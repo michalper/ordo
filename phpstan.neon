@@ -1,3 +1,6 @@
+includes:
+    - ../../bitexpert/phpstan-magento/extension.neon
+
 parameters:
     level: max
     paths:
@@ -6,4 +9,4 @@ parameters:
         - vendor/*
         - Test/*
     magento:
-        magento_root: '%currentWorkingDirectory%/../../../..'
+        magentoRoot: '%currentWorkingDirectory%'
