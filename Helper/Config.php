@@ -23,6 +23,10 @@ class Config extends AbstractHelper
     private const XML_PATH_OFFER_MAX_SELF_EXTENSIONS = 'ordo_automation/offer/max_self_extensions';
     private const XML_PATH_OFFER_SELF_EXTENSION_DAYS = 'ordo_automation/offer/self_extension_days';
 
+    private const XML_PATH_CREDIT_ENABLED = 'ordo_automation/credit_limit/enabled';
+    private const XML_PATH_CREDIT_WARNING_THRESHOLD = 'ordo_automation/credit_limit/warning_threshold_percent';
+    private const XML_PATH_CREDIT_COOLDOWN_DAYS = 'ordo_automation/credit_limit/cooldown_days';
+
     public function __construct(Context $context)
     {
         parent::__construct($context);
@@ -122,6 +126,33 @@ class Config extends AbstractHelper
     {
         return (int) $this->scopeConfig->getValue(
             self::XML_PATH_OFFER_SELF_EXTENSION_DAYS,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        ) ?: 7;
+    }
+
+    public function isCreditLimitAlertEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_CREDIT_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getCreditLimitWarningThreshold(?int $storeId = null): int
+    {
+        return (int) $this->scopeConfig->getValue(
+            self::XML_PATH_CREDIT_WARNING_THRESHOLD,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        ) ?: 80;
+    }
+
+    public function getCreditLimitAlertCooldownDays(?int $storeId = null): int
+    {
+        return (int) $this->scopeConfig->getValue(
+            self::XML_PATH_CREDIT_COOLDOWN_DAYS,
             ScopeInterface::SCOPE_STORE,
             $storeId
         ) ?: 7;

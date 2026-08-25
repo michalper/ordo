@@ -3,4 +3,5 @@
     <template id="ordo_reorder_reminder" label="Ordo: Reorder Reminder" file="reorder_reminder.html" type="html" module="Ordo_Automation" area="frontend"/>
     <template id="ordo_abandoned_cart_reminder" label="Ordo: Abandoned Cart Reminder" file="abandoned_cart_reminder.html" type="html" module="Ordo_Automation" area="frontend"/>
     <template id="ordo_offer_expiring_soon" label="Ordo: Offer Expiring Soon" file="offer_expiring_soon.html" type="html" module="Ordo_Automation" area="frontend"/>
+    <template id="ordo_credit_limit_warning" label="Ordo: Credit Limit Warning" file="credit_limit_warning.html" type="html" module="Ordo_Automation" area="frontend"/>
 </config>

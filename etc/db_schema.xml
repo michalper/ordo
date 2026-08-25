@@ -86,4 +86,18 @@
                     referenceTable="ordo_offer" referenceColumn="entity_id" onDelete="CASCADE"/>
     </table>
 
+    <table name="ordo_credit_limit_alert_log" resource="default" engine="innodb" comment="Log of sent credit limit alerts, one row per threshold band crossed, to control alert frequency">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
+        <column xsi:type="smallint" name="threshold_percent" unsigned="true" nullable="false" comment="Threshold band crossed, e.g. 80 or 100"/>
+        <column xsi:type="decimal" name="utilization_percent" scale="2" precision="7" unsigned="true" nullable="false" comment="Actual utilization at send time"/>
+        <column xsi:type="timestamp" name="sent_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Sent At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="ORDO_CREDIT_LIMIT_ALERT_LOG_CUSTOMER_ID" indexType="btree">
+            <column name="customer_id"/>
+        </index>
+    </table>
+
 </schema>

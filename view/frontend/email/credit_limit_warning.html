@@ -1,0 +1,26 @@
+<!--@subject Your credit limit is at {{var utilization_percent}}% @-->
+{{template config_path="design/email/header_template"}}
+
+<table>
+    <tr class="email-intro">
+        <td>
+            <p class="greeting">Hi {{var customer_name}},</p>
+            {{depend is_over_limit}}
+            <p>
+                Your account has gone over its credit limit: <strong>{{var used_credit}}</strong> used out of
+                <strong>{{var credit_limit}}</strong> ({{var utilization_percent}}%). New orders may be held until
+                the balance is brought back under the limit.
+            </p>
+            {{/depend}}
+            {{depend is_over_limit}}{{else}}
+            <p>
+                Your account is currently using <strong>{{var utilization_percent}}%</strong> of its credit limit
+                ({{var used_credit}} of {{var credit_limit}}). Let us know if you'd like to discuss a higher limit
+                or settle an open balance before it becomes a problem.
+            </p>
+            {{/depend}}
+        </td>
+    </tr>
+</table>
+
+{{template config_path="design/email/footer_template"}}
