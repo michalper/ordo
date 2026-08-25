@@ -2,8 +2,13 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
     <event name="customer_register_success">
         <observer name="ordo_automation_send_welcome_email" instance="Ordo\Automation\Observer\SendWelcomeEmail"/>
+        <observer name="ordo_automation_dispatch_customer_registered_campaigns" instance="Ordo\Automation\Observer\DispatchCustomerRegisteredCampaigns"/>
     </event>
     <event name="sales_order_place_after">
         <observer name="ordo_automation_hold_order_for_approval" instance="Ordo\Automation\Observer\HoldOrderForApproval"/>
+        <observer name="ordo_automation_dispatch_order_placed_campaigns" instance="Ordo\Automation\Observer\DispatchOrderPlacedCampaigns"/>
+    </event>
+    <event name="ordo_customer_tag_added">
+        <observer name="ordo_automation_dispatch_tag_added_campaigns" instance="Ordo\Automation\Observer\DispatchTagAddedCampaigns"/>
     </event>
 </config>

@@ -8,7 +8,7 @@ The goal is for this module to be a genuine substitute for a general-purpose MA 
 
 They're strong on channels (email/SMS/push) and campaign UI, but they only see what a store exports through a generic connector — order totals, cart events, product views. They don't compute purchase-cycle patterns, don't know about quote expiry, credit limits, or company hierarchies, and their B2C behavioral tracking runs through a JS snippet + cookie that's completely decoupled from server-side order data. Ordo Automation runs inside Magento itself, so triggers can combine both without an integration layer.
 
-## Features (v0.3)
+## Features (v0.5)
 
 **B2B**
 - **Reorder reminders** — detects a recurring purchase pattern per customer/SKU from order history and emails a reminder before the predicted next order date.
@@ -23,17 +23,21 @@ They're strong on channels (email/SMS/push) and campaign UI, but they only see w
 
 **Shared foundation**
 - **Behavioral tagging** (`CustomerTagManager`) — the segmentation primitive every trigger above reads or writes (`new_customer`, `inactive`, `win_back_sent`, ...), the same pattern general MA platforms build campaign targeting on.
+- **Sales-rep signature** (`SalesRepEmailContext`) — every automated email above is signed by the customer's assigned rep when one is set, falling back to the store name. A weekly digest also groups inactive customers by rep.
+- **Campaign engine** (`ordo_campaign` + `ordo_campaign_condition` + `ordo_campaign_action`) — a genuinely configurable "when X happens and Y is true, do Z" rule engine, not a hardcoded cron per idea. Conditions and actions are plug-ins registered in `di.xml` (`Model\Campaign\ConditionPool` / `ActionPool`) against `Api\Campaign\ConditionInterface` / `ActionInterface` — adding a new condition or action type is a new class + one `di.xml` line, never a change to the dispatcher. Ships with two conditions (`tag`, `order_total_gte`) and three actions (`add_tag`, `send_email`, `generate_coupon`), triggered on `order_placed`, `customer_registered`, and `tag_added` (the last fired as a Magento event by `CustomerTagManager`, not a direct call, to avoid a DI cycle with the `tag` condition). Exposed as a full service contract (`CampaignRepositoryInterface`) with REST endpoints under `/V1/ordo/campaigns`.
 
-All of it is configurable under **Stores → Configuration → Ordo Automation**, each feature with its own on/off switch and its own cron job (see `etc/crontab.xml`).
+All of it is configurable under **Stores → Configuration → Ordo Automation** (or, for campaigns, via the `ordo_campaign*` tables / REST API — no dedicated admin grid yet, see Phase 4), each feature with its own on/off switch and its own cron job (see `etc/crontab.xml`).
+
+**A note on scope:** the campaign engine intentionally works on structured, low-frequency events (orders, registrations, tag changes) — a handful of rows per customer, not per click. Raw high-frequency on-site behavior tracking (Phase 5, page views / clicks via a JS snippet) is a different scale problem and is *not* meant to be stored as one row per event in this same schema — see Phase 5 for why, and how that's meant to feed into the tag system instead of bypassing it.
 
 ## Architecture
 
 ```
 etc/
-  module.xml, di.xml, crontab.xml, db_schema.xml, events.xml, email_templates.xml, acl.xml
+  module.xml, di.xml, crontab.xml, db_schema.xml, events.xml, email_templates.xml, acl.xml, webapi.xml
   adminhtml/system.xml          — store configuration
   frontend/routes.xml           — /ordo/approval/* (token-based, no login)
-Api/, Api/Data/                 — service contracts (OfferInterface, OfferRepositoryInterface)
+Api/, Api/Data/                 — service contracts: Offer*, Campaign*, Campaign/ConditionInterface, Campaign/ActionInterface
 Cron/
   CalculateReorderCycle.php, SendReorderReminders.php
   SendAbandonedCartReminders.php
@@ -41,16 +45,26 @@ Cron/
   SendCreditLimitAlerts.php
   TagInactiveCustomers.php, SendWinBackEmails.php
   EscalateStalePendingApprovals.php
+  SendSalesRepDigest.php
 Observer/
-  SendWelcomeEmail.php           — customer_register_success
-  HoldOrderForApproval.php       — sales_order_place_after
+  SendWelcomeEmail.php                        — customer_register_success
+  HoldOrderForApproval.php                    — sales_order_place_after
+  DispatchOrderPlacedCampaigns.php            — sales_order_place_after
+  DispatchCustomerRegisteredCampaigns.php     — customer_register_success
+  DispatchTagAddedCampaigns.php               — ordo_customer_tag_added (custom event)
 Controller/Approval/            — Approve.php, Reject.php (token-based frontend actions)
-Model/, Model/ResourceModel/     — ordo_reorder_cycle, ordo_offer, ordo_customer_tag, ordo_order_approval
+Model/, Model/ResourceModel/     — ordo_reorder_cycle, ordo_offer, ordo_customer_tag, ordo_order_approval, ordo_campaign(_condition/_action)
+Model/Campaign/                  — ConditionPool, ActionPool, Condition/*, Action/* (the plug-in registry)
+Model/CampaignDispatcher.php     — "trigger event + context in, matching campaigns run out"
 Model/CreditLimitCalculator.php  — used-credit derived from open sales_order.total_due
-Model/CustomerTagManager.php     — add/remove/check/list-by-tag
-Setup/Patch/Data/                — customer attributes (credit limit, spend limit, approval admin email), Pending Approval order status
+Model/CustomerTagManager.php     — add/remove/check/list-by-tag; fires ordo_customer_tag_added
+Model/CouponGenerator.php        — mints a single-use SalesRule coupon code
+Model/SalesRepEmailContext.php   — shared email signature block
+Setup/Patch/Data/                — customer attributes (credit/spend limit, approval admin email, sales rep), Pending Approval order status
 Helper/Config.php                — typed access to system.xml values
 view/frontend/email/             — email templates
+Test/Unit/                       — PHPUnit tests (seed coverage, see Phase 6)
+i18n/                            — translation CSVs (en_US, pl_PL)
 ```
 
 ## Install
@@ -82,17 +96,17 @@ Ownership split for how this roadmap is being driven: B2B direction is scoped by
 
 ### Phase 2 — remaining B2B triggers
 
-- **Sales-rep-signed emails** — an "assigned rep" customer attribute plus a shared email view-model so every automated email (reorder, offer, credit) is signed by a real person instead of a generic sender address, and reps get a periodic digest of customers needing attention.
+**Closed.** Sales-rep-signed emails and the weekly rep digest shipped in v0.4.0 (`SalesRepEmailContext`, `SendSalesRepDigest`).
 
 ### Phase 3 — Promotion Builder (adjacent product area, not a trigger)
 
 A friendlier admin layer over Magento's native `SalesRule` engine — the raw native form (tabs, dropdowns, a condition tree written like code) is the same everywhere, and no store owner enjoys using it.
 
-- **Buy X Get Y free** — already 100% native Magento (`SalesRule` "Buy X Get Y" discount action); this is just a human-friendly config screen with a live calculator, not new backend logic.
-- **Cheapest item in a bundle free** — genuinely missing from native Magento: no built-in rule action picks "the cheapest item in a qualifying set" as the free one. Needs a custom `SalesRule` action class.
-- **Free gift above a cart threshold** — also missing natively; needs a custom rule action too.
-- **Coupon generated after checkout** ("10% off your next order") — bridges into the trigger list above: same `sales_order_place_after` event, but the action is "generate a coupon," not "send an email."
-- **Coupon for cart recovery** — same idea applied to the abandoned-cart trigger: instead of just a reminder email, optionally attach a discount code.
+- **Buy X Get Y free** — already 100% native Magento (`SalesRule` "Buy X Get Y" discount action); needs only a human-friendly config screen with a live calculator (no admin UI built yet — see Phase 4), not new backend logic.
+- **Coupon generated after checkout / for cart recovery** — **done, but reframed:** rather than two one-off hardcoded features, this shipped as the general-purpose campaign engine (`ordo_campaign`, see Features above) — "on `order_placed`, generate a coupon and email it" is just a two-action campaign row, not bespoke code. The same engine covers cart-recovery coupons once a `cart_abandoned` trigger event is added (currently `SendAbandonedCartReminders` is still a fixed cron, not campaign-driven — see below).
+- **Cheapest item in a bundle free** — still genuinely missing from native Magento: no built-in rule action picks "the cheapest item in a qualifying set" as the free one. Needs a custom `SalesRule` action class (implementing `Magento\SalesRule\Model\Rule\Action\Discount\DiscountInterface`, registered via the `Magento\SalesRule\Model\Validator` calculators array in `di.xml`) — not yet built. Note for whoever picks this up: making it appear as a friendly label in the native "Apply" dropdown requires a plugin on the core admin block that hardcodes that option list — a real, known wart in Magento's extensibility here, not an oversight if it's still missing.
+- **Free gift above a cart threshold** — also missing natively (adding a *different*, specific product for free); needs a custom rule action too. Not yet built.
+- **Migrate `SendAbandonedCartReminders` onto the campaign engine** — right now it's the one B2C trigger still implemented as a fixed cron instead of a `cart_abandoned`-triggered campaign. Doing so would let a store admin attach a coupon to cart recovery without new code, consistent with everything else in Phase 3.
 
 ### Phase 5 — on-site behavior tracking (the missing half of "like iPresso")
 
@@ -103,20 +117,24 @@ Everything in v0.2 reacts to server-side data (orders, carts, registration). A r
 - **Identity stitching** — once the visitor logs in or checks out, their anonymous event history gets linked to the real `customer_id`, so behavioral data collected before conversion still feeds tags/segments/triggers afterward.
 - Once this exists, tags stop being purely order-derived (`inactive`, `new_customer`) and can include on-site behavior (`viewed_category_x_3_times`, `abandoned_checkout_step_shipping`), which is where this starts to genuinely replace a general-purpose MA platform instead of just covering its blind spots.
 
+**Scale note:** raw per-click/per-pageview events must *not* be persisted 1:1 into Magento's own database the way `ordo_campaign`/`ordo_customer_tag` are — that table would grow by thousands of rows/day even on a mid-size store, which is exactly why real MA platforms keep that in separate infrastructure (event stores, ClickHouse, Kafka), not their core app DB. The intended design: the JS endpoint aggregates in-flight and only writes derived signals (a tag crossing a threshold) into `ordo_customer_tag` — either raw events never touch a persistent Magento table at all, or they land in a separate, aggressively-pruned table (e.g. 7-day retention) that's structurally kept apart from the rest of this module's schema.
+
 ### Phase 6 — closing the test coverage & localization gap
 
 The standards in "Quality & testing standards" above apply from now on; this phase is the backlog of bringing everything written before that rule existed up to the same bar:
 
-- **Unit tests** for every `Cron/`, `Observer/`, `Controller/Approval/` class beyond the `SalesRepEmailContext` seed — `CreditLimitCalculator`, `CustomerTagManager`, and each cron's `execute()` logic with mocked collections/repositories.
-- **MFTF test suite** (`Test/Mftf/` — directory scaffolded, tests not yet written): admin sets a customer's credit limit and spend limit → storefront checkout flows exercise both; the full order-approval email round-trip; offer self-extension from the storefront.
-- **API functional tests** for `OfferRepositoryInterface` (`save`/`getById`/`getList`/`delete`), following Magento's own `dev/tests/api-functional` conventions.
+- **Unit tests** for every `Cron/`, `Observer/`, `Controller/Approval/` class beyond the seed tests (`SalesRepEmailContextTest`, `ConditionPoolTest`, `OrderTotalAtLeastTest`) — `CreditLimitCalculator`, `CustomerTagManager`, `CampaignDispatcher` (with mocked collection factories — the pool tests cover the plug-in registry itself, not yet the dispatch/condition-AND/action-order logic), and each cron's `execute()` logic.
+- **MFTF test suite** (`Test/Mftf/` — directory scaffolded, tests not yet written): admin sets a customer's credit limit and spend limit → storefront checkout flows exercise both; the full order-approval email round-trip; offer self-extension from the storefront; a saved campaign (order_placed → generate_coupon → send_email) actually firing on a real checkout.
+- **API functional tests** for `OfferRepositoryInterface` and `CampaignRepositoryInterface` (`save`/`getById`/`getList`/`delete`), following Magento's own `dev/tests/api-functional` conventions.
 - **PHPStan clean run at `level: max`** across the whole module — `phpstan.neon` exists; hasn't been run against every file added since Phase 2-3 yet.
 - **Coverage report wired into CI** (whatever CI this repo ends up on) so "100% target" becomes a number in a build badge, not just a stated goal.
 - **More `i18n/*.csv` locales** beyond `en_US`/`pl_PL` — driven by whichever languages an actual install needs, not translated speculatively ahead of demand.
 
 ### Phase 4 — one dashboard instead of scattered config screens
 
-Right now every trigger lives in its own `system.xml` section with its own cron and its own silent log table. Once there are enough triggers to make it worthwhile: a single "Automation" admin menu, one grid listing every trigger with an on/off switch and basic stats (sent / response rate / estimated recovered revenue), one config form per trigger instead of digging through Stores → Configuration.
+Right now every fixed trigger lives in its own `system.xml` section with its own cron and its own silent log table, and the new campaign engine has *no admin UI at all* yet — campaigns can only be created via direct DB rows or the REST API. Once there's enough here to make it worthwhile:
+- A single "Automation" admin menu: one grid listing every fixed trigger with an on/off switch and basic stats (sent / response rate / estimated recovered revenue).
+- A proper campaign builder screen: list of campaigns, a form to pick a trigger event, add conditions (dropdown populated from `ConditionPool::getAvailableTypes()`) and actions (from `ActionPool::getAvailableTypes()`) with their params — the UI equivalent of what's already fully functional in the data model and dispatcher today.
 
 ## Changelog
 

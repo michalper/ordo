@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
+    <route url="/V1/ordo/campaigns" method="GET">
+        <service class="Ordo\Automation\Api\CampaignRepositoryInterface" method="getList"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/campaigns/:entityId" method="GET">
+        <service class="Ordo\Automation\Api\CampaignRepositoryInterface" method="getById"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/campaigns" method="POST">
+        <service class="Ordo\Automation\Api\CampaignRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/campaigns/:entityId" method="PUT">
+        <service class="Ordo\Automation\Api\CampaignRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+
+    <route url="/V1/ordo/offers" method="GET">
+        <service class="Ordo\Automation\Api\OfferRepositoryInterface" method="getList"/>
+        <resources>
+            <resource ref="Ordo_Automation::config"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/offers/:entityId" method="GET">
+        <service class="Ordo\Automation\Api\OfferRepositoryInterface" method="getById"/>
+        <resources>
+            <resource ref="Ordo_Automation::config"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/offers" method="POST">
+        <service class="Ordo\Automation\Api\OfferRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Ordo_Automation::config"/>
+        </resources>
+    </route>
+</routes>

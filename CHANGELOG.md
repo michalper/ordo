@@ -2,6 +2,18 @@
 
 All notable changes to this module are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.5.0]
+
+### Added
+- Configurable campaign engine ("when X happens and Y is true, do Z"): new `ordo_campaign` / `ordo_campaign_condition` / `ordo_campaign_action` tables, `CampaignDispatcher`, and a plug-in registry (`Model\Campaign\ConditionPool` / `ActionPool`) driven entirely by `di.xml` — no hardcoded switch statement to extend. Ships with two conditions (`tag`, `order_total_gte`) and three actions (`add_tag`, `send_email`, `generate_coupon`).
+- Three new trigger events wired into the dispatcher: `order_placed`, `customer_registered`, and `tag_added` (the last fired as a Magento event, `ordo_customer_tag_added`, from `CustomerTagManager` — going through the event bus instead of a direct call avoids a DI cycle with the `tag` condition, which itself depends on `CustomerTagManager`).
+- `CouponGenerator` service — mints single-use `SalesRule` coupon codes, used by the `generate_coupon` campaign action. Reframes what was previously planned as two bespoke features ("coupon after checkout", "coupon for cart recovery") as ordinary two-action campaigns instead of new code per idea.
+- Full service contract for campaigns (`CampaignRepositoryInterface`, `Api\Data\CampaignInterface`) with REST endpoints under `/V1/ordo/campaigns`.
+- Seed unit tests for the new plug-in architecture (`ConditionPoolTest`, `OrderTotalAtLeastTest`).
+
+### Changed
+- Reframed Phase 3 (Promotion Builder) roadmap: "coupon after checkout" / "coupon for cart recovery" moved from planned to done via the campaign engine; "cheapest item in a bundle free" and "free gift above cart threshold" remain open, now documented with the exact Magento extension points required (`SalesRule` custom discount calculator via `Magento\SalesRule\Model\Validator`) and a known limitation (the native "Apply" admin dropdown needs a core block plugin to show a friendly label for a new discount type).
+
 ## [0.4.0]
 
 ### Added

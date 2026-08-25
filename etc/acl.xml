@@ -8,6 +8,7 @@
                         <resource id="Ordo_Automation::config" title="Ordo Automation Section" translate="title" sortOrder="500"/>
                     </resource>
                 </resource>
+                <resource id="Ordo_Automation::campaigns" title="Ordo Automation Campaigns" translate="title" sortOrder="510"/>
             </resource>
         </resources>
     </acl>

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Model;
 
 use Magento\Framework\App\ResourceConnection;
+use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
 
 /**
  * Behavioral tagging, the same primitive general-purpose MA platforms (SalesManago, iPresso,
@@ -11,11 +12,17 @@ use Magento\Framework\App\ResourceConnection;
  * trigger/segment in this module reads or writes tags instead of inventing its own ad-hoc flag.
  * Kept intentionally dumb — no rule engine, just add/remove/check — so it stays easy to reason
  * about and easy to extend later (a rule-based auto-tagger is just another cron that calls this).
+ *
+ * Fires the "ordo_customer_tag_added" Magento event (not a direct CampaignDispatcher call) when
+ * a new tag is actually added — CampaignDispatcher's HasTag condition itself depends on this
+ * class, so calling it directly here would create a DI cycle. Going through Magento's own event
+ * manager, with a thin observer on the other end, breaks the cycle the idiomatic way.
  */
 class CustomerTagManager
 {
     public function __construct(
-        private readonly ResourceConnection $resourceConnection
+        private readonly ResourceConnection $resourceConnection,
+        private readonly EventManagerInterface $eventManager
     ) {
     }
 
@@ -31,6 +38,8 @@ class CustomerTagManager
             'tag' => $tag,
             'added_at' => date('Y-m-d H:i:s'),
         ]);
+
+        $this->eventManager->dispatch('ordo_customer_tag_added', ['customer_id' => $customerId, 'tag' => $tag]);
     }
 
     public function removeTag(int $customerId, string $tag): void

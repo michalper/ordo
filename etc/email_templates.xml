@@ -9,4 +9,5 @@
     <template id="ordo_order_approval_request" label="Ordo: Order Approval Request" file="order_approval_request.html" type="html" module="Ordo_Automation" area="frontend"/>
     <template id="ordo_order_approval_escalation" label="Ordo: Order Approval Escalation" file="order_approval_escalation.html" type="html" module="Ordo_Automation" area="frontend"/>
     <template id="ordo_sales_rep_digest" label="Ordo: Sales Rep Weekly Digest" file="sales_rep_digest.html" type="html" module="Ordo_Automation" area="frontend"/>
+    <template id="ordo_campaign_generic" label="Ordo: Campaign — Generic" file="campaign_generic.html" type="html" module="Ordo_Automation" area="frontend"/>
 </config>

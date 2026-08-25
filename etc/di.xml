@@ -2,4 +2,30 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
     <preference for="Ordo\Automation\Api\Data\OfferInterface" type="Ordo\Automation\Model\Offer"/>
     <preference for="Ordo\Automation\Api\OfferRepositoryInterface" type="Ordo\Automation\Model\OfferRepository"/>
+    <preference for="Ordo\Automation\Api\Data\CampaignInterface" type="Ordo\Automation\Model\Campaign"/>
+    <preference for="Ordo\Automation\Api\CampaignRepositoryInterface" type="Ordo\Automation\Model\CampaignRepository"/>
+
+    <!--
+        Campaign engine plug-in registry. Adding a new condition or action type never means
+        touching CampaignDispatcher — just a new class implementing ConditionInterface /
+        ActionInterface, and one line here.
+    -->
+    <type name="Ordo\Automation\Model\Campaign\ConditionPool">
+        <arguments>
+            <argument name="conditions" xsi:type="array">
+                <item name="tag" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\HasTag</item>
+                <item name="order_total_gte" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\OrderTotalAtLeast</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="Ordo\Automation\Model\Campaign\ActionPool">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="add_tag" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddTag</item>
+                <item name="send_email" xsi:type="object">Ordo\Automation\Model\Campaign\Action\SendEmail</item>
+                <item name="generate_coupon" xsi:type="object">Ordo\Automation\Model\Campaign\Action\GenerateCoupon</item>
+            </argument>
+        </arguments>
+    </type>
 </config>
