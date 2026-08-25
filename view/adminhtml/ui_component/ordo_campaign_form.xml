@@ -104,10 +104,14 @@
                 <dataScope>conditions</dataScope>
             </settings>
             <container name="record" component="Magento_Ui/js/dynamic-rows/record">
+                <argument name="data" xsi:type="array">
+                    <item name="config" xsi:type="array">
+                        <item name="isTemplate" xsi:type="boolean">true</item>
+                        <item name="is_collection" xsi:type="boolean">true</item>
+                    </item>
+                </argument>
                 <settings>
                     <componentType>container</componentType>
-                    <isTemplate>true</isTemplate>
-                    <is_collection>true</is_collection>
                 </settings>
                 <field name="type" formElement="select" sortOrder="10">
                     <settings>
@@ -145,10 +149,14 @@
                 <dataScope>actions</dataScope>
             </settings>
             <container name="record" component="Magento_Ui/js/dynamic-rows/record">
+                <argument name="data" xsi:type="array">
+                    <item name="config" xsi:type="array">
+                        <item name="isTemplate" xsi:type="boolean">true</item>
+                        <item name="is_collection" xsi:type="boolean">true</item>
+                    </item>
+                </argument>
                 <settings>
                     <componentType>container</componentType>
-                    <isTemplate>true</isTemplate>
-                    <is_collection>true</is_collection>
                 </settings>
                 <field name="type" formElement="select" sortOrder="10">
                     <settings>
