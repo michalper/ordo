@@ -31,5 +31,8 @@
         <job name="ordo_automation_send_sales_rep_digest" instance="Ordo\Automation\Cron\SendSalesRepDigest" method="execute">
             <schedule>0 8 * * 1</schedule>
         </job>
+        <job name="ordo_automation_prune_visitor_events" instance="Ordo\Automation\Cron\PruneVisitorEvents" method="execute">
+            <schedule>0 4 * * *</schedule>
+        </job>
     </group>
 </config>

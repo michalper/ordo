@@ -2,6 +2,18 @@
 
 All notable changes to this module are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.8.0]
+
+### Added
+- On-site behavior tracking core: dependency-free `tracker.js` snippet (visitor cookie + `page_view`/`product_view`/`category_view` events), a public CSRF-exempt `POST /ordo/track/event` endpoint, `customer_login`-triggered identity stitching, and `VisitorAggregator` turning threshold-crossing raw events into ordinary `ordo_customer_tag` rows — which the campaign engine's existing `tag_added` trigger already fires on, with no new code.
+- `ordo_visitor_event` table, deliberately separate from `ordo_campaign`/`ordo_customer_tag`, with a new `PruneVisitorEvents` cron enforcing a configurable retention window (default 7 days) — the concrete implementation of the scale caution flagged in the previous README version, not a deferred promise anymore.
+- New `tracking` config group: enabled toggle, view threshold, retention days.
+
+### Known limitations (documented, not hidden)
+- No automatic page-type detection; `product_view`/`category_view` require an explicit `window.ordoTrack()` call from the theme.
+- `tracker.js` loads sitewide independent of the enabled toggle (the endpoint just no-ops) — a wasted request, not a data leak, but not ideal; needs a config-aware Block to fix properly.
+- Tag-per-event-key is an explicit cardinality tradeoff (precision vs. bounded tag count), left as an operating decision, not resolved here.
+
 ## [0.7.0]
 
 ### Added

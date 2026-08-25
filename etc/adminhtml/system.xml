@@ -127,6 +127,26 @@
                     <comment>The rep signature on reorder/offer/credit emails is always active once a customer has "Assigned Sales Rep" fields set — this only controls the separate weekly summary email.</comment>
                 </field>
             </group>
+
+            <group id="tracking" translate="label" type="text" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>On-Site Behavior Tracking</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>The tracker.js snippet loads sitewide regardless of this setting (see view/frontend/layout/default.xml) — this only controls whether the /ordo/track/event endpoint stores anything.</comment>
+                </field>
+                <field id="view_threshold" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Tag a customer after this many views of the same item</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="retention_days" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Delete raw events older than this many days</label>
+                    <comment>Only raw events are pruned — tags already derived from them are unaffected and stay permanently.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
         </section>
     </system>
 </config>

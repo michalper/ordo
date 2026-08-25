@@ -190,4 +190,25 @@
         </index>
     </table>
 
+    <table name="ordo_visitor_event" resource="default" engine="innodb" comment="Raw on-site behavior events — short-lived by design, see PruneVisitorEvents. Deliberately kept separate from ordo_campaign/ordo_customer_tag, which are low-frequency and long-lived.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="visitor_id" nullable="false" length="64" comment="Anonymous first-party cookie value"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="true" comment="Set once identity stitching links this visitor to a logged-in customer"/>
+        <column xsi:type="varchar" name="event_type" nullable="false" length="32" comment="e.g. page_view, product_view, category_view"/>
+        <column xsi:type="varchar" name="event_key" nullable="true" length="255" comment="e.g. the SKU or category id the event was about, for grouping"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="ORDO_VISITOR_EVENT_VISITOR_ID" indexType="btree">
+            <column name="visitor_id"/>
+        </index>
+        <index referenceId="ORDO_VISITOR_EVENT_CUSTOMER_ID" indexType="btree">
+            <column name="customer_id"/>
+        </index>
+        <index referenceId="ORDO_VISITOR_EVENT_CREATED_AT" indexType="btree">
+            <column name="created_at"/>
+        </index>
+    </table>
+
 </schema>

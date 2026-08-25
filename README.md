@@ -8,7 +8,7 @@ The goal is for this module to be a genuine substitute for a general-purpose MA 
 
 They're strong on channels (email/SMS/push) and campaign UI, but they only see what a store exports through a generic connector — order totals, cart events, product views. They don't compute purchase-cycle patterns, don't know about quote expiry, credit limits, or company hierarchies, and their B2C behavioral tracking runs through a JS snippet + cookie that's completely decoupled from server-side order data. Ordo Automation runs inside Magento itself, so triggers can combine both without an integration layer.
 
-## Features (v0.7)
+## Features (v0.8)
 
 **B2B**
 - **Reorder reminders** — detects a recurring purchase pattern per customer/SKU from order history and emails a reminder before the predicted next order date.
@@ -68,6 +68,10 @@ Model/SalesRepEmailContext.php   — shared email signature block
 Setup/Patch/Data/                — customer attributes (credit/spend limit, approval admin email, sales rep), Pending Approval order status
 Helper/Config.php                — typed access to system.xml values
 view/frontend/email/             — email templates
+Controller/Track/Event.php       — public, CSRF-exempt tracking endpoint
+Model/VisitorEventLogger.php     — writes ordo_visitor_event, triggers aggregation when identity is known
+Model/VisitorAggregator.php      — raw events → ordo_customer_tag threshold-crossing tags
+view/frontend/web/js/tracker.js  — dependency-free visitor cookie + event snippet
 Test/Unit/                       — PHPUnit tests (seed coverage, see Phase 6)
 i18n/                            — translation CSVs (en_US, pl_PL)
 ```
@@ -115,14 +119,20 @@ A friendlier admin layer over Magento's native `SalesRule` engine — the raw na
 
 ### Phase 5 — on-site behavior tracking (the missing half of "like iPresso")
 
-Everything in v0.2 reacts to server-side data (orders, carts, registration). A real MA platform also tracks anonymous on-site behavior before someone ever converts:
+**Core shipped.** Everything before this phase reacts to server-side data (orders, carts, registration) only. A real MA platform also tracks anonymous on-site behavior before someone ever converts:
 
-- **First-party visitor cookie** — issued on first visit (works as a native Magento frontend plugin, or as a small JS snippet that can be dropped into any site, Magento or not), giving every anonymous visitor a stable ID before they're a customer.
-- **JS tracking snippet** — records page views / product views / cart actions client-side and posts them to a Magento REST endpoint as events, the same architecture SalesManago/iPresso use for their "External Events."
-- **Identity stitching** — once the visitor logs in or checks out, their anonymous event history gets linked to the real `customer_id`, so behavioral data collected before conversion still feeds tags/segments/triggers afterward.
-- Once this exists, tags stop being purely order-derived (`inactive`, `new_customer`) and can include on-site behavior (`viewed_category_x_3_times`, `abandoned_checkout_step_shipping`), which is where this starts to genuinely replace a general-purpose MA platform instead of just covering its blind spots.
+- **First-party visitor cookie** — `view/frontend/web/js/tracker.js` is a dependency-free (no RequireJS/jQuery) snippet, issuing an `ordo_visitor_id` cookie on first visit via plain `document.cookie` — genuinely portable to a non-Magento site, not just "works as a Magento plugin."
+- **Tracking endpoint** — `POST /ordo/track/event` (`Controller\Track\Event`), unauthenticated and CSRF-exempt by design (same trust model as any third-party tracking pixel — an anonymous visitor has no session/form key yet). Accepts `page_view` / `product_view` / `category_view` with an optional `event_key` (SKU, category id).
+- **Identity stitching** — `StitchVisitorIdentity` observer on `customer_login` backfills the visitor's pre-login anonymous events with their `customer_id` and immediately re-runs aggregation, so behavior from before login still counts.
+- **Aggregation → tags, not raw storage** — `VisitorAggregator` turns "viewed category 15 three times" into the tag `viewed_category_view_15` in the same long-lived `ordo_customer_tag` table everything else in this module already uses — this is what makes on-site behavior usable by the campaign engine (a `tag_added` campaign fires the moment the threshold is crossed) without a new condition/action type.
 
-**Scale note:** raw per-click/per-pageview events must *not* be persisted 1:1 into Magento's own database the way `ordo_campaign`/`ordo_customer_tag` are — that table would grow by thousands of rows/day even on a mid-size store, which is exactly why real MA platforms keep that in separate infrastructure (event stores, ClickHouse, Kafka), not their core app DB. The intended design: the JS endpoint aggregates in-flight and only writes derived signals (a tag crossing a threshold) into `ordo_customer_tag` — either raw events never touch a persistent Magento table at all, or they land in a separate, aggressively-pruned table (e.g. 7-day retention) that's structurally kept apart from the rest of this module's schema.
+**Scale design — implemented, not just described:** raw events live in their own table, `ordo_visitor_event`, structurally separate from `ordo_campaign`/`ordo_customer_tag`, and `PruneVisitorEvents` deletes rows older than a configurable retention window (default 7 days) nightly. Tags derived from those events are unaffected by pruning — only the raw evidence is discarded, the conclusion stays. This is the concrete implementation of the "scale note" from the previous version of this README, not a promise deferred further.
+
+**Known limitations (documented, not hidden):**
+- No automatic page-type detection — firing `product_view`/`category_view` with the right key requires the theme to call `window.ordoTrack(eventType, eventKey)` on PDP/PLP templates. Only `page_view` fires automatically.
+- `tracker.js` loads sitewide (`view/frontend/layout/default.xml`) regardless of the "tracking enabled" config toggle — the endpoint no-ops when disabled, but the JS still makes a wasted network call every page load. Fixing this needs a config-aware Block instead of a bare `<script>` tag.
+- Tag cardinality tradeoff is explicit, not resolved: tagging by `event_key` (e.g. `viewed_category_view_15`) gives precise targeting but an unbounded number of distinct tags on a large catalog. A coarser variant is a deliberate, documented option for whoever operates this, not a decision made here.
+- No MFTF/API test coverage yet for this phase — tracked in Phase 6 alongside everything else.
 
 ### Phase 6 — closing the test coverage & localization gap
 
