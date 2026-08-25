@@ -28,4 +28,22 @@
             </argument>
         </arguments>
     </type>
+
+    <!--
+        Registers "ordo_cheapest_item_free" as a possible cart price rule simple_action, the
+        same extension point Magento's own "Buy X Get Y" calculator is wired through. Array
+        arguments merge across modules' di.xml by item key, so this adds to — never replaces —
+        whatever other calculators are already registered against this class.
+        See Model\Rule\Action\Discount\CheapestItemFree for the known admin-UI limitation.
+    -->
+    <type name="Magento\SalesRule\Model\Validator">
+        <arguments>
+            <argument name="calculators" xsi:type="array">
+                <item name="ordo_cheapest_item_free" xsi:type="array">
+                    <item name="sort_order" xsi:type="string">100</item>
+                    <item name="model" xsi:type="string">Ordo\Automation\Model\Rule\Action\Discount\CheapestItemFree</item>
+                </item>
+            </argument>
+        </arguments>
+    </type>
 </config>

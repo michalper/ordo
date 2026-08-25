@@ -10,12 +10,19 @@ use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Quote\Model\QuoteFactory;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\CampaignDispatcher;
 use Psr\Log\LoggerInterface;
 
 /**
  * Finds quotes with items that have not been touched for the configured delay,
  * were not converted to an order, and belong to an identifiable customer/email,
  * then sends a one-time (or capped) recovery reminder.
+ *
+ * Also dispatches a "cart_abandoned" campaign event for quotes tied to a registered
+ * customer, alongside the fixed reminder above — a store can layer a coupon or a tag
+ * onto cart recovery via a campaign without touching this cron. Guest quotes (no
+ * customer_id) only get the fixed email, since campaign conditions/actions here all
+ * assume a real customer_id.
  */
 class SendAbandonedCartReminders
 {
@@ -29,6 +36,7 @@ class SendAbandonedCartReminders
         private readonly TransportBuilder $transportBuilder,
         private readonly StoreManagerInterface $storeManager,
         private readonly StateInterface $inlineTranslation,
+        private readonly CampaignDispatcher $campaignDispatcher,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -49,7 +57,7 @@ class SendAbandonedCartReminders
         $logTable = $this->resourceConnection->getTableName('ordo_abandoned_cart_reminder_log');
 
         $select = $connection->select()
-            ->from(['q' => $quoteTable], ['entity_id', 'customer_email', 'customer_firstname', 'subtotal'])
+            ->from(['q' => $quoteTable], ['entity_id', 'customer_id', 'customer_email', 'customer_firstname', 'subtotal'])
             ->joinLeft(
                 ['l' => $logTable],
                 'l.quote_id = q.entity_id',
@@ -70,6 +78,7 @@ class SendAbandonedCartReminders
             try {
                 $this->sendReminder($row);
                 $this->logReminderSent((int) $row['entity_id']);
+                $this->dispatchCampaigns($row);
                 $sent++;
             } catch (\Throwable $e) {
                 $this->logger->error(
@@ -116,6 +125,18 @@ class SendAbandonedCartReminders
         $transport->sendMessage();
 
         $this->inlineTranslation->resume();
+    }
+
+    private function dispatchCampaigns(array $row): void
+    {
+        if (empty($row['customer_id'])) {
+            return;
+        }
+
+        $this->campaignDispatcher->dispatch('cart_abandoned', [
+            'customer_id' => (int) $row['customer_id'],
+            'cart_subtotal' => (float) $row['subtotal'],
+        ]);
     }
 
     private function logReminderSent(int $quoteId): void

@@ -15,6 +15,7 @@ interface CampaignInterface
     public const TRIGGER_ORDER_PLACED = 'order_placed';
     public const TRIGGER_CUSTOMER_REGISTERED = 'customer_registered';
     public const TRIGGER_TAG_ADDED = 'tag_added';
+    public const TRIGGER_CART_ABANDONED = 'cart_abandoned';
 
     public function getEntityId(): ?int;
 

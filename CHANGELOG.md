@@ -2,6 +2,18 @@
 
 All notable changes to this module are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.6.0]
+
+### Added
+- `cart_abandoned` campaign event, dispatched from `SendAbandonedCartReminders` for quotes tied to a registered customer (guests still only get the fixed reminder email) — closes the "migrate abandoned cart onto the campaign engine" Phase 3 item.
+- Custom `SalesRule` discount calculator, `Model\Rule\Action\Discount\CheapestItemFree` (+ `QualifyingSetTracker`), giving 100% off the cheapest item in a rule's own qualifying set. Wired via the same `Magento\SalesRule\Model\Validator` calculator extension point Magento's native "Buy X Get Y" uses, as a new `simple_action` value (`ordo_cheapest_item_free`).
+- Unit tests for `QualifyingSetTracker` (cheapest-item selection, non-matching items, per-request caching) — syntax/logic-checked, not yet executed against a real Magento install (no `magento/framework` available in this dev environment; see README verification note).
+
+### Known limitations (documented, not hidden)
+- `CheapestItemFree` is not selectable through the native admin "Apply" dropdown — that list is hardcoded in a core admin block. Usable today only via direct rule data or the REST API.
+- `CheapestItemFree` has not been integration-tested against a real checkout. Tracked as the first MFTF scenario to write in Phase 6.
+- "Free gift above a cart threshold" remains unbuilt — flagged in README as architecturally different work (adding a new line item, not discounting an existing one), not just "the same pattern as CheapestItemFree, once more."
+
 ## [0.5.0]
 
 ### Added
