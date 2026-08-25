@@ -3,7 +3,7 @@
     "description": "B2B marketing automation for Magento Open Source — reorder reminders and abandoned cart recovery based on native order/quote data, no Adobe Commerce B2B required.",
     "type": "magento2-module",
     "license": "OSL-3.0",
-    "version": "0.1.0",
+    "version": "0.3.0",
     "require": {
         "php": "~8.1||~8.2||~8.3",
         "magento/framework": "*",

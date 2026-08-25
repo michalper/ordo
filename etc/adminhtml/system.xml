@@ -104,6 +104,20 @@
                     <depends><field id="enabled">1</field></depends>
                 </field>
             </group>
+
+            <group id="order_approval" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Order Approval Workflow</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Requires setting "Order Spend Limit" and "Order Approval Admin Email" on customers you want held for approval (Customers grid → Edit Customer).</comment>
+                </field>
+                <field id="escalation_days" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Escalate (resend) if not decided within this many days</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
         </section>
     </system>
 </config>

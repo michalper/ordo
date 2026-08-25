@@ -3,4 +3,7 @@
     <event name="customer_register_success">
         <observer name="ordo_automation_send_welcome_email" instance="Ordo\Automation\Observer\SendWelcomeEmail"/>
     </event>
+    <event name="sales_order_place_after">
+        <observer name="ordo_automation_hold_order_for_approval" instance="Ordo\Automation\Observer\HoldOrderForApproval"/>
+    </event>
 </config>

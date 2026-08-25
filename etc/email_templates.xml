@@ -6,4 +6,6 @@
     <template id="ordo_credit_limit_warning" label="Ordo: Credit Limit Warning" file="credit_limit_warning.html" type="html" module="Ordo_Automation" area="frontend"/>
     <template id="ordo_welcome_email" label="Ordo: Welcome Email" file="welcome_email.html" type="html" module="Ordo_Automation" area="frontend"/>
     <template id="ordo_win_back_email" label="Ordo: Win-back Email" file="win_back_email.html" type="html" module="Ordo_Automation" area="frontend"/>
+    <template id="ordo_order_approval_request" label="Ordo: Order Approval Request" file="order_approval_request.html" type="html" module="Ordo_Automation" area="frontend"/>
+    <template id="ordo_order_approval_escalation" label="Ordo: Order Approval Escalation" file="order_approval_escalation.html" type="html" module="Ordo_Automation" area="frontend"/>
 </config>

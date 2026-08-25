@@ -8,12 +8,13 @@ The goal is for this module to be a genuine substitute for a general-purpose MA 
 
 They're strong on channels (email/SMS/push) and campaign UI, but they only see what a store exports through a generic connector — order totals, cart events, product views. They don't compute purchase-cycle patterns, don't know about quote expiry, credit limits, or company hierarchies, and their B2C behavioral tracking runs through a JS snippet + cookie that's completely decoupled from server-side order data. Ordo Automation runs inside Magento itself, so triggers can combine both without an integration layer.
 
-## Features (v0.2)
+## Features (v0.3)
 
 **B2B**
 - **Reorder reminders** — detects a recurring purchase pattern per customer/SKU from order history and emails a reminder before the predicted next order date.
 - **Offer/quote expiry reminders** — a first-party quote entity (`ordo_offer`) with a *proactive* "expires in N days" reminder — every established B2B platform we checked (Adobe Commerce B2B, OroCommerce) only notifies reactively, after a status change.
 - **Credit limit alerts** — a customer credit-limit attribute + a cron warning at a configurable threshold (default 80%) before the account gets blocked, instead of only reacting once it's already over.
+- **Order approval workflow** — an optional per-customer spend limit + approval-admin email; orders above the limit are held (status `Pending Approval`, same "new" state so inventory reservation is untouched) and the admin gets a token-based approve/reject email link, no login required. Unresolved approvals get escalated (resent, capped) after a configurable number of days.
 
 **B2C**
 - **Abandoned cart recovery** — finds inactive carts above a configurable subtotal threshold and sends a recovery email, capped per cart.
@@ -31,6 +32,7 @@ All of it is configurable under **Stores → Configuration → Ordo Automation**
 etc/
   module.xml, di.xml, crontab.xml, db_schema.xml, events.xml, email_templates.xml, acl.xml
   adminhtml/system.xml          — store configuration
+  frontend/routes.xml           — /ordo/approval/* (token-based, no login)
 Api/, Api/Data/                 — service contracts (OfferInterface, OfferRepositoryInterface)
 Cron/
   CalculateReorderCycle.php, SendReorderReminders.php
@@ -38,12 +40,15 @@ Cron/
   SendOfferExpiryReminders.php, ExpireOverdueOffers.php
   SendCreditLimitAlerts.php
   TagInactiveCustomers.php, SendWinBackEmails.php
+  EscalateStalePendingApprovals.php
 Observer/
   SendWelcomeEmail.php           — customer_register_success
-Model/, Model/ResourceModel/     — ordo_reorder_cycle, ordo_offer, ordo_customer_tag
+  HoldOrderForApproval.php       — sales_order_place_after
+Controller/Approval/            — Approve.php, Reject.php (token-based frontend actions)
+Model/, Model/ResourceModel/     — ordo_reorder_cycle, ordo_offer, ordo_customer_tag, ordo_order_approval
 Model/CreditLimitCalculator.php  — used-credit derived from open sales_order.total_due
 Model/CustomerTagManager.php     — add/remove/check/list-by-tag
-Setup/Patch/Data/                — ordo_credit_limit customer attribute
+Setup/Patch/Data/                — customer attributes (credit limit, spend limit, approval admin email), Pending Approval order status
 Helper/Config.php                — typed access to system.xml values
 view/frontend/email/             — email templates
 ```
@@ -63,7 +68,6 @@ Ownership split for how this roadmap is being driven: B2B direction is scoped by
 
 ### Phase 2 — remaining B2B triggers
 
-- **Order approval workflow reminders** — needs a minimal company/sub-account hierarchy (one admin, N buyers, a spend limit) with an approve/reject email flow, plus an escalation reminder if nobody acts within N days. Several established systems (Adobe Commerce, OroCommerce, Medusa 2.0 B2B) already have the base approval workflow — the escalation on top of it is the differentiator, not the workflow itself.
 - **Sales-rep-signed emails** — an "assigned rep" customer attribute plus a shared email view-model so every automated email (reorder, offer, credit) is signed by a real person instead of a generic sender address, and reps get a periodic digest of customers needing attention.
 
 ### Phase 3 — Promotion Builder (adjacent product area, not a trigger)

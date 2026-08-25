@@ -1,0 +1,29 @@
+<!--@subject Reminder: order #{{var order_increment_id}} is still waiting for your approval @-->
+{{template config_path="design/email/header_template"}}
+
+<table>
+    <tr class="email-intro">
+        <td>
+            <p class="greeting">Hi,</p>
+            <p>
+                Order <strong>#{{var order_increment_id}}</strong> ({{var order_total}}) is still waiting for your
+                decision.
+            </p>
+            <table class="button-container" cellspacing="0" cellpadding="0" style="margin: 20px 0;">
+                <tr>
+                    <td>
+                        <a href="{{var approve_url}}" class="action primary">
+                            <span>Approve</span>
+                        </a>
+                        &nbsp;&nbsp;
+                        <a href="{{var reject_url}}" class="action">
+                            <span>Reject</span>
+                        </a>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+{{template config_path="design/email/footer_template"}}

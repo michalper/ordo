@@ -25,5 +25,8 @@
         <job name="ordo_automation_send_win_back_emails" instance="Ordo\Automation\Cron\SendWinBackEmails" method="execute">
             <schedule>0 9 * * *</schedule>
         </job>
+        <job name="ordo_automation_escalate_stale_pending_approvals" instance="Ordo\Automation\Cron\EscalateStalePendingApprovals" method="execute">
+            <schedule>0 10 * * *</schedule>
+        </job>
     </group>
 </config>

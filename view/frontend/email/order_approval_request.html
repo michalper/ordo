@@ -1,0 +1,30 @@
+<!--@subject Approval needed: order #{{var order_increment_id}} @-->
+{{template config_path="design/email/header_template"}}
+
+<table>
+    <tr class="email-intro">
+        <td>
+            <p class="greeting">Hi,</p>
+            <p>
+                {{var customer_name}} placed order <strong>#{{var order_increment_id}}</strong> for
+                <strong>{{var order_total}}</strong>, which is above their spend limit and needs your approval
+                before it's processed.
+            </p>
+            <table class="button-container" cellspacing="0" cellpadding="0" style="margin: 20px 0;">
+                <tr>
+                    <td>
+                        <a href="{{var approve_url}}" class="action primary">
+                            <span>Approve</span>
+                        </a>
+                        &nbsp;&nbsp;
+                        <a href="{{var reject_url}}" class="action">
+                            <span>Reject</span>
+                        </a>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+{{template config_path="design/email/footer_template"}}

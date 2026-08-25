@@ -30,6 +30,9 @@ class Config extends AbstractHelper
     private const XML_PATH_LIFECYCLE_ENABLED = 'ordo_automation/lifecycle/enabled';
     private const XML_PATH_LIFECYCLE_WIN_BACK_INACTIVE_DAYS = 'ordo_automation/lifecycle/win_back_inactive_days';
 
+    private const XML_PATH_APPROVAL_ENABLED = 'ordo_automation/order_approval/enabled';
+    private const XML_PATH_APPROVAL_ESCALATION_DAYS = 'ordo_automation/order_approval/escalation_days';
+
     public function __construct(Context $context)
     {
         parent::__construct($context);
@@ -177,5 +180,23 @@ class Config extends AbstractHelper
             ScopeInterface::SCOPE_STORE,
             $storeId
         ) ?: 90;
+    }
+
+    public function isOrderApprovalEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_APPROVAL_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getOrderApprovalEscalationDays(?int $storeId = null): int
+    {
+        return (int) $this->scopeConfig->getValue(
+            self::XML_PATH_APPROVAL_ESCALATION_DAYS,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        ) ?: 2;
     }
 }
