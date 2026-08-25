@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
+    <group id="default">
+        <job name="ordo_automation_calculate_reorder_cycle" instance="Ordo\Automation\Cron\CalculateReorderCycle" method="execute">
+            <schedule>0 2 * * *</schedule>
+        </job>
+        <job name="ordo_automation_send_reorder_reminders" instance="Ordo\Automation\Cron\SendReorderReminders" method="execute">
+            <schedule>0 7 * * *</schedule>
+        </job>
+        <job name="ordo_automation_send_abandoned_cart_reminders" instance="Ordo\Automation\Cron\SendAbandonedCartReminders" method="execute">
+            <schedule>*/30 * * * *</schedule>
+        </job>
+    </group>
+</config>

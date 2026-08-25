@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Email:etc/email_templates.xsd">
+    <template id="ordo_reorder_reminder" label="Ordo: Reorder Reminder" file="reorder_reminder.html" type="html" module="Ordo_Automation" area="frontend"/>
+    <template id="ordo_abandoned_cart_reminder" label="Ordo: Abandoned Cart Reminder" file="abandoned_cart_reminder.html" type="html" module="Ordo_Automation" area="frontend"/>
+</config>

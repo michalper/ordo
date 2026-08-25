@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+
+    <table name="ordo_reorder_cycle" resource="default" engine="innodb" comment="Detected reorder cycle per customer and SKU">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
+        <column xsi:type="varchar" name="sku" nullable="false" length="64" comment="Product SKU"/>
+        <column xsi:type="smallint" name="avg_interval_days" unsigned="true" nullable="false" comment="Average interval between orders, in days"/>
+        <column xsi:type="date" name="last_order_date" nullable="false" comment="Date of the most recent order containing this SKU"/>
+        <column xsi:type="date" name="next_expected_date" nullable="false" comment="Predicted date of the next order"/>
+        <column xsi:type="smallint" name="orders_considered" unsigned="true" nullable="false" comment="Number of past orders used to compute the cycle"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="ORDO_REORDER_CYCLE_CUSTOMER_ID_SKU">
+            <column name="customer_id"/>
+            <column name="sku"/>
+        </constraint>
+        <index referenceId="ORDO_REORDER_CYCLE_NEXT_EXPECTED_DATE" indexType="btree">
+            <column name="next_expected_date"/>
+        </index>
+    </table>
+
+    <table name="ordo_reorder_reminder_log" resource="default" engine="innodb" comment="Log of sent reorder reminders, to avoid duplicate sends">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="reorder_cycle_id" padding="10" unsigned="true" nullable="false" comment="ordo_reorder_cycle.entity_id"/>
+        <column xsi:type="timestamp" name="sent_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Sent At"/>
+        <column xsi:type="boolean" name="reacted" nullable="false" default="false" comment="Whether the customer placed a matching order after the reminder"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="ORDO_REMINDER_LOG_CYCLE_ID_REORDER_CYCLE_ENTITY_ID"
+                    table="ordo_reorder_reminder_log" column="reorder_cycle_id"
+                    referenceTable="ordo_reorder_cycle" referenceColumn="entity_id" onDelete="CASCADE"/>
+    </table>
+
+    <table name="ordo_abandoned_cart_reminder_log" resource="default" engine="innodb" comment="Log of sent abandoned cart reminders, to cap reminders per cart">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="quote_id" padding="10" unsigned="true" nullable="false" comment="quote.entity_id"/>
+        <column xsi:type="timestamp" name="sent_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Sent At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="ORDO_ABANDONED_CART_LOG_QUOTE_ID" indexType="btree">
+            <column name="quote_id"/>
+        </index>
+    </table>
+
+</schema>

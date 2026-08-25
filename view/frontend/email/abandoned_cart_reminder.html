@@ -1,0 +1,33 @@
+<!--@subject You left something in your cart @-->
+{{template config_path="design/email/header_template"}}
+
+<table>
+    <tr class="email-intro">
+        <td>
+            <p class="greeting">Hi {{var customer_name}},</p>
+            <p>You still have items waiting in your cart:</p>
+            <table cellspacing="0" cellpadding="6" style="width:100%; border-collapse: collapse;">
+                {{depend cart_items}}
+                {{for item in cart_items}}
+                <tr>
+                    <td>{{var item.name}}</td>
+                    <td>Qty: {{var item.qty}}</td>
+                </tr>
+                {{/for}}
+                {{/depend}}
+            </table>
+            <p><strong>Subtotal: {{var cart_subtotal}}</strong></p>
+            <table class="button-container" cellspacing="0" cellpadding="0" style="margin: 20px 0;">
+                <tr>
+                    <td>
+                        <a href="{{var store.getBaseUrl()}}checkout/cart/" class="action primary">
+                            <span>Return to cart</span>
+                        </a>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+{{template config_path="design/email/footer_template"}}

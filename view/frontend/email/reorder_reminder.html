@@ -1,0 +1,25 @@
+<!--@subject Time to reorder {{var sku}}? @-->
+{{template config_path="design/email/header_template"}}
+
+<table>
+    <tr class="email-intro">
+        <td>
+            <p class="greeting">Hi {{var customer_name}},</p>
+            <p>
+                You usually order <strong>{{var sku}}</strong> about every
+                <strong>{{var avg_interval_days}}</strong> days — it looks like it might be time again.
+            </p>
+            <table class="button-container" cellspacing="0" cellpadding="0" style="margin: 20px 0;">
+                <tr>
+                    <td>
+                        <a href="{{var store.getBaseUrl()}}catalogsearch/result/?q={{var sku}}" class="action primary">
+                            <span>Reorder now</span>
+                        </a>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+{{template config_path="design/email/footer_template"}}
