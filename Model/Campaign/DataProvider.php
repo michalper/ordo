@@ -1,0 +1,82 @@
+<?php
+declare(strict_types=1);
+
+namespace Ordo\Automation\Model\Campaign;
+
+use Magento\Framework\App\Request\DataPersistorInterface;
+use Magento\Ui\DataProvider\AbstractDataProvider;
+use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as CampaignActionCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as CampaignConditionCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
+
+/**
+ * Feeds the campaign edit form, including the two dynamicRows sections (conditions, actions)
+ * — those aren't columns on ordo_campaign itself, so they're loaded separately here and
+ * nested into each campaign's data array under the same keys the form's dynamicRows fields
+ * expect (see ordo_campaign_form.xml).
+ */
+class DataProvider extends AbstractDataProvider
+{
+    public function __construct(
+        $name,
+        $primaryFieldName,
+        $requestFieldName,
+        CampaignCollectionFactory $collectionFactory,
+        private readonly CampaignConditionCollectionFactory $campaignConditionCollectionFactory,
+        private readonly CampaignActionCollectionFactory $campaignActionCollectionFactory,
+        private readonly DataPersistorInterface $dataPersistor,
+        array $meta = [],
+        array $data = []
+    ) {
+        $this->collection = $collectionFactory->create();
+        parent::__construct($name, $primaryFieldName, $requestFieldName, $meta, $data);
+    }
+
+    public function getData(): array
+    {
+        if (isset($this->loadedData)) {
+            return $this->loadedData;
+        }
+
+        $this->loadedData = [];
+
+        foreach ($this->collection->getItems() as $campaign) {
+            $campaignData = $campaign->getData();
+            $campaignId = (int) $campaign->getEntityId();
+
+            $campaignData['conditions'] = $this->loadChildRows($this->campaignConditionCollectionFactory->create(), $campaignId);
+            $campaignData['actions'] = $this->loadChildRows($this->campaignActionCollectionFactory->create(), $campaignId);
+
+            $this->loadedData[$campaignId] = $campaignData;
+        }
+
+        $persisted = $this->dataPersistor->get('ordo_campaign');
+        if ($persisted) {
+            $campaignId = $persisted['entity_id'] ?? null;
+            if ($campaignId) {
+                $this->loadedData[$campaignId] = $persisted;
+            }
+            $this->dataPersistor->clear('ordo_campaign');
+        }
+
+        return $this->loadedData;
+    }
+
+    /**
+     * @return array<int, array{type: string, params_json: string}>
+     */
+    private function loadChildRows($collection, int $campaignId): array
+    {
+        $collection->addCampaignFilter($campaignId);
+
+        $rows = [];
+        foreach ($collection as $row) {
+            $rows[] = [
+                'type' => $row->getData('type'),
+                'params_json' => $row->getData('params'),
+            ];
+        }
+
+        return $rows;
+    }
+}

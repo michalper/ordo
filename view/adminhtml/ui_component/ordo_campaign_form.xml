@@ -1,0 +1,176 @@
+<?xml version="1.0"?>
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">ordo_campaign_form.ordo_campaign_form_data_source</item>
+        </item>
+        <item name="label" xsi:type="string" translate="true">Campaign Information</item>
+    </argument>
+    <settings>
+        <buttons>
+            <button name="back" class="Ordo\Automation\Block\Adminhtml\Campaign\Edit\BackButton"/>
+            <button name="delete" class="Ordo\Automation\Block\Adminhtml\Campaign\Edit\DeleteButton"/>
+            <button name="save" class="Magento\Ui\Component\Control\Container\Toolbar\Save"/>
+            <button name="save_and_continue" class="Ordo\Automation\Block\Adminhtml\Campaign\Edit\SaveAndContinueButton"/>
+        </buttons>
+        <namespace>ordo_campaign_form</namespace>
+        <dataScope>data</dataScope>
+        <deps>
+            <dep>ordo_campaign_form.ordo_campaign_form_data_source</dep>
+        </deps>
+    </settings>
+
+    <dataSource name="ordo_campaign_form_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Ordo\Automation\Model\Campaign\DataProvider</argument>
+            <argument name="name" xsi:type="string">ordo_campaign_form_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">entity_id</argument>
+            <argument name="requestFieldName" xsi:type="string">entity_id</argument>
+        </argument>
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/form/provider</item>
+            </item>
+        </argument>
+    </dataSource>
+
+    <fieldset name="general">
+        <settings>
+            <label translate="true">General</label>
+        </settings>
+        <field name="entity_id" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <visible>false</visible>
+            </settings>
+        </field>
+        <field name="name" formElement="input" sortOrder="10">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Name</label>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+        </field>
+        <field name="trigger_event" formElement="select" sortOrder="20">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Trigger Event</label>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options class="Ordo\Automation\Model\Config\Source\TriggerEvent"/>
+                    </settings>
+                </select>
+            </formElements>
+        </field>
+        <field name="enabled" formElement="checkbox" sortOrder="30">
+            <settings>
+                <dataType>boolean</dataType>
+                <label translate="true">Enabled</label>
+                <valueMap>
+                    <map name="false" xsi:type="number">0</map>
+                    <map name="true" xsi:type="number">1</map>
+                </valueMap>
+            </settings>
+            <formElements>
+                <checkbox>
+                    <settings>
+                        <valueMap>
+                            <map name="false" xsi:type="number">0</map>
+                            <map name="true" xsi:type="number">1</map>
+                        </valueMap>
+                        <prefer>toggle</prefer>
+                    </settings>
+                </checkbox>
+            </formElements>
+        </field>
+    </fieldset>
+
+    <fieldset name="conditions">
+        <settings>
+            <label translate="true">Conditions (all must pass — AND)</label>
+        </settings>
+        <container name="conditions" component="Magento_Ui/js/dynamic-rows/dynamic-rows">
+            <settings>
+                <label translate="true">Conditions</label>
+                <addButtonLabel translate="true">Add Condition</addButtonLabel>
+                <componentType>dynamicRows</componentType>
+                <dataScope>conditions</dataScope>
+            </settings>
+            <container name="record" component="Magento_Ui/js/dynamic-rows/record">
+                <settings>
+                    <componentType>container</componentType>
+                    <isTemplate>true</isTemplate>
+                    <is_collection>true</is_collection>
+                </settings>
+                <field name="type" formElement="select" sortOrder="10">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Type</label>
+                    </settings>
+                    <formElements>
+                        <select>
+                            <settings>
+                                <options class="Ordo\Automation\Model\Config\Source\ConditionType"/>
+                            </settings>
+                        </select>
+                    </formElements>
+                </field>
+                <field name="params_json" formElement="textarea" sortOrder="20">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Params (JSON)</label>
+                        <notice translate="true">e.g. {"tag": "vip"} or {"amount": "500"}</notice>
+                    </settings>
+                </field>
+            </container>
+        </container>
+    </fieldset>
+
+    <fieldset name="actions">
+        <settings>
+            <label translate="true">Actions (run in order)</label>
+        </settings>
+        <container name="actions" component="Magento_Ui/js/dynamic-rows/dynamic-rows">
+            <settings>
+                <label translate="true">Actions</label>
+                <addButtonLabel translate="true">Add Action</addButtonLabel>
+                <componentType>dynamicRows</componentType>
+                <dataScope>actions</dataScope>
+            </settings>
+            <container name="record" component="Magento_Ui/js/dynamic-rows/record">
+                <settings>
+                    <componentType>container</componentType>
+                    <isTemplate>true</isTemplate>
+                    <is_collection>true</is_collection>
+                </settings>
+                <field name="type" formElement="select" sortOrder="10">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Type</label>
+                    </settings>
+                    <formElements>
+                        <select>
+                            <settings>
+                                <options class="Ordo\Automation\Model\Config\Source\ActionType"/>
+                            </settings>
+                        </select>
+                    </formElements>
+                </field>
+                <field name="params_json" formElement="textarea" sortOrder="20">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Params (JSON)</label>
+                        <notice translate="true">e.g. {"tag": "vip"} or {"rule_id": "5", "prefix": "COMEBACK"} or {"template": "ordo_campaign_generic", "message": "Thanks!"}</notice>
+                    </settings>
+                </field>
+            </container>
+        </container>
+    </fieldset>
+</form>

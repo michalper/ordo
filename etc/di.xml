@@ -5,6 +5,16 @@
     <preference for="Ordo\Automation\Api\Data\CampaignInterface" type="Ordo\Automation\Model\Campaign"/>
     <preference for="Ordo\Automation\Api\CampaignRepositoryInterface" type="Ordo\Automation\Model\CampaignRepository"/>
 
+    <!-- Admin grid data sources — one entry per listing UI component. -->
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections" xsi:type="array">
+                <item name="ordo_campaign_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Campaign\Grid\Collection</item>
+                <item name="ordo_reorder_cycle_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\ReorderCycle\Grid\Collection</item>
+            </argument>
+        </arguments>
+    </type>
+
     <!--
         Campaign engine plug-in registry. Adding a new condition or action type never means
         touching CampaignDispatcher — just a new class implementing ConditionInterface /

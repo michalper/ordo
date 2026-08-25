@@ -8,7 +8,7 @@ The goal is for this module to be a genuine substitute for a general-purpose MA 
 
 They're strong on channels (email/SMS/push) and campaign UI, but they only see what a store exports through a generic connector — order totals, cart events, product views. They don't compute purchase-cycle patterns, don't know about quote expiry, credit limits, or company hierarchies, and their B2C behavioral tracking runs through a JS snippet + cookie that's completely decoupled from server-side order data. Ordo Automation runs inside Magento itself, so triggers can combine both without an integration layer.
 
-## Features (v0.6)
+## Features (v0.7)
 
 **B2B**
 - **Reorder reminders** — detects a recurring purchase pattern per customer/SKU from order history and emails a reminder before the predicted next order date.
@@ -57,6 +57,10 @@ Model/, Model/ResourceModel/     — ordo_reorder_cycle, ordo_offer, ordo_custom
 Model/Campaign/                  — ConditionPool, ActionPool, Condition/*, Action/* (the plug-in registry)
 Model/CampaignDispatcher.php     — "trigger event + context in, matching campaigns run out"
 Model/Rule/Action/Discount/      — CheapestItemFree (custom SalesRule calculator), QualifyingSetTracker
+Controller/Adminhtml/Campaign/, ReorderCycle/ — admin grid/form controllers
+Block/Adminhtml/Campaign/Edit/   — toolbar button blocks (Back/Delete/Save & Continue)
+Ui/Component/Listing/Column/     — CampaignActions (Edit/Delete row links)
+view/adminhtml/ui_component/     — ordo_campaign_listing, ordo_campaign_form, ordo_reorder_cycle_listing
 Model/CreditLimitCalculator.php  — used-credit derived from open sales_order.total_due
 Model/CustomerTagManager.php     — add/remove/check/list-by-tag; fires ordo_customer_tag_added
 Model/CouponGenerator.php        — mints a single-use SalesRule coupon code
@@ -131,11 +135,17 @@ The standards in "Quality & testing standards" above apply from now on; this pha
 - **Coverage report wired into CI** (whatever CI this repo ends up on) so "100% target" becomes a number in a build badge, not just a stated goal.
 - **More `i18n/*.csv` locales** beyond `en_US`/`pl_PL` — driven by whichever languages an actual install needs, not translated speculatively ahead of demand.
 
-### Phase 4 — one dashboard instead of scattered config screens
+### Phase 4 — admin UI
 
-Right now every fixed trigger lives in its own `system.xml` section with its own cron and its own silent log table, and the new campaign engine has *no admin UI at all* yet — campaigns can only be created via direct DB rows or the REST API. Once there's enough here to make it worthwhile:
-- A single "Automation" admin menu: one grid listing every fixed trigger with an on/off switch and basic stats (sent / response rate / estimated recovered revenue).
-- A proper campaign builder screen: list of campaigns, a form to pick a trigger event, add conditions (dropdown populated from `ConditionPool::getAvailableTypes()`) and actions (from `ActionPool::getAvailableTypes()`) with their params — the UI equivalent of what's already fully functional in the data model and dispatcher today.
+**Campaign builder — done.** New "Ordo Automation" top-level admin menu (`etc/adminhtml/menu.xml`) with:
+- **Campaigns grid** (`ordo/campaign/index`) — standard `SearchResult`-based admin grid (`Model\ResourceModel\Campaign\Grid\Collection`), filterable by name/trigger event/enabled, with Edit/Delete row actions.
+- **Campaign edit form** (`ordo/campaign/edit`) — name, trigger event (dropdown from `TriggerEvent` source), enabled toggle, and two `dynamicRows` sections for conditions and actions. The type dropdowns in both are generated from `ConditionPool::getAvailableTypes()` / `ActionPool::getAvailableTypes()` — i.e. from whatever's actually registered in `di.xml` — so the UI can never drift out of sync with what the dispatcher can resolve. **Deliberate MVP simplification:** each condition/action row has one `type` dropdown and one raw JSON textarea (`params_json`) instead of dedicated, type-specific fields (e.g. a proper "pick a tag" field instead of typing `{"tag": "vip"}` by hand). Building per-type dynamic field sets is real additional UI work — tracked below, not silently skipped.
+- **Reorder Cycles grid** (`ordo/reordercycle/index`) — read-only diagnostic view of what `CalculateReorderCycle` has computed (customer, SKU, average interval, next expected date), for verifying a detected cycle looks right without querying the database directly.
+
+**Not yet built:**
+- Per-type condition/action fields (replacing the raw JSON textarea) — e.g. `HasTag`'s params should be a tag autocomplete, not free text.
+- A grid for the five fixed triggers (reorder/offer/credit/approval/lifecycle) with on/off switches and stats — these still live in scattered `system.xml` sections. The campaign engine's admin UI and the fixed-trigger config UI are two different screens today; unifying them into one "Automation" dashboard (sent / response rate / estimated recovered revenue per trigger, fixed or campaign-driven) is the next real UI milestone.
+- A live calculator for the native "Buy X Get Y" rule type (see Phase 3) — nothing custom to build backend-wise, just a friendlier config screen.
 
 ## Changelog
 

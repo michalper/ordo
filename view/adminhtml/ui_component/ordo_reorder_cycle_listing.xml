@@ -1,0 +1,88 @@
+<?xml version="1.0"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">ordo_reorder_cycle_listing.ordo_reorder_cycle_listing_data_source</item>
+        </item>
+    </argument>
+    <settings>
+        <spinner>ordo_reorder_cycle_columns</spinner>
+        <deps>
+            <dep>ordo_reorder_cycle_listing.ordo_reorder_cycle_listing_data_source</dep>
+        </deps>
+    </settings>
+
+    <dataSource name="ordo_reorder_cycle_listing_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider</argument>
+            <argument name="name" xsi:type="string">ordo_reorder_cycle_listing_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">entity_id</argument>
+            <argument name="requestFieldName" xsi:type="string">entity_id</argument>
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="update_url" xsi:type="url" path="mui/index/render"/>
+                </item>
+            </argument>
+        </argument>
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/grid/provider</item>
+            </item>
+        </argument>
+    </dataSource>
+
+    <columns name="ordo_reorder_cycle_columns">
+        <column name="entity_id">
+            <settings>
+                <filter>text</filter>
+                <sorting>asc</sorting>
+                <label translate="true">ID</label>
+            </settings>
+        </column>
+        <column name="customer_id">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Customer ID</label>
+            </settings>
+        </column>
+        <column name="sku">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">SKU</label>
+            </settings>
+        </column>
+        <column name="avg_interval_days">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">Avg. Interval (days)</label>
+            </settings>
+        </column>
+        <column name="last_order_date" class="Magento\Ui\Component\Listing\Columns\Date">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Last Order</label>
+            </settings>
+        </column>
+        <column name="next_expected_date" class="Magento\Ui\Component\Listing\Columns\Date">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Next Expected</label>
+            </settings>
+        </column>
+        <column name="orders_considered">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">Orders Considered</label>
+            </settings>
+        </column>
+        <column name="updated_at" class="Magento\Ui\Component\Listing\Columns\Date">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Last Recalculated</label>
+            </settings>
+        </column>
+    </columns>
+</listing>

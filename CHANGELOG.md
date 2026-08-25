@@ -2,6 +2,16 @@
 
 All notable changes to this module are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.7.0]
+
+### Added
+- New "Ordo Automation" admin menu with a full campaign builder: grid (`ordo/campaign/index`) and edit form (`ordo/campaign/edit`) with `dynamicRows` sections for conditions and actions, both dropdowns generated live from `ConditionPool`/`ActionPool` so the UI can't drift out of sync with the dispatcher.
+- Read-only "Reorder Cycles" admin grid (`ordo/reordercycle/index`) for inspecting what `CalculateReorderCycle` has computed, without querying the database directly.
+- Standard Magento admin-grid plumbing added: `Grid\Collection` classes (`SearchResult`-based) for both campaigns and reorder cycles, registered via the `UiComponent\DataProvider\CollectionFactory` di.xml mapping; `CampaignActions` row-action column; toolbar button blocks for the campaign form (Back, Delete, Save & Continue).
+
+### Known limitation (documented, not hidden)
+- Condition/action rows in the campaign form use one `type` dropdown + a raw JSON textarea for params, not dedicated per-type fields (e.g. a tag autocomplete for `HasTag`). Deliberate MVP scope — tracked in README → Roadmap → Phase 4.
+
 ## [0.6.0]
 
 ### Added

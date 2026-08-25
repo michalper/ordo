@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Ordo_Automation::top_level" title="Ordo Automation" module="Ordo_Automation"
+             sortOrder="61" resource="Ordo_Automation::campaigns"/>
+        <add id="Ordo_Automation::campaigns" title="Campaigns" module="Ordo_Automation"
+             sortOrder="10" resource="Ordo_Automation::campaigns"
+             action="ordo/campaign/index" parent="Ordo_Automation::top_level"/>
+        <add id="Ordo_Automation::reorder_cycles" title="Reorder Cycles" module="Ordo_Automation"
+             sortOrder="15" resource="Ordo_Automation::config"
+             action="ordo/reordercycle/index" parent="Ordo_Automation::top_level"/>
+        <add id="Ordo_Automation::configuration" title="Configuration" module="Ordo_Automation"
+             sortOrder="20" resource="Ordo_Automation::config"
+             action="adminhtml/system_config/edit/section/ordo_automation" parent="Ordo_Automation::top_level"/>
+    </menu>
+</config>
