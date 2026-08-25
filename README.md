@@ -93,6 +93,10 @@ Everything in v0.2 reacts to server-side data (orders, carts, registration). A r
 
 Right now every trigger lives in its own `system.xml` section with its own cron and its own silent log table. Once there are enough triggers to make it worthwhile: a single "Automation" admin menu, one grid listing every trigger with an on/off switch and basic stats (sent / response rate / estimated recovered revenue), one config form per trigger instead of digging through Stores → Configuration.
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
+
 ## License
 
 OSL-3.0 (same as Magento core).
