@@ -96,7 +96,7 @@
         <settings>
             <label translate="true">Conditions (all must pass — AND)</label>
         </settings>
-        <container name="conditions" component="Magento_Ui/js/dynamic-rows/dynamic-rows">
+        <dynamicRows name="conditions">
             <settings>
                 <label translate="true">Conditions</label>
                 <addButtonLabel translate="true">Add Condition</addButtonLabel>
@@ -130,14 +130,14 @@
                     </settings>
                 </field>
             </container>
-        </container>
+        </dynamicRows>
     </fieldset>
 
     <fieldset name="actions">
         <settings>
             <label translate="true">Actions (run in order)</label>
         </settings>
-        <container name="actions" component="Magento_Ui/js/dynamic-rows/dynamic-rows">
+        <dynamicRows name="actions">
             <settings>
                 <label translate="true">Actions</label>
                 <addButtonLabel translate="true">Add Action</addButtonLabel>
@@ -171,6 +171,6 @@
                     </settings>
                 </field>
             </container>
-        </container>
+        </dynamicRows>
     </fieldset>
 </form>
