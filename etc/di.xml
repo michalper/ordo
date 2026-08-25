@@ -16,6 +16,25 @@
     </type>
 
     <!--
+        SearchResult-based grid collections take their table/resource model via constructor
+        arguments, not via _init() — same wiring pattern Magento core uses for e.g. the sales
+        order grid collection.
+    -->
+    <type name="Ordo\Automation\Model\ResourceModel\Campaign\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">ordo_campaign</argument>
+            <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\Campaign</argument>
+        </arguments>
+    </type>
+
+    <type name="Ordo\Automation\Model\ResourceModel\ReorderCycle\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">ordo_reorder_cycle</argument>
+            <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\ReorderCycle</argument>
+        </arguments>
+    </type>
+
+    <!--
         Campaign engine plug-in registry. Adding a new condition or action type never means
         touching CampaignDispatcher — just a new class implementing ConditionInterface /
         ActionInterface, and one line here.
