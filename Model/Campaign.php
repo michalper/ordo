@@ -20,9 +20,9 @@ class Campaign extends AbstractModel implements CampaignInterface
         return $id === null ? null : (int) $id;
     }
 
-    public function setEntityId(int $entityId): self
+    public function setEntityId($entityId): self
     {
-        $this->setData(self::ENTITY_ID, $entityId);
+        $this->setData(self::ENTITY_ID, (int) $entityId);
         return $this;
     }
 

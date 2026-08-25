@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Block\Adminhtml\Campaign\Edit;
 
-use Magento\Ui\Component\Control\Container\ToolbarButtonInterface;
+use Magento\Framework\View\Element\UiComponent\Control\ButtonProviderInterface;
 
-class DeleteButton extends GenericButton implements ToolbarButtonInterface
+class DeleteButton extends GenericButton implements ButtonProviderInterface
 {
     public function getButtonData(): array
     {
