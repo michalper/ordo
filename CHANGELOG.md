@@ -2,6 +2,11 @@
 
 All notable changes to this module are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.8.2]
+
+### Added
+- `VERIFICATION.md` — a step-by-step checklist for actually installing and exercising this module on a fresh Magento Open Source instance: prerequisites, install via a local path repository, running PHPStan/PHPUnit for real, and a manual walkthrough of every feature (B2B triggers, campaign engine, Promotion Builder, on-site tracking) with concrete pass/fail criteria per step. Linked from README's "Trying this for real" section.
+
 ## [0.8.1]
 
 ### Added

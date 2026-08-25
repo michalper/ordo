@@ -162,6 +162,8 @@ Everything above has been written, lint-checked, and where possible logic-verifi
 3. Walk through each feature manually: set a customer's credit/spend limit, place orders that cross the thresholds, create a campaign in the new admin UI, confirm the tracker cookie appears and an event round-trips.
 4. Only then start on the Phase 6 backlog above with real assertions, not assumptions.
 
+**Full step-by-step checklist:** [VERIFICATION.md](VERIFICATION.md) — covers install, static analysis, and a manual walkthrough of every feature in this README, organized so a failure at any step points at exactly what to fix next.
+
 ### Phase 4 — admin UI
 
 **Campaign builder — done.** New "Ordo Automation" top-level admin menu (`etc/adminhtml/menu.xml`) with:
