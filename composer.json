@@ -1,6 +1,6 @@
 {
     "name": "ordo/module-automation",
-    "description": "B2B marketing automation for Magento Open Source — reorder reminders and abandoned cart recovery based on native order/quote data, no Adobe Commerce B2B required.",
+    "description": "B2B + B2C marketing automation for Magento Open Source — reorder, offer expiry, credit limit, and order approval triggers alongside abandoned cart and lifecycle emails, no Adobe Commerce B2B or external MA subscription required.",
     "type": "magento2-module",
     "license": "OSL-3.0",
     "version": "0.3.0",
