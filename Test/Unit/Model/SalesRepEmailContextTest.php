@@ -56,7 +56,7 @@ class SalesRepEmailContextTest extends TestCase
         $this->customerRepository->method('getById')->with(7)->willReturn($customer);
 
         $store = $this->createMock(StoreInterface::class);
-        $store->method('getFrontendName')->willReturn('Acme Supplies');
+        $store->method('getName')->willReturn('Acme Supplies');
         $this->storeManager->method('getStore')->willReturn($store);
 
         $result = $this->context->getForCustomer(7);
@@ -73,7 +73,7 @@ class SalesRepEmailContextTest extends TestCase
             ->willThrowException(new NoSuchEntityException(__('not found')));
 
         $store = $this->createMock(StoreInterface::class);
-        $store->method('getFrontendName')->willReturn('');
+        $store->method('getName')->willReturn('');
         $this->storeManager->method('getStore')->willReturn($store);
 
         $result = $this->context->getForCustomer(999);

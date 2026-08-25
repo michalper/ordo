@@ -28,7 +28,7 @@ class QualifyingSetTracker
 
     public function isFreeItem(Rule $rule, AbstractItem $item): bool
     {
-        $key = $rule->getRuleId() . ':' . $item->getQuoteId();
+        $key = $rule->getId() . ':' . $item->getQuoteId();
 
         if (!array_key_exists($key, $this->freeItemIdByRuleAndQuote)) {
             $this->freeItemIdByRuleAndQuote[$key] = $this->resolveCheapestQualifyingItemId($rule, $item);

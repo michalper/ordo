@@ -61,7 +61,7 @@ class SalesRepEmailContext
     private function getFallback(): array
     {
         try {
-            $storeName = (string) $this->storeManager->getStore()->getFrontendName();
+            $storeName = (string) $this->storeManager->getStore()->getName();
         } catch (\Throwable $e) {
             $storeName = '';
         }

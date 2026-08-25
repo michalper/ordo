@@ -56,7 +56,7 @@ class QualifyingSetTrackerTest extends TestCase
         $conditions->expects(self::exactly(1))->method('validate')->willReturn(true);
 
         $rule = $this->createMock(Rule::class);
-        $rule->method('getRuleId')->willReturn(10);
+        $rule->method('getId')->willReturn(10);
         $rule->method('getConditions')->willReturn($conditions);
 
         self::assertTrue($this->tracker->isFreeItem($rule, $cheap));
@@ -93,7 +93,7 @@ class QualifyingSetTrackerTest extends TestCase
         $conditions->method('validate')->willReturn(true);
 
         $rule = $this->createMock(Rule::class);
-        $rule->method('getRuleId')->willReturn($ruleId);
+        $rule->method('getId')->willReturn($ruleId);
         $rule->method('getConditions')->willReturn($conditions);
 
         return $rule;
@@ -105,7 +105,7 @@ class QualifyingSetTrackerTest extends TestCase
         $conditions->method('validate')->willReturn(false);
 
         $rule = $this->createMock(Rule::class);
-        $rule->method('getRuleId')->willReturn($ruleId);
+        $rule->method('getId')->willReturn($ruleId);
         $rule->method('getConditions')->willReturn($conditions);
 
         return $rule;
