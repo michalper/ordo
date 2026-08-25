@@ -10,6 +10,7 @@ use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory as ReorderCycleCollectionFactory;
+use Ordo\Automation\Model\SalesRepEmailContext;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -30,6 +31,7 @@ class SendReorderReminders
         private readonly TransportBuilder $transportBuilder,
         private readonly StoreManagerInterface $storeManager,
         private readonly StateInterface $inlineTranslation,
+        private readonly SalesRepEmailContext $salesRepEmailContext,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -80,12 +82,12 @@ class SendReorderReminders
         $transport = $this->transportBuilder
             ->setTemplateIdentifier(self::XML_PATH_EMAIL_TEMPLATE)
             ->setTemplateOptions(['area' => \Magento\Framework\App\Area::AREA_FRONTEND, 'store' => $store->getId()])
-            ->setTemplateVars([
+            ->setTemplateVars(array_merge([
                 'customer_name' => $customer->getFirstname(),
                 'sku' => $cycle->getData('sku'),
                 'avg_interval_days' => $cycle->getData('avg_interval_days'),
                 'store' => $store,
-            ])
+            ], $this->salesRepEmailContext->getForCustomer((int) $cycle->getData('customer_id'))))
             ->setFromByScope(self::XML_PATH_EMAIL_SENDER, $store->getId())
             ->addTo($customer->getEmail(), $customer->getFirstname())
             ->getTransport();

@@ -12,6 +12,7 @@ use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Offer;
 use Ordo\Automation\Model\ResourceModel\Offer\CollectionFactory as OfferCollectionFactory;
+use Ordo\Automation\Model\SalesRepEmailContext;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -34,6 +35,7 @@ class SendOfferExpiryReminders
         private readonly TransportBuilder $transportBuilder,
         private readonly StoreManagerInterface $storeManager,
         private readonly StateInterface $inlineTranslation,
+        private readonly SalesRepEmailContext $salesRepEmailContext,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -80,7 +82,7 @@ class SendOfferExpiryReminders
         $transport = $this->transportBuilder
             ->setTemplateIdentifier(self::XML_PATH_EMAIL_TEMPLATE)
             ->setTemplateOptions(['area' => Area::AREA_FRONTEND, 'store' => $store->getId()])
-            ->setTemplateVars([
+            ->setTemplateVars(array_merge([
                 'customer_name' => $customer->getFirstname(),
                 'offer_reference' => $offer->getReference(),
                 'offer_total' => $offer->getTotal(),
@@ -88,7 +90,7 @@ class SendOfferExpiryReminders
                 'offer_expires_at' => $offer->getExpiresAt(),
                 'can_self_extend' => $offer->canSelfExtend($this->config->getOfferMaxSelfExtensions()),
                 'store' => $store,
-            ])
+            ], $this->salesRepEmailContext->getForCustomer($offer->getCustomerId())))
             ->setFromByScope(self::XML_PATH_EMAIL_SENDER, $store->getId())
             ->addTo($customer->getEmail(), $customer->getFirstname())
             ->getTransport();

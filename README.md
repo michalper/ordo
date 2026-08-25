@@ -62,6 +62,20 @@ bin/magento setup:upgrade
 bin/magento cache:flush
 ```
 
+## Quality & testing standards (project rule, not aspirational)
+
+These are binding rules for this repo going forward, not a someday-wishlist — every new class added after this point should meet them, and existing code is being brought up to the same bar incrementally (tracked in Roadmap → Phase 6):
+
+- **Static analysis: PHPStan at `level: max`**, configured in `phpstan.neon` with the [bitexpert/phpstan-magento](https://github.com/bitexpert/phpstan-magento) extension so Magento's magic (factories, proxies, `__()` translation, EAV magic getters) doesn't produce false positives. Runs as `require-dev` only — never ships to a production install.
+- **Unit tests (PHPUnit)** for every class with non-trivial logic — `Model/`, `Cron/`, `Helper/`, `Controller/`. `Test/Unit/Model/SalesRepEmailContextTest.php` is the seed test establishing the mocking pattern (`createMock` on interfaces, no real Magento bootstrap).
+- **MFTF (Magento Functional Testing Framework)** end-to-end coverage for every customer- and admin-facing flow: placing an order over the spend limit → email → approve/reject link → order status change; a customer self-extending an expiring offer; etc. Per Adobe's [MFTF getting-started guide](https://developer.adobe.com/commerce/testing/functional-testing-framework/getting-started).
+- **API tests** for every service contract in `Api/` (currently `OfferRepositoryInterface`) — exercised the same way Magento's own `dev/tests/api-functional` suite exercises core APIs.
+- **Target: 100% code coverage.** Explicitly a target, not yet a claim — see Phase 6 for what's covered today vs. outstanding. No class should be added without an accompanying test from this point forward, so the gap only shrinks.
+
+## Localization
+
+Admin-facing labels (`system.xml`, customer attribute labels) are translatable via standard Magento i18n CSV files in `i18n/`, keyed off `en_US.csv` as the source. Currently shipped: `en_US`, `pl_PL`. Contributions/requests for additional locales are tracked in Phase 6 — the goal is to cover every language relevant to the store's actual customer base, not just a token second locale.
+
 ## Roadmap
 
 Ownership split for how this roadmap is being driven: B2B direction is scoped by the technical/architecture side (this repo's maintainer); B2C direction is scoped from real hands-on marketing automation experience (iPresso-style platforms) — so expect the B2C phases below to grow faster and get more opinionated over time.
@@ -88,6 +102,17 @@ Everything in v0.2 reacts to server-side data (orders, carts, registration). A r
 - **JS tracking snippet** — records page views / product views / cart actions client-side and posts them to a Magento REST endpoint as events, the same architecture SalesManago/iPresso use for their "External Events."
 - **Identity stitching** — once the visitor logs in or checks out, their anonymous event history gets linked to the real `customer_id`, so behavioral data collected before conversion still feeds tags/segments/triggers afterward.
 - Once this exists, tags stop being purely order-derived (`inactive`, `new_customer`) and can include on-site behavior (`viewed_category_x_3_times`, `abandoned_checkout_step_shipping`), which is where this starts to genuinely replace a general-purpose MA platform instead of just covering its blind spots.
+
+### Phase 6 — closing the test coverage & localization gap
+
+The standards in "Quality & testing standards" above apply from now on; this phase is the backlog of bringing everything written before that rule existed up to the same bar:
+
+- **Unit tests** for every `Cron/`, `Observer/`, `Controller/Approval/` class beyond the `SalesRepEmailContext` seed — `CreditLimitCalculator`, `CustomerTagManager`, and each cron's `execute()` logic with mocked collections/repositories.
+- **MFTF test suite** (`Test/Mftf/` — directory scaffolded, tests not yet written): admin sets a customer's credit limit and spend limit → storefront checkout flows exercise both; the full order-approval email round-trip; offer self-extension from the storefront.
+- **API functional tests** for `OfferRepositoryInterface` (`save`/`getById`/`getList`/`delete`), following Magento's own `dev/tests/api-functional` conventions.
+- **PHPStan clean run at `level: max`** across the whole module — `phpstan.neon` exists; hasn't been run against every file added since Phase 2-3 yet.
+- **Coverage report wired into CI** (whatever CI this repo ends up on) so "100% target" becomes a number in a build badge, not just a stated goal.
+- **More `i18n/*.csv` locales** beyond `en_US`/`pl_PL` — driven by whichever languages an actual install needs, not translated speculatively ahead of demand.
 
 ### Phase 4 — one dashboard instead of scattered config screens
 

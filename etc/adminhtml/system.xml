@@ -118,6 +118,15 @@
                     <depends><field id="enabled">1</field></depends>
                 </field>
             </group>
+
+            <group id="sales_rep" translate="label" type="text" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Sales Rep Signature &amp; Digest</label>
+                <field id="digest_enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Send weekly digest to reps</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>The rep signature on reorder/offer/credit emails is always active once a customer has "Assigned Sales Rep" fields set — this only controls the separate weekly summary email.</comment>
+                </field>
+            </group>
         </section>
     </system>
 </config>

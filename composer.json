@@ -3,7 +3,7 @@
     "description": "B2B + B2C marketing automation for Magento Open Source — reorder, offer expiry, credit limit, and order approval triggers alongside abandoned cart and lifecycle emails, no Adobe Commerce B2B or external MA subscription required.",
     "type": "magento2-module",
     "license": "OSL-3.0",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "require": {
         "php": "~8.1||~8.2||~8.3",
         "magento/framework": "*",
@@ -13,10 +13,21 @@
         "magento/module-store": "*",
         "magento/module-email": "*"
     },
+    "require-dev": {
+        "phpstan/phpstan": "^1.10",
+        "bitexpert/phpstan-magento": "^0.30",
+        "phpunit/phpunit": "^9.6 || ^10.0",
+        "magento/magento2-functional-testing-framework": "^4.0"
+    },
     "autoload": {
         "files": ["registration.php"],
         "psr-4": {
             "Ordo\\Automation\\": ""
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Ordo\\Automation\\Test\\Unit\\": "Test/Unit/"
         }
     }
 }

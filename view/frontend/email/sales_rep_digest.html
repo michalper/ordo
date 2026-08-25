@@ -1,0 +1,18 @@
+<!--@subject {{var customer_count}} customers need your attention this week @-->
+{{template config_path="design/email/header_template"}}
+
+<table>
+    <tr class="email-intro">
+        <td>
+            <p class="greeting">Hi,</p>
+            <p><strong>{{var customer_count}}</strong> of your customers have gone inactive this week:</p>
+            <ul>
+                {{for name in customer_names}}
+                <li>{{var name}}</li>
+                {{/for}}
+            </ul>
+        </td>
+    </tr>
+</table>
+
+{{template config_path="design/email/footer_template"}}

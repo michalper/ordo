@@ -2,6 +2,17 @@
 
 All notable changes to this module are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.0]
+
+### Added
+- Sales-rep signature on every automated customer email (reorder, offer expiry, credit limit) via a new shared `SalesRepEmailContext` service, falling back to the store name when no rep is assigned to the customer. Closes Phase 2 of the B2B roadmap.
+- Weekly sales-rep digest email, grouping customers tagged `inactive` by their assigned rep so each rep gets one summary instead of per-signal spam.
+- Formal quality standards adopted for the project going forward: PHPStan at `level: max` (`phpstan.neon`), a unit test per non-trivial class (seed: `SalesRepEmailContextTest`), planned MFTF and API test coverage, and a 100% code coverage target — tracked as Phase 6.
+- Localization scaffold: `i18n/en_US.csv` (source) and `i18n/pl_PL.csv`, covering every admin-facing label added so far.
+
+### Fixed
+- Two email templates (`credit_limit_warning.html`, and an earlier draft of the signature block) used an invalid `{{depend}}{{else}}` construct that doesn't exist in Magento's email directive syntax — replaced with independent `{{depend}}` blocks on distinct boolean variables.
+
 ## [0.3.0]
 
 ### Added

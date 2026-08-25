@@ -28,5 +28,8 @@
         <job name="ordo_automation_escalate_stale_pending_approvals" instance="Ordo\Automation\Cron\EscalateStalePendingApprovals" method="execute">
             <schedule>0 10 * * *</schedule>
         </job>
+        <job name="ordo_automation_send_sales_rep_digest" instance="Ordo\Automation\Cron\SendSalesRepDigest" method="execute">
+            <schedule>0 8 * * 1</schedule>
+        </job>
     </group>
 </config>

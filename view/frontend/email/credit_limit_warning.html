@@ -12,13 +12,19 @@
                 the balance is brought back under the limit.
             </p>
             {{/depend}}
-            {{depend is_over_limit}}{{else}}
+            {{depend is_within_limit}}
             <p>
                 Your account is currently using <strong>{{var utilization_percent}}%</strong> of its credit limit
                 ({{var used_credit}} of {{var credit_limit}}). Let us know if you'd like to discuss a higher limit
                 or settle an open balance before it becomes a problem.
             </p>
             {{/depend}}
+            <p style="margin-top:24px;">
+                Best,<br>
+                {{var sender_name}}
+                {{depend sender_email}}<br>{{var sender_email}}{{/depend}}
+                {{depend sender_phone}} &middot; {{var sender_phone}}{{/depend}}
+            </p>
         </td>
     </tr>
 </table>

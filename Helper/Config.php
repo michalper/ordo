@@ -33,6 +33,8 @@ class Config extends AbstractHelper
     private const XML_PATH_APPROVAL_ENABLED = 'ordo_automation/order_approval/enabled';
     private const XML_PATH_APPROVAL_ESCALATION_DAYS = 'ordo_automation/order_approval/escalation_days';
 
+    private const XML_PATH_SALES_REP_DIGEST_ENABLED = 'ordo_automation/sales_rep/digest_enabled';
+
     public function __construct(Context $context)
     {
         parent::__construct($context);
@@ -198,5 +200,14 @@ class Config extends AbstractHelper
             ScopeInterface::SCOPE_STORE,
             $storeId
         ) ?: 2;
+    }
+
+    public function isSalesRepDigestEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_SALES_REP_DIGEST_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
     }
 }

@@ -1,0 +1,9 @@
+parameters:
+    level: max
+    paths:
+        - .
+    excludePaths:
+        - vendor/*
+        - Test/*
+    magento:
+        magento_root: '%currentWorkingDirectory%/../../../..'

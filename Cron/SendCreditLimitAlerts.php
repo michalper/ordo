@@ -11,6 +11,7 @@ use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CreditLimitCalculator;
+use Ordo\Automation\Model\SalesRepEmailContext;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -33,6 +34,7 @@ class SendCreditLimitAlerts
         private readonly TransportBuilder $transportBuilder,
         private readonly StoreManagerInterface $storeManager,
         private readonly StateInterface $inlineTranslation,
+        private readonly SalesRepEmailContext $salesRepEmailContext,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -113,14 +115,15 @@ class SendCreditLimitAlerts
         $transport = $this->transportBuilder
             ->setTemplateIdentifier(self::XML_PATH_EMAIL_TEMPLATE)
             ->setTemplateOptions(['area' => Area::AREA_FRONTEND, 'store' => $store->getId()])
-            ->setTemplateVars([
+            ->setTemplateVars(array_merge([
                 'customer_name' => $customer->getFirstname(),
                 'utilization_percent' => $utilization,
                 'credit_limit' => $this->creditLimitCalculator->getCreditLimit($customerId),
                 'used_credit' => $this->creditLimitCalculator->getUsedCredit($customerId),
                 'is_over_limit' => $band >= self::OVER_LIMIT_BAND,
+                'is_within_limit' => $band < self::OVER_LIMIT_BAND,
                 'store' => $store,
-            ])
+            ], $this->salesRepEmailContext->getForCustomer($customerId)))
             ->setFromByScope(self::XML_PATH_EMAIL_SENDER, $store->getId())
             ->addTo($customer->getEmail(), $customer->getFirstname())
             ->getTransport();
