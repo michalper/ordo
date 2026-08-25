@@ -2,6 +2,15 @@
 
 All notable changes to this module are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.8.1]
+
+### Added
+- Two more unit tests: `HasTagTest`, `AddTagTest` (campaign condition/action, both run and passing locally — 14/14 across all four mockable test classes together).
+- First MFTF test, `AdminCreateCampaignTest.xml` — admin creates a campaign via the Phase 4 form, confirms it saves and appears in the grid. Written and XML-validated, not run (no MFTF runtime in this dev environment).
+
+### Changed
+- README Phase 6 rewritten to state exact current test coverage (6 unit test files, 1 MFTF test, 0 API functional tests, PHPStan configured but never run, no coverage percentage) instead of a generic "still needs work" — and to spell out concretely how to actually try the module on a fresh Magento Open Source instance before trusting any unverified claim in this README.
+
 ## [0.8.0]
 
 ### Added

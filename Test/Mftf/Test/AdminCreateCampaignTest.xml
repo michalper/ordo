@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCreateCampaignTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Campaign engine"/>
+            <title value="Admin can create a campaign with one condition and one action"/>
+            <description value="Covers the admin UI shipped in Phase 4: create a campaign via the form's dynamicRows sections, save it, and confirm it appears correctly in the grid. Does not yet exercise the dispatcher actually firing the campaign on a real trigger event — that's checkout-flow-level coverage, tracked as a separate, not-yet-written scenario (see README Phase 6)."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <amOnPage url="ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+
+        <fillField selector="[name='name']" userInput="Test Win-Back Coupon" stepKey="fillName"/>
+        <selectOption selector="[name='trigger_event']" userInput="order_placed" stepKey="selectTriggerEvent"/>
+        <checkOption selector="[name='enabled']" stepKey="enableCampaign"/>
+
+        <click selector="//*[@data-index='conditions']//button[contains(., 'Add Condition')]" stepKey="addConditionRow"/>
+        <selectOption selector="[name='conditions[0][type]']" userInput="order_total_gte" stepKey="selectConditionType"/>
+        <fillField selector="[name='conditions[0][params_json]']" userInput="{&quot;amount&quot;: &quot;500&quot;}" stepKey="fillConditionParams"/>
+
+        <click selector="//*[@data-index='actions']//button[contains(., 'Add Action')]" stepKey="addActionRow"/>
+        <selectOption selector="[name='actions[0][type]']" userInput="add_tag" stepKey="selectActionType"/>
+        <fillField selector="[name='actions[0][params_json]']" userInput="{&quot;tag&quot;: &quot;big_spender&quot;}" stepKey="fillActionParams"/>
+
+        <click selector="button[data-index='save']" stepKey="clickSave"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+
+        <amOnPage url="ordo/campaign/index" stepKey="goToCampaignGrid"/>
+        <waitForPageLoad stepKey="waitForGrid"/>
+        <see selector="table.data-grid" userInput="Test Win-Back Coupon" stepKey="seeCampaignInGrid"/>
+    </test>
+</tests>
