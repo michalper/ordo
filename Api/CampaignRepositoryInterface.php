@@ -12,16 +12,24 @@ use Ordo\Automation\Api\Data\CampaignInterface;
 interface CampaignRepositoryInterface
 {
     /**
+     * @return CampaignInterface
      * @throws CouldNotSaveException
      */
     public function save(CampaignInterface $campaign): CampaignInterface;
 
     /**
+     * @return CampaignInterface
      * @throws NoSuchEntityException
      */
     public function getById(int $entityId): CampaignInterface;
 
+    /**
+     * @return SearchResultsInterface
+     */
     public function getList(SearchCriteriaInterface $searchCriteria): SearchResultsInterface;
 
+    /**
+     * @return bool
+     */
     public function delete(CampaignInterface $campaign): bool;
 }

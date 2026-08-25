@@ -12,16 +12,24 @@ use Ordo\Automation\Api\Data\OfferInterface;
 interface OfferRepositoryInterface
 {
     /**
+     * @return OfferInterface
      * @throws CouldNotSaveException
      */
     public function save(OfferInterface $offer): OfferInterface;
 
     /**
+     * @return OfferInterface
      * @throws NoSuchEntityException
      */
     public function getById(int $entityId): OfferInterface;
 
+    /**
+     * @return SearchResultsInterface
+     */
     public function getList(SearchCriteriaInterface $searchCriteria): SearchResultsInterface;
 
+    /**
+     * @return bool
+     */
     public function delete(OfferInterface $offer): bool;
 }
