@@ -10,7 +10,7 @@
         <buttons>
             <button name="back" class="Ordo\Automation\Block\Adminhtml\Campaign\Edit\BackButton"/>
             <button name="delete" class="Ordo\Automation\Block\Adminhtml\Campaign\Edit\DeleteButton"/>
-            <button name="save" class="Magento\Ui\Component\Control\Container\Toolbar\Save"/>
+            <button name="save" class="Ordo\Automation\Block\Adminhtml\Campaign\Edit\SaveButton"/>
             <button name="save_and_continue" class="Ordo\Automation\Block\Adminhtml\Campaign\Edit\SaveAndContinueButton"/>
         </buttons>
         <namespace>ordo_campaign_form</namespace>

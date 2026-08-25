@@ -17,6 +17,11 @@ use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCo
  */
 class DataProvider extends AbstractDataProvider
 {
+    /**
+     * @var array
+     */
+    protected $loadedData;
+
     public function __construct(
         $name,
         $primaryFieldName,
