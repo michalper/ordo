@@ -19,5 +19,11 @@
         <job name="ordo_automation_send_credit_limit_alerts" instance="Ordo\Automation\Cron\SendCreditLimitAlerts" method="execute">
             <schedule>0 6 * * *</schedule>
         </job>
+        <job name="ordo_automation_tag_inactive_customers" instance="Ordo\Automation\Cron\TagInactiveCustomers" method="execute">
+            <schedule>0 3 * * *</schedule>
+        </job>
+        <job name="ordo_automation_send_win_back_emails" instance="Ordo\Automation\Cron\SendWinBackEmails" method="execute">
+            <schedule>0 9 * * *</schedule>
+        </job>
     </group>
 </config>

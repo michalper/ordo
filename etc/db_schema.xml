@@ -100,4 +100,21 @@
         </index>
     </table>
 
+    <table name="ordo_customer_tag" resource="default" engine="innodb" comment="Behavioral tags — the segmentation primitive every B2C trigger and future campaign targeting reads from">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
+        <column xsi:type="varchar" name="tag" nullable="false" length="64" comment="Tag, e.g. new_customer, vip, inactive, win_back_sent"/>
+        <column xsi:type="timestamp" name="added_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Added At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="ORDO_CUSTOMER_TAG_CUSTOMER_ID_TAG">
+            <column name="customer_id"/>
+            <column name="tag"/>
+        </constraint>
+        <index referenceId="ORDO_CUSTOMER_TAG_TAG" indexType="btree">
+            <column name="tag"/>
+        </index>
+    </table>
+
 </schema>

@@ -1,0 +1,22 @@
+<!--@subject We miss you @-->
+{{template config_path="design/email/header_template"}}
+
+<table>
+    <tr class="email-intro">
+        <td>
+            <p class="greeting">Hi {{var customer_name}},</p>
+            <p>It's been a while since your last order — here's a reason to come back.</p>
+            <table class="button-container" cellspacing="0" cellpadding="0" style="margin: 20px 0;">
+                <tr>
+                    <td>
+                        <a href="{{var store.getBaseUrl()}}" class="action primary">
+                            <span>See what's new</span>
+                        </a>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+{{template config_path="design/email/footer_template"}}

@@ -27,6 +27,9 @@ class Config extends AbstractHelper
     private const XML_PATH_CREDIT_WARNING_THRESHOLD = 'ordo_automation/credit_limit/warning_threshold_percent';
     private const XML_PATH_CREDIT_COOLDOWN_DAYS = 'ordo_automation/credit_limit/cooldown_days';
 
+    private const XML_PATH_LIFECYCLE_ENABLED = 'ordo_automation/lifecycle/enabled';
+    private const XML_PATH_LIFECYCLE_WIN_BACK_INACTIVE_DAYS = 'ordo_automation/lifecycle/win_back_inactive_days';
+
     public function __construct(Context $context)
     {
         parent::__construct($context);
@@ -156,5 +159,23 @@ class Config extends AbstractHelper
             ScopeInterface::SCOPE_STORE,
             $storeId
         ) ?: 7;
+    }
+
+    public function isLifecycleEmailsEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_LIFECYCLE_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getWinBackInactiveDays(?int $storeId = null): int
+    {
+        return (int) $this->scopeConfig->getValue(
+            self::XML_PATH_LIFECYCLE_WIN_BACK_INACTIVE_DAYS,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        ) ?: 90;
     }
 }

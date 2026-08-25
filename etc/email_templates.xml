@@ -4,4 +4,6 @@
     <template id="ordo_abandoned_cart_reminder" label="Ordo: Abandoned Cart Reminder" file="abandoned_cart_reminder.html" type="html" module="Ordo_Automation" area="frontend"/>
     <template id="ordo_offer_expiring_soon" label="Ordo: Offer Expiring Soon" file="offer_expiring_soon.html" type="html" module="Ordo_Automation" area="frontend"/>
     <template id="ordo_credit_limit_warning" label="Ordo: Credit Limit Warning" file="credit_limit_warning.html" type="html" module="Ordo_Automation" area="frontend"/>
+    <template id="ordo_welcome_email" label="Ordo: Welcome Email" file="welcome_email.html" type="html" module="Ordo_Automation" area="frontend"/>
+    <template id="ordo_win_back_email" label="Ordo: Win-back Email" file="win_back_email.html" type="html" module="Ordo_Automation" area="frontend"/>
 </config>
