@@ -10,5 +10,11 @@
         <job name="ordo_automation_send_abandoned_cart_reminders" instance="Ordo\Automation\Cron\SendAbandonedCartReminders" method="execute">
             <schedule>*/30 * * * *</schedule>
         </job>
+        <job name="ordo_automation_send_offer_expiry_reminders" instance="Ordo\Automation\Cron\SendOfferExpiryReminders" method="execute">
+            <schedule>0 8 * * *</schedule>
+        </job>
+        <job name="ordo_automation_expire_overdue_offers" instance="Ordo\Automation\Cron\ExpireOverdueOffers" method="execute">
+            <schedule>30 8 * * *</schedule>
+        </job>
     </group>
 </config>

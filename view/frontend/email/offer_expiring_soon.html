@@ -1,0 +1,31 @@
+<!--@subject Your offer {{var offer_reference}} expires soon @-->
+{{template config_path="design/email/header_template"}}
+
+<table>
+    <tr class="email-intro">
+        <td>
+            <p class="greeting">Hi {{var customer_name}},</p>
+            <p>
+                Your offer <strong>{{var offer_reference}}</strong>
+                ({{var offer_currency}} {{var offer_total}}) expires on <strong>{{var offer_expires_at}}</strong>.
+                Need more time to decide?
+            </p>
+            <table class="button-container" cellspacing="0" cellpadding="0" style="margin: 20px 0;">
+                <tr>
+                    <td>
+                        <a href="{{var store.getBaseUrl()}}" class="action primary">
+                            <span>Review offer</span>
+                        </a>
+                    </td>
+                </tr>
+            </table>
+            {{depend can_self_extend}}
+            <p>
+                You can also request a short extension yourself — no need to wait for a reply.
+            </p>
+            {{/depend}}
+        </td>
+    </tr>
+</table>
+
+{{template config_path="design/email/footer_template"}}
