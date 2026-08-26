@@ -107,6 +107,26 @@ vendor/bin/phpunit vendor/ordo/module-automation/Test/Unit
       Abandoned Cart, Offer, Credit Limit, Lifecycle, Order Approval, Sales Rep,
       Tracking), no missing source-model errors, confirmed via full page screenshot
 
+### Known open issue — not yet root-caused
+
+`Uncaught TypeError: $(...).filter(...).collapse is not a function` at
+`theme.js:629`, seen on the New/Edit Campaign page in a real browser tab
+(not reproduced in the headless devtools session used for most of this
+verification pass). Looks like a jQuery/bootstrap `collapse` plugin
+load-order race in Magento core's `theme.js` during RequireJS bootstrap —
+nothing in this module touches `theme.js` or bootstrap loading, so it's
+suspected environment/timing, not an Ordo Automation bug, but **not
+confirmed**. Docker image is native `aarch64` (Apple Silicon host, no x86
+emulation), so it's not an emulation performance issue either — the
+general slowness reported alongside this needs a real look (check PHP
+opcache is actually enabled in the container, check `bin/magento` mode is
+`production` vs `default`, check container CPU/memory limits) before
+assuming it's just "Magento is slow." Next step if it reproduces
+consistently: hard-refresh first to rule out a one-off race, then check
+whether it happens on a *stock* Magento page with no Ordo Automation code
+loaded at all (e.g. Dashboard) — if it does, it's conclusively unrelated
+to this module.
+
 ## 4. B2B triggers, one at a time
 
 **Not reached this pass.** The section 3 blocker (campaigns couldn't be created
