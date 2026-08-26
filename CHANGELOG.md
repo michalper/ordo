@@ -2,6 +2,29 @@
 
 All notable changes to this module are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.8.5]
+
+### Added
+- Custom admin dashboard (`ordo/dashboard/index`) — own controller/block/template/CSS,
+  not a UI Component. Shows campaign stats, nav cards to Campaigns/Reorder
+  Cycles/Configuration, and the campaign list. Server-rendered from the same
+  collections the grids already use.
+
+### Changed
+- `Ordo Automation` admin menu is now a single flat entry pointing straight at
+  the dashboard, instead of a dropdown with separate Campaigns/Reorder
+  Cycles/Configuration items — those are still real, unchanged controllers,
+  just linked as cards from the dashboard now.
+- An initial attempt at this used a fully standalone static dashboard
+  (`dashboard/` — vanilla JS calling the REST API with its own admin-token
+  login) before being replaced with the in-admin version above, which needs
+  no separate auth/CORS handling. Not shipped in this release.
+
+### Roadmap
+- Drafted a full visual identity direction (logo/mark, color palette,
+  typography, admin menu icon, GitHub banner) — documented in README, not
+  implemented. Decision pending on scope.
+
 ## [0.8.4]
 
 Closes the "New/Edit Campaign form fields don't render" issue left open at the

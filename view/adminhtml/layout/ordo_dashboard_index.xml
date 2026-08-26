@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <css src="Ordo_Automation::css/dashboard.css"/>
+    </head>
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template"
+                   name="ordo_dashboard"
+                   template="Ordo_Automation::dashboard/index.phtml">
+                <arguments>
+                    <argument name="view_model" xsi:type="object">Ordo\Automation\Block\Adminhtml\Dashboard\DashboardViewModel</argument>
+                </arguments>
+            </block>
+        </referenceContainer>
+    </body>
+</page>

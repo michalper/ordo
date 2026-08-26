@@ -1,0 +1,71 @@
+<?php
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \Magento\Framework\Escaper $escaper */
+
+/** @var \Ordo\Automation\Block\Adminhtml\Dashboard\DashboardViewModel $viewModel */
+$viewModel = $block->getData('view_model');
+$campaigns = $viewModel->getCampaigns();
+?>
+<div class="ordo-dashboard">
+    <div class="ordo-dashboard-stats">
+        <div class="ordo-stat-card">
+            <div class="ordo-stat-value"><?= $escaper->escapeHtml((string) $viewModel->getTotalCampaignCount()) ?></div>
+            <div class="ordo-stat-label"><?= $escaper->escapeHtml(__('Total campaigns')) ?></div>
+        </div>
+        <div class="ordo-stat-card">
+            <div class="ordo-stat-value"><?= $escaper->escapeHtml((string) $viewModel->getEnabledCampaignCount()) ?></div>
+            <div class="ordo-stat-label"><?= $escaper->escapeHtml(__('Enabled')) ?></div>
+        </div>
+        <div class="ordo-stat-card">
+            <div class="ordo-stat-value"><?= $escaper->escapeHtml((string) $viewModel->getReorderCycleCount()) ?></div>
+            <div class="ordo-stat-label"><?= $escaper->escapeHtml(__('Tracked reorder cycles')) ?></div>
+        </div>
+    </div>
+
+    <div class="ordo-dashboard-nav">
+        <a class="ordo-nav-card" href="<?= $escaper->escapeUrl($block->getUrl('ordo/campaign/index')) ?>">
+            <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('Campaigns')) ?></span>
+            <span class="ordo-nav-desc"><?= $escaper->escapeHtml(__('Build and manage automation campaigns')) ?></span>
+        </a>
+        <a class="ordo-nav-card" href="<?= $escaper->escapeUrl($block->getUrl('ordo/reordercycle/index')) ?>">
+            <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('Reorder Cycles')) ?></span>
+            <span class="ordo-nav-desc"><?= $escaper->escapeHtml(__('Diagnostic view of detected reorder patterns')) ?></span>
+        </a>
+        <a class="ordo-nav-card" href="<?= $escaper->escapeUrl($block->getUrl('adminhtml/system_config/edit/section/ordo_automation')) ?>">
+            <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('Configuration')) ?></span>
+            <span class="ordo-nav-desc"><?= $escaper->escapeHtml(__('Triggers, thresholds, tracking, and more')) ?></span>
+        </a>
+    </div>
+
+    <div class="ordo-dashboard-campaigns">
+        <div class="ordo-section-head">
+            <h2><?= $escaper->escapeHtml(__('Campaigns')) ?></h2>
+            <a class="ordo-btn ordo-btn-primary" href="<?= $escaper->escapeUrl($block->getUrl('ordo/campaign/new')) ?>">
+                <?= $escaper->escapeHtml(__('+ New Campaign')) ?>
+            </a>
+        </div>
+
+        <?php if (empty($campaigns)): ?>
+            <p class="ordo-empty-state">
+                <?= $escaper->escapeHtml(__('No campaigns yet — create one to get started.')) ?>
+            </p>
+        <?php else: ?>
+            <div class="ordo-campaigns-grid">
+                <?php foreach ($campaigns as $campaign): ?>
+                    <a class="ordo-campaign-card"
+                       href="<?= $escaper->escapeUrl($block->getUrl('ordo/campaign/edit', ['entity_id' => $campaign->getEntityId()])) ?>">
+                        <div class="ordo-campaign-card-head">
+                            <span class="ordo-campaign-name"><?= $escaper->escapeHtml($campaign->getName()) ?></span>
+                            <span class="ordo-badge <?= $campaign->isEnabled() ? 'ordo-badge-on' : 'ordo-badge-off' ?>">
+                                <?= $campaign->isEnabled() ? $escaper->escapeHtml(__('Enabled')) : $escaper->escapeHtml(__('Disabled')) ?>
+                            </span>
+                        </div>
+                        <div class="ordo-campaign-trigger">
+                            <?= $escaper->escapeHtml(__('Trigger: %1', $viewModel->getTriggerLabel($campaign->getTriggerEvent()))) ?>
+                        </div>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
