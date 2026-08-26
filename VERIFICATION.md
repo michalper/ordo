@@ -137,7 +137,17 @@ The individual cron classes (`CalculateReorderCycle`, `SendReorderReminders`,
 
 ## 5. Campaign engine end-to-end
 
-**Not reached** — same blocker as section 4.
+- [x] The campaign created through the admin UI (`order_placed` → `order_total_gte`
+      amount=1 → `add_tag` tag=engine_e2e_test, dedicated fields, real save) actually
+      fires: called `CampaignDispatcher::dispatch('order_placed', ['order_total' =>
+      100.0, 'customer_id' => 1])` directly (real object manager, real customer row,
+      real DB) — confirmed `ordo_customer_tag` gained the row
+      `customer_id=1, tag=engine_e2e_test`. This exercises the full chain: campaign
+      row → condition/action rows → `ConditionPool`/`ActionPool` resolution →
+      `AddTag` action → `CustomerTagManager`.
+- [ ] `generate_coupon` → `send_email` chaining, and a real order placed through
+      checkout (rather than calling the dispatcher directly) — not yet done.
+- [ ] `tag_added` trigger firing a second campaign — not yet done.
 
 ## 6. Promotion Builder (Phase 3)
 
