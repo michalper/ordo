@@ -2,6 +2,26 @@
 
 All notable changes to this module are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.9.3]
+
+Phase 5 (on-site tracking) verified for real — two more real bugs found.
+VERIFICATION.md now has every phase checked off against real data except
+a full checkout order placement (blocked on unrelated Magento-core issues)
+and the tracker.js snippet in an actual browser.
+
+### Fixed
+- **`VisitorEventLogger::attributeVisitorToCustomer()` never actually
+  re-ran aggregation after backfilling a visitor's events on login** —
+  contradicting its own docblock and the README's claim. A customer whose
+  anonymous browsing crossed a tag threshold before they logged in never
+  got tagged until the next scheduled aggregation, if any. One-line fix.
+- **`Config::getTrackingRetentionDays()` treated a deliberate `0` ("don't
+  keep raw events at all") as unset and silently fell back to the 7-day
+  default**, via the same `?: 7` pattern several other getters in this
+  class use. Fixed with an explicit null/empty-string check. Flagged the
+  other `?:`-based getters in `Helper/Config.php` as worth auditing for
+  the same issue — not done yet.
+
 ## [0.9.2]
 
 Phase 3 (Promotion Builder) verified for real — two real bugs found and

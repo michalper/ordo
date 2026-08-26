@@ -48,5 +48,7 @@ class VisitorEventLogger
             ['customer_id' => $customerId],
             ['visitor_id = ?' => $visitorId, 'customer_id IS NULL']
         );
+
+        $this->visitorAggregator->aggregateForCustomer($customerId);
     }
 }

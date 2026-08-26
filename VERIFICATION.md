@@ -239,7 +239,41 @@ to this module.
 
 ## 7. On-site tracking (Phase 5)
 
-**Not reached this pass.**
+- [x] **Tracking endpoint:** `POST /ordo/track/event` — first call used a raw JSON
+      body and got `invalid_payload`; the controller reads `getParam()` (form
+      data), matching what `tracker.js` actually sends via `URLSearchParams`,
+      not JSON — a test-script mistake, not a bug. Retried with form-encoded
+      data: `{"ok":true}`, confirmed real rows in `ordo_visitor_event`
+      (`product_view`/`cheap-a` × 2, `page_view` × 1), `customer_id` correctly
+      `NULL` for an anonymous visitor.
+- [x] **Identity stitching — real bug found and fixed.** Called
+      `VisitorEventLogger::attributeVisitorToCustomer()` directly (the method
+      `StitchVisitorIdentity` calls on `customer_login`) to backfill the
+      anonymous visitor's events to a real customer. The backfill itself
+      worked (`customer_id` updated on all 3 events), but **no tag was
+      created** despite crossing the configured threshold (2) — contradicting
+      both the README ("immediately re-runs aggregation") and this method's
+      own docblock. `attributeVisitorToCustomer()` never actually called
+      `VisitorAggregator::aggregateForCustomer()` after the backfill UPDATE.
+      Fixed (one line); re-verified with a fresh visitor: tag
+      `viewed_product_view_cheap-a` now created immediately on stitching, not
+      just on the next scheduled aggregation.
+- [x] **Retention pruning — real bug found and fixed.** Set
+      `tracking/retention_days = 0` (meaning "don't keep raw events at all")
+      and ran `PruneVisitorEvents` — nothing was deleted. Traced to
+      `Config::getTrackingRetentionDays()` using `?: 7`, which treats a
+      legitimate `0` as falsy and silently falls back to the 7-day default —
+      the same class of bug as the other `?:`-based config defaults in this
+      module, just caught here because 0 is a meaningful value for this
+      particular setting. Fixed with an explicit `!== null && !== ''` check.
+      Re-verified: `getTrackingRetentionDays()` returns `0`, `PruneVisitorEvents`
+      deleted all rows, and — importantly — the tag derived from those events
+      was untouched, confirming the "prune raw evidence, keep the conclusion"
+      design actually holds.
+- [ ] **Not covered:** the tracker.js snippet in an actual browser (cookie
+      issuance, automatic `page_view` firing) — only the server-side endpoint
+      and downstream pipeline were exercised this pass, via direct HTTP calls
+      standing in for the JS.
 
 ## 8. Real bugs found and fixed in this pass
 
@@ -364,6 +398,18 @@ shapes or the real Magento UI-component runtime.
     `collectTotals()` — impossible to catch with the existing mocked unit
     test, since the mock never modeled this Address\Item id quirk. Fixed by
     identifying the qualifying item by SKU instead of item id. See section 6.
+18. **`VisitorEventLogger::attributeVisitorToCustomer()` never actually
+    re-ran aggregation after backfilling a visitor's events on login** —
+    contradicting its own docblock and the README. Found by calling it
+    directly and observing no tag appeared despite crossing the configured
+    threshold. One-line fix. See section 7.
+19. **`Config::getTrackingRetentionDays()` treated a deliberate `0` (\"prune
+    everything\") as unset and silently fell back to the 7-day default**,
+    via the same `?: 7` pattern several other config getters in this class
+    use. Found by setting retention to 0 and observing `PruneVisitorEvents`
+    delete nothing. Fixed with an explicit null/empty-string check. Worth
+    checking the other `?:`-based getters in `Helper/Config.php` for the same
+    issue where 0 is a meaningful value (not yet audited).
 
 ## 9. What to do with results
 

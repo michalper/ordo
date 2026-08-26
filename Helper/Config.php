@@ -226,11 +226,15 @@ class Config extends AbstractHelper
 
     public function getTrackingRetentionDays(?int $storeId = null): int
     {
-        return (int) $this->scopeConfig->getValue(
+        $value = $this->scopeConfig->getValue(
             self::XML_PATH_TRACKING_RETENTION_DAYS,
             ScopeInterface::SCOPE_STORE,
             $storeId
-        ) ?: 7;
+        );
+
+        // Deliberate !== '' check, not ?: — 0 is a valid, meaningful setting ("don't keep raw
+        // events at all"), and `?:` would treat it as unset and silently fall back to 7.
+        return $value !== null && $value !== '' ? (int) $value : 7;
     }
 
     public function getTrackingViewThreshold(?int $storeId = null): int
