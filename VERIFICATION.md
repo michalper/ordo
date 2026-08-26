@@ -162,7 +162,21 @@ to this module.
       order was inserted directly via SQL with no `sales_order_payment` row; a
       real order placed through checkout has one. Core hold/approval logic
       confirmed correct.
-- [ ] **Reorder reminders, abandoned cart:** not yet run.
+- [x] **Reorder reminders:** inserted 3 real `sales_order`/`sales_order_item` rows
+      for the same customer/SKU, 30 days apart. `CalculateReorderCycle` correctly
+      computed `avg_interval_days=30`, `next_expected_date` = last order + 30
+      days, `orders_considered=3`. Moved `next_expected_date` to within the
+      lead window and ran `SendReorderReminders` — correctly found the cycle,
+      built the email, attempted delivery (failed only on this sandbox's
+      missing SMTP, same as every other reminder cron tested).
+- [x] **Abandoned cart:** inserted a real `quote` row (`is_active=1`,
+      `items_count=1`, `subtotal=250`, `customer_email` set, `updated_at`
+      outside the delay window). `SendAbandonedCartReminders` correctly found
+      it and attempted delivery (same SMTP limitation). Also calls
+      `CampaignDispatcher::dispatch('cart_abandoned', ...)` for registered
+      customers — not separately re-verified with a live `cart_abandoned`
+      campaign this pass, but the dispatcher itself was already proven correct
+      end-to-end in section 5 with a different trigger.
 - [ ] **A real order placed through full checkout** (as opposed to observer
       logic tested directly) — attempted twice, blocked on pure Magento-core
       checkout-stack issues unrelated to this module (see bug list below,
