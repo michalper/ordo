@@ -4,9 +4,10 @@ declare(strict_types=1);
 namespace Ordo\Automation\Controller\Adminhtml\Campaign;
 
 use Magento\Backend\App\Action\Context;
+use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\View\Result\PageFactory;
 
-class Index extends AbstractCampaignAction
+class Index extends AbstractCampaignAction implements HttpGetActionInterface
 {
     public function __construct(
         Context $context,

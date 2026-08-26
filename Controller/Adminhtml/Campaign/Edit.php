@@ -4,12 +4,13 @@ declare(strict_types=1);
 namespace Ordo\Automation\Controller\Adminhtml\Campaign;
 
 use Magento\Backend\App\Action\Context;
+use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\Registry;
 use Magento\Framework\View\Result\PageFactory;
 use Ordo\Automation\Model\CampaignFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign as CampaignResource;
 
-class Edit extends AbstractCampaignAction
+class Edit extends AbstractCampaignAction implements HttpGetActionInterface
 {
     public function __construct(
         Context $context,

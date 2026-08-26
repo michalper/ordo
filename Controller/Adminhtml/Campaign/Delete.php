@@ -4,10 +4,15 @@ declare(strict_types=1);
 namespace Ordo\Automation\Controller\Adminhtml\Campaign;
 
 use Magento\Backend\App\Action\Context;
+use Magento\Framework\App\Action\HttpGetActionInterface;
 use Ordo\Automation\Model\CampaignFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign as CampaignResource;
 
-class Delete extends AbstractCampaignAction
+/**
+ * Invoked via a plain GET link (see Ui\Component\Listing\Column\CampaignActions), matching
+ * the interface it's actually dispatched through.
+ */
+class Delete extends AbstractCampaignAction implements HttpGetActionInterface
 {
     public function __construct(
         Context $context,

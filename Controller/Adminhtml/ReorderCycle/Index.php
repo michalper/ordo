@@ -5,13 +5,14 @@ namespace Ordo\Automation\Controller\Adminhtml\ReorderCycle;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
+use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\View\Result\PageFactory;
 
 /**
  * Read-only diagnostic view of what CalculateReorderCycle has computed — no edit/delete,
  * this is for verifying "does the detected cycle look right" while debugging, not a CRUD screen.
  */
-class Index extends Action
+class Index extends Action implements HttpGetActionInterface
 {
     public const ADMIN_RESOURCE = 'Ordo_Automation::config';
 

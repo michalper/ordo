@@ -138,16 +138,15 @@ A friendlier admin layer over Magento's native `SalesRule` engine — the raw na
 
 The standards in "Quality & testing standards" above apply from now on. Honest current state, not a rounded-up claim:
 
-**Unit tests — 6 files, all logic-verified, only some execution-verified in this dev environment (no `magento/framework` installed here — see "Verification status" below each test class in code):**
-- `SalesRepEmailContextTest`, `ConditionPoolTest`, `OrderTotalAtLeastTest`, `HasTagTest`, `AddTagTest` — pure logic or mocked-Magento-interface tests; `ConditionPoolTest`/`OrderTotalAtLeastTest` have been **run** (7/7 passing) against a local PHPUnit 13 install as a sanity check (target dev dependency is `^9.6 || ^10.0`, per `composer.json`); `HasTagTest`/`AddTagTest` likewise run and passing (14/14 across all four together).
-- `QualifyingSetTrackerTest` — written, lint-checked, **not executed** (depends on real `Magento\SalesRule\Model\Rule`/`Magento\Quote\Model\Quote`, unavailable here).
+**Unit tests — 6 files, 24/24 passing, run for real against Magento Open Source 2.4.7** (see `VERIFICATION.md`, verified 2026-08-25). This caught two real bugs on the first run — `QualifyingSetTracker` calling a nonexistent `Rule::getRuleId()` and `SalesRepEmailContext` calling `StoreInterface::getFrontendName()` (only on the concrete `Store` class, not the interface) — both fixed, both now covered.
+- `SalesRepEmailContextTest`, `ConditionPoolTest`, `OrderTotalAtLeastTest`, `HasTagTest`, `AddTagTest`, `QualifyingSetTrackerTest` — all pass against real `magento/framework`/`magento/module-sales`/`magento/module-quote` classes, not mocks-of-mocks.
 - **Still missing:** `CreditLimitCalculator`, `CustomerTagManager`, `CampaignDispatcher` (the dispatch/condition-AND/action-order logic itself — the pool tests only cover the plug-in registry), `VisitorAggregator`, and every `Cron/`/`Observer/`/`Controller/` class's `execute()` logic.
 
-**MFTF — 1 test written (`AdminCreateCampaignTest.xml`), not run** (no MFTF runtime in this environment). Covers admin campaign creation via the Phase 4 form. Still missing: the dispatcher actually firing on a real checkout, offer self-extension, credit-limit checkout behavior, the tracking snippet in a real browser. See `Test/Mftf/README.md`.
+**MFTF — 1 test written (`AdminCreateCampaignTest.xml`), not run.** Covers admin campaign creation via the Phase 4 form — currently blocked by an open dynamicRows rendering bug in that same form, see `VERIFICATION.md` section 3. Still missing: the dispatcher actually firing on a real checkout, offer self-extension, credit-limit checkout behavior, the tracking snippet in a real browser. See `Test/Mftf/README.md`.
 
 **API functional tests — none written yet** for `OfferRepositoryInterface` or `CampaignRepositoryInterface`, following Magento's own `dev/tests/api-functional` conventions.
 
-**PHPStan — configured (`phpstan.neon`, level max), never run.** This sandbox has no `magento/framework`, so `bitexpert/phpstan-magento`'s Magento-aware analysis can't execute here. First real run needs to happen on an actual Magento install (see "Trying this for real," below) before any PHPStan-clean claim is credible.
+**PHPStan — runs for real now** (verified 2026-08-25). The shipped `phpstan.neon` never actually worked before this pass — missing `includes:` for the bitexpert extension and a wrong parameter key (`magento_root` vs `magentoRoot`) meant it refused to start. Fixed; it now reports 183 real level-max findings (overwhelmingly missing iterable value types on `array` params/returns) — a real backlog, not fixed in this pass, tracked in `VERIFICATION.md`.
 
 **Coverage — no number exists.** "100% target" is a stated goal with 6 test files against ~50 non-trivial classes, not a coverage report. Don't claim a percentage until a coverage tool has actually run.
 
@@ -155,12 +154,20 @@ The standards in "Quality & testing standards" above apply from now on. Honest c
 
 ## Trying this for real
 
-Everything above has been written, lint-checked, and where possible logic-verified with a local PHPUnit — but none of it has run inside an actual Magento application yet. Before relying on this module, or before believing any "it works" claim in this README beyond what's marked as tested:
+**Verified against Magento Open Source 2.4.7 on 2026-08-25** (Docker, Magento cloned
+from GitHub — no Adobe Marketplace keys needed). Install, `setup:upgrade`,
+`setup:di:compile`, and the admin panel/login all work; PHPStan and the unit suite
+both run for real and pass/report cleanly (183 PHPStan findings still open, see
+below). Twelve real bugs were found and fixed along the way — full list in
+`VERIFICATION.md`.
 
-1. Spin up a **fresh Magento Open Source instance** (not an existing store with unrelated data/customizations — a clean install isolates whether something's actually broken here vs. conflicting with something else).
-2. `composer require` this module, `bin/magento module:enable Ordo_Automation`, `setup:upgrade`.
-3. Walk through each feature manually: set a customer's credit/spend limit, place orders that cross the thresholds, create a campaign in the new admin UI, confirm the tracker cookie appears and an event round-trips.
-4. Only then start on the Phase 6 backlog above with real assertions, not assumptions.
+**What's still open:** the Campaign admin form's `dynamicRows` sections (conditions/
+actions) don't visibly render fields yet — narrowed down to a Knockout
+initialization issue, not a PHP-level bug, but not root-caused. This blocks
+actually creating a campaign through the UI, which in turn blocks the B2B trigger
+walkthrough (section 4), campaign engine end-to-end (section 5), Promotion Builder
+(section 6), and on-site tracking (section 7) checklist items — none of those have
+been exercised against a live instance yet.
 
 **Full step-by-step checklist:** [VERIFICATION.md](VERIFICATION.md) — covers install, static analysis, and a manual walkthrough of every feature in this README, organized so a failure at any step points at exactly what to fix next.
 

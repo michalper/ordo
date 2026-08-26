@@ -2,6 +2,78 @@
 
 All notable changes to this module are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.8.4]
+
+Closes the "New/Edit Campaign form fields don't render" issue left open at the
+end of 0.8.3.
+
+### Fixed
+- `Controller/Adminhtml/Campaign/{Index,NewAction,Edit,Delete}.php`,
+  `Controller/Adminhtml/ReorderCycle/Index.php` — none implemented
+  `HttpGetActionInterface`; `Save.php` didn't implement `HttpPostActionInterface`.
+  Magento 2.4's `BackendValidator` silently rejects admin controller actions
+  missing the matching HTTP-method interface — requests never reached
+  `execute()`, logged only as a DEBUG-level "Invalid request received" line
+  easy to miss.
+- `view/adminhtml/ui_component/ordo_campaign_form.xml` — the form's knockout
+  template resolved to `templates/form/default.xhtml`, which binds its content
+  to a `{{name}}.areas` scope. Nothing in this component tree ever creates an
+  `areas` sub-component (that only happens for `<layout>`-declared area
+  structures, which this form doesn't use), so the scope binding waited on a
+  registry key that would never resolve — permanent spinner, no error, no
+  console output, since `registry.get(name, callback)` just never calls back.
+  Fixed by explicitly setting `<item name="template">templates/form/collapsible</item>`,
+  whose template binds to `{{name}}.{{name}}` instead — which matches this
+  form's actual (unremarkable, single-root) component tree shape.
+
+## [0.8.3]
+
+First real run against a live Magento Open Source 2.4.7 instance (Docker, Magento
+cloned from GitHub — no Adobe Marketplace keys needed for `composer install`).
+Twelve real bugs found and fixed; full detail and current status in
+`VERIFICATION.md`.
+
+### Fixed
+- `Api/CampaignRepositoryInterface.php`, `Api/OfferRepositoryInterface.php` —
+  missing/incomplete `@return` docblocks broke the WebAPI reflection generator.
+- `Model/Campaign.php`, `Model/Offer.php` — `setEntityId(int $entityId): self` was
+  parameter-incompatible with `AbstractModel::setEntityId($entityId)` — PHP fatal
+  at class-load time.
+- `Model/CampaignRepository.php`, `Model/OfferRepository.php` — `getList()` was
+  missing the `SearchResultsInterface` return type the interface declares.
+- Three `Block/Adminhtml/Campaign/Edit/*Button.php` classes implemented a
+  nonexistent Magento interface (`Toolbar\ButtonInterface` typo) instead of
+  `ButtonProviderInterface`.
+- `etc/acl.xml` — missing `Magento_Backend::stores_settings` ancestor level created
+  a conflicting duplicate ACL resource; admin login failed outright.
+- `Model/ResourceModel/Campaign/Grid/Collection.php`,
+  `Model/ResourceModel/ReorderCycle/Grid/Collection.php` — `SearchResult`-based
+  grid collections need `mainTable`/`resourceModel` via `di.xml`, not `_init()`.
+- `view/adminhtml/ui_component/ordo_campaign_form.xml` — `save` button referenced
+  a nonexistent core class; added `Block/Adminhtml/Campaign/Edit/SaveButton.php`.
+- `Model/Campaign/DataProvider.php` — undeclared `$loadedData` property, PHP 8.2
+  dynamic-property deprecation notice on every campaign form load.
+- `Model/Rule/Action/Discount/QualifyingSetTracker.php` — called
+  `$rule->getRuleId()`, which doesn't exist on `Magento\SalesRule\Model\Rule`
+  (only `getId()`). Found by the unit test refusing to mock a nonexistent method.
+- `Model/SalesRepEmailContext.php` — called `->getFrontendName()` on a
+  `StoreInterface`-typed value; that method only exists on the concrete `Store`
+  model. Switched to `getName()`, which is on the interface.
+- `phpstan.neon` — missing `includes:` for the bitexpert extension and wrong
+  parameter key meant PHPStan never actually ran before this pass; it now runs
+  and reports 183 real (mostly iterable-typing) findings, not fixed in this pass.
+- `view/adminhtml/ui_component/ordo_campaign_form.xml` (dynamicRows) — switched to
+  the canonical `<dynamicRows>` XSD element and moved `isTemplate`/`is_collection`
+  into the correct config node; resolved a JS `TypeError` in the console, but the
+  New/Edit Campaign form fields still don't visibly render — **still open**, see
+  `VERIFICATION.md` section 3.
+
+### Added
+- `Test/Unit/Model/EntityModelSignatureCompatibilityTest.php`,
+  `Test/Unit/Model/RepositorySignatureCompatibilityTest.php` — reflection-based
+  regression guards for the `AbstractModel`/repository signature-compatibility
+  bugs above (mocked unit tests can't catch these; they never load the real class).
+
 ## [0.8.2]
 
 ### Added

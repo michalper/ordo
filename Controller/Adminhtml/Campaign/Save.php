@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Controller\Adminhtml\Campaign;
 
 use Magento\Backend\App\Action\Context;
+use Magento\Framework\App\Action\HttpPostActionInterface;
 use Ordo\Automation\Model\CampaignActionFactory;
 use Ordo\Automation\Model\CampaignConditionFactory;
 use Ordo\Automation\Model\CampaignFactory;
@@ -19,7 +20,7 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as 
  * re-inserts them rather than diffing, which is simple and correct for the small row counts
  * a campaign realistically has (a handful of conditions/actions, not hundreds).
  */
-class Save extends AbstractCampaignAction
+class Save extends AbstractCampaignAction implements HttpPostActionInterface
 {
     public function __construct(
         Context $context,

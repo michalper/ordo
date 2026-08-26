@@ -5,6 +5,7 @@
             <item name="provider" xsi:type="string">ordo_campaign_form.ordo_campaign_form_data_source</item>
         </item>
         <item name="label" xsi:type="string" translate="true">Campaign Information</item>
+        <item name="template" xsi:type="string">templates/form/collapsible</item>
     </argument>
     <settings>
         <buttons>
@@ -92,7 +93,7 @@
         </field>
     </fieldset>
 
-    <fieldset name="conditions">
+    <fieldset name="conditions_fieldset">
         <settings>
             <label translate="true">Conditions (all must pass — AND)</label>
         </settings>
@@ -137,7 +138,7 @@
         </dynamicRows>
     </fieldset>
 
-    <fieldset name="actions">
+    <fieldset name="actions_fieldset">
         <settings>
             <label translate="true">Actions (run in order)</label>
         </settings>
