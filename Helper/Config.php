@@ -44,6 +44,20 @@ class Config extends AbstractHelper
         parent::__construct($context);
     }
 
+    /**
+     * Every int-valued setting in this class goes through here instead of `?: $default` —
+     * `?:` treats a deliberately-set `0` the same as "not configured" and silently falls back
+     * to the default, which is wrong for any setting where 0 is a meaningful value (e.g.
+     * "retention_days = 0" meaning "keep nothing"). Found the hard way: see
+     * VERIFICATION.md #19.
+     */
+    private function intConfig(string $path, int $default, ?int $storeId): int
+    {
+        $value = $this->scopeConfig->getValue($path, ScopeInterface::SCOPE_STORE, $storeId);
+
+        return $value !== null && $value !== '' ? (int) $value : $default;
+    }
+
     public function isReorderReminderEnabled(?int $storeId = null): bool
     {
         return $this->scopeConfig->isSetFlag(
@@ -55,20 +69,12 @@ class Config extends AbstractHelper
 
     public function getReorderMinOrders(?int $storeId = null): int
     {
-        return (int) $this->scopeConfig->getValue(
-            self::XML_PATH_REORDER_MIN_ORDERS,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        ) ?: 3;
+        return $this->intConfig(self::XML_PATH_REORDER_MIN_ORDERS, 3, $storeId);
     }
 
     public function getReorderLeadDays(?int $storeId = null): int
     {
-        return (int) $this->scopeConfig->getValue(
-            self::XML_PATH_REORDER_LEAD_DAYS,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        ) ?: 2;
+        return $this->intConfig(self::XML_PATH_REORDER_LEAD_DAYS, 2, $storeId);
     }
 
     public function isAbandonedCartEnabled(?int $storeId = null): bool
@@ -82,11 +88,7 @@ class Config extends AbstractHelper
 
     public function getAbandonedCartDelayMinutes(?int $storeId = null): int
     {
-        return (int) $this->scopeConfig->getValue(
-            self::XML_PATH_CART_DELAY_MINUTES,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        ) ?: 120;
+        return $this->intConfig(self::XML_PATH_CART_DELAY_MINUTES, 120, $storeId);
     }
 
     public function getAbandonedCartMinSubtotal(?int $storeId = null): float
@@ -100,11 +102,7 @@ class Config extends AbstractHelper
 
     public function getAbandonedCartMaxReminders(?int $storeId = null): int
     {
-        return (int) $this->scopeConfig->getValue(
-            self::XML_PATH_CART_MAX_REMINDERS,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        ) ?: 1;
+        return $this->intConfig(self::XML_PATH_CART_MAX_REMINDERS, 1, $storeId);
     }
 
     public function isOfferReminderEnabled(?int $storeId = null): bool
@@ -118,29 +116,17 @@ class Config extends AbstractHelper
 
     public function getOfferLeadDays(?int $storeId = null): int
     {
-        return (int) $this->scopeConfig->getValue(
-            self::XML_PATH_OFFER_LEAD_DAYS,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        ) ?: 2;
+        return $this->intConfig(self::XML_PATH_OFFER_LEAD_DAYS, 2, $storeId);
     }
 
     public function getOfferMaxSelfExtensions(?int $storeId = null): int
     {
-        return (int) $this->scopeConfig->getValue(
-            self::XML_PATH_OFFER_MAX_SELF_EXTENSIONS,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        ) ?: 1;
+        return $this->intConfig(self::XML_PATH_OFFER_MAX_SELF_EXTENSIONS, 1, $storeId);
     }
 
     public function getOfferSelfExtensionDays(?int $storeId = null): int
     {
-        return (int) $this->scopeConfig->getValue(
-            self::XML_PATH_OFFER_SELF_EXTENSION_DAYS,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        ) ?: 7;
+        return $this->intConfig(self::XML_PATH_OFFER_SELF_EXTENSION_DAYS, 7, $storeId);
     }
 
     public function isCreditLimitAlertEnabled(?int $storeId = null): bool
@@ -154,20 +140,12 @@ class Config extends AbstractHelper
 
     public function getCreditLimitWarningThreshold(?int $storeId = null): int
     {
-        return (int) $this->scopeConfig->getValue(
-            self::XML_PATH_CREDIT_WARNING_THRESHOLD,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        ) ?: 80;
+        return $this->intConfig(self::XML_PATH_CREDIT_WARNING_THRESHOLD, 80, $storeId);
     }
 
     public function getCreditLimitAlertCooldownDays(?int $storeId = null): int
     {
-        return (int) $this->scopeConfig->getValue(
-            self::XML_PATH_CREDIT_COOLDOWN_DAYS,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        ) ?: 7;
+        return $this->intConfig(self::XML_PATH_CREDIT_COOLDOWN_DAYS, 7, $storeId);
     }
 
     public function isLifecycleEmailsEnabled(?int $storeId = null): bool
@@ -181,11 +159,7 @@ class Config extends AbstractHelper
 
     public function getWinBackInactiveDays(?int $storeId = null): int
     {
-        return (int) $this->scopeConfig->getValue(
-            self::XML_PATH_LIFECYCLE_WIN_BACK_INACTIVE_DAYS,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        ) ?: 90;
+        return $this->intConfig(self::XML_PATH_LIFECYCLE_WIN_BACK_INACTIVE_DAYS, 90, $storeId);
     }
 
     public function isOrderApprovalEnabled(?int $storeId = null): bool
@@ -199,11 +173,7 @@ class Config extends AbstractHelper
 
     public function getOrderApprovalEscalationDays(?int $storeId = null): int
     {
-        return (int) $this->scopeConfig->getValue(
-            self::XML_PATH_APPROVAL_ESCALATION_DAYS,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        ) ?: 2;
+        return $this->intConfig(self::XML_PATH_APPROVAL_ESCALATION_DAYS, 2, $storeId);
     }
 
     public function isSalesRepDigestEnabled(?int $storeId = null): bool
@@ -226,23 +196,11 @@ class Config extends AbstractHelper
 
     public function getTrackingRetentionDays(?int $storeId = null): int
     {
-        $value = $this->scopeConfig->getValue(
-            self::XML_PATH_TRACKING_RETENTION_DAYS,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        );
-
-        // Deliberate !== '' check, not ?: — 0 is a valid, meaningful setting ("don't keep raw
-        // events at all"), and `?:` would treat it as unset and silently fall back to 7.
-        return $value !== null && $value !== '' ? (int) $value : 7;
+        return $this->intConfig(self::XML_PATH_TRACKING_RETENTION_DAYS, 7, $storeId);
     }
 
     public function getTrackingViewThreshold(?int $storeId = null): int
     {
-        return (int) $this->scopeConfig->getValue(
-            self::XML_PATH_TRACKING_VIEW_THRESHOLD,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        ) ?: 3;
+        return $this->intConfig(self::XML_PATH_TRACKING_VIEW_THRESHOLD, 3, $storeId);
     }
 }

@@ -405,11 +405,19 @@ shapes or the real Magento UI-component runtime.
     threshold. One-line fix. See section 7.
 19. **`Config::getTrackingRetentionDays()` treated a deliberate `0` (\"prune
     everything\") as unset and silently fell back to the 7-day default**,
-    via the same `?: 7` pattern several other config getters in this class
-    use. Found by setting retention to 0 and observing `PruneVisitorEvents`
-    delete nothing. Fixed with an explicit null/empty-string check. Worth
-    checking the other `?:`-based getters in `Helper/Config.php` for the same
-    issue where 0 is a meaningful value (not yet audited).
+    via the same `?: 7` pattern every other int-valued config getter in this
+    class used. Found by setting retention to 0 and observing
+    `PruneVisitorEvents` delete nothing. **Audited and fixed all 12 instances**
+    of the pattern in `Helper/Config.php` (reorder min orders/lead days, cart
+    delay/max reminders, offer lead days/max self-extensions/self-extension
+    days, credit warning threshold/cooldown days, win-back inactive days,
+    approval escalation days, tracking retention/view threshold) — extracted
+    a single `intConfig(string $path, int $default, ?int $storeId): int`
+    helper instead of duplicating the null/empty-string check 12 times.
+    Re-verified against the real database: unset settings still return their
+    documented defaults, and settings explicitly set to `0` (and `2`,
+    distinguishing "explicit low value" from "coincidentally equals the
+    default") are honored rather than silently overridden.
 
 ## 9. What to do with results
 

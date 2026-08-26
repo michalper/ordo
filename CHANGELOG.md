@@ -2,6 +2,20 @@
 
 All notable changes to this module are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.9.4]
+
+### Fixed
+- **Audited and fixed all 12 instances of the `?: $default` config-getter bug**
+  in `Helper/Config.php` (the same pattern found in `getTrackingRetentionDays()`
+  in 0.9.3, now closed everywhere it appeared): reorder min orders/lead days,
+  abandoned cart delay/max reminders, offer lead days/max self-extensions/
+  self-extension days, credit limit warning threshold/cooldown days, win-back
+  inactive days, order approval escalation days, tracking view threshold.
+  Extracted a single `intConfig()` helper instead of duplicating the fix 12
+  times. Verified against the real database: defaults still apply when
+  unset, and explicit low values (including `0`) are honored instead of
+  silently overridden.
+
 ## [0.9.3]
 
 Phase 5 (on-site tracking) verified for real — two more real bugs found.
