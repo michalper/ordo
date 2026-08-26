@@ -144,11 +144,35 @@ to this module.
       marked as sent and will be retried next run rather than silently
       swallowed. Matching/building logic confirmed correct; actual delivery is
       untestable without a real SMTP relay in this sandbox.
-- [ ] **Reorder reminders, abandoned cart, credit limit, order approval:** not
-      yet run. Credit limit and order approval both need a real `sales_order`
-      row (`total_due` for credit limit; a placed order over the spend limit
-      for approval) — heavier to set up than a direct table insert, needs an
-      actual product + cart + order placement, not attempted this pass.
+- [ ] **Credit limit / order approval — blocked on environment, not this module's
+      code.** Both need a real placed order. Tried twice:
+      1. Programmatic order placement via `QuoteManagement` (CLI script, real
+         object manager) — hit a chain of pure Magento-core checkout-stack
+         issues unrelated to Ordo Automation (`Quote\Payment::getMethodInstance()`
+         calling `getQuote()->getStoreId()` on a null quote reference when
+         payment is imported via the legacy `importData()` path outside a real
+         HTTP request context; then `AllowedCountryValidationRule` rejecting a
+         `US` address despite `general/country/allow` correctly containing `US`
+         at default scope). Root cause not found — programmatic order placement
+         from a raw script is a notoriously fragile area of Magento even
+         outside this module.
+      2. Real storefront checkout (logged in as the test customer, added
+         `ordo-test-sku` to cart, filled a real shipping address, reached the
+         payment step) — got stuck on **"No Payment Methods"** shown at
+         checkout despite `payment/checkmo/active = 1` confirmed at all three
+         scopes (`default`, `website`, `store`) in `core_config_data`. Also
+         not root-caused — this is Magento's own payment-method availability
+         resolution, not Ordo Automation code.
+      - **Recommendation for next attempt:** this environment (bare Docker,
+        PHP built-in server, no real mail/queue infra) may simply be a poor fit
+        for exercising the full checkout stack. Consider either (a) a more
+        complete Magento devbox (e.g. `markshust/docker-magento`, which
+        handles Elasticsearch/Redis/mail/cron properly), or (b) directly unit-
+        testing `HoldOrderForApproval`/`CreditLimitCalculator` against a
+        hand-built `Magento\Sales\Model\Order` object instead of going through
+        checkout at all — proves the module's own logic without fighting
+        Magento's checkout stack.
+- [ ] **Reorder reminders, abandoned cart:** not yet run.
 
 ## 5. Campaign engine end-to-end
 
@@ -242,6 +266,37 @@ shapes or the real Magento UI-component runtime.
     `BackendValidator` silently rejects the request before `execute()` runs,
     logged only as a DEBUG-level "Invalid request received" line — easy to miss,
     and the admin UI just showed the page shell with no error.
+
+15. **Custom customer EAV attributes (`ordo_credit_limit`, `ordo_order_spend_limit`,
+    `ordo_approval_admin_email`, and by extension the three `ordo_sales_rep_*`
+    fields — all defined the same way in `Setup/Patch/Data/*`) silently fail to
+    persist.** Confirmed directly against the real database, not assumed:
+    - `\Magento\Customer\Model\ResourceModel\Customer::getAttribute('ordo_credit_limit')`
+      correctly finds the attribute (`attribute_id=137`, `backend_type=decimal`,
+      `backend_table=customer_entity_decimal`) — the attribute *is* properly
+      registered.
+    - But `$customer->setData('ordo_credit_limit', '1000'); $customer->save();`
+      returns with no exception, and a fresh reload of the same customer shows
+      `NULL` — nothing was ever written to `customer_entity_decimal`.
+    - Ruled out one hypothesis already: the patches set
+      `'scope' => ScopedAttributeInterface::SCOPE_STORE'`, which looked
+      suspicious (a credit limit shouldn't vary per store view), but `eav_attribute`
+      and `customer_eav_attribute` have no scope/global column for customer
+      entities to write to in the first place — so that setting is inert, not
+      the cause.
+    - **Not yet root-caused.** This directly blocks verifying `CreditLimitCalculator`
+      (needs `ordo_credit_limit` to compute anything but 0), `HoldOrderForApproval`
+      (needs `ordo_order_spend_limit` + `ordo_approval_admin_email` to ever
+      trigger), and `SalesRepEmailContext` (needs the three sales-rep fields) —
+      i.e. most of the remaining untested B2B triggers are blocked on this, not
+      on checkout/environment issues.
+    - **Where to look next:** read `\Magento\Eav\Model\Entity\AbstractEntity::save()`
+      and `\Magento\Customer\Model\Customer`'s own `beforeSave()`/`getSaveableData()`
+      (or equivalent in this Magento version) to see whether custom attributes are
+      being filtered out before the EAV write — the `used_in_forms: ['adminhtml_customer']`
+      restriction set in the patches is the next suspect, since form-based
+      filtering is exactly the kind of thing that would silently drop an
+      attribute when saved from a raw CLI script with no form context.
 
 ## 9. What to do with results
 
