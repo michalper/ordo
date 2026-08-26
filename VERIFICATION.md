@@ -201,7 +201,41 @@ to this module.
 
 ## 6. Promotion Builder (Phase 3)
 
-**Not reached this pass.**
+- [x] **CheapestItemFree — two real bugs found and fixed, then verified correct.**
+      Created 3 real products (50/150/300), a real cart price rule
+      (`simple_action=ordo_cheapest_item_free`), and a real quote with all three
+      items, then ran `collectTotals()` for real (no mocks).
+      1. First run: `ordo_cheapest_item_free is unknown type`. Our `di.xml`
+         registered the calculator against `Magento\SalesRule\Model\Validator`'s
+         `calculators` argument — that argument doesn't exist on that class in
+         Magento 2.4.x. The real extension point is
+         `Magento\SalesRule\Model\Rule\Action\Discount\CalculatorFactory`'s
+         `discountRules` argument (a flat `simple_action => calculator class`
+         map). Fixed the `di.xml` wiring.
+      2. Second run: **every** item got 100% off, not just the cheapest — grand
+         total dropped to 0 on a 500-total cart. Traced into
+         `QualifyingSetTracker`: `calculate()` receives a `Quote\Address\Item`,
+         whose `getItemId()` is reliably `null` (its `importQuoteItem()` copies
+         the source id into `quote_item_id`, not `item_id`) — and casting that
+         null to `(int)` silently produced `0` for every item, so they all
+         "matched" each other. Tried `quote_item_id` as a fallback next, but
+         even the underlying `Quote\Item` objects reached via
+         `$item->getQuote()->getAllItems()` had a null id at this point in the
+         request (the quote hadn't fully round-tripped through the DB in a way
+         that populated it yet) — so that fallback was null too. **Fixed by
+         switching identity from item id to SKU** (stable in both contexts,
+         and Magento merges repeat `addProduct()` calls for the same SKU into
+         one line item by default, so it's a safe stand-in here).
+      3. Re-verified after the SKU fix: 3-item cart (50/150/300) → only the
+         50 item discounted, grand total 450. Re-ran with items in a
+         different order and qty=2 each → still only the cheapest item
+         discounted, and only 1 unit of it (qty=2 at 50 → discount=50, not
+         100) — confirms both the "which item" and "only one unit" logic are
+         correct.
+      - **Still not covered:** the native admin "Apply" dropdown doesn't show
+        a friendly label for this simple_action (documented limitation,
+        unchanged) — has to be set via direct DB/API. "Free gift above cart
+        threshold" remains unbuilt (different technique, tracked in README).
 
 ## 7. On-site tracking (Phase 5)
 
@@ -316,6 +350,20 @@ shapes or the real Magento UI-component runtime.
     (API path) — confirmed rows in `customer_entity_decimal`/`customer_entity_varchar`.
     This unblocked verifying `CreditLimitCalculator`, `SendCreditLimitAlerts`,
     and `HoldOrderForApproval` — see section 4.
+16. **`etc/di.xml` wired `CheapestItemFree` against the wrong class** —
+    `Magento\SalesRule\Model\Validator`'s `calculators` argument doesn't exist
+    in Magento 2.4.x; the real extension point is `CalculatorFactory`'s
+    `discountRules` argument. Found by actually running a rule with this
+    `simple_action` against a real quote (`... is unknown type`). See section 6
+    for full detail.
+17. **`QualifyingSetTracker` gave every item in the cart 100% off, not just the
+    cheapest** — `Quote\Address\Item::getItemId()` is null during real discount
+    collection (the id lives in `quote_item_id` instead), and casting that
+    null to `(int)` silently produced `0` for every item, so they all matched
+    each other. Found only by running a real 3-item, 3-price quote through
+    `collectTotals()` — impossible to catch with the existing mocked unit
+    test, since the mock never modeled this Address\Item id quirk. Fixed by
+    identifying the qualifying item by SKU instead of item id. See section 6.
 
 ## 9. What to do with results
 

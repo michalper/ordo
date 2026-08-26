@@ -2,6 +2,30 @@
 
 All notable changes to this module are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.9.2]
+
+Phase 3 (Promotion Builder) verified for real — two real bugs found and
+fixed along the way, neither catchable by the existing mocked unit test.
+
+### Fixed
+- **`etc/di.xml` wired `CheapestItemFree` against the wrong extension point.**
+  `Magento\SalesRule\Model\Validator`'s `calculators` argument doesn't exist
+  in Magento 2.4.x — the real one is `CalculatorFactory`'s `discountRules`
+  argument. Found by actually running a rule with this `simple_action`
+  against a real quote (`ordo_cheapest_item_free is unknown type`).
+- **`QualifyingSetTracker` gave every item in the cart 100% off, not just the
+  cheapest one.** `Quote\Address\Item::getItemId()` — the object real discount
+  collection actually calls `calculate()` with — is reliably `null`; casting
+  that to `(int)` silently produced `0` for every item, making them all match
+  each other. The `quote_item_id` fallback didn't help either (also null at
+  this point in the request). Switched item identity from item id to SKU.
+  Verified against a real 3-item/3-price quote: only the cheapest item
+  discounted, grand total correct; re-verified with items reordered and
+  qty=2 each — still only one unit of the cheapest item discounted.
+- Updated `QualifyingSetTrackerTest` to mock `getSku()` instead of
+  `getItemId()` — the old mock would have hidden this exact bug, since it
+  never modeled the real `Quote\Address\Item` id quirk.
+
 ## [0.9.1]
 
 ### Fixed

@@ -59,19 +59,21 @@
     </type>
 
     <!--
-        Registers "ordo_cheapest_item_free" as a possible cart price rule simple_action, the
-        same extension point Magento's own "Buy X Get Y" calculator is wired through. Array
-        arguments merge across modules' di.xml by item key, so this adds to — never replaces —
-        whatever other calculators are already registered against this class.
+        Registers "ordo_cheapest_item_free" as a possible cart price rule simple_action.
+        The real extension point in Magento 2.4.x is CalculatorFactory's "discountRules"
+        argument (a flat map of simple_action value => calculator class) — NOT
+        Magento\SalesRule\Model\Validator's "calculators" argument, which doesn't exist on
+        that class in this version and was silently ignored (no error, the calculator was
+        just never registered; found by actually running a rule with this simple_action
+        against a real quote — "ordo_cheapest_item_free is unknown type"). Array arguments
+        merge across modules' di.xml by item key, so this adds to — never replaces —
+        whatever other calculators are already registered.
         See Model\Rule\Action\Discount\CheapestItemFree for the known admin-UI limitation.
     -->
-    <type name="Magento\SalesRule\Model\Validator">
+    <type name="Magento\SalesRule\Model\Rule\Action\Discount\CalculatorFactory">
         <arguments>
-            <argument name="calculators" xsi:type="array">
-                <item name="ordo_cheapest_item_free" xsi:type="array">
-                    <item name="sort_order" xsi:type="string">100</item>
-                    <item name="model" xsi:type="string">Ordo\Automation\Model\Rule\Action\Discount\CheapestItemFree</item>
-                </item>
+            <argument name="discountRules" xsi:type="array">
+                <item name="ordo_cheapest_item_free" xsi:type="string">Ordo\Automation\Model\Rule\Action\Discount\CheapestItemFree</item>
             </argument>
         </arguments>
     </type>

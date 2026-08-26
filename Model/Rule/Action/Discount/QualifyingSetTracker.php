@@ -22,23 +22,36 @@ use Magento\SalesRule\Model\Rule;
 class QualifyingSetTracker
 {
     /**
-     * @var array<string, int|null> "{ruleId}:{quoteId}" => item id chosen as free, or null if none qualified
+     * @var array<string, string|null> "{ruleId}:{quoteId}" => sku chosen as free, or null if none qualified
      */
-    private array $freeItemIdByRuleAndQuote = [];
+    private array $freeSkuByRuleAndQuote = [];
 
     public function isFreeItem(Rule $rule, AbstractItem $item): bool
     {
-        $key = $rule->getId() . ':' . $item->getQuoteId();
+        $key = $rule->getId() . ':' . $item->getQuote()->getId();
 
-        if (!array_key_exists($key, $this->freeItemIdByRuleAndQuote)) {
-            $this->freeItemIdByRuleAndQuote[$key] = $this->resolveCheapestQualifyingItemId($rule, $item);
+        if (!array_key_exists($key, $this->freeSkuByRuleAndQuote)) {
+            $this->freeSkuByRuleAndQuote[$key] = $this->resolveCheapestQualifyingSku($rule, $item);
         }
 
-        return $this->freeItemIdByRuleAndQuote[$key] !== null
-            && $this->freeItemIdByRuleAndQuote[$key] === (int) $item->getItemId();
+        $resolvedSku = $this->freeSkuByRuleAndQuote[$key];
+
+        return $resolvedSku !== null && $resolvedSku === $item->getSku();
     }
 
-    private function resolveCheapestQualifyingItemId(Rule $rule, AbstractItem $item): ?int
+    /**
+     * Identifies the chosen item by SKU, not item id. `calculate()` is called with a
+     * `Quote\Address\Item` during real discount collection, and `getItemId()` is reliably
+     * null there — `Address\Item::importQuoteItem()` copies the source id into
+     * `quote_item_id`, not `item_id` — but that turned out unreliable too: at the point
+     * this tracker runs, even the underlying `Quote\Item` objects reached via
+     * `$item->getQuote()->getAllItems()` have a null item id (this quote hasn't fully
+     * round-tripped through the DB in this request yet). SKU is present and stable in both
+     * cases, and — since Magento merges a repeat `addProduct()` call for the same SKU into
+     * one line item by default — is a reliable stand-in for "this exact line item" for the
+     * qualifying-set use case here.
+     */
+    private function resolveCheapestQualifyingSku(Rule $rule, AbstractItem $item): ?string
     {
         $conditions = $rule->getConditions();
         $cheapest = null;
@@ -53,6 +66,6 @@ class QualifyingSetTracker
             }
         }
 
-        return $cheapest ? (int) $cheapest->getItemId() : null;
+        return $cheapest ? $cheapest->getSku() : null;
     }
 }

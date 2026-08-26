@@ -21,8 +21,8 @@ class QualifyingSetTrackerTest extends TestCase
 
     public function testCheapestQualifyingItemIsChosenAsFree(): void
     {
-        $expensive = $this->item(itemId: 1, price: 100.0, quoteId: 5);
-        $cheap = $this->item(itemId: 2, price: 20.0, quoteId: 5);
+        $expensive = $this->item(sku: 'expensive-sku', price: 100.0);
+        $cheap = $this->item(sku: 'cheap-sku', price: 20.0);
         $quote = $this->quoteWithItems(5, [$expensive, $cheap]);
         $this->assignQuote($expensive, $quote);
         $this->assignQuote($cheap, $quote);
@@ -35,7 +35,7 @@ class QualifyingSetTrackerTest extends TestCase
 
     public function testItemNotMatchingRuleConditionsIsNeverFree(): void
     {
-        $onlyItem = $this->item(itemId: 1, price: 20.0, quoteId: 5);
+        $onlyItem = $this->item(sku: 'only-sku', price: 20.0);
         $quote = $this->quoteWithItems(5, [$onlyItem]);
         $this->assignQuote($onlyItem, $quote);
 
@@ -46,7 +46,7 @@ class QualifyingSetTrackerTest extends TestCase
 
     public function testDecisionIsCachedAcrossCallsForTheSameRuleAndQuote(): void
     {
-        $cheap = $this->item(itemId: 2, price: 20.0, quoteId: 5);
+        $cheap = $this->item(sku: 'cheap-sku', price: 20.0);
         $quote = $this->quoteWithItems(5, [$cheap]);
         $this->assignQuote($cheap, $quote);
 
@@ -63,12 +63,17 @@ class QualifyingSetTrackerTest extends TestCase
         self::assertTrue($this->tracker->isFreeItem($rule, $cheap));
     }
 
-    private function item(int $itemId, float $price, int $quoteId): Item&\PHPUnit\Framework\MockObject\MockObject
+    /**
+     * Deliberately does NOT mock getItemId() — real discount collection calls this with a
+     * Quote\Address\Item whose getItemId() is reliably null (see
+     * Model\Rule\Action\Discount\QualifyingSetTracker's docblock and VERIFICATION.md #17),
+     * which is exactly the real bug a getItemId()-based mock here would have hidden.
+     */
+    private function item(string $sku, float $price): Item&\PHPUnit\Framework\MockObject\MockObject
     {
         $item = $this->createMock(Item::class);
-        $item->method('getItemId')->willReturn($itemId);
+        $item->method('getSku')->willReturn($sku);
         $item->method('getCalculationPrice')->willReturn($price);
-        $item->method('getQuoteId')->willReturn($quoteId);
 
         return $item;
     }
