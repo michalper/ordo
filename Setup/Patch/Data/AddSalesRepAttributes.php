@@ -59,6 +59,7 @@ class AddSalesRepAttributes implements DataPatchInterface
                     'required' => false,
                     'visible' => true,
                     'user_defined' => true,
+                    'group' => 'General',
                     'position' => $config['position'],
                     'system' => false,
                 ]

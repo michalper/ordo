@@ -2,6 +2,38 @@
 
 All notable changes to this module are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.9.1]
+
+### Fixed
+- **Real bug, root-caused: every custom customer attribute this module defines
+  (`ordo_credit_limit`, `ordo_order_spend_limit`, `ordo_approval_admin_email`,
+  the three `ordo_sales_rep_*` fields) silently failed to persist.**
+  `Magento\Eav\Setup\EavSetup::addAttribute()` only auto-attaches a new
+  attribute to the entity's attribute set when you pass a `'group'` key (or
+  when `user_defined` is falsy) — every one of this module's setup patches set
+  `'user_defined' => true` without ever passing `'group'`, so the attribute was
+  created but never attached to any attribute set. `AbstractEntity::_collectSaveData()`
+  silently drops any value for an attribute not in the entity's set — no
+  exception, `save()` just no-ops on that field. Fixed by adding
+  `'group' => 'General'` to all 6 attribute definitions across
+  `AddCustomerCreditLimitAttribute.php`, `AddCustomerSpendLimitAttributes.php`,
+  `AddSalesRepAttributes.php`. Verified against the real database: all 6 now
+  round-trip through both the legacy `Customer::save()`/`load()` path and
+  `CustomerRepositoryInterface::getCustomAttribute()`.
+
+### Verified against real data (see `VERIFICATION.md`)
+- **Credit limit alert:** real customer at 80% utilization (computed from a
+  real `sales_order.total_due` row) — `SendCreditLimitAlerts` correctly found
+  it and attempted to send; delivery only failed on this sandbox's missing
+  SMTP, handled gracefully.
+- **Order approval:** `HoldOrderForApproval` correctly created a real
+  `ordo_order_approval` row (token + admin email) for an over-limit order.
+- Two attempts at placing a real order through full checkout (both
+  programmatic via `QuoteManagement` and through the real storefront UI) hit
+  pure Magento-core checkout-stack issues unrelated to this module — documented
+  in `VERIFICATION.md` with a recommendation for next time (a fuller devbox,
+  or keep testing trigger logic directly against hand-built objects).
+
 ## [0.9.0]
 
 Per-type condition/action fields, done and verified end-to-end this time —

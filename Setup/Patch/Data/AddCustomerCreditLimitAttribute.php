@@ -50,6 +50,7 @@ class AddCustomerCreditLimitAttribute implements DataPatchInterface
                 'default' => '0.0000',
                 'visible' => true,
                 'user_defined' => true,
+                'group' => 'General',
                 'position' => 200,
                 'system' => false,
             ]

@@ -52,6 +52,7 @@ class AddCustomerSpendLimitAttributes implements DataPatchInterface
                 'default' => '0.0000',
                 'visible' => true,
                 'user_defined' => true,
+                'group' => 'General',
                 'position' => 210,
                 'system' => false,
             ]
@@ -71,6 +72,7 @@ class AddCustomerSpendLimitAttributes implements DataPatchInterface
                 'required' => false,
                 'visible' => true,
                 'user_defined' => true,
+                'group' => 'General',
                 'position' => 220,
                 'system' => false,
             ]

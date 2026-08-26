@@ -142,7 +142,7 @@ The standards in "Quality & testing standards" above apply from now on. Honest c
 - `SalesRepEmailContextTest`, `ConditionPoolTest`, `OrderTotalAtLeastTest`, `HasTagTest`, `AddTagTest`, `QualifyingSetTrackerTest` — all pass against real `magento/framework`/`magento/module-sales`/`magento/module-quote` classes, not mocks-of-mocks.
 - **Still missing:** `CreditLimitCalculator`, `CustomerTagManager`, `CampaignDispatcher` (the dispatch/condition-AND/action-order logic itself — the pool tests only cover the plug-in registry), `VisitorAggregator`, and every `Cron/`/`Observer/`/`Controller/` class's `execute()` logic.
 
-**MFTF — 1 test written (`AdminCreateCampaignTest.xml`), not run.** Covers admin campaign creation via the Phase 4 form — currently blocked by an open dynamicRows rendering bug in that same form, see `VERIFICATION.md` section 3. Still missing: the dispatcher actually firing on a real checkout, offer self-extension, credit-limit checkout behavior, the tracking snippet in a real browser. See `Test/Mftf/README.md`.
+**MFTF — 1 test written (`AdminCreateCampaignTest.xml`), not run.** Covers admin campaign creation via the Phase 4 form — the form itself now works end-to-end (see `VERIFICATION.md` sections 3–5), the MFTF test just hasn't been executed in a real MFTF runtime yet. Still missing: the dispatcher actually firing on a real checkout, offer self-extension, the tracking snippet in a real browser. See `Test/Mftf/README.md`.
 
 **API functional tests — none written yet** for `OfferRepositoryInterface` or `CampaignRepositoryInterface`, following Magento's own `dev/tests/api-functional` conventions.
 
