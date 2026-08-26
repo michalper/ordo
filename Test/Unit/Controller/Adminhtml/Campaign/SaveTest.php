@@ -127,6 +127,75 @@ class SaveTest extends AbstractAdminActionTestCase
         self::assertSame($redirect, $controller->execute());
     }
 
+    public function testExecuteLoadsExistingCampaignAndDeletesOldChildRows(): void
+    {
+        $controller = $this->makeController();
+        $this->request->method('getPostValue')->willReturn([
+            'entity_id' => 7,
+            'name' => 'Welcome',
+        ]);
+        $this->request->method('getParam')->with('back')->willReturn(null);
+
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(7);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+        $this->campaignResource->expects(self::once())->method('load')->with($campaign, 7);
+
+        $existingCondition = $this->createMock(CampaignCondition::class);
+        $conditionCollection = $this->createMock(ConditionCollection::class);
+        $conditionCollection->method('addCampaignFilter');
+        $conditionCollection->method('getIterator')->willReturn(new \ArrayIterator([$existingCondition]));
+        $this->conditionCollectionFactory->method('create')->willReturn($conditionCollection);
+        $this->campaignConditionResource->expects(self::once())->method('delete')->with($existingCondition);
+
+        $existingAction = $this->createMock(CampaignAction::class);
+        $actionCollection = $this->createMock(ActionCollection::class);
+        $actionCollection->method('addCampaignFilter');
+        $actionCollection->method('getIterator')->willReturn(new \ArrayIterator([$existingAction]));
+        $this->actionCollectionFactory->method('create')->willReturn($actionCollection);
+        $this->campaignActionResource->expects(self::once())->method('delete')->with($existingAction);
+
+        $redirect = $this->createMock(Redirect::class);
+        $redirect->method('setPath')->willReturnSelf();
+        $this->resultRedirectFactory->method('create')->willReturn($redirect);
+
+        $controller->execute();
+    }
+
+    public function testExecuteFallsBackToJsonTextareaWhenNoDedicatedFields(): void
+    {
+        $controller = $this->makeController();
+        $this->request->method('getPostValue')->willReturn([
+            'conditions' => ['conditions' => [['type' => 'has_tag', 'params_json' => '{"raw":"value"}']]],
+            'actions' => ['actions' => []],
+        ]);
+        $this->request->method('getParam')->with('back')->willReturn(null);
+
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(1);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $emptyConditionCollection = $this->createMock(ConditionCollection::class);
+        $emptyConditionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
+        $this->conditionCollectionFactory->method('create')->willReturn($emptyConditionCollection);
+
+        $condition = $this->createMock(CampaignCondition::class);
+        $condition->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => json_decode($data['params'], true) === ['raw' => 'value']
+        ));
+        $this->campaignConditionFactory->method('create')->willReturn($condition);
+
+        $emptyActionCollection = $this->createMock(ActionCollection::class);
+        $emptyActionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
+        $this->actionCollectionFactory->method('create')->willReturn($emptyActionCollection);
+
+        $redirect = $this->createMock(Redirect::class);
+        $redirect->method('setPath')->willReturnSelf();
+        $this->resultRedirectFactory->method('create')->willReturn($redirect);
+
+        $controller->execute();
+    }
+
     public function testExecuteRedirectsToEditWhenBackParamSet(): void
     {
         $controller = $this->makeController();

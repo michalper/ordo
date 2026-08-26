@@ -66,6 +66,20 @@ class SalesRepEmailContextTest extends TestCase
         self::assertFalse($result['has_assigned_rep']);
     }
 
+    public function testFallsBackToGenericTeamWhenStoreLookupThrows(): void
+    {
+        $customer = $this->createMock(CustomerInterface::class);
+        $customer->method('getCustomAttribute')->willReturn(null);
+        $this->customerRepository->method('getById')->with(8)->willReturn($customer);
+
+        $this->storeManager->method('getStore')->willThrowException(new \RuntimeException('no store'));
+
+        $result = $this->context->getForCustomer(8);
+
+        self::assertSame('our team', $result['sender_name']);
+        self::assertFalse($result['has_assigned_rep']);
+    }
+
     public function testFallsBackWhenCustomerDoesNotExist(): void
     {
         $this->customerRepository->method('getById')

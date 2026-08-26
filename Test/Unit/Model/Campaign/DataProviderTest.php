@@ -83,6 +83,35 @@ class DataProviderTest extends TestCase
         self::assertSame('reordered', $data[1]['actions'][0]['tag']);
     }
 
+    public function testGetDataKeepsParamsJsonOnlyWhenDecodeFails(): void
+    {
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getData')->willReturn(['entity_id' => 2]);
+        $campaign->method('getEntityId')->willReturn(2);
+
+        $collection = $this->createMock(CampaignCollection::class);
+        $collection->method('getItems')->willReturn([$campaign]);
+
+        $conditionRow = $this->createMock(CampaignCondition::class);
+        $conditionRow->method('getData')->willReturnMap([
+            ['type', null, 'has_tag'],
+            ['params', null, 'not-json'],
+        ]);
+        $conditionCollection = $this->createMock(ConditionCollection::class);
+        $conditionCollection->method('addCampaignFilter');
+        $conditionCollection->method('getIterator')->willReturn(new \ArrayIterator([$conditionRow]));
+        $this->conditionCollectionFactory->method('create')->willReturn($conditionCollection);
+
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeEmptyActionCollection());
+        $this->dataPersistor->method('get')->willReturn(null);
+
+        $provider = $this->makeProvider($collection);
+        $data = $provider->getData();
+
+        self::assertSame('not-json', $data[2]['conditions'][0]['params_json']);
+        self::assertArrayNotHasKey('tag', $data[2]['conditions'][0]);
+    }
+
     public function testGetDataAppliesPersistedDataAndClearsIt(): void
     {
         $collection = $this->createMock(CampaignCollection::class);

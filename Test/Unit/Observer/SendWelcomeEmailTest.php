@@ -69,6 +69,50 @@ class SendWelcomeEmailTest extends TestCase
         $this->makeObserver($config, $tagManager)->execute($observer);
     }
 
+    public function testExecuteLogsErrorWhenTransportThrows(): void
+    {
+        $config = $this->createMock(Config::class);
+        $config->method('isLifecycleEmailsEnabled')->willReturn(true);
+
+        $customer = $this->createMock(CustomerInterface::class);
+        $customer->method('getId')->willReturn(42);
+        $customer->method('getFirstname')->willReturn('Jan');
+        $customer->method('getEmail')->willReturn('jan@example.com');
+
+        $event = new Event(['customer' => $customer]);
+        $observer = $this->createMock(EventObserver::class);
+        $observer->method('getEvent')->willReturn($event);
+
+        $tagManager = $this->createMock(CustomerTagManager::class);
+
+        $store = $this->createMock(StoreInterface::class);
+        $store->method('getId')->willReturn(1);
+        $storeManager = $this->createMock(StoreManagerInterface::class);
+        $storeManager->method('getStore')->willReturn($store);
+
+        $transportBuilder = $this->createMock(TransportBuilder::class);
+        $transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
+        $transportBuilder->method('setTemplateOptions')->willReturnSelf();
+        $transportBuilder->method('setTemplateVars')->willReturnSelf();
+        $transportBuilder->method('setFromByScope')->willReturnSelf();
+        $transportBuilder->method('addTo')->willReturnSelf();
+        $transportBuilder->method('getTransport')->willThrowException(new \RuntimeException('smtp down'));
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('error');
+
+        $observerInstance = new SendWelcomeEmail(
+            $config,
+            $tagManager,
+            $transportBuilder,
+            $storeManager,
+            $this->createMock(StateInterface::class),
+            $logger
+        );
+
+        $observerInstance->execute($observer);
+    }
+
     private function makeObserver(Config $config, CustomerTagManager $tagManager): SendWelcomeEmail
     {
         $store = $this->createMock(StoreInterface::class);
