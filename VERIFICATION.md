@@ -129,11 +129,26 @@ to this module.
 
 ## 4. B2B triggers, one at a time
 
-**Not reached this pass.** The section 3 blocker (campaigns couldn't be created
-through the UI) is now fixed, so this is unblocked — just not yet walked through.
-The individual cron classes (`CalculateReorderCycle`, `SendReorderReminders`,
-`SendAbandonedCartReminders`, `SendOfferExpiryReminders`, `ExpireOverdueOffers`,
-`SendCreditLimitAlerts`) were not executed against real data in this pass.
+- [x] **Offer expiry reminder:** inserted a real `ordo_offer` row (`status=sent`,
+      `expires_at` = today+2, matching the default `lead_days` config), enabled
+      `ordo_automation/offer/enabled` via `config:set`, ran
+      `SendOfferExpiryReminders::execute()` directly (real object manager, no
+      mocks). It correctly found the matching offer, built the email
+      (customer/template/vars), and attempted delivery — failed only because
+      this container has no `sendmail`/SMTP configured (`Unable to send mail.
+      Please try again later.`), an environment limitation, not a code bug. The
+      failure was handled correctly: caught, logged (`main.ERROR: ... failed to
+      send offer expiry reminder for offer #1: ...`), didn't crash the cron
+      (`main.INFO: sent 0 offer expiry reminders.`), and — importantly —
+      `ordo_offer_reminder_log` stayed empty, meaning a failed send is *not*
+      marked as sent and will be retried next run rather than silently
+      swallowed. Matching/building logic confirmed correct; actual delivery is
+      untestable without a real SMTP relay in this sandbox.
+- [ ] **Reorder reminders, abandoned cart, credit limit, order approval:** not
+      yet run. Credit limit and order approval both need a real `sales_order`
+      row (`total_due` for credit limit; a placed order over the spend limit
+      for approval) — heavier to set up than a direct table insert, needs an
+      actual product + cart + order placement, not attempted this pass.
 
 ## 5. Campaign engine end-to-end
 
