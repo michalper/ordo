@@ -68,7 +68,12 @@ class DataProvider extends AbstractDataProvider
     }
 
     /**
-     * @return array<int, array{type: string, params_json: string}>
+     * Spreads the saved params back into the row's dedicated fields (tag, amount, ...) too —
+     * not just params_json — so the switcherConfig fields in ordo_campaign_form.xml
+     * pre-populate correctly when editing an existing campaign, instead of only showing the
+     * raw JSON.
+     *
+     * @return array<int, array<string, mixed>>
      */
     private function loadChildRows($collection, int $campaignId): array
     {
@@ -76,10 +81,19 @@ class DataProvider extends AbstractDataProvider
 
         $rows = [];
         foreach ($collection as $row) {
-            $rows[] = [
+            $paramsJson = (string) $row->getData('params');
+            $decoded = json_decode($paramsJson, true);
+
+            $rowData = [
                 'type' => $row->getData('type'),
-                'params_json' => $row->getData('params'),
+                'params_json' => $paramsJson,
             ];
+
+            if (is_array($decoded)) {
+                $rowData += $decoded;
+            }
+
+            $rows[] = $rowData;
         }
 
         return $rows;

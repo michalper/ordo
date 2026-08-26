@@ -60,8 +60,8 @@ class Save extends AbstractCampaignAction implements HttpPostActionInterface
             $this->campaignResource->save($campaign);
             $this->saveChildRows(
                 (int) $campaign->getEntityId(),
-                (array) ($data['conditions'] ?? []),
-                (array) ($data['actions'] ?? [])
+                (array) ($data['conditions']['conditions'] ?? []),
+                (array) ($data['actions']['actions'] ?? [])
             );
 
             $this->messageManager->addSuccessMessage(__('The campaign has been saved.'));
@@ -99,7 +99,7 @@ class Save extends AbstractCampaignAction implements HttpPostActionInterface
             $condition->setData([
                 'campaign_id' => $campaignId,
                 'type' => (string) $row['type'],
-                'params' => $this->normalizeParams($row['params_json'] ?? ''),
+                'params' => $this->normalizeRowParams($row),
                 'sort_order' => $sortOrder++,
             ]);
             $this->campaignConditionResource->save($condition);
@@ -121,7 +121,7 @@ class Save extends AbstractCampaignAction implements HttpPostActionInterface
             $action->setData([
                 'campaign_id' => $campaignId,
                 'type' => (string) $row['type'],
-                'params' => $this->normalizeParams($row['params_json'] ?? ''),
+                'params' => $this->normalizeRowParams($row),
                 'sort_order' => $sortOrder++,
             ]);
             $this->campaignActionResource->save($action);
@@ -129,18 +129,49 @@ class Save extends AbstractCampaignAction implements HttpPostActionInterface
     }
 
     /**
-     * Stores whatever was typed as valid JSON if possible; falls back to an empty object
-     * rather than rejecting the save outright — a condition/action with unparsable params
-     * simply won't find the keys it expects at dispatch time (fails closed, doesn't crash).
+     * Dedicated per-type fields the form posts (see ordo_campaign_form.xml switcherConfig) —
+     * whichever of these are non-empty for a row get merged into its params, so the raw JSON
+     * textarea is only needed for a condition/action type that doesn't have one yet.
      */
-    private function normalizeParams(string $raw): string
+    private const DEDICATED_PARAM_FIELDS = ['tag', 'amount', 'rule_id', 'prefix', 'template', 'message'];
+
+    /**
+     * Starts from whatever was typed in the JSON textarea (if valid), then overlays any
+     * dedicated fields present on the row — dedicated fields win over the JSON textarea on
+     * key conflicts, since a stale/copy-pasted JSON blob shouldn't silently override a field
+     * the admin just filled in and can see.
+     *
+     * @param array<string, mixed> $row
+     */
+    private function normalizeRowParams(array $row): string
+    {
+        $params = $this->parseJson((string) ($row['params_json'] ?? ''));
+
+        foreach (self::DEDICATED_PARAM_FIELDS as $field) {
+            $value = trim((string) ($row[$field] ?? ''));
+            if ($value !== '') {
+                $params[$field] = $value;
+            }
+        }
+
+        return json_encode($params);
+    }
+
+    /**
+     * Falls back to an empty object rather than rejecting the save outright — a
+     * condition/action with unparsable params simply won't find the keys it expects at
+     * dispatch time (fails closed, doesn't crash).
+     *
+     * @return array<string, mixed>
+     */
+    private function parseJson(string $raw): array
     {
         $raw = trim($raw);
         if ($raw === '') {
-            return '{}';
+            return [];
         }
 
         $decoded = json_decode($raw, true);
-        return json_last_error() === JSON_ERROR_NONE ? json_encode($decoded) : '{}';
+        return json_last_error() === JSON_ERROR_NONE && is_array($decoded) ? $decoded : [];
     }
 }

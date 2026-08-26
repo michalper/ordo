@@ -2,6 +2,52 @@
 
 All notable changes to this module are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.9.0]
+
+Per-type condition/action fields, done and verified end-to-end this time —
+two prior attempts were reverted (see 0.8.4/0.8.5 entries) because either
+the backend wiring was missing or the front-end switcher silently did
+nothing. Root-caused both.
+
+### Added
+- Dedicated fields per condition/action type (`tag`, `amount`, `rule_id`,
+  `prefix`, `template`, `message`) in `ordo_campaign_form.xml`, shown/hidden
+  via `<switcherConfig>` on the row's `type` select. `params_json` remains
+  as the fallback for a type without a dedicated field yet.
+- `Save.php::normalizeRowParams()` merges whichever dedicated fields are
+  filled in into the row's `params` before saving (dedicated fields win
+  over a stale/pasted JSON blob on key conflicts).
+- `DataProvider::loadChildRows()` spreads saved `params` back into the
+  row's dedicated fields on edit, not just `params_json`.
+
+### Fixed
+- **Root cause of the previous session's failed switcherConfig attempt:**
+  `<switcherConfig>` was placed on the *target* fields (`tag`, `amount`)
+  instead of the *controlling* `type` select — a switcher only reacts to
+  its own component's value, so it needs to live on the field whose change
+  should drive the others' visibility, not on the fields being toggled.
+- **`ordo_campaign_form.xml` `<dataSource>` was missing `<submitUrl
+  path="ordo/campaign/save"/>`.** Without it, the Save button posted to the
+  current page's own URL — visibly broken in this session (`.../new/key/
+  ...undefined`), logged only as a DEBUG-level "cannot be accessed with
+  POST method" line. Existed before this session; never triggered because
+  the New/Edit Campaign page could never even render until 0.8.4.
+- **`Save.php` read `$data['conditions']`/`$data['actions']` directly, but
+  the dynamicRows' actual posted structure is double-nested —
+  `conditions[conditions][0][...]`, not `conditions[0][...]`** (the
+  `dynamicRows` component's own `name` matches its `dataScope`). This
+  meant every condition/action row silently failed to save — confirmed via
+  the raw POST body and an empty `ordo_campaign_condition` table after a
+  "successful" save. Fixed by reading `$data['conditions']['conditions']`
+  / `$data['actions']['actions']`. **This bug predates this session** —
+  conditions/actions have likely never actually persisted through the
+  admin form before now.
+- Verified end-to-end against the real database: creating a campaign with
+  a `tag` condition through its dedicated field produces the row
+  `type=tag, params={"tag":"..."}` in `ordo_campaign_condition`, confirming
+  the whole chain (switcher → POST → merge → save) actually works, not
+  just "looks right in the browser."
+
 ## [0.8.5]
 
 ### Added

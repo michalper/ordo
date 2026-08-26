@@ -33,6 +33,9 @@
                 <item name="component" xsi:type="string">Magento_Ui/js/form/provider</item>
             </item>
         </argument>
+        <settings>
+            <submitUrl path="ordo/campaign/save"/>
+        </settings>
     </dataSource>
 
     <fieldset name="general">
@@ -118,6 +121,49 @@
                     <settings>
                         <dataType>text</dataType>
                         <label translate="true">Type</label>
+                        <switcherConfig>
+                            <enabled>true</enabled>
+                            <rules>
+                                <rule name="0">
+                                    <value>tag</value>
+                                    <actions>
+                                        <action name="0">
+                                            <target>${ $.parentName }.tag</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">true</param>
+                                            </params>
+                                        </action>
+                                        <action name="1">
+                                            <target>${ $.parentName }.amount</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                    </actions>
+                                </rule>
+                                <rule name="1">
+                                    <value>order_total_gte</value>
+                                    <actions>
+                                        <action name="0">
+                                            <target>${ $.parentName }.amount</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">true</param>
+                                            </params>
+                                        </action>
+                                        <action name="1">
+                                            <target>${ $.parentName }.tag</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                    </actions>
+                                </rule>
+                            </rules>
+                        </switcherConfig>
                     </settings>
                     <formElements>
                         <select>
@@ -127,11 +173,25 @@
                         </select>
                     </formElements>
                 </field>
+                <field name="tag" formElement="input" sortOrder="15">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Tag</label>
+                        <visible>false</visible>
+                    </settings>
+                </field>
+                <field name="amount" formElement="input" sortOrder="16">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Minimum order total</label>
+                        <visible>false</visible>
+                    </settings>
+                </field>
                 <field name="params_json" formElement="textarea" sortOrder="20">
                     <settings>
                         <dataType>text</dataType>
-                        <label translate="true">Params (JSON)</label>
-                        <notice translate="true">e.g. {"tag": "vip"} or {"amount": "500"}</notice>
+                        <label translate="true">Params (JSON) — only needed for a condition type without a dedicated field above</label>
+                        <notice translate="true">Leave blank if you filled in Tag / Minimum order total above.</notice>
                     </settings>
                 </field>
             </container>
@@ -163,6 +223,101 @@
                     <settings>
                         <dataType>text</dataType>
                         <label translate="true">Type</label>
+                        <switcherConfig>
+                            <enabled>true</enabled>
+                            <rules>
+                                <rule name="0">
+                                    <value>add_tag</value>
+                                    <actions>
+                                        <action name="0">
+                                            <target>${ $.parentName }.tag</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">true</param></params>
+                                        </action>
+                                        <action name="1">
+                                            <target>${ $.parentName }.rule_id</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="2">
+                                            <target>${ $.parentName }.prefix</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="3">
+                                            <target>${ $.parentName }.template</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="4">
+                                            <target>${ $.parentName }.message</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                    </actions>
+                                </rule>
+                                <rule name="1">
+                                    <value>generate_coupon</value>
+                                    <actions>
+                                        <action name="0">
+                                            <target>${ $.parentName }.tag</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="1">
+                                            <target>${ $.parentName }.rule_id</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">true</param></params>
+                                        </action>
+                                        <action name="2">
+                                            <target>${ $.parentName }.prefix</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">true</param></params>
+                                        </action>
+                                        <action name="3">
+                                            <target>${ $.parentName }.template</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="4">
+                                            <target>${ $.parentName }.message</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                    </actions>
+                                </rule>
+                                <rule name="2">
+                                    <value>send_email</value>
+                                    <actions>
+                                        <action name="0">
+                                            <target>${ $.parentName }.tag</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="1">
+                                            <target>${ $.parentName }.rule_id</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="2">
+                                            <target>${ $.parentName }.prefix</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="3">
+                                            <target>${ $.parentName }.template</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">true</param></params>
+                                        </action>
+                                        <action name="4">
+                                            <target>${ $.parentName }.message</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">true</param></params>
+                                        </action>
+                                    </actions>
+                                </rule>
+                            </rules>
+                        </switcherConfig>
                     </settings>
                     <formElements>
                         <select>
@@ -172,11 +327,46 @@
                         </select>
                     </formElements>
                 </field>
+                <field name="tag" formElement="input" sortOrder="15">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Tag</label>
+                        <visible>false</visible>
+                    </settings>
+                </field>
+                <field name="rule_id" formElement="input" sortOrder="16">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Cart price rule ID</label>
+                        <visible>false</visible>
+                    </settings>
+                </field>
+                <field name="prefix" formElement="input" sortOrder="17">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Coupon code prefix</label>
+                        <visible>false</visible>
+                    </settings>
+                </field>
+                <field name="template" formElement="input" sortOrder="18">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Email template identifier</label>
+                        <visible>false</visible>
+                    </settings>
+                </field>
+                <field name="message" formElement="textarea" sortOrder="19">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Message</label>
+                        <visible>false</visible>
+                    </settings>
+                </field>
                 <field name="params_json" formElement="textarea" sortOrder="20">
                     <settings>
                         <dataType>text</dataType>
-                        <label translate="true">Params (JSON)</label>
-                        <notice translate="true">e.g. {"tag": "vip"} or {"rule_id": "5", "prefix": "COMEBACK"} or {"template": "ordo_campaign_generic", "message": "Thanks!"}</notice>
+                        <label translate="true">Params (JSON) — only needed for an action type without a dedicated field above</label>
+                        <notice translate="true">Leave blank if you filled in one of the dedicated fields above.</notice>
                     </settings>
                 </field>
             </container>
