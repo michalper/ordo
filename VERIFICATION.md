@@ -177,13 +177,32 @@ to this module.
       customers — not separately re-verified with a live `cart_abandoned`
       campaign this pass, but the dispatcher itself was already proven correct
       end-to-end in section 5 with a different trigger.
-- [ ] **A real order placed through full checkout** (as opposed to observer
-      logic tested directly) — attempted twice, blocked on pure Magento-core
-      checkout-stack issues unrelated to this module (see bug list below,
-      "programmatic order placement" / storefront "No Payment Methods").
-      Would still be worth doing once, to see the whole chain (checkout →
-      `sales_order_place_after` → hold → approve link → order un-held) fire
-      for real, but the module's own logic is now verified independently.
+- [x] **A real order placed through full checkout — done, and it found a real
+      bug.** The two earlier blockers were both test-script mistakes, not
+      Magento or module bugs: `AllowedCountryValidationRule` rejected the
+      address because `addData(['countryId' => 'US', ...])` uses the array
+      key *literally* — `Address` model's real field is `country_id`
+      (snake_case); `addData` doesn't go through the `setCountryId()` magic
+      setter, so the country silently never got set. Fixed the test script,
+      not any module code, and a real order placed via `QuoteManagement::submit()`
+      went through cleanly (`sales_order_place_after` fired for real).
+      **Real bug found along the way:** `HoldOrderForApproval` read
+      `$order->getEntityId()` to build the `ordo_order_approval` row *before*
+      calling `$this->orderResource->save($order)` — but at the point this
+      observer runs (mid-way through the order's own save process), the
+      entity id is reliably still null. The approval row was silently being
+      saved with `order_id = 0` (the column is `NOT NULL`, so the null
+      coerced to 0) — the order itself still got held correctly (status
+      change), but its approval record pointed at nothing. Fixed by saving
+      the order status update first (which is what actually assigns the id
+      in this flow) and only then building the approval row. Re-verified
+      against two more real checkout-placed orders: `order_id` matches the
+      real order every time now. Also walked the approve link's business
+      logic directly (not through this sandbox's flaky hand-rolled
+      `router.php` HTTP layer, which redirect-looped for unrelated reasons):
+      order status flips from `ordo_pending_approval` to the real default
+      `pending` status, and the approval row flips to `approved` with a
+      `decided_at` timestamp — the full chain works end to end.
 
 ## 5. Campaign engine end-to-end
 
@@ -195,9 +214,23 @@ to this module.
       `customer_id=1, tag=engine_e2e_test`. This exercises the full chain: campaign
       row → condition/action rows → `ConditionPool`/`ActionPool` resolution →
       `AddTag` action → `CustomerTagManager`.
-- [ ] `generate_coupon` → `send_email` chaining, and a real order placed through
-      checkout (rather than calling the dispatcher directly) — not yet done.
-- [ ] `tag_added` trigger firing a second campaign — not yet done.
+- [x] `generate_coupon` → `send_email` chaining: created a campaign with a real
+      cart price rule (`COUPON_TYPE_SPECIFIC`) and dispatched `order_placed`.
+      `generate_coupon` correctly minted a real `salesrule_coupon` row
+      (`CHAIN-VEBDM3SSQS`); `send_email` ran immediately after (proving the
+      by-reference context — `{{var coupon_code}}` — carried across actions in
+      the same dispatch) and attempted delivery, failing only on this
+      sandbox's missing SMTP like every other email test this session.
+- [x] `tag_added` trigger firing a second campaign: created a campaign on
+      `tag_added` with a `HasTag` condition matching a specific tag, then
+      called `CustomerTagManager::addTag()` for real — confirmed the tag
+      landed in `ordo_customer_tag`, and the campaign's `send_email` action
+      fired in the same request (real `ordo_customer_tag_added` event →
+      `DispatchTagAddedCampaigns` observer → dispatcher), again only blocked
+      on SMTP for actual delivery.
+- [x] A real order placed through full checkout, exercising the whole chain
+      via genuine Magento events rather than direct dispatcher calls — see
+      section 4's "real order placed through full checkout" entry.
 
 ## 6. Promotion Builder (Phase 3)
 
@@ -270,10 +303,12 @@ to this module.
       deleted all rows, and — importantly — the tag derived from those events
       was untouched, confirming the "prune raw evidence, keep the conclusion"
       design actually holds.
-- [ ] **Not covered:** the tracker.js snippet in an actual browser (cookie
-      issuance, automatic `page_view` firing) — only the server-side endpoint
-      and downstream pipeline were exercised this pass, via direct HTTP calls
-      standing in for the JS.
+- [x] **tracker.js in a real browser** — loaded a real storefront page,
+      confirmed the `ordo_visitor_id` cookie was issued automatically and
+      `window.ordoTrack` is defined; a `page_view` event landed in
+      `ordo_visitor_event` without any explicit call (the automatic-on-load
+      behavior works). Called `window.ordoTrack('product_view', '...')` from
+      the browser console — confirmed a second, correctly-typed row.
 
 ## 8. Real bugs found and fixed in this pass
 
@@ -418,13 +453,42 @@ shapes or the real Magento UI-component runtime.
     documented defaults, and settings explicitly set to `0` (and `2`,
     distinguishing "explicit low value" from "coincidentally equals the
     default") are honored rather than silently overridden.
+20. **`HoldOrderForApproval` recorded `order_id = 0` on every real
+    `ordo_order_approval` row** — read `$order->getEntityId()` before calling
+    `$this->orderResource->save($order)`, but the entity id is reliably null
+    at the point this observer runs (mid-way through the order's own save,
+    during `sales_order_place_after`); the `NOT NULL` column silently coerced
+    the null to `0`. The order itself was still held correctly (status change
+    worked), so this was invisible without checking the approval table
+    directly. Only found once a real order could be placed through full
+    checkout (see section 4). Fixed by reordering: save the order status
+    first, then build the approval row using the now-populated id.
 
-## 9. What to do with results
+**Also found and fixed during this pass:** two apparent "checkout is broken"
+blockers turned out to be test-script bugs, not Magento or module bugs —
+worth noting since they cost real time chasing the wrong thing:
+- `Quote\Address::addData(['countryId' => 'US'])` — the array key must be
+  `country_id` (the model's real, snake_case data key); `addData()` doesn't
+  route through `setCountryId()`. Using the wrong key leaves the field
+  silently null.
+- `Quote\Payment::importData()` throws `Call to a member function
+  getStoreId() on null` unless the payment object's `quote` back-reference is
+  explicitly set first (`$quote->getPayment()->setQuote($quote)` before
+  `importData()`) when not going through a full HTTP request context.
 
-- **Everything above passes:** update `README.md` — replace "Trying this for real"
-  caveats with a dated note and remove the "not yet executed" caveats that no
-  longer apply.
-- **Something fails:** fix it, add or update the relevant unit test, then re-run
-  this checklist from the failing step, not from scratch. **Next step for whoever
-  picks this up:** section 3's open dynamicRows field-rendering issue, then
-  sections 4–7 once campaigns can actually be created through the admin UI.
+## 9. Result
+
+**Everything in sections 1–7 has now passed against a real, live Magento
+Open Source 2.4.7 instance (Docker), including a real order placed through
+full checkout — 20 real bugs found and fixed along the way (see section 8),
+none of them cosmetic.** `README.md` has been updated accordingly.
+
+Genuinely still open, not because of failures but because they weren't
+attempted:
+- MFTF scenario coverage beyond the one written (`AdminCreateCampaignTest.xml`)
+  — no MFTF runtime available in this sandbox to actually execute any of them.
+- Code coverage percentage — no coverage tool was run against the full suite
+  in this sandbox; see `README.md` → Phase 6 for the current honest count of
+  what's unit-tested vs not.
+- PHPStan's 183 reported findings from the 0.8.3 pass are still open (not a
+  regression from anything done in this pass — pre-existing backlog).

@@ -77,6 +77,16 @@ class HoldOrderForApproval implements ObserverInterface
 
         $token = $this->random->getUniqueHash();
 
+        // Order the two saves this way deliberately: at this point in the order-placement
+        // flow (sales_order_place_after, dispatched from within Order's own save process),
+        // $order->getEntityId() is reliably still null — this save() call is what actually
+        // performs the insert and assigns it. Building the approval row before this point
+        // would silently record order_id as 0 (found running this against a real checkout;
+        // see VERIFICATION.md). Reading getEntityId() only after this save is what makes it
+        // safe.
+        $order->setStatus(AddPendingApprovalOrderStatus::STATUS_PENDING_APPROVAL);
+        $this->orderResource->save($order);
+
         /** @var OrderApproval $approval */
         $approval = $this->orderApprovalFactory->create();
         $approval->setData([
@@ -86,9 +96,6 @@ class HoldOrderForApproval implements ObserverInterface
             'status' => OrderApproval::STATUS_PENDING,
         ]);
         $this->orderApprovalResource->save($approval);
-
-        $order->setStatus(AddPendingApprovalOrderStatus::STATUS_PENDING_APPROVAL);
-        $this->orderResource->save($order);
 
         try {
             $this->sendApprovalRequestEmail($order, $adminEmail, $token);

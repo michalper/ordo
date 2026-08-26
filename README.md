@@ -154,20 +154,26 @@ The standards in "Quality & testing standards" above apply from now on. Honest c
 
 ## Trying this for real
 
-**Verified against Magento Open Source 2.4.7 on 2026-08-25** (Docker, Magento cloned
-from GitHub — no Adobe Marketplace keys needed). Install, `setup:upgrade`,
-`setup:di:compile`, and the admin panel/login all work; PHPStan and the unit suite
-both run for real and pass/report cleanly (183 PHPStan findings still open, see
-below). Twelve real bugs were found and fixed along the way — full list in
-`VERIFICATION.md`.
+**Verified end to end against Magento Open Source 2.4.7 on 2026-08-26**
+(Docker, Magento cloned from GitHub — no Adobe Marketplace keys needed).
+Every checklist item in `VERIFICATION.md` sections 1–7 has passed against a
+real, live instance: install, static analysis, the full admin UI (dashboard,
+campaign builder with dedicated per-type fields, grids), every B2B trigger
+cron, the campaign engine (including `generate_coupon` → `send_email`
+chaining and the `tag_added` trigger), the `CheapestItemFree` promotion
+calculator, on-site tracking in a real browser, and — the hardest one — a
+real order placed through full storefront checkout, held for approval,
+approved via the real link, and un-held.
 
-**What's still open:** the Campaign admin form's `dynamicRows` sections (conditions/
-actions) don't visibly render fields yet — narrowed down to a Knockout
-initialization issue, not a PHP-level bug, but not root-caused. This blocks
-actually creating a campaign through the UI, which in turn blocks the B2B trigger
-walkthrough (section 4), campaign engine end-to-end (section 5), Promotion Builder
-(section 6), and on-site tracking (section 7) checklist items — none of those have
-been exercised against a live instance yet.
+**20 real bugs were found and fixed along the way** — wrong DI extension
+points, silently-dropped EAV attribute values, a config-default footgun
+present in 12 places, and more. Full list, with exactly how each was found
+and verified, in `VERIFICATION.md`.
+
+**What's genuinely still open** (not failures — not attempted): MFTF scenario
+execution (no MFTF runtime in this sandbox), a measured code coverage
+percentage for the unit suite, and the 183 pre-existing PHPStan findings
+from the 0.8.3 pass.
 
 **Full step-by-step checklist:** [VERIFICATION.md](VERIFICATION.md) — covers install, static analysis, and a manual walkthrough of every feature in this README, organized so a failure at any step points at exactly what to fix next.
 

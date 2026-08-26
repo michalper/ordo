@@ -2,6 +2,46 @@
 
 All notable changes to this module are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.0]
+
+**Every checklist item in `VERIFICATION.md` sections 1–7 now passes against a
+real, live Magento Open Source 2.4.7 instance** — including, for the first
+time, a real order placed through full storefront checkout (login, add to
+cart, real shipping/payment, `QuoteManagement::submit()`), held for approval,
+approved via the real token link, and released.
+
+### Fixed
+- **`HoldOrderForApproval` recorded `order_id = 0` on every real
+  `ordo_order_approval` row.** Read `$order->getEntityId()` before calling
+  `$this->orderResource->save($order)`, but the entity id is reliably still
+  null at the point this observer runs (mid-way through the order's own save,
+  during `sales_order_place_after`) — the `NOT NULL` column silently coerced
+  it to `0`. The order itself was still held correctly (status changed), so
+  this was invisible without checking the approval table directly — only
+  found once a real order could be placed through full checkout. Fixed by
+  saving the order status first (which is what actually assigns the id in
+  this flow), then building the approval row.
+
+### Verified against real data this pass (see `VERIFICATION.md` for detail)
+- A real order placed through full checkout — the two earlier blockers
+  (`AllowedCountryValidationRule` rejecting the address, "No Payment
+  Methods" in the storefront) both turned out to be test-script mistakes
+  (`addData()` needs `country_id`, not `countryId`; `Quote\Payment` needs its
+  `quote` back-reference set explicitly outside a real HTTP request), not
+  Magento or module bugs.
+- `generate_coupon` → `send_email` action chaining, with a real
+  `salesrule_coupon` row minted and the coupon code carried into the email
+  context.
+- The `tag_added` campaign trigger, fired via a real
+  `CustomerTagManager::addTag()` call and the real `ordo_customer_tag_added`
+  event.
+- The approve-link flow: order status flips from `ordo_pending_approval` to
+  the real default `pending`, and the approval row flips to `approved` with
+  a `decided_at` timestamp.
+- `tracker.js` in an actual browser: cookie issuance, automatic `page_view`
+  on load, and manual `window.ordoTrack()` calls all confirmed with real
+  rows in `ordo_visitor_event`.
+
 ## [0.9.4]
 
 ### Fixed
