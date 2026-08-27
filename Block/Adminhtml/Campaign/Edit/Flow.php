@@ -11,6 +11,7 @@ use Magento\Framework\Registry;
 use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\Campaign\ActionPool;
 use Ordo\Automation\Model\Campaign\ConditionPool;
+use Ordo\Automation\Model\Campaign\TypeLabels;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as ConditionCollectionFactory;
@@ -40,6 +41,7 @@ class Flow extends Template
         private readonly TriggerEvent $triggerEventSource,
         private readonly ConditionPool $conditionPool,
         private readonly ActionPool $actionPool,
+        private readonly TypeLabels $typeLabels,
         array $data = [],
         ?JsonHelper $jsonHelper = null,
         ?DirectoryHelper $directoryHelper = null
@@ -83,6 +85,49 @@ class Flow extends Template
     }
 
     /**
+     * type => human-readable label, for the canvas's palette chips and node type dropdowns —
+     * the raw type key (e.g. "order_total_gte") is what di.xml registers and what gets
+     * persisted, but nobody building a campaign should have to read it. See TypeLabels.
+     *
+     * @return array<string, string>
+     */
+    public function getTriggerEventLabels(): array
+    {
+        $labels = [];
+        foreach ($this->triggerEventSource->toOptionArray() as $option) {
+            $labels[(string) $option['value']] = (string) $option['label'];
+        }
+
+        return $labels;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getConditionTypeLabels(): array
+    {
+        $labels = [];
+        foreach ($this->getConditionTypes() as $type) {
+            $labels[$type] = $this->typeLabels->conditionLabel($type);
+        }
+
+        return $labels;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getActionTypeLabels(): array
+    {
+        $labels = [];
+        foreach ($this->getActionTypes() as $type) {
+            $labels[$type] = $this->typeLabels->actionLabel($type);
+        }
+
+        return $labels;
+    }
+
+    /**
      * Which of Save.php's DEDICATED_PARAM_FIELDS applies to each known condition/action type —
      * the same mapping ordo_campaign_form.xml's switcherConfig encodes for the native dynamicRows
      * form, duplicated here (not read from the XML) so the flow canvas can render the same
@@ -120,14 +165,17 @@ class Flow extends Template
 
     /**
      * @param string[] $types
+     * @param array<string, string> $labels type => human-readable label (TypeLabels /
+     *   TriggerEvent) — the <option> value is still the raw type key (what gets persisted and
+     *   what the dispatcher matches against), only the visible text is the label.
      */
-    private function typeOptionsHtml(array $types, string $selected): string
+    private function typeOptionsHtml(array $types, string $selected, array $labels): string
     {
         $html = '';
         foreach ($types as $type) {
             $isSelected = $type === $selected ? ' selected="selected"' : '';
             $html .= '<option value="' . $this->escapeHtmlAttr($type) . '"' . $isSelected . '>'
-                . $this->escapeHtml($type) . '</option>';
+                . $this->escapeHtml($labels[$type] ?? $type) . '</option>';
         }
 
         return $html;
@@ -237,7 +285,7 @@ class Flow extends Template
             $nodes[$id] = $this->buildNode(
                 $id,
                 'ordo-flow-trigger',
-                $this->triggerNodeHtml($triggerEvent, $this->typeOptionsHtml($this->getTriggerEventTypes(), $triggerEvent)),
+                $this->triggerNodeHtml($triggerEvent, $this->typeOptionsHtml($this->getTriggerEventTypes(), $triggerEvent, $this->getTriggerEventLabels())),
                 $x,
                 60 + count($triggerIds) * 160
             );
@@ -258,7 +306,7 @@ class Flow extends Template
                     'condition',
                     (string) __('Condition'),
                     (string) $condition->getData('params'),
-                    $this->typeOptionsHtml($this->getConditionTypes(), $type)
+                    $this->typeOptionsHtml($this->getConditionTypes(), $type, $this->getConditionTypeLabels())
                 ),
                 $x,
                 150
@@ -286,7 +334,7 @@ class Flow extends Template
                     'action',
                     (string) __('Action'),
                     (string) $action->getData('params'),
-                    $this->typeOptionsHtml($this->getActionTypes(), $type)
+                    $this->typeOptionsHtml($this->getActionTypes(), $type, $this->getActionTypeLabels())
                 ),
                 $x,
                 150

@@ -5,6 +5,7 @@ namespace Ordo\Automation\Model\Config\Source;
 
 use Magento\Framework\Data\OptionSourceInterface;
 use Ordo\Automation\Model\Campaign\ConditionPool;
+use Ordo\Automation\Model\Campaign\TypeLabels;
 
 /**
  * The dropdown is generated from ConditionPool::getAvailableTypes() — i.e. from whatever is
@@ -14,7 +15,8 @@ use Ordo\Automation\Model\Campaign\ConditionPool;
 class ConditionType implements OptionSourceInterface
 {
     public function __construct(
-        private readonly ConditionPool $conditionPool
+        private readonly ConditionPool $conditionPool,
+        private readonly TypeLabels $typeLabels
     ) {
     }
 
@@ -22,7 +24,7 @@ class ConditionType implements OptionSourceInterface
     {
         $options = [];
         foreach ($this->conditionPool->getAvailableTypes() as $type) {
-            $options[] = ['value' => $type, 'label' => $type];
+            $options[] = ['value' => $type, 'label' => $this->typeLabels->conditionLabel($type)];
         }
 
         return $options;

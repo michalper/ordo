@@ -15,20 +15,20 @@
         <div class="ordo-flow-palette">
             <div class="ordo-flow-palette-group">
                 <h3><?= $escaper->escapeHtml(__('Triggers')) ?></h3>
-                <?php foreach ($block->getTriggerEventTypes() as $type): ?>
-                <div class="ordo-flow-palette-item" draggable="true" data-flow-kind="trigger" data-flow-type="<?= $escaper->escapeHtmlAttr($type) ?>"><?= $escaper->escapeHtml($type) ?></div>
+                <?php foreach ($block->getTriggerEventLabels() as $type => $label): ?>
+                <div class="ordo-flow-palette-item" draggable="true" data-flow-kind="trigger" data-flow-type="<?= $escaper->escapeHtmlAttr($type) ?>"><?= $escaper->escapeHtml($label) ?></div>
                 <?php endforeach; ?>
             </div>
             <div class="ordo-flow-palette-group">
                 <h3><?= $escaper->escapeHtml(__('Conditions')) ?></h3>
-                <?php foreach ($block->getConditionTypes() as $type): ?>
-                <div class="ordo-flow-palette-item" draggable="true" data-flow-kind="condition" data-flow-type="<?= $escaper->escapeHtmlAttr($type) ?>"><?= $escaper->escapeHtml($type) ?></div>
+                <?php foreach ($block->getConditionTypeLabels() as $type => $label): ?>
+                <div class="ordo-flow-palette-item" draggable="true" data-flow-kind="condition" data-flow-type="<?= $escaper->escapeHtmlAttr($type) ?>"><?= $escaper->escapeHtml($label) ?></div>
                 <?php endforeach; ?>
             </div>
             <div class="ordo-flow-palette-group">
                 <h3><?= $escaper->escapeHtml(__('Actions')) ?></h3>
-                <?php foreach ($block->getActionTypes() as $type): ?>
-                <div class="ordo-flow-palette-item" draggable="true" data-flow-kind="action" data-flow-type="<?= $escaper->escapeHtmlAttr($type) ?>"><?= $escaper->escapeHtml($type) ?></div>
+                <?php foreach ($block->getActionTypeLabels() as $type => $label): ?>
+                <div class="ordo-flow-palette-item" draggable="true" data-flow-kind="action" data-flow-type="<?= $escaper->escapeHtmlAttr($type) ?>"><?= $escaper->escapeHtml($label) ?></div>
                 <?php endforeach; ?>
             </div>
         </div>
@@ -45,6 +45,11 @@ require(['Ordo_Automation/js/campaign-flow-editor'], function (initCampaignFlowE
             triggers: <?= /* @noEscape */ json_encode($block->getTriggerEventTypes()) ?>,
             conditions: <?= /* @noEscape */ json_encode($block->getConditionTypes()) ?>,
             actions: <?= /* @noEscape */ json_encode($block->getActionTypes()) ?>,
+            labels: {
+                trigger: <?= /* @noEscape */ json_encode($block->getTriggerEventLabels()) ?>,
+                condition: <?= /* @noEscape */ json_encode($block->getConditionTypeLabels()) ?>,
+                action: <?= /* @noEscape */ json_encode($block->getActionTypeLabels()) ?>
+            },
             fields: <?= /* @noEscape */ $block->getFieldsConfigJson() ?>
         };
 

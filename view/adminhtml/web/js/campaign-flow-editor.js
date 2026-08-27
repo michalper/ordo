@@ -147,6 +147,14 @@ define([
                 KIND_TYPE_LISTS = { trigger: 'triggers', condition: 'conditions', action: 'actions' };
 
             /**
+             * @param {String} raw
+             * @return {String}
+             */
+            function escapeHtml(raw) {
+                return $('<div>').text(raw).html();
+            }
+
+            /**
              * @param {String} kind 'trigger' | 'condition' | 'action'
              * @param {String} label
              * @param {Array} typeOptions
@@ -156,10 +164,12 @@ define([
              * @return {String}
              */
             function buildNodeHtml(kind, label, typeOptions, presetType) {
-                var optionsHtml = typeOptions.map(function (type) {
-                    var selectedAttr = type === presetType ? ' selected="selected"' : '';
-                    return '<option value="' + type + '"' + selectedAttr + '>' + type + '</option>';
-                }).join('');
+                var typeLabels = typesConfig.labels[kind] || {},
+                    optionsHtml = typeOptions.map(function (type) {
+                        var selectedAttr = type === presetType ? ' selected="selected"' : '';
+                        return '<option value="' + type + '"' + selectedAttr + '>' +
+                            escapeHtml(typeLabels[type] || type) + '</option>';
+                    }).join('');
 
                 // `data-kind` (not a class) is what collectRows() below matches on — Drawflow
                 // already puts the 'ordo-flow-condition'/'ordo-flow-action'/'ordo-flow-trigger'

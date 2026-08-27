@@ -11,6 +11,7 @@ use Ordo\Automation\Block\Adminhtml\Campaign\Edit\Flow;
 use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\Campaign\ActionPool;
 use Ordo\Automation\Model\Campaign\ConditionPool;
+use Ordo\Automation\Model\Campaign\TypeLabels;
 use Ordo\Automation\Model\CampaignAction;
 use Ordo\Automation\Model\CampaignCondition;
 use Ordo\Automation\Model\CampaignTrigger;
@@ -67,6 +68,7 @@ class FlowTest extends TestCase
             $this->triggerEventSource,
             $this->conditionPool,
             $this->actionPool,
+            new TypeLabels(),
             [],
             $this->createMock(JsonHelper::class),
             $this->createMock(DirectoryHelper::class)
@@ -103,6 +105,27 @@ class FlowTest extends TestCase
         $this->registry->method('registry')->with('ordo_campaign')->willReturn($campaign);
 
         self::assertFalse($this->makeBlock()->hasCampaign());
+    }
+
+    public function testGetTriggerEventLabelsMapsValueToLabel(): void
+    {
+        self::assertSame(['order_placed' => 'Order Placed'], $this->makeBlock()->getTriggerEventLabels());
+    }
+
+    public function testGetConditionTypeLabelsMapsTypeToLabel(): void
+    {
+        self::assertSame(
+            ['order_total_gte' => 'Order Total ≥', 'tag' => 'Has Tag'],
+            $this->makeBlock()->getConditionTypeLabels()
+        );
+    }
+
+    public function testGetActionTypeLabelsMapsTypeToLabel(): void
+    {
+        self::assertSame(
+            ['add_tag' => 'Add Tag', 'send_email' => 'Send Email'],
+            $this->makeBlock()->getActionTypeLabels()
+        );
     }
 
     public function testGetFlowDataJsonReturnsEmptyObjectWithoutCampaign(): void
