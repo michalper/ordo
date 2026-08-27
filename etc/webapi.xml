@@ -31,10 +31,43 @@
         </resources>
     </route>
 
-    <!-- Conditions/actions are flat resources filtered by campaign_id via searchCriteria
+    <!-- Triggers/conditions/actions are flat resources filtered by campaign_id via searchCriteria
          (searchCriteria[filterGroups][0][filters][0][field]=campaign_id&...[value]=<id>),
          matching Magento's own SearchCriteria convention rather than a nested URL — the same
-         pattern already used by, e.g., order items. -->
+         pattern already used by, e.g., order items. A campaign can have more than one trigger
+         (CampaignTriggerInterface, not a single trigger_event column on the campaign itself) —
+         every trigger fans out to the same conditions/actions. -->
+    <route url="/V1/ordo/campaign-triggers" method="GET">
+        <service class="Ordo\Automation\Api\CampaignTriggerRepositoryInterface" method="getList"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/campaign-triggers/:entityId" method="GET">
+        <service class="Ordo\Automation\Api\CampaignTriggerRepositoryInterface" method="getById"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/campaign-triggers" method="POST">
+        <service class="Ordo\Automation\Api\CampaignTriggerRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/campaign-triggers/:entityId" method="PUT">
+        <service class="Ordo\Automation\Api\CampaignTriggerRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/campaign-triggers/:entityId" method="DELETE">
+        <service class="Ordo\Automation\Api\CampaignTriggerRepositoryInterface" method="deleteById"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+
     <route url="/V1/ordo/campaign-conditions" method="GET">
         <service class="Ordo\Automation\Api\CampaignConditionRepositoryInterface" method="getList"/>
         <resources>

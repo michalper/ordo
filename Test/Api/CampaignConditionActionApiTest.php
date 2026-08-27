@@ -14,7 +14,7 @@ class CampaignConditionActionApiTest extends AbstractApiTestCase
     public function testConditionAndActionCrudRoundTrip(): void
     {
         [$status, $campaign] = $this->asAdmin('POST', '/rest/V1/ordo/campaigns', [
-            'campaign' => ['name' => 'API Condition Test Campaign', 'trigger_event' => 'order_placed', 'enabled' => true],
+            'campaign' => ['name' => 'API Condition Test Campaign', 'enabled' => true],
         ]);
         self::assertSame(200, $status);
         $campaignId = $campaign['entity_id'];

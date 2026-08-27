@@ -11,6 +11,8 @@ use Ordo\Automation\Model\CampaignActionFactory;
 use Ordo\Automation\Model\CampaignCondition;
 use Ordo\Automation\Model\CampaignConditionFactory;
 use Ordo\Automation\Model\CampaignFactory;
+use Ordo\Automation\Model\CampaignTrigger;
+use Ordo\Automation\Model\CampaignTriggerFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign as CampaignResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action as CampaignActionResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\Collection as ActionCollection;
@@ -18,12 +20,18 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as Act
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition as CampaignConditionResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\Collection as ConditionCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as ConditionCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign\Trigger as CampaignTriggerResource;
+use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as TriggerCollection;
+use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
 use Ordo\Automation\Test\Unit\Controller\AbstractAdminActionTestCase;
 
 class SaveTest extends AbstractAdminActionTestCase
 {
     private CampaignFactory $campaignFactory;
     private CampaignResource $campaignResource;
+    private CampaignTriggerFactory $campaignTriggerFactory;
+    private CampaignTriggerResource $campaignTriggerResource;
+    private TriggerCollectionFactory $triggerCollectionFactory;
     private CampaignConditionFactory $campaignConditionFactory;
     private CampaignConditionResource $campaignConditionResource;
     private ConditionCollectionFactory $conditionCollectionFactory;
@@ -35,6 +43,9 @@ class SaveTest extends AbstractAdminActionTestCase
     {
         $this->campaignFactory = $this->createMock(CampaignFactory::class);
         $this->campaignResource = $this->createMock(CampaignResource::class);
+        $this->campaignTriggerFactory = $this->createMock(CampaignTriggerFactory::class);
+        $this->campaignTriggerResource = $this->createMock(CampaignTriggerResource::class);
+        $this->triggerCollectionFactory = $this->createMock(TriggerCollectionFactory::class);
         $this->campaignConditionFactory = $this->createMock(CampaignConditionFactory::class);
         $this->campaignConditionResource = $this->createMock(CampaignConditionResource::class);
         $this->conditionCollectionFactory = $this->createMock(ConditionCollectionFactory::class);
@@ -49,6 +60,9 @@ class SaveTest extends AbstractAdminActionTestCase
             $this->makeContext(),
             $this->campaignFactory,
             $this->campaignResource,
+            $this->campaignTriggerFactory,
+            $this->campaignTriggerResource,
+            $this->triggerCollectionFactory,
             $this->campaignConditionFactory,
             $this->campaignConditionResource,
             $this->conditionCollectionFactory,
@@ -56,6 +70,14 @@ class SaveTest extends AbstractAdminActionTestCase
             $this->campaignActionResource,
             $this->actionCollectionFactory
         );
+    }
+
+    private function emptyTriggerCollection(): TriggerCollection
+    {
+        $collection = $this->createMock(TriggerCollection::class);
+        $collection->method('addCampaignFilter');
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
+        return $collection;
     }
 
     public function testExecuteRedirectsImmediatelyWhenNoPostData(): void
@@ -78,8 +100,8 @@ class SaveTest extends AbstractAdminActionTestCase
         $this->request->method('getPostValue')->willReturn([
             'entity_id' => 0,
             'name' => 'Welcome',
-            'trigger_event' => 'customer_registered',
             'enabled' => '1',
+            'triggers' => ['triggers' => [['trigger_event' => 'customer_registered']]],
             'conditions' => ['conditions' => [['type' => 'has_tag', 'tag' => 'vip', 'params_json' => '']]],
             'actions' => ['actions' => [['type' => 'tag_customer', 'tag' => 'reordered', 'params_json' => '']]],
         ]);
@@ -87,12 +109,21 @@ class SaveTest extends AbstractAdminActionTestCase
 
         $campaign = $this->createMock(Campaign::class);
         $campaign->expects(self::once())->method('setName')->with('Welcome');
-        $campaign->expects(self::once())->method('setTriggerEvent')->with('customer_registered');
         $campaign->expects(self::once())->method('setEnabled')->with(true);
         $campaign->method('getEntityId')->willReturn(7);
         $this->campaignFactory->method('create')->willReturn($campaign);
 
         $this->campaignResource->expects(self::once())->method('save')->with($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
+
+        $trigger = $this->createMock(CampaignTrigger::class);
+        $trigger->expects(self::once())->method('setData')->with([
+            'campaign_id' => 7,
+            'trigger_event' => 'customer_registered',
+        ]);
+        $this->campaignTriggerFactory->method('create')->willReturn($trigger);
+        $this->campaignTriggerResource->expects(self::once())->method('save')->with($trigger);
 
         $emptyConditionCollection = $this->createMock(ConditionCollection::class);
         $emptyConditionCollection->method('addCampaignFilter');
@@ -127,6 +158,45 @@ class SaveTest extends AbstractAdminActionTestCase
         self::assertSame($redirect, $controller->execute());
     }
 
+    public function testExecuteDeduplicatesRepeatedTriggerEvents(): void
+    {
+        $controller = $this->makeController();
+        $this->request->method('getPostValue')->willReturn([
+            'entity_id' => 0,
+            'name' => 'Welcome',
+            'triggers' => ['triggers' => [
+                ['trigger_event' => 'order_placed'],
+                ['trigger_event' => 'order_placed'],
+                ['trigger_event' => ''],
+            ]],
+        ]);
+        $this->request->method('getParam')->with('back')->willReturn(null);
+
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(9);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
+
+        $trigger = $this->createMock(CampaignTrigger::class);
+        $this->campaignTriggerFactory->method('create')->willReturn($trigger);
+        $this->campaignTriggerResource->expects(self::once())->method('save')->with($trigger);
+
+        $emptyConditionCollection = $this->createMock(ConditionCollection::class);
+        $emptyConditionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
+        $this->conditionCollectionFactory->method('create')->willReturn($emptyConditionCollection);
+
+        $emptyActionCollection = $this->createMock(ActionCollection::class);
+        $emptyActionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
+        $this->actionCollectionFactory->method('create')->willReturn($emptyActionCollection);
+
+        $redirect = $this->createMock(Redirect::class);
+        $redirect->method('setPath')->willReturnSelf();
+        $this->resultRedirectFactory->method('create')->willReturn($redirect);
+
+        $controller->execute();
+    }
+
     public function testExecuteLoadsExistingCampaignAndDeletesOldChildRows(): void
     {
         $controller = $this->makeController();
@@ -140,6 +210,13 @@ class SaveTest extends AbstractAdminActionTestCase
         $campaign->method('getEntityId')->willReturn(7);
         $this->campaignFactory->method('create')->willReturn($campaign);
         $this->campaignResource->expects(self::once())->method('load')->with($campaign, 7);
+
+        $existingTrigger = $this->createMock(CampaignTrigger::class);
+        $triggerCollection = $this->createMock(TriggerCollection::class);
+        $triggerCollection->method('addCampaignFilter');
+        $triggerCollection->method('getIterator')->willReturn(new \ArrayIterator([$existingTrigger]));
+        $this->triggerCollectionFactory->method('create')->willReturn($triggerCollection);
+        $this->campaignTriggerResource->expects(self::once())->method('delete')->with($existingTrigger);
 
         $existingCondition = $this->createMock(CampaignCondition::class);
         $conditionCollection = $this->createMock(ConditionCollection::class);
@@ -175,6 +252,8 @@ class SaveTest extends AbstractAdminActionTestCase
         $campaign->method('getEntityId')->willReturn(1);
         $this->campaignFactory->method('create')->willReturn($campaign);
 
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
+
         $emptyConditionCollection = $this->createMock(ConditionCollection::class);
         $emptyConditionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->conditionCollectionFactory->method('create')->willReturn($emptyConditionCollection);
@@ -205,6 +284,8 @@ class SaveTest extends AbstractAdminActionTestCase
         $campaign = $this->createMock(Campaign::class);
         $campaign->method('getEntityId')->willReturn(7);
         $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
 
         $emptyConditionCollection = $this->createMock(ConditionCollection::class);
         $emptyConditionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
@@ -251,6 +332,8 @@ class SaveTest extends AbstractAdminActionTestCase
         $campaign = $this->createMock(Campaign::class);
         $campaign->method('getEntityId')->willReturn(1);
         $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
 
         $emptyConditionCollection = $this->createMock(ConditionCollection::class);
         $emptyConditionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));

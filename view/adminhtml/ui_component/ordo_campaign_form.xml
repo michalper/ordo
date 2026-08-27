@@ -57,22 +57,6 @@
                 </validation>
             </settings>
         </field>
-        <field name="trigger_event" formElement="select" sortOrder="20">
-            <settings>
-                <dataType>text</dataType>
-                <label translate="true">Trigger Event</label>
-                <validation>
-                    <rule name="required-entry" xsi:type="boolean">true</rule>
-                </validation>
-            </settings>
-            <formElements>
-                <select>
-                    <settings>
-                        <options class="Ordo\Automation\Model\Config\Source\TriggerEvent"/>
-                    </settings>
-                </select>
-            </formElements>
-        </field>
         <field name="enabled" formElement="checkbox" sortOrder="30">
             <settings>
                 <dataType>boolean</dataType>
@@ -96,9 +80,63 @@
         </field>
     </fieldset>
 
+    <!-- Hidden, not removed: same reasoning as conditions_fieldset/actions_fieldset below — the
+         Flow canvas is the only editor a store owner sees for triggers too now, a campaign can
+         fire on more than one (CampaignTriggerInterface is its own child entity, not a single
+         column on ordo_campaign anymore), so this is a dynamicRows section rather than the old
+         single trigger_event select. -->
+    <fieldset name="triggers_fieldset">
+        <settings>
+            <label translate="true">Triggers</label>
+            <visible>false</visible>
+        </settings>
+        <dynamicRows name="triggers">
+            <settings>
+                <label translate="true">Triggers</label>
+                <addButtonLabel translate="true">Add Trigger</addButtonLabel>
+                <componentType>dynamicRows</componentType>
+                <dataScope>triggers</dataScope>
+            </settings>
+            <container name="record" component="Magento_Ui/js/dynamic-rows/record">
+                <argument name="data" xsi:type="array">
+                    <item name="config" xsi:type="array">
+                        <item name="isTemplate" xsi:type="boolean">true</item>
+                        <item name="is_collection" xsi:type="boolean">true</item>
+                    </item>
+                </argument>
+                <settings>
+                    <componentType>container</componentType>
+                </settings>
+                <field name="trigger_event" formElement="select" sortOrder="10">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Trigger Event</label>
+                        <validation>
+                            <rule name="required-entry" xsi:type="boolean">true</rule>
+                        </validation>
+                    </settings>
+                    <formElements>
+                        <select>
+                            <settings>
+                                <options class="Ordo\Automation\Model\Config\Source\TriggerEvent"/>
+                            </settings>
+                        </select>
+                    </formElements>
+                </field>
+            </container>
+        </dynamicRows>
+    </fieldset>
+
+    <!-- Hidden, not removed: the Flow canvas above (Block\Adminhtml\Campaign\Edit\Flow /
+         campaign-flow-editor.js) is now the only editor a store owner sees for
+         conditions/actions — it writes into this exact same provider.data.conditions/actions
+         path via "Apply flow to form & Save", so the underlying dynamicRows component still
+         needs to exist and stay wired to the form's data source, it just shouldn't render its
+         own raw-JSON grid next to the friendlier canvas above it. -->
     <fieldset name="conditions_fieldset">
         <settings>
             <label translate="true">Conditions (all must pass — AND)</label>
+            <visible>false</visible>
         </settings>
         <dynamicRows name="conditions">
             <settings>
@@ -198,9 +236,11 @@
         </dynamicRows>
     </fieldset>
 
+    <!-- Hidden for the same reason as conditions_fieldset above. -->
     <fieldset name="actions_fieldset">
         <settings>
             <label translate="true">Actions (run in order)</label>
+            <visible>false</visible>
         </settings>
         <dynamicRows name="actions">
             <settings>

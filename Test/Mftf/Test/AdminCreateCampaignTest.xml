@@ -21,7 +21,12 @@
         <waitForPageLoad stepKey="waitForNewCampaignPage"/>
 
         <fillField selector="[name='name']" userInput="Test Win-Back Coupon" stepKey="fillName"/>
-        <selectOption selector="[name='trigger_event']" userInput="order_placed" stepKey="selectTriggerEvent"/>
+        <!-- Trigger moved from a single select to its own dynamicRows section
+             (CampaignTriggerInterface — a campaign can fire on more than one trigger event
+             now), same double-nested posting shape as conditions/actions below. -->
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRow"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRow"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEvent"/>
         <!-- "enabled" renders as a Magento_Ui single-checkbox styled as a toggle switch
              (prefer: "toggle") — the real <input> is visually covered by its own field
              wrapper, so a direct click/checkOption on the input gets intercepted by that

@@ -14,16 +14,21 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Collection as CampaignCollectio
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\Collection as ConditionCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as ConditionCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as TriggerCollection;
+use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
 use PHPUnit\Framework\TestCase;
 
 class DataProviderTest extends TestCase
 {
+    private TriggerCollectionFactory $triggerCollectionFactory;
     private ConditionCollectionFactory $conditionCollectionFactory;
     private ActionCollectionFactory $actionCollectionFactory;
     private DataPersistorInterface $dataPersistor;
 
     protected function setUp(): void
     {
+        $this->triggerCollectionFactory = $this->createMock(TriggerCollectionFactory::class);
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeEmptyTriggerCollection());
         $this->conditionCollectionFactory = $this->createMock(ConditionCollectionFactory::class);
         $this->actionCollectionFactory = $this->createMock(ActionCollectionFactory::class);
         $this->dataPersistor = $this->createMock(DataPersistorInterface::class);
@@ -39,10 +44,20 @@ class DataProviderTest extends TestCase
             'entity_id',
             'entity_id',
             $collectionFactory,
+            $this->triggerCollectionFactory,
             $this->conditionCollectionFactory,
             $this->actionCollectionFactory,
             $this->dataPersistor
         );
+    }
+
+    private function makeEmptyTriggerCollection(): TriggerCollection
+    {
+        $collection = $this->createMock(TriggerCollection::class);
+        $collection->method('addCampaignFilter');
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
+
+        return $collection;
     }
 
     public function testGetDataMergesChildRowsWithDedicatedFields(): void

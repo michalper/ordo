@@ -8,6 +8,7 @@ use Ordo\Automation\Model\Campaign\ConditionPool;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as CampaignActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as CampaignConditionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as CampaignTriggerCollectionFactory;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -15,6 +16,11 @@ use Psr\Log\LoggerInterface;
  * calls into: "here's what just happened (trigger event + context), run whatever campaigns
  * are configured for it." Campaigns, conditions and actions are all just database rows —
  * adding a new marketing rule is an admin/API action, not a code deploy.
+ *
+ * A campaign can fire on more than one trigger event (CampaignTrigger is its own child entity,
+ * same as conditions/actions) — the lookup here is a two-step "which campaign_ids have a
+ * trigger row for this event" then "of those, which are enabled", not a single-column equality
+ * filter on ordo_campaign itself anymore.
  *
  * All conditions on a campaign are AND'd together; unknown condition/action types (e.g. a
  * campaign referencing a type this install's di.xml doesn't register) are treated as failing
@@ -25,6 +31,7 @@ class CampaignDispatcher
 {
     public function __construct(
         private readonly CampaignCollectionFactory $campaignCollectionFactory,
+        private readonly CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory,
         private readonly CampaignConditionCollectionFactory $campaignConditionCollectionFactory,
         private readonly CampaignActionCollectionFactory $campaignActionCollectionFactory,
         private readonly ConditionPool $conditionPool,
@@ -38,8 +45,21 @@ class CampaignDispatcher
      */
     public function dispatch(string $triggerEvent, array $context): void
     {
+        $triggers = $this->campaignTriggerCollectionFactory->create();
+        $triggers->addTriggerEventFilter($triggerEvent);
+
+        $campaignIds = [];
+        foreach ($triggers as $trigger) {
+            $campaignIds[(int) $trigger->getCampaignId()] = true;
+        }
+
+        if (!$campaignIds) {
+            return;
+        }
+
         $campaigns = $this->campaignCollectionFactory->create();
-        $campaigns->addEnabledForTriggerFilter($triggerEvent);
+        $campaigns->addIdsFilter(array_keys($campaignIds));
+        $campaigns->addEnabledFilter();
 
         foreach ($campaigns as $campaign) {
             try {

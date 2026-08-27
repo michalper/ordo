@@ -9,26 +9,37 @@ use Magento\Directory\Helper\Data as DirectoryHelper;
 use Magento\Framework\Json\Helper\Data as JsonHelper;
 use Magento\Framework\Registry;
 use Ordo\Automation\Model\Campaign;
+use Ordo\Automation\Model\Campaign\ActionPool;
+use Ordo\Automation\Model\Campaign\ConditionPool;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as ConditionCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
 
 /**
- * Read-only Drawflow (https://github.com/jerosoler/Drawflow) visualization of a campaign's
- * actual trigger → conditions → actions chain, built server-side from the same
- * CampaignCondition/CampaignAction rows the dynamicRows form above edits — this block is
- * deliberately NOT the source of truth (the existing form + Save.php are unchanged), just an
- * additional, hooked-in-place read of what's already there. A visual editor that writes back
- * into the same conditions[]/actions[] structure is a natural next step, not built here.
+ * Editable Drawflow (https://github.com/jerosoler/Drawflow) view of a campaign's trigger(s) →
+ * conditions → actions chain, built server-side from the same CampaignTrigger/CampaignCondition/
+ * CampaignAction rows the dynamicRows form below edits. A campaign can have more than one
+ * trigger node (CampaignTriggerInterface is its own child entity — see CampaignDispatcher) —
+ * every trigger on the canvas fans out to the same conditions/actions chain, they're
+ * alternative starting points for one scenario, not separate scenarios. Nodes can be
+ * added/removed/retyped on the canvas; "Apply flow to form" (campaign-flow-editor.js) reads the
+ * current graph and writes it into the exact same `triggers`/`conditions`/`actions` provider
+ * data paths Save.php already accepts, then calls the form's own native save — this block never
+ * talks to the backend directly, it only prepares the data the existing, unmodified save
+ * pipeline already knows how to persist.
  */
 class Flow extends Template
 {
     public function __construct(
         Context $context,
         private readonly Registry $registry,
+        private readonly TriggerCollectionFactory $triggerCollectionFactory,
         private readonly ConditionCollectionFactory $conditionCollectionFactory,
         private readonly ActionCollectionFactory $actionCollectionFactory,
         private readonly TriggerEvent $triggerEventSource,
+        private readonly ConditionPool $conditionPool,
+        private readonly ActionPool $actionPool,
         array $data = [],
         ?JsonHelper $jsonHelper = null,
         ?DirectoryHelper $directoryHelper = null
@@ -47,22 +58,141 @@ class Flow extends Template
         return $this->getCampaign() !== null && $this->getCampaign()->getEntityId();
     }
 
-    private function triggerLabel(string $triggerEvent): string
+    /**
+     * @return string[]
+     */
+    public function getTriggerEventTypes(): array
     {
-        foreach ($this->triggerEventSource->toOptionArray() as $option) {
-            if ($option['value'] === $triggerEvent) {
-                return (string) $option['label'];
-            }
-        }
-
-        return $triggerEvent;
+        return array_column($this->triggerEventSource->toOptionArray(), 'value');
     }
 
     /**
+     * @return string[]
+     */
+    public function getConditionTypes(): array
+    {
+        return $this->conditionPool->getAvailableTypes();
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getActionTypes(): array
+    {
+        return $this->actionPool->getAvailableTypes();
+    }
+
+    /**
+     * Which of Save.php's DEDICATED_PARAM_FIELDS applies to each known condition/action type —
+     * the same mapping ordo_campaign_form.xml's switcherConfig encodes for the native dynamicRows
+     * form, duplicated here (not read from the XML) so the flow canvas can render the same
+     * human-readable labeled inputs instead of a raw JSON textarea for anyone who doesn't know
+     * what JSON is. A type not listed here (a custom condition/action a store added) still works
+     * via the JSON fallback field every node also has.
+     *
+     * @return array<string, array<string, array<int, array<string, string>>>>
+     */
+    public function getFieldsConfig(): array
+    {
+        return [
+            'condition' => [
+                'tag' => [['name' => 'tag', 'label' => (string) __('Tag')]],
+                'order_total_gte' => [['name' => 'amount', 'label' => (string) __('Minimum order total')]],
+            ],
+            'action' => [
+                'add_tag' => [['name' => 'tag', 'label' => (string) __('Tag')]],
+                'generate_coupon' => [
+                    ['name' => 'rule_id', 'label' => (string) __('Cart price rule ID')],
+                    ['name' => 'prefix', 'label' => (string) __('Coupon code prefix')],
+                ],
+                'send_email' => [
+                    ['name' => 'template', 'label' => (string) __('Email template identifier')],
+                    ['name' => 'message', 'label' => (string) __('Message')],
+                ],
+            ],
+        ];
+    }
+
+    public function getFieldsConfigJson(): string
+    {
+        return (string) json_encode($this->getFieldsConfig());
+    }
+
+    /**
+     * @param string[] $types
+     */
+    private function typeOptionsHtml(array $types, string $selected): string
+    {
+        $html = '';
+        foreach ($types as $type) {
+            $isSelected = $type === $selected ? ' selected="selected"' : '';
+            $html .= '<option value="' . $this->escapeHtmlAttr($type) . '"' . $isSelected . '>'
+                . $this->escapeHtml($type) . '</option>';
+        }
+
+        return $html;
+    }
+
+    /**
+     * A trigger node has no dedicated fields/params — its type select value IS the whole
+     * payload (the trigger_event itself) — so it's a simpler shape than
+     * editableNodeHtml()/condition/action nodes below: just a label, a delete button, and the
+     * select.
+     */
+    private function triggerNodeHtml(string $selectedTrigger, string $optionsHtml): string
+    {
+        return '<div class="ordo-flow-node" data-kind="trigger">'
+            . '<div class="ordo-flow-node-head">'
+            . '<span>' . $this->escapeHtml((string) __('Trigger')) . '</span>'
+            . '<button type="button" class="ordo-flow-delete" title="' . $this->escapeHtmlAttr((string) __('Remove')) . '">&times;</button>'
+            . '</div>'
+            . '<select class="ordo-flow-type-select">' . $optionsHtml . '</select>'
+            . '</div>';
+    }
+
+    /**
+     * Every condition/action node renders the same editable shape: a type <select> (options
+     * from ConditionPool/ActionPool — the same registry the native dynamicRows type dropdown
+     * uses) plus an empty `.ordo-flow-fields` container that campaign-flow-editor.js fills with
+     * labeled inputs for whatever fields the selected type actually has (getFieldsConfig()) —
+     * this node's decoded params travel in the `data-params` attribute so the client-side
+     * renderer has something to pre-fill. No raw JSON textarea for a type that has dedicated
+     * fields: someone who doesn't know what JSON is should never have to see one to configure
+     * this. A type without a mapping still gets the JSON fallback field.
+     */
+    private function editableNodeHtml(string $kind, string $label, string $paramsJson, string $optionsHtml): string
+    {
+        $decodedParams = json_decode($paramsJson, true);
+        $paramsAttr = json_encode(is_array($decodedParams) ? $decodedParams : []);
+
+        // Drawflow itself already applies the 'ordo-flow-condition'/'ordo-flow-action' class
+        // (passed as addNode's classoverride / buildNode's $name) to the outer .drawflow-node
+        // wrapper it generates around this HTML — repeating that same class on our own inner
+        // div here would make jQuery's `.find('.ordo-flow-action')` in campaign-flow-editor.js
+        // match both elements per node and silently double every row on save. This inner div
+        // only ever needs the `data-kind` marker for that lookup, not the class.
+        return '<div class="ordo-flow-node" data-kind="' . $this->escapeHtmlAttr($kind)
+            . '" data-params="' . $this->escapeHtmlAttr((string) $paramsAttr) . '">'
+            . '<div class="ordo-flow-node-head">'
+            . '<span>' . $this->escapeHtml($label) . '</span>'
+            . '<button type="button" class="ordo-flow-delete" title="' . $this->escapeHtmlAttr((string) __('Remove')) . '">&times;</button>'
+            . '</div>'
+            . '<select class="ordo-flow-type-select">' . $optionsHtml . '</select>'
+            . '<div class="ordo-flow-fields"></div>'
+            . '</div>';
+    }
+
+    /**
+     * Trigger nodes have no input — nothing ever feeds into them, they're where the scenario
+     * starts — so they get zero `inputs`, not the usual one, and no left-edge connector dot
+     * renders for them at all.
+     *
      * @return array<string, mixed>
      */
     private function buildNode(int $id, string $name, string $html, int $posX, int $posY): array
     {
+        $isTrigger = $name === 'ordo-flow-trigger';
+
         return [
             'id' => $id,
             'name' => $name,
@@ -70,7 +200,7 @@ class Flow extends Template
             'class' => $name,
             'html' => $html,
             'typenode' => false,
-            'inputs' => ['input_1' => ['connections' => []]],
+            'inputs' => $isTrigger ? [] : ['input_1' => ['connections' => []]],
             'outputs' => ['output_1' => ['connections' => []]],
             'pos_x' => $posX,
             'pos_y' => $posY,
@@ -96,36 +226,51 @@ class Flow extends Template
         $campaignId = (int) $campaign->getEntityId();
         $nodes = [];
         $nextId = 1;
-        $x = 40;
+        $x = 60;
 
-        $triggerId = $nextId++;
-        $nodes[$triggerId] = $this->buildNode(
-            $triggerId,
-            'ordo-flow-trigger',
-            '<div class="ordo-flow-node ordo-flow-trigger">' . $this->escapeHtml($this->triggerLabel($campaign->getTriggerEvent())) . '</div>',
-            $x,
-            150
-        );
-        $x += 220;
+        $triggers = $this->triggerCollectionFactory->create();
+        $triggers->addCampaignFilter($campaignId);
+        $triggerIds = [];
+        foreach ($triggers as $trigger) {
+            $id = $nextId++;
+            $triggerEvent = (string) $trigger->getData('trigger_event');
+            $nodes[$id] = $this->buildNode(
+                $id,
+                'ordo-flow-trigger',
+                $this->triggerNodeHtml($triggerEvent, $this->typeOptionsHtml($this->getTriggerEventTypes(), $triggerEvent)),
+                $x,
+                60 + count($triggerIds) * 160
+            );
+            $triggerIds[] = $id;
+        }
+        $x += 260;
 
         $conditions = $this->conditionCollectionFactory->create();
         $conditions->addCampaignFilter($campaignId);
         $lastConditionIds = [];
         foreach ($conditions as $condition) {
             $id = $nextId++;
+            $type = (string) $condition->getData('type');
             $nodes[$id] = $this->buildNode(
                 $id,
                 'ordo-flow-condition',
-                '<div class="ordo-flow-node ordo-flow-condition">' . $this->escapeHtml((string) $condition->getData('type')) . '</div>',
+                $this->editableNodeHtml(
+                    'condition',
+                    (string) __('Condition'),
+                    (string) $condition->getData('params'),
+                    $this->typeOptionsHtml($this->getConditionTypes(), $type)
+                ),
                 $x,
                 150
             );
-            $this->connect($nodes, $triggerId, $id);
+            foreach ($triggerIds as $triggerId) {
+                $this->connect($nodes, $triggerId, $id);
+            }
             $lastConditionIds[] = $id;
-            $x += 220;
+            $x += 260;
         }
 
-        $upstreamIds = $lastConditionIds ?: [$triggerId];
+        $upstreamIds = $lastConditionIds ?: $triggerIds;
 
         $actions = $this->actionCollectionFactory->create();
         $actions->addCampaignFilter($campaignId);
@@ -133,10 +278,16 @@ class Flow extends Template
         $previousActionId = null;
         foreach ($actions as $action) {
             $id = $nextId++;
+            $type = (string) $action->getData('type');
             $nodes[$id] = $this->buildNode(
                 $id,
                 'ordo-flow-action',
-                '<div class="ordo-flow-node ordo-flow-action">' . $this->escapeHtml((string) $action->getData('type')) . '</div>',
+                $this->editableNodeHtml(
+                    'action',
+                    (string) __('Action'),
+                    (string) $action->getData('params'),
+                    $this->typeOptionsHtml($this->getActionTypes(), $type)
+                ),
                 $x,
                 150
             );
@@ -150,7 +301,7 @@ class Flow extends Template
             }
 
             $previousActionId = $id;
-            $x += 220;
+            $x += 260;
         }
 
         return (string) json_encode([

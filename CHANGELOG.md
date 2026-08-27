@@ -2,6 +2,41 @@
 
 All notable changes to this module are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+- **Multi-trigger campaigns.** A campaign's trigger event moved from a single
+  `ordo_campaign.trigger_event` column to its own child entity,
+  `ordo_campaign_trigger` (`CampaignTriggerInterface`), matching the existing
+  `CampaignCondition`/`CampaignAction` pattern — a campaign can now fire on
+  more than one trigger event (e.g. both `customer_registered` and
+  `tag_added` running the same conditions/actions chain). New REST resource:
+  `/V1/ordo/campaign-triggers` (full CRUD, see `API.md`). The old column is
+  kept, nullable and unread by any code path, purely so
+  `Setup\Patch\Data\MigrateCampaignTriggerToChildTable` has something to
+  migrate from on upgrade — declarative schema applies the whole
+  `db_schema.xml` diff before any data patch runs, so dropping the column in
+  the same release would have destroyed the data the patch needs to read.
+- **Editable Drawflow scenario canvas** on the campaign edit page
+  (`ordo/campaign/edit`) — a visual, drag-and-drop view of a campaign's
+  trigger(s) → conditions → actions chain, built on
+  [Drawflow](https://github.com/jerosoler/Drawflow) (MIT, vendored). Every
+  condition/action type with a dedicated field mapping renders labeled
+  inputs instead of a raw JSON textarea — someone who doesn't know what JSON
+  is should never have to see one to configure a condition/action that has a
+  known shape. "Apply flow to form & Save" validates the graph (every node
+  reachable from a trigger, at least one action, no dead-end condition
+  nodes) before writing back into the same `triggers`/`conditions`/`actions`
+  provider data `Save.php` already accepts and calling the form's own native
+  save — the canvas never talks to the backend directly.
+
+### Fixed
+- **Campaigns grid still showed the deprecated single `trigger_event`
+  column**, which is empty for any campaign saved after the multi-trigger
+  migration. `Model\ResourceModel\Campaign\Grid\Collection` now joins
+  `ordo_campaign_trigger` with a `GROUP_CONCAT` and the grid's "Triggers"
+  column shows every trigger a campaign actually has, comma-separated.
+
 ## [1.0.0]
 
 **Every checklist item in `VERIFICATION.md` sections 1–7 now passes against a

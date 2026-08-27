@@ -3,10 +3,12 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Block\Adminhtml\Dashboard;
 
-use Ordo\Automation\Api\Data\CampaignInterface;
+use Ordo\Automation\Api\Data\CampaignTriggerInterface;
 use Ordo\Automation\Block\Adminhtml\Dashboard\DashboardViewModel;
 use Ordo\Automation\Model\ResourceModel\Campaign\Collection as CampaignCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as CampaignTriggerCollection;
+use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as CampaignTriggerCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\Collection as FreeGiftOfferCollection;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\CollectionFactory as FreeGiftOfferCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\Collection as ReorderCycleCollection;
@@ -18,10 +20,12 @@ class DashboardViewModelTest extends TestCase
     private function makeViewModel(
         ?CampaignCollectionFactory $campaignCollectionFactory = null,
         ?ReorderCycleCollectionFactory $reorderCycleCollectionFactory = null,
-        ?FreeGiftOfferCollectionFactory $freeGiftOfferCollectionFactory = null
+        ?FreeGiftOfferCollectionFactory $freeGiftOfferCollectionFactory = null,
+        ?CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory = null
     ): DashboardViewModel {
         return new DashboardViewModel(
             $campaignCollectionFactory ?? $this->createMock(CampaignCollectionFactory::class),
+            $campaignTriggerCollectionFactory ?? $this->createMock(CampaignTriggerCollectionFactory::class),
             $reorderCycleCollectionFactory ?? $this->createMock(ReorderCycleCollectionFactory::class),
             $freeGiftOfferCollectionFactory ?? $this->createMock(FreeGiftOfferCollectionFactory::class)
         );
@@ -98,7 +102,7 @@ class DashboardViewModelTest extends TestCase
     {
         $viewModel = $this->makeViewModel();
 
-        self::assertSame('Order Placed', $viewModel->getTriggerLabel(CampaignInterface::TRIGGER_ORDER_PLACED));
+        self::assertSame('Order Placed', $viewModel->getTriggerLabel(CampaignTriggerInterface::TRIGGER_ORDER_PLACED));
     }
 
     public function testGetTriggerLabelFallsBackToRawValue(): void
@@ -106,5 +110,39 @@ class DashboardViewModelTest extends TestCase
         $viewModel = $this->makeViewModel();
 
         self::assertSame('unknown_trigger', $viewModel->getTriggerLabel('unknown_trigger'));
+    }
+
+    public function testGetTriggerLabelsForCampaignJoinsAllLabels(): void
+    {
+        $triggerOne = $this->createMock(\Ordo\Automation\Model\CampaignTrigger::class);
+        $triggerOne->method('getTriggerEvent')->willReturn(CampaignTriggerInterface::TRIGGER_ORDER_PLACED);
+
+        $triggerTwo = $this->createMock(\Ordo\Automation\Model\CampaignTrigger::class);
+        $triggerTwo->method('getTriggerEvent')->willReturn(CampaignTriggerInterface::TRIGGER_TAG_ADDED);
+
+        $collection = $this->createMock(CampaignTriggerCollection::class);
+        $collection->expects(self::once())->method('addCampaignFilter')->with(5);
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$triggerOne, $triggerTwo]));
+
+        $campaignTriggerCollectionFactory = $this->createMock(CampaignTriggerCollectionFactory::class);
+        $campaignTriggerCollectionFactory->method('create')->willReturn($collection);
+
+        $viewModel = $this->makeViewModel(null, null, null, $campaignTriggerCollectionFactory);
+
+        self::assertSame('Order Placed, Tag Added', $viewModel->getTriggerLabelsForCampaign(5));
+    }
+
+    public function testGetTriggerLabelsForCampaignFallsBackWhenEmpty(): void
+    {
+        $collection = $this->createMock(CampaignTriggerCollection::class);
+        $collection->method('addCampaignFilter');
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
+
+        $campaignTriggerCollectionFactory = $this->createMock(CampaignTriggerCollectionFactory::class);
+        $campaignTriggerCollectionFactory->method('create')->willReturn($collection);
+
+        $viewModel = $this->makeViewModel(null, null, null, $campaignTriggerCollectionFactory);
+
+        self::assertSame('No trigger configured', $viewModel->getTriggerLabelsForCampaign(5));
     }
 }

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Model\Config\Source;
 
-use Ordo\Automation\Api\Data\CampaignInterface;
+use Ordo\Automation\Api\Data\CampaignTriggerInterface;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
 use PHPUnit\Framework\TestCase;
 
@@ -15,10 +15,10 @@ class TriggerEventTest extends TestCase
 
         self::assertSame(
             [
-                CampaignInterface::TRIGGER_ORDER_PLACED,
-                CampaignInterface::TRIGGER_CUSTOMER_REGISTERED,
-                CampaignInterface::TRIGGER_TAG_ADDED,
-                CampaignInterface::TRIGGER_CART_ABANDONED,
+                CampaignTriggerInterface::TRIGGER_ORDER_PLACED,
+                CampaignTriggerInterface::TRIGGER_CUSTOMER_REGISTERED,
+                CampaignTriggerInterface::TRIGGER_TAG_ADDED,
+                CampaignTriggerInterface::TRIGGER_CART_ABANDONED,
             ],
             $values
         );

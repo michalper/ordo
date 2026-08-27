@@ -16,6 +16,8 @@
     <preference for="Ordo\Automation\Api\CampaignConditionRepositoryInterface" type="Ordo\Automation\Model\CampaignConditionRepository"/>
     <preference for="Ordo\Automation\Api\Data\CampaignActionInterface" type="Ordo\Automation\Model\CampaignAction"/>
     <preference for="Ordo\Automation\Api\CampaignActionRepositoryInterface" type="Ordo\Automation\Model\CampaignActionRepository"/>
+    <preference for="Ordo\Automation\Api\Data\CampaignTriggerInterface" type="Ordo\Automation\Model\CampaignTrigger"/>
+    <preference for="Ordo\Automation\Api\CampaignTriggerRepositoryInterface" type="Ordo\Automation\Model\CampaignTriggerRepository"/>
     <preference for="Ordo\Automation\Api\Data\FreeGiftOfferInterface" type="Ordo\Automation\Model\FreeGiftOffer"/>
     <preference for="Ordo\Automation\Api\FreeGiftOfferRepositoryInterface" type="Ordo\Automation\Model\FreeGiftOfferRepository"/>
     <preference for="Ordo\Automation\Api\Data\FreeGiftOfferTierInterface" type="Ordo\Automation\Model\FreeGiftOfferTier"/>
@@ -41,6 +43,7 @@
     <preference for="Ordo\Automation\Api\Data\OrderApprovalSearchResultsInterface" type="Ordo\Automation\Model\OrderApproval\SearchResults"/>
     <preference for="Ordo\Automation\Api\Data\CampaignConditionSearchResultsInterface" type="Ordo\Automation\Model\Campaign\Condition\SearchResults"/>
     <preference for="Ordo\Automation\Api\Data\CampaignActionSearchResultsInterface" type="Ordo\Automation\Model\Campaign\Action\SearchResults"/>
+    <preference for="Ordo\Automation\Api\Data\CampaignTriggerSearchResultsInterface" type="Ordo\Automation\Model\Campaign\Trigger\SearchResults"/>
     <preference for="Ordo\Automation\Api\Data\FreeGiftOfferSearchResultsInterface" type="Ordo\Automation\Model\FreeGiftOffer\SearchResults"/>
     <preference for="Ordo\Automation\Api\Data\FreeGiftOfferTierSearchResultsInterface" type="Ordo\Automation\Model\FreeGiftOfferTier\SearchResults"/>
     <preference for="Ordo\Automation\Api\Data\FreeGiftOfferProductSearchResultsInterface" type="Ordo\Automation\Model\FreeGiftOfferProduct\SearchResults"/>

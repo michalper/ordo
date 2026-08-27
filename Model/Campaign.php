@@ -37,17 +37,6 @@ class Campaign extends AbstractModel implements CampaignInterface
         return $this;
     }
 
-    public function getTriggerEvent(): string
-    {
-        return (string) $this->getData(self::TRIGGER_EVENT);
-    }
-
-    public function setTriggerEvent(string $triggerEvent): self
-    {
-        $this->setData(self::TRIGGER_EVENT, $triggerEvent);
-        return $this;
-    }
-
     public function isEnabled(): bool
     {
         return (bool) $this->getData(self::ENABLED);

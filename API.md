@@ -38,13 +38,39 @@ Full CRUD. ACL resource: `Ordo_Automation::campaigns` (admin token).
 
 ```
 POST /rest/V1/ordo/campaigns
-{"campaign": {"name": "API Test Campaign", "trigger_event": "order_placed", "enabled": true}}
+{"campaign": {"name": "API Test Campaign", "enabled": true}}
 
-→ 200 {"entity_id":10,"name":"API Test Campaign","trigger_event":"order_placed","enabled":true}
+→ 200 {"entity_id":10,"name":"API Test Campaign","enabled":true}
+```
+
+A campaign's trigger event(s) are no longer a field on the campaign itself — see
+"Campaign triggers" below. A campaign with no trigger rows never fires; add at least one.
+
+## Campaign triggers
+
+The event(s) that start a campaign — a campaign can have more than one (e.g. both
+`customer_registered` and `tag_added` running the same conditions/actions chain), so this is its
+own flat resource, same shape and convention as conditions/actions below. ACL resource:
+`Ordo_Automation::campaigns` (admin token).
+
+| Method | Path | Service method |
+|---|---|---|
+| GET | `/V1/ordo/campaign-triggers?searchCriteria[...]` | `CampaignTriggerRepositoryInterface::getList` |
+| GET | `/V1/ordo/campaign-triggers/:entityId` | `CampaignTriggerRepositoryInterface::getById` |
+| POST | `/V1/ordo/campaign-triggers` | `CampaignTriggerRepositoryInterface::save` |
+| PUT | `/V1/ordo/campaign-triggers/:entityId` | `CampaignTriggerRepositoryInterface::save` |
+| DELETE | `/V1/ordo/campaign-triggers/:entityId` | `CampaignTriggerRepositoryInterface::deleteById` |
+
+```
+POST /rest/V1/ordo/campaign-triggers
+{"trigger": {"campaign_id": 10, "trigger_event": "order_placed"}}
+
+→ 200 {"entity_id":3,"campaign_id":10,"trigger_event":"order_placed"}
 ```
 
 `trigger_event` is one of `order_placed`, `customer_registered`, `tag_added`, `cart_abandoned`
-(`Api\Data\CampaignInterface::TRIGGER_*` constants).
+(`Api\Data\CampaignTriggerInterface::TRIGGER_*` constants). A `(campaign_id, trigger_event)` pair
+is unique — posting the same pair twice for one campaign is a duplicate, not a second trigger.
 
 ## Campaign conditions / actions
 
@@ -309,7 +335,12 @@ TOKEN=$(curl -s -X POST "$BASE/rest/V1/integration/admin/token" \
 
 curl -s -X POST "$BASE/rest/V1/ordo/campaigns" \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
-  -d '{"campaign":{"name":"Win-back","trigger_event":"cart_abandoned","enabled":true}}'
+  -d '{"campaign":{"name":"Win-back","enabled":true}}'
+# → note the returned entity_id, then give it a trigger:
+
+curl -s -X POST "$BASE/rest/V1/ordo/campaign-triggers" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"trigger":{"campaign_id":<id>,"trigger_event":"cart_abandoned"}}'
 
 curl -s "$BASE/rest/V1/ordo/campaigns?searchCriteria[pageSize]=10" \
   -H "Authorization: Bearer $TOKEN"

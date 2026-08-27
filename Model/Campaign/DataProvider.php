@@ -8,12 +8,13 @@ use Magento\Ui\DataProvider\AbstractDataProvider;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as CampaignActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as CampaignConditionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as CampaignTriggerCollectionFactory;
 
 /**
- * Feeds the campaign edit form, including the two dynamicRows sections (conditions, actions)
- * — those aren't columns on ordo_campaign itself, so they're loaded separately here and
- * nested into each campaign's data array under the same keys the form's dynamicRows fields
- * expect (see ordo_campaign_form.xml).
+ * Feeds the campaign edit form, including the three dynamicRows sections (triggers,
+ * conditions, actions) — those aren't columns on ordo_campaign itself, so they're loaded
+ * separately here and nested into each campaign's data array under the same keys the form's
+ * dynamicRows fields expect (see ordo_campaign_form.xml).
  */
 class DataProvider extends AbstractDataProvider
 {
@@ -27,6 +28,7 @@ class DataProvider extends AbstractDataProvider
         $primaryFieldName,
         $requestFieldName,
         CampaignCollectionFactory $collectionFactory,
+        private readonly CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory,
         private readonly CampaignConditionCollectionFactory $campaignConditionCollectionFactory,
         private readonly CampaignActionCollectionFactory $campaignActionCollectionFactory,
         private readonly DataPersistorInterface $dataPersistor,
@@ -49,6 +51,7 @@ class DataProvider extends AbstractDataProvider
             $campaignData = $campaign->getData();
             $campaignId = (int) $campaign->getEntityId();
 
+            $campaignData['triggers'] = $this->loadTriggerRows($campaignId);
             $campaignData['conditions'] = $this->loadChildRows($this->campaignConditionCollectionFactory->create(), $campaignId);
             $campaignData['actions'] = $this->loadChildRows($this->campaignActionCollectionFactory->create(), $campaignId);
 
@@ -94,6 +97,22 @@ class DataProvider extends AbstractDataProvider
             }
 
             $rows[] = $rowData;
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function loadTriggerRows(int $campaignId): array
+    {
+        $collection = $this->campaignTriggerCollectionFactory->create();
+        $collection->addCampaignFilter($campaignId);
+
+        $rows = [];
+        foreach ($collection as $row) {
+            $rows[] = ['trigger_event' => $row->getData('trigger_event')];
         }
 
         return $rows;

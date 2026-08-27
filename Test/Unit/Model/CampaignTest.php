@@ -28,13 +28,6 @@ class CampaignTest extends AbstractModelTestCase
         self::assertSame('Welcome campaign', $model->getName());
     }
 
-    public function testTriggerEventRoundTrip(): void
-    {
-        $model = $this->makeModel();
-        $model->setTriggerEvent('customer_register_success');
-        self::assertSame('customer_register_success', $model->getTriggerEvent());
-    }
-
     public function testEnabledRoundTrip(): void
     {
         $model = $this->makeModel();

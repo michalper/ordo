@@ -69,7 +69,7 @@ $campaigns = $viewModel->getCampaigns();
                             </span>
                         </div>
                         <div class="ordo-campaign-trigger">
-                            <?= $escaper->escapeHtml(__('Trigger: %1', $viewModel->getTriggerLabel($campaign->getTriggerEvent()))) ?>
+                            <?= $escaper->escapeHtml(__('Triggers: %1', $viewModel->getTriggerLabelsForCampaign((int) $campaign->getEntityId()))) ?>
                         </div>
                     </a>
                 <?php endforeach; ?>

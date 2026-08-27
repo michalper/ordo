@@ -143,16 +143,34 @@
     <table name="ordo_campaign" resource="default" engine="innodb" comment="A configurable 'when X happens and Y is true, do Z' marketing rule">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="name" nullable="false" length="255" comment="Admin-facing name"/>
-        <column xsi:type="varchar" name="trigger_event" nullable="false" length="64" comment="e.g. order_placed, customer_registered, tag_added"/>
+        <column xsi:type="varchar" name="trigger_event" nullable="true" length="64" comment="DEPRECATED — superseded by ordo_campaign_trigger (a campaign can have more than one trigger now). Kept nullable, unread by any code path, purely so Setup\Patch\Data\MigrateCampaignTriggerToChildTable has a column to read from on upgrade. Safe to drop in a follow-up schema-only release once every install has run that patch."/>
         <column xsi:type="boolean" name="enabled" nullable="false" default="0" comment="Enabled"/>
         <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
         <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
-        <index referenceId="ORDO_CAMPAIGN_TRIGGER_EVENT_ENABLED" indexType="btree">
-            <column name="trigger_event"/>
+        <index referenceId="ORDO_CAMPAIGN_ENABLED" indexType="btree">
             <column name="enabled"/>
+        </index>
+    </table>
+
+    <table name="ordo_campaign_trigger" resource="default" engine="innodb" comment="One trigger event that starts a campaign — a campaign can fire on more than one, e.g. both customer_registered and tag_added, running the same conditions/actions either way">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id"/>
+        <column xsi:type="varchar" name="trigger_event" nullable="false" length="64" comment="e.g. order_placed, customer_registered, tag_added"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="ORDO_CAMPAIGN_TRIGGER_CAMPAIGN_ID_CAMPAIGN_ENTITY_ID"
+                    table="ordo_campaign_trigger" column="campaign_id"
+                    referenceTable="ordo_campaign" referenceColumn="entity_id" onDelete="CASCADE"/>
+        <constraint xsi:type="unique" referenceId="ORDO_CAMPAIGN_TRIGGER_CAMPAIGN_ID_TRIGGER_EVENT">
+            <column name="campaign_id"/>
+            <column name="trigger_event"/>
+        </constraint>
+        <index referenceId="ORDO_CAMPAIGN_TRIGGER_EVENT" indexType="btree">
+            <column name="trigger_event"/>
         </index>
     </table>
 

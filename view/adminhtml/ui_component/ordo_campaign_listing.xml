@@ -57,12 +57,15 @@
                 <label translate="true">Name</label>
             </settings>
         </column>
-        <column name="trigger_event">
+        <!-- A campaign can fire on more than one trigger event now (CampaignTriggerInterface
+             is its own child entity) — "triggers" is a GROUP_CONCAT aggregate the grid
+             collection computes (see Model/ResourceModel/Campaign/Grid/Collection.php), not a
+             plain column, so it's text-filterable only, not a select of one fixed value. -->
+        <column name="triggers">
             <settings>
-                <filter>select</filter>
-                <options class="Ordo\Automation\Model\Config\Source\TriggerEvent"/>
-                <dataType>select</dataType>
-                <label translate="true">Trigger Event</label>
+                <filter>text</filter>
+                <sortable>false</sortable>
+                <label translate="true">Triggers</label>
             </settings>
         </column>
         <column name="enabled" component="Magento_Ui/js/grid/columns/select">

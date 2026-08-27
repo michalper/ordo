@@ -5,30 +5,31 @@
 <?php if ($block->hasCampaign()): ?>
 <div class="ordo-flow-wrapper">
     <div class="ordo-flow-head">
-        <h2><?= $escaper->escapeHtml(__('Flow (read-only)')) ?></h2>
-        <p><?= $escaper->escapeHtml(__('Visualizes the conditions and actions saved below — drag to pan/zoom, this view does not edit the campaign.')) ?></p>
+        <h2><?= $escaper->escapeHtml(__('Flow')) ?></h2>
+        <p><?= $escaper->escapeHtml(__('Add trigger/condition/action nodes, then drag from the small dot on the right edge of one node to the dot on the left edge of the next to connect them. A campaign can start from more than one trigger — every one of them must lead all the way through to an Action before you can save. Then "Apply flow to form & Save" writes the graph into the form below and saves through the same action the Save button uses.')) ?></p>
+        <div class="ordo-flow-toolbar">
+            <button type="button" class="action-secondary" data-flow-action="add-trigger"><?= $escaper->escapeHtml(__('+ Trigger')) ?></button>
+            <button type="button" class="action-secondary" data-flow-action="add-condition"><?= $escaper->escapeHtml(__('+ Condition')) ?></button>
+            <button type="button" class="action-secondary" data-flow-action="add-action"><?= $escaper->escapeHtml(__('+ Action')) ?></button>
+            <button type="button" class="action-primary" data-flow-action="apply"><?= $escaper->escapeHtml(__('Apply flow to form & Save')) ?></button>
+        </div>
     </div>
     <div id="ordo-campaign-flow" class="ordo-flow-canvas"></div>
 </div>
 <script>
-require(['jquery', 'domReady!'], function ($) {
+require(['Ordo_Automation/js/campaign-flow-editor'], function (initCampaignFlowEditor) {
     'use strict';
 
-    var script = document.createElement('script');
-    script.src = '<?= $escaper->escapeJs($block->getViewFileUrl('Ordo_Automation::lib/drawflow/drawflow.min.js')) ?>';
-    script.onload = function () {
-        var container = document.getElementById('ordo-campaign-flow');
-        var editor = new window.Drawflow(container);
-        editor.reroute = true;
-        editor.editor_mode = 'view';
-        editor.start();
+    var container = document.getElementById('ordo-campaign-flow'),
+        flowData = <?= /* @noEscape */ $block->getFlowDataJson() ?>,
+        typesConfig = {
+            triggers: <?= /* @noEscape */ json_encode($block->getTriggerEventTypes()) ?>,
+            conditions: <?= /* @noEscape */ json_encode($block->getConditionTypes()) ?>,
+            actions: <?= /* @noEscape */ json_encode($block->getActionTypes()) ?>,
+            fields: <?= /* @noEscape */ $block->getFieldsConfigJson() ?>
+        };
 
-        var flowData = <?= /* @noEscape */ $block->getFlowDataJson() ?>;
-        if (flowData && flowData.drawflow) {
-            editor.import(flowData);
-        }
-    };
-    document.head.appendChild(script);
+    initCampaignFlowEditor(container, flowData, 'ordo_campaign_form.ordo_campaign_form_data_source', typesConfig);
 });
 </script>
 <?php endif; ?>

@@ -25,7 +25,7 @@ The goal is for this module to be a genuine substitute for a general-purpose MA 
 - **Sales-rep signature** — automated emails are signed by the customer's assigned rep; a weekly digest groups inactive customers by rep.
 - **Campaign engine** — a configurable "when X happens and Y is true, do Z" rule engine, with conditions/actions as `di.xml`-registered plug-ins and a full REST service contract.
 - **On-site behavior tracking** — a dependency-free JS snippet turns page/product/category views into campaign-engine tags.
-- **Admin UI** — dashboard, campaign builder (with a read-only [Drawflow](https://github.com/jerosoler/Drawflow) trigger → conditions → actions preview), free gift offer builder, and reorder-cycles diagnostic grid.
+- **Admin UI** — dashboard, campaign builder (with an editable [Drawflow](https://github.com/jerosoler/Drawflow) trigger(s) → conditions → actions canvas — a campaign can have more than one trigger), free gift offer builder, and reorder-cycles diagnostic grid.
 
 Everything is configurable under **Stores → Configuration → Ordo Automation** (or, for campaigns and free gifts, via their REST API), each with its own on/off switch and cron job. Implementation detail and the "why" behind each design decision live in [CHANGELOG.md](CHANGELOG.md); what's still in progress lives in [ROADMAP.md](ROADMAP.md).
 

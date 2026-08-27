@@ -16,7 +16,6 @@ class CampaignApiTest extends AbstractApiTestCase
         [$status, $created] = $this->asAdmin('POST', '/rest/V1/ordo/campaigns', [
             'campaign' => [
                 'name' => 'API Test Campaign',
-                'trigger_event' => 'order_placed',
                 'enabled' => true,
             ],
         ]);
@@ -43,7 +42,6 @@ class CampaignApiTest extends AbstractApiTestCase
             'campaign' => [
                 'entity_id' => $entityId,
                 'name' => 'API Test Campaign Updated',
-                'trigger_event' => 'order_placed',
                 'enabled' => false,
             ],
         ]);

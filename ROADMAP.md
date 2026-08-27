@@ -32,6 +32,7 @@ This file tracks what's shipped (for the implementation history/context) and wha
 **Campaign flow visualization — read-only preview shipped.** `ordo/campaign/edit` now renders a [Drawflow](https://github.com/jerosoler/Drawflow) (MIT, vendored under `view/adminhtml/web/lib/drawflow/`) canvas above the existing dynamicRows form: `Block\Adminhtml\Campaign\Edit\Flow` reads the same `CampaignCondition`/`CampaignAction` rows the form edits and builds a trigger → conditions → actions node graph server-side (`getFlowDataJson()`), imported into Drawflow in `editor_mode = 'view'`. Deliberately **not** the source of truth — the dynamicRows form and `Save.php` are unchanged, this is purely an additional visualization hooked onto data that already exists. Verified live: loaded a real campaign with a condition and an action, confirmed the exact node/connection JSON, confirmed the JS/CSS assets serve and the page renders without error.
 
 **Not yet built:**
+- **Delay / wait step between actions** — the action chain runs immediately, start to finish; there's no way to say "wait 2 days, then send the next email." Every real MA platform's scenario builder has this (iPresso's included — see `funkcjonalnosci/scenariusze-marketing-automation`: action blocks, conditions, and time delays as first-class steps in the sequence). This is the clearest gap between our engine and a real drip-campaign builder, more so than the visual editor below. Open question worth checking before designing it: does iPresso's scenario allow more than one trigger per scenario, or exactly one? Their page lists "Triggery" as a category of block but doesn't say whether a single scenario can start from several of them at once — relevant because we just built multi-trigger support (`CampaignTriggerInterface`) as a deliberate choice, and it's worth confirming whether that's ahead of or just different from the market-standard pattern.
 - A full visual **editor** (drag to create/rewire conditions and actions, writing back into the same `conditions[]`/`actions[]` structure `Save.php` already accepts) — the read-only preview above is the natural first step toward this, not the whole thing.
 - Stats for the five fixed triggers (reorder/offer/credit/approval/lifecycle) — sent / response rate / estimated recovered revenue per trigger — on the dashboard itself, alongside the campaign stats already there.
 - **Visual identity system** (logo/mark, color palette, typography, admin menu icon, GitHub social banner) — a full brand direction was drafted (dark "engine" aesthetic, Magento-orange + cyan accents, Inter/Plus Jakarta Sans + JetBrains Mono) but is a separate, sizeable design effort, not started. Decision pending on which pieces are worth building for a solo project (likely: GitHub banner + a simple monochrome menu icon first; branded email templates are lower priority).
@@ -51,6 +52,7 @@ This file tracks what's shipped (for the implementation history/context) and wha
 - No automatic page-type detection — firing `product_view`/`category_view` with the right key requires the theme to call `window.ordoTrack(eventType, eventKey)` on PDP/PLP templates. Only `page_view` fires automatically.
 - Tag cardinality tradeoff is explicit, not resolved: tagging by `event_key` (e.g. `viewed_category_view_15`) gives precise targeting but an unbounded number of distinct tags on a large catalog. A coarser variant is a deliberate, documented option for whoever operates this, not a decision made here.
 - No MFTF/API test coverage yet for this phase — tracked in Phase 6 alongside everything else.
+- **On-site channel (popups/banners/push) is missing** — every current action ends in an email, tag, or coupon; there's no action type that renders something back on the page itself for the visitor to see live (iPresso calls this "real-time marketing" / "Satellite" — see `funkcjonalnosci/real-time-marketing`). We already have the real-time detection half (`VisitorAggregator` tags on the fly, a `tag_added` campaign fires the instant a threshold is crossed) — the missing half is a new action type plus a small frontend piece that polls/receives the fired action and renders it (popup/banner) instead of only sending mail. Worth scoping once the delay-step gap above is closed.
 
 **Fixed:** `tracker.js` used to load sitewide regardless of the "tracking enabled" config toggle (the endpoint no-op'd, but the JS still made a wasted network call every page load). Now gated by `Block\Frontend\TrackerViewModel` — the `<script>` tag itself is only rendered when `Helper\Config::isTrackingEnabled()` is true, verified live against a real page.
 
@@ -76,5 +78,45 @@ Not failures — not attempted, or explicitly deferred:
 - Dashboard stats per fixed trigger (Phase 4).
 - Visual identity system (Phase 4).
 - `Test/Api/` coverage for the credit-limit endpoints (Phase 6).
+
+## Gaps vs. a full-market MA platform (iPresso-class enterprise features)
+
+Checked against iPresso's own feature pages (`funkcjonalnosci/scenariusze-marketing-automation`,
+`funkcjonalnosci/real-time-marketing`, `enterprise/e-commerce`, `funkcjonalnosci/content-automation`,
+`funkcjonalnosci/scoring`, `funkcjonalnosci/pop-up`, `funkcjonalnosci/segmentacja`) to see where
+this module genuinely falls short of a mature, general-purpose MA platform — not a code review, a
+market comparison. Each of these is a real, separate stream of work, not something to bolt onto
+the current campaign engine incidentally:
+
+- **Product recommendations** — dynamic "recommended for you" blocks in email/on-site based on
+  browsing/purchase history. We have none; every email is static content.
+- **Lead scoring** — iPresso supports demographic scoring (points for attributes), behavioral
+  scoring (points per event — page visit, email link click), and custom scoring plans, with
+  automations triggered by crossing a point threshold. We only have binary tags
+  (`ordo_customer_tag` — has it or doesn't), no point accumulation or threshold model at all;
+  this is a bigger gap than "no scoring" sounds — it's a genuinely different data model
+  (`ordo_customer_score` type table, plus rules mapping event → points, and a threshold check in
+  the condition pool) than tags are.
+- **Popups** — iPresso's popup product is specifically event-driven ("Pop-upy wywoływane
+  zdarzeniami to unikat na rynku" — triggered by a specific on-page click, not just page load),
+  with display-frequency capping and page-level targeting. This is the same on-site-channel gap
+  already tracked in Phase 5's known limitations, called out again here with more shape: it needs
+  at minimum a trigger condition ("element clicked") beyond the page/product/category views we
+  track today, plus frequency capping per visitor.
+- **Dynamic content blocks** (reusable text/HTML snippets, RSS-driven auto-newsletters, product
+  feed inside a campaign email) — not built; every email template today is static.
+- **Saved/reusable segments** — iPresso lets a segment (built from attributes + behavior) be
+  saved once and reused across scenarios/notifications, plus bulk actions on a segment (assign
+  tag, add note). We have no standalone segment entity — conditions are inline, per-campaign,
+  not a reusable named thing. This overlaps with the RFM gap below: a saved-segment feature would
+  be the natural place to add RFM-style segmentation too, rather than two separate builds.
+- **RFM segmentation** — a dedicated recency/frequency/monetary report and segment-by-RFM
+  workflow. Our "segmentation" today is just campaign conditions (`has_tag`,
+  `order_total_gte`), not a standalone RFM engine or report.
+- **Multichannel recovery** (SMS/WhatsApp/push, not just email) — `cart_abandoned`/win-back
+  campaigns only ever send email today; no other channel is wired into `ActionPool`.
+- **Delay/wait step and on-site channel** — tracked above (Phase 4 "Not yet built" and Phase 5
+  known limitations respectively); listed here again only for visibility, not duplicated as new
+  items.
 
 For what's already shipped and stable, see [README.md](README.md).

@@ -14,10 +14,18 @@ class Collection extends AbstractCollection
         $this->_init(CampaignModel::class, CampaignResource::class);
     }
 
-    public function addEnabledForTriggerFilter(string $triggerEvent): self
+    public function addEnabledFilter(): self
     {
-        $this->addFieldToFilter('trigger_event', $triggerEvent);
         $this->addFieldToFilter('enabled', 1);
+        return $this;
+    }
+
+    /**
+     * @param int[] $campaignIds
+     */
+    public function addIdsFilter(array $campaignIds): self
+    {
+        $this->addFieldToFilter('entity_id', ['in' => $campaignIds]);
         return $this;
     }
 }

@@ -8,17 +8,20 @@ use Magento\Framework\App\Action\HttpPostActionInterface;
 use Ordo\Automation\Model\CampaignActionFactory;
 use Ordo\Automation\Model\CampaignConditionFactory;
 use Ordo\Automation\Model\CampaignFactory;
+use Ordo\Automation\Model\CampaignTriggerFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign as CampaignResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action as CampaignActionResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as CampaignActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition as CampaignConditionResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as CampaignConditionCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign\Trigger as CampaignTriggerResource;
+use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as CampaignTriggerCollectionFactory;
 
 /**
- * Persists the campaign row plus its condition/action child rows in one request. Child rows
- * are posted by the form's dynamicRows fields as plain arrays — this always deletes and
- * re-inserts them rather than diffing, which is simple and correct for the small row counts
- * a campaign realistically has (a handful of conditions/actions, not hundreds).
+ * Persists the campaign row plus its trigger/condition/action child rows in one request. Child
+ * rows are posted by the form's dynamicRows fields as plain arrays — this always deletes and
+ * re-inserts them rather than diffing, which is simple and correct for the small row counts a
+ * campaign realistically has (a handful of triggers/conditions/actions, not hundreds).
  */
 class Save extends AbstractCampaignAction implements HttpPostActionInterface
 {
@@ -26,6 +29,9 @@ class Save extends AbstractCampaignAction implements HttpPostActionInterface
         Context $context,
         private readonly CampaignFactory $campaignFactory,
         private readonly CampaignResource $campaignResource,
+        private readonly CampaignTriggerFactory $campaignTriggerFactory,
+        private readonly CampaignTriggerResource $campaignTriggerResource,
+        private readonly CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory,
         private readonly CampaignConditionFactory $campaignConditionFactory,
         private readonly CampaignConditionResource $campaignConditionResource,
         private readonly CampaignConditionCollectionFactory $campaignConditionCollectionFactory,
@@ -53,11 +59,11 @@ class Save extends AbstractCampaignAction implements HttpPostActionInterface
         }
 
         $campaign->setName((string) ($data['name'] ?? ''));
-        $campaign->setTriggerEvent((string) ($data['trigger_event'] ?? ''));
         $campaign->setEnabled(!empty($data['enabled']));
 
         try {
             $this->campaignResource->save($campaign);
+            $this->saveTriggers((int) $campaign->getEntityId(), (array) ($data['triggers']['triggers'] ?? []));
             $this->saveChildRows(
                 (int) $campaign->getEntityId(),
                 (array) ($data['conditions']['conditions'] ?? []),
@@ -74,6 +80,37 @@ class Save extends AbstractCampaignAction implements HttpPostActionInterface
         } catch (\Throwable $e) {
             $this->messageManager->addErrorMessage(__('Could not save the campaign: %1', $e->getMessage()));
             return $resultRedirect->setPath('*/*/edit', ['entity_id' => $entityId]);
+        }
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $triggerRows
+     */
+    private function saveTriggers(int $campaignId, array $triggerRows): void
+    {
+        $existingTriggers = $this->campaignTriggerCollectionFactory->create();
+        $existingTriggers->addCampaignFilter($campaignId);
+        foreach ($existingTriggers as $existing) {
+            $this->campaignTriggerResource->delete($existing);
+        }
+
+        // A campaign posting the same trigger_event twice (e.g. two rows both set to
+        // "order_placed") would otherwise hit the unique(campaign_id, trigger_event) constraint
+        // on save — de-duplicate here rather than surfacing that as a confusing DB error.
+        $seen = [];
+        foreach ($triggerRows as $row) {
+            $triggerEvent = (string) ($row['trigger_event'] ?? '');
+            if ($triggerEvent === '' || isset($seen[$triggerEvent])) {
+                continue;
+            }
+            $seen[$triggerEvent] = true;
+
+            $trigger = $this->campaignTriggerFactory->create();
+            $trigger->setData([
+                'campaign_id' => $campaignId,
+                'trigger_event' => $triggerEvent,
+            ]);
+            $this->campaignTriggerResource->save($trigger);
         }
     }
 

@@ -8,12 +8,22 @@ use Ordo\Automation\Test\Unit\Model\ResourceModel\AbstractCollectionTestCase;
 
 class CollectionTest extends AbstractCollectionTestCase
 {
-    public function testAddEnabledForTriggerFilterIsFluentAndFiltersByTriggerAndEnabled(): void
+    public function testAddEnabledFilterIsFluent(): void
     {
         [$entityFactory, $logger, $fetchStrategy, $eventManager] = $this->makeCollectionDeps();
         $collection = new Collection($entityFactory, $logger, $fetchStrategy, $eventManager, null, $this->makeResource());
 
-        $result = $collection->addEnabledForTriggerFilter('order_placed');
+        $result = $collection->addEnabledFilter();
+
+        self::assertSame($collection, $result);
+    }
+
+    public function testAddIdsFilterIsFluent(): void
+    {
+        [$entityFactory, $logger, $fetchStrategy, $eventManager] = $this->makeCollectionDeps();
+        $collection = new Collection($entityFactory, $logger, $fetchStrategy, $eventManager, null, $this->makeResource());
+
+        $result = $collection->addIdsFilter([1, 2, 3]);
 
         self::assertSame($collection, $result);
     }

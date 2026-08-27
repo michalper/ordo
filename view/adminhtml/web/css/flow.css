@@ -1,54 +1,259 @@
 .ordo-flow-wrapper {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
     background: #fff;
-    border: 1px solid #d6d6d6;
-    border-radius: 4px;
-    padding: 16px;
+    border: 1px solid #e2e2e2;
+    border-radius: 8px;
+    padding: 20px 24px 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .04);
 }
 
 .ordo-flow-head h2 {
     margin: 0 0 4px;
-    font-size: 16px;
+    font-size: 17px;
+    font-weight: 600;
+    color: #11263c;
 }
 
 .ordo-flow-head p {
-    margin: 0 0 12px;
-    color: #6d6d6d;
+    margin: 0 0 16px;
+    color: #767676;
     font-size: 12px;
+    max-width: 720px;
+    line-height: 1.5;
+}
+
+.ordo-flow-toolbar {
+    margin-bottom: 16px;
+    display: flex;
+    gap: 10px;
+}
+
+.ordo-flow-error {
+    display: none;
+    margin: -6px 0 16px;
+    padding: 10px 14px;
+    background: #fdf0ef;
+    border: 1px solid #f4b7ae;
+    border-radius: 6px;
+    color: #9b3126;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.ordo-flow-canvas .drawflow-node.ordo-flow-node-error {
+    box-shadow: 0 0 0 3px #e02b27, 0 4px 10px rgba(0, 0, 0, .15);
+}
+
+.ordo-flow-toolbar button {
+    margin: 0;
+    border-radius: 20px;
+    padding: 7px 18px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .2px;
+    border: 1px solid transparent;
+}
+
+.ordo-flow-toolbar button.action-secondary {
+    background: #f4f5f6;
+    border-color: #dadfe3;
+    color: #41454b;
+}
+
+.ordo-flow-toolbar button.action-secondary:hover {
+    background: #e9ebee;
+}
+
+.ordo-flow-toolbar button[data-flow-action="apply"] {
+    background: #2196f3;
+    color: #fff;
+    margin-left: auto;
+}
+
+.ordo-flow-toolbar button[data-flow-action="apply"]:hover {
+    background: #1c86dc;
 }
 
 .ordo-flow-canvas {
+    position: relative;
     width: 100%;
-    height: 260px;
-    border: 1px solid #e3e3e3;
-    background: #fafafa;
+    height: 460px;
+    border: 1px solid #e6e9ec;
+    border-radius: 8px;
+    background-color: #fbfcfd;
+    background-image: radial-gradient(#dde3e8 1px, transparent 1px);
+    background-size: 22px 22px;
+    overflow: hidden;
 }
 
-.ordo-flow-node {
-    padding: 10px 14px;
-    font-size: 12px;
-    text-align: center;
-    border-radius: 3px;
-    color: #fff;
-    width: 100%;
-}
-
+/* Node chrome — Drawflow wraps our HTML in its own .drawflow-node div and applies the
+   'ordo-flow-condition'/'ordo-flow-action'/'ordo-flow-trigger' class to THAT wrapper (see
+   addNode()/buildNode() in JS/PHP), so all card styling (background, shadow, radius) lives
+   here rather than on our inner content div. */
 .ordo-flow-canvas .drawflow-node {
-    width: 180px;
+    width: 210px;
     min-height: auto;
     background: transparent;
     box-shadow: none;
     padding: 0;
+    border-radius: 10px;
+    /* NOT overflow:hidden — Drawflow positions the input/output connector dots outside this
+       box's own bounds (e.g. `left:-27px` in drawflow.min.css), so clipping overflow here
+       clips the dots themselves, making it look like there's no way to draw a connection. */
 }
 
-.ordo-flow-trigger {
-    background: #1979c3;
+.ordo-flow-canvas .drawflow-node > .drawflow_content_node {
+    border-radius: 10px;
+    overflow: hidden;
 }
 
-.ordo-flow-condition {
-    background: #eb5202;
+.ordo-flow-canvas .drawflow-node.selected {
+    box-shadow: 0 0 0 2px #2196f3, 0 4px 10px rgba(0, 0, 0, .12);
 }
 
-.ordo-flow-action {
-    background: #4b9e3f;
+.ordo-flow-node {
+    padding: 12px 14px 14px;
+    font-size: 12px;
+    color: #fff;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.ordo-flow-node-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+    opacity: .9;
+}
+
+.ordo-flow-delete {
+    /* Magento admin's global button styles set padding/line-height/font that turn a plain
+       width+height circle into an egg shape unless every one of those is reset explicitly and
+       box-sizing is pinned so the border doesn't add to the box. */
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, .18);
+    border: 0;
+    margin: 0;
+    padding: 0;
+    color: #fff;
+    cursor: pointer;
+    line-height: 1;
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    border-radius: 50%;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.ordo-flow-delete:hover {
+    background: rgba(0, 0, 0, .32);
+}
+
+.ordo-flow-type-select,
+.ordo-flow-params-textarea {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 11px;
+    margin-bottom: 6px;
+    color: #2b2b2b;
+    border: none;
+    border-radius: 5px;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, .92);
+}
+
+.ordo-flow-params-textarea {
+    resize: vertical;
+    height: 42px;
+    font-family: 'Consolas', 'Menlo', monospace;
+    margin-bottom: 0;
+}
+
+.ordo-flow-field-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    opacity: .85;
+    margin: 0 0 3px;
+}
+
+.ordo-flow-field-input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 11px;
+    margin-bottom: 8px;
+    color: #2b2b2b;
+    border: none;
+    border-radius: 5px;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, .92);
+}
+
+.ordo-flow-field-input:last-child,
+.ordo-flow-fields > .ordo-flow-field-label:last-child + .ordo-flow-field-input {
+    margin-bottom: 0;
+}
+
+/* drawflow.min.css's own `.drawflow .drawflow-node { background: #0ff; border: 2px solid #000 }`
+   is two classes deep (specificity 0,2,0) — a bare `.ordo-flow-trigger {...}` (0,1,0) loses to
+   it regardless of stylesheet load order, so every one of these repeats the
+   `.ordo-flow-canvas .drawflow-node` prefix to outrank it. */
+.ordo-flow-canvas .drawflow-node.ordo-flow-trigger {
+    background: linear-gradient(135deg, #2196f3, #1565c0);
+    border: none;
+}
+
+.ordo-flow-canvas .drawflow-node.ordo-flow-condition {
+    background: linear-gradient(135deg, #ff9142, #ea580c);
+    border: none;
+}
+
+.ordo-flow-canvas .drawflow-node.ordo-flow-action {
+    background: linear-gradient(135deg, #4caf50, #2e7d32);
+    border: none;
+}
+
+/* Connection lines/dots — Drawflow's defaults are thin and grey by default; make them read
+   clearly against the dotted canvas background above. The arrowhead marker itself is defined
+   once as an inline SVG <marker> injected by campaign-flow-editor.js (Drawflow's own paths have
+   no direction indicator at all otherwise). */
+.ordo-flow-canvas .connection .main-path {
+    stroke: #9aa7b0;
+    stroke-width: 3px;
+    marker-end: url(#ordo-flow-arrowhead);
+}
+
+.ordo-flow-canvas .drawflow .connection .point {
+    stroke: #9aa7b0;
+    fill: #fff;
+}
+
+.ordo-flow-canvas .drawflow .input,
+.ordo-flow-canvas .drawflow .output {
+    background: #fff;
+    border: 3px solid #6b7580;
+    height: 16px;
+    width: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+    transition: transform .1s ease, border-color .1s ease;
+}
+
+.ordo-flow-canvas .drawflow .output:hover,
+.ordo-flow-canvas .drawflow .input:hover {
+    border-color: #2196f3;
+    transform: scale(1.25);
+    cursor: crosshair;
 }
