@@ -81,6 +81,9 @@ class DataProviderTest extends TestCase
 
         self::assertSame('vip', $data[1]['conditions'][0]['tag']);
         self::assertSame('reordered', $data[1]['actions'][0]['tag']);
+
+        // Second call must hit the cached $loadedData branch, not reload from the collection.
+        self::assertSame($data, $provider->getData());
     }
 
     public function testGetDataKeepsParamsJsonOnlyWhenDecodeFails(): void

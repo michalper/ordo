@@ -45,4 +45,13 @@ class AddCustomerSpendLimitAttributesTest extends TestCase
             AddCustomerSpendLimitAttributes::getDependencies()
         );
     }
+
+    public function testGetAliasesIsEmpty(): void
+    {
+        $moduleDataSetup = $this->createMock(ModuleDataSetupInterface::class);
+        $customerSetupFactory = $this->createMock(CustomerSetupFactory::class);
+        $patch = new AddCustomerSpendLimitAttributes($moduleDataSetup, $customerSetupFactory);
+
+        self::assertSame([], $patch->getAliases());
+    }
 }

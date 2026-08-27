@@ -111,15 +111,64 @@ class SendAbandonedCartRemindersTest extends TestCase
         $this->makeCron($config, $resourceConnection, $dispatcher)->execute();
     }
 
+    public function testExecuteLogsErrorWhenSendingReminderThrows(): void
+    {
+        $config = $this->createMock(Config::class);
+        $config->method('isAbandonedCartEnabled')->willReturn(true);
+        $config->method('getAbandonedCartDelayMinutes')->willReturn(120);
+        $config->method('getAbandonedCartMinSubtotal')->willReturn(0.0);
+        $config->method('getAbandonedCartMaxReminders')->willReturn(1);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            [
+                'entity_id' => 10,
+                'customer_id' => 5,
+                'customer_email' => 'jan@example.com',
+                'customer_firstname' => 'Jan',
+                'subtotal' => 150.0,
+            ],
+        ]);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $quoteFactory = $this->createMock(QuoteFactory::class);
+        $quoteFactory->method('create')->willThrowException(new \RuntimeException('quote load failed'));
+
+        $dispatcher = $this->createMock(CampaignDispatcher::class);
+        $dispatcher->expects(self::never())->method('dispatch');
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('error');
+
+        (new SendAbandonedCartReminders(
+            $config,
+            $resourceConnection,
+            $quoteFactory,
+            $this->createMock(TransportBuilder::class),
+            $this->createMock(StoreManagerInterface::class),
+            $this->createMock(StateInterface::class),
+            $dispatcher,
+            $logger
+        ))->execute();
+    }
+
     private function makeCron(
         Config $config,
         ResourceConnection $resourceConnection,
         ?CampaignDispatcher $dispatcher = null,
         ?LoggerInterface $logger = null
     ): SendAbandonedCartReminders {
+        $quoteItem = $this->createMock(\Magento\Quote\Model\Quote\Item::class);
+        $quoteItem->method('getName')->willReturn('Widget');
+        $quoteItem->method('getQty')->willReturn(2.0);
+
         $quote = $this->createMock(Quote::class);
         $quote->method('load')->willReturnSelf();
-        $quote->method('getAllVisibleItems')->willReturn([]);
+        $quote->method('getAllVisibleItems')->willReturn([$quoteItem]);
 
         $quoteFactory = $this->createMock(QuoteFactory::class);
         $quoteFactory->method('create')->willReturn($quote);

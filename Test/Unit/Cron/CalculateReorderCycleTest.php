@@ -85,6 +85,33 @@ class CalculateReorderCycleTest extends TestCase
         (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $logger))->execute();
     }
 
+    public function testExecuteSkipsSameDayRepeatPurchases(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-01-01 10:00:00'],
+            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-01-01 11:00:00'],
+            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-01-01 12:00:00'],
+        ]);
+        $connection->expects(self::never())->method('insert');
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $reorderCycleFactory = $this->createMock(ReorderCycleFactory::class);
+        $reorderCycleFactory->expects(self::never())->method('create');
+
+        $reorderCycleResource = $this->createMock(ReorderCycleResource::class);
+        $reorderCycleResource->expects(self::never())->method('save');
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('info')->with(self::stringContains('0 reorder cycles'));
+
+        (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $logger))->execute();
+    }
+
     public function testExecuteUpdatesExistingCycle(): void
     {
         $connection = $this->createMock(AdapterInterface::class);

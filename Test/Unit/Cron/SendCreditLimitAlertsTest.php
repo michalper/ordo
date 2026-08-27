@@ -109,6 +109,48 @@ class SendCreditLimitAlertsTest extends TestCase
         $this->makeCron($config, $calculator, $resourceConnection)->execute();
     }
 
+    public function testExecuteLogsErrorWhenSendingAlertThrows(): void
+    {
+        $config = $this->createMock(Config::class);
+        $config->method('isCreditLimitAlertEnabled')->willReturn(true);
+        $config->method('getCreditLimitWarningThreshold')->willReturn(80);
+        $config->method('getCreditLimitAlertCooldownDays')->willReturn(7);
+
+        $calculator = $this->createMock(CreditLimitCalculator::class);
+        $calculator->method('getCustomerIdsWithCreditLimit')->willReturn([5]);
+        $calculator->method('getUtilizationPercent')->willReturn(85.0);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchOne')->willReturn(0);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $customerRepository->method('getById')->willThrowException(new \RuntimeException('customer lookup failed'));
+
+        $storeManager = $this->createMock(StoreManagerInterface::class);
+        $transportBuilder = $this->createMock(TransportBuilder::class);
+        $salesRepEmailContext = $this->createMock(SalesRepEmailContext::class);
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('error');
+
+        (new SendCreditLimitAlerts(
+            $config,
+            $calculator,
+            $resourceConnection,
+            $customerRepository,
+            $transportBuilder,
+            $storeManager,
+            $this->createMock(StateInterface::class),
+            $salesRepEmailContext,
+            $logger
+        ))->execute();
+    }
+
     private function makeCron(
         Config $config,
         CreditLimitCalculator $calculator,

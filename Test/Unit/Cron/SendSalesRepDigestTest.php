@@ -99,4 +99,68 @@ class SendSalesRepDigestTest extends TestCase
             $logger
         ))->execute();
     }
+
+    public function testExecuteSkipsCustomerWhenLookupThrows(): void
+    {
+        $config = $this->createMock(Config::class);
+        $config->method('isSalesRepDigestEnabled')->willReturn(true);
+
+        $tagManager = $this->createMock(CustomerTagManager::class);
+        $tagManager->method('getCustomerIdsWithTag')->willReturn([5]);
+
+        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $customerRepository->method('getById')->willThrowException(new \RuntimeException('not found'));
+
+        $transportBuilder = $this->createMock(TransportBuilder::class);
+        $transportBuilder->expects(self::never())->method('getTransport');
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('info')->with(self::stringContains('0 sales rep digests'));
+
+        (new SendSalesRepDigest(
+            $config,
+            $tagManager,
+            $customerRepository,
+            $transportBuilder,
+            $this->createMock(StoreManagerInterface::class),
+            $this->createMock(StateInterface::class),
+            $logger
+        ))->execute();
+    }
+
+    public function testExecuteLogsErrorWhenSendingDigestThrows(): void
+    {
+        $config = $this->createMock(Config::class);
+        $config->method('isSalesRepDigestEnabled')->willReturn(true);
+
+        $tagManager = $this->createMock(CustomerTagManager::class);
+        $tagManager->method('getCustomerIdsWithTag')->willReturn([5]);
+
+        $repAttr = $this->createMock(AttributeInterface::class);
+        $repAttr->method('getValue')->willReturn('rep@example.com');
+
+        $customer = $this->createMock(CustomerInterface::class);
+        $customer->method('getCustomAttribute')->willReturn($repAttr);
+        $customer->method('getFirstname')->willReturn('Jan');
+        $customer->method('getLastname')->willReturn('Kowalski');
+
+        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $customerRepository->method('getById')->willReturn($customer);
+
+        $storeManager = $this->createMock(StoreManagerInterface::class);
+        $storeManager->method('getStore')->willThrowException(new \RuntimeException('no store'));
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('error');
+
+        (new SendSalesRepDigest(
+            $config,
+            $tagManager,
+            $customerRepository,
+            $this->createMock(TransportBuilder::class),
+            $storeManager,
+            $this->createMock(StateInterface::class),
+            $logger
+        ))->execute();
+    }
 }

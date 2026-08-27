@@ -56,6 +56,33 @@ class SendWinBackEmailsTest extends TestCase
         $this->makeCron($config, $tagManager)->execute();
     }
 
+    public function testExecuteLogsErrorWhenSendingThrows(): void
+    {
+        $config = $this->createMock(Config::class);
+        $config->method('isLifecycleEmailsEnabled')->willReturn(true);
+
+        $tagManager = $this->createMock(CustomerTagManager::class);
+        $tagManager->method('getCustomerIdsWithTag')->willReturn([5]);
+        $tagManager->method('hasTag')->willReturn(false);
+        $tagManager->expects(self::never())->method('addTag');
+
+        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $customerRepository->method('getById')->willThrowException(new \RuntimeException('lookup failed'));
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('error');
+
+        (new SendWinBackEmails(
+            $config,
+            $tagManager,
+            $customerRepository,
+            $this->createMock(TransportBuilder::class),
+            $this->createMock(StoreManagerInterface::class),
+            $this->createMock(StateInterface::class),
+            $logger
+        ))->execute();
+    }
+
     private function makeCron(Config $config, CustomerTagManager $tagManager): SendWinBackEmails
     {
         $customer = $this->createMock(CustomerInterface::class);

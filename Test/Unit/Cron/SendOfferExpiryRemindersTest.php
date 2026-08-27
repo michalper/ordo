@@ -110,6 +110,50 @@ class SendOfferExpiryRemindersTest extends TestCase
         $this->makeCron($config, $collectionFactory, $resourceConnection)->execute();
     }
 
+    public function testExecuteLogsErrorWhenSendingReminderThrows(): void
+    {
+        $config = $this->createMock(Config::class);
+        $config->method('isOfferReminderEnabled')->willReturn(true);
+        $config->method('getOfferLeadDays')->willReturn(2);
+
+        $offer = $this->createMock(Offer::class);
+        $offer->method('getEntityId')->willReturn(4);
+        $offer->method('getCustomerId')->willReturn(5);
+
+        $collection = $this->createMock(Collection::class);
+        $collection->method('addExpiringOnFilter');
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$offer]));
+
+        $collectionFactory = $this->createMock(CollectionFactory::class);
+        $collectionFactory->method('create')->willReturn($collection);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchOne')->willReturn(0);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $customerRepository->method('getById')->willThrowException(new \RuntimeException('lookup failed'));
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('error');
+
+        (new SendOfferExpiryReminders(
+            $config,
+            $collectionFactory,
+            $resourceConnection,
+            $customerRepository,
+            $this->createMock(TransportBuilder::class),
+            $this->createMock(StoreManagerInterface::class),
+            $this->createMock(StateInterface::class),
+            $this->createMock(SalesRepEmailContext::class),
+            $logger
+        ))->execute();
+    }
+
     private function makeCron(
         Config $config,
         CollectionFactory $collectionFactory,

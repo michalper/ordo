@@ -159,4 +159,34 @@ class EscalateStalePendingApprovalsTest extends TestCase
 
         $this->makeCron()->execute();
     }
+
+    public function testExecuteLogsErrorWhenEmailSendingThrows(): void
+    {
+        $approval = $this->createMock(OrderApproval::class);
+        $approval->method('getData')->willReturnMap([
+            ['reminders_sent', null, 0],
+            ['order_id', null, 7],
+        ]);
+
+        $collection = $this->createMock(ApprovalCollection::class);
+        $collection->method('addStalePendingFilter');
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$approval]));
+        $this->approvalCollectionFactory->method('create')->willReturn($collection);
+
+        $order = $this->createMock(Order::class);
+        $order->method('getId')->willReturn(7);
+        $order->method('getEntityId')->willReturn(7);
+
+        $orderCollection = $this->createMock(OrderCollection::class);
+        $orderCollection->method('addFieldToFilter')->willReturnSelf();
+        $orderCollection->method('getFirstItem')->willReturn($order);
+        $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
+
+        $this->storeManager->method('getStore')->willThrowException(new \RuntimeException('no store'));
+
+        $this->orderApprovalResource->expects(self::never())->method('save');
+        $this->logger->expects(self::once())->method('error');
+
+        $this->makeCron()->execute();
+    }
 }
