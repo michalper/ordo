@@ -130,8 +130,9 @@ A friendlier admin layer over Magento's native `SalesRule` engine — the raw na
 
 **Known limitations (documented, not hidden):**
 - No automatic page-type detection — firing `product_view`/`category_view` with the right key requires the theme to call `window.ordoTrack(eventType, eventKey)` on PDP/PLP templates. Only `page_view` fires automatically.
-- `tracker.js` loads sitewide (`view/frontend/layout/default.xml`) regardless of the "tracking enabled" config toggle — the endpoint no-ops when disabled, but the JS still makes a wasted network call every page load. Fixing this needs a config-aware Block instead of a bare `<script>` tag.
 - Tag cardinality tradeoff is explicit, not resolved: tagging by `event_key` (e.g. `viewed_category_view_15`) gives precise targeting but an unbounded number of distinct tags on a large catalog. A coarser variant is a deliberate, documented option for whoever operates this, not a decision made here.
+
+**Fixed:** `tracker.js` used to load sitewide regardless of the "tracking enabled" config toggle (the endpoint no-op'd, but the JS still made a wasted network call every page load). Now gated by `Block\Frontend\TrackerViewModel` — the `<script>` tag itself is only rendered when `Helper\Config::isTrackingEnabled()` is true, verified live against a real page (present when enabled, absent when disabled, confirmed by toggling the config and re-fetching the homepage).
 - No MFTF/API test coverage yet for this phase — tracked in Phase 6 alongside everything else.
 
 ### Phase 6 — test coverage & localization gap

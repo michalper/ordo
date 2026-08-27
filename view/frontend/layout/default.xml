@@ -1,14 +1,18 @@
 <?xml version="1.0"?>
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
-    <head>
+    <body>
         <!--
-            Known limitation, documented rather than hidden: this loads sitewide regardless of
-            the "tracking > enabled" config toggle. The /ordo/track/event endpoint no-ops (and
-            stores nothing) when tracking is disabled, but the JS still fires a page_view
-            request on every page load either way — wasted, not harmful. Making this
-            conditional on store config needs a small Block checking Config::isTrackingEnabled()
-            instead of a bare <script> tag; tracked as a Phase 5 follow-up, not done here.
+            Config-gated, unlike the previous bare <script> in <head> — that loaded on every
+            page regardless of the "tracking > enabled" toggle (the /ordo/track/event endpoint
+            no-op'd, but the JS still fired a wasted request every page load). This block only
+            renders the <script> tag at all when Helper\Config::isTrackingEnabled() is true.
         -->
-        <script src="Ordo_Automation::js/tracker.js"/>
-    </head>
+        <referenceContainer name="before.body.end">
+            <block class="Magento\Framework\View\Element\Template" name="ordo.tracker" template="Ordo_Automation::tracker.phtml">
+                <arguments>
+                    <argument name="view_model" xsi:type="object">Ordo\Automation\Block\Frontend\TrackerViewModel</argument>
+                </arguments>
+            </block>
+        </referenceContainer>
+    </body>
 </page>

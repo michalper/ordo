@@ -1,0 +1,8 @@
+<?php
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \Ordo\Automation\Block\Frontend\TrackerViewModel $viewModel */
+$viewModel = $block->getData('view_model');
+?>
+<?php if ($viewModel->isTrackingEnabled()): ?>
+<script src="<?= $block->getViewFileUrl('Ordo_Automation::js/tracker.js') ?>"></script>
+<?php endif; ?>
