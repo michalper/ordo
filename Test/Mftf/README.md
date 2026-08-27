@@ -4,11 +4,19 @@ Standard Magento MFTF layout (`Test/`, and `ActionGroup/`/`Data/`/`Page/`/`Secti
 
 ## What exists
 
-- **`AdminCreateCampaignTest.xml`** — admin creates a campaign (one condition, one action) via the Phase 4 form and confirms it saves and appears in the grid.
-- **`AdminViewReorderCyclesGridTest.xml`** — admin opens the read-only Reorder Cycles diagnostic grid (`Controller/Adminhtml/ReorderCycle/Index.php`) and confirms it renders.
-- **`AdminViewDashboardTest.xml`** — clicking the single flat "Ordo Automation" menu entry lands directly on the in-admin dashboard (`ordo/dashboard/index`), and its server-rendered stat cards / nav cards are present. Uses `Section/OrdoDashboardSection.xml`, whose selectors were written directly against `view/adminhtml/templates/dashboard/index.phtml`'s real markup (`.ordo-stat-card` / `.ordo-stat-label` / `.ordo-nav-card` / `.ordo-nav-title`), not guessed.
+All three tests below have now actually been executed against a real Magento instance (MFTF 4.7.6 + `selenium/standalone-chrome`, wired into the same Docker Compose stack used for the unit-test runs) and pass:
 
-All three are XML-well-formed (`xmllint --noout`) and written against standard, stable Magento action groups (`AdminLoginActionGroup`/`AdminLogoutActionGroup`) — **none have been run against a real Magento instance** (no MFTF runtime available in this dev environment, same caveat already documented for `CheapestItemFree`).
+- **`AdminCreateCampaignTest.xml`** — admin creates a campaign (one condition, one action) via the Phase 4 form and confirms it saves and appears in the grid. ✅ **PASS**
+- **`AdminViewReorderCyclesGridTest.xml`** — admin opens the read-only Reorder Cycles diagnostic grid (`Controller/Adminhtml/ReorderCycle/Index.php`) and confirms it renders. ✅ **PASS**
+- **`AdminViewDashboardTest.xml`** — clicking the single flat "Ordo Automation" menu entry lands directly on the in-admin dashboard (`ordo/dashboard/index`), and its server-rendered stat cards / nav cards are present. Uses `Section/OrdoDashboardSection.xml`, whose selectors were written directly against `view/adminhtml/templates/dashboard/index.phtml`'s real markup. ✅ **PASS**
+
+Getting to a real green run surfaced genuine bugs in the tests themselves that a "written but never executed" test can't catch — all fixed once actually run against real Chrome:
+
+- `amOnPage url="ordo/campaign/..."` (missing the `admin/` prefix) resolved against the *storefront* base URL. Since this module also registers a frontend route under the same `ordo` frontName (`Controller/Track/Event.php`), the bare URL 404'd instead of reaching the admin controller. Fixed to `admin/ordo/campaign/...` everywhere.
+- `checkOption` on `[name='enabled']` failed with "element click intercepted" — this field renders as a `Magento_Ui/js/form/element/single-checkbox` styled as a toggle switch (`"prefer":"toggle"`), so the real `<input>` is visually covered by its own wrapper. Fixed to click the adjacent `<label>` instead, matching how a real user interacts with the toggle.
+- `conditions[0][type]` / `actions[0][type]` selectors matched nothing — the real, rendered field names are double-nested (`conditions[conditions][0][type]`, `actions[actions][0][type]`), matching the exact POST structure `Controller/Adminhtml/Campaign/Save.php` expects (see `VERIFICATION.md` #14). Confirmed against the live DOM with a throwaway WebDriver script before fixing the test XML.
+- `button[data-index='save']` matched nothing — the real Save button has `id="save"`, no `data-index` attribute. Fixed to `#save`.
+- Two environment-level (not module-level) issues were also found and fixed in the disposable test sandbox database, both blocking every admin controller in this Magento install, not just this module's: `admin/security/use_form_key` was forcing bare-URL navigation to redirect to the startup page instead of the requested controller (standard Magento admin secret-key/CSRF protection — disabled here only in this local Docker sandbox, a documented, common MFTF setup step, done with explicit user sign-off); and four leftover synthetic orders from earlier manual checkout testing had `billing_address_id IS NULL` / `customer_is_guest IS NULL`, which crashed Magento's own core `Backend\Block\Dashboard\Orders\Grid` (a null-pointer on `getBillingAddress()->getName()`) — every admin login lands on the dashboard first, so this broke every test regardless of what it actually targeted. Cleaned up via direct SQL, since this was disposable test data, not real data.
 
 ## What's still missing (planned, not written)
 

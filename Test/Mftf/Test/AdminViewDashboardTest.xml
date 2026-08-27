@@ -17,7 +17,7 @@
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
-        <amOnPage url="ordo/dashboard/index" stepKey="goToDashboard"/>
+        <amOnPage url="admin/ordo/dashboard/index" stepKey="goToDashboard"/>
         <waitForPageLoad stepKey="waitForDashboard"/>
         <see selector="h1.page-title" userInput="Dashboard" stepKey="seePageTitle"/>
         <seeElement selector="{{OrdoDashboardSection.statCardByLabel('Total campaigns')}}" stepKey="seeTotalCampaignsStat"/>

@@ -17,26 +17,39 @@
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
-        <amOnPage url="ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
         <waitForPageLoad stepKey="waitForNewCampaignPage"/>
 
         <fillField selector="[name='name']" userInput="Test Win-Back Coupon" stepKey="fillName"/>
         <selectOption selector="[name='trigger_event']" userInput="order_placed" stepKey="selectTriggerEvent"/>
-        <checkOption selector="[name='enabled']" stepKey="enableCampaign"/>
+        <!-- "enabled" renders as a Magento_Ui single-checkbox styled as a toggle switch
+             (prefer: "toggle") — the real <input> is visually covered by its own field
+             wrapper, so a direct click/checkOption on the input gets intercepted by that
+             wrapper. Click the label that sits next to it instead, matching how a real
+             user would interact with the toggle. -->
+        <click selector="//input[@name='enabled']/following-sibling::label" stepKey="enableCampaign"/>
 
-        <click selector="//*[@data-index='conditions']//button[contains(., 'Add Condition')]" stepKey="addConditionRow"/>
-        <selectOption selector="[name='conditions[0][type]']" userInput="order_total_gte" stepKey="selectConditionType"/>
-        <fillField selector="[name='conditions[0][params_json]']" userInput="{&quot;amount&quot;: &quot;500&quot;}" stepKey="fillConditionParams"/>
+        <!-- dynamicRows posts fields double-nested under the section's own name
+             (conditions[conditions][0][...], actions[actions][0][...]) — see
+             Controller/Adminhtml/Campaign/Save.php's DEDICATED_PARAM_FIELDS handling and
+             VERIFICATION.md #14, where this exact double-nesting was the real bug found by
+             running a real save. A flat conditions[0][...] selector (what an earlier,
+             never-executed version of this test assumed) silently matches nothing. -->
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRow"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRow"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="selectConditionType"/>
+        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;amount&quot;: &quot;500&quot;}" stepKey="fillConditionParams"/>
 
-        <click selector="//*[@data-index='actions']//button[contains(., 'Add Action')]" stepKey="addActionRow"/>
-        <selectOption selector="[name='actions[0][type]']" userInput="add_tag" stepKey="selectActionType"/>
-        <fillField selector="[name='actions[0][params_json]']" userInput="{&quot;tag&quot;: &quot;big_spender&quot;}" stepKey="fillActionParams"/>
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRow"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRow"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="add_tag" stepKey="selectActionType"/>
+        <fillField selector="[name='actions[actions][0][params_json]']" userInput="{&quot;tag&quot;: &quot;big_spender&quot;}" stepKey="fillActionParams"/>
 
-        <click selector="button[data-index='save']" stepKey="clickSave"/>
+        <click selector="#save" stepKey="clickSave"/>
         <waitForPageLoad stepKey="waitForSave"/>
         <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
 
-        <amOnPage url="ordo/campaign/index" stepKey="goToCampaignGrid"/>
+        <amOnPage url="admin/ordo/campaign/index" stepKey="goToCampaignGrid"/>
         <waitForPageLoad stepKey="waitForGrid"/>
         <see selector="table.data-grid" userInput="Test Win-Back Coupon" stepKey="seeCampaignInGrid"/>
     </test>

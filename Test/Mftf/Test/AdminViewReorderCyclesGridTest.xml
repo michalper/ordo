@@ -17,7 +17,7 @@
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
-        <amOnPage url="ordo/reordercycle/index" stepKey="goToReorderCyclesGrid"/>
+        <amOnPage url="admin/ordo/reordercycle/index" stepKey="goToReorderCyclesGrid"/>
         <waitForPageLoad stepKey="waitForGrid"/>
         <see selector="h1.page-title" userInput="Reorder Cycles" stepKey="seePageTitle"/>
         <seeElement selector="table.data-grid" stepKey="seeGrid"/>
