@@ -51,6 +51,7 @@
             <argument name="collections" xsi:type="array">
                 <item name="ordo_campaign_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Campaign\Grid\Collection</item>
                 <item name="ordo_reorder_cycle_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\ReorderCycle\Grid\Collection</item>
+                <item name="ordo_free_gift_offer_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\FreeGiftOffer\Grid\Collection</item>
             </argument>
         </arguments>
     </type>
@@ -71,6 +72,13 @@
         <arguments>
             <argument name="mainTable" xsi:type="string">ordo_reorder_cycle</argument>
             <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\ReorderCycle</argument>
+        </arguments>
+    </type>
+
+    <type name="Ordo\Automation\Model\ResourceModel\FreeGiftOffer\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">ordo_free_gift_offer</argument>
+            <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\FreeGiftOffer</argument>
         </arguments>
     </type>
 

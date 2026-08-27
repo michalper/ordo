@@ -25,7 +25,7 @@ Celem tego modułu jest bycie realną alternatywą dla ogólnej platformy MA na 
 - **Podpis opiekuna handlowego** — automatyczne e-maile podpisane danymi przypisanego opiekuna klienta; cotygodniowy digest grupuje nieaktywnych klientów per opiekun.
 - **Silnik kampanii** — konfigurowalny silnik reguł "gdy zdarzy się X i Y jest prawdą, zrób Z", z warunkami/akcjami jako plug-inami rejestrowanymi w `di.xml` i pełnym kontraktem REST.
 - **Śledzenie zachowań na stronie** — bezzależnościowy snippet JS zamienia odsłony stron/produktów/kategorii w tagi silnika kampanii.
-- **Panel administracyjny** — dashboard, kreator kampanii i diagnostyczny grid cykli reorder.
+- **Panel administracyjny** — dashboard, kreator kampanii, kreator ofert gratisów i diagnostyczny grid cykli reorder.
 
 Wszystko konfigurowalne pod **Stores → Configuration → Ordo Automation** (albo, dla kampanii i gratisów, przez ich REST API), każda funkcja z własnym przełącznikiem włącz/wyłącz i zadaniem cron. Szczegóły implementacji i uzasadnienie decyzji projektowych są w [CHANGELOG.md](CHANGELOG.md); to, co wciąż w toku — w [ROADMAP.md](ROADMAP.md).
 
@@ -56,10 +56,10 @@ Model/, Model/ResourceModel/     — ordo_reorder_cycle, ordo_offer, ordo_custom
 Model/Campaign/                  — ConditionPool, ActionPool, Condition/*, Action/* (rejestr plug-inów)
 Model/CampaignDispatcher.php     — "event triggera + kontekst na wejściu, pasujące kampanie się wykonują"
 Model/Rule/Action/Discount/      — CheapestItemFree (własny kalkulator SalesRule), QualifyingSetTracker
-Controller/Adminhtml/Campaign/, ReorderCycle/ — kontrolery gridu/formularza adminowego
-Block/Adminhtml/Campaign/Edit/   — bloki przycisków toolbara (Back/Delete/Save & Continue)
-Ui/Component/Listing/Column/     — CampaignActions (linki Edit/Delete w wierszach)
-view/adminhtml/ui_component/     — ordo_campaign_listing, ordo_campaign_form, ordo_reorder_cycle_listing
+Controller/Adminhtml/Campaign/, ReorderCycle/, FreeGiftOffer/ — kontrolery gridu/formularza adminowego
+Block/Adminhtml/Campaign/Edit/, FreeGiftOffer/Edit/ — bloki przycisków toolbara (Back/Delete/Save & Continue)
+Ui/Component/Listing/Column/     — CampaignActions, FreeGiftOfferActions (linki Edit/Delete w wierszach)
+view/adminhtml/ui_component/     — ordo_campaign_listing/form, ordo_reorder_cycle_listing, ordo_free_gift_offer_listing/form
 Model/CreditLimitCalculator.php  — used-credit liczone z otwartych sales_order.total_due
 Model/CreditLimitManagement.php  — wrapper REST-owy (mine / po id klienta) nad kalkulatorem powyżej
 Model/FreeGiftOffer(Tier/Product).php, Model/FreeGiftManagement.php — oferty gratisów z kaskadowymi progami + wybór

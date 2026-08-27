@@ -1,0 +1,29 @@
+<?php
+declare(strict_types=1);
+
+namespace Ordo\Automation\Test\Unit\Controller\Adminhtml\FreeGiftOffer;
+
+use Ordo\Automation\Test\Unit\Controller\AbstractAdminActionTestCase;
+
+class NewActionTest extends AbstractAdminActionTestCase
+{
+    public function testExecuteForwardsToEdit(): void
+    {
+        $context = $this->makeContext();
+
+        $controller = new class ($context) extends \Ordo\Automation\Controller\Adminhtml\FreeGiftOffer\NewAction {
+            public array $forwardedTo = [];
+
+            protected function _forward($action, $controller = null, $module = null, ?array $params = null)
+            {
+                $this->forwardedTo[] = $action;
+
+                return null;
+            }
+        };
+
+        $controller->execute();
+
+        self::assertSame(['edit'], $controller->forwardedTo);
+    }
+}

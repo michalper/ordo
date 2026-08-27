@@ -25,12 +25,13 @@ A friendlier admin layer over Magento's native `SalesRule` engine — the raw na
 - **Campaign edit form** (`ordo/campaign/edit`) — name, trigger event (dropdown from `TriggerEvent` source), enabled toggle, and two `dynamicRows` sections for conditions and actions. The type dropdowns in both are generated from `ConditionPool::getAvailableTypes()` / `ActionPool::getAvailableTypes()` — i.e. from whatever's actually registered in `di.xml` — so the UI can never drift out of sync with what the dispatcher can resolve. Each condition/action row also has a dedicated field per known type (`tag`, `amount`, `rule_id`, `prefix`, `template`, `message`), shown/hidden via `<switcherConfig>` keyed off the row's `type` select — the raw JSON textarea (`params_json`) is now just the fallback for a type without one yet. End-to-end verified against the real database: saving a `tag` condition through its dedicated field produces `{"tag": "..."}`  in `ordo_campaign_condition.params`.
 - **Reorder Cycles grid** (`ordo/reordercycle/index`) — read-only diagnostic view of what `CalculateReorderCycle` has computed (customer, SKU, average interval, next expected date), for verifying a detected cycle looks right without querying the database directly.
 
-**Dashboard — done.** `Ordo Automation` is now a single, flat admin menu entry (no dropdown) — clicking it opens a custom dashboard (`ordo/dashboard/index`, own block/template/CSS, not a UI Component) with campaign stats, nav cards to Campaigns/Reorder Cycles/Configuration, and a campaign grid. Server-rendered from the same collections the grids use — no separate REST/auth story, it lives inside the existing admin session.
+**Dashboard — done.** `Ordo Automation` is now a single, flat admin menu entry (no dropdown) — clicking it opens a custom dashboard (`ordo/dashboard/index`, own block/template/CSS, not a UI Component) with campaign stats, nav cards to Campaigns/Reorder Cycles/Free Gift Offers/Configuration, and a campaign grid. Server-rendered from the same collections the grids use — no separate REST/auth story, it lives inside the existing admin session.
+
+**Free gift offers admin UI — done.** `ordo/freegiftoffer/index` (grid, same `SearchResult`-based pattern as campaigns) and `ordo/freegiftoffer/edit` (form: name, enabled toggle, and two `dynamicRows` sections — cascading tiers and gift-pool SKUs, no switcher needed since neither section has per-type fields). `Save.php` follows the same delete-then-reinsert child-row pattern as `Controller\Adminhtml\Campaign\Save`. Closes the gap this module had since the free-gift feature itself shipped (previously REST-API/database-only). End-to-end verified against a real admin session: created an offer with two tiers and one gift SKU through the actual form POST, confirmed all three rows persisted correctly, confirmed the edit page pre-populates them, confirmed delete cascades.
 
 **Not yet built:**
 - Stats for the five fixed triggers (reorder/offer/credit/approval/lifecycle) — sent / response rate / estimated recovered revenue per trigger — on the dashboard itself, alongside the campaign stats already there.
 - A live calculator for the native "Buy X Get Y" rule type (see Phase 3) — nothing custom to build backend-wise, just a friendlier config screen.
-- Admin grid/form for the free-gift offers/tiers/gift-pool entities added in Phase 3 — currently REST-API/database-only, no dedicated admin UI (same gap campaigns had before Phase 4 closed it).
 - **Visual identity system** (logo/mark, color palette, typography, admin menu icon, GitHub social banner) — a full brand direction was drafted (dark "engine" aesthetic, Magento-orange + cyan accents, Inter/Plus Jakarta Sans + JetBrains Mono) but is a separate, sizeable design effort, not started. Decision pending on which pieces are worth building for a solo project (likely: GitHub banner + a simple monochrome menu icon first; a custom visual campaign builder and branded email templates are lower priority).
 
 ## Phase 5 — on-site behavior tracking (the missing half of "like iPresso")
@@ -70,7 +71,6 @@ The standards in README's "Quality & testing standards" apply from now on. Hones
 Not failures — not attempted, or explicitly deferred:
 - A measured code coverage percentage for the unit suite since the free-gift/credit-limit work (see Phase 6 above).
 - MFTF scenario execution for order approval, tracking, and free gift (no MFTF runtime currently stood up in this pass).
-- Admin grid/form UI for free-gift offers (Phase 4).
 - Dashboard stats per fixed trigger (Phase 4).
 - Visual identity system (Phase 4).
 - `Test/Api/` coverage for the credit-limit endpoints (Phase 6).

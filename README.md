@@ -25,7 +25,7 @@ The goal is for this module to be a genuine substitute for a general-purpose MA 
 - **Sales-rep signature** — automated emails are signed by the customer's assigned rep; a weekly digest groups inactive customers by rep.
 - **Campaign engine** — a configurable "when X happens and Y is true, do Z" rule engine, with conditions/actions as `di.xml`-registered plug-ins and a full REST service contract.
 - **On-site behavior tracking** — a dependency-free JS snippet turns page/product/category views into campaign-engine tags.
-- **Admin UI** — dashboard, campaign builder, and reorder-cycles diagnostic grid.
+- **Admin UI** — dashboard, campaign builder, free gift offer builder, and reorder-cycles diagnostic grid.
 
 Everything is configurable under **Stores → Configuration → Ordo Automation** (or, for campaigns and free gifts, via their REST API), each with its own on/off switch and cron job. Implementation detail and the "why" behind each design decision live in [CHANGELOG.md](CHANGELOG.md); what's still in progress lives in [ROADMAP.md](ROADMAP.md).
 
@@ -56,10 +56,10 @@ Model/, Model/ResourceModel/     — ordo_reorder_cycle, ordo_offer, ordo_custom
 Model/Campaign/                  — ConditionPool, ActionPool, Condition/*, Action/* (the plug-in registry)
 Model/CampaignDispatcher.php     — "trigger event + context in, matching campaigns run out"
 Model/Rule/Action/Discount/      — CheapestItemFree (custom SalesRule calculator), QualifyingSetTracker
-Controller/Adminhtml/Campaign/, ReorderCycle/ — admin grid/form controllers
-Block/Adminhtml/Campaign/Edit/   — toolbar button blocks (Back/Delete/Save & Continue)
-Ui/Component/Listing/Column/     — CampaignActions (Edit/Delete row links)
-view/adminhtml/ui_component/     — ordo_campaign_listing, ordo_campaign_form, ordo_reorder_cycle_listing
+Controller/Adminhtml/Campaign/, ReorderCycle/, FreeGiftOffer/ — admin grid/form controllers
+Block/Adminhtml/Campaign/Edit/, FreeGiftOffer/Edit/ — toolbar button blocks (Back/Delete/Save & Continue)
+Ui/Component/Listing/Column/     — CampaignActions, FreeGiftOfferActions (Edit/Delete row links)
+view/adminhtml/ui_component/     — ordo_campaign_listing/form, ordo_reorder_cycle_listing, ordo_free_gift_offer_listing/form
 Model/CreditLimitCalculator.php  — used-credit derived from open sales_order.total_due
 Model/CreditLimitManagement.php  — REST-facing wrapper (mine / by customer id) over the calculator above
 Model/FreeGiftOffer(Tier/Product).php, Model/FreeGiftManagement.php — cascading-tier gift offers + selection

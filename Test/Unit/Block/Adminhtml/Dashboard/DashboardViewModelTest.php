@@ -7,12 +7,26 @@ use Ordo\Automation\Api\Data\CampaignInterface;
 use Ordo\Automation\Block\Adminhtml\Dashboard\DashboardViewModel;
 use Ordo\Automation\Model\ResourceModel\Campaign\Collection as CampaignCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\Collection as FreeGiftOfferCollection;
+use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\CollectionFactory as FreeGiftOfferCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\Collection as ReorderCycleCollection;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory as ReorderCycleCollectionFactory;
 use PHPUnit\Framework\TestCase;
 
 class DashboardViewModelTest extends TestCase
 {
+    private function makeViewModel(
+        ?CampaignCollectionFactory $campaignCollectionFactory = null,
+        ?ReorderCycleCollectionFactory $reorderCycleCollectionFactory = null,
+        ?FreeGiftOfferCollectionFactory $freeGiftOfferCollectionFactory = null
+    ): DashboardViewModel {
+        return new DashboardViewModel(
+            $campaignCollectionFactory ?? $this->createMock(CampaignCollectionFactory::class),
+            $reorderCycleCollectionFactory ?? $this->createMock(ReorderCycleCollectionFactory::class),
+            $freeGiftOfferCollectionFactory ?? $this->createMock(FreeGiftOfferCollectionFactory::class)
+        );
+    }
+
     public function testGetCampaignsOrdersByEntityIdDescending(): void
     {
         $collection = $this->createMock(CampaignCollection::class);
@@ -22,7 +36,7 @@ class DashboardViewModelTest extends TestCase
         $campaignCollectionFactory = $this->createMock(CampaignCollectionFactory::class);
         $campaignCollectionFactory->method('create')->willReturn($collection);
 
-        $viewModel = new DashboardViewModel($campaignCollectionFactory, $this->createMock(ReorderCycleCollectionFactory::class));
+        $viewModel = $this->makeViewModel($campaignCollectionFactory);
 
         self::assertSame(['campaign1'], $viewModel->getCampaigns());
     }
@@ -35,7 +49,7 @@ class DashboardViewModelTest extends TestCase
         $campaignCollectionFactory = $this->createMock(CampaignCollectionFactory::class);
         $campaignCollectionFactory->method('create')->willReturn($collection);
 
-        $viewModel = new DashboardViewModel($campaignCollectionFactory, $this->createMock(ReorderCycleCollectionFactory::class));
+        $viewModel = $this->makeViewModel($campaignCollectionFactory);
 
         self::assertSame(3, $viewModel->getTotalCampaignCount());
     }
@@ -49,7 +63,7 @@ class DashboardViewModelTest extends TestCase
         $campaignCollectionFactory = $this->createMock(CampaignCollectionFactory::class);
         $campaignCollectionFactory->method('create')->willReturn($collection);
 
-        $viewModel = new DashboardViewModel($campaignCollectionFactory, $this->createMock(ReorderCycleCollectionFactory::class));
+        $viewModel = $this->makeViewModel($campaignCollectionFactory);
 
         self::assertSame(2, $viewModel->getEnabledCampaignCount());
     }
@@ -62,27 +76,34 @@ class DashboardViewModelTest extends TestCase
         $reorderCycleCollectionFactory = $this->createMock(ReorderCycleCollectionFactory::class);
         $reorderCycleCollectionFactory->method('create')->willReturn($reorderCollection);
 
-        $viewModel = new DashboardViewModel($this->createMock(CampaignCollectionFactory::class), $reorderCycleCollectionFactory);
+        $viewModel = $this->makeViewModel(null, $reorderCycleCollectionFactory);
 
         self::assertSame(7, $viewModel->getReorderCycleCount());
     }
 
+    public function testGetFreeGiftOfferCount(): void
+    {
+        $offerCollection = $this->createMock(FreeGiftOfferCollection::class);
+        $offerCollection->method('getSize')->willReturn(4);
+
+        $freeGiftOfferCollectionFactory = $this->createMock(FreeGiftOfferCollectionFactory::class);
+        $freeGiftOfferCollectionFactory->method('create')->willReturn($offerCollection);
+
+        $viewModel = $this->makeViewModel(null, null, $freeGiftOfferCollectionFactory);
+
+        self::assertSame(4, $viewModel->getFreeGiftOfferCount());
+    }
+
     public function testGetTriggerLabelReturnsKnownLabel(): void
     {
-        $viewModel = new DashboardViewModel(
-            $this->createMock(CampaignCollectionFactory::class),
-            $this->createMock(ReorderCycleCollectionFactory::class)
-        );
+        $viewModel = $this->makeViewModel();
 
         self::assertSame('Order Placed', $viewModel->getTriggerLabel(CampaignInterface::TRIGGER_ORDER_PLACED));
     }
 
     public function testGetTriggerLabelFallsBackToRawValue(): void
     {
-        $viewModel = new DashboardViewModel(
-            $this->createMock(CampaignCollectionFactory::class),
-            $this->createMock(ReorderCycleCollectionFactory::class)
-        );
+        $viewModel = $this->makeViewModel();
 
         self::assertSame('unknown_trigger', $viewModel->getTriggerLabel('unknown_trigger'));
     }

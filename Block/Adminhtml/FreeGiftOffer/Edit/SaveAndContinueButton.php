@@ -1,0 +1,31 @@
+<?php
+declare(strict_types=1);
+
+namespace Ordo\Automation\Block\Adminhtml\FreeGiftOffer\Edit;
+
+use Magento\Framework\View\Element\UiComponent\Control\ButtonProviderInterface;
+
+class SaveAndContinueButton extends GenericButton implements ButtonProviderInterface
+{
+    public function getButtonData(): array
+    {
+        return [
+            'label' => __('Save & Continue Edit'),
+            'class' => 'save',
+            'data_attribute' => [
+                'mage-init' => [
+                    'buttonAdapter' => [
+                        'actions' => [
+                            [
+                                'targetName' => 'ordo_free_gift_offer_form.ordo_free_gift_offer_form',
+                                'actionName' => 'save',
+                                'params' => [true, ['back' => 'edit']],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'sort_order' => 80,
+        ];
+    }
+}

@@ -1,0 +1,162 @@
+<?xml version="1.0"?>
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">ordo_free_gift_offer_form.ordo_free_gift_offer_form_data_source</item>
+        </item>
+        <item name="label" xsi:type="string" translate="true">Free Gift Offer Information</item>
+        <item name="template" xsi:type="string">templates/form/collapsible</item>
+    </argument>
+    <settings>
+        <buttons>
+            <button name="back" class="Ordo\Automation\Block\Adminhtml\FreeGiftOffer\Edit\BackButton"/>
+            <button name="delete" class="Ordo\Automation\Block\Adminhtml\FreeGiftOffer\Edit\DeleteButton"/>
+            <button name="save" class="Ordo\Automation\Block\Adminhtml\FreeGiftOffer\Edit\SaveButton"/>
+            <button name="save_and_continue" class="Ordo\Automation\Block\Adminhtml\FreeGiftOffer\Edit\SaveAndContinueButton"/>
+        </buttons>
+        <namespace>ordo_free_gift_offer_form</namespace>
+        <dataScope>data</dataScope>
+        <deps>
+            <dep>ordo_free_gift_offer_form.ordo_free_gift_offer_form_data_source</dep>
+        </deps>
+    </settings>
+
+    <dataSource name="ordo_free_gift_offer_form_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Ordo\Automation\Model\FreeGiftOffer\DataProvider</argument>
+            <argument name="name" xsi:type="string">ordo_free_gift_offer_form_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">entity_id</argument>
+            <argument name="requestFieldName" xsi:type="string">entity_id</argument>
+        </argument>
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/form/provider</item>
+            </item>
+        </argument>
+        <settings>
+            <submitUrl path="ordo/freegiftoffer/save"/>
+        </settings>
+    </dataSource>
+
+    <fieldset name="general">
+        <settings>
+            <label translate="true">General</label>
+        </settings>
+        <field name="entity_id" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <visible>false</visible>
+            </settings>
+        </field>
+        <field name="name" formElement="input" sortOrder="10">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Name</label>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+        </field>
+        <field name="enabled" formElement="checkbox" sortOrder="20">
+            <settings>
+                <dataType>boolean</dataType>
+                <label translate="true">Enabled</label>
+                <valueMap>
+                    <map name="false" xsi:type="number">0</map>
+                    <map name="true" xsi:type="number">1</map>
+                </valueMap>
+            </settings>
+            <formElements>
+                <checkbox>
+                    <settings>
+                        <valueMap>
+                            <map name="false" xsi:type="number">0</map>
+                            <map name="true" xsi:type="number">1</map>
+                        </valueMap>
+                        <prefer>toggle</prefer>
+                    </settings>
+                </checkbox>
+            </formElements>
+        </field>
+    </fieldset>
+
+    <fieldset name="tiers_fieldset">
+        <settings>
+            <label translate="true">Cascading tiers — every tier the cart subtotal reaches ADDS its gift slots, cumulative</label>
+        </settings>
+        <dynamicRows name="tiers">
+            <settings>
+                <label translate="true">Tiers</label>
+                <addButtonLabel translate="true">Add Tier</addButtonLabel>
+                <componentType>dynamicRows</componentType>
+                <dataScope>tiers</dataScope>
+            </settings>
+            <container name="record" component="Magento_Ui/js/dynamic-rows/record">
+                <argument name="data" xsi:type="array">
+                    <item name="config" xsi:type="array">
+                        <item name="isTemplate" xsi:type="boolean">true</item>
+                        <item name="is_collection" xsi:type="boolean">true</item>
+                    </item>
+                </argument>
+                <settings>
+                    <componentType>container</componentType>
+                </settings>
+                <field name="min_subtotal" formElement="input" sortOrder="10">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Minimum cart subtotal</label>
+                        <validation>
+                            <rule name="required-entry" xsi:type="boolean">true</rule>
+                            <rule name="validate-number" xsi:type="boolean">true</rule>
+                        </validation>
+                    </settings>
+                </field>
+                <field name="gift_slots" formElement="input" sortOrder="20">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Gift slots this tier adds</label>
+                        <validation>
+                            <rule name="required-entry" xsi:type="boolean">true</rule>
+                            <rule name="validate-digits" xsi:type="boolean">true</rule>
+                            <rule name="validate-greater-than-zero" xsi:type="boolean">true</rule>
+                        </validation>
+                    </settings>
+                </field>
+            </container>
+        </dynamicRows>
+    </fieldset>
+
+    <fieldset name="products_fieldset">
+        <settings>
+            <label translate="true">Gift pool — SKUs a customer may pick from once eligible</label>
+        </settings>
+        <dynamicRows name="products">
+            <settings>
+                <label translate="true">Products</label>
+                <addButtonLabel translate="true">Add SKU</addButtonLabel>
+                <componentType>dynamicRows</componentType>
+                <dataScope>products</dataScope>
+            </settings>
+            <container name="record" component="Magento_Ui/js/dynamic-rows/record">
+                <argument name="data" xsi:type="array">
+                    <item name="config" xsi:type="array">
+                        <item name="isTemplate" xsi:type="boolean">true</item>
+                        <item name="is_collection" xsi:type="boolean">true</item>
+                    </item>
+                </argument>
+                <settings>
+                    <componentType>container</componentType>
+                </settings>
+                <field name="sku" formElement="input" sortOrder="10">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">SKU</label>
+                        <validation>
+                            <rule name="required-entry" xsi:type="boolean">true</rule>
+                        </validation>
+                    </settings>
+                </field>
+            </container>
+        </dynamicRows>
+    </fieldset>
+</form>

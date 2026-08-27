@@ -6,6 +6,7 @@ namespace Ordo\Automation\Block\Adminhtml\Dashboard;
 use Magento\Framework\View\Element\Block\ArgumentInterface;
 use Ordo\Automation\Api\Data\CampaignInterface;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\CollectionFactory as FreeGiftOfferCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory as ReorderCycleCollectionFactory;
 
 /**
@@ -23,7 +24,8 @@ class DashboardViewModel implements ArgumentInterface
 
     public function __construct(
         private readonly CampaignCollectionFactory $campaignCollectionFactory,
-        private readonly ReorderCycleCollectionFactory $reorderCycleCollectionFactory
+        private readonly ReorderCycleCollectionFactory $reorderCycleCollectionFactory,
+        private readonly FreeGiftOfferCollectionFactory $freeGiftOfferCollectionFactory
     ) {
     }
 
@@ -54,6 +56,11 @@ class DashboardViewModel implements ArgumentInterface
     public function getReorderCycleCount(): int
     {
         return $this->reorderCycleCollectionFactory->create()->getSize();
+    }
+
+    public function getFreeGiftOfferCount(): int
+    {
+        return $this->freeGiftOfferCollectionFactory->create()->getSize();
     }
 
     public function getTriggerLabel(string $triggerEvent): string
