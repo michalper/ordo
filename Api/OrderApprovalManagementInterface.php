@@ -5,6 +5,7 @@ namespace Ordo\Automation\Api;
 
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Ordo\Automation\Api\Data\OrderApprovalDecisionLinksInterface;
 use Ordo\Automation\Api\Data\OrderApprovalInterface;
 
 /**
@@ -32,4 +33,15 @@ interface OrderApprovalManagementInterface
      * @throws LocalizedException if the held order itself can no longer be found
      */
     public function rejectByToken(string $token): OrderApprovalInterface;
+
+    /**
+     * Admin-only (unlike approveByToken/rejectByToken above) — retrieves the approve/reject
+     * URLs for a still-pending approval by its entity_id, without needing the original email.
+     * Closes the gap documented in API.md: a headless client (e.g. a sales-rep mobile app)
+     * previously had no way to act on a pending approval except through the email link.
+     *
+     * @return OrderApprovalDecisionLinksInterface
+     * @throws NoSuchEntityException if the approval doesn't exist or is no longer pending
+     */
+    public function getDecisionLinksById(int $entityId): OrderApprovalDecisionLinksInterface;
 }

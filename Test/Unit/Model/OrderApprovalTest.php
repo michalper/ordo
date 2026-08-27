@@ -86,4 +86,12 @@ class OrderApprovalTest extends AbstractModelTestCase
         self::assertSame('2026-01-01 00:00:00', $model->getCreatedAt());
         self::assertSame('2026-01-02 00:00:00', $model->getDecidedAt());
     }
+
+    public function testTokenReadFromData(): void
+    {
+        $model = $this->makeModel();
+        $model->setData('token', 'secret-token');
+
+        self::assertSame('secret-token', $model->getToken());
+    }
 }

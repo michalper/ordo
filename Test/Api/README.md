@@ -27,8 +27,10 @@ response, no mocks) using a portable, self-contained HTTP client instead, so the
 - **`CustomerTagManagementApiTest.php`** — add → get → hasTag → getCustomerIdsWithTag → remove,
   full round trip.
 - **`OrderApprovalApiTest.php`** — GET list (admin-scoped, confirms the token field is never
-  present in the response), and the anonymous approve/reject-by-token endpoints (including
-  confirming a second call with the same token is rejected).
+  present in the response), the anonymous approve/reject-by-token endpoints (including
+  confirming a second call with the same token is rejected), and `decision-links` (admin
+  fetches the approve/reject URLs by entity_id, extracts the token, and actually uses it to
+  approve the order — proving the URL is real and usable, not just correctly formatted).
 
 **All of the above were actually run against a live Magento 2.4.7 instance while writing this
 pass** (Docker Compose stack: `ordo_test_php` + `ordo_test_db`, PHP built-in server on

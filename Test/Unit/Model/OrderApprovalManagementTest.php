@@ -11,7 +11,11 @@ use Magento\Sales\Model\Order\Config as OrderConfig;
 use Magento\Sales\Model\ResourceModel\Order as OrderResource;
 use Magento\Sales\Model\ResourceModel\Order\Collection as OrderCollection;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
+use Magento\Store\Model\Store;
+use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Model\OrderApproval;
+use Ordo\Automation\Model\OrderApprovalDecisionLinks;
+use Ordo\Automation\Model\OrderApprovalDecisionLinksFactory;
 use Ordo\Automation\Model\OrderApprovalFactory;
 use Ordo\Automation\Model\OrderApprovalManagement;
 use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
@@ -25,6 +29,8 @@ class OrderApprovalManagementTest extends TestCase
     private OrderResource $orderResource;
     private OrderConfig $orderConfig;
     private OrderRepositoryInterface $orderRepository;
+    private StoreManagerInterface $storeManager;
+    private OrderApprovalDecisionLinksFactory $decisionLinksFactory;
     private OrderApprovalManagement $management;
 
     protected function setUp(): void
@@ -35,6 +41,8 @@ class OrderApprovalManagementTest extends TestCase
         $this->orderResource = $this->createMock(OrderResource::class);
         $this->orderConfig = $this->createMock(OrderConfig::class);
         $this->orderRepository = $this->createMock(OrderRepositoryInterface::class);
+        $this->storeManager = $this->createMock(StoreManagerInterface::class);
+        $this->decisionLinksFactory = $this->createMock(OrderApprovalDecisionLinksFactory::class);
 
         $this->management = new OrderApprovalManagement(
             $this->orderApprovalFactory,
@@ -42,7 +50,9 @@ class OrderApprovalManagementTest extends TestCase
             $this->orderCollectionFactory,
             $this->orderResource,
             $this->orderConfig,
-            $this->orderRepository
+            $this->orderRepository,
+            $this->storeManager,
+            $this->decisionLinksFactory
         );
     }
 
@@ -134,5 +144,39 @@ class OrderApprovalManagementTest extends TestCase
     {
         $this->expectException(NoSuchEntityException::class);
         $this->management->rejectByToken('');
+    }
+
+    public function testGetDecisionLinksByIdThrowsWhenNotPending(): void
+    {
+        $approval = $this->createMock(OrderApproval::class);
+        $approval->method('getId')->willReturn(null);
+        $this->orderApprovalFactory->method('create')->willReturn($approval);
+
+        $this->expectException(NoSuchEntityException::class);
+        $this->management->getDecisionLinksById(5);
+    }
+
+    public function testGetDecisionLinksByIdBuildsUrlsFromToken(): void
+    {
+        $approval = $this->createMock(OrderApproval::class);
+        $approval->method('getId')->willReturn(5);
+        $approval->method('isPending')->willReturn(true);
+        $approval->method('getToken')->willReturn('secret-token');
+        $this->orderApprovalFactory->method('create')->willReturn($approval);
+
+        $store = $this->createMock(Store::class);
+        $store->method('getBaseUrl')->willReturn('https://example.com/');
+        $this->storeManager->method('getStore')->willReturn($store);
+
+        $links = $this->createMock(OrderApprovalDecisionLinks::class);
+        $links->expects(self::once())->method('setApproveUrl')
+            ->with('https://example.com/ordo/approval/approve/token/secret-token')
+            ->willReturnSelf();
+        $links->expects(self::once())->method('setRejectUrl')
+            ->with('https://example.com/ordo/approval/reject/token/secret-token')
+            ->willReturnSelf();
+        $this->decisionLinksFactory->method('create')->willReturn($links);
+
+        self::assertSame($links, $this->management->getDecisionLinksById(5));
     }
 }

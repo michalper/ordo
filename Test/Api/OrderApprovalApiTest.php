@@ -38,4 +38,33 @@ class OrderApprovalApiTest extends AbstractApiTestCase
         self::assertSame(404, $status);
         self::assertStringContainsString('Invalid or already-used', $reused['message']);
     }
+
+    /**
+     * Requires ORDO_API_TEST_APPROVAL_ENTITY_ID to point at a freshly seeded, still-pending
+     * ordo_order_approval row's entity_id. Proves the full loop this endpoint exists for: an
+     * admin who never saw the original email can still discover the decision link (admin-token
+     * protected, unlike approve/reject themselves) and use it to actually decide the order —
+     * not just that the URL string looks right.
+     */
+    public function testGetDecisionLinksByIdReturnsUsableApproveUrl(): void
+    {
+        $entityId = getenv('ORDO_API_TEST_APPROVAL_ENTITY_ID');
+        if (!$entityId) {
+            self::markTestSkipped('ORDO_API_TEST_APPROVAL_ENTITY_ID not set — see Test/Api/README.md.');
+        }
+
+        [$status, $links] = $this->asAdmin('GET', "/rest/V1/ordo/order-approvals/{$entityId}/decision-links");
+        self::assertSame(200, $status, json_encode($links));
+        self::assertStringContainsString('/ordo/approval/approve/token/', $links['approve_url']);
+        self::assertStringContainsString('/ordo/approval/reject/token/', $links['reject_url']);
+
+        // approve_url/reject_url are the plain web-controller links (same format as the email,
+        // meant to be opened in a browser — hence the redirect, not JSON, if hit directly). A
+        // headless client extracts the token and calls the REST decision endpoint with it,
+        // which is what's actually being proven usable here.
+        $token = basename(parse_url($links['approve_url'], PHP_URL_PATH));
+        [$status, $approved] = $this->anonymous('POST', "/rest/V1/ordo/order-approvals/{$token}/approve");
+        self::assertSame(200, $status, json_encode($approved));
+        self::assertSame('approved', $approved['status']);
+    }
 }

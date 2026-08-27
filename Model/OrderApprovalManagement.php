@@ -10,6 +10,8 @@ use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Config as OrderConfig;
 use Magento\Sales\Model\ResourceModel\Order as OrderResource;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
+use Magento\Store\Model\StoreManagerInterface;
+use Ordo\Automation\Api\Data\OrderApprovalDecisionLinksInterface;
 use Ordo\Automation\Api\Data\OrderApprovalInterface;
 use Ordo\Automation\Api\OrderApprovalManagementInterface;
 use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
@@ -28,7 +30,9 @@ class OrderApprovalManagement implements OrderApprovalManagementInterface
         private readonly OrderCollectionFactory $orderCollectionFactory,
         private readonly OrderResource $orderResource,
         private readonly OrderConfig $orderConfig,
-        private readonly OrderRepositoryInterface $orderRepository
+        private readonly OrderRepositoryInterface $orderRepository,
+        private readonly StoreManagerInterface $storeManager,
+        private readonly OrderApprovalDecisionLinksFactory $decisionLinksFactory
     ) {
     }
 
@@ -55,6 +59,29 @@ class OrderApprovalManagement implements OrderApprovalManagementInterface
         $this->orderRepository->save($order);
 
         return $this->decide($approval, OrderApproval::STATUS_REJECTED);
+    }
+
+    public function getDecisionLinksById(int $entityId): OrderApprovalDecisionLinksInterface
+    {
+        /** @var OrderApproval $approval */
+        $approval = $this->orderApprovalFactory->create();
+        $this->orderApprovalResource->load($approval, $entityId);
+
+        if (!$approval->getId() || !$approval->isPending()) {
+            throw new NoSuchEntityException(
+                __('Order approval with id "%1" does not exist or is no longer pending.', $entityId)
+            );
+        }
+
+        $baseUrl = rtrim((string) $this->storeManager->getStore()->getBaseUrl(), '/');
+        $token = $approval->getToken();
+
+        /** @var OrderApprovalDecisionLinks $links */
+        $links = $this->decisionLinksFactory->create();
+        $links->setApproveUrl($baseUrl . '/ordo/approval/approve/token/' . $token);
+        $links->setRejectUrl($baseUrl . '/ordo/approval/reject/token/' . $token);
+
+        return $links;
     }
 
     /**

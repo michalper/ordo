@@ -58,4 +58,15 @@ class OrderApproval extends AbstractModel implements OrderApprovalInterface
     {
         return $this->getData('status') === self::STATUS_PENDING;
     }
+
+    /**
+     * Deliberately NOT part of Api\Data\OrderApprovalInterface — the token is a bearer secret
+     * (possession of it approves/rejects the order, no other auth), so it must never round-trip
+     * through the general read API. Only OrderApprovalManagement::getDecisionLinksById() reads
+     * this, behind its own explicit, admin-ACL-protected action.
+     */
+    public function getToken(): string
+    {
+        return (string) $this->getData('token');
+    }
 }

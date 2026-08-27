@@ -206,6 +206,17 @@
         </resources>
     </route>
 
+    <!-- Admin-only, unlike the two anonymous routes above — lets an authorized admin (e.g. a
+         sales-rep mobile app) retrieve the decision links for a pending approval without
+         needing the original email. The token itself is still never returned directly, only
+         baked into these two URLs. -->
+    <route url="/V1/ordo/order-approvals/:entityId/decision-links" method="GET">
+        <service class="Ordo\Automation\Api\OrderApprovalManagementInterface" method="getDecisionLinksById"/>
+        <resources>
+            <resource ref="Ordo_Automation::config"/>
+        </resources>
+    </route>
+
     <!-- Customer self-service — any authenticated customer may call this; ownership of the
          specific offer is enforced inside OfferManagement::selfExtend() itself (a customer
          token only proves who's asking, not which offer is theirs). -->

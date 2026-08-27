@@ -165,13 +165,14 @@ Adding a tag that already exists is a no-op (idempotent); it does **not** re-fir
 
 ## Order approvals
 
-Read (admin-scoped) plus two anonymous, token-authenticated decision endpoints — the only
-routes in this module that are neither admin- nor customer-scoped, by design.
+Read + a dedicated link-lookup (both admin-scoped) plus two anonymous, token-authenticated
+decision endpoints.
 
 | Method | Path | Service method | Auth |
 |---|---|---|---|
 | GET | `/V1/ordo/order-approvals?searchCriteria[...]` | `OrderApprovalRepositoryInterface::getList` | admin |
 | GET | `/V1/ordo/order-approvals/:entityId` | `OrderApprovalRepositoryInterface::getById` | admin |
+| GET | `/V1/ordo/order-approvals/:entityId/decision-links` | `OrderApprovalManagementInterface::getDecisionLinksById` | admin |
 | POST | `/V1/ordo/order-approvals/:token/approve` | `OrderApprovalManagementInterface::approveByToken` | anonymous |
 | POST | `/V1/ordo/order-approvals/:token/reject` | `OrderApprovalManagementInterface::rejectByToken` | anonymous |
 
@@ -181,6 +182,10 @@ GET /rest/V1/ordo/order-approvals?searchCriteria[pageSize]=3   (admin token)
        "status":"approved","reminders_sent":0,"created_at":"...","decided_at":"...",
        "pending":false}], ...}
 
+GET /rest/V1/ordo/order-approvals/10/decision-links   (admin token)
+→ 200 {"approve_url":"http://.../ordo/approval/approve/token/decision-links-test-token",
+       "reject_url":"http://.../ordo/approval/reject/token/decision-links-test-token"}
+
 POST /rest/V1/ordo/order-approvals/<token>/approve   (no Authorization header)
 → 200 {"entity_id":5,"order_id":5,"admin_email":"...","status":"approved", ...}
 
@@ -188,16 +193,16 @@ POST /rest/V1/ordo/order-approvals/<same token again>/approve
 → 404 {"message":"Invalid or already-used approval token."}
 ```
 
-Note what's **not** in the response: the `token` field itself is deliberately excluded from
-`Api\Data\OrderApprovalInterface` — it never round-trips through the read (admin) API, so
-knowing an approval's `entity_id` never lets you reconstruct or guess its token.
-
-There is intentionally no REST endpoint that *creates* an approval or *retrieves an existing
-approval's token* — the only way a token is issued is by `Observer\HoldOrderForApproval`
-generating one server-side and emailing it. A headless client (e.g. a sales-rep mobile app)
-cannot yet fetch "the current pending approval's decision link" over the API without that
-token; it would need to come from the same email today. Flagged as a real, current limitation,
-not silently glossed over.
+Note what's **not** in the plain `getById`/`getList` response: the `token` field itself is
+deliberately excluded from `Api\Data\OrderApprovalInterface` — it never round-trips through the
+general read API, so knowing an approval's `entity_id` never lets you reconstruct or guess its
+token. The only place the token is ever exposed over the API is baked into the two URLs
+returned by `decision-links` — a separate, explicit, admin-ACL-protected action. This closes
+what used to be a real limitation: an admin who never saw the original email (e.g. building a
+sales-rep mobile app) previously had no way to act on a pending approval at all; now they can
+look up the entity_id via `getList`/`getById` and fetch its decision links the same way. There
+is still intentionally no way to *create* an approval or retrieve a token for one that's
+already been decided — the token is only ever minted once, by `Observer\HoldOrderForApproval`.
 
 ## Full example: campaign CRUD round trip
 
