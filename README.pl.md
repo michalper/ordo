@@ -4,36 +4,30 @@
 
 Marketing automation działający *wewnątrz* **czystego Magento Open Source** — bez licencji Adobe Commerce B2B, bez zewnętrznej subskrypcji MA (Klaviyo, iPresso, SalesManago...). Każdy trigger liczony jest z danych, które Magento już ma (zamówienia, koszyki, klienci), albo z niewielkiego własnego modelu danych dołożonego obok.
 
-Celem tego modułu jest bycie realną alternatywą dla ogólnego platformy MA na sklepie Magento — nie garstką dodatków "w stylu B2B" — obejmującą zarówno klasyczną automatyzację cyklu życia B2C, jak i triggery B2B, których strukturalnie nie widzi większość zewnętrznych narzędzi MA.
+Celem tego modułu jest bycie realną alternatywą dla ogólnej platformy MA na sklepie Magento — nie garstką dodatków "w stylu B2B" — obejmującą zarówno klasyczną automatyzację cyklu życia B2C, jak i triggery B2B, których strukturalnie nie widzi większość zewnętrznych narzędzi MA.
 
-## Dlaczego nie po prostu Klaviyo/iPresso/SalesManago?
-
-Są mocne w kanałach komunikacji (e-mail/SMS/push) i UI kampanii, ale widzą tylko to, co sklep wyeksportuje przez generyczny konektor — sumy zamówień, eventy koszyka, oglądane produkty. Nie liczą wzorców cyklu zakupowego, nie wiedzą o wygasaniu ofert, limitach kredytowych czy hierarchii firm, a ich śledzenie zachowań B2C działa przez snippet JS + cookie całkowicie odcięty od danych zamówień po stronie serwera. Ordo Automation działa wewnątrz samego Magento, więc triggery mogą łączyć obie te rzeczy bez warstwy integracyjnej.
-
-## Funkcje (v0.8)
+## Funkcje
 
 **B2B**
-- **Przypomnienia o ponownym zamówieniu (reorder)** — wykrywa powtarzalny wzorzec zakupowy per klient/SKU z historii zamówień i wysyła przypomnienie przed przewidywaną datą kolejnego zamówienia.
-- **Przypomnienia o wygasaniu oferty/wyceny** — własna encja oferty (`ordo_offer`) z *proaktywnym* przypomnieniem "wygasa za N dni" — każda sprawdzona przez nas ugruntowana platforma B2B (Adobe Commerce B2B, OroCommerce) powiadamia dopiero reaktywnie, po zmianie statusu.
-- **Alerty limitu kredytowego** — atrybut limitu kredytowego klienta + cron ostrzegający przy konfigurowalnym progu (domyślnie 80%) zanim konto zostanie zablokowane, zamiast reagować dopiero po przekroczeniu. Status jest też odczytywalny na żywo przez REST (`GET /V1/ordo/credit-limit/mine`), nie tylko wypychany e-mailem — niezależny front może pokazać "ile zostało limitu" we własnym koncie klienta. Zobacz `API.md`.
-- **Workflow akceptacji zamówień** — opcjonalny limit wydatków per klient + e-mail do administratora akceptacji; zamówienia powyżej limitu są wstrzymywane (status `Pending Approval`, ten sam stan "new", więc rezerwacja zapasu nie jest naruszana), a administrator dostaje link akceptuj/odrzuć oparty na tokenie, bez logowania. Nierozstrzygnięte akceptacje są eskalowane (ponowna wysyłka, z limitem) po konfigurowalnej liczbie dni.
-- **Gratis powyżej progu koszyka** — administrator definiuje pulę gratisów oraz jeden lub więcej kaskadowych progów wartości koszyka; każdy osiągnięty próg DODAJE slot na gratis kumulatywnie (nie jeden płaski próg ani stała liczba 1), a klient wybiera z puli przez REST. Zobacz `API.md`.
+- **Przypomnienia o ponownym zamówieniu (reorder)** — przypomina klientowi przed przewidywaną datą kolejnego zamówienia, na podstawie jego własnej historii zakupów.
+- **Przypomnienia o wygasaniu oferty/wyceny** — proaktywny e-mail "wygasa za N dni" dla własnej encji oferty (`ordo_offer`).
+- **Alerty limitu kredytowego** — cron ostrzegający przy konfigurowalnym progu, plus status na żywo przez REST (`GET /V1/ordo/credit-limit/mine`).
+- **Workflow akceptacji zamówień** — zamówienia powyżej limitu wydatków per klient są wstrzymywane do akceptacji przez administratora (link na tokenie w e-mailu), z eskalacją nierozstrzygniętych przypadków.
+- **Gratis powyżej progu koszyka** — pula gratisów zdefiniowana przez administratora z kaskadowymi progami wartości koszyka; klient wybiera przez REST.
 
 **B2C**
-- **Odzyskiwanie porzuconych koszyków** — znajduje nieaktywne koszyki powyżej konfigurowalnego progu wartości i wysyła e-mail przypominający, z limitem liczby wysyłek na koszyk.
-- **E-mail powitalny** — uruchamiany na `customer_register_success`, taguje klienta jako `new_customer`.
-- **E-mail win-back / reaktywacyjny** — nocne tagowanie klientów nieaktywnych od N dni, po czym jednorazowy e-mail win-back; tagi znikają automatycznie, gdy klient znów złoży zamówienie.
+- **Odzyskiwanie porzuconych koszyków** — e-mail przypominający dla nieaktywnych koszyków powyżej konfigurowalnego progu, z limitem wysyłek na koszyk.
+- **E-mail powitalny** — przy rejestracji klienta.
+- **E-mail win-back / reaktywacyjny** — jednorazowy e-mail po N dniach nieaktywności, znikający automatycznie po kolejnym zamówieniu.
 
 **Wspólny fundament**
-- **Tagowanie behawioralne** (`CustomerTagManager`) — prymityw segmentacji, z którego korzysta każdy trigger powyżej (`new_customer`, `inactive`, `win_back_sent`, ...), ten sam wzorzec, na którym ogólne platformy MA budują targetowanie kampanii.
-- **Podpis opiekuna handlowego** (`SalesRepEmailContext`) — każdy automatyczny e-mail powyżej jest podpisany danymi przypisanego opiekuna klienta, jeśli taki jest ustawiony, w przeciwnym razie nazwą sklepu. Cotygodniowy digest grupuje też nieaktywnych klientów per opiekun.
-- **Silnik kampanii** (`ordo_campaign` + `ordo_campaign_condition` + `ordo_campaign_action`) — realnie konfigurowalny silnik reguł "gdy zdarzy się X i Y jest prawdą, zrób Z", nie zaszyty na sztywno cron per pomysł. Warunki i akcje to plug-iny rejestrowane w `di.xml` (`Model\Campaign\ConditionPool` / `ActionPool`) względem `Api\Campaign\ConditionInterface` / `ActionInterface` — dodanie nowego typu warunku lub akcji to nowa klasa + jedna linijka w `di.xml`, nigdy zmiana w dispatcherze. W zestawie dwa warunki (`tag`, `order_total_gte`) i trzy akcje (`add_tag`, `send_email`, `generate_coupon`), uruchamiane na `order_placed`, `customer_registered` i `tag_added` (ten ostatni jako event Magento wystrzeliwany przez `CustomerTagManager`, nie bezpośrednie wywołanie, żeby uniknąć cyklu DI z warunkiem `tag`). Wystawiony jako pełny kontrakt usługi (`CampaignRepositoryInterface`) z endpointami REST pod `/V1/ordo/campaigns`.
-- **Śledzenie zachowań na stronie** — bezzależnościowy snippet JS (`tracker.js`) ustawia własne cookie odwiedzającego i wysyła eventy `page_view`/`product_view`/`category_view`; tożsamość jest doszywana do klienta po zalogowaniu, a powtarzające się odsłony zamieniają się w tagi silnika kampanii (np. `viewed_category_view_15`) zamiast surowego zapisu per-klik.
-- **Panel administracyjny** — dedykowane menu adminowe "Ordo Automation" z dashboardem, pełnym kreatorem kampanii (grid + formularz z dynamicznymi wierszami warunków/akcji, listy typów zawsze zsynchronizowane z tym, co zarejestrowane w `di.xml`) oraz diagnostycznym gridem cykli reorder. Oferty/progi/pula gratisów są na razie zarządzane tylko przez REST API/bazę danych (brak jeszcze gridu adminowego — zobacz `ROADMAP.md`).
+- **Tagowanie behawioralne** — prymityw segmentacji, z którego korzysta każdy trigger powyżej.
+- **Podpis opiekuna handlowego** — automatyczne e-maile podpisane danymi przypisanego opiekuna klienta; cotygodniowy digest grupuje nieaktywnych klientów per opiekun.
+- **Silnik kampanii** — konfigurowalny silnik reguł "gdy zdarzy się X i Y jest prawdą, zrób Z", z warunkami/akcjami jako plug-inami rejestrowanymi w `di.xml` i pełnym kontraktem REST.
+- **Śledzenie zachowań na stronie** — bezzależnościowy snippet JS zamienia odsłony stron/produktów/kategorii w tagi silnika kampanii.
+- **Panel administracyjny** — dashboard, kreator kampanii i diagnostyczny grid cykli reorder.
 
-Wszystko konfigurowalne pod **Stores → Configuration → Ordo Automation** (albo, dla kampanii i gratisów, przez ich tabele / REST API), każda funkcja z własnym przełącznikiem włącz/wyłącz i własnym zadaniem cron (zobacz `etc/crontab.xml`).
-
-**Uwaga o skali:** silnik kampanii celowo działa na ustrukturyzowanych, rzadkich zdarzeniach (zamówienia, rejestracje, zmiany tagów) — garstka wierszy per klient, nie per klik. Surowe, wysokoczęstotliwościowe śledzenie zachowań na stronie (odsłony/kliknięcia przez snippet JS powyżej) to inny problem skali i *nie* jest przechowywane jako jeden wiersz per event w tym samym schemacie — zobacz `ROADMAP.md`, Faza 5, po pełny opis projektu i jak to zasila system tagów zamiast go omijać.
+Wszystko konfigurowalne pod **Stores → Configuration → Ordo Automation** (albo, dla kampanii i gratisów, przez ich REST API), każda funkcja z własnym przełącznikiem włącz/wyłącz i zadaniem cron. Szczegóły implementacji i uzasadnienie decyzji projektowych są w [CHANGELOG.md](CHANGELOG.md); to, co wciąż w toku — w [ROADMAP.md](ROADMAP.md).
 
 ## Architektura
 
@@ -102,7 +96,7 @@ To są wiążące reguły tego repozytorium na przyszłość, nie lista życzeń
 - **Testy jednostkowe (PHPUnit)** dla każdej klasy z nietrywialną logiką — `Model/`, `Cron/`, `Helper/`, `Controller/`. `Test/Unit/Model/SalesRepEmailContextTest.php` to test-zalążek ustalający wzorzec mockowania (`createMock` na interfejsach, bez prawdziwego bootstrapu Magento).
 - **MFTF (Magento Functional Testing Framework)** pokrycie end-to-end dla każdego flow widocznego dla klienta i administratora: złożenie zamówienia powyżej limitu wydatków → e-mail → link akceptuj/odrzuć → zmiana statusu zamówienia; samodzielne przedłużenie wygasającej oferty przez klienta; itd. Zgodnie z [przewodnikiem MFTF Adobe](https://developer.adobe.com/commerce/testing/functional-testing-framework/getting-started).
 - **Testy API** dla każdego kontraktu usługi w `Api/` — zobacz `API.md` i `Test/Api/README.md`.
-- **Cel: ~100% pokrycia kodu.** Aktualny (lub nieaktualny) zmierzony stan w `ROADMAP.md`, Faza 6, oraz `VERIFICATION.md` — co jest pokryte dziś, w porównaniu z garstką linii genuinie nieosiągalnych.
+- **Cel: ~100% pokrycia kodu.** Aktualny (lub nieaktualny) zmierzony stan w `ROADMAP.md`, Faza 6, oraz `VERIFICATION.md` — co jest dziś pokryte, w porównaniu z garstką linii faktycznie nieosiągalnych.
 
 ## Lokalizacja
 
@@ -130,7 +124,7 @@ rozszerzeń DI, ciche gubienie wartości atrybutów EAV, pułapkę domyślnej
 konfiguracji obecną w 12 miejscach i więcej. Pełna lista, z dokładnym opisem
 jak każdy został znaleziony i zweryfikowany, w `VERIFICATION.md`.
 
-**Co wciąż jest genuinie otwarte:** zobacz [ROADMAP.md](ROADMAP.md) — nie porażki, nie próbowane, albo świadomie odłożone.
+**Co wciąż jest faktycznie otwarte:** zobacz [ROADMAP.md](ROADMAP.md) — nie porażki, nie próbowane, albo świadomie odłożone.
 
 **Pełna checklista krok po kroku:** [VERIFICATION.md](VERIFICATION.md) — obejmuje instalację, analizę statyczną i ręczny przegląd każdej funkcji z tego README, zorganizowana tak, żeby porażka na dowolnym kroku wskazywała dokładnie, co naprawić dalej.
 

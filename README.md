@@ -6,34 +6,28 @@ Marketing automation that runs *inside* **stock Magento Open Source** — no Ado
 
 The goal is for this module to be a genuine substitute for a general-purpose MA platform on a Magento store — not just a handful of B2B-flavored add-ons — covering both classic B2C lifecycle automation and the B2B triggers most external MA tools structurally can't see.
 
-## Why not just install Klaviyo/iPresso/SalesManago?
-
-They're strong on channels (email/SMS/push) and campaign UI, but they only see what a store exports through a generic connector — order totals, cart events, product views. They don't compute purchase-cycle patterns, don't know about quote expiry, credit limits, or company hierarchies, and their B2C behavioral tracking runs through a JS snippet + cookie that's completely decoupled from server-side order data. Ordo Automation runs inside Magento itself, so triggers can combine both without an integration layer.
-
-## Features (v0.8)
+## Features
 
 **B2B**
-- **Reorder reminders** — detects a recurring purchase pattern per customer/SKU from order history and emails a reminder before the predicted next order date.
-- **Offer/quote expiry reminders** — a first-party quote entity (`ordo_offer`) with a *proactive* "expires in N days" reminder — every established B2B platform we checked (Adobe Commerce B2B, OroCommerce) only notifies reactively, after a status change.
-- **Credit limit alerts** — a customer credit-limit attribute + a cron warning at a configurable threshold (default 80%) before the account gets blocked, instead of only reacting once it's already over. Status is also readable live via REST (`GET /V1/ordo/credit-limit/mine`), not just pushed by email — a headless storefront can show "how much credit is left" in a customer's own account. See `API.md`.
-- **Order approval workflow** — an optional per-customer spend limit + approval-admin email; orders above the limit are held (status `Pending Approval`, same "new" state so inventory reservation is untouched) and the admin gets a token-based approve/reject email link, no login required. Unresolved approvals get escalated (resent, capped) after a configurable number of days.
-- **Free gift above a cart threshold** — admin defines a gift pool plus one or more cascading cart-subtotal tiers; every tier the subtotal reaches ADDS a gift slot cumulatively (not a single flat threshold or a fixed count of 1), and the customer picks from the pool via REST. See `API.md`.
+- **Reorder reminders** — reminds a customer before their predicted next order date, based on their own purchase history.
+- **Offer/quote expiry reminders** — proactive "expires in N days" email for the module's own quote entity (`ordo_offer`).
+- **Credit limit alerts** — cron warning at a configurable threshold, plus live status over REST (`GET /V1/ordo/credit-limit/mine`).
+- **Order approval workflow** — orders above a per-customer spend limit are held for a token-based admin approve/reject email, with escalation for unresolved approvals.
+- **Free gift above a cart threshold** — admin-defined gift pool with cascading cart-subtotal tiers; the customer selects via REST.
 
 **B2C**
-- **Abandoned cart recovery** — finds inactive carts above a configurable subtotal threshold and sends a recovery email, capped per cart.
-- **Welcome email** — fires on `customer_register_success`, tags the customer `new_customer`.
-- **Win-back / re-engagement email** — nightly tagging of customers inactive for N days, followed by a one-time win-back email; tags clear themselves automatically once the customer orders again.
+- **Abandoned cart recovery** — recovery email for inactive carts above a configurable subtotal, capped per cart.
+- **Welcome email** — on customer registration.
+- **Win-back / re-engagement email** — one-time email after N days of inactivity, self-clearing once the customer orders again.
 
 **Shared foundation**
-- **Behavioral tagging** (`CustomerTagManager`) — the segmentation primitive every trigger above reads or writes (`new_customer`, `inactive`, `win_back_sent`, ...), the same pattern general MA platforms build campaign targeting on.
-- **Sales-rep signature** (`SalesRepEmailContext`) — every automated email above is signed by the customer's assigned rep when one is set, falling back to the store name. A weekly digest also groups inactive customers by rep.
-- **Campaign engine** (`ordo_campaign` + `ordo_campaign_condition` + `ordo_campaign_action`) — a genuinely configurable "when X happens and Y is true, do Z" rule engine, not a hardcoded cron per idea. Conditions and actions are plug-ins registered in `di.xml` (`Model\Campaign\ConditionPool` / `ActionPool`) against `Api\Campaign\ConditionInterface` / `ActionInterface` — adding a new condition or action type is a new class + one `di.xml` line, never a change to the dispatcher. Ships with two conditions (`tag`, `order_total_gte`) and three actions (`add_tag`, `send_email`, `generate_coupon`), triggered on `order_placed`, `customer_registered`, and `tag_added` (the last fired as a Magento event by `CustomerTagManager`, not a direct call, to avoid a DI cycle with the `tag` condition). Exposed as a full service contract (`CampaignRepositoryInterface`) with REST endpoints under `/V1/ordo/campaigns`.
-- **On-site behavior tracking** — a dependency-free JS snippet (`tracker.js`) issues a first-party visitor cookie and posts `page_view`/`product_view`/`category_view` events; identity is stitched to the customer on login, and repeated views turn into campaign-engine tags (e.g. `viewed_category_view_15`) instead of raw per-click storage.
-- **Admin UI** — a dedicated "Ordo Automation" admin menu with a dashboard, a full campaign builder (grid + form with dynamic condition/action rows, type dropdowns always in sync with what's registered in `di.xml`), and a reorder-cycles diagnostic grid. Free-gift offers/tiers/gift-pool are REST-API/database-managed only for now (no admin grid yet — see `ROADMAP.md`).
+- **Behavioral tagging** — the segmentation primitive every trigger above reads or writes.
+- **Sales-rep signature** — automated emails are signed by the customer's assigned rep; a weekly digest groups inactive customers by rep.
+- **Campaign engine** — a configurable "when X happens and Y is true, do Z" rule engine, with conditions/actions as `di.xml`-registered plug-ins and a full REST service contract.
+- **On-site behavior tracking** — a dependency-free JS snippet turns page/product/category views into campaign-engine tags.
+- **Admin UI** — dashboard, campaign builder, and reorder-cycles diagnostic grid.
 
-All of it is configurable under **Stores → Configuration → Ordo Automation** (or, for campaigns and free gifts, via their tables / REST API), each feature with its own on/off switch and its own cron job (see `etc/crontab.xml`).
-
-**A note on scope:** the campaign engine intentionally works on structured, low-frequency events (orders, registrations, tag changes) — a handful of rows per customer, not per click. Raw high-frequency on-site behavior tracking (page views / clicks via the JS snippet above) is a different scale problem and is *not* stored as one row per event in this same schema — see `ROADMAP.md` Phase 5 for the full design and how it feeds into the tag system instead of bypassing it.
+Everything is configurable under **Stores → Configuration → Ordo Automation** (or, for campaigns and free gifts, via their REST API), each with its own on/off switch and cron job. Implementation detail and the "why" behind each design decision live in [CHANGELOG.md](CHANGELOG.md); what's still in progress lives in [ROADMAP.md](ROADMAP.md).
 
 ## Architecture
 
