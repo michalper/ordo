@@ -25,6 +25,8 @@
     <preference for="Ordo\Automation\Api\Data\FreeGiftEligibilityInterface" type="Ordo\Automation\Model\FreeGiftEligibility"/>
     <preference for="Ordo\Automation\Api\Data\FreeGiftSelectionInterface" type="Ordo\Automation\Model\FreeGiftSelection"/>
     <preference for="Ordo\Automation\Api\FreeGiftManagementInterface" type="Ordo\Automation\Model\FreeGiftManagement"/>
+    <preference for="Ordo\Automation\Api\Data\CreditLimitStatusInterface" type="Ordo\Automation\Model\CreditLimitStatus"/>
+    <preference for="Ordo\Automation\Api\CreditLimitManagementInterface" type="Ordo\Automation\Model\CreditLimitManagement"/>
 
     <!-- Dedicated SearchResults types so the WebAPI output processor knows what's inside each
          list endpoint's "items" array (the generic SearchResultsInterface can't express this —

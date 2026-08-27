@@ -341,4 +341,20 @@
             <resource ref="self"/>
         </resources>
     </route>
+
+    <!-- Credit limit status. "mine" resolves the customer from the token itself (no id needed,
+         and no id to guess/enumerate) — a headless storefront can show "how much credit do I
+         have left" with only a customer token. The by-id lookup is admin/sales-rep only. -->
+    <route url="/V1/ordo/credit-limit/mine" method="GET">
+        <service class="Ordo\Automation\Api\CreditLimitManagementInterface" method="getMyStatus"/>
+        <resources>
+            <resource ref="self"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/customers/:customerId/credit-limit" method="GET">
+        <service class="Ordo\Automation\Api\CreditLimitManagementInterface" method="getStatusForCustomer"/>
+        <resources>
+            <resource ref="Ordo_Automation::config"/>
+        </resources>
+    </route>
 </routes>

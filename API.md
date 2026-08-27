@@ -271,6 +271,35 @@ totals recalculation — the customer keeps whatever still fits their earned slo
 on/off switch lives at `Stores → Configuration → Ordo Automation → Free Gift Above Threshold`
 (`Helper\Config::isFreeGiftEnabled()`); individual offers also have their own `enabled` flag.
 
+## Credit limit status
+
+Previously cron/email-only (`Cron\SendCreditLimitAlerts`) with nothing a headless storefront
+could query to show "how much credit do I have left" in a customer's account. `mine` resolves
+the customer straight from the token — no id needed, and nothing to enumerate.
+
+| Method | Path | Service method | Auth |
+|---|---|---|---|
+| GET | `/V1/ordo/credit-limit/mine` | `CreditLimitManagementInterface::getMyStatus` | customer |
+| GET | `/V1/ordo/customers/:customerId/credit-limit` | `CreditLimitManagementInterface::getStatusForCustomer` | admin |
+
+```
+GET /rest/V1/ordo/credit-limit/mine   (customer token)
+→ 200 {"credit_limit":1000,"used_credit":300,"available_credit":700,"utilization_percent":30}
+
+GET /rest/V1/ordo/credit-limit/mine   (customer with no credit_limit attribute set)
+→ 200 {"credit_limit":0,"used_credit":0,"available_credit":0,"utilization_percent":0}
+
+GET /rest/V1/ordo/customers/12/credit-limit   (admin token, customer over their limit)
+→ 200 {"credit_limit":500,"used_credit":750,"available_credit":-250,"utilization_percent":150}
+```
+
+`available_credit` is deliberately **not clamped to zero** — a negative value means the
+customer is already over their limit by that amount, which is meaningfully different from "0
+left, but still within limit" and a UI may want to render the two differently.
+`used_credit` is computed live from `SUM(sales_order.total_due)` across the customer's
+non-canceled orders (`Model\CreditLimitCalculator::getUsedCredit()`), not a cached counter, so
+this always reflects the current state, not the value at the last alert cron run.
+
 ## Full example: campaign CRUD round trip
 
 ```bash
