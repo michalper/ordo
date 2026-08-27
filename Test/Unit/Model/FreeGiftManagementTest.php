@@ -1,0 +1,311 @@
+<?php
+declare(strict_types=1);
+
+namespace Ordo\Automation\Test\Unit\Model;
+
+use Magento\Authorization\Model\UserContextInterface;
+use Magento\Catalog\Api\ProductRepositoryInterface;
+use Magento\Catalog\Model\Product;
+use Magento\Framework\Exception\InputException;
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Quote\Api\CartRepositoryInterface;
+use Magento\Quote\Model\Quote;
+use Magento\Quote\Model\Quote\Item;
+use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\FreeGiftEligibility;
+use Ordo\Automation\Model\FreeGiftEligibilityFactory;
+use Ordo\Automation\Model\FreeGiftManagement;
+use Ordo\Automation\Model\FreeGiftOffer;
+use Ordo\Automation\Model\FreeGiftOfferProduct;
+use Ordo\Automation\Model\FreeGiftOfferTier;
+use Ordo\Automation\Model\FreeGiftSelection;
+use Ordo\Automation\Model\QuoteGiftItem;
+use Ordo\Automation\Model\QuoteGiftItemFactory;
+use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\Collection as OfferCollection;
+use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\CollectionFactory as OfferCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\FreeGiftOfferProduct\Collection as ProductCollection;
+use Ordo\Automation\Model\ResourceModel\FreeGiftOfferProduct\CollectionFactory as ProductCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\FreeGiftOfferTier\Collection as TierCollection;
+use Ordo\Automation\Model\ResourceModel\FreeGiftOfferTier\CollectionFactory as TierCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\QuoteGiftItem as QuoteGiftItemResource;
+use Ordo\Automation\Model\ResourceModel\QuoteGiftItem\Collection as GiftItemCollection;
+use Ordo\Automation\Model\ResourceModel\QuoteGiftItem\CollectionFactory as GiftItemCollectionFactory;
+class FreeGiftManagementTest extends AbstractModelTestCase
+{
+    private CartRepositoryInterface $cartRepository;
+    private OfferCollectionFactory $offerCollectionFactory;
+    private TierCollectionFactory $tierCollectionFactory;
+    private ProductCollectionFactory $productCollectionFactory;
+    private GiftItemCollectionFactory $giftItemCollectionFactory;
+    private QuoteGiftItemFactory $giftItemFactory;
+    private QuoteGiftItemResource $giftItemResource;
+    private FreeGiftEligibilityFactory $eligibilityFactory;
+    private ProductRepositoryInterface $productRepository;
+    private UserContextInterface $userContext;
+    private Config $config;
+    private FreeGiftManagement $management;
+
+    protected function setUp(): void
+    {
+        $this->cartRepository = $this->createMock(CartRepositoryInterface::class);
+        $this->offerCollectionFactory = $this->createMock(OfferCollectionFactory::class);
+        $this->tierCollectionFactory = $this->createMock(TierCollectionFactory::class);
+        $this->productCollectionFactory = $this->createMock(ProductCollectionFactory::class);
+        $this->giftItemCollectionFactory = $this->createMock(GiftItemCollectionFactory::class);
+        $this->giftItemFactory = $this->createMock(QuoteGiftItemFactory::class);
+        $this->giftItemResource = $this->createMock(QuoteGiftItemResource::class);
+        $this->eligibilityFactory = $this->createMock(FreeGiftEligibilityFactory::class);
+        $this->eligibilityFactory->method('create')->willReturnCallback(fn () => new FreeGiftEligibility());
+        $this->productRepository = $this->createMock(ProductRepositoryInterface::class);
+        $this->userContext = $this->createMock(UserContextInterface::class);
+        $this->config = $this->createMock(Config::class);
+        $this->config->method('isFreeGiftEnabled')->willReturn(true);
+
+        $this->management = new FreeGiftManagement(
+            $this->cartRepository,
+            $this->offerCollectionFactory,
+            $this->tierCollectionFactory,
+            $this->productCollectionFactory,
+            $this->giftItemCollectionFactory,
+            $this->giftItemFactory,
+            $this->giftItemResource,
+            $this->eligibilityFactory,
+            $this->productRepository,
+            $this->userContext,
+            $this->config
+        );
+    }
+
+    /**
+     * @param \Ordo\Automation\Model\FreeGiftOfferTier[] $tiers
+     */
+    private function stubOffersAndTiers(array $offerIds, array $tiers): void
+    {
+        $offerCollection = $this->createMock(OfferCollection::class);
+        $offerCollection->method('addEnabledFilter')->willReturn($offerCollection);
+        $offerCollection->method('getAllIds')->willReturn($offerIds);
+        $this->offerCollectionFactory->method('create')->willReturn($offerCollection);
+
+        $tierCollection = $this->createMock(TierCollection::class);
+        $tierCollection->method('addOffersFilter')->willReturn($tierCollection);
+        $tierCollection->method('getIterator')->willReturn(new \ArrayIterator($tiers));
+        $this->tierCollectionFactory->method('create')->willReturn($tierCollection);
+    }
+
+    /**
+     * @param \Ordo\Automation\Model\FreeGiftOfferProduct[] $products
+     */
+    private function stubProducts(array $products): void
+    {
+        $productCollection = $this->createMock(ProductCollection::class);
+        $productCollection->method('addOffersFilter')->willReturn($productCollection);
+        $productCollection->method('getIterator')->willReturn(new \ArrayIterator($products));
+        $this->productCollectionFactory->method('create')->willReturn($productCollection);
+    }
+
+    /**
+     * @param string[] $skus
+     */
+    private function selection(array $skus): FreeGiftSelection
+    {
+        return (new FreeGiftSelection())->setSkus($skus);
+    }
+
+    private function stubGiftItems(array $rows): void
+    {
+        $giftCollection = $this->createMock(GiftItemCollection::class);
+        $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
+        $giftCollection->method('getSize')->willReturn(count($rows));
+        $giftCollection->method('getIterator')->willReturn(new \ArrayIterator($rows));
+        $giftCollection->method('getItems')->willReturn($rows);
+        $this->giftItemCollectionFactory->method('create')->willReturn($giftCollection);
+    }
+
+    private function tier(int $offerId, float $minSubtotal, int $giftSlots): FreeGiftOfferTier
+    {
+        $tier = new FreeGiftOfferTier($this->makeModelContext(), $this->makeRegistry(), $this->makeModelResource());
+        $tier->setOfferId($offerId);
+        $tier->setMinSubtotal($minSubtotal);
+        $tier->setGiftSlots($giftSlots);
+        return $tier;
+    }
+
+    private function product(int $offerId, string $sku): FreeGiftOfferProduct
+    {
+        $product = new FreeGiftOfferProduct($this->makeModelContext(), $this->makeRegistry(), $this->makeModelResource());
+        $product->setOfferId($offerId);
+        $product->setSku($sku);
+        return $product;
+    }
+
+    private function quote(float $subtotal, int $id = 42, int $customerId = 0, int $storeId = 1): Quote
+    {
+        // getSubtotal()/getCustomerId() are magic (__call via AbstractModel), not real declared
+        // methods on Quote — createMock() alone can't stub them, needs addMethods().
+        $quote = $this->getMockBuilder(Quote::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getId', 'getStoreId', 'collectTotals', 'addProduct', 'removeItem'])
+            ->addMethods(['getSubtotal', 'getCustomerId'])
+            ->getMock();
+        $quote->method('getId')->willReturn($id);
+        $quote->method('getSubtotal')->willReturn($subtotal);
+        $quote->method('getCustomerId')->willReturn($customerId);
+        $quote->method('getStoreId')->willReturn($storeId);
+        return $quote;
+    }
+
+    public function testGetEligibilitySumsCascadingTiersAcrossMultipleOffers(): void
+    {
+        // Offer 1: tier @100 -> +1, tier @300 -> +1 (cumulative -> 2 at subtotal 300)
+        // Offer 2: tier @300 -> +1
+        $this->stubOffersAndTiers([1, 2], [
+            $this->tier(1, 100.0, 1),
+            $this->tier(1, 300.0, 1),
+            $this->tier(2, 300.0, 1),
+        ]);
+        $this->stubProducts([$this->product(1, 'SKU-A'), $this->product(2, 'SKU-B')]);
+        $this->stubGiftItems([]);
+
+        $quote = $this->quote(300.0);
+        $quote->expects(self::atLeastOnce())->method('collectTotals');
+        $this->cartRepository->method('get')->with(7)->willReturn($quote);
+
+        $eligibility = $this->management->getEligibility(7);
+
+        self::assertSame(3, $eligibility->getEarnedSlots());
+        self::assertSame(0, $eligibility->getUsedSlots());
+        self::assertSame(3, $eligibility->getRemainingSlots());
+        self::assertEqualsCanonicalizing(['SKU-A', 'SKU-B'], $eligibility->getEligibleSkus());
+    }
+
+    public function testGetEligibilityBelowFirstTierEarnsNothing(): void
+    {
+        $this->stubOffersAndTiers([1], [$this->tier(1, 100.0, 1)]);
+        $this->stubProducts([]);
+        $this->stubGiftItems([]);
+
+        $quote = $this->quote(50.0);
+        $this->cartRepository->method('get')->willReturn($quote);
+
+        $eligibility = $this->management->getEligibility(7);
+
+        self::assertSame(0, $eligibility->getEarnedSlots());
+        self::assertSame([], $eligibility->getEligibleSkus());
+    }
+
+    public function testGetEligibilityReturnsZeroWhenMasterSwitchDisabled(): void
+    {
+        $this->config = $this->createMock(Config::class);
+        $this->config->method('isFreeGiftEnabled')->willReturn(false);
+        $this->management = new FreeGiftManagement(
+            $this->cartRepository,
+            $this->offerCollectionFactory,
+            $this->tierCollectionFactory,
+            $this->productCollectionFactory,
+            $this->giftItemCollectionFactory,
+            $this->giftItemFactory,
+            $this->giftItemResource,
+            $this->eligibilityFactory,
+            $this->productRepository,
+            $this->userContext,
+            $this->config
+        );
+        $this->stubGiftItems([]);
+
+        $quote = $this->quote(1000.0);
+        $this->cartRepository->method('get')->willReturn($quote);
+
+        $eligibility = $this->management->getEligibility(7);
+
+        self::assertSame(0, $eligibility->getEarnedSlots());
+    }
+
+    public function testGetEligibilityThrowsWhenCartBelongsToDifferentCustomer(): void
+    {
+        $this->userContext->method('getUserId')->willReturn(99);
+        $quote = $this->quote(0.0, 7, 5);
+        $this->cartRepository->method('get')->willReturn($quote);
+
+        $this->expectException(NoSuchEntityException::class);
+        $this->management->getEligibility(7);
+    }
+
+    public function testSelectGiftsThrowsOnDuplicateSkus(): void
+    {
+        $this->expectException(InputException::class);
+        $this->management->selectGifts(7, $this->selection(['SKU-A', 'SKU-A']));
+    }
+
+    public function testSelectGiftsThrowsWhenExceedingEarnedSlots(): void
+    {
+        $this->stubOffersAndTiers([1], [$this->tier(1, 100.0, 1)]);
+        $this->stubProducts([$this->product(1, 'SKU-A')]);
+        $this->stubGiftItems([]);
+
+        $quote = $this->quote(150.0);
+        $this->cartRepository->method('get')->willReturn($quote);
+
+        $this->expectException(LocalizedException::class);
+        $this->management->selectGifts(7, $this->selection(['SKU-A', 'SKU-B']));
+    }
+
+    public function testSelectGiftsThrowsOnIneligibleSku(): void
+    {
+        $this->stubOffersAndTiers([1], [$this->tier(1, 100.0, 2)]);
+        $this->stubProducts([$this->product(1, 'SKU-A')]);
+        $this->stubGiftItems([]);
+
+        $quote = $this->quote(150.0);
+        $this->cartRepository->method('get')->willReturn($quote);
+
+        $this->expectException(InputException::class);
+        $this->management->selectGifts(7, $this->selection(['SKU-NOT-IN-POOL']));
+    }
+
+    public function testSelectGiftsAddsItemsWithZeroPriceAndPersistsMarkerRows(): void
+    {
+        $this->stubOffersAndTiers([1], [$this->tier(1, 100.0, 1)]);
+        $this->stubProducts([$this->product(1, 'SKU-A')]);
+        $this->stubGiftItems([]);
+
+        $quote = $this->quote(150.0);
+        $this->cartRepository->method('get')->willReturn($quote);
+        $this->cartRepository->expects(self::once())->method('save')->with($quote);
+
+        $product = $this->createMock(Product::class);
+        $this->productRepository->method('get')->with('SKU-A')->willReturn($product);
+
+        $item = $this->getMockBuilder(Item::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['setCustomPrice', 'getId', 'getProduct'])
+            ->addMethods(['setOriginalCustomPrice'])
+            ->getMock();
+        $item->expects(self::once())->method('setCustomPrice')->with(0.0)->willReturnSelf();
+        $item->expects(self::once())->method('setOriginalCustomPrice')->with(0.0)->willReturnSelf();
+        $item->method('getId')->willReturn(101);
+        $itemProduct = $this->getMockBuilder(Product::class)
+            ->disableOriginalConstructor()
+            ->addMethods(['setIsSuperMode'])
+            ->getMock();
+        $itemProduct->expects(self::once())->method('setIsSuperMode')->with(true);
+        $item->method('getProduct')->willReturn($itemProduct);
+
+        $quote->expects(self::once())->method('addProduct')->with($product, 1)->willReturn($item);
+
+        $giftItem = $this->getMockBuilder(QuoteGiftItem::class)
+            ->disableOriginalConstructor()
+            ->addMethods(['setQuoteId', 'setQuoteItemId', 'setOfferId', 'setSku'])
+            ->getMock();
+        $giftItem->expects(self::once())->method('setQuoteId')->with(42)->willReturnSelf();
+        $giftItem->expects(self::once())->method('setQuoteItemId')->with(101)->willReturnSelf();
+        $giftItem->expects(self::once())->method('setOfferId')->with(1)->willReturnSelf();
+        $giftItem->expects(self::once())->method('setSku')->with('SKU-A')->willReturnSelf();
+        $this->giftItemFactory->method('create')->willReturn($giftItem);
+        $this->giftItemResource->expects(self::once())->method('save')->with($giftItem);
+
+        $eligibility = $this->management->selectGifts(7, $this->selection(['SKU-A']));
+
+        self::assertSame(1, $eligibility->getEarnedSlots());
+    }
+}

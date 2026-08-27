@@ -14,4 +14,7 @@
     <event name="customer_login">
         <observer name="ordo_automation_stitch_visitor_identity" instance="Ordo\Automation\Observer\StitchVisitorIdentity"/>
     </event>
+    <event name="sales_quote_collect_totals_after">
+        <observer name="ordo_automation_trim_excess_free_gifts" instance="Ordo\Automation\Observer\TrimExcessFreeGifts"/>
+    </event>
 </config>

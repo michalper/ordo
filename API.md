@@ -204,6 +204,73 @@ look up the entity_id via `getList`/`getById` and fetch its decision links the s
 is still intentionally no way to *create* an approval or retrieve a token for one that's
 already been decided — the token is only ever minted once, by `Observer\HoldOrderForApproval`.
 
+## Free gift above threshold
+
+Cascading cart-subtotal tiers per offer: every tier whose `min_subtotal` the cart has reached
+ADDS `gift_slots` to the customer's earned total — cumulative across tiers, and across every
+active offer, not a single flat threshold. Admin manages offers/tiers/gift-pool SKUs
+(`Ordo_Automation::free_gifts`); any authenticated customer (or guest, by cart id) reads
+eligibility and picks gifts for their own cart.
+
+| Method | Path | Service method | Auth |
+|---|---|---|---|
+| GET | `/V1/ordo/free-gift-offers?searchCriteria[...]` | `FreeGiftOfferRepositoryInterface::getList` | admin |
+| GET/POST/PUT/DELETE | `/V1/ordo/free-gift-offers[/:entityId]` | `FreeGiftOfferRepositoryInterface::*` | admin |
+| GET/POST/PUT/DELETE | `/V1/ordo/free-gift-offer-tiers[/:entityId]` | `FreeGiftOfferTierRepositoryInterface::*` | admin |
+| GET/POST/PUT/DELETE | `/V1/ordo/free-gift-offer-products[/:entityId]` | `FreeGiftOfferProductRepositoryInterface::*` | admin |
+| GET | `/V1/ordo/carts/:cartId/free-gift-eligibility` | `FreeGiftManagementInterface::getEligibility` | customer/guest |
+| PUT | `/V1/ordo/carts/:cartId/free-gifts` | `FreeGiftManagementInterface::selectGifts` | customer/guest |
+
+Tiers and gift-pool SKUs are flat resources filterable by `offer_id` via `searchCriteria`, same
+pattern as campaign conditions/actions — not nested under `/free-gift-offers/:id/...`.
+
+```
+POST /rest/V1/ordo/free-gift-offers          (admin token)
+{"offer": {"name": "Spend more, get more", "enabled": true}}
+→ 200 {"entity_id":1,"name":"Spend more, get more","enabled":true, ...}
+
+POST /rest/V1/ordo/free-gift-offer-tiers     (admin token)
+{"tier": {"offer_id": 1, "min_subtotal": 100, "gift_slots": 1}}
+{"tier": {"offer_id": 1, "min_subtotal": 300, "gift_slots": 1}}
+→ each tier ADDS to the total earned — a 300 subtotal earns 1 + 1 = 2 gift slots for this offer,
+  not just the top tier's 1.
+
+POST /rest/V1/ordo/free-gift-offer-products  (admin token)
+{"product": {"offer_id": 1, "sku": "GIFT-MUG"}}
+{"product": {"offer_id": 1, "sku": "GIFT-TOTE"}}
+
+GET /rest/V1/ordo/carts/7/free-gift-eligibility   (customer token, cart subtotal = 300)
+→ 200 {"earned_slots":2,"used_slots":0,"remaining_slots":2,"eligible_skus":["GIFT-MUG","GIFT-TOTE"]}
+
+PUT /rest/V1/ordo/carts/7/free-gifts         (customer token)
+{"selection": {"skus": ["GIFT-MUG", "GIFT-TOTE"]}}
+→ 200 {"earned_slots":2,"used_slots":2,"remaining_slots":0,"eligible_skus":[...]}
+  Adds each SKU to the cart as a quote item with custom_price 0; replaces any previously
+  selected gifts on that cart (idempotent — call again with a different list to change the
+  selection). Requesting more SKUs than remaining_slots, or a SKU outside the pool, is rejected
+  before anything is added.
+```
+
+The request body wraps `skus` in a `selection` object (`Api\Data\FreeGiftSelectionInterface`)
+rather than passing a bare array as the second parameter — Magento's WebAPI path-param
+overrider (`ParamsOverrider::overrideRequestBodyIdWithPathParam`) crashes with
+`ReflectionException: Class "string[]" does not exist` on a route that combines a path
+parameter with a body that is a single top-level key mapping to a scalar array (found by
+actually calling the endpoint against a live instance — see `Test/Api/README.md`). A real data
+object sidesteps it.
+
+```
+
+PUT /rest/V1/ordo/carts/999/free-gifts       (cart belongs to a different customer)
+→ 404 {"message":"Cart with id \"999\" does not exist."}
+```
+
+If the cart subtotal later drops below what earned the current selection (e.g. the customer
+removes a paid item), `Observer\TrimExcessFreeGifts` silently drops the excess gifts on the next
+totals recalculation — the customer keeps whatever still fits their earned slots. A master
+on/off switch lives at `Stores → Configuration → Ordo Automation → Free Gift Above Threshold`
+(`Helper\Config::isFreeGiftEnabled()`); individual offers also have their own `enabled` flag.
+
 ## Full example: campaign CRUD round trip
 
 ```bash

@@ -226,4 +226,119 @@
             <resource ref="self"/>
         </resources>
     </route>
+
+    <!-- Admin CRUD — offer headers, their cascading tiers, and their gift-pool SKUs. Tiers and
+         products are flat resources filterable by offer_id via searchCriteria, same pattern as
+         campaign-conditions/campaign-actions. -->
+    <route url="/V1/ordo/free-gift-offers" method="GET">
+        <service class="Ordo\Automation\Api\FreeGiftOfferRepositoryInterface" method="getList"/>
+        <resources>
+            <resource ref="Ordo_Automation::free_gifts"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/free-gift-offers/:entityId" method="GET">
+        <service class="Ordo\Automation\Api\FreeGiftOfferRepositoryInterface" method="getById"/>
+        <resources>
+            <resource ref="Ordo_Automation::free_gifts"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/free-gift-offers" method="POST">
+        <service class="Ordo\Automation\Api\FreeGiftOfferRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Ordo_Automation::free_gifts"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/free-gift-offers/:entityId" method="PUT">
+        <service class="Ordo\Automation\Api\FreeGiftOfferRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Ordo_Automation::free_gifts"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/free-gift-offers/:entityId" method="DELETE">
+        <service class="Ordo\Automation\Api\FreeGiftOfferRepositoryInterface" method="deleteById"/>
+        <resources>
+            <resource ref="Ordo_Automation::free_gifts"/>
+        </resources>
+    </route>
+
+    <route url="/V1/ordo/free-gift-offer-tiers" method="GET">
+        <service class="Ordo\Automation\Api\FreeGiftOfferTierRepositoryInterface" method="getList"/>
+        <resources>
+            <resource ref="Ordo_Automation::free_gifts"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/free-gift-offer-tiers/:entityId" method="GET">
+        <service class="Ordo\Automation\Api\FreeGiftOfferTierRepositoryInterface" method="getById"/>
+        <resources>
+            <resource ref="Ordo_Automation::free_gifts"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/free-gift-offer-tiers" method="POST">
+        <service class="Ordo\Automation\Api\FreeGiftOfferTierRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Ordo_Automation::free_gifts"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/free-gift-offer-tiers/:entityId" method="PUT">
+        <service class="Ordo\Automation\Api\FreeGiftOfferTierRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Ordo_Automation::free_gifts"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/free-gift-offer-tiers/:entityId" method="DELETE">
+        <service class="Ordo\Automation\Api\FreeGiftOfferTierRepositoryInterface" method="deleteById"/>
+        <resources>
+            <resource ref="Ordo_Automation::free_gifts"/>
+        </resources>
+    </route>
+
+    <route url="/V1/ordo/free-gift-offer-products" method="GET">
+        <service class="Ordo\Automation\Api\FreeGiftOfferProductRepositoryInterface" method="getList"/>
+        <resources>
+            <resource ref="Ordo_Automation::free_gifts"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/free-gift-offer-products/:entityId" method="GET">
+        <service class="Ordo\Automation\Api\FreeGiftOfferProductRepositoryInterface" method="getById"/>
+        <resources>
+            <resource ref="Ordo_Automation::free_gifts"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/free-gift-offer-products" method="POST">
+        <service class="Ordo\Automation\Api\FreeGiftOfferProductRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Ordo_Automation::free_gifts"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/free-gift-offer-products/:entityId" method="PUT">
+        <service class="Ordo\Automation\Api\FreeGiftOfferProductRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Ordo_Automation::free_gifts"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/free-gift-offer-products/:entityId" method="DELETE">
+        <service class="Ordo\Automation\Api\FreeGiftOfferProductRepositoryInterface" method="deleteById"/>
+        <resources>
+            <resource ref="Ordo_Automation::free_gifts"/>
+        </resources>
+    </route>
+
+    <!-- Customer-facing — any authenticated customer may call these for any numeric cart id;
+         FreeGiftManagement::assertOwnership() rejects a cart that belongs to a different
+         customer with the same "not found" message OfferManagement::selfExtend() uses, so the
+         API never confirms "cart #X exists, you just don't own it". Guest carts are reachable
+         too (ownership check is skipped when there's no logged-in customer), so this also works
+         for headless guest checkout flows. -->
+    <route url="/V1/ordo/carts/:cartId/free-gift-eligibility" method="GET">
+        <service class="Ordo\Automation\Api\FreeGiftManagementInterface" method="getEligibility"/>
+        <resources>
+            <resource ref="self"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/carts/:cartId/free-gifts" method="PUT">
+        <service class="Ordo\Automation\Api\FreeGiftManagementInterface" method="selectGifts"/>
+        <resources>
+            <resource ref="self"/>
+        </resources>
+    </route>
 </routes>

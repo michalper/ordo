@@ -16,6 +16,15 @@
     <preference for="Ordo\Automation\Api\CampaignConditionRepositoryInterface" type="Ordo\Automation\Model\CampaignConditionRepository"/>
     <preference for="Ordo\Automation\Api\Data\CampaignActionInterface" type="Ordo\Automation\Model\CampaignAction"/>
     <preference for="Ordo\Automation\Api\CampaignActionRepositoryInterface" type="Ordo\Automation\Model\CampaignActionRepository"/>
+    <preference for="Ordo\Automation\Api\Data\FreeGiftOfferInterface" type="Ordo\Automation\Model\FreeGiftOffer"/>
+    <preference for="Ordo\Automation\Api\FreeGiftOfferRepositoryInterface" type="Ordo\Automation\Model\FreeGiftOfferRepository"/>
+    <preference for="Ordo\Automation\Api\Data\FreeGiftOfferTierInterface" type="Ordo\Automation\Model\FreeGiftOfferTier"/>
+    <preference for="Ordo\Automation\Api\FreeGiftOfferTierRepositoryInterface" type="Ordo\Automation\Model\FreeGiftOfferTierRepository"/>
+    <preference for="Ordo\Automation\Api\Data\FreeGiftOfferProductInterface" type="Ordo\Automation\Model\FreeGiftOfferProduct"/>
+    <preference for="Ordo\Automation\Api\FreeGiftOfferProductRepositoryInterface" type="Ordo\Automation\Model\FreeGiftOfferProductRepository"/>
+    <preference for="Ordo\Automation\Api\Data\FreeGiftEligibilityInterface" type="Ordo\Automation\Model\FreeGiftEligibility"/>
+    <preference for="Ordo\Automation\Api\Data\FreeGiftSelectionInterface" type="Ordo\Automation\Model\FreeGiftSelection"/>
+    <preference for="Ordo\Automation\Api\FreeGiftManagementInterface" type="Ordo\Automation\Model\FreeGiftManagement"/>
 
     <!-- Dedicated SearchResults types so the WebAPI output processor knows what's inside each
          list endpoint's "items" array (the generic SearchResultsInterface can't express this —
@@ -30,6 +39,9 @@
     <preference for="Ordo\Automation\Api\Data\OrderApprovalSearchResultsInterface" type="Ordo\Automation\Model\OrderApproval\SearchResults"/>
     <preference for="Ordo\Automation\Api\Data\CampaignConditionSearchResultsInterface" type="Ordo\Automation\Model\Campaign\Condition\SearchResults"/>
     <preference for="Ordo\Automation\Api\Data\CampaignActionSearchResultsInterface" type="Ordo\Automation\Model\Campaign\Action\SearchResults"/>
+    <preference for="Ordo\Automation\Api\Data\FreeGiftOfferSearchResultsInterface" type="Ordo\Automation\Model\FreeGiftOffer\SearchResults"/>
+    <preference for="Ordo\Automation\Api\Data\FreeGiftOfferTierSearchResultsInterface" type="Ordo\Automation\Model\FreeGiftOfferTier\SearchResults"/>
+    <preference for="Ordo\Automation\Api\Data\FreeGiftOfferProductSearchResultsInterface" type="Ordo\Automation\Model\FreeGiftOfferProduct\SearchResults"/>
 
     <!-- Admin grid data sources — one entry per listing UI component. -->
     <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
