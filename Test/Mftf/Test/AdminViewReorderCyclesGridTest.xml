@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminViewReorderCyclesGridTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Reorder cycle diagnostics"/>
+            <title value="Admin can open the read-only Reorder Cycles grid"/>
+            <description value="Covers Controller/Adminhtml/ReorderCycle/Index.php — the read-only diagnostic grid over what CalculateReorderCycle has computed. No edit/delete on this screen, so the assertion is just that the page loads with its grid and title, matching the controller's own doc comment ('for verifying the detected cycle looks right while debugging, not a CRUD screen')."/>
+            <severity value="MINOR"/>
+            <group value="ordo_automation"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <amOnPage url="ordo/reordercycle/index" stepKey="goToReorderCyclesGrid"/>
+        <waitForPageLoad stepKey="waitForGrid"/>
+        <see selector="h1.page-title" userInput="Reorder Cycles" stepKey="seePageTitle"/>
+        <seeElement selector="table.data-grid" stepKey="seeGrid"/>
+    </test>
+</tests>

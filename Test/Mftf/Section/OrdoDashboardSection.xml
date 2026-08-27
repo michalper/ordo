@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sections xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="urn:magento:mftf:Page/etc/SectionObject.xsd">
+    <section name="OrdoDashboardSection">
+        <element name="statCardByLabel" type="text" selector="//div[@class='ordo-stat-card'][.//div[@class='ordo-stat-label' and normalize-space(text())='{{label}}']]//div[@class='ordo-stat-value']" parameterized="true"/>
+        <element name="navCardByTitle" type="text" selector="//a[@class='ordo-nav-card'][.//span[@class='ordo-nav-title' and normalize-space(text())='{{title}}']]" parameterized="true"/>
+    </section>
+</sections>
