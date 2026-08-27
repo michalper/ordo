@@ -150,11 +150,15 @@ define([
              * @param {String} kind 'trigger' | 'condition' | 'action'
              * @param {String} label
              * @param {Array} typeOptions
+             * @param {String} [presetType] pre-select this type (dropped from the palette
+             *   already carrying a specific type, e.g. "order_total_gte") instead of defaulting
+             *   to whatever option happens to sort first
              * @return {String}
              */
-            function buildNodeHtml(kind, label, typeOptions) {
+            function buildNodeHtml(kind, label, typeOptions, presetType) {
                 var optionsHtml = typeOptions.map(function (type) {
-                    return '<option value="' + type + '">' + type + '</option>';
+                    var selectedAttr = type === presetType ? ' selected="selected"' : '';
+                    return '<option value="' + type + '"' + selectedAttr + '>' + type + '</option>';
                 }).join('');
 
                 // `data-kind` (not a class) is what collectRows() below matches on — Drawflow
@@ -173,15 +177,28 @@ define([
 
             /**
              * @param {String} kind
+             * @param {String} [presetType] pre-select a specific type on the new node instead
+             *   of leaving it at whatever sorts first — used when the node was dropped from a
+             *   specific palette chip (e.g. dragging "order_total_gte" onto the canvas should
+             *   produce a condition node already set to that type, not a generic blank one)
+             * @param {Number} [posX] canvas-relative position; defaults to the old
+             *   click-to-add placement (fixed x for triggers, randomized for everything else)
+             *   when not dropped at a specific point
+             * @param {Number} [posY]
              */
-            function addNode(kind) {
+            function addNode(kind, presetType, posX, posY) {
                 var label = KIND_LABELS[kind],
                     typeOptions = typesConfig[KIND_TYPE_LISTS[kind]],
-                    html = buildNodeHtml(kind, label, typeOptions),
-                    posX = kind === 'trigger' ? 60 : (60 + Math.random() * 400),
-                    posY = 260 + Math.random() * 120,
+                    html = buildNodeHtml(kind, label, typeOptions, presetType),
                     nodeId,
                     inputCount = kind === 'trigger' ? 0 : 1;
+
+                if (posX === undefined) {
+                    posX = kind === 'trigger' ? 60 : (60 + Math.random() * 400);
+                }
+                if (posY === undefined) {
+                    posY = 260 + Math.random() * 120;
+                }
 
                 nodeId = editor.addNode(
                     'ordo-flow-' + kind,
@@ -197,6 +214,27 @@ define([
                 bindNode($(container).find('#node-' + nodeId).find('[data-kind]'), kind);
             }
 
+            /**
+             * Converts a viewport drop point (event.clientX/Y) into Drawflow's internal canvas
+             * coordinate space — Drawflow pans/zooms `editor.precanvas` independently of the
+             * page, so a raw clientX/Y would place the new node wherever the canvas happened to
+             * be scrolled/zoomed to, not under the cursor. Same formula Drawflow's own
+             * drag-from-menu demo uses: undo the canvas's current zoom and offset.
+             *
+             * @param {Number} clientX
+             * @param {Number} clientY
+             * @return {{x: Number, y: Number}}
+             */
+            function toCanvasPosition(clientX, clientY) {
+                var rect = editor.precanvas.getBoundingClientRect(),
+                    zoom = editor.zoom || 1;
+
+                return {
+                    x: (clientX - rect.x) / zoom,
+                    y: (clientY - rect.y) / zoom
+                };
+            }
+
             // Drawflow renders node HTML as-is; delete buttons are wired via event delegation
             // since nodes are added/removed dynamically after the container's own listeners are
             // bound once at init.
@@ -209,16 +247,45 @@ define([
                 }
             });
 
-            $(container).closest('.ordo-flow-wrapper').on('click', '[data-flow-action="add-trigger"]', function () {
-                addNode('trigger');
+            // Palette drag-and-drop: each chip in the sidebar (flow.phtml) carries the exact
+            // kind/type to create, set as the drag payload on dragstart. The canvas itself must
+            // preventDefault() on dragover for a drop to be allowed to fire at all (native HTML5
+            // drag-and-drop behavior, not a Drawflow API). Dropping instantiates a node with
+            // that type pre-selected, positioned under the cursor via toCanvasPosition().
+            $(document).on('dragstart', '.ordo-flow-palette-item', function (event) {
+                var $item = $(this);
+
+                event.originalEvent.dataTransfer.setData('text/plain', JSON.stringify({
+                    kind: $item.attr('data-flow-kind'),
+                    type: $item.attr('data-flow-type')
+                }));
+                event.originalEvent.dataTransfer.effectAllowed = 'copy';
             });
 
-            $(container).closest('.ordo-flow-wrapper').on('click', '[data-flow-action="add-condition"]', function () {
-                addNode('condition');
+            $(container).on('dragover', function (event) {
+                event.preventDefault();
+                event.originalEvent.dataTransfer.dropEffect = 'copy';
             });
 
-            $(container).closest('.ordo-flow-wrapper').on('click', '[data-flow-action="add-action"]', function () {
-                addNode('action');
+            $(container).on('drop', function (event) {
+                var raw = event.originalEvent.dataTransfer.getData('text/plain'),
+                    payload,
+                    pos;
+
+                event.preventDefault();
+
+                try {
+                    payload = JSON.parse(raw);
+                } catch (e) {
+                    return;
+                }
+
+                if (!payload || !payload.kind) {
+                    return;
+                }
+
+                pos = toCanvasPosition(event.originalEvent.clientX, event.originalEvent.clientY);
+                addNode(payload.kind, payload.type, pos.x, pos.y);
             });
 
             /**

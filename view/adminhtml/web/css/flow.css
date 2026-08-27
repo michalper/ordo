@@ -74,9 +74,63 @@
     background: #1c86dc;
 }
 
+.ordo-flow-body {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.ordo-flow-palette {
+    flex: 0 0 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    border: 1px solid #e6e9ec;
+    border-radius: 8px;
+    background: #fbfcfd;
+    padding: 12px;
+    max-height: 460px;
+    overflow-y: auto;
+}
+
+.ordo-flow-palette-group h3 {
+    margin: 0 0 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b7680;
+}
+
+.ordo-flow-palette-item {
+    padding: 7px 10px;
+    margin-bottom: 6px;
+    border: 1px solid #dde3e8;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 12px;
+    color: #2f3944;
+    cursor: grab;
+    user-select: none;
+}
+
+.ordo-flow-palette-item:last-child {
+    margin-bottom: 0;
+}
+
+.ordo-flow-palette-item:hover {
+    border-color: #2196f3;
+    background: #eef6fe;
+}
+
+.ordo-flow-palette-item:active {
+    cursor: grabbing;
+}
+
 .ordo-flow-canvas {
     position: relative;
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
     height: 460px;
     border: 1px solid #e6e9ec;
     border-radius: 8px;

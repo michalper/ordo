@@ -29,6 +29,14 @@ All notable changes to this module are documented here. Format loosely follows [
   nodes) before writing back into the same `triggers`/`conditions`/`actions`
   provider data `Save.php` already accepts and calling the form's own native
   save — the canvas never talks to the backend directly.
+- **Real palette drag-and-drop on the Flow canvas**, replacing the earlier
+  "+ Trigger / + Condition / + Action" click buttons. A sidebar lists every
+  registered trigger/condition/action type as a draggable chip; dropping one
+  onto the canvas creates a node of that exact type at the drop point
+  (`toCanvasPosition()` accounts for Drawflow's own zoom/pan so the node
+  actually lands under the cursor, not wherever the canvas happens to be
+  scrolled to), pre-selected in its type dropdown rather than defaulting to
+  whichever option sorts first.
 
 ### Fixed
 - **Campaigns grid still showed the deprecated single `trigger_event`
