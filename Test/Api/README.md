@@ -18,6 +18,9 @@ response, no mocks) using a portable, self-contained HTTP client instead, so the
   request helper.
 - **`CampaignApiTest.php`** — full CRUD round trip (POST create → GET by id → GET list → PUT
   update → DELETE → confirm 404 after).
+- **`CampaignConditionActionApiTest.php`** — full CRUD on a campaign's condition/action rows
+  (the dynamicRows sections of the admin form), filtered listing by `campaign_id` via
+  `searchCriteria`.
 - **`OfferApiTest.php`** — POST create → PUT update → DELETE, plus the customer-scoped
   self-extend endpoint (success, max-extensions-exceeded, and wrong-owner cases).
 - **`ReorderCycleApiTest.php`** — GET list / GET by id (read-only).

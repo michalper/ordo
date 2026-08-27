@@ -31,6 +31,72 @@
         </resources>
     </route>
 
+    <!-- Conditions/actions are flat resources filtered by campaign_id via searchCriteria
+         (searchCriteria[filterGroups][0][filters][0][field]=campaign_id&...[value]=<id>),
+         matching Magento's own SearchCriteria convention rather than a nested URL — the same
+         pattern already used by, e.g., order items. -->
+    <route url="/V1/ordo/campaign-conditions" method="GET">
+        <service class="Ordo\Automation\Api\CampaignConditionRepositoryInterface" method="getList"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/campaign-conditions/:entityId" method="GET">
+        <service class="Ordo\Automation\Api\CampaignConditionRepositoryInterface" method="getById"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/campaign-conditions" method="POST">
+        <service class="Ordo\Automation\Api\CampaignConditionRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/campaign-conditions/:entityId" method="PUT">
+        <service class="Ordo\Automation\Api\CampaignConditionRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/campaign-conditions/:entityId" method="DELETE">
+        <service class="Ordo\Automation\Api\CampaignConditionRepositoryInterface" method="deleteById"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+
+    <route url="/V1/ordo/campaign-actions" method="GET">
+        <service class="Ordo\Automation\Api\CampaignActionRepositoryInterface" method="getList"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/campaign-actions/:entityId" method="GET">
+        <service class="Ordo\Automation\Api\CampaignActionRepositoryInterface" method="getById"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/campaign-actions" method="POST">
+        <service class="Ordo\Automation\Api\CampaignActionRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/campaign-actions/:entityId" method="PUT">
+        <service class="Ordo\Automation\Api\CampaignActionRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/campaign-actions/:entityId" method="DELETE">
+        <service class="Ordo\Automation\Api\CampaignActionRepositoryInterface" method="deleteById"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+
     <route url="/V1/ordo/offers" method="GET">
         <service class="Ordo\Automation\Api\OfferRepositoryInterface" method="getList"/>
         <resources>

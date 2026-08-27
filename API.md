@@ -44,11 +44,42 @@ POST /rest/V1/ordo/campaigns
 ```
 
 `trigger_event` is one of `order_placed`, `customer_registered`, `tag_added`, `cart_abandoned`
-(`Api\Data\CampaignInterface::TRIGGER_*` constants). Conditions/actions (the per-campaign rule
-rows edited in the admin form's dynamicRows sections) are not yet part of this API — they're
-only reachable through the admin UI (`Controller/Adminhtml/Campaign/Save.php`). A headless
-client can create/enable/disable/delete campaigns, but not yet author their condition/action
-rules; tracked as a follow-up, not implemented in this pass.
+(`Api\Data\CampaignInterface::TRIGGER_*` constants).
+
+## Campaign conditions / actions
+
+Full CRUD on the per-campaign rule rows the admin form's dynamicRows sections edit — a headless
+client can now author these too, not just create/enable/disable the parent campaign. Flat
+resources, not nested under `/campaigns/:id/...` — filter by `campaign_id` via `searchCriteria`
+to get everything on one campaign, the same convention Magento's own APIs use (e.g. order
+items). ACL resource: `Ordo_Automation::campaigns` (admin token).
+
+| Method | Path | Service method |
+|---|---|---|
+| GET | `/V1/ordo/campaign-conditions?searchCriteria[...]` | `CampaignConditionRepositoryInterface::getList` |
+| GET | `/V1/ordo/campaign-conditions/:entityId` | `CampaignConditionRepositoryInterface::getById` |
+| POST | `/V1/ordo/campaign-conditions` | `CampaignConditionRepositoryInterface::save` |
+| PUT | `/V1/ordo/campaign-conditions/:entityId` | `CampaignConditionRepositoryInterface::save` |
+| DELETE | `/V1/ordo/campaign-conditions/:entityId` | `CampaignConditionRepositoryInterface::deleteById` |
+| GET / POST / PUT / DELETE | `/V1/ordo/campaign-actions[/...]` | `CampaignActionRepositoryInterface` (same shape) |
+
+```
+POST /rest/V1/ordo/campaign-conditions
+{"condition": {"campaign_id": 12, "type": "order_total_gte", "params_json": "{\"amount\":\"500\"}", "sort_order": 0}}
+
+→ 200 {"entity_id":8,"campaign_id":12,"type":"order_total_gte","params_json":"{\"amount\":\"500\"}","sort_order":0}
+
+GET /rest/V1/ordo/campaign-conditions?searchCriteria[filterGroups][0][filters][0][field]=campaign_id
+                                      &searchCriteria[filterGroups][0][filters][0][value]=12
+→ 200 {"items":[{"entity_id":8,"campaign_id":12, ...}], "total_count":1}
+```
+
+`type` must match a type key registered in `Model\Campaign\ConditionPool` / `ActionPool` (the
+same registry the admin form's type dropdown reads from) — an unregistered type won't error on
+save, but the dispatcher will log and skip it at trigger time (fails closed, see
+`CampaignDispatcher`). `params_json` is the field name (not `params`, the raw DB column) so it
+can't collide with the model's own `getParams(): array` decoded-helper method — see
+`Api\Data\CampaignConditionInterface` for why.
 
 ## Offers
 
