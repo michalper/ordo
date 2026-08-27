@@ -4,6 +4,12 @@
     <preference for="Ordo\Automation\Api\OfferRepositoryInterface" type="Ordo\Automation\Model\OfferRepository"/>
     <preference for="Ordo\Automation\Api\Data\CampaignInterface" type="Ordo\Automation\Model\Campaign"/>
     <preference for="Ordo\Automation\Api\CampaignRepositoryInterface" type="Ordo\Automation\Model\CampaignRepository"/>
+    <preference for="Ordo\Automation\Api\Data\ReorderCycleInterface" type="Ordo\Automation\Model\ReorderCycle"/>
+    <preference for="Ordo\Automation\Api\ReorderCycleRepositoryInterface" type="Ordo\Automation\Model\ReorderCycleRepository"/>
+    <preference for="Ordo\Automation\Api\CustomerTagManagementInterface" type="Ordo\Automation\Model\CustomerTagManager"/>
+    <preference for="Ordo\Automation\Api\Data\OrderApprovalInterface" type="Ordo\Automation\Model\OrderApproval"/>
+    <preference for="Ordo\Automation\Api\OrderApprovalRepositoryInterface" type="Ordo\Automation\Model\OrderApprovalRepository"/>
+    <preference for="Ordo\Automation\Api\OrderApprovalManagementInterface" type="Ordo\Automation\Model\OrderApprovalManagement"/>
 
     <!-- Admin grid data sources — one entry per listing UI component. -->
     <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">

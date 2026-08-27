@@ -5,6 +5,7 @@ namespace Ordo\Automation\Model;
 
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
+use Ordo\Automation\Api\CustomerTagManagementInterface;
 
 /**
  * Behavioral tagging, the same primitive general-purpose MA platforms (SalesManago, iPresso,
@@ -18,7 +19,7 @@ use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
  * class, so calling it directly here would create a DI cycle. Going through Magento's own event
  * manager, with a thin observer on the other end, breaks the cycle the idiomatic way.
  */
-class CustomerTagManager
+class CustomerTagManager implements CustomerTagManagementInterface
 {
     public function __construct(
         private readonly ResourceConnection $resourceConnection,

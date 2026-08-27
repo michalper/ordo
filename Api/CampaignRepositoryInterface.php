@@ -32,4 +32,11 @@ interface CampaignRepositoryInterface
      * @return bool
      */
     public function delete(CampaignInterface $campaign): bool;
+
+    /**
+     * @return bool
+     * @throws NoSuchEntityException
+     * @throws CouldNotSaveException
+     */
+    public function deleteById(int $entityId): bool;
 }

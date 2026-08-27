@@ -3,119 +3,68 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Controller\Approval;
 
-use Magento\Sales\Model\Order;
-use Magento\Sales\Model\Order\Config as OrderConfig;
-use Magento\Sales\Model\ResourceModel\Order as OrderResource;
-use Magento\Sales\Model\ResourceModel\Order\Collection as OrderCollection;
-use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Sales\Api\Data\OrderInterface;
+use Magento\Sales\Api\OrderRepositoryInterface;
 use Ordo\Automation\Controller\Approval\Approve;
 use Ordo\Automation\Model\OrderApproval;
-use Ordo\Automation\Model\OrderApprovalFactory;
-use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
+use Ordo\Automation\Model\OrderApprovalManagement;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
 
 class ApproveTest extends AbstractFrontendActionTestCase
 {
-    private OrderApprovalFactory $orderApprovalFactory;
-    private OrderApprovalResource $orderApprovalResource;
-    private OrderCollectionFactory $orderCollectionFactory;
-    private OrderResource $orderResource;
-    private OrderConfig $orderConfig;
+    private OrderApprovalManagement $orderApprovalManagement;
+    private OrderRepositoryInterface $orderRepository;
 
     protected function setUp(): void
     {
-        $this->orderApprovalFactory = $this->createMock(OrderApprovalFactory::class);
-        $this->orderApprovalResource = $this->createMock(OrderApprovalResource::class);
-        $this->orderCollectionFactory = $this->createMock(OrderCollectionFactory::class);
-        $this->orderResource = $this->createMock(OrderResource::class);
-        $this->orderConfig = $this->createMock(OrderConfig::class);
+        $this->orderApprovalManagement = $this->createMock(OrderApprovalManagement::class);
+        $this->orderRepository = $this->createMock(OrderRepositoryInterface::class);
     }
 
     private function makeController(): Approve
     {
-        return new Approve(
-            $this->makeContext(),
-            $this->orderApprovalFactory,
-            $this->orderApprovalResource,
-            $this->orderCollectionFactory,
-            $this->orderResource,
-            $this->orderConfig
-        );
+        return new Approve($this->makeContext(), $this->orderApprovalManagement, $this->orderRepository);
     }
 
-    public function testExecuteRedirectsWithErrorWhenTokenMissing(): void
+    public function testExecuteRedirectsWithErrorWhenTokenInvalid(): void
     {
         $controller = $this->makeController();
         $this->request->method('getParam')->with('token')->willReturn('');
+        $this->orderApprovalManagement->method('approveByToken')
+            ->willThrowException(new NoSuchEntityException(__('invalid')));
+
+        $this->messageManager->expects(self::once())->method('addErrorMessage');
+        $this->orderRepository->expects(self::never())->method('get');
+
+        self::assertSame($this->resultRedirect, $controller->execute());
+    }
+
+    public function testExecuteRedirectsWithErrorWhenOrderCannotBeFound(): void
+    {
+        $controller = $this->makeController();
+        $this->request->method('getParam')->with('token')->willReturn('tok');
+        $this->orderApprovalManagement->method('approveByToken')
+            ->willThrowException(new LocalizedException(__('The order for this approval could not be found.')));
 
         $this->messageManager->expects(self::once())->method('addErrorMessage');
 
         self::assertSame($this->resultRedirect, $controller->execute());
     }
 
-    public function testExecuteRedirectsWithErrorWhenApprovalNotPending(): void
+    public function testExecuteApprovesOrderAndRedirectsWithSuccess(): void
     {
         $controller = $this->makeController();
         $this->request->method('getParam')->with('token')->willReturn('tok');
 
         $approval = $this->createMock(OrderApproval::class);
-        $approval->method('getId')->willReturn(null);
-        $this->orderApprovalFactory->method('create')->willReturn($approval);
+        $approval->method('getOrderId')->willReturn(7);
+        $this->orderApprovalManagement->method('approveByToken')->with('tok')->willReturn($approval);
 
-        $this->messageManager->expects(self::once())->method('addErrorMessage');
-
-        self::assertSame($this->resultRedirect, $controller->execute());
-    }
-
-    public function testExecuteRedirectsWithErrorWhenOrderNotFound(): void
-    {
-        $controller = $this->makeController();
-        $this->request->method('getParam')->with('token')->willReturn('tok');
-
-        $approval = $this->createMock(OrderApproval::class);
-        $approval->method('getId')->willReturn(1);
-        $approval->method('isPending')->willReturn(true);
-        $approval->method('getData')->with('order_id')->willReturn(7);
-        $this->orderApprovalFactory->method('create')->willReturn($approval);
-
-        $order = $this->createMock(Order::class);
-        $order->method('getId')->willReturn(null);
-
-        $orderCollection = $this->createMock(OrderCollection::class);
-        $orderCollection->method('addFieldToFilter')->willReturnSelf();
-        $orderCollection->method('getFirstItem')->willReturn($order);
-        $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
-
-        $this->messageManager->expects(self::once())->method('addErrorMessage');
-
-        self::assertSame($this->resultRedirect, $controller->execute());
-    }
-
-    public function testExecuteApprovesOrderAndReleasesIt(): void
-    {
-        $controller = $this->makeController();
-        $this->request->method('getParam')->with('token')->willReturn('tok');
-
-        $approval = $this->createMock(OrderApproval::class);
-        $approval->method('getId')->willReturn(1);
-        $approval->method('isPending')->willReturn(true);
-        $approval->method('getData')->with('order_id')->willReturn(7);
-        $approval->expects(self::exactly(2))->method('setData');
-        $this->orderApprovalFactory->method('create')->willReturn($approval);
-
-        $order = $this->createMock(Order::class);
-        $order->method('getId')->willReturn(7);
+        $order = $this->createMock(OrderInterface::class);
         $order->method('getIncrementId')->willReturn('000000007');
-        $order->expects(self::once())->method('setStatus')->with('processing');
-
-        $orderCollection = $this->createMock(OrderCollection::class);
-        $orderCollection->method('addFieldToFilter')->willReturnSelf();
-        $orderCollection->method('getFirstItem')->willReturn($order);
-        $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
-
-        $this->orderConfig->method('getStateDefaultStatus')->with(Order::STATE_NEW)->willReturn('processing');
-        $this->orderResource->expects(self::once())->method('save')->with($order);
-        $this->orderApprovalResource->expects(self::once())->method('save')->with($approval);
+        $this->orderRepository->method('get')->with(7)->willReturn($order);
 
         $this->messageManager->expects(self::once())->method('addSuccessMessage');
 

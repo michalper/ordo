@@ -71,4 +71,9 @@ class CampaignRepository implements CampaignRepositoryInterface
 
         return true;
     }
+
+    public function deleteById(int $entityId): bool
+    {
+        return $this->delete($this->getById($entityId));
+    }
 }

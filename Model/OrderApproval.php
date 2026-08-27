@@ -4,9 +4,10 @@ declare(strict_types=1);
 namespace Ordo\Automation\Model;
 
 use Magento\Framework\Model\AbstractModel;
+use Ordo\Automation\Api\Data\OrderApprovalInterface;
 use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
 
-class OrderApproval extends AbstractModel
+class OrderApproval extends AbstractModel implements OrderApprovalInterface
 {
     public const STATUS_PENDING = 'pending';
     public const STATUS_APPROVED = 'approved';
@@ -15,6 +16,42 @@ class OrderApproval extends AbstractModel
     protected function _construct(): void
     {
         $this->_init(OrderApprovalResource::class);
+    }
+
+    public function getEntityId(): ?int
+    {
+        $id = $this->getData(self::ENTITY_ID);
+        return $id === null ? null : (int) $id;
+    }
+
+    public function getOrderId(): int
+    {
+        return (int) $this->getData(self::ORDER_ID);
+    }
+
+    public function getAdminEmail(): string
+    {
+        return (string) $this->getData(self::ADMIN_EMAIL);
+    }
+
+    public function getStatus(): string
+    {
+        return (string) $this->getData(self::STATUS);
+    }
+
+    public function getRemindersSent(): int
+    {
+        return (int) $this->getData(self::REMINDERS_SENT);
+    }
+
+    public function getCreatedAt(): ?string
+    {
+        return $this->getData(self::CREATED_AT);
+    }
+
+    public function getDecidedAt(): ?string
+    {
+        return $this->getData(self::DECIDED_AT);
     }
 
     public function isPending(): bool

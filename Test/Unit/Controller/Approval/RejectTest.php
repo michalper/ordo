@@ -3,100 +3,68 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Controller\Approval;
 
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
-use Magento\Sales\Model\Order;
-use Magento\Sales\Model\ResourceModel\Order\Collection as OrderCollection;
-use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
 use Ordo\Automation\Controller\Approval\Reject;
 use Ordo\Automation\Model\OrderApproval;
-use Ordo\Automation\Model\OrderApprovalFactory;
-use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
+use Ordo\Automation\Model\OrderApprovalManagement;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
 
 class RejectTest extends AbstractFrontendActionTestCase
 {
-    private OrderApprovalFactory $orderApprovalFactory;
-    private OrderApprovalResource $orderApprovalResource;
-    private OrderCollectionFactory $orderCollectionFactory;
+    private OrderApprovalManagement $orderApprovalManagement;
     private OrderRepositoryInterface $orderRepository;
 
     protected function setUp(): void
     {
-        $this->orderApprovalFactory = $this->createMock(OrderApprovalFactory::class);
-        $this->orderApprovalResource = $this->createMock(OrderApprovalResource::class);
-        $this->orderCollectionFactory = $this->createMock(OrderCollectionFactory::class);
+        $this->orderApprovalManagement = $this->createMock(OrderApprovalManagement::class);
         $this->orderRepository = $this->createMock(OrderRepositoryInterface::class);
     }
 
     private function makeController(): Reject
     {
-        return new Reject(
-            $this->makeContext(),
-            $this->orderApprovalFactory,
-            $this->orderApprovalResource,
-            $this->orderCollectionFactory,
-            $this->orderRepository
-        );
+        return new Reject($this->makeContext(), $this->orderApprovalManagement, $this->orderRepository);
     }
 
     public function testExecuteRedirectsWithErrorWhenTokenInvalid(): void
     {
         $controller = $this->makeController();
         $this->request->method('getParam')->with('token')->willReturn('');
+        $this->orderApprovalManagement->method('rejectByToken')
+            ->willThrowException(new NoSuchEntityException(__('invalid')));
+
+        $this->messageManager->expects(self::once())->method('addErrorMessage');
+        $this->orderRepository->expects(self::never())->method('get');
+
+        self::assertSame($this->resultRedirect, $controller->execute());
+    }
+
+    public function testExecuteRedirectsWithErrorWhenOrderCannotBeFound(): void
+    {
+        $controller = $this->makeController();
+        $this->request->method('getParam')->with('token')->willReturn('tok');
+        $this->orderApprovalManagement->method('rejectByToken')
+            ->willThrowException(new LocalizedException(__('The order for this approval could not be found.')));
 
         $this->messageManager->expects(self::once())->method('addErrorMessage');
 
         self::assertSame($this->resultRedirect, $controller->execute());
     }
 
-    public function testExecuteRedirectsWithErrorWhenOrderNotFound(): void
+    public function testExecuteRejectsOrderAndRedirectsWithSuccess(): void
     {
         $controller = $this->makeController();
         $this->request->method('getParam')->with('token')->willReturn('tok');
 
         $approval = $this->createMock(OrderApproval::class);
-        $approval->method('getId')->willReturn(1);
-        $approval->method('isPending')->willReturn(true);
-        $approval->method('getData')->with('order_id')->willReturn(7);
-        $this->orderApprovalFactory->method('create')->willReturn($approval);
+        $approval->method('getOrderId')->willReturn(7);
+        $this->orderApprovalManagement->method('rejectByToken')->with('tok')->willReturn($approval);
 
-        $order = $this->createMock(Order::class);
-        $order->method('getId')->willReturn(null);
-
-        $orderCollection = $this->createMock(OrderCollection::class);
-        $orderCollection->method('addFieldToFilter')->willReturnSelf();
-        $orderCollection->method('getFirstItem')->willReturn($order);
-        $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
-
-        $this->messageManager->expects(self::once())->method('addErrorMessage');
-
-        self::assertSame($this->resultRedirect, $controller->execute());
-    }
-
-    public function testExecuteCancelsOrderAndRejectsApproval(): void
-    {
-        $controller = $this->makeController();
-        $this->request->method('getParam')->with('token')->willReturn('tok');
-
-        $approval = $this->createMock(OrderApproval::class);
-        $approval->method('getId')->willReturn(1);
-        $approval->method('isPending')->willReturn(true);
-        $approval->method('getData')->with('order_id')->willReturn(7);
-        $approval->expects(self::exactly(2))->method('setData');
-        $this->orderApprovalFactory->method('create')->willReturn($approval);
-
-        $order = $this->createMock(Order::class);
-        $order->method('getId')->willReturn(7);
+        $order = $this->createMock(OrderInterface::class);
         $order->method('getIncrementId')->willReturn('000000007');
-        $order->expects(self::once())->method('cancel');
-
-        $orderCollection = $this->createMock(OrderCollection::class);
-        $orderCollection->method('addFieldToFilter')->willReturnSelf();
-        $orderCollection->method('getFirstItem')->willReturn($order);
-        $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
-
-        $this->orderRepository->expects(self::once())->method('save')->with($order);
-        $this->orderApprovalResource->expects(self::once())->method('save')->with($approval);
+        $this->orderRepository->method('get')->with(7)->willReturn($order);
 
         $this->messageManager->expects(self::once())->method('addSuccessMessage');
 

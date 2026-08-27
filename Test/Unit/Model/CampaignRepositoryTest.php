@@ -112,4 +112,24 @@ class CampaignRepositoryTest extends TestCase
         $this->expectException(CouldNotSaveException::class);
         $this->repository->delete($campaign);
     }
+
+    public function testDeleteByIdLoadsThenDeletes(): void
+    {
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(5);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+        $this->resource->expects(self::once())->method('delete')->with($campaign);
+
+        self::assertTrue($this->repository->deleteById(5));
+    }
+
+    public function testDeleteByIdThrowsWhenNotFound(): void
+    {
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(null);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->expectException(NoSuchEntityException::class);
+        $this->repository->deleteById(99);
+    }
 }

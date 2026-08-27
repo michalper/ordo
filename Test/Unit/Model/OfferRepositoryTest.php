@@ -112,4 +112,24 @@ class OfferRepositoryTest extends TestCase
         $this->expectException(CouldNotSaveException::class);
         $this->repository->delete($offer);
     }
+
+    public function testDeleteByIdLoadsThenDeletes(): void
+    {
+        $offer = $this->createMock(Offer::class);
+        $offer->method('getEntityId')->willReturn(5);
+        $this->offerFactory->method('create')->willReturn($offer);
+        $this->resource->expects(self::once())->method('delete')->with($offer);
+
+        self::assertTrue($this->repository->deleteById(5));
+    }
+
+    public function testDeleteByIdThrowsWhenNotFound(): void
+    {
+        $offer = $this->createMock(Offer::class);
+        $offer->method('getEntityId')->willReturn(null);
+        $this->offerFactory->method('create')->willReturn($offer);
+
+        $this->expectException(NoSuchEntityException::class);
+        $this->repository->deleteById(99);
+    }
 }

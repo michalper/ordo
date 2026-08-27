@@ -24,6 +24,12 @@
             <resource ref="Ordo_Automation::campaigns"/>
         </resources>
     </route>
+    <route url="/V1/ordo/campaigns/:entityId" method="DELETE">
+        <service class="Ordo\Automation\Api\CampaignRepositoryInterface" method="deleteById"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
 
     <route url="/V1/ordo/offers" method="GET">
         <service class="Ordo\Automation\Api\OfferRepositoryInterface" method="getList"/>
@@ -41,6 +47,96 @@
         <service class="Ordo\Automation\Api\OfferRepositoryInterface" method="save"/>
         <resources>
             <resource ref="Ordo_Automation::config"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/offers/:entityId" method="PUT">
+        <service class="Ordo\Automation\Api\OfferRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Ordo_Automation::config"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/offers/:entityId" method="DELETE">
+        <service class="Ordo\Automation\Api\OfferRepositoryInterface" method="deleteById"/>
+        <resources>
+            <resource ref="Ordo_Automation::config"/>
+        </resources>
+    </route>
+
+    <!-- Read-only — reorder cycles are computed by Cron\CalculateReorderCycle, not writable via API. -->
+    <route url="/V1/ordo/reorder-cycles" method="GET">
+        <service class="Ordo\Automation\Api\ReorderCycleRepositoryInterface" method="getList"/>
+        <resources>
+            <resource ref="Ordo_Automation::config"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/reorder-cycles/:entityId" method="GET">
+        <service class="Ordo\Automation\Api\ReorderCycleRepositoryInterface" method="getById"/>
+        <resources>
+            <resource ref="Ordo_Automation::config"/>
+        </resources>
+    </route>
+
+    <!-- Customer tags — the segmentation primitive campaigns target ("send to everyone tagged
+         'vip'"). Exposed so a headless storefront/CRM can manage tags without an admin session. -->
+    <route url="/V1/ordo/customers/:customerId/tags" method="GET">
+        <service class="Ordo\Automation\Api\CustomerTagManagementInterface" method="getTags"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/customers/:customerId/tags/:tag" method="PUT">
+        <service class="Ordo\Automation\Api\CustomerTagManagementInterface" method="addTag"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/customers/:customerId/tags/:tag" method="DELETE">
+        <service class="Ordo\Automation\Api\CustomerTagManagementInterface" method="removeTag"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/customers/:customerId/tags/:tag" method="GET">
+        <service class="Ordo\Automation\Api\CustomerTagManagementInterface" method="hasTag"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/tags/:tag/customers" method="GET">
+        <service class="Ordo\Automation\Api\CustomerTagManagementInterface" method="getCustomerIdsWithTag"/>
+        <resources>
+            <resource ref="Ordo_Automation::campaigns"/>
+        </resources>
+    </route>
+
+    <!-- Read-only, admin-scoped — the token itself (used for the two anonymous decision routes
+         below) is deliberately excluded from Data\OrderApprovalInterface's getters. -->
+    <route url="/V1/ordo/order-approvals" method="GET">
+        <service class="Ordo\Automation\Api\OrderApprovalRepositoryInterface" method="getList"/>
+        <resources>
+            <resource ref="Ordo_Automation::config"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/order-approvals/:entityId" method="GET">
+        <service class="Ordo\Automation\Api\OrderApprovalRepositoryInterface" method="getById"/>
+        <resources>
+            <resource ref="Ordo_Automation::config"/>
+        </resources>
+    </route>
+
+    <!-- Anonymous by design, mirroring the email approve/reject links: possession of the
+         one-time token is the credential, the same trust model as any "click to approve"
+         email link. No admin login required — see OrderApprovalManagementInterface. -->
+    <route url="/V1/ordo/order-approvals/:token/approve" method="POST">
+        <service class="Ordo\Automation\Api\OrderApprovalManagementInterface" method="approveByToken"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/order-approvals/:token/reject" method="POST">
+        <service class="Ordo\Automation\Api\OrderApprovalManagementInterface" method="rejectByToken"/>
+        <resources>
+            <resource ref="anonymous"/>
         </resources>
     </route>
 </routes>
