@@ -1,0 +1,34 @@
+<?php
+/** @var \Ordo\Automation\Block\Adminhtml\Campaign\Edit\Flow $block */
+/** @var \Magento\Framework\Escaper $escaper */
+?>
+<?php if ($block->hasCampaign()): ?>
+<div class="ordo-flow-wrapper">
+    <div class="ordo-flow-head">
+        <h2><?= $escaper->escapeHtml(__('Flow (read-only)')) ?></h2>
+        <p><?= $escaper->escapeHtml(__('Visualizes the conditions and actions saved below — drag to pan/zoom, this view does not edit the campaign.')) ?></p>
+    </div>
+    <div id="ordo-campaign-flow" class="ordo-flow-canvas"></div>
+</div>
+<script>
+require(['jquery', 'domReady!'], function ($) {
+    'use strict';
+
+    var script = document.createElement('script');
+    script.src = '<?= $escaper->escapeJs($block->getViewFileUrl('Ordo_Automation::lib/drawflow/drawflow.min.js')) ?>';
+    script.onload = function () {
+        var container = document.getElementById('ordo-campaign-flow');
+        var editor = new window.Drawflow(container);
+        editor.reroute = true;
+        editor.editor_mode = 'view';
+        editor.start();
+
+        var flowData = <?= /* @noEscape */ $block->getFlowDataJson() ?>;
+        if (flowData && flowData.drawflow) {
+            editor.import(flowData);
+        }
+    };
+    document.head.appendChild(script);
+});
+</script>
+<?php endif; ?>

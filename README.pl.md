@@ -25,7 +25,7 @@ Celem tego modułu jest bycie realną alternatywą dla ogólnej platformy MA na 
 - **Podpis opiekuna handlowego** — automatyczne e-maile podpisane danymi przypisanego opiekuna klienta; cotygodniowy digest grupuje nieaktywnych klientów per opiekun.
 - **Silnik kampanii** — konfigurowalny silnik reguł "gdy zdarzy się X i Y jest prawdą, zrób Z", z warunkami/akcjami jako plug-inami rejestrowanymi w `di.xml` i pełnym kontraktem REST.
 - **Śledzenie zachowań na stronie** — bezzależnościowy snippet JS zamienia odsłony stron/produktów/kategorii w tagi silnika kampanii.
-- **Panel administracyjny** — dashboard, kreator kampanii, kreator ofert gratisów i diagnostyczny grid cykli reorder.
+- **Panel administracyjny** — dashboard, kreator kampanii (z podglądem tylko do odczytu trigger → warunki → akcje na bazie [Drawflow](https://github.com/jerosoler/Drawflow)), kreator ofert gratisów i diagnostyczny grid cykli reorder.
 
 Wszystko konfigurowalne pod **Stores → Configuration → Ordo Automation** (albo, dla kampanii i gratisów, przez ich REST API), każda funkcja z własnym przełącznikiem włącz/wyłącz i zadaniem cron. Szczegóły implementacji i uzasadnienie decyzji projektowych są w [CHANGELOG.md](CHANGELOG.md); to, co wciąż w toku — w [ROADMAP.md](ROADMAP.md).
 
@@ -58,6 +58,8 @@ Model/CampaignDispatcher.php     — "event triggera + kontekst na wejściu, pas
 Model/Rule/Action/Discount/      — CheapestItemFree (własny kalkulator SalesRule), QualifyingSetTracker
 view/adminhtml/ui_component/sales_rule_form.xml — rozszerza natywny formularz Cart Price Rule o podgląd na żywo "Buy X Get Y"
 view/adminhtml/web/js/buy-x-get-y-calculator.js — kalkulator podglądu (tylko do odczytu, bez nowej logiki rabatowej)
+Block/Adminhtml/Campaign/Edit/Flow.php — buduje graf Drawflow (trigger/warunki/akcje) na stronie edycji kampanii
+view/adminhtml/web/lib/drawflow/     — wgrany Drawflow (MIT) — https://github.com/jerosoler/Drawflow
 Controller/Adminhtml/Campaign/, ReorderCycle/, FreeGiftOffer/ — kontrolery gridu/formularza adminowego
 Block/Adminhtml/Campaign/Edit/, FreeGiftOffer/Edit/ — bloki przycisków toolbara (Back/Delete/Save & Continue)
 Ui/Component/Listing/Column/     — CampaignActions, FreeGiftOfferActions (linki Edit/Delete w wierszach)

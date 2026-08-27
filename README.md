@@ -25,7 +25,7 @@ The goal is for this module to be a genuine substitute for a general-purpose MA 
 - **Sales-rep signature** — automated emails are signed by the customer's assigned rep; a weekly digest groups inactive customers by rep.
 - **Campaign engine** — a configurable "when X happens and Y is true, do Z" rule engine, with conditions/actions as `di.xml`-registered plug-ins and a full REST service contract.
 - **On-site behavior tracking** — a dependency-free JS snippet turns page/product/category views into campaign-engine tags.
-- **Admin UI** — dashboard, campaign builder, free gift offer builder, and reorder-cycles diagnostic grid.
+- **Admin UI** — dashboard, campaign builder (with a read-only [Drawflow](https://github.com/jerosoler/Drawflow) trigger → conditions → actions preview), free gift offer builder, and reorder-cycles diagnostic grid.
 
 Everything is configurable under **Stores → Configuration → Ordo Automation** (or, for campaigns and free gifts, via their REST API), each with its own on/off switch and cron job. Implementation detail and the "why" behind each design decision live in [CHANGELOG.md](CHANGELOG.md); what's still in progress lives in [ROADMAP.md](ROADMAP.md).
 
@@ -58,6 +58,8 @@ Model/CampaignDispatcher.php     — "trigger event + context in, matching campa
 Model/Rule/Action/Discount/      — CheapestItemFree (custom SalesRule calculator), QualifyingSetTracker
 view/adminhtml/ui_component/sales_rule_form.xml — extends the native Cart Price Rule form with a live "Buy X Get Y" preview field
 view/adminhtml/web/js/buy-x-get-y-calculator.js — the preview's read-only calculator (no new discount logic, mirrors the native one)
+Block/Adminhtml/Campaign/Edit/Flow.php — builds the Drawflow trigger/condition/action graph for the campaign edit page
+view/adminhtml/web/lib/drawflow/     — vendored Drawflow (MIT) — https://github.com/jerosoler/Drawflow
 Controller/Adminhtml/Campaign/, ReorderCycle/, FreeGiftOffer/ — admin grid/form controllers
 Block/Adminhtml/Campaign/Edit/, FreeGiftOffer/Edit/ — toolbar button blocks (Back/Delete/Save & Continue)
 Ui/Component/Listing/Column/     — CampaignActions, FreeGiftOfferActions (Edit/Delete row links)
