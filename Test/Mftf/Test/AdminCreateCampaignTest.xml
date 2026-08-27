@@ -45,6 +45,7 @@
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="selectConditionType"/>
         <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;amount&quot;: &quot;500&quot;}" stepKey="fillConditionParams"/>
 
+        <waitForElementVisible selector="//*[contains(text(), 'Add Action')]" stepKey="waitForAddActionButton"/>
         <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRow"/>
         <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRow"/>
         <selectOption selector="[name='actions[actions][0][type]']" userInput="add_tag" stepKey="selectActionType"/>

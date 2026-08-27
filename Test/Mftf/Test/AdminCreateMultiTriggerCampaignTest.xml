@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCreateMultiTriggerCampaignTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Campaign engine"/>
+            <title value="Admin can create a campaign with two triggers and both persist"/>
+            <description value="Covers CampaignTriggerInterface (a campaign can fire on more than one trigger event now, its own child entity — see ROADMAP.md): add two trigger rows on the create form, save, confirm both round-trip on re-edit, and confirm the grid's aggregated Triggers column shows both, comma-separated."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+
+        <fillField selector="[name='name']" userInput="Test Multi-Trigger Campaign" stepKey="fillName"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButton"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addFirstTriggerRow"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForFirstTriggerRow"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectFirstTriggerEvent"/>
+
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addSecondTriggerRow"/>
+        <waitForElementVisible selector="[name='triggers[triggers][1][trigger_event]']" stepKey="waitForSecondTriggerRow"/>
+        <selectOption selector="[name='triggers[triggers][1][trigger_event]']" userInput="customer_registered" stepKey="selectSecondTriggerEvent"/>
+
+        <!-- "enabled" renders as a Magento_Ui single-checkbox styled as a toggle switch
+             (prefer: "toggle") — the real <input> is visually covered by its own field
+             wrapper, so a direct click/checkOption on the input gets intercepted by that
+             wrapper. Click the label that sits next to it instead. -->
+        <click selector="//input[@name='enabled']/following-sibling::label" stepKey="enableCampaign"/>
+
+        <!-- "Save &amp; Continue Edit" (not the plain Save button, which redirects to the
+             grid) so the URL still carries entity_id afterwards — needed to reload the page
+             and confirm the round trip below without guessing the new id another way. No
+             fixed id/data-index on this button (see Block/Adminhtml/Campaign/Edit/
+             SaveAndContinueButton.php), so target it by its visible label. -->
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+
+        <!-- Reload the page (rather than trusting the in-place state after save) so this
+             actually proves the data round-tripped through the database, not just that the
+             form still holds what was typed. Once the campaign has an entity_id, hasCampaign()
+             is true and the Flow canvas (Block/Adminhtml/Campaign/Edit/Flow.php) takes over
+             from the raw dynamicRows fields checked above — those are legitimately hidden now,
+             so the round trip is checked against the canvas's own trigger nodes instead: each
+             is a ".ordo-flow-node[data-kind='trigger']" whose <select> has the campaign's real
+             trigger_event pre-selected server-side (Flow::typeOptionsHtml()), not set by
+             client JS, so a selected option actually proves the saved DB row, not just that
+             the browser remembered a form value. -->
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
+        <amOnPage url="admin/ordo/campaign/edit/entity_id/{$grabCampaignId}/" stepKey="goToEditPage"/>
+        <waitForPageLoad stepKey="waitForEditPage"/>
+        <waitForElementVisible selector=".ordo-flow-canvas" stepKey="waitForFlowCanvas"/>
+        <seeElementInDOM selector=".ordo-flow-node[data-kind='trigger'] select option[value='order_placed'][selected]" stepKey="seeFirstTriggerPersisted"/>
+        <seeElementInDOM selector=".ordo-flow-node[data-kind='trigger'] select option[value='customer_registered'][selected]" stepKey="seeSecondTriggerPersisted"/>
+
+        <amOnPage url="admin/ordo/campaign/index" stepKey="goToCampaignGrid"/>
+        <waitForPageLoad stepKey="waitForGrid"/>
+        <see selector="table.data-grid" userInput="Test Multi-Trigger Campaign" stepKey="seeCampaignInGrid"/>
+        <!-- The grid's Triggers column aggregates both trigger rows via GROUP_CONCAT
+             (Model/ResourceModel/Campaign/Grid/Collection.php), with no ORDER BY — check both
+             event values are present rather than asserting one fixed concatenation order. -->
+        <see selector="table.data-grid" userInput="order_placed" stepKey="seeFirstTriggerInGrid"/>
+        <see selector="table.data-grid" userInput="customer_registered" stepKey="seeSecondTriggerInGrid"/>
+    </test>
+</tests>

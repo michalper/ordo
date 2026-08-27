@@ -32,4 +32,24 @@ require(['Ordo_Automation/js/campaign-flow-editor'], function (initCampaignFlowE
     initCampaignFlowEditor(container, flowData, 'ordo_campaign_form.ordo_campaign_form_data_source', typesConfig);
 });
 </script>
+<?php else: ?>
+<script>
+require(['uiRegistry'], function (uiRegistry) {
+    'use strict';
+
+    // The Flow canvas above (and this whole block) only renders once a campaign has an
+    // entity_id — a brand-new campaign has nothing yet to draw. But triggers_fieldset/
+    // conditions_fieldset/actions_fieldset in ordo_campaign_form.xml default to
+    // <visible>false</visible> now that the canvas is the normal way to add these on an
+    // existing campaign — leaving them hidden here too would mean a new campaign could never
+    // get its first trigger/condition/action at all. Force them visible for this one case;
+    // saving reloads the page with an entity_id, hasCampaign() becomes true, the canvas takes
+    // over, and this branch no longer runs.
+    ['triggers_fieldset', 'conditions_fieldset', 'actions_fieldset'].forEach(function (fieldsetName) {
+        uiRegistry.get('ordo_campaign_form.ordo_campaign_form.' + fieldsetName, function (fieldset) {
+            fieldset.visible(true);
+        });
+    });
+});
+</script>
 <?php endif; ?>
