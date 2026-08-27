@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!--
+    Extends Magento_SalesRule's own sales_rule_form.xml (standard UI Component XML merge by
+    node name) to add a live "Buy X Get Y" preview next to the native discount_step/
+    discount_amount fields — those two fields exist and work today (Model\Rule\Action\Discount\
+    BuyXGetY, native since Magento core), but their labels ("Discount Qty Step (Buy X)",
+    "Discount Amount") don't make it obvious what an admin is actually configuring, and there's
+    no confirmation of the resulting customer-facing offer before saving. This is deliberately
+    NOT new backend logic — see ROADMAP.md Phase 3 — just a friendlier config screen over an
+    already-complete native feature.
+-->
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <fieldset name="actions">
+        <field name="ordo_buy_x_get_y_preview" formElement="input" sortOrder="35" component="Ordo_Automation/js/buy-x-get-y-calculator">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Preview</label>
+                <visible>true</visible>
+                <imports>
+                    <link name="simpleAction">${ $.parentName }.simple_action:value</link>
+                    <link name="discountStep">${ $.parentName }.discount_step:value</link>
+                    <link name="discountAmount">${ $.parentName }.discount_amount:value</link>
+                </imports>
+            </settings>
+        </field>
+    </fieldset>
+</form>

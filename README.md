@@ -56,6 +56,8 @@ Model/, Model/ResourceModel/     — ordo_reorder_cycle, ordo_offer, ordo_custom
 Model/Campaign/                  — ConditionPool, ActionPool, Condition/*, Action/* (the plug-in registry)
 Model/CampaignDispatcher.php     — "trigger event + context in, matching campaigns run out"
 Model/Rule/Action/Discount/      — CheapestItemFree (custom SalesRule calculator), QualifyingSetTracker
+view/adminhtml/ui_component/sales_rule_form.xml — extends the native Cart Price Rule form with a live "Buy X Get Y" preview field
+view/adminhtml/web/js/buy-x-get-y-calculator.js — the preview's read-only calculator (no new discount logic, mirrors the native one)
 Controller/Adminhtml/Campaign/, ReorderCycle/, FreeGiftOffer/ — admin grid/form controllers
 Block/Adminhtml/Campaign/Edit/, FreeGiftOffer/Edit/ — toolbar button blocks (Back/Delete/Save & Continue)
 Ui/Component/Listing/Column/     — CampaignActions, FreeGiftOfferActions (Edit/Delete row links)
