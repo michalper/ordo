@@ -5,10 +5,10 @@ namespace Ordo\Automation\Model;
 
 use Magento\Framework\Api\SearchCriteria\CollectionProcessorInterface;
 use Magento\Framework\Api\SearchCriteriaInterface;
-use Magento\Framework\Api\SearchResultsInterface;
-use Magento\Framework\Api\SearchResultsInterfaceFactory;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Api\Data\ReorderCycleInterface;
+use Ordo\Automation\Api\Data\ReorderCycleSearchResultsInterface;
+use Ordo\Automation\Api\Data\ReorderCycleSearchResultsInterfaceFactory;
 use Ordo\Automation\Api\ReorderCycleRepositoryInterface;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle as ReorderCycleResource;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory as ReorderCycleCollectionFactory;
@@ -19,7 +19,7 @@ class ReorderCycleRepository implements ReorderCycleRepositoryInterface
         private readonly ReorderCycleResource $reorderCycleResource,
         private readonly ReorderCycleFactory $reorderCycleFactory,
         private readonly ReorderCycleCollectionFactory $reorderCycleCollectionFactory,
-        private readonly SearchResultsInterfaceFactory $searchResultsFactory,
+        private readonly ReorderCycleSearchResultsInterfaceFactory $searchResultsFactory,
         private readonly CollectionProcessorInterface $collectionProcessor
     ) {
     }
@@ -36,7 +36,7 @@ class ReorderCycleRepository implements ReorderCycleRepositoryInterface
         return $reorderCycle;
     }
 
-    public function getList(SearchCriteriaInterface $searchCriteria): SearchResultsInterface
+    public function getList(SearchCriteriaInterface $searchCriteria): ReorderCycleSearchResultsInterface
     {
         $collection = $this->reorderCycleCollectionFactory->create();
         $this->collectionProcessor->process($searchCriteria, $collection);

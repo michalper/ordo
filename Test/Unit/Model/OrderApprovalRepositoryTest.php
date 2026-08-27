@@ -5,8 +5,8 @@ namespace Ordo\Automation\Test\Unit\Model;
 
 use Magento\Framework\Api\SearchCriteria\CollectionProcessorInterface;
 use Magento\Framework\Api\SearchCriteriaInterface;
-use Magento\Framework\Api\SearchResultsInterface;
-use Magento\Framework\Api\SearchResultsInterfaceFactory;
+use Ordo\Automation\Api\Data\OrderApprovalSearchResultsInterface;
+use Ordo\Automation\Api\Data\OrderApprovalSearchResultsInterfaceFactory;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Model\OrderApproval;
 use Ordo\Automation\Model\OrderApprovalFactory;
@@ -21,7 +21,7 @@ class OrderApprovalRepositoryTest extends TestCase
     private OrderApprovalResource $resource;
     private OrderApprovalFactory $orderApprovalFactory;
     private CollectionFactory $collectionFactory;
-    private SearchResultsInterfaceFactory $searchResultsFactory;
+    private OrderApprovalSearchResultsInterfaceFactory $searchResultsFactory;
     private CollectionProcessorInterface $collectionProcessor;
     private OrderApprovalRepository $repository;
 
@@ -30,7 +30,7 @@ class OrderApprovalRepositoryTest extends TestCase
         $this->resource = $this->createMock(OrderApprovalResource::class);
         $this->orderApprovalFactory = $this->createMock(OrderApprovalFactory::class);
         $this->collectionFactory = $this->createMock(CollectionFactory::class);
-        $this->searchResultsFactory = $this->createMock(SearchResultsInterfaceFactory::class);
+        $this->searchResultsFactory = $this->createMock(OrderApprovalSearchResultsInterfaceFactory::class);
         $this->collectionProcessor = $this->createMock(CollectionProcessorInterface::class);
 
         $this->repository = new OrderApprovalRepository(
@@ -69,7 +69,7 @@ class OrderApprovalRepositoryTest extends TestCase
         $collection->method('getSize')->willReturn(0);
         $this->collectionFactory->method('create')->willReturn($collection);
 
-        $searchResults = $this->createMock(SearchResultsInterface::class);
+        $searchResults = $this->createMock(OrderApprovalSearchResultsInterface::class);
         $searchResults->expects(self::once())->method('setSearchCriteria')->with($criteria);
         $searchResults->expects(self::once())->method('setItems')->with([]);
         $searchResults->expects(self::once())->method('setTotalCount')->with(0);

@@ -5,8 +5,8 @@ namespace Ordo\Automation\Test\Unit\Model;
 
 use Magento\Framework\Api\SearchCriteria\CollectionProcessorInterface;
 use Magento\Framework\Api\SearchCriteriaInterface;
-use Magento\Framework\Api\SearchResultsInterface;
-use Magento\Framework\Api\SearchResultsInterfaceFactory;
+use Ordo\Automation\Api\Data\ReorderCycleSearchResultsInterface;
+use Ordo\Automation\Api\Data\ReorderCycleSearchResultsInterfaceFactory;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Model\ReorderCycle;
 use Ordo\Automation\Model\ReorderCycleFactory;
@@ -21,7 +21,7 @@ class ReorderCycleRepositoryTest extends TestCase
     private ReorderCycleResource $resource;
     private ReorderCycleFactory $reorderCycleFactory;
     private CollectionFactory $collectionFactory;
-    private SearchResultsInterfaceFactory $searchResultsFactory;
+    private ReorderCycleSearchResultsInterfaceFactory $searchResultsFactory;
     private CollectionProcessorInterface $collectionProcessor;
     private ReorderCycleRepository $repository;
 
@@ -30,7 +30,7 @@ class ReorderCycleRepositoryTest extends TestCase
         $this->resource = $this->createMock(ReorderCycleResource::class);
         $this->reorderCycleFactory = $this->createMock(ReorderCycleFactory::class);
         $this->collectionFactory = $this->createMock(CollectionFactory::class);
-        $this->searchResultsFactory = $this->createMock(SearchResultsInterfaceFactory::class);
+        $this->searchResultsFactory = $this->createMock(ReorderCycleSearchResultsInterfaceFactory::class);
         $this->collectionProcessor = $this->createMock(CollectionProcessorInterface::class);
 
         $this->repository = new ReorderCycleRepository(
@@ -69,7 +69,7 @@ class ReorderCycleRepositoryTest extends TestCase
         $collection->method('getSize')->willReturn(0);
         $this->collectionFactory->method('create')->willReturn($collection);
 
-        $searchResults = $this->createMock(SearchResultsInterface::class);
+        $searchResults = $this->createMock(ReorderCycleSearchResultsInterface::class);
         $searchResults->expects(self::once())->method('setSearchCriteria')->with($criteria);
         $searchResults->expects(self::once())->method('setItems')->with([]);
         $searchResults->expects(self::once())->method('setTotalCount')->with(0);

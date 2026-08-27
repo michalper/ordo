@@ -5,10 +5,10 @@ namespace Ordo\Automation\Model;
 
 use Magento\Framework\Api\SearchCriteria\CollectionProcessorInterface;
 use Magento\Framework\Api\SearchCriteriaInterface;
-use Magento\Framework\Api\SearchResultsInterface;
-use Magento\Framework\Api\SearchResultsInterfaceFactory;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Api\Data\OrderApprovalInterface;
+use Ordo\Automation\Api\Data\OrderApprovalSearchResultsInterface;
+use Ordo\Automation\Api\Data\OrderApprovalSearchResultsInterfaceFactory;
 use Ordo\Automation\Api\OrderApprovalRepositoryInterface;
 use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
 use Ordo\Automation\Model\ResourceModel\OrderApproval\CollectionFactory as OrderApprovalCollectionFactory;
@@ -19,7 +19,7 @@ class OrderApprovalRepository implements OrderApprovalRepositoryInterface
         private readonly OrderApprovalResource $orderApprovalResource,
         private readonly OrderApprovalFactory $orderApprovalFactory,
         private readonly OrderApprovalCollectionFactory $orderApprovalCollectionFactory,
-        private readonly SearchResultsInterfaceFactory $searchResultsFactory,
+        private readonly OrderApprovalSearchResultsInterfaceFactory $searchResultsFactory,
         private readonly CollectionProcessorInterface $collectionProcessor
     ) {
     }
@@ -36,7 +36,7 @@ class OrderApprovalRepository implements OrderApprovalRepositoryInterface
         return $orderApproval;
     }
 
-    public function getList(SearchCriteriaInterface $searchCriteria): SearchResultsInterface
+    public function getList(SearchCriteriaInterface $searchCriteria): OrderApprovalSearchResultsInterface
     {
         $collection = $this->orderApprovalCollectionFactory->create();
         $this->collectionProcessor->process($searchCriteria, $collection);

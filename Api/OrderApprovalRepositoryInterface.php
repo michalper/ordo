@@ -4,9 +4,9 @@ declare(strict_types=1);
 namespace Ordo\Automation\Api;
 
 use Magento\Framework\Api\SearchCriteriaInterface;
-use Magento\Framework\Api\SearchResultsInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Api\Data\OrderApprovalInterface;
+use Ordo\Automation\Api\Data\OrderApprovalSearchResultsInterface;
 
 /**
  * Read-only — decisions are made through OrderApprovalManagementInterface::approveByToken()/
@@ -22,7 +22,7 @@ interface OrderApprovalRepositoryInterface
     public function getById(int $entityId): OrderApprovalInterface;
 
     /**
-     * @return SearchResultsInterface
+     * @return OrderApprovalSearchResultsInterface
      */
-    public function getList(SearchCriteriaInterface $searchCriteria): SearchResultsInterface;
+    public function getList(SearchCriteriaInterface $searchCriteria): OrderApprovalSearchResultsInterface;
 }

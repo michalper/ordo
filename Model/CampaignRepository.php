@@ -5,12 +5,12 @@ namespace Ordo\Automation\Model;
 
 use Magento\Framework\Api\SearchCriteria\CollectionProcessorInterface;
 use Magento\Framework\Api\SearchCriteriaInterface;
-use Magento\Framework\Api\SearchResultsInterface;
-use Magento\Framework\Api\SearchResultsInterfaceFactory;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Api\CampaignRepositoryInterface;
 use Ordo\Automation\Api\Data\CampaignInterface;
+use Ordo\Automation\Api\Data\CampaignSearchResultsInterface;
+use Ordo\Automation\Api\Data\CampaignSearchResultsInterfaceFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign as CampaignResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
 
@@ -20,7 +20,7 @@ class CampaignRepository implements CampaignRepositoryInterface
         private readonly CampaignResource $campaignResource,
         private readonly CampaignFactory $campaignFactory,
         private readonly CampaignCollectionFactory $campaignCollectionFactory,
-        private readonly SearchResultsInterfaceFactory $searchResultsFactory,
+        private readonly CampaignSearchResultsInterfaceFactory $searchResultsFactory,
         private readonly CollectionProcessorInterface $collectionProcessor
     ) {
     }
@@ -48,7 +48,7 @@ class CampaignRepository implements CampaignRepositoryInterface
         return $campaign;
     }
 
-    public function getList(SearchCriteriaInterface $searchCriteria): SearchResultsInterface
+    public function getList(SearchCriteriaInterface $searchCriteria): CampaignSearchResultsInterface
     {
         $collection = $this->campaignCollectionFactory->create();
         $this->collectionProcessor->process($searchCriteria, $collection);

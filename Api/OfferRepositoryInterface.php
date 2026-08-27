@@ -4,10 +4,10 @@ declare(strict_types=1);
 namespace Ordo\Automation\Api;
 
 use Magento\Framework\Api\SearchCriteriaInterface;
-use Magento\Framework\Api\SearchResultsInterface;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Api\Data\OfferInterface;
+use Ordo\Automation\Api\Data\OfferSearchResultsInterface;
 
 interface OfferRepositoryInterface
 {
@@ -24,9 +24,9 @@ interface OfferRepositoryInterface
     public function getById(int $entityId): OfferInterface;
 
     /**
-     * @return SearchResultsInterface
+     * @return OfferSearchResultsInterface
      */
-    public function getList(SearchCriteriaInterface $searchCriteria): SearchResultsInterface;
+    public function getList(SearchCriteriaInterface $searchCriteria): OfferSearchResultsInterface;
 
     /**
      * @return bool

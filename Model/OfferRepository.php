@@ -5,11 +5,11 @@ namespace Ordo\Automation\Model;
 
 use Magento\Framework\Api\SearchCriteria\CollectionProcessorInterface;
 use Magento\Framework\Api\SearchCriteriaInterface;
-use Magento\Framework\Api\SearchResultsInterface;
-use Magento\Framework\Api\SearchResultsInterfaceFactory;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Api\Data\OfferInterface;
+use Ordo\Automation\Api\Data\OfferSearchResultsInterface;
+use Ordo\Automation\Api\Data\OfferSearchResultsInterfaceFactory;
 use Ordo\Automation\Api\OfferRepositoryInterface;
 use Ordo\Automation\Model\ResourceModel\Offer as OfferResource;
 use Ordo\Automation\Model\ResourceModel\Offer\CollectionFactory as OfferCollectionFactory;
@@ -20,7 +20,7 @@ class OfferRepository implements OfferRepositoryInterface
         private readonly OfferResource $offerResource,
         private readonly OfferFactory $offerFactory,
         private readonly OfferCollectionFactory $offerCollectionFactory,
-        private readonly SearchResultsInterfaceFactory $searchResultsFactory,
+        private readonly OfferSearchResultsInterfaceFactory $searchResultsFactory,
         private readonly CollectionProcessorInterface $collectionProcessor
     ) {
     }
@@ -48,7 +48,7 @@ class OfferRepository implements OfferRepositoryInterface
         return $offer;
     }
 
-    public function getList(SearchCriteriaInterface $searchCriteria): SearchResultsInterface
+    public function getList(SearchCriteriaInterface $searchCriteria): OfferSearchResultsInterface
     {
         $collection = $this->offerCollectionFactory->create();
         $this->collectionProcessor->process($searchCriteria, $collection);

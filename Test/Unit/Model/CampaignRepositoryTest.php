@@ -5,8 +5,8 @@ namespace Ordo\Automation\Test\Unit\Model;
 
 use Magento\Framework\Api\SearchCriteria\CollectionProcessorInterface;
 use Magento\Framework\Api\SearchCriteriaInterface;
-use Magento\Framework\Api\SearchResultsInterface;
-use Magento\Framework\Api\SearchResultsInterfaceFactory;
+use Ordo\Automation\Api\Data\CampaignSearchResultsInterface;
+use Ordo\Automation\Api\Data\CampaignSearchResultsInterfaceFactory;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Model\Campaign;
@@ -22,7 +22,7 @@ class CampaignRepositoryTest extends TestCase
     private CampaignResource $resource;
     private CampaignFactory $campaignFactory;
     private CollectionFactory $collectionFactory;
-    private SearchResultsInterfaceFactory $searchResultsFactory;
+    private CampaignSearchResultsInterfaceFactory $searchResultsFactory;
     private CollectionProcessorInterface $collectionProcessor;
     private CampaignRepository $repository;
 
@@ -31,7 +31,7 @@ class CampaignRepositoryTest extends TestCase
         $this->resource = $this->createMock(CampaignResource::class);
         $this->campaignFactory = $this->createMock(CampaignFactory::class);
         $this->collectionFactory = $this->createMock(CollectionFactory::class);
-        $this->searchResultsFactory = $this->createMock(SearchResultsInterfaceFactory::class);
+        $this->searchResultsFactory = $this->createMock(CampaignSearchResultsInterfaceFactory::class);
         $this->collectionProcessor = $this->createMock(CollectionProcessorInterface::class);
 
         $this->repository = new CampaignRepository(
@@ -87,7 +87,7 @@ class CampaignRepositoryTest extends TestCase
         $collection->method('getSize')->willReturn(0);
         $this->collectionFactory->method('create')->willReturn($collection);
 
-        $searchResults = $this->createMock(SearchResultsInterface::class);
+        $searchResults = $this->createMock(CampaignSearchResultsInterface::class);
         $searchResults->expects(self::once())->method('setSearchCriteria')->with($criteria);
         $searchResults->expects(self::once())->method('setItems')->with([]);
         $searchResults->expects(self::once())->method('setTotalCount')->with(0);
