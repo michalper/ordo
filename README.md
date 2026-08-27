@@ -92,8 +92,8 @@ These are binding rules for this repo going forward, not a someday-wishlist — 
 - **Static analysis: PHPStan at `level: max`**, configured in `phpstan.neon` with the [bitexpert/phpstan-magento](https://github.com/bitexpert/phpstan-magento) extension so Magento's magic (factories, proxies, `__()` translation, EAV magic getters) doesn't produce false positives. Runs as `require-dev` only — never ships to a production install.
 - **Unit tests (PHPUnit)** for every class with non-trivial logic — `Model/`, `Cron/`, `Helper/`, `Controller/`. `Test/Unit/Model/SalesRepEmailContextTest.php` is the seed test establishing the mocking pattern (`createMock` on interfaces, no real Magento bootstrap).
 - **MFTF (Magento Functional Testing Framework)** end-to-end coverage for every customer- and admin-facing flow: placing an order over the spend limit → email → approve/reject link → order status change; a customer self-extending an expiring offer; etc. Per Adobe's [MFTF getting-started guide](https://developer.adobe.com/commerce/testing/functional-testing-framework/getting-started).
-- **API tests** for every service contract in `Api/` (currently `OfferRepositoryInterface`) — exercised the same way Magento's own `dev/tests/api-functional` suite exercises core APIs.
-- **Target: 100% code coverage.** Explicitly a target, not yet a claim — see Phase 6 for what's covered today vs. outstanding. No class should be added without an accompanying test from this point forward, so the gap only shrinks.
+- **API tests** for every service contract in `Api/` — see `API.md` and `Test/Api/README.md`.
+- **Target: ~100% code coverage.** Currently ~98% classes / ~99.5% methods — see `VERIFICATION.md` for what's covered today vs. the handful of genuinely unreachable lines still outstanding.
 
 ## Localization
 
@@ -138,13 +138,11 @@ A friendlier admin layer over Magento's native `SalesRule` engine — the raw na
 
 The standards in "Quality & testing standards" above apply from now on. Honest current state, not a rounded-up claim:
 
-**Unit tests — 6 files, 24/24 passing, run for real against Magento Open Source 2.4.7** (see `VERIFICATION.md`, verified 2026-08-25). This caught two real bugs on the first run — `QualifyingSetTracker` calling a nonexistent `Rule::getRuleId()` and `SalesRepEmailContext` calling `StoreInterface::getFrontendName()` (only on the concrete `Store` class, not the interface) — both fixed, both now covered.
-- `SalesRepEmailContextTest`, `ConditionPoolTest`, `OrderTotalAtLeastTest`, `HasTagTest`, `AddTagTest`, `QualifyingSetTrackerTest` — all pass against real `magento/framework`/`magento/module-sales`/`magento/module-quote` classes, not mocks-of-mocks.
-- **Still missing:** `CreditLimitCalculator`, `CustomerTagManager`, `CampaignDispatcher` (the dispatch/condition-AND/action-order logic itself — the pool tests only cover the plug-in registry), `VisitorAggregator`, and every `Cron/`/`Observer/`/`Controller/` class's `execute()` logic.
+**Unit tests — 272 tests passing, run for real against Magento Open Source 2.4.7**, ~98% class / ~99.5% method coverage (see `VERIFICATION.md`). Covers every `Model/`, `Cron/`, `Observer/`, `Controller/`, `Helper/`, `Block/`, `Ui/` class in the module.
 
-**MFTF — 1 test written (`AdminCreateCampaignTest.xml`), not run.** Covers admin campaign creation via the Phase 4 form — the form itself now works end-to-end (see `VERIFICATION.md` sections 3–5), the MFTF test just hasn't been executed in a real MFTF runtime yet. Still missing: the dispatcher actually firing on a real checkout, offer self-extension, the tracking snippet in a real browser. See `Test/Mftf/README.md`.
+**MFTF — 3 tests written, all passing against a real MFTF runtime** (`magento/magento2-functional-testing-framework` + `selenium/standalone-chrome`, actually stood up and run, not just written): admin campaign creation via the Phase 4 form, the admin dashboard, and the reorder-cycles diagnostic grid. Still missing: the order-approval round trip end to end (blocked on the token only ever being delivered by email — no mail-catcher in this environment) and the tracking snippet in a real browser. See `Test/Mftf/README.md`.
 
-**API functional tests — none written yet** for `OfferRepositoryInterface` or `CampaignRepositoryInterface`, following Magento's own `dev/tests/api-functional` conventions.
+**API functional tests — full suite written and run for real** against a live instance: Campaigns (full CRUD), Offers (full CRUD + customer self-extend), ReorderCycle (read), CustomerTagManagement (full round trip), OrderApproval (admin read + anonymous approve/reject-by-token). See `API.md` for the endpoint reference and `Test/Api/README.md` for what running them found — four real, pre-existing WebAPI defects (missing docblocks, wrong SearchResults typing) that no unit test could have caught.
 
 **PHPStan — runs for real now** (verified 2026-08-25). The shipped `phpstan.neon` never actually worked before this pass — missing `includes:` for the bitexpert extension and a wrong parameter key (`magento_root` vs `magentoRoot`) meant it refused to start. Fixed; it now reports 183 real level-max findings (overwhelmingly missing iterable value types on `array` params/returns) — a real backlog, not fixed in this pass, tracked in `VERIFICATION.md`.
 
