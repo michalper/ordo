@@ -139,4 +139,14 @@
             <resource ref="anonymous"/>
         </resources>
     </route>
+
+    <!-- Customer self-service — any authenticated customer may call this; ownership of the
+         specific offer is enforced inside OfferManagement::selfExtend() itself (a customer
+         token only proves who's asking, not which offer is theirs). -->
+    <route url="/V1/ordo/offers/:offerId/self-extend" method="POST">
+        <service class="Ordo\Automation\Api\OfferManagementInterface" method="selfExtend"/>
+        <resources>
+            <resource ref="self"/>
+        </resources>
+    </route>
 </routes>

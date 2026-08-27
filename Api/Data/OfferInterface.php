@@ -57,4 +57,9 @@ interface OfferInterface
     public function getCreatedAt(): ?string;
 
     public function getUpdatedAt(): ?string;
+
+    /**
+     * Whether this offer can still self-extend its own expiry, given the currently configured cap.
+     */
+    public function canSelfExtend(int $maxExtensions): bool;
 }

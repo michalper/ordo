@@ -10,6 +10,7 @@
     <preference for="Ordo\Automation\Api\Data\OrderApprovalInterface" type="Ordo\Automation\Model\OrderApproval"/>
     <preference for="Ordo\Automation\Api\OrderApprovalRepositoryInterface" type="Ordo\Automation\Model\OrderApprovalRepository"/>
     <preference for="Ordo\Automation\Api\OrderApprovalManagementInterface" type="Ordo\Automation\Model\OrderApprovalManagement"/>
+    <preference for="Ordo\Automation\Api\OfferManagementInterface" type="Ordo\Automation\Model\OfferManagement"/>
 
     <!-- Admin grid data sources — one entry per listing UI component. -->
     <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
