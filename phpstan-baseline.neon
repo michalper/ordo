@@ -1,0 +1,796 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Block\\\\Adminhtml\\\\Campaign\\\\Edit\\\\BackButton\\:\\:getButtonData\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Block/Adminhtml/Campaign/Edit/BackButton.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Block\\\\Adminhtml\\\\Campaign\\\\Edit\\\\DeleteButton\\:\\:getButtonData\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Block/Adminhtml/Campaign/Edit/DeleteButton.php
+
+		-
+			message: "#^Cannot cast mixed to int\\.$#"
+			count: 1
+			path: Block/Adminhtml/Campaign/Edit/GenericButton.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Block\\\\Adminhtml\\\\Campaign\\\\Edit\\\\GenericButton\\:\\:getUrl\\(\\) has parameter \\$params with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Block/Adminhtml/Campaign/Edit/GenericButton.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Block\\\\Adminhtml\\\\Campaign\\\\Edit\\\\SaveAndContinueButton\\:\\:getButtonData\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Block/Adminhtml/Campaign/Edit/SaveAndContinueButton.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Block\\\\Adminhtml\\\\Campaign\\\\Edit\\\\SaveButton\\:\\:getButtonData\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Block/Adminhtml/Campaign/Edit/SaveButton.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Block\\\\Adminhtml\\\\Dashboard\\\\DashboardViewModel\\:\\:getCampaigns\\(\\) should return array\\<Ordo\\\\Automation\\\\Api\\\\Data\\\\CampaignInterface\\> but returns array\\<Magento\\\\Framework\\\\DataObject\\>\\.$#"
+			count: 1
+			path: Block/Adminhtml/Dashboard/DashboardViewModel.php
+
+		-
+			message: "#^Parameter \\#2 \\$condition of method Magento\\\\Framework\\\\Data\\\\Collection\\\\AbstractDb\\:\\:addFieldToFilter\\(\\) expects array\\|string\\|null, int given\\.$#"
+			count: 1
+			path: Block/Adminhtml/Dashboard/DashboardViewModel.php
+
+		-
+			message: "#^Cannot cast mixed to int\\.$#"
+			count: 1
+			path: Controller/Adminhtml/Campaign/Delete.php
+
+		-
+			message: "#^Parameter \\#1 \\$message of method Magento\\\\Framework\\\\Message\\\\ManagerInterface\\:\\:addErrorMessage\\(\\) expects string, Magento\\\\Framework\\\\Phrase given\\.$#"
+			count: 2
+			path: Controller/Adminhtml/Campaign/Delete.php
+
+		-
+			message: "#^Parameter \\#1 \\$message of method Magento\\\\Framework\\\\Message\\\\ManagerInterface\\:\\:addSuccessMessage\\(\\) expects string, Magento\\\\Framework\\\\Phrase given\\.$#"
+			count: 1
+			path: Controller/Adminhtml/Campaign/Delete.php
+
+		-
+			message: "#^Call to an undefined method Magento\\\\Framework\\\\View\\\\Result\\\\Page\\:\\:setActiveMenu\\(\\)\\.$#"
+			count: 1
+			path: Controller/Adminhtml/Campaign/Edit.php
+
+		-
+			message: "#^Cannot cast mixed to int\\.$#"
+			count: 1
+			path: Controller/Adminhtml/Campaign/Edit.php
+
+		-
+			message: "#^Parameter \\#1 \\$message of method Magento\\\\Framework\\\\Message\\\\ManagerInterface\\:\\:addErrorMessage\\(\\) expects string, Magento\\\\Framework\\\\Phrase given\\.$#"
+			count: 1
+			path: Controller/Adminhtml/Campaign/Edit.php
+
+		-
+			message: "#^Parameter \\#1 \\$prefix of method Magento\\\\Framework\\\\View\\\\Page\\\\Title\\:\\:prepend\\(\\) expects string, Magento\\\\Framework\\\\Phrase given\\.$#"
+			count: 1
+			path: Controller/Adminhtml/Campaign/Edit.php
+
+		-
+			message: "#^Call to an undefined method Magento\\\\Framework\\\\View\\\\Result\\\\Page\\:\\:setActiveMenu\\(\\)\\.$#"
+			count: 1
+			path: Controller/Adminhtml/Campaign/Index.php
+
+		-
+			message: "#^Parameter \\#1 \\$prefix of method Magento\\\\Framework\\\\View\\\\Page\\\\Title\\:\\:prepend\\(\\) expects string, Magento\\\\Framework\\\\Phrase given\\.$#"
+			count: 1
+			path: Controller/Adminhtml/Campaign/Index.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Controller\\\\Adminhtml\\\\Campaign\\\\NewAction\\:\\:execute\\(\\) should return Magento\\\\Framework\\\\App\\\\ResponseInterface\\|Magento\\\\Framework\\\\Controller\\\\ResultInterface but returns null\\.$#"
+			count: 1
+			path: Controller/Adminhtml/Campaign/NewAction.php
+
+		-
+			message: "#^Result of method Magento\\\\Backend\\\\App\\\\AbstractAction\\:\\:_forward\\(\\) \\(void\\) is used\\.$#"
+			count: 1
+			path: Controller/Adminhtml/Campaign/NewAction.php
+
+		-
+			message: "#^Call to an undefined method Magento\\\\Framework\\\\App\\\\RequestInterface\\:\\:getPostValue\\(\\)\\.$#"
+			count: 1
+			path: Controller/Adminhtml/Campaign/Save.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 4
+			path: Controller/Adminhtml/Campaign/Save.php
+
+		-
+			message: "#^Parameter \\#1 \\$message of method Magento\\\\Framework\\\\Message\\\\ManagerInterface\\:\\:addErrorMessage\\(\\) expects string, Magento\\\\Framework\\\\Phrase given\\.$#"
+			count: 1
+			path: Controller/Adminhtml/Campaign/Save.php
+
+		-
+			message: "#^Parameter \\#1 \\$message of method Magento\\\\Framework\\\\Message\\\\ManagerInterface\\:\\:addSuccessMessage\\(\\) expects string, Magento\\\\Framework\\\\Phrase given\\.$#"
+			count: 1
+			path: Controller/Adminhtml/Campaign/Save.php
+
+		-
+			message: "#^Parameter \\#1 \\$object of method Magento\\\\Framework\\\\Model\\\\ResourceModel\\\\Db\\\\AbstractDb\\:\\:delete\\(\\) expects Magento\\\\Framework\\\\Model\\\\AbstractModel, mixed given\\.$#"
+			count: 2
+			path: Controller/Adminhtml/Campaign/Save.php
+
+		-
+			message: "#^Call to an undefined method Magento\\\\Framework\\\\View\\\\Result\\\\Page\\:\\:setActiveMenu\\(\\)\\.$#"
+			count: 1
+			path: Controller/Adminhtml/Dashboard/Index.php
+
+		-
+			message: "#^Parameter \\#1 \\$prefix of method Magento\\\\Framework\\\\View\\\\Page\\\\Title\\:\\:prepend\\(\\) expects string, Magento\\\\Framework\\\\Phrase given\\.$#"
+			count: 1
+			path: Controller/Adminhtml/Dashboard/Index.php
+
+		-
+			message: "#^Call to an undefined method Magento\\\\Framework\\\\View\\\\Result\\\\Page\\:\\:setActiveMenu\\(\\)\\.$#"
+			count: 1
+			path: Controller/Adminhtml/ReorderCycle/Index.php
+
+		-
+			message: "#^Parameter \\#1 \\$prefix of method Magento\\\\Framework\\\\View\\\\Page\\\\Title\\:\\:prepend\\(\\) expects string, Magento\\\\Framework\\\\Phrase given\\.$#"
+			count: 1
+			path: Controller/Adminhtml/ReorderCycle/Index.php
+
+		-
+			message: "#^Access to undefined constant Magento\\\\Framework\\\\Controller\\\\ResultFactory\\:\\:TYPE_REDIRECT\\.$#"
+			count: 1
+			path: Controller/Approval/AbstractApprovalAction.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Controller\\\\Approval\\\\AbstractApprovalAction\\:\\:redirectHome\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: Controller/Approval/AbstractApprovalAction.php
+
+		-
+			message: "#^Parameter \\#1 \\$message of method Magento\\\\Framework\\\\Message\\\\ManagerInterface\\:\\:addErrorMessage\\(\\) expects string, Magento\\\\Framework\\\\Phrase given\\.$#"
+			count: 1
+			path: Controller/Approval/AbstractApprovalAction.php
+
+		-
+			message: "#^Parameter \\#1 \\$message of method Magento\\\\Framework\\\\Message\\\\ManagerInterface\\:\\:addSuccessMessage\\(\\) expects string, Magento\\\\Framework\\\\Phrase given\\.$#"
+			count: 1
+			path: Controller/Approval/AbstractApprovalAction.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 1
+			path: Controller/Approval/Approve.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 1
+			path: Controller/Approval/Reject.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 3
+			path: Controller/Track/Event.php
+
+		-
+			message: "#^Cannot call method fetchOne\\(\\) on Magento\\\\Framework\\\\DB\\\\Adapter\\\\AdapterInterface\\|false\\.$#"
+			count: 1
+			path: Cron/CalculateReorderCycle.php
+
+		-
+			message: "#^Cannot call method select\\(\\) on Magento\\\\Framework\\\\DB\\\\Adapter\\\\AdapterInterface\\|false\\.$#"
+			count: 1
+			path: Cron/CalculateReorderCycle.php
+
+		-
+			message: "#^Parameter \\#2 \\$timestamp of function date expects int\\|null, int\\|false given\\.$#"
+			count: 2
+			path: Cron/CalculateReorderCycle.php
+
+		-
+			message: "#^Use service contracts to persist entities in favour of Ordo\\\\Automation\\\\Model\\\\ReorderCycle\\:\\:load\\(\\) method$#"
+			count: 1
+			path: Cron/CalculateReorderCycle.php
+
+		-
+			message: "#^Cannot call method getData\\(\\) on mixed\\.$#"
+			count: 3
+			path: Cron/EscalateStalePendingApprovals.php
+
+		-
+			message: "#^Cannot call method setData\\(\\) on mixed\\.$#"
+			count: 1
+			path: Cron/EscalateStalePendingApprovals.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Cron\\\\EscalateStalePendingApprovals\\:\\:sendEscalationEmail\\(\\) has parameter \\$approval with no type specified\\.$#"
+			count: 1
+			path: Cron/EscalateStalePendingApprovals.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Cron\\\\EscalateStalePendingApprovals\\:\\:sendEscalationEmail\\(\\) has parameter \\$order with no type specified\\.$#"
+			count: 1
+			path: Cron/EscalateStalePendingApprovals.php
+
+		-
+			message: "#^Negated boolean expression is always false\\.$#"
+			count: 1
+			path: Cron/EscalateStalePendingApprovals.php
+
+		-
+			message: "#^Parameter \\#1 \\$object of method Magento\\\\Framework\\\\Model\\\\ResourceModel\\\\Db\\\\AbstractDb\\:\\:save\\(\\) expects Magento\\\\Framework\\\\Model\\\\AbstractModel, mixed given\\.$#"
+			count: 1
+			path: Cron/EscalateStalePendingApprovals.php
+
+		-
+			message: "#^Parameter \\#2 \\$timestamp of function date expects int\\|null, int\\|false given\\.$#"
+			count: 1
+			path: Cron/EscalateStalePendingApprovals.php
+
+		-
+			message: "#^Cannot call method setStatus\\(\\) on mixed\\.$#"
+			count: 1
+			path: Cron/ExpireOverdueOffers.php
+
+		-
+			message: "#^Parameter \\#1 \\$object of method Magento\\\\Framework\\\\Model\\\\ResourceModel\\\\Db\\\\AbstractDb\\:\\:save\\(\\) expects Magento\\\\Framework\\\\Model\\\\AbstractModel, mixed given\\.$#"
+			count: 1
+			path: Cron/ExpireOverdueOffers.php
+
+		-
+			message: "#^Parameter \\#2 \\$timestamp of function date expects int\\|null, int\\|false given\\.$#"
+			count: 1
+			path: Cron/PruneVisitorEvents.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Cron\\\\SendAbandonedCartReminders\\:\\:dispatchCampaigns\\(\\) has parameter \\$row with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Cron/SendAbandonedCartReminders.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Cron\\\\SendAbandonedCartReminders\\:\\:sendReminder\\(\\) has parameter \\$row with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Cron/SendAbandonedCartReminders.php
+
+		-
+			message: "#^Parameter \\#1 \\$sql of method Magento\\\\Framework\\\\DB\\\\Adapter\\\\AdapterInterface\\:\\:fetchAll\\(\\) expects Magento\\\\Framework\\\\DB\\\\Select\\|string, Zend_Db_Select given\\.$#"
+			count: 1
+			path: Cron/SendAbandonedCartReminders.php
+
+		-
+			message: "#^Parameter \\#2 \\$timestamp of function date expects int\\|null, int\\|false given\\.$#"
+			count: 1
+			path: Cron/SendAbandonedCartReminders.php
+
+		-
+			message: "#^Parameter \\#2 \\$value of method Magento\\\\Framework\\\\DB\\\\Select\\:\\:where\\(\\) expects array\\|int\\|string\\|null, float given\\.$#"
+			count: 1
+			path: Cron/SendAbandonedCartReminders.php
+
+		-
+			message: "#^Use service contracts to persist entities in favour of Magento\\\\Quote\\\\Model\\\\Quote\\:\\:load\\(\\) method$#"
+			count: 1
+			path: Cron/SendAbandonedCartReminders.php
+
+		-
+			message: "#^Parameter \\#2 \\$timestamp of function date expects int\\|null, int\\|false given\\.$#"
+			count: 1
+			path: Cron/SendCreditLimitAlerts.php
+
+		-
+			message: "#^Cannot call method getEntityId\\(\\) on mixed\\.$#"
+			count: 3
+			path: Cron/SendOfferExpiryReminders.php
+
+		-
+			message: "#^Parameter \\#1 \\$offer of method Ordo\\\\Automation\\\\Cron\\\\SendOfferExpiryReminders\\:\\:sendReminder\\(\\) expects Ordo\\\\Automation\\\\Model\\\\Offer, mixed given\\.$#"
+			count: 1
+			path: Cron/SendOfferExpiryReminders.php
+
+		-
+			message: "#^Parameter \\#2 \\$timestamp of function date expects int\\|null, int\\|false given\\.$#"
+			count: 1
+			path: Cron/SendOfferExpiryReminders.php
+
+		-
+			message: "#^Cannot call method getId\\(\\) on mixed\\.$#"
+			count: 3
+			path: Cron/SendReorderReminders.php
+
+		-
+			message: "#^Cannot cast mixed to int\\.$#"
+			count: 2
+			path: Cron/SendReorderReminders.php
+
+		-
+			message: "#^Parameter \\#1 \\$cycle of method Ordo\\\\Automation\\\\Cron\\\\SendReorderReminders\\:\\:sendReminder\\(\\) expects Ordo\\\\Automation\\\\Model\\\\ReorderCycle, mixed given\\.$#"
+			count: 1
+			path: Cron/SendReorderReminders.php
+
+		-
+			message: "#^Parameter \\#2 \\$timestamp of function date expects int\\|null, int\\|false given\\.$#"
+			count: 1
+			path: Cron/SendReorderReminders.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 1
+			path: Cron/SendSalesRepDigest.php
+
+		-
+			message: "#^Parameter \\#1 \\$sql of method Magento\\\\Framework\\\\DB\\\\Adapter\\\\AdapterInterface\\:\\:fetchCol\\(\\) expects Magento\\\\Framework\\\\DB\\\\Select\\|string, Zend_Db_Select given\\.$#"
+			count: 1
+			path: Cron/TagInactiveCustomers.php
+
+		-
+			message: "#^Parameter \\#2 \\$timestamp of function date expects int\\|null, int\\|false given\\.$#"
+			count: 1
+			path: Cron/TagInactiveCustomers.php
+
+		-
+			message: "#^Cannot cast mixed to float\\.$#"
+			count: 1
+			path: Helper/Config.php
+
+		-
+			message: "#^Cannot cast mixed to int\\.$#"
+			count: 1
+			path: Helper/Config.php
+
+		-
+			message: "#^Cannot cast mixed to int\\.$#"
+			count: 1
+			path: Model/Campaign.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 2
+			path: Model/Campaign.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Model\\\\Campaign\\:\\:getCreatedAt\\(\\) should return string\\|null but returns mixed\\.$#"
+			count: 1
+			path: Model/Campaign.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Model\\\\Campaign\\:\\:getUpdatedAt\\(\\) should return string\\|null but returns mixed\\.$#"
+			count: 1
+			path: Model/Campaign.php
+
+		-
+			message: "#^Cannot cast mixed to int\\.$#"
+			count: 1
+			path: Model/Campaign/Action/AddTag.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 1
+			path: Model/Campaign/Action/AddTag.php
+
+		-
+			message: "#^Cannot cast mixed to int\\.$#"
+			count: 1
+			path: Model/Campaign/Action/GenerateCoupon.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 1
+			path: Model/Campaign/Action/GenerateCoupon.php
+
+		-
+			message: "#^Cannot cast mixed to int\\.$#"
+			count: 1
+			path: Model/Campaign/Action/SendEmail.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 2
+			path: Model/Campaign/Action/SendEmail.php
+
+		-
+			message: "#^Cannot cast mixed to int\\.$#"
+			count: 1
+			path: Model/Campaign/Condition/HasTag.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 1
+			path: Model/Campaign/Condition/HasTag.php
+
+		-
+			message: "#^Cannot cast mixed to float\\.$#"
+			count: 2
+			path: Model/Campaign/Condition/OrderTotalAtLeast.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Model\\\\Campaign\\\\DataProvider\\:\\:__construct\\(\\) has parameter \\$data with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Model/Campaign/DataProvider.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Model\\\\Campaign\\\\DataProvider\\:\\:__construct\\(\\) has parameter \\$meta with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Model/Campaign/DataProvider.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Model\\\\Campaign\\\\DataProvider\\:\\:getData\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Model/Campaign/DataProvider.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Model\\\\Campaign\\\\DataProvider\\:\\:loadChildRows\\(\\) has parameter \\$collection with no type specified\\.$#"
+			count: 1
+			path: Model/Campaign/DataProvider.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Model\\\\Campaign\\\\DataProvider\\:\\:loadChildRows\\(\\) is unused\\.$#"
+			count: 1
+			path: Model/Campaign/DataProvider.php
+
+		-
+			message: "#^Property Ordo\\\\Automation\\\\Model\\\\Campaign\\\\DataProvider\\:\\:\\$campaignActionCollectionFactory is never read, only written\\.$#"
+			count: 1
+			path: Model/Campaign/DataProvider.php
+
+		-
+			message: "#^Property Ordo\\\\Automation\\\\Model\\\\Campaign\\\\DataProvider\\:\\:\\$campaignConditionCollectionFactory is never read, only written\\.$#"
+			count: 1
+			path: Model/Campaign/DataProvider.php
+
+		-
+			message: "#^Property Ordo\\\\Automation\\\\Model\\\\Campaign\\\\DataProvider\\:\\:\\$dataPersistor is never read, only written\\.$#"
+			count: 1
+			path: Model/Campaign/DataProvider.php
+
+		-
+			message: "#^Property Ordo\\\\Automation\\\\Model\\\\Campaign\\\\DataProvider\\:\\:\\$loadedData \\(array\\) in isset\\(\\) is not nullable\\.$#"
+			count: 1
+			path: Model/Campaign/DataProvider.php
+
+		-
+			message: "#^Property Ordo\\\\Automation\\\\Model\\\\Campaign\\\\DataProvider\\:\\:\\$loadedData type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Model/Campaign/DataProvider.php
+
+		-
+			message: "#^Unreachable statement \\- code above always terminates\\.$#"
+			count: 1
+			path: Model/Campaign/DataProvider.php
+
+		-
+			message: "#^Cannot cast mixed to int\\.$#"
+			count: 3
+			path: Model/CampaignAction.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 3
+			path: Model/CampaignAction.php
+
+		-
+			message: "#^Parameter \\#1 \\$items of method Ordo\\\\Automation\\\\Api\\\\Data\\\\CampaignActionSearchResultsInterface\\:\\:setItems\\(\\) expects array\\<Ordo\\\\Automation\\\\Api\\\\Data\\\\CampaignActionInterface\\>, array\\<Magento\\\\Framework\\\\DataObject\\> given\\.$#"
+			count: 1
+			path: Model/CampaignActionRepository.php
+
+		-
+			message: "#^Parameter \\#1 \\$object of method Magento\\\\Framework\\\\Model\\\\ResourceModel\\\\Db\\\\AbstractDb\\:\\:delete\\(\\) expects Magento\\\\Framework\\\\Model\\\\AbstractModel, Ordo\\\\Automation\\\\Api\\\\Data\\\\CampaignActionInterface given\\.$#"
+			count: 1
+			path: Model/CampaignActionRepository.php
+
+		-
+			message: "#^Parameter \\#1 \\$object of method Magento\\\\Framework\\\\Model\\\\ResourceModel\\\\Db\\\\AbstractDb\\:\\:save\\(\\) expects Magento\\\\Framework\\\\Model\\\\AbstractModel, Ordo\\\\Automation\\\\Api\\\\Data\\\\CampaignActionInterface given\\.$#"
+			count: 1
+			path: Model/CampaignActionRepository.php
+
+		-
+			message: "#^Cannot cast mixed to int\\.$#"
+			count: 3
+			path: Model/CampaignCondition.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 3
+			path: Model/CampaignCondition.php
+
+		-
+			message: "#^Parameter \\#1 \\$items of method Ordo\\\\Automation\\\\Api\\\\Data\\\\CampaignConditionSearchResultsInterface\\:\\:setItems\\(\\) expects array\\<Ordo\\\\Automation\\\\Api\\\\Data\\\\CampaignConditionInterface\\>, array\\<Magento\\\\Framework\\\\DataObject\\> given\\.$#"
+			count: 1
+			path: Model/CampaignConditionRepository.php
+
+		-
+			message: "#^Parameter \\#1 \\$object of method Magento\\\\Framework\\\\Model\\\\ResourceModel\\\\Db\\\\AbstractDb\\:\\:delete\\(\\) expects Magento\\\\Framework\\\\Model\\\\AbstractModel, Ordo\\\\Automation\\\\Api\\\\Data\\\\CampaignConditionInterface given\\.$#"
+			count: 1
+			path: Model/CampaignConditionRepository.php
+
+		-
+			message: "#^Parameter \\#1 \\$object of method Magento\\\\Framework\\\\Model\\\\ResourceModel\\\\Db\\\\AbstractDb\\:\\:save\\(\\) expects Magento\\\\Framework\\\\Model\\\\AbstractModel, Ordo\\\\Automation\\\\Api\\\\Data\\\\CampaignConditionInterface given\\.$#"
+			count: 1
+			path: Model/CampaignConditionRepository.php
+
+		-
+			message: "#^Cannot call method getData\\(\\) on mixed\\.$#"
+			count: 4
+			path: Model/CampaignDispatcher.php
+
+		-
+			message: "#^Cannot call method getId\\(\\) on mixed\\.$#"
+			count: 3
+			path: Model/CampaignDispatcher.php
+
+		-
+			message: "#^Cannot call method getParams\\(\\) on mixed\\.$#"
+			count: 2
+			path: Model/CampaignDispatcher.php
+
+		-
+			message: "#^Parameter \\#1 \\$items of method Ordo\\\\Automation\\\\Api\\\\Data\\\\CampaignSearchResultsInterface\\:\\:setItems\\(\\) expects array\\<Ordo\\\\Automation\\\\Api\\\\Data\\\\CampaignInterface\\>, array\\<Magento\\\\Framework\\\\DataObject\\> given\\.$#"
+			count: 1
+			path: Model/CampaignRepository.php
+
+		-
+			message: "#^Parameter \\#1 \\$object of method Magento\\\\Framework\\\\Model\\\\ResourceModel\\\\Db\\\\AbstractDb\\:\\:delete\\(\\) expects Magento\\\\Framework\\\\Model\\\\AbstractModel, Ordo\\\\Automation\\\\Api\\\\Data\\\\CampaignInterface given\\.$#"
+			count: 1
+			path: Model/CampaignRepository.php
+
+		-
+			message: "#^Parameter \\#1 \\$object of method Magento\\\\Framework\\\\Model\\\\ResourceModel\\\\Db\\\\AbstractDb\\:\\:save\\(\\) expects Magento\\\\Framework\\\\Model\\\\AbstractModel, Ordo\\\\Automation\\\\Api\\\\Data\\\\CampaignInterface given\\.$#"
+			count: 1
+			path: Model/CampaignRepository.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Model\\\\Config\\\\Source\\\\ActionType\\:\\:toOptionArray\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Model/Config/Source/ActionType.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Model\\\\Config\\\\Source\\\\ConditionType\\:\\:toOptionArray\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Model/Config/Source/ConditionType.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Model\\\\Config\\\\Source\\\\TriggerEvent\\:\\:toOptionArray\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Model/Config/Source/TriggerEvent.php
+
+		-
+			message: "#^Cannot cast mixed to float\\.$#"
+			count: 1
+			path: Model/CreditLimitCalculator.php
+
+		-
+			message: "#^Cannot cast mixed to float\\.$#"
+			count: 1
+			path: Model/Offer.php
+
+		-
+			message: "#^Cannot cast mixed to int\\.$#"
+			count: 3
+			path: Model/Offer.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 4
+			path: Model/Offer.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Model\\\\Offer\\:\\:getCreatedAt\\(\\) should return string\\|null but returns mixed\\.$#"
+			count: 1
+			path: Model/Offer.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Model\\\\Offer\\:\\:getUpdatedAt\\(\\) should return string\\|null but returns mixed\\.$#"
+			count: 1
+			path: Model/Offer.php
+
+		-
+			message: "#^Parameter \\#2 \\$timestamp of function date expects int\\|null, int\\|false given\\.$#"
+			count: 1
+			path: Model/OfferManagement.php
+
+		-
+			message: "#^Parameter \\#1 \\$items of method Ordo\\\\Automation\\\\Api\\\\Data\\\\OfferSearchResultsInterface\\:\\:setItems\\(\\) expects array\\<Ordo\\\\Automation\\\\Api\\\\Data\\\\OfferInterface\\>, array\\<Magento\\\\Framework\\\\DataObject\\> given\\.$#"
+			count: 1
+			path: Model/OfferRepository.php
+
+		-
+			message: "#^Parameter \\#1 \\$object of method Magento\\\\Framework\\\\Model\\\\ResourceModel\\\\Db\\\\AbstractDb\\:\\:delete\\(\\) expects Magento\\\\Framework\\\\Model\\\\AbstractModel, Ordo\\\\Automation\\\\Api\\\\Data\\\\OfferInterface given\\.$#"
+			count: 1
+			path: Model/OfferRepository.php
+
+		-
+			message: "#^Parameter \\#1 \\$object of method Magento\\\\Framework\\\\Model\\\\ResourceModel\\\\Db\\\\AbstractDb\\:\\:save\\(\\) expects Magento\\\\Framework\\\\Model\\\\AbstractModel, Ordo\\\\Automation\\\\Api\\\\Data\\\\OfferInterface given\\.$#"
+			count: 1
+			path: Model/OfferRepository.php
+
+		-
+			message: "#^Cannot cast mixed to int\\.$#"
+			count: 3
+			path: Model/OrderApproval.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 3
+			path: Model/OrderApproval.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Model\\\\OrderApproval\\:\\:getCreatedAt\\(\\) should return string\\|null but returns mixed\\.$#"
+			count: 1
+			path: Model/OrderApproval.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Model\\\\OrderApproval\\:\\:getDecidedAt\\(\\) should return string\\|null but returns mixed\\.$#"
+			count: 1
+			path: Model/OrderApproval.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 2
+			path: Model/OrderApprovalDecisionLinks.php
+
+		-
+			message: "#^Parameter \\#1 \\$status of method Magento\\\\Sales\\\\Model\\\\Order\\:\\:setStatus\\(\\) expects string, string\\|null given\\.$#"
+			count: 1
+			path: Model/OrderApprovalManagement.php
+
+		-
+			message: "#^Parameter \\#2 \\$condition of method Magento\\\\Framework\\\\Data\\\\Collection\\\\AbstractDb\\:\\:addFieldToFilter\\(\\) expects array\\|string\\|null, int given\\.$#"
+			count: 1
+			path: Model/OrderApprovalManagement.php
+
+		-
+			message: "#^Parameter \\#1 \\$items of method Ordo\\\\Automation\\\\Api\\\\Data\\\\OrderApprovalSearchResultsInterface\\:\\:setItems\\(\\) expects array\\<Ordo\\\\Automation\\\\Api\\\\Data\\\\OrderApprovalInterface\\>, array\\<Magento\\\\Framework\\\\DataObject\\> given\\.$#"
+			count: 1
+			path: Model/OrderApprovalRepository.php
+
+		-
+			message: "#^Cannot cast mixed to int\\.$#"
+			count: 4
+			path: Model/ReorderCycle.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 3
+			path: Model/ReorderCycle.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Model\\\\ReorderCycle\\:\\:getUpdatedAt\\(\\) should return string\\|null but returns mixed\\.$#"
+			count: 1
+			path: Model/ReorderCycle.php
+
+		-
+			message: "#^Parameter \\#1 \\$items of method Ordo\\\\Automation\\\\Api\\\\Data\\\\ReorderCycleSearchResultsInterface\\:\\:setItems\\(\\) expects array\\<Ordo\\\\Automation\\\\Api\\\\Data\\\\ReorderCycleInterface\\>, array\\<Magento\\\\Framework\\\\DataObject\\> given\\.$#"
+			count: 1
+			path: Model/ReorderCycleRepository.php
+
+		-
+			message: "#^Parameter \\#2 \\$condition of method Magento\\\\Framework\\\\Data\\\\Collection\\\\AbstractDb\\:\\:addFieldToFilter\\(\\) expects array\\|string\\|null, int given\\.$#"
+			count: 1
+			path: Model/ResourceModel/Campaign/Action/Collection.php
+
+		-
+			message: "#^Parameter \\#2 \\$condition of method Magento\\\\Framework\\\\Data\\\\Collection\\\\AbstractDb\\:\\:addFieldToFilter\\(\\) expects array\\|string\\|null, int given\\.$#"
+			count: 1
+			path: Model/ResourceModel/Campaign/Collection.php
+
+		-
+			message: "#^Parameter \\#2 \\$condition of method Magento\\\\Framework\\\\Data\\\\Collection\\\\AbstractDb\\:\\:addFieldToFilter\\(\\) expects array\\|string\\|null, int given\\.$#"
+			count: 1
+			path: Model/ResourceModel/Campaign/Condition/Collection.php
+
+		-
+			message: "#^Cannot call method fetchOne\\(\\) on Magento\\\\Framework\\\\DB\\\\Adapter\\\\AdapterInterface\\|false\\.$#"
+			count: 1
+			path: Model/ResourceModel/OrderApproval.php
+
+		-
+			message: "#^Cannot call method select\\(\\) on Magento\\\\Framework\\\\DB\\\\Adapter\\\\AdapterInterface\\|false\\.$#"
+			count: 1
+			path: Model/ResourceModel/OrderApproval.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Model\\\\SalesRepEmailContext\\:\\:getAttributeValue\\(\\) has parameter \\$customer with no type specified\\.$#"
+			count: 1
+			path: Model/SalesRepEmailContext.php
+
+		-
+			message: "#^Parameter \\#1 \\$sql of method Magento\\\\Framework\\\\DB\\\\Adapter\\\\AdapterInterface\\:\\:fetchAll\\(\\) expects Magento\\\\Framework\\\\DB\\\\Select\\|string, Zend_Db_Select given\\.$#"
+			count: 1
+			path: Model/VisitorAggregator.php
+
+		-
+			message: "#^Cannot cast mixed to int\\.$#"
+			count: 1
+			path: Observer/DispatchTagAddedCampaigns.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 1
+			path: Observer/DispatchTagAddedCampaigns.php
+
+		-
+			message: "#^Cannot cast mixed to float\\.$#"
+			count: 1
+			path: Observer/HoldOrderForApproval.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 1
+			path: Observer/HoldOrderForApproval.php
+
+		-
+			message: "#^Negated boolean expression is always false\\.$#"
+			count: 1
+			path: Observer/HoldOrderForApproval.php
+
+		-
+			message: "#^Parameter \\#2 \\.\\.\\.\\$values of function sprintf expects bool\\|float\\|int\\|string\\|null, mixed given\\.$#"
+			count: 1
+			path: Observer/HoldOrderForApproval.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Plugin\\\\SalesRule\\\\SimpleActionOptionsProviderPlugin\\:\\:afterToOptionArray\\(\\) has parameter \\$result with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Plugin/SalesRule/SimpleActionOptionsProviderPlugin.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Plugin\\\\SalesRule\\\\SimpleActionOptionsProviderPlugin\\:\\:afterToOptionArray\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Plugin/SalesRule/SimpleActionOptionsProviderPlugin.php
+
+		-
+			message: "#^Return type \\(void\\) of method Ordo\\\\Automation\\\\Setup\\\\Patch\\\\Data\\\\AddCustomerCreditLimitAttribute\\:\\:apply\\(\\) should be compatible with return type \\(\\$this\\(Magento\\\\Framework\\\\Setup\\\\Patch\\\\PatchInterface\\)\\) of method Magento\\\\Framework\\\\Setup\\\\Patch\\\\PatchInterface\\:\\:apply\\(\\)$#"
+			count: 2
+			path: Setup/Patch/Data/AddCustomerCreditLimitAttribute.php
+
+		-
+			message: "#^Use service contracts to persist entities in favour of Magento\\\\Eav\\\\Model\\\\Entity\\\\Attribute\\\\AbstractAttribute\\:\\:save\\(\\) method$#"
+			count: 1
+			path: Setup/Patch/Data/AddCustomerCreditLimitAttribute.php
+
+		-
+			message: "#^Return type \\(void\\) of method Ordo\\\\Automation\\\\Setup\\\\Patch\\\\Data\\\\AddCustomerSpendLimitAttributes\\:\\:apply\\(\\) should be compatible with return type \\(\\$this\\(Magento\\\\Framework\\\\Setup\\\\Patch\\\\PatchInterface\\)\\) of method Magento\\\\Framework\\\\Setup\\\\Patch\\\\PatchInterface\\:\\:apply\\(\\)$#"
+			count: 2
+			path: Setup/Patch/Data/AddCustomerSpendLimitAttributes.php
+
+		-
+			message: "#^Use service contracts to persist entities in favour of Magento\\\\Eav\\\\Model\\\\Entity\\\\Attribute\\\\AbstractAttribute\\:\\:save\\(\\) method$#"
+			count: 2
+			path: Setup/Patch/Data/AddCustomerSpendLimitAttributes.php
+
+		-
+			message: "#^Return type \\(void\\) of method Ordo\\\\Automation\\\\Setup\\\\Patch\\\\Data\\\\AddPendingApprovalOrderStatus\\:\\:apply\\(\\) should be compatible with return type \\(\\$this\\(Magento\\\\Framework\\\\Setup\\\\Patch\\\\PatchInterface\\)\\) of method Magento\\\\Framework\\\\Setup\\\\Patch\\\\PatchInterface\\:\\:apply\\(\\)$#"
+			count: 2
+			path: Setup/Patch/Data/AddPendingApprovalOrderStatus.php
+
+		-
+			message: "#^Return type \\(void\\) of method Ordo\\\\Automation\\\\Setup\\\\Patch\\\\Data\\\\AddSalesRepAttributes\\:\\:apply\\(\\) should be compatible with return type \\(\\$this\\(Magento\\\\Framework\\\\Setup\\\\Patch\\\\PatchInterface\\)\\) of method Magento\\\\Framework\\\\Setup\\\\Patch\\\\PatchInterface\\:\\:apply\\(\\)$#"
+			count: 2
+			path: Setup/Patch/Data/AddSalesRepAttributes.php
+
+		-
+			message: "#^Use service contracts to persist entities in favour of Magento\\\\Eav\\\\Model\\\\Entity\\\\Attribute\\\\AbstractAttribute\\:\\:save\\(\\) method$#"
+			count: 1
+			path: Setup/Patch/Data/AddSalesRepAttributes.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Ui\\\\Component\\\\Listing\\\\Column\\\\CampaignActions\\:\\:__construct\\(\\) has parameter \\$components with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Ui/Component/Listing/Column/CampaignActions.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Ui\\\\Component\\\\Listing\\\\Column\\\\CampaignActions\\:\\:__construct\\(\\) has parameter \\$data with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Ui/Component/Listing/Column/CampaignActions.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Ui\\\\Component\\\\Listing\\\\Column\\\\CampaignActions\\:\\:prepareDataSource\\(\\) has parameter \\$dataSource with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Ui/Component/Listing/Column/CampaignActions.php
+
+		-
+			message: "#^Method Ordo\\\\Automation\\\\Ui\\\\Component\\\\Listing\\\\Column\\\\CampaignActions\\:\\:prepareDataSource\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: Ui/Component/Listing/Column/CampaignActions.php

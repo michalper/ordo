@@ -154,7 +154,7 @@ class Save extends AbstractCampaignAction implements HttpPostActionInterface
             }
         }
 
-        return json_encode($params);
+        return json_encode($params) ?: '{}';
     }
 
     /**

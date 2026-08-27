@@ -1,5 +1,6 @@
 includes:
     - ../../bitexpert/phpstan-magento/extension.neon
+    - phpstan-baseline.neon
 
 parameters:
     level: max
