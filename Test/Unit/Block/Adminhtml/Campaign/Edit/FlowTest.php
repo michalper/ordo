@@ -157,6 +157,7 @@ class FlowTest extends TestCase
         $action->method('getData')->willReturnMap([
             ['type', null, 'add_tag'],
             ['params', null, '{"tag":"vip"}'],
+            ['delay_minutes', null, 1440],
         ]);
         $actionCollection = $this->createMock(ActionCollection::class);
         $actionCollection->method('addCampaignFilter');
@@ -173,6 +174,7 @@ class FlowTest extends TestCase
         self::assertStringContainsString('{"amount":"100"}', $data[2]['html']);
         self::assertStringContainsString('add_tag', $data[3]['html']);
         self::assertStringContainsString('{"tag":"vip"}', $data[3]['html']);
+        self::assertStringContainsString('data-field="delay_minutes" value="1440"', $data[3]['html']);
 
         // trigger has no input
         self::assertSame([], $data[1]['inputs']);

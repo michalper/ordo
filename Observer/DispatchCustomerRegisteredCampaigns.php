@@ -5,12 +5,12 @@ namespace Ordo\Automation\Observer;
 
 use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\Event\ObserverInterface;
-use Ordo\Automation\Model\CampaignDispatcher;
+use Ordo\Automation\Model\Queue\CampaignDispatchPublisher;
 
 class DispatchCustomerRegisteredCampaigns implements ObserverInterface
 {
     public function __construct(
-        private readonly CampaignDispatcher $campaignDispatcher
+        private readonly CampaignDispatchPublisher $campaignDispatchPublisher
     ) {
     }
 
@@ -21,7 +21,7 @@ class DispatchCustomerRegisteredCampaigns implements ObserverInterface
             return;
         }
 
-        $this->campaignDispatcher->dispatch('customer_registered', [
+        $this->campaignDispatchPublisher->publish('customer_registered', [
             'customer_id' => (int) $customer->getId(),
         ]);
     }

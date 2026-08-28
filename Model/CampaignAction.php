@@ -79,4 +79,15 @@ class CampaignAction extends AbstractModel implements CampaignActionInterface
         $this->setData(self::SORT_ORDER, $sortOrder);
         return $this;
     }
+
+    public function getDelayMinutes(): int
+    {
+        return (int) $this->getData(self::DELAY_MINUTES);
+    }
+
+    public function setDelayMinutes(int $delayMinutes): self
+    {
+        $this->setData(self::DELAY_MINUTES, $delayMinutes);
+        return $this;
+    }
 }

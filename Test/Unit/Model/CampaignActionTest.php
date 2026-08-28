@@ -74,4 +74,17 @@ class CampaignActionTest extends AbstractModelTestCase
 
         self::assertSame(1, $model->getSortOrder());
     }
+
+    public function testDelayMinutesDefaultsToZero(): void
+    {
+        self::assertSame(0, $this->makeModel()->getDelayMinutes());
+    }
+
+    public function testDelayMinutesRoundTrip(): void
+    {
+        $model = $this->makeModel();
+        $model->setDelayMinutes(1440);
+
+        self::assertSame(1440, $model->getDelayMinutes());
+    }
 }

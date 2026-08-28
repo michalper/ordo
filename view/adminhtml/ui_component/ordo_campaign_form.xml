@@ -367,6 +367,20 @@
                         </select>
                     </formElements>
                 </field>
+                <!-- Not part of switcherConfig above — unlike tag/rule_id/prefix/etc., this
+                     applies to every action type, not just some. See CampaignActionInterface::
+                     DELAY_MINUTES and CampaignDispatcher for what it actually does at
+                     dispatch time. -->
+                <field name="delay_minutes" formElement="input" sortOrder="12">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Delay (minutes)</label>
+                        <notice translate="true">Wait this long after the previous step (or the trigger, for the first action) before running this one. 0 runs immediately.</notice>
+                        <validation>
+                            <rule name="validate-digits" xsi:type="boolean">true</rule>
+                        </validation>
+                    </settings>
+                </field>
                 <field name="tag" formElement="input" sortOrder="15">
                     <settings>
                         <dataType>text</dataType>

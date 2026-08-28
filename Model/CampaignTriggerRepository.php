@@ -5,6 +5,7 @@ namespace Ordo\Automation\Model;
 
 use Magento\Framework\Api\SearchCriteria\CollectionProcessorInterface;
 use Magento\Framework\Api\SearchCriteriaInterface;
+use Magento\Framework\App\CacheInterface;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Api\CampaignTriggerRepositoryInterface;
@@ -21,7 +22,8 @@ class CampaignTriggerRepository implements CampaignTriggerRepositoryInterface
         private readonly CampaignTriggerFactory $campaignTriggerFactory,
         private readonly CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory,
         private readonly CampaignTriggerSearchResultsInterfaceFactory $searchResultsFactory,
-        private readonly CollectionProcessorInterface $collectionProcessor
+        private readonly CollectionProcessorInterface $collectionProcessor,
+        private readonly CacheInterface $cache
     ) {
     }
 
@@ -32,6 +34,10 @@ class CampaignTriggerRepository implements CampaignTriggerRepositoryInterface
         } catch (\Exception $e) {
             throw new CouldNotSaveException(__('Could not save the campaign trigger: %1', $e->getMessage()), $e);
         }
+
+        // Adding/changing a trigger row changes which campaigns fire for its trigger_event —
+        // CampaignDispatcher's cached lookup for that event must not keep serving a stale answer.
+        $this->cache->clean([CampaignDispatcher::CACHE_TAG]);
 
         return $trigger;
     }
@@ -70,6 +76,8 @@ class CampaignTriggerRepository implements CampaignTriggerRepositoryInterface
         } catch (\Exception $e) {
             throw new CouldNotSaveException(__('Could not delete the campaign trigger: %1', $e->getMessage()), $e);
         }
+
+        $this->cache->clean([CampaignDispatcher::CACHE_TAG]);
 
         return true;
     }

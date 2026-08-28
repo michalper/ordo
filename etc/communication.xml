@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Communication/etc/communication.xsd">
+    <topic name="ordo.automation.campaign.dispatch" is_synchronous="false" request="string">
+        <handler name="ordoAutomationCampaignDispatch"
+                 type="Ordo\Automation\Model\Queue\CampaignDispatchConsumer" method="execute"/>
+    </topic>
+</config>

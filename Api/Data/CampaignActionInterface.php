@@ -10,6 +10,7 @@ interface CampaignActionInterface
     public const TYPE = 'type';
     public const PARAMS = 'params';
     public const SORT_ORDER = 'sort_order';
+    public const DELAY_MINUTES = 'delay_minutes';
 
     /**
      * @return int|null
@@ -73,4 +74,20 @@ interface CampaignActionInterface
      * @return $this
      */
     public function setSortOrder(int $sortOrder): self;
+
+    /**
+     * Minutes to wait after the previous action (or the trigger, if this is the first) before
+     * running this one — 0 runs in the same synchronous dispatch as everything before it, a
+     * positive value pauses the campaign's action chain (Model\CampaignDispatcher schedules a
+     * ordo_campaign_scheduled_action row instead of executing further) until it elapses.
+     *
+     * @return int
+     */
+    public function getDelayMinutes(): int;
+
+    /**
+     * @param int $delayMinutes
+     * @return $this
+     */
+    public function setDelayMinutes(int $delayMinutes): self;
 }

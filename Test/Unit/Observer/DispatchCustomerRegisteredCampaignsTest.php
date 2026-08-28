@@ -6,13 +6,13 @@ namespace Ordo\Automation\Test\Unit\Observer;
 use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\Event;
 use Magento\Framework\Event\Observer as EventObserver;
-use Ordo\Automation\Model\CampaignDispatcher;
+use Ordo\Automation\Model\Queue\CampaignDispatchPublisher;
 use Ordo\Automation\Observer\DispatchCustomerRegisteredCampaigns;
 use PHPUnit\Framework\TestCase;
 
 class DispatchCustomerRegisteredCampaignsTest extends TestCase
 {
-    public function testExecuteDispatchesForKnownCustomer(): void
+    public function testExecutePublishesForKnownCustomer(): void
     {
         $customer = $this->createMock(CustomerInterface::class);
         $customer->method('getId')->willReturn(42);
@@ -22,10 +22,10 @@ class DispatchCustomerRegisteredCampaignsTest extends TestCase
         $observer = $this->createMock(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);
 
-        $dispatcher = $this->createMock(CampaignDispatcher::class);
-        $dispatcher->expects(self::once())->method('dispatch')->with('customer_registered', ['customer_id' => 42]);
+        $publisher = $this->createMock(CampaignDispatchPublisher::class);
+        $publisher->expects(self::once())->method('publish')->with('customer_registered', ['customer_id' => 42]);
 
-        (new DispatchCustomerRegisteredCampaigns($dispatcher))->execute($observer);
+        (new DispatchCustomerRegisteredCampaigns($publisher))->execute($observer);
     }
 
     public function testExecuteDoesNothingWhenCustomerMissing(): void
@@ -35,9 +35,9 @@ class DispatchCustomerRegisteredCampaignsTest extends TestCase
         $observer = $this->createMock(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);
 
-        $dispatcher = $this->createMock(CampaignDispatcher::class);
-        $dispatcher->expects(self::never())->method('dispatch');
+        $publisher = $this->createMock(CampaignDispatchPublisher::class);
+        $publisher->expects(self::never())->method('publish');
 
-        (new DispatchCustomerRegisteredCampaigns($dispatcher))->execute($observer);
+        (new DispatchCustomerRegisteredCampaigns($publisher))->execute($observer);
     }
 }

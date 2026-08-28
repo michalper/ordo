@@ -27,7 +27,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Ordo\\Automation\\Test\\Unit\\": "Test/Unit/"
+            "Ordo\\Automation\\Test\\Unit\\": "Test/Unit/",
+            "Ordo\\Automation\\Test\\Integration\\": "Test/Integration/"
         }
     }
 }

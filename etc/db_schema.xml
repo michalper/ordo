@@ -47,7 +47,7 @@
         </index>
     </table>
 
-    <table name="ordo_offer" resource="default" engine="innodb" comment="B2B offer/quote with an expiration date — the entity Magento Open Source doesn't have natively">
+    <table name="ordo_offer" resource="default" engine="innodb" comment="B2B offer/quote with an expiration date — the entity Magento Open Source does not have natively">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
         <column xsi:type="varchar" name="reference" nullable="false" length="32" comment="Human-readable offer reference, e.g. OFR-000123"/>
@@ -117,7 +117,7 @@
         </index>
     </table>
 
-    <table name="ordo_order_approval" resource="default" engine="innodb" comment="Approval hold for orders placed above a customer's spend limit — the minimal stand-in for a B2B approval workflow">
+    <table name="ordo_order_approval" resource="default" engine="innodb" comment="Approval hold for orders placed above a customer spend limit — the minimal stand-in for a B2B approval workflow">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="order_id" padding="10" unsigned="true" nullable="false" comment="sales_order.entity_id"/>
         <column xsi:type="varchar" name="admin_email" nullable="false" length="255" comment="Email of the person who must approve"/>
@@ -140,7 +140,7 @@
         </index>
     </table>
 
-    <table name="ordo_campaign" resource="default" engine="innodb" comment="A configurable 'when X happens and Y is true, do Z' marketing rule">
+    <table name="ordo_campaign" resource="default" engine="innodb" comment="A configurable when-X-happens-and-Y-is-true-do-Z marketing rule">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="name" nullable="false" length="255" comment="Admin-facing name"/>
         <column xsi:type="varchar" name="trigger_event" nullable="true" length="64" comment="DEPRECATED — superseded by ordo_campaign_trigger (a campaign can have more than one trigger now). Kept nullable, unread by any code path, purely so Setup\Patch\Data\MigrateCampaignTriggerToChildTable has a column to read from on upgrade. Safe to drop in a follow-up schema-only release once every install has run that patch."/>
@@ -197,6 +197,7 @@
         <column xsi:type="varchar" name="type" nullable="false" length="64" comment="Action type key, matches Model\Campaign\ActionPool registration"/>
         <column xsi:type="text" name="params" nullable="true" comment="JSON-encoded action configuration"/>
         <column xsi:type="smallint" name="sort_order" unsigned="true" nullable="false" default="0" comment="Sort Order"/>
+        <column xsi:type="int" name="delay_minutes" padding="10" unsigned="true" nullable="false" default="0" comment="Minutes to wait after the previous action (or the trigger, if this is the first) before running this one. 0 runs immediately, in the same dispatch as everything before it."/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
@@ -205,6 +206,29 @@
                     referenceTable="ordo_campaign" referenceColumn="entity_id" onDelete="CASCADE"/>
         <index referenceId="ORDO_CAMPAIGN_ACTION_CAMPAIGN_ID" indexType="btree">
             <column name="campaign_id"/>
+        </index>
+    </table>
+
+    <table name="ordo_campaign_scheduled_action" resource="default" engine="innodb" comment="A paused campaign action chain waiting on a delay_minutes step — CampaignDispatcher stops running its actions synchronously the moment it reaches one with a delay and writes one of these instead of blocking. Cron\RunScheduledCampaignActions resumes the chain (starting at, and including, resume_action_id) once run_at has passed.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id"/>
+        <column xsi:type="int" name="resume_action_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign_action.entity_id — the delayed action to run when this row is resumed, then continue on to the rest of the chain"/>
+        <column xsi:type="text" name="context" nullable="false" comment="JSON-encoded dispatch context (customer_id, order_id, etc. — whatever the trigger observer originally passed in, including any mutations earlier, non-delayed actions in the same chain made before the delay was hit)"/>
+        <column xsi:type="datetime" name="run_at" nullable="false" comment="Earliest time this row is eligible to resume"/>
+        <column xsi:type="datetime" name="executed_at" nullable="true" comment="Set the moment the cron claims this row, before running it — not just on success — so a row can never be picked up twice even if execution itself throws"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="ORDO_CAMPAIGN_SCHEDULED_ACTION_CAMPAIGN_ID_CAMPAIGN_ENTITY_ID"
+                    table="ordo_campaign_scheduled_action" column="campaign_id"
+                    referenceTable="ordo_campaign" referenceColumn="entity_id" onDelete="CASCADE"/>
+        <constraint xsi:type="foreign" referenceId="ORDO_CAMPAIGN_SCHEDULED_ACTION_RESUME_ACTION_ID_CAMPAIGN_ACTION_ENTITY_ID"
+                    table="ordo_campaign_scheduled_action" column="resume_action_id"
+                    referenceTable="ordo_campaign_action" referenceColumn="entity_id" onDelete="CASCADE"/>
+        <index referenceId="ORDO_CAMPAIGN_SCHEDULED_ACTION_RUN_AT_EXECUTED_AT" indexType="btree">
+            <column name="run_at"/>
+            <column name="executed_at"/>
         </index>
     </table>
 

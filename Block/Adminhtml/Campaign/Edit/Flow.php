@@ -208,7 +208,7 @@ class Flow extends Template
      * fields: someone who doesn't know what JSON is should never have to see one to configure
      * this. A type without a mapping still gets the JSON fallback field.
      */
-    private function editableNodeHtml(string $kind, string $label, string $paramsJson, string $optionsHtml): string
+    private function editableNodeHtml(string $kind, string $label, string $paramsJson, string $optionsHtml, int $delayMinutes = 0): string
     {
         $decodedParams = json_decode($paramsJson, true);
         $paramsAttr = json_encode(is_array($decodedParams) ? $decodedParams : []);
@@ -219,6 +219,17 @@ class Flow extends Template
         // div here would make jQuery's `.find('.ordo-flow-action')` in campaign-flow-editor.js
         // match both elements per node and silently double every row on save. This inner div
         // only ever needs the `data-kind` marker for that lookup, not the class.
+        //
+        // delay_minutes only ever applies to action nodes — it's rendered as an always-visible
+        // input alongside the per-type fields (campaign-flow-editor.js's bindNode()), not part
+        // of `data-params`/getFieldsConfig(), since it's a real CampaignAction column, not
+        // something stored inside params JSON.
+        $delayHtml = $kind === 'action'
+            ? '<label class="ordo-flow-field-label">' . $this->escapeHtml((string) __('Delay (minutes)')) . '</label>'
+                . '<input type="text" class="ordo-flow-field-input" data-field="delay_minutes" value="'
+                . $this->escapeHtmlAttr((string) $delayMinutes) . '">'
+            : '';
+
         return '<div class="ordo-flow-node" data-kind="' . $this->escapeHtmlAttr($kind)
             . '" data-params="' . $this->escapeHtmlAttr((string) $paramsAttr) . '">'
             . '<div class="ordo-flow-node-head">'
@@ -226,6 +237,7 @@ class Flow extends Template
             . '<button type="button" class="ordo-flow-delete" title="' . $this->escapeHtmlAttr((string) __('Remove')) . '">&times;</button>'
             . '</div>'
             . '<select class="ordo-flow-type-select">' . $optionsHtml . '</select>'
+            . $delayHtml
             . '<div class="ordo-flow-fields"></div>'
             . '</div>';
     }
@@ -334,7 +346,8 @@ class Flow extends Template
                     'action',
                     (string) __('Action'),
                     (string) $action->getData('params'),
-                    $this->typeOptionsHtml($this->getActionTypes(), $type, $this->getActionTypeLabels())
+                    $this->typeOptionsHtml($this->getActionTypes(), $type, $this->getActionTypeLabels()),
+                    (int) $action->getData('delay_minutes')
                 ),
                 $x,
                 150

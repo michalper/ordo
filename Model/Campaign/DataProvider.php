@@ -53,7 +53,7 @@ class DataProvider extends AbstractDataProvider
 
             $campaignData['triggers'] = $this->loadTriggerRows($campaignId);
             $campaignData['conditions'] = $this->loadChildRows($this->campaignConditionCollectionFactory->create(), $campaignId);
-            $campaignData['actions'] = $this->loadChildRows($this->campaignActionCollectionFactory->create(), $campaignId);
+            $campaignData['actions'] = $this->loadActionRows($campaignId);
 
             $this->loadedData[$campaignId] = $campaignData;
         }
@@ -90,6 +90,39 @@ class DataProvider extends AbstractDataProvider
             $rowData = [
                 'type' => $row->getData('type'),
                 'params_json' => $paramsJson,
+            ];
+
+            if (is_array($decoded)) {
+                $rowData += $decoded;
+            }
+
+            $rows[] = $rowData;
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Same shape as loadChildRows(), plus delay_minutes — the one field CampaignActionInterface
+     * has that CampaignConditionInterface doesn't, so this can't just be a third loadChildRows()
+     * caller.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function loadActionRows(int $campaignId): array
+    {
+        $collection = $this->campaignActionCollectionFactory->create();
+        $collection->addCampaignFilter($campaignId);
+
+        $rows = [];
+        foreach ($collection as $row) {
+            $paramsJson = (string) $row->getData('params');
+            $decoded = json_decode($paramsJson, true);
+
+            $rowData = [
+                'type' => $row->getData('type'),
+                'params_json' => $paramsJson,
+                'delay_minutes' => (int) $row->getData('delay_minutes'),
             ];
 
             if (is_array($decoded)) {

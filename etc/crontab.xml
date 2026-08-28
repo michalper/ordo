@@ -34,5 +34,8 @@
         <job name="ordo_automation_prune_visitor_events" instance="Ordo\Automation\Cron\PruneVisitorEvents" method="execute">
             <schedule>0 4 * * *</schedule>
         </job>
+        <job name="ordo_automation_run_scheduled_campaign_actions" instance="Ordo\Automation\Cron\RunScheduledCampaignActions" method="execute">
+            <schedule>*/5 * * * *</schedule>
+        </job>
     </group>
 </config>

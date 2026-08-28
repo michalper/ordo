@@ -5,7 +5,7 @@ namespace Ordo\Automation\Observer;
 
 use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\Event\ObserverInterface;
-use Ordo\Automation\Model\CampaignDispatcher;
+use Ordo\Automation\Model\Queue\CampaignDispatchPublisher;
 
 /**
  * Listens for the "ordo_customer_tag_added" event CustomerTagManager fires (see its class doc
@@ -14,7 +14,7 @@ use Ordo\Automation\Model\CampaignDispatcher;
 class DispatchTagAddedCampaigns implements ObserverInterface
 {
     public function __construct(
-        private readonly CampaignDispatcher $campaignDispatcher
+        private readonly CampaignDispatchPublisher $campaignDispatchPublisher
     ) {
     }
 
@@ -27,7 +27,7 @@ class DispatchTagAddedCampaigns implements ObserverInterface
             return;
         }
 
-        $this->campaignDispatcher->dispatch('tag_added', [
+        $this->campaignDispatchPublisher->publish('tag_added', [
             'customer_id' => $customerId,
             'tag' => $tag,
         ]);

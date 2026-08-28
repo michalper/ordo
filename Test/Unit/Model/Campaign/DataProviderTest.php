@@ -83,6 +83,7 @@ class DataProviderTest extends TestCase
         $actionRow->method('getData')->willReturnMap([
             ['type', null, 'tag_customer'],
             ['params', null, json_encode(['tag' => 'reordered'])],
+            ['delay_minutes', null, 60],
         ]);
         $actionCollection = $this->createMock(ActionCollection::class);
         $actionCollection->method('addCampaignFilter');
@@ -96,6 +97,7 @@ class DataProviderTest extends TestCase
 
         self::assertSame('vip', $data[1]['conditions'][0]['tag']);
         self::assertSame('reordered', $data[1]['actions'][0]['tag']);
+        self::assertSame(60, $data[1]['actions'][0]['delay_minutes']);
 
         // Second call must hit the cached $loadedData branch, not reload from the collection.
         self::assertSame($data, $provider->getData());

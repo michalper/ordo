@@ -5,6 +5,7 @@ namespace Ordo\Automation\Model;
 
 use Magento\Framework\Api\SearchCriteria\CollectionProcessorInterface;
 use Magento\Framework\Api\SearchCriteriaInterface;
+use Magento\Framework\App\CacheInterface;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Api\CampaignRepositoryInterface;
@@ -21,7 +22,8 @@ class CampaignRepository implements CampaignRepositoryInterface
         private readonly CampaignFactory $campaignFactory,
         private readonly CampaignCollectionFactory $campaignCollectionFactory,
         private readonly CampaignSearchResultsInterfaceFactory $searchResultsFactory,
-        private readonly CollectionProcessorInterface $collectionProcessor
+        private readonly CollectionProcessorInterface $collectionProcessor,
+        private readonly CacheInterface $cache
     ) {
     }
 
@@ -32,6 +34,11 @@ class CampaignRepository implements CampaignRepositoryInterface
         } catch (\Exception $e) {
             throw new CouldNotSaveException(__('Could not save the campaign: %1', $e->getMessage()), $e);
         }
+
+        // A save can change enabled status, or (via its child triggers/conditions/actions)
+        // which trigger events fire it — CampaignDispatcher's cached "campaign ids for trigger
+        // event" lookups must not keep serving a now-stale answer.
+        $this->cache->clean([CampaignDispatcher::CACHE_TAG]);
 
         return $campaign;
     }
@@ -68,6 +75,8 @@ class CampaignRepository implements CampaignRepositoryInterface
         } catch (\Exception $e) {
             throw new CouldNotSaveException(__('Could not delete the campaign: %1', $e->getMessage()), $e);
         }
+
+        $this->cache->clean([CampaignDispatcher::CACHE_TAG]);
 
         return true;
     }

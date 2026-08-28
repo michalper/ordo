@@ -4,12 +4,14 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Controller\Adminhtml\Campaign;
 
 use Magento\Backend\Model\View\Result\Redirect;
+use Magento\Framework\App\CacheInterface;
 use Ordo\Automation\Controller\Adminhtml\Campaign\Save;
 use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\CampaignAction;
 use Ordo\Automation\Model\CampaignActionFactory;
 use Ordo\Automation\Model\CampaignCondition;
 use Ordo\Automation\Model\CampaignConditionFactory;
+use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\CampaignFactory;
 use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\CampaignTriggerFactory;
@@ -38,6 +40,7 @@ class SaveTest extends AbstractAdminActionTestCase
     private CampaignActionFactory $campaignActionFactory;
     private CampaignActionResource $campaignActionResource;
     private ActionCollectionFactory $actionCollectionFactory;
+    private CacheInterface $cache;
 
     protected function setUp(): void
     {
@@ -52,6 +55,7 @@ class SaveTest extends AbstractAdminActionTestCase
         $this->campaignActionFactory = $this->createMock(CampaignActionFactory::class);
         $this->campaignActionResource = $this->createMock(CampaignActionResource::class);
         $this->actionCollectionFactory = $this->createMock(ActionCollectionFactory::class);
+        $this->cache = $this->createMock(CacheInterface::class);
     }
 
     private function makeController(): Save
@@ -68,7 +72,8 @@ class SaveTest extends AbstractAdminActionTestCase
             $this->conditionCollectionFactory,
             $this->campaignActionFactory,
             $this->campaignActionResource,
-            $this->actionCollectionFactory
+            $this->actionCollectionFactory,
+            $this->cache
         );
     }
 
@@ -103,7 +108,7 @@ class SaveTest extends AbstractAdminActionTestCase
             'enabled' => '1',
             'triggers' => ['triggers' => [['trigger_event' => 'customer_registered']]],
             'conditions' => ['conditions' => [['type' => 'has_tag', 'tag' => 'vip', 'params_json' => '']]],
-            'actions' => ['actions' => [['type' => 'tag_customer', 'tag' => 'reordered', 'params_json' => '']]],
+            'actions' => ['actions' => [['type' => 'tag_customer', 'tag' => 'reordered', 'params_json' => '', 'delay_minutes' => '60']]],
         ]);
         $this->request->method('getParam')->with('back')->willReturn(null);
 
@@ -144,10 +149,14 @@ class SaveTest extends AbstractAdminActionTestCase
 
         $action = $this->createMock(CampaignAction::class);
         $action->expects(self::once())->method('setData')->with(self::callback(
-            fn (array $data) => $data['type'] === 'tag_customer' && json_decode($data['params'], true) === ['tag' => 'reordered']
+            fn (array $data) => $data['type'] === 'tag_customer'
+                && json_decode($data['params'], true) === ['tag' => 'reordered']
+                && $data['delay_minutes'] === 60
         ));
         $this->campaignActionFactory->method('create')->willReturn($action);
         $this->campaignActionResource->expects(self::once())->method('save')->with($action);
+
+        $this->cache->expects(self::once())->method('clean')->with([CampaignDispatcher::CACHE_TAG]);
 
         $this->messageManager->expects(self::once())->method('addSuccessMessage');
 
@@ -275,6 +284,41 @@ class SaveTest extends AbstractAdminActionTestCase
         $controller->execute();
     }
 
+    public function testExecuteDefaultsDelayMinutesToZeroWhenAbsent(): void
+    {
+        $controller = $this->makeController();
+        $this->request->method('getPostValue')->willReturn([
+            'actions' => ['actions' => [['type' => 'add_tag', 'tag' => 'vip']]],
+        ]);
+        $this->request->method('getParam')->with('back')->willReturn(null);
+
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(1);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
+
+        $emptyConditionCollection = $this->createMock(ConditionCollection::class);
+        $emptyConditionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
+        $this->conditionCollectionFactory->method('create')->willReturn($emptyConditionCollection);
+
+        $emptyActionCollection = $this->createMock(ActionCollection::class);
+        $emptyActionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
+        $this->actionCollectionFactory->method('create')->willReturn($emptyActionCollection);
+
+        $action = $this->createMock(CampaignAction::class);
+        $action->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => $data['delay_minutes'] === 0
+        ));
+        $this->campaignActionFactory->method('create')->willReturn($action);
+
+        $redirect = $this->createMock(Redirect::class);
+        $redirect->method('setPath')->willReturnSelf();
+        $this->resultRedirectFactory->method('create')->willReturn($redirect);
+
+        $controller->execute();
+    }
+
     public function testExecuteRedirectsToEditWhenBackParamSet(): void
     {
         $controller = $this->makeController();
@@ -311,6 +355,7 @@ class SaveTest extends AbstractAdminActionTestCase
         $this->campaignFactory->method('create')->willReturn($campaign);
         $this->campaignResource->method('save')->willThrowException(new \RuntimeException('db down'));
 
+        $this->cache->expects(self::never())->method('clean');
         $this->messageManager->expects(self::once())->method('addErrorMessage');
 
         $redirect = $this->createMock(Redirect::class);

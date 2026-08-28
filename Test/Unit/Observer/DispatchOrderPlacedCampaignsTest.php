@@ -6,13 +6,13 @@ namespace Ordo\Automation\Test\Unit\Observer;
 use Magento\Framework\Event;
 use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Sales\Model\Order;
-use Ordo\Automation\Model\CampaignDispatcher;
+use Ordo\Automation\Model\Queue\CampaignDispatchPublisher;
 use Ordo\Automation\Observer\DispatchOrderPlacedCampaigns;
 use PHPUnit\Framework\TestCase;
 
 class DispatchOrderPlacedCampaignsTest extends TestCase
 {
-    public function testExecuteDispatchesForOrderWithCustomer(): void
+    public function testExecutePublishesForOrderWithCustomer(): void
     {
         $order = $this->createMock(Order::class);
         $order->method('getCustomerId')->willReturn(42);
@@ -24,14 +24,14 @@ class DispatchOrderPlacedCampaignsTest extends TestCase
         $observer = $this->createMock(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);
 
-        $dispatcher = $this->createMock(CampaignDispatcher::class);
-        $dispatcher->expects(self::once())->method('dispatch')->with('order_placed', [
+        $publisher = $this->createMock(CampaignDispatchPublisher::class);
+        $publisher->expects(self::once())->method('publish')->with('order_placed', [
             'customer_id' => 42,
             'order_total' => 99.5,
             'order_increment_id' => '000000123',
         ]);
 
-        (new DispatchOrderPlacedCampaigns($dispatcher))->execute($observer);
+        (new DispatchOrderPlacedCampaigns($publisher))->execute($observer);
     }
 
     public function testExecuteDoesNothingWhenOrderHasNoCustomer(): void
@@ -44,9 +44,9 @@ class DispatchOrderPlacedCampaignsTest extends TestCase
         $observer = $this->createMock(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);
 
-        $dispatcher = $this->createMock(CampaignDispatcher::class);
-        $dispatcher->expects(self::never())->method('dispatch');
+        $publisher = $this->createMock(CampaignDispatchPublisher::class);
+        $publisher->expects(self::never())->method('publish');
 
-        (new DispatchOrderPlacedCampaigns($dispatcher))->execute($observer);
+        (new DispatchOrderPlacedCampaigns($publisher))->execute($observer);
     }
 }

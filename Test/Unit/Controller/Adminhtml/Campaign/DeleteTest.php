@@ -4,8 +4,10 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Controller\Adminhtml\Campaign;
 
 use Magento\Backend\Model\View\Result\Redirect;
+use Magento\Framework\App\CacheInterface;
 use Ordo\Automation\Controller\Adminhtml\Campaign\Delete;
 use Ordo\Automation\Model\Campaign;
+use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\CampaignFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign as CampaignResource;
 use Ordo\Automation\Test\Unit\Controller\AbstractAdminActionTestCase;
@@ -25,8 +27,9 @@ class DeleteTest extends AbstractAdminActionTestCase
 
         $campaignFactory = $this->createMock(CampaignFactory::class);
         $campaignResource = $this->createMock(CampaignResource::class);
+        $cache = $this->createMock(CacheInterface::class);
 
-        $controller = new Delete($context, $campaignFactory, $campaignResource);
+        $controller = new Delete($context, $campaignFactory, $campaignResource, $cache);
         self::assertSame($redirect, $controller->execute());
     }
 
@@ -48,7 +51,10 @@ class DeleteTest extends AbstractAdminActionTestCase
         $campaignResource = $this->createMock(CampaignResource::class);
         $campaignResource->expects(self::once())->method('delete')->with($campaign);
 
-        $controller = new Delete($context, $campaignFactory, $campaignResource);
+        $cache = $this->createMock(CacheInterface::class);
+        $cache->expects(self::once())->method('clean')->with([CampaignDispatcher::CACHE_TAG]);
+
+        $controller = new Delete($context, $campaignFactory, $campaignResource, $cache);
         self::assertSame($redirect, $controller->execute());
     }
 
@@ -70,7 +76,10 @@ class DeleteTest extends AbstractAdminActionTestCase
         $campaignResource = $this->createMock(CampaignResource::class);
         $campaignResource->method('delete')->willThrowException(new \RuntimeException('locked'));
 
-        $controller = new Delete($context, $campaignFactory, $campaignResource);
+        $cache = $this->createMock(CacheInterface::class);
+        $cache->expects(self::never())->method('clean');
+
+        $controller = new Delete($context, $campaignFactory, $campaignResource, $cache);
         self::assertSame($redirect, $controller->execute());
     }
 }

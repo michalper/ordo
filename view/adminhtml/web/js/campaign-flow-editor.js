@@ -169,7 +169,16 @@ define([
                         var selectedAttr = type === presetType ? ' selected="selected"' : '';
                         return '<option value="' + type + '"' + selectedAttr + '>' +
                             escapeHtml(typeLabels[type] || type) + '</option>';
-                    }).join('');
+                    }).join(''),
+                    // delay_minutes only applies to action nodes, and only ever starts at 0 for
+                    // a freshly-dropped node — matches the markup Flow::editableNodeHtml() (PHP)
+                    // renders for an existing action loaded from the database, so collectRows()
+                    // below can read data-field="delay_minutes" the same way regardless of
+                    // whether the node came from the server or the palette.
+                    delayHtml = kind === 'action'
+                        ? '<label class="ordo-flow-field-label">Delay (minutes)</label>' +
+                            '<input type="text" class="ordo-flow-field-input" data-field="delay_minutes" value="0">'
+                        : '';
 
                 // `data-kind` (not a class) is what collectRows() below matches on — Drawflow
                 // already puts the 'ordo-flow-condition'/'ordo-flow-action'/'ordo-flow-trigger'
@@ -181,6 +190,7 @@ define([
                     '<div class="ordo-flow-node-head"><span>' + label + '</span>' +
                     '<button type="button" class="ordo-flow-delete" title="Remove">&times;</button></div>' +
                     '<select class="ordo-flow-type-select">' + optionsHtml + '</select>' +
+                    delayHtml +
                     (kind === 'trigger' ? '' : '<div class="ordo-flow-fields"></div>') +
                     '</div>';
             }

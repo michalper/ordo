@@ -5,8 +5,10 @@ namespace Ordo\Automation\Controller\Adminhtml\Campaign;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\App\CacheInterface;
 use Ordo\Automation\Model\CampaignActionFactory;
 use Ordo\Automation\Model\CampaignConditionFactory;
+use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\CampaignFactory;
 use Ordo\Automation\Model\CampaignTriggerFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign as CampaignResource;
@@ -37,7 +39,8 @@ class Save extends AbstractCampaignAction implements HttpPostActionInterface
         private readonly CampaignConditionCollectionFactory $campaignConditionCollectionFactory,
         private readonly CampaignActionFactory $campaignActionFactory,
         private readonly CampaignActionResource $campaignActionResource,
-        private readonly CampaignActionCollectionFactory $campaignActionCollectionFactory
+        private readonly CampaignActionCollectionFactory $campaignActionCollectionFactory,
+        private readonly CacheInterface $cache
     ) {
         parent::__construct($context);
     }
@@ -69,6 +72,12 @@ class Save extends AbstractCampaignAction implements HttpPostActionInterface
                 (array) ($data['conditions']['conditions'] ?? []),
                 (array) ($data['actions']['actions'] ?? [])
             );
+
+            // This is the admin UI's actual write path for triggers/enabled status — it saves
+            // child rows via the resource models directly, not CampaignRepository — so
+            // CampaignDispatcher's cached "campaign ids for trigger event" lookups need
+            // invalidating here too, or a just-added trigger silently won't fire until expiry.
+            $this->cache->clean([CampaignDispatcher::CACHE_TAG]);
 
             $this->messageManager->addSuccessMessage(__('The campaign has been saved.'));
 
@@ -160,6 +169,7 @@ class Save extends AbstractCampaignAction implements HttpPostActionInterface
                 'type' => (string) $row['type'],
                 'params' => $this->normalizeRowParams($row),
                 'sort_order' => $sortOrder++,
+                'delay_minutes' => max(0, (int) ($row['delay_minutes'] ?? 0)),
             ]);
             $this->campaignActionResource->save($action);
         }
