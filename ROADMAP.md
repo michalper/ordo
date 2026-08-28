@@ -57,6 +57,62 @@ This file tracks what's shipped (for the implementation history/context) and wha
 
 **Fixed:** `tracker.js` used to load sitewide regardless of the "tracking enabled" config toggle (the endpoint no-op'd, but the JS still made a wasted network call every page load). Now gated by `Block\Frontend\TrackerViewModel` — the `<script>` tag itself is only rendered when `Helper\Config::isTrackingEnabled()` is true, verified live against a real page.
 
+## Phase 7 — dispatch performance at scale
+
+An audit found the campaign engine worked correctly but would not survive real traffic:
+`CampaignDispatcher::dispatch()` ran inline inside the triggering request (checkout,
+registration), issued a fresh DB query per matched campaign for its conditions and its actions
+(N+1), re-queried "which campaigns are enabled for this trigger" from scratch on every single
+event with no caching, and the scheduled-action cron loaded every past-due row into memory at
+once with no batch limit. All four fixed:
+
+- **Async dispatch via Magento's own message queue.** Trigger observers
+  (`DispatchOrderPlacedCampaigns`/`DispatchCustomerRegisteredCampaigns`/`DispatchTagAddedCampaigns`)
+  no longer call `CampaignDispatcher::dispatch()` directly — they publish onto topic
+  `ordo.automation.campaign.dispatch` (`Model\Queue\CampaignDispatchPublisher`), and
+  `Model\Queue\CampaignDispatchConsumer` does the actual dispatch off the request thread.
+  `etc/{queue,queue_consumer,queue_publisher,queue_topology,communication}.xml` model the
+  topology on Magento's own `Magento_MediaGalleryRenditions` pattern (no RabbitMQ required — the
+  default DB-driver queue works, see `AGENTS.md` for the `cron_consumers_runner` config needed to
+  run the consumer automatically).
+- **N+1 eliminated.** Conditions and actions for every matched campaign are loaded in one query
+  each (`addCampaignIdsFilter`, grouped by campaign_id in PHP) instead of one query per campaign.
+- **Trigger→campaign lookup is cached** (`CampaignDispatcher::CACHE_TAG`), invalidated on any
+  campaign/trigger save or delete (`CampaignRepository`, `CampaignTriggerRepository`,
+  `Controller\Adminhtml\Campaign\Save`/`Delete` — the admin form writes via resource models
+  directly, not the repository, so it needed its own invalidation call too).
+- **Scheduled-action cron now processes in fixed-size batches** (500/batch, capped at 20 batches
+  per run) instead of loading every due row into memory at once; logs a warning rather than
+  silently truncating if the cap is hit.
+
+**A real, pre-existing bug this work surfaced (not introduced by it):** `etc/db_schema.xml` had
+unescaped apostrophes in four table comments (`ordo_campaign`, `ordo_offer`,
+`ordo_order_approval`, `ordo_campaign_scheduled_action`), breaking the generated
+`COMMENT='...'` SQL and silently failing `setup:upgrade`'s schema step on every environment —
+which in turn meant the new queue topology above could never actually register in the database.
+Fixed as part of landing this phase; `setup:upgrade` completes cleanly now.
+
+**End-to-end verification added, not just unit tests with everything mocked** — see Phase 6
+below for the full breakdown, but specifically for this phase: `Test/Integration/` (real DI,
+real dev database, no rollback) proves the dispatch engine itself (every condition/action type,
+delayed-chain cron resume, multi-trigger, the cache and its invalidation) AND separately proves
+the queue wiring end to end — a real Magento event fired through `EventManagerInterface`, through
+the real observer, onto the real DB queue, consumed by running `bin/magento
+queue:consumers:start` as a real subprocess, resulting in a real database side effect. 13/13
+integration tests passing, run twice to rule out ordering flakiness.
+
+**Not yet done:**
+- `AdminCampaignScenarioEndToEndTest.xml` (MFTF) — written (real admin scenario build → real
+  storefront checkout → real queue consumer run → real coupon assertion in the admin grid) but
+  **not yet executed**. This environment's Selenium container needs to be brought back up and
+  `vendor/bin/mftf generate:tests` run before it can prove anything; until then this is an
+  unverified test file, not a verified one. Same for the sibling
+  `AdminCreateCampaignWithConditionsAndActionsTest.xml` (condition/action row persistence,
+  extending the existing multi-trigger MFTF pattern).
+- No load/soak test exists yet to put a number on "how many concurrent dispatches" — the fixes
+  above address the *shape* of the bottleneck (N+1, synchronous blocking, unbounded cron), not a
+  measured throughput target.
+
 ## Phase 6 — test coverage & localization gap
 
 The standards in README's "Quality & testing standards" apply from now on. Honest current state, not a rounded-up claim:
@@ -76,9 +132,11 @@ The standards in README's "Quality & testing standards" apply from now on. Hones
 Not failures — not attempted, or explicitly deferred:
 - A measured code coverage percentage for the unit suite since the free-gift/credit-limit work (see Phase 6 above).
 - MFTF scenario execution for order approval, tracking, and free gift (no MFTF runtime currently stood up in this pass).
+- MFTF scenario execution for the new `AdminCampaignScenarioEndToEndTest.xml` and `AdminCreateCampaignWithConditionsAndActionsTest.xml` (Phase 7 — written, Selenium not currently up).
 - Dashboard stats per fixed trigger (Phase 4).
 - Visual identity system (Phase 4).
 - `Test/Api/` coverage for the credit-limit endpoints (Phase 6).
+- A measured throughput/load number for the Phase 7 dispatch performance work — the architectural bottlenecks are fixed, but nothing has put a concurrent-dispatch number on it yet.
 
 ## Gaps vs. a full-market MA platform (iPresso-class enterprise features)
 

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCreateCampaignWithConditionsAndActionsTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Campaign engine"/>
+            <title value="Admin can add a condition and an action row and both persist"/>
+            <description value="Sibling to AdminCreateMultiTriggerCampaignTest, which only covers trigger rows — this covers the other two dynamicRows (conditions, actions) the Flow canvas renders, since a scenario is only real once all three kinds of row round-trip through the database."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+
+        <fillField selector="[name='name']" userInput="Test Condition Action Campaign" stepKey="fillName"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButton"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRow"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRow"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEvent"/>
+
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRow"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRow"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="selectConditionType"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][amount]']" stepKey="waitForAmountField"/>
+        <fillField selector="[name='conditions[conditions][0][amount]']" userInput="100" stepKey="fillConditionAmount"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRow"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRow"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="add_tag" stepKey="selectActionType"/>
+        <waitForElementVisible selector="[name='actions[actions][0][tag]']" stepKey="waitForTagField"/>
+        <fillField selector="[name='actions[actions][0][tag]']" userInput="vip" stepKey="fillActionTag"/>
+        <fillField selector="[name='actions[actions][0][delay_minutes]']" userInput="0" stepKey="fillDelayMinutes"/>
+
+        <!-- "enabled" renders as a Magento_Ui single-checkbox styled as a toggle switch — same
+             workaround as AdminCreateMultiTriggerCampaignTest (see that test for why the label
+             is clicked instead of the input). -->
+        <click selector="//input[@name='enabled']/following-sibling::label" stepKey="enableCampaign"/>
+
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+
+        <!-- Reload so this proves the DB round trip, not just in-place form state — same
+             reasoning as AdminCreateMultiTriggerCampaignTest's trigger assertion, applied here
+             to the condition and action nodes the Flow canvas renders alongside triggers. -->
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
+        <amOnPage url="admin/ordo/campaign/edit/entity_id/{$grabCampaignId}/" stepKey="goToEditPage"/>
+        <waitForPageLoad stepKey="waitForEditPage"/>
+        <waitForElementVisible selector=".ordo-flow-canvas" stepKey="waitForFlowCanvas"/>
+
+        <seeElementInDOM selector=".ordo-flow-node[data-kind='trigger'] select.ordo-flow-type-select option[value='order_placed'][selected]" stepKey="seeTriggerPersisted"/>
+        <seeElementInDOM selector=".ordo-flow-node[data-kind='condition'] select.ordo-flow-type-select option[value='order_total_gte'][selected]" stepKey="seeConditionTypePersisted"/>
+        <seeElementInDOM selector=".ordo-flow-node[data-kind='condition'] input[data-field='amount']" stepKey="seeConditionAmountField"/>
+        <grabValueFrom selector=".ordo-flow-node[data-kind='condition'] input[data-field='amount']" stepKey="grabConditionAmount"/>
+        <assertEquals stepKey="assertConditionAmountValue">
+            <expectedResult type="string">100</expectedResult>
+            <actualResult type="variable">grabConditionAmount</actualResult>
+        </assertEquals>
+
+        <seeElementInDOM selector=".ordo-flow-node[data-kind='action'] select.ordo-flow-type-select option[value='add_tag'][selected]" stepKey="seeActionTypePersisted"/>
+        <grabValueFrom selector=".ordo-flow-node[data-kind='action'] input[data-field='tag']" stepKey="grabActionTag"/>
+        <assertEquals stepKey="assertActionTagValue">
+            <expectedResult type="string">vip</expectedResult>
+            <actualResult type="variable">grabActionTag</actualResult>
+        </assertEquals>
+    </test>
+</tests>

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCampaignScenarioEndToEndTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Campaign engine"/>
+            <title value="A real order triggers a real campaign that generates a real coupon"/>
+            <description value="The one test in this module that proves the whole thing end to end with no shortcuts: build a scenario in the admin UI exactly like a real merchant would (trigger=order placed, condition=order total, action=generate coupon), place a REAL order through storefront checkout as a REAL customer, run the real async queue consumer (this install has no RabbitMQ — see AGENTS.md — so the DB-queue consumer is started directly), and assert the coupon that only CampaignDispatcher could have created actually exists in the admin coupon grid. Everything else in this module's test suite (Test/Unit, Test/Integration) either mocks collaborators or bypasses the UI/checkout — this is the only test where a human clicking through the admin and storefront would see the exact same thing."/>
+            <severity value="CRITICAL"/>
+            <group value="ordo_automation"/>
+        </annotations>
+        <before>
+            <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <createData entity="ApiSalesRule" stepKey="createRule"/>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <deleteData createDataKey="createRule" stepKey="deleteRule"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: build the scenario in the admin exactly like AdminCreateCampaignWithConditionsAndActionsTest,
+             but with the action that has a real, externally-visible side effect (generate_coupon has an
+             admin grid; add_tag/send_email don't — see AGENTS.md notes on why coupons were chosen here). -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <fillField selector="[name='name']" userInput="E2E Order Coupon Campaign" stepKey="fillName"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButton"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRow"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRow"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEvent"/>
+
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRow"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRow"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="selectConditionType"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][amount]']" stepKey="waitForAmountField"/>
+        <!-- SimpleProduct2 (Magento_Catalog fixture) is priced at 123.00 — 50 leaves headroom
+             for tax/shipping rounding while still safely below the order total. -->
+        <fillField selector="[name='conditions[conditions][0][amount]']" userInput="50" stepKey="fillConditionAmount"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRow"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRow"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="generate_coupon" stepKey="selectActionType"/>
+        <waitForElementVisible selector="[name='actions[actions][0][rule_id]']" stepKey="waitForRuleIdField"/>
+        <fillField selector="[name='actions[actions][0][rule_id]']" userInput="$createRule.rule_id$" stepKey="fillRuleId"/>
+        <fillField selector="[name='actions[actions][0][prefix]']" userInput="E2ETEST" stepKey="fillPrefix"/>
+        <fillField selector="[name='actions[actions][0][delay_minutes]']" userInput="0" stepKey="fillDelayMinutes"/>
+
+        <click selector="//input[@name='enabled']/following-sibling::label" stepKey="enableCampaign"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+
+        <!-- Step 2: a REAL order, through REAL storefront checkout, as the REAL customer created
+             above — not a synthetic dispatch() call like Test/Integration/CampaignDispatchScenarioTest. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <!-- Step 3: this install has no RabbitMQ (DB queue driver only — see AGENTS.md), so
+             nothing consumes the message DispatchOrderPlacedCampaigns just published until a
+             consumer actually runs. In production that's cron_consumers_runner; here, run it
+             directly, exactly once, for exactly this module's consumer. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=1" stepKey="runCampaignDispatchConsumer"/>
+
+        <!-- Step 4: the only assertion in this whole module's test suite that checks a REAL,
+             merchant-visible side effect — a coupon code that only CampaignDispatcher's
+             generate_coupon action, run via the full trigger->condition->action chain, could
+             have produced. -->
+        <amOnPage url="admin/sales_rule/promo_quote/edit/id/$createRule.rule_id$/" stepKey="goToRuleEditPage"/>
+        <waitForPageLoad stepKey="waitForRuleEditPage"/>
+        <conditionalClick selector="{{AdminCartPriceRulesFormSection.manageCouponCodesHeader}}"
+                           dependentSelector="#couponCodesGrid_table" visible="false" stepKey="openCouponCodesTab"/>
+        <waitForElementVisible selector="#couponCodesGrid_table" stepKey="waitForCouponCodesGrid"/>
+        <see selector="#couponCodesGrid_table" userInput="E2ETEST-" stepKey="seeGeneratedCouponInGrid"/>
+    </test>
+</tests>
