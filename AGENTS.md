@@ -85,7 +85,41 @@ Wymaga działającego `app/etc/env.php` (baza, cache) tego środowiska — to ni
 - `AdminCreateCampaignWithConditionsAndActionsTest.xml` — to samo dla warunków i akcji (dotąd nieotestowane w MFTF).
 - `AdminCampaignScenarioEndToEndTest.xml` — **jedyny test w całym module, który dowodzi tego z pytania "czy to w ogóle ma sens i działa" bez żadnego skrótu**: buduje scenariusz w adminie (trigger=`order_placed`, warunek=`order_total_gte`, akcja=`generate_coupon` — wybrana bo ma realne, widoczne UI w adminie; `add_tag`/`send_email` nie mają żadnego grida), realny klient robi realny checkout na storefroncie, `queue:consumers:start ordo.automation.campaign.dispatch --max-messages=1` przetwarza wiadomość (znów: brak RabbitMQ w tym środowisku), i na końcu sprawdza w Marketing → Cart Price Rules → Manage Coupon Codes, że kupon **faktycznie tam jest**.
 
-Uruchomienie (wymaga działającego Selenium — `docker compose up -d` w `magento-ordo-test` uruchamia też `ordo_test_selenium`, ale bywa zatrzymany po restarcie hosta, sprawdź `docker compose ps` najpierw):
+### Uruchomienie MFTF w tym środowisku — realne pułapki, wszystkie napotkane i naprawione
+
+To środowisko **nie ma prawdziwego webservera** — `docker-compose.yml`'s `php` service ma `command: sleep infinity`, więc ktoś (my) musi ręcznie odpalić wbudowany serwer PHP przed każdym `mftf run:test`. Napotkane i naprawione pułapki, w kolejności odkrycia:
+
+1. **Brak serwera w ogóle** → `curl` do `localhost:8080` z kontenera php dostawał "connection refused". Trzeba go odpalić ręcznie:
+   ```bash
+   docker compose exec -d -e PHP_CLI_SERVER_WORKERS=8 php sh -c "cd /var/www/magento/dev/tests/acceptance/utils && exec php -S 0.0.0.0:8080 -t /var/www/magento/pub /tmp/router.php"
+   ```
+   **`PHP_CLI_SERVER_WORKERS=8` jest obowiązkowe** — bez tego wbudowany serwer PHP obsługuje jeden request na raz, a Selenium/Chrome robi wiele równoległych requestów (JS/CSS/AJAX) — bez workerów strona admina renderuje się z urwanymi assetami (`Uncaught SyntaxError`, RequireJS `Script error`) albo zawiesza się na 60s timeout.
+   **Sprawdź, że port faktycznie się zwolnił przed restartem** — `docker compose exec` nie ubija starego procesu automatycznie; jeśli `php -S` już nasłuchuje na 8080, kolejne uruchomienie po prostu cicho nie zbinduje się i STARY proces (z inną konfiguracją) dalej obsługuje ruch, co wygląda jak "moja zmiana nie zadziałała". Zabij ręcznie przez skan `/proc/[0-9]*/cmdline` (brak `pgrep`/`ps` w tym obrazie) zanim wystartujesz nowy.
+2. **Statyczne assety generowane w locie** (`app mode: default`) pogłębiają problem #1 nawet z workerami — każdy request do niewdrożonego pliku w `pub/static/` triggeruje LESS/JS kompilację. Wdróż raz na start środowiska:
+   ```bash
+   bin/magento setup:static-content:deploy -f en_US -a adminhtml
+   bin/magento setup:static-content:deploy -f en_US -a frontend
+   ```
+3. **`<magentoCLI>` w testach MFTF zwracał HTTP 404** — `.env` nie miał `MAGENTO_CLI_COMMAND_PATH`/`MAGENTO_CLI_COMMAND_PARAMETER` w ogóle (MFTF bez nich POSTuje na pusty base URL). Dodane do `dev/tests/acceptance/.env`:
+   ```
+   MAGENTO_CLI_COMMAND_PATH=cli-bridge/a/b/command.php
+   MAGENTO_CLI_COMMAND_PARAMETER=command
+   ```
+   **Ta ścieżka MUSI być dokładnie 3 katalogi głębokości pod `pub/`** — `dev/tests/acceptance/utils/command.php` liczy `bin/magento` jako `../../../../bin/magento` (4×`../`) **względem CWD, które wbudowany serwer PHP ustawia na `docroot + katalog żądania URL`**, nie względem rzeczywistej lokalizacji pliku (nawet jeśli plik jest symlinkiem, nawet jeśli serwer wystartował z innym CWD). Z docroot=`pub/`, 3 poziomy zagnieżdżenia + 4×`../` trafia dokładnie w katalog główny Magento. Symlink trzeba założyć ręcznie (nie jest w gicie, bo żyje w `pub/` środowiska testowego, nie w repo modułu):
+   ```bash
+   mkdir -p /var/www/magento/pub/cli-bridge/a/b
+   ln -sf /var/www/magento/dev/tests/acceptance/utils/command.php /var/www/magento/pub/cli-bridge/a/b/command.php
+   ```
+4. **Indeksy "Update by Schedule" ukrywają świeżo utworzone dane testowe** — produkt stworzony przez `<createData entity="SimpleProduct2">` nie jest "salable"/dodawalny do koszyka, dopóki indeksy stocku/ceny się nie przeliczą. Zamiast wymuszać `indexer:reindex` w każdym teście (co dodatkowo failuje cały krok, jeśli akurat OpenSearch nie żyje, bo `catalogsearch_fulltext` kaskaduje), ustaw raz globalnie:
+   ```bash
+   bin/magento indexer:set-mode realtime cataloginventory_stock catalog_product_price catalog_product_attribute catalog_category_product catalog_product_category
+   ```
+   (celowo BEZ `catalogsearch_fulltext` — ten test go nie potrzebuje, a wymaga żywego OpenSearcha).
+
+**Znany, nierozwiązany problem: losowe `tab crashed` / `Operation timed out` w Chrome/Selenium.** Ten host ma zainstalowanych mnóstwo innych, niezwiązanych projektów Docker (widoczne w `docker stats` — jeden kontener sam zajmował 66% limitu pamięci Dockera), przez co `db`/`opensearch` regularnie padają z OOM (exit 137), a sesje Chrome w Selenium crashują w losowym, nieprzewidywalnym momencie testu (raz na pierwszym kroku, raz tuż przed metą). To **nie jest błąd w kodzie modułu ani w samym teście** — `AdminCreateMultiTriggerCampaignTest` i `AdminCreateCampaignWithConditionsAndActionsTest` (czysto adminowe, krótsze) przechodzą stabilnie po tych poprawkach; `AdminCampaignScenarioEndToEndTest` (długi, prawdziwy checkout) dochodził w kolejnych próbach coraz dalej (aż do wyboru akcji `generate_coupon`) bez ani jednego prawdziwego błędu logicznego, ale nie ukończył się w pełni z powodu wyczerpania pamięci hosta. Żeby faktycznie dokończyć weryfikację tego testu: albo zwolnij pamięć hosta (zatrzymaj inne, niepotrzebne w danej chwili projekty Docker), albo uruchom go w mniej obciążonym środowisku/CI.
+
+Uruchomienie:
 ```bash
+docker compose exec php vendor/bin/mftf generate:tests AdminCampaignScenarioEndToEndTest AdminCreateCampaignWithConditionsAndActionsTest AdminCreateMultiTriggerCampaignTest
 docker compose exec php vendor/bin/mftf run:test AdminCampaignScenarioEndToEndTest AdminCreateCampaignWithConditionsAndActionsTest AdminCreateMultiTriggerCampaignTest
 ```

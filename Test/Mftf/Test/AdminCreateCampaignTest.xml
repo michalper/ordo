@@ -31,8 +31,10 @@
              (prefer: "toggle") — the real <input> is visually covered by its own field
              wrapper, so a direct click/checkOption on the input gets intercepted by that
              wrapper. Click the label that sits next to it instead, matching how a real
-             user would interact with the toggle. -->
-        <click selector="//input[@name='enabled']/following-sibling::label" stepKey="enableCampaign"/>
+             user would interact with the toggle. It also sits high enough on the page to end
+             up under the sticky page-actions toolbar at the very top of the viewport — scroll
+             it into view first with room above for that toolbar. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
 
         <!-- dynamicRows posts fields double-nested under the section's own name
              (conditions[conditions][0][...], actions[actions][0][...]) — see

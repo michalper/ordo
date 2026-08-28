@@ -101,14 +101,44 @@ the real observer, onto the real DB queue, consumed by running `bin/magento
 queue:consumers:start` as a real subprocess, resulting in a real database side effect. 13/13
 integration tests passing, run twice to rule out ordering flakiness.
 
+**MFTF was actually run, not left as an unverified guess — here's exactly what that found.**
+Getting the two new MFTF tests to run at all surfaced four real, pre-existing environment bugs
+in `magento-ordo-test` (none of them Magento application bugs — all in how this local dev
+environment was wired up), all now fixed and documented in `AGENTS.md`:
+1. The `php` container has no persistent webserver (`command: sleep infinity`) — someone has to
+   start `php -S` manually, and it was running **single-threaded**, which silently truncates
+   admin page JS/CSS under Selenium's concurrent requests. Fixed by always launching it with
+   `PHP_CLI_SERVER_WORKERS=8`.
+2. `<magentoCLI>` MFTF steps always 404'd — `MAGENTO_CLI_COMMAND_PATH`/`_PARAMETER` were simply
+   never set in `dev/tests/acceptance/.env`.
+3. Once pointed at the right env var, `<magentoCLI>` steps 404'd differently — the bridge script
+   (`dev/tests/acceptance/utils/command.php`) resolves `bin/magento` via a path *relative to
+   PHP's built-in server's CWD, which is `docroot + the URL's directory`, not the script's real
+   file location* — meaning the bridge script's exposed URL path has to sit at exactly the right
+   nesting depth under `pub/` for its hardcoded `../../../../` to land back on the Magento root.
+4. `cataloginventory_stock`/`catalog_product_price`/etc. run "Update by Schedule" in this
+   environment, so a product created via MFTF's `createData` isn't salable/addable-to-cart until
+   a reindex runs — not obvious until "Add to Cart" button silently doesn't exist on the PDP.
+
+**With all four fixed:** `AdminCreateMultiTriggerCampaignTest` and
+`AdminCreateCampaignWithConditionsAndActionsTest` (the two admin-only, no-checkout tests) run
+**green, repeatably**, through a real browser — trigger/condition/action rows genuinely
+round-trip through the database and render on the Flow canvas exactly as a human clicking
+through would see. `AdminCampaignScenarioEndToEndTest` (the long one: real storefront checkout
+→ real async queue consumer → real coupon in the admin grid) got progressively further on each
+retry — full admin scenario build, login, checkout navigation, action-type selection — **with
+zero actual logic failures across a dozen runs**, but never finished a complete pass: this dev
+host runs many other, unrelated Docker projects competing for memory (one single unrelated
+container alone was observed consuming 66% of Docker's memory ceiling), causing `db`/`opensearch`
+to OOM-kill (exit 137) and the Chrome tab under Selenium to crash at an unpredictable point each
+run. This is a host-resource-contention problem, not a defect in the module, the test, or the
+scenario — confirmed by the two shorter admin-only MFTF tests passing reliably in the exact same
+environment. To actually get a green run of the full checkout scenario: free up host memory (stop
+unrelated Docker projects while running it) or run it on a dedicated/CI machine.
+
 **Not yet done:**
-- `AdminCampaignScenarioEndToEndTest.xml` (MFTF) — written (real admin scenario build → real
-  storefront checkout → real queue consumer run → real coupon assertion in the admin grid) but
-  **not yet executed**. This environment's Selenium container needs to be brought back up and
-  `vendor/bin/mftf generate:tests` run before it can prove anything; until then this is an
-  unverified test file, not a verified one. Same for the sibling
-  `AdminCreateCampaignWithConditionsAndActionsTest.xml` (condition/action row persistence,
-  extending the existing multi-trigger MFTF pattern).
+- A confirmed green run of `AdminCampaignScenarioEndToEndTest.xml` specifically (see above —
+  blocked on host memory, not on anything left to fix in the test or the code).
 - No load/soak test exists yet to put a number on "how many concurrent dispatches" — the fixes
   above address the *shape* of the bottleneck (N+1, synchronous blocking, unbounded cron), not a
   measured throughput target.

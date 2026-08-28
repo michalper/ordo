@@ -14,6 +14,15 @@
             <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
             <createData entity="SimpleProduct2" stepKey="createProduct"/>
             <createData entity="ApiSalesRule" stepKey="createRule"/>
+            <!-- Requires cataloginventory_stock/catalog_product_price/catalog_product_attribute/
+                 catalog_category_product/catalog_product_category set to "Update on Save" mode
+                 (bin/magento indexer:set-mode realtime ...) in this environment — on the default
+                 "Update by Schedule" mode, a product created via the API (createData, above)
+                 doesn't become salable/addable-to-cart on the storefront until a cron-driven
+                 reindex runs, which a test shouldn't have to assume already happened. Left as
+                 "Update by Schedule" specifically for catalogsearch_fulltext, which this test
+                 doesn't depend on and which needs a search engine (OpenSearch) that isn't always
+                 up in this environment. -->
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
@@ -51,7 +60,8 @@
         <fillField selector="[name='actions[actions][0][prefix]']" userInput="E2ETEST" stepKey="fillPrefix"/>
         <fillField selector="[name='actions[actions][0][delay_minutes]']" userInput="0" stepKey="fillDelayMinutes"/>
 
-        <click selector="//input[@name='enabled']/following-sibling::label" stepKey="enableCampaign"/>
+        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
         <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
         <waitForPageLoad stepKey="waitForSave"/>
         <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>

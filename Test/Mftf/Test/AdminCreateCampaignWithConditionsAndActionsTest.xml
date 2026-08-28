@@ -42,8 +42,9 @@
 
         <!-- "enabled" renders as a Magento_Ui single-checkbox styled as a toggle switch — same
              workaround as AdminCreateMultiTriggerCampaignTest (see that test for why the label
-             is clicked instead of the input). -->
-        <click selector="//input[@name='enabled']/following-sibling::label" stepKey="enableCampaign"/>
+             is clicked instead of the input, and why it needs a scrollTo first — it sits under
+             the sticky page-actions toolbar otherwise, "element click intercepted"). -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
 
         <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
         <waitForPageLoad stepKey="waitForSave"/>

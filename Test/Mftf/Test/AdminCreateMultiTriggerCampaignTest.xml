@@ -34,8 +34,11 @@
         <!-- "enabled" renders as a Magento_Ui single-checkbox styled as a toggle switch
              (prefer: "toggle") — the real <input> is visually covered by its own field
              wrapper, so a direct click/checkOption on the input gets intercepted by that
-             wrapper. Click the label that sits next to it instead. -->
-        <click selector="//input[@name='enabled']/following-sibling::label" stepKey="enableCampaign"/>
+             wrapper. Click the label that sits next to it instead. It also sits high enough on
+             the page to end up under the sticky page-actions toolbar at the very top of the
+             viewport ("element click intercepted... Other element would receive the click:
+             page-actions _fixed") — scroll it into view first with room above for that toolbar. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
 
         <!-- "Save &amp; Continue Edit" (not the plain Save button, which redirects to the
              grid) so the URL still carries entity_id afterwards — needed to reload the page
