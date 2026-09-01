@@ -15,9 +15,9 @@ class ConfigTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->scopeConfig = $this->createMock(ScopeConfigInterface::class);
+        $this->scopeConfig = $this->createStub(ScopeConfigInterface::class);
 
-        $context = $this->createMock(Context::class);
+        $context = $this->createStub(Context::class);
         $context->method('getScopeConfig')->willReturn($this->scopeConfig);
 
         $this->config = new Config($context);

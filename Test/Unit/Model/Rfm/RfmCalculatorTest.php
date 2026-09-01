@@ -14,7 +14,7 @@ class RfmCalculatorTest extends TestCase
 {
     private function makeSelect(): Select
     {
-        $select = $this->createMock(Select::class);
+        $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
 
@@ -23,11 +23,11 @@ class RfmCalculatorTest extends TestCase
 
     private function makeCalculator(AdapterInterface $connection, int $now = 1700000000): RfmCalculator
     {
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        $dateTime = $this->createMock(DateTime::class);
+        $dateTime = $this->createStub(DateTime::class);
         $dateTime->method('gmtTimestamp')->willReturn($now);
 
         return new RfmCalculator($resourceConnection, $dateTime);
@@ -38,7 +38,7 @@ class RfmCalculatorTest extends TestCase
         $now = 1700000000;
         $tenDaysAgo = date('Y-m-d H:i:s', $now - 10 * 86400);
 
-        $connection = $this->createMock(AdapterInterface::class);
+        $connection = $this->createStub(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
         $connection->method('fetchOne')->willReturn($tenDaysAgo);
 
@@ -49,7 +49,7 @@ class RfmCalculatorTest extends TestCase
 
     public function testGetRecencyDaysReturnsNullWhenCustomerHasNoOrders(): void
     {
-        $connection = $this->createMock(AdapterInterface::class);
+        $connection = $this->createStub(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
         $connection->method('fetchOne')->willReturn(false);
 
@@ -60,7 +60,7 @@ class RfmCalculatorTest extends TestCase
 
     public function testGetFrequencyReturnsOrderCount(): void
     {
-        $connection = $this->createMock(AdapterInterface::class);
+        $connection = $this->createStub(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
         $connection->method('fetchOne')->willReturn('5');
 
@@ -71,7 +71,7 @@ class RfmCalculatorTest extends TestCase
 
     public function testGetMonetaryTotalReturnsSumOfGrandTotal(): void
     {
-        $connection = $this->createMock(AdapterInterface::class);
+        $connection = $this->createStub(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
         $connection->method('fetchOne')->willReturn('249.90');
 
@@ -82,7 +82,7 @@ class RfmCalculatorTest extends TestCase
 
     public function testGetMonetaryTotalReturnsZeroWhenNoOrders(): void
     {
-        $connection = $this->createMock(AdapterInterface::class);
+        $connection = $this->createStub(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
         $connection->method('fetchOne')->willReturn(false);
 

@@ -14,7 +14,7 @@ class PruneVisitorEventsTest extends TestCase
 {
     public function testExecuteDeletesOldRowsAndLogs(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('getTrackingRetentionDays')->willReturn(7);
 
         $connection = $this->createMock(AdapterInterface::class);
@@ -22,7 +22,7 @@ class PruneVisitorEventsTest extends TestCase
             ->with('ordo_visitor_event', self::isArray())
             ->willReturn(5);
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 

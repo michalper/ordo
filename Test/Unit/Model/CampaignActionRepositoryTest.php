@@ -16,6 +16,7 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Action as CampaignActionResourc
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\Collection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class CampaignActionRepositoryTest extends TestCase
 {
@@ -29,10 +30,10 @@ class CampaignActionRepositoryTest extends TestCase
     protected function setUp(): void
     {
         $this->resource = $this->createMock(CampaignActionResource::class);
-        $this->actionFactory = $this->createMock(CampaignActionFactory::class);
-        $this->collectionFactory = $this->createMock(CollectionFactory::class);
-        $this->searchResultsFactory = $this->createMock(CampaignActionSearchResultsInterfaceFactory::class);
-        $this->collectionProcessor = $this->createMock(CollectionProcessorInterface::class);
+        $this->actionFactory = $this->createStub(CampaignActionFactory::class);
+        $this->collectionFactory = $this->createStub(CollectionFactory::class);
+        $this->searchResultsFactory = $this->createStub(CampaignActionSearchResultsInterfaceFactory::class);
+        $this->collectionProcessor = $this->createStub(CollectionProcessorInterface::class);
 
         $this->repository = new CampaignActionRepository(
             $this->resource,
@@ -45,33 +46,36 @@ class CampaignActionRepositoryTest extends TestCase
 
     public function testSaveReturnsSavedAction(): void
     {
-        $action = $this->createMock(CampaignAction::class);
+        $action = $this->createStub(CampaignAction::class);
         $this->resource->expects(self::once())->method('save')->with($action);
 
         self::assertSame($action, $this->repository->save($action));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSaveWrapsExceptionInCouldNotSaveException(): void
     {
-        $action = $this->createMock(CampaignAction::class);
+        $action = $this->createStub(CampaignAction::class);
         $this->resource->method('save')->willThrowException(new \Exception('db down'));
 
         $this->expectException(CouldNotSaveException::class);
         $this->repository->save($action);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetByIdReturnsLoadedAction(): void
     {
-        $action = $this->createMock(CampaignAction::class);
+        $action = $this->createStub(CampaignAction::class);
         $action->method('getEntityId')->willReturn(5);
         $this->actionFactory->method('create')->willReturn($action);
 
         self::assertSame($action, $this->repository->getById(5));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetByIdThrowsWhenNotFound(): void
     {
-        $action = $this->createMock(CampaignAction::class);
+        $action = $this->createStub(CampaignAction::class);
         $action->method('getEntityId')->willReturn(null);
         $this->actionFactory->method('create')->willReturn($action);
 
@@ -79,10 +83,11 @@ class CampaignActionRepositoryTest extends TestCase
         $this->repository->getById(99);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetListBuildsSearchResults(): void
     {
-        $criteria = $this->createMock(SearchCriteriaInterface::class);
-        $collection = $this->createMock(Collection::class);
+        $criteria = $this->createStub(SearchCriteriaInterface::class);
+        $collection = $this->createStub(Collection::class);
         $collection->method('getItems')->willReturn([]);
         $collection->method('getSize')->willReturn(0);
         $this->collectionFactory->method('create')->willReturn($collection);
@@ -98,7 +103,7 @@ class CampaignActionRepositoryTest extends TestCase
 
     public function testDeleteByIdLoadsThenDeletes(): void
     {
-        $action = $this->createMock(CampaignAction::class);
+        $action = $this->createStub(CampaignAction::class);
         $action->method('getEntityId')->willReturn(5);
         $this->actionFactory->method('create')->willReturn($action);
         $this->resource->expects(self::once())->method('delete')->with($action);
@@ -106,9 +111,10 @@ class CampaignActionRepositoryTest extends TestCase
         self::assertTrue($this->repository->deleteById(5));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDeleteByIdThrowsWhenNotFound(): void
     {
-        $action = $this->createMock(CampaignAction::class);
+        $action = $this->createStub(CampaignAction::class);
         $action->method('getEntityId')->willReturn(null);
         $this->actionFactory->method('create')->willReturn($action);
 
@@ -116,9 +122,10 @@ class CampaignActionRepositoryTest extends TestCase
         $this->repository->deleteById(99);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDeleteByIdWrapsExceptionInCouldNotSaveException(): void
     {
-        $action = $this->createMock(CampaignAction::class);
+        $action = $this->createStub(CampaignAction::class);
         $action->method('getEntityId')->willReturn(5);
         $this->actionFactory->method('create')->willReturn($action);
         $this->resource->method('delete')->willThrowException(new \Exception('locked'));

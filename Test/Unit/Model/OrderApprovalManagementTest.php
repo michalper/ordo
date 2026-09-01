@@ -20,6 +20,7 @@ use Ordo\Automation\Model\OrderApprovalFactory;
 use Ordo\Automation\Model\OrderApprovalManagement;
 use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class OrderApprovalManagementTest extends TestCase
 {
@@ -37,12 +38,12 @@ class OrderApprovalManagementTest extends TestCase
     {
         $this->orderApprovalFactory = $this->createMock(OrderApprovalFactory::class);
         $this->orderApprovalResource = $this->createMock(OrderApprovalResource::class);
-        $this->orderCollectionFactory = $this->createMock(OrderCollectionFactory::class);
+        $this->orderCollectionFactory = $this->createStub(OrderCollectionFactory::class);
         $this->orderResource = $this->createMock(OrderResource::class);
         $this->orderConfig = $this->createMock(OrderConfig::class);
         $this->orderRepository = $this->createMock(OrderRepositoryInterface::class);
-        $this->storeManager = $this->createMock(StoreManagerInterface::class);
-        $this->decisionLinksFactory = $this->createMock(OrderApprovalDecisionLinksFactory::class);
+        $this->storeManager = $this->createStub(StoreManagerInterface::class);
+        $this->decisionLinksFactory = $this->createStub(OrderApprovalDecisionLinksFactory::class);
 
         $this->management = new OrderApprovalManagement(
             $this->orderApprovalFactory,
@@ -56,6 +57,7 @@ class OrderApprovalManagementTest extends TestCase
         );
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testApproveByTokenThrowsWhenTokenEmpty(): void
     {
         $this->orderApprovalFactory->expects(self::never())->method('create');
@@ -64,6 +66,7 @@ class OrderApprovalManagementTest extends TestCase
         $this->management->approveByToken('');
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testApproveByTokenThrowsWhenApprovalNotPending(): void
     {
         $approval = $this->createMock(OrderApproval::class);
@@ -74,6 +77,7 @@ class OrderApprovalManagementTest extends TestCase
         $this->management->approveByToken('tok');
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testApproveByTokenThrowsWhenOrderNotFound(): void
     {
         $approval = $this->createMock(OrderApproval::class);
@@ -84,7 +88,7 @@ class OrderApprovalManagementTest extends TestCase
 
         $order = $this->createMock(Order::class);
         $order->method('getId')->willReturn(null);
-        $orderCollection = $this->createMock(OrderCollection::class);
+        $orderCollection = $this->createStub(OrderCollection::class);
         $orderCollection->method('addFieldToFilter')->willReturnSelf();
         $orderCollection->method('getFirstItem')->willReturn($order);
         $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
@@ -93,6 +97,7 @@ class OrderApprovalManagementTest extends TestCase
         $this->management->approveByToken('tok');
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testApproveByTokenReleasesOrderAndMarksApproved(): void
     {
         $approval = $this->createMock(OrderApproval::class);
@@ -105,7 +110,7 @@ class OrderApprovalManagementTest extends TestCase
         $order = $this->createMock(Order::class);
         $order->method('getId')->willReturn(7);
         $order->expects(self::once())->method('setStatus')->with('processing');
-        $orderCollection = $this->createMock(OrderCollection::class);
+        $orderCollection = $this->createStub(OrderCollection::class);
         $orderCollection->method('addFieldToFilter')->willReturnSelf();
         $orderCollection->method('getFirstItem')->willReturn($order);
         $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
@@ -117,6 +122,7 @@ class OrderApprovalManagementTest extends TestCase
         self::assertSame($approval, $this->management->approveByToken('tok'));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testRejectByTokenCancelsOrderAndMarksRejected(): void
     {
         $approval = $this->createMock(OrderApproval::class);
@@ -129,7 +135,7 @@ class OrderApprovalManagementTest extends TestCase
         $order = $this->createMock(Order::class);
         $order->method('getId')->willReturn(7);
         $order->expects(self::once())->method('cancel');
-        $orderCollection = $this->createMock(OrderCollection::class);
+        $orderCollection = $this->createStub(OrderCollection::class);
         $orderCollection->method('addFieldToFilter')->willReturnSelf();
         $orderCollection->method('getFirstItem')->willReturn($order);
         $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
@@ -140,12 +146,14 @@ class OrderApprovalManagementTest extends TestCase
         self::assertSame($approval, $this->management->rejectByToken('tok'));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testRejectByTokenThrowsWhenTokenEmpty(): void
     {
         $this->expectException(NoSuchEntityException::class);
         $this->management->rejectByToken('');
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetDecisionLinksByIdThrowsWhenNotPending(): void
     {
         $approval = $this->createMock(OrderApproval::class);
@@ -156,6 +164,7 @@ class OrderApprovalManagementTest extends TestCase
         $this->management->getDecisionLinksById(5);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetDecisionLinksByIdBuildsUrlsFromToken(): void
     {
         $approval = $this->createMock(OrderApproval::class);
@@ -164,7 +173,7 @@ class OrderApprovalManagementTest extends TestCase
         $approval->method('getToken')->willReturn('secret-token');
         $this->orderApprovalFactory->method('create')->willReturn($approval);
 
-        $store = $this->createMock(Store::class);
+        $store = $this->createStub(Store::class);
         $store->method('getBaseUrl')->willReturn('https://example.com/');
         $this->storeManager->method('getStore')->willReturn($store);
 

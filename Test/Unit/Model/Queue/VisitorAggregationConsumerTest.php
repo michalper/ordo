@@ -8,6 +8,7 @@ use Ordo\Automation\Model\Queue\VisitorAggregationConsumer;
 use Ordo\Automation\Model\VisitorAggregator;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class VisitorAggregationConsumerTest extends TestCase
 {
@@ -26,6 +27,7 @@ class VisitorAggregationConsumerTest extends TestCase
         (new VisitorAggregationConsumer($aggregator, $serializer, $logger))->execute('raw-message');
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteAggregatesForVisitorWhenVisitorIdPresent(): void
     {
         $aggregator = $this->createMock(VisitorAggregator::class);
@@ -41,6 +43,7 @@ class VisitorAggregationConsumerTest extends TestCase
         (new VisitorAggregationConsumer($aggregator, $serializer, $logger))->execute('raw-message');
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsAndSkipsWhenNeitherIdentifierPresent(): void
     {
         $aggregator = $this->createMock(VisitorAggregator::class);

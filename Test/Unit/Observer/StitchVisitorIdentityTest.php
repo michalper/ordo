@@ -10,6 +10,7 @@ use Magento\Framework\Stdlib\CookieManagerInterface;
 use Ordo\Automation\Model\VisitorEventLogger;
 use Ordo\Automation\Observer\StitchVisitorIdentity;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class StitchVisitorIdentityTest extends TestCase
 {
@@ -18,12 +19,12 @@ class StitchVisitorIdentityTest extends TestCase
         $cookieManager = $this->createMock(CookieManagerInterface::class);
         $cookieManager->method('getCookie')->with(StitchVisitorIdentity::COOKIE_NAME)->willReturn('v1');
 
-        $customer = $this->createMock(CustomerInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getId')->willReturn(42);
 
         $event = new Event(['customer' => $customer]);
 
-        $observer = $this->createMock(EventObserver::class);
+        $observer = $this->createStub(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);
 
         $eventLogger = $this->createMock(VisitorEventLogger::class);
@@ -32,12 +33,13 @@ class StitchVisitorIdentityTest extends TestCase
         (new StitchVisitorIdentity($cookieManager, $eventLogger))->execute($observer);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteDoesNothingWhenNoCookie(): void
     {
         $cookieManager = $this->createMock(CookieManagerInterface::class);
         $cookieManager->method('getCookie')->willReturn(null);
 
-        $observer = $this->createMock(EventObserver::class);
+        $observer = $this->createStub(EventObserver::class);
 
         $eventLogger = $this->createMock(VisitorEventLogger::class);
         $eventLogger->expects(self::never())->method('attributeVisitorToCustomer');
@@ -45,6 +47,7 @@ class StitchVisitorIdentityTest extends TestCase
         (new StitchVisitorIdentity($cookieManager, $eventLogger))->execute($observer);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteDoesNothingWhenNoCustomer(): void
     {
         $cookieManager = $this->createMock(CookieManagerInterface::class);
@@ -52,7 +55,7 @@ class StitchVisitorIdentityTest extends TestCase
 
         $event = new Event([]);
 
-        $observer = $this->createMock(EventObserver::class);
+        $observer = $this->createStub(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);
 
         $eventLogger = $this->createMock(VisitorEventLogger::class);

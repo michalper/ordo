@@ -33,6 +33,7 @@ use Ordo\Automation\Model\ResourceModel\QuoteGiftItem\CollectionFactory as GiftI
 use Ordo\Automation\Test\Unit\CatalogProductTestDouble;
 use Ordo\Automation\Test\Unit\QuoteItemTestDouble;
 use Ordo\Automation\Test\Unit\QuoteTestDouble;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 class FreeGiftManagementTest extends AbstractModelTestCase
 {
     private CartRepositoryInterface $cartRepository;
@@ -51,17 +52,17 @@ class FreeGiftManagementTest extends AbstractModelTestCase
     protected function setUp(): void
     {
         $this->cartRepository = $this->createMock(CartRepositoryInterface::class);
-        $this->offerCollectionFactory = $this->createMock(OfferCollectionFactory::class);
-        $this->tierCollectionFactory = $this->createMock(TierCollectionFactory::class);
-        $this->productCollectionFactory = $this->createMock(ProductCollectionFactory::class);
-        $this->giftItemCollectionFactory = $this->createMock(GiftItemCollectionFactory::class);
-        $this->giftItemFactory = $this->createMock(QuoteGiftItemFactory::class);
+        $this->offerCollectionFactory = $this->createStub(OfferCollectionFactory::class);
+        $this->tierCollectionFactory = $this->createStub(TierCollectionFactory::class);
+        $this->productCollectionFactory = $this->createStub(ProductCollectionFactory::class);
+        $this->giftItemCollectionFactory = $this->createStub(GiftItemCollectionFactory::class);
+        $this->giftItemFactory = $this->createStub(QuoteGiftItemFactory::class);
         $this->giftItemResource = $this->createMock(QuoteGiftItemResource::class);
-        $this->eligibilityFactory = $this->createMock(FreeGiftEligibilityFactory::class);
+        $this->eligibilityFactory = $this->createStub(FreeGiftEligibilityFactory::class);
         $this->eligibilityFactory->method('create')->willReturnCallback(fn () => new FreeGiftEligibility());
         $this->productRepository = $this->createMock(ProductRepositoryInterface::class);
-        $this->userContext = $this->createMock(UserContextInterface::class);
-        $this->config = $this->createMock(Config::class);
+        $this->userContext = $this->createStub(UserContextInterface::class);
+        $this->config = $this->createStub(Config::class);
         $this->config->method('isFreeGiftEnabled')->willReturn(true);
 
         $this->management = new FreeGiftManagement(
@@ -84,12 +85,12 @@ class FreeGiftManagementTest extends AbstractModelTestCase
      */
     private function stubOffersAndTiers(array $offerIds, array $tiers): void
     {
-        $offerCollection = $this->createMock(OfferCollection::class);
+        $offerCollection = $this->createStub(OfferCollection::class);
         $offerCollection->method('addEnabledFilter')->willReturn($offerCollection);
         $offerCollection->method('getAllIds')->willReturn($offerIds);
         $this->offerCollectionFactory->method('create')->willReturn($offerCollection);
 
-        $tierCollection = $this->createMock(TierCollection::class);
+        $tierCollection = $this->createStub(TierCollection::class);
         $tierCollection->method('addOffersFilter')->willReturn($tierCollection);
         $tierCollection->method('getIterator')->willReturn(new \ArrayIterator($tiers));
         $this->tierCollectionFactory->method('create')->willReturn($tierCollection);
@@ -100,7 +101,7 @@ class FreeGiftManagementTest extends AbstractModelTestCase
      */
     private function stubProducts(array $products): void
     {
-        $productCollection = $this->createMock(ProductCollection::class);
+        $productCollection = $this->createStub(ProductCollection::class);
         $productCollection->method('addOffersFilter')->willReturn($productCollection);
         $productCollection->method('getIterator')->willReturn(new \ArrayIterator($products));
         $this->productCollectionFactory->method('create')->willReturn($productCollection);
@@ -116,7 +117,7 @@ class FreeGiftManagementTest extends AbstractModelTestCase
 
     private function stubGiftItems(array $rows): void
     {
-        $giftCollection = $this->createMock(GiftItemCollection::class);
+        $giftCollection = $this->createStub(GiftItemCollection::class);
         $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
         $giftCollection->method('getSize')->willReturn(count($rows));
         $giftCollection->method('getIterator')->willReturn(new \ArrayIterator($rows));
@@ -158,6 +159,7 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         return $quote;
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetEligibilitySumsCascadingTiersAcrossMultipleOffers(): void
     {
         // Offer 1: tier @100 -> +1, tier @300 -> +1 (cumulative -> 2 at subtotal 300)
@@ -182,6 +184,7 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         self::assertEqualsCanonicalizing(['SKU-A', 'SKU-B'], $eligibility->getEligibleSkus());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetEligibilityBelowFirstTierEarnsNothing(): void
     {
         $this->stubOffersAndTiers([1], [$this->tier(1, 100.0, 1)]);
@@ -197,9 +200,10 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         self::assertSame([], $eligibility->getEligibleSkus());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetEligibilityReturnsZeroWhenMasterSwitchDisabled(): void
     {
-        $this->config = $this->createMock(Config::class);
+        $this->config = $this->createStub(Config::class);
         $this->config->method('isFreeGiftEnabled')->willReturn(false);
         $this->management = new FreeGiftManagement(
             $this->cartRepository,
@@ -224,6 +228,7 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         self::assertSame(0, $eligibility->getEarnedSlots());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetEligibilityThrowsWhenCartBelongsToDifferentCustomer(): void
     {
         $this->userContext->method('getUserId')->willReturn(99);
@@ -234,12 +239,14 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         $this->management->getEligibility(7);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSelectGiftsThrowsOnDuplicateSkus(): void
     {
         $this->expectException(InputException::class);
         $this->management->selectGifts(7, $this->selection(['SKU-A', 'SKU-A']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSelectGiftsThrowsWhenExceedingEarnedSlots(): void
     {
         $this->stubOffersAndTiers([1], [$this->tier(1, 100.0, 1)]);
@@ -253,6 +260,7 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         $this->management->selectGifts(7, $this->selection(['SKU-A', 'SKU-B']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSelectGiftsThrowsOnIneligibleSku(): void
     {
         $this->stubOffersAndTiers([1], [$this->tier(1, 100.0, 2)]);
@@ -276,7 +284,7 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         $this->cartRepository->method('get')->willReturn($quote);
         $this->cartRepository->expects(self::once())->method('save')->with($quote);
 
-        $product = $this->createMock(Product::class);
+        $product = $this->createStub(Product::class);
         $this->productRepository->method('get')->with('SKU-A')->willReturn($product);
 
         // setOriginalCustomPrice()/setIsSuperMode() are magic (__call via AbstractModel), not
@@ -308,6 +316,7 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         self::assertSame('SKU-A', $giftItem->getSku());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetEligibilityReturnsZeroWhenNoOffersAreEnabled(): void
     {
         $this->stubOffersAndTiers([], []);
@@ -322,6 +331,7 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         self::assertSame([], $eligibility->getEligibleSkus());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSelectGiftsThrowsWhenAddProductReturnsAnErrorString(): void
     {
         $this->stubOffersAndTiers([1], [$this->tier(1, 100.0, 1)]);
@@ -331,7 +341,7 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         $quote = $this->quote(150.0);
         $this->cartRepository->method('get')->willReturn($quote);
 
-        $product = $this->createMock(Product::class);
+        $product = $this->createStub(Product::class);
         $this->productRepository->method('get')->with('SKU-A')->willReturn($product);
         $quote->method('addProduct')->with($product, 1)->willReturn('Not enough stock.');
 
@@ -339,6 +349,7 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         $this->management->selectGifts(7, $this->selection(['SKU-A']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSelectGiftsRemovesStaleMarkerRowEvenWhenQuoteItemAlreadyGone(): void
     {
         $this->stubOffersAndTiers([1], [$this->tier(1, 100.0, 1)]);
@@ -355,7 +366,7 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         // The stale marker row must still be deleted even though removeItem() failed.
         $this->giftItemResource->expects(self::once())->method('delete')->with($staleRow);
 
-        $product = $this->createMock(Product::class);
+        $product = $this->createStub(Product::class);
         $this->productRepository->method('get')->with('SKU-A')->willReturn($product);
 
         $item = $this->getMockBuilder(QuoteItemTestDouble::class)

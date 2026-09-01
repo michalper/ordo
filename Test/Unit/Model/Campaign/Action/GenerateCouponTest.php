@@ -7,6 +7,7 @@ use Ordo\Automation\Model\Campaign\Action\GenerateCoupon;
 use Ordo\Automation\Model\CouponGenerator;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class GenerateCouponTest extends TestCase
 {
@@ -15,7 +16,7 @@ class GenerateCouponTest extends TestCase
         $generator = $this->createMock(CouponGenerator::class);
         $generator->method('generate')->with(5, 'COMEBACK')->willReturn('COMEBACK-XYZ');
 
-        $action = new GenerateCoupon($generator, $this->createMock(LoggerInterface::class));
+        $action = new GenerateCoupon($generator, $this->createStub(LoggerInterface::class));
 
         $context = [];
         $action->execute($context, ['rule_id' => '5', 'prefix' => 'COMEBACK']);
@@ -39,6 +40,7 @@ class GenerateCouponTest extends TestCase
         self::assertArrayNotHasKey('coupon_code', $context);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsErrorWhenGeneratorThrows(): void
     {
         $generator = $this->createMock(CouponGenerator::class);

@@ -18,11 +18,11 @@ class OrderApprovalTest extends AbstractDbTestCase
 
     public function testLoadByTokenDoesNothingWhenTokenNotFound(): void
     {
-        $select = $this->createMock(Select::class);
+        $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
 
-        $connection = $this->createMock(\Magento\Framework\DB\Adapter\AdapterInterface::class);
+        $connection = $this->createStub(\Magento\Framework\DB\Adapter\AdapterInterface::class);
         $connection->method('select')->willReturn($select);
         $connection->method('fetchOne')->willReturn(false);
 
@@ -33,17 +33,17 @@ class OrderApprovalTest extends AbstractDbTestCase
         $resource->method('getConnection')->willReturn($connection);
         $resource->expects(self::never())->method('load');
 
-        $model = $this->createMock(\Ordo\Automation\Model\OrderApproval::class);
+        $model = $this->createStub(\Ordo\Automation\Model\OrderApproval::class);
         $resource->loadByToken($model, 'no-such-token');
     }
 
     public function testLoadByTokenLoadsModelWhenTokenFound(): void
     {
-        $select = $this->createMock(Select::class);
+        $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
 
-        $connection = $this->createMock(\Magento\Framework\DB\Adapter\AdapterInterface::class);
+        $connection = $this->createStub(\Magento\Framework\DB\Adapter\AdapterInterface::class);
         $connection->method('select')->willReturn($select);
         $connection->method('fetchOne')->willReturn('7');
 
@@ -53,7 +53,7 @@ class OrderApprovalTest extends AbstractDbTestCase
             ->getMock();
         $resource->method('getConnection')->willReturn($connection);
 
-        $model = $this->createMock(\Ordo\Automation\Model\OrderApproval::class);
+        $model = $this->createStub(\Ordo\Automation\Model\OrderApproval::class);
         $resource->expects(self::once())->method('load')->with($model, 7);
 
         $resource->loadByToken($model, 'real-token');

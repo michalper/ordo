@@ -8,6 +8,7 @@ use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\DB\Select;
 use Ordo\Automation\Model\CustomerScoreManager;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class CustomerScoreManagerTest extends TestCase
 {
@@ -17,7 +18,7 @@ class CustomerScoreManagerTest extends TestCase
         $connection->expects(self::once())->method('query')
             ->with(self::stringContains('ON DUPLICATE KEY UPDATE'), [42, 10]);
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
@@ -25,9 +26,10 @@ class CustomerScoreManagerTest extends TestCase
         $manager->addPoints(42, 10);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetScoreReturnsStoredScore(): void
     {
-        $select = $this->createMock(Select::class);
+        $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
 
@@ -35,7 +37,7 @@ class CustomerScoreManagerTest extends TestCase
         $connection->method('select')->willReturn($select);
         $connection->method('fetchOne')->willReturn('35');
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
@@ -44,9 +46,10 @@ class CustomerScoreManagerTest extends TestCase
         self::assertSame(35, $manager->getScore(42));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetScoreReturnsZeroWhenCustomerHasNoRowYet(): void
     {
-        $select = $this->createMock(Select::class);
+        $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
 
@@ -54,7 +57,7 @@ class CustomerScoreManagerTest extends TestCase
         $connection->method('select')->willReturn($select);
         $connection->method('fetchOne')->willReturn(false);
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 

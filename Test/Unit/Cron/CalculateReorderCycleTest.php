@@ -12,12 +12,13 @@ use Ordo\Automation\Model\ReorderCycleFactory;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle as ReorderCycleResource;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class CalculateReorderCycleTest extends TestCase
 {
     private function makeSelect(): Select
     {
-        $select = $this->createMock(Select::class);
+        $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('joinInner')->willReturnSelf();
         $select->method('where')->willReturnSelf();
@@ -36,14 +37,14 @@ class CalculateReorderCycleTest extends TestCase
         ]);
         $connection->expects(self::never())->method('insert');
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $reorderCycleFactory = $this->createMock(ReorderCycleFactory::class);
         $reorderCycleFactory->expects(self::never())->method('create');
 
-        $reorderCycleResource = $this->createMock(ReorderCycleResource::class);
+        $reorderCycleResource = $this->createStub(ReorderCycleResource::class);
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('info')->with(self::stringContains('0 reorder cycles'));
@@ -51,6 +52,7 @@ class CalculateReorderCycleTest extends TestCase
         (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $logger))->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteCreatesNewCycleWhenPatternDetected(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
@@ -62,7 +64,7 @@ class CalculateReorderCycleTest extends TestCase
         ]);
         $connection->method('fetchOne')->willReturn(false);
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
@@ -96,7 +98,7 @@ class CalculateReorderCycleTest extends TestCase
         ]);
         $connection->expects(self::never())->method('insert');
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
@@ -112,6 +114,7 @@ class CalculateReorderCycleTest extends TestCase
         (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $logger))->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteUpdatesExistingCycle(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
@@ -123,7 +126,7 @@ class CalculateReorderCycleTest extends TestCase
         ]);
         $connection->method('fetchOne')->willReturn('9');
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
@@ -139,7 +142,7 @@ class CalculateReorderCycleTest extends TestCase
         $reorderCycleResource->method('getMainTable')->willReturn('ordo_reorder_cycle');
         $reorderCycleResource->expects(self::once())->method('save')->with($model);
 
-        $logger = $this->createMock(LoggerInterface::class);
+        $logger = $this->createStub(LoggerInterface::class);
 
         (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $logger))->execute();
     }

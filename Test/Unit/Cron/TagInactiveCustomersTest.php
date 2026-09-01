@@ -12,12 +12,13 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CustomerTagManager;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class TagInactiveCustomersTest extends TestCase
 {
     private function makeSelect(): Select
     {
-        $select = $this->createMock(Select::class);
+        $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('joinLeft')->willReturnSelf();
         $select->method('where')->willReturnSelf();
@@ -27,9 +28,10 @@ class TagInactiveCustomersTest extends TestCase
         return $select;
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsWhenLifecycleEmailsDisabled(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isLifecycleEmailsEnabled')->willReturn(false);
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
@@ -37,16 +39,17 @@ class TagInactiveCustomersTest extends TestCase
 
         $tagManager = $this->createMock(CustomerTagManager::class);
 
-        (new TagInactiveCustomers($config, $resourceConnection, $tagManager, $this->createMock(LoggerInterface::class)))->execute();
+        (new TagInactiveCustomers($config, $resourceConnection, $tagManager, $this->createStub(LoggerInterface::class)))->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteTagsNewlyInactiveAndClearsRecovered(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isLifecycleEmailsEnabled')->willReturn(true);
         $config->method('getWinBackInactiveDays')->willReturn(90);
 
-        $connection = $this->createMock(AdapterInterface::class);
+        $connection = $this->createStub(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
         $connection->method('fetchCol')->willReturn(['5']);
 

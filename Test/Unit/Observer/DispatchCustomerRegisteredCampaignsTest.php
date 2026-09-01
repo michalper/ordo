@@ -14,12 +14,12 @@ class DispatchCustomerRegisteredCampaignsTest extends TestCase
 {
     public function testExecutePublishesForKnownCustomer(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getId')->willReturn(42);
 
         $event = new Event(['customer' => $customer]);
 
-        $observer = $this->createMock(EventObserver::class);
+        $observer = $this->createStub(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);
 
         $publisher = $this->createMock(CampaignDispatchPublisher::class);
@@ -32,7 +32,7 @@ class DispatchCustomerRegisteredCampaignsTest extends TestCase
     {
         $event = new Event([]);
 
-        $observer = $this->createMock(EventObserver::class);
+        $observer = $this->createStub(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);
 
         $publisher = $this->createMock(CampaignDispatchPublisher::class);

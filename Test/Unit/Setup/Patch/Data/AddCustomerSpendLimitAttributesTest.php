@@ -17,21 +17,21 @@ class AddCustomerSpendLimitAttributesTest extends TestCase
 {
     public function testApplyAddsBothAttributes(): void
     {
-        $connection = $this->createMock(AdapterInterface::class);
-        $moduleDataSetup = $this->createMock(ModuleDataSetupInterface::class);
+        $connection = $this->createStub(AdapterInterface::class);
+        $moduleDataSetup = $this->createStub(ModuleDataSetupInterface::class);
         $moduleDataSetup->method('getConnection')->willReturn($connection);
 
         $attribute = $this->createMock(Attribute::class);
         $attribute->expects(self::exactly(2))->method('save');
 
-        $eavConfig = $this->createMock(EavConfig::class);
+        $eavConfig = $this->createStub(EavConfig::class);
         $eavConfig->method('getAttribute')->willReturn($attribute);
 
         $customerSetup = $this->createMock(CustomerSetup::class);
         $customerSetup->expects(self::exactly(2))->method('addAttribute');
         $customerSetup->method('getEavConfig')->willReturn($eavConfig);
 
-        $customerSetupFactory = $this->createMock(CustomerSetupFactory::class);
+        $customerSetupFactory = $this->createStub(CustomerSetupFactory::class);
         $customerSetupFactory->method('create')->willReturn($customerSetup);
 
         $patch = new AddCustomerSpendLimitAttributes($moduleDataSetup, $customerSetupFactory);
@@ -48,8 +48,8 @@ class AddCustomerSpendLimitAttributesTest extends TestCase
 
     public function testGetAliasesIsEmpty(): void
     {
-        $moduleDataSetup = $this->createMock(ModuleDataSetupInterface::class);
-        $customerSetupFactory = $this->createMock(CustomerSetupFactory::class);
+        $moduleDataSetup = $this->createStub(ModuleDataSetupInterface::class);
+        $customerSetupFactory = $this->createStub(CustomerSetupFactory::class);
         $patch = new AddCustomerSpendLimitAttributes($moduleDataSetup, $customerSetupFactory);
 
         self::assertSame([], $patch->getAliases());

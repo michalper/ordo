@@ -13,6 +13,7 @@ use Ordo\Automation\Model\ResourceModel\PendingPopup\Collection as PendingPopupC
 use Ordo\Automation\Model\ResourceModel\PendingPopup\CollectionFactory as PendingPopupCollectionFactory;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class ShowPopupTest extends TestCase
 {
@@ -48,6 +49,7 @@ class ShowPopupTest extends TestCase
         );
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSavesPopupForCustomer(): void
     {
         $popup = $this->createMock(PendingPopup::class);
@@ -69,6 +71,7 @@ class ShowPopupTest extends TestCase
         ]);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSavesPopupForAnonymousVisitor(): void
     {
         $popup = $this->createMock(PendingPopup::class);
@@ -81,6 +84,7 @@ class ShowPopupTest extends TestCase
         $this->action->execute($context, ['headline' => 'Hello!']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLeavesOptionalParamsNullWhenBlank(): void
     {
         $popup = $this->createMock(PendingPopup::class);
@@ -93,6 +97,7 @@ class ShowPopupTest extends TestCase
         $this->action->execute($context, ['headline' => 'Hello!']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsAndSkipsWhenNoIdentifierInContext(): void
     {
         $this->pendingPopupFactory->expects(self::never())->method('create');
@@ -102,6 +107,7 @@ class ShowPopupTest extends TestCase
         $this->action->execute($context, ['headline' => 'Hello!']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsAndSkipsWhenHeadlineMissing(): void
     {
         $this->pendingPopupFactory->expects(self::never())->method('create');
@@ -111,11 +117,12 @@ class ShowPopupTest extends TestCase
         $this->action->execute($context, []);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsSilentlyWhenTargetRecentlyReceivedAPopup(): void
     {
-        $collection = $this->createMock(PendingPopupCollection::class);
+        $collection = $this->createStub(PendingPopupCollection::class);
         $collection->method('targetHasRecentlyReceivedPopup')->willReturn(true);
-        $collectionFactory = $this->createMock(PendingPopupCollectionFactory::class);
+        $collectionFactory = $this->createStub(PendingPopupCollectionFactory::class);
         $collectionFactory->method('create')->willReturn($collection);
 
         $action = new ShowPopup(
@@ -135,6 +142,7 @@ class ShowPopupTest extends TestCase
         $action->execute($context, ['headline' => 'Hello!']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteIgnoresFrequencyCapWhenDisabled(): void
     {
         $this->config = $this->createMock(Config::class);
@@ -148,7 +156,7 @@ class ShowPopupTest extends TestCase
             $this->logger
         );
 
-        $popup = $this->createMock(PendingPopup::class);
+        $popup = $this->createStub(PendingPopup::class);
         $this->pendingPopupFactory->method('create')->willReturn($popup);
         $this->pendingPopupCollectionFactory->expects(self::never())->method('create');
         $this->pendingPopupResource->expects(self::once())->method('save')->with($popup);

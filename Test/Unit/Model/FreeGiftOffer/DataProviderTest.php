@@ -15,6 +15,7 @@ use Ordo\Automation\Model\ResourceModel\FreeGiftOfferProduct\CollectionFactory a
 use Ordo\Automation\Model\ResourceModel\FreeGiftOfferTier\Collection as TierCollection;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOfferTier\CollectionFactory as TierCollectionFactory;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class DataProviderTest extends TestCase
 {
@@ -24,14 +25,14 @@ class DataProviderTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->tierCollectionFactory = $this->createMock(TierCollectionFactory::class);
-        $this->productCollectionFactory = $this->createMock(ProductCollectionFactory::class);
+        $this->tierCollectionFactory = $this->createStub(TierCollectionFactory::class);
+        $this->productCollectionFactory = $this->createStub(ProductCollectionFactory::class);
         $this->dataPersistor = $this->createMock(DataPersistorInterface::class);
     }
 
     private function makeProvider(OfferCollection $collection): DataProvider
     {
-        $collectionFactory = $this->createMock(OfferCollectionFactory::class);
+        $collectionFactory = $this->createStub(OfferCollectionFactory::class);
         $collectionFactory->method('create')->willReturn($collection);
 
         return new DataProvider(
@@ -45,26 +46,27 @@ class DataProviderTest extends TestCase
         );
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetDataNestsTiersAndProducts(): void
     {
-        $offer = $this->createMock(FreeGiftOffer::class);
+        $offer = $this->createStub(FreeGiftOffer::class);
         $offer->method('getData')->willReturn(['entity_id' => 1, 'name' => 'Spend more, get more']);
         $offer->method('getEntityId')->willReturn(1);
 
-        $collection = $this->createMock(OfferCollection::class);
+        $collection = $this->createStub(OfferCollection::class);
         $collection->method('getItems')->willReturn([$offer]);
 
-        $tier = $this->createMock(FreeGiftOfferTier::class);
+        $tier = $this->createStub(FreeGiftOfferTier::class);
         $tier->method('getMinSubtotal')->willReturn(100.0);
         $tier->method('getGiftSlots')->willReturn(1);
-        $tierCollection = $this->createMock(TierCollection::class);
+        $tierCollection = $this->createStub(TierCollection::class);
         $tierCollection->method('addOfferFilter');
         $tierCollection->method('getItems')->willReturn([$tier]);
         $this->tierCollectionFactory->method('create')->willReturn($tierCollection);
 
-        $product = $this->createMock(FreeGiftOfferProduct::class);
+        $product = $this->createStub(FreeGiftOfferProduct::class);
         $product->method('getSku')->willReturn('GIFT-MUG');
-        $productCollection = $this->createMock(ProductCollection::class);
+        $productCollection = $this->createStub(ProductCollection::class);
         $productCollection->method('addOfferFilter');
         $productCollection->method('getItems')->willReturn([$product]);
         $this->productCollectionFactory->method('create')->willReturn($productCollection);
@@ -83,14 +85,14 @@ class DataProviderTest extends TestCase
 
     public function testGetDataAppliesPersistedDataAndClearsIt(): void
     {
-        $collection = $this->createMock(OfferCollection::class);
+        $collection = $this->createStub(OfferCollection::class);
         $collection->method('getItems')->willReturn([]);
 
-        $emptyTierCollection = $this->createMock(TierCollection::class);
+        $emptyTierCollection = $this->createStub(TierCollection::class);
         $emptyTierCollection->method('getItems')->willReturn([]);
         $this->tierCollectionFactory->method('create')->willReturn($emptyTierCollection);
 
-        $emptyProductCollection = $this->createMock(ProductCollection::class);
+        $emptyProductCollection = $this->createStub(ProductCollection::class);
         $emptyProductCollection->method('getItems')->willReturn([]);
         $this->productCollectionFactory->method('create')->willReturn($emptyProductCollection);
 

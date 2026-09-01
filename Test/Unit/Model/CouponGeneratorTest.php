@@ -10,12 +10,13 @@ use Magento\SalesRule\Model\ResourceModel\Coupon as CouponResource;
 use Magento\SalesRule\Model\Rule;
 use Ordo\Automation\Model\CouponGenerator;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class CouponGeneratorTest extends TestCase
 {
     public function testGenerateBuildsAndSavesCoupon(): void
     {
-        $couponFactory = $this->createMock(CouponFactory::class);
+        $couponFactory = $this->createStub(CouponFactory::class);
         $couponResource = $this->createMock(CouponResource::class);
         $random = $this->createMock(Random::class);
         $random->method('getRandomString')->with(10)->willReturn('abcdef1234');
@@ -36,10 +37,11 @@ class CouponGeneratorTest extends TestCase
         self::assertSame('ORDO-ABCDEF1234', $generator->generate(7));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGenerateUsesCustomPrefixAndUsageLimit(): void
     {
-        $couponFactory = $this->createMock(CouponFactory::class);
-        $couponResource = $this->createMock(CouponResource::class);
+        $couponFactory = $this->createStub(CouponFactory::class);
+        $couponResource = $this->createStub(CouponResource::class);
         $random = $this->createMock(Random::class);
         $random->method('getRandomString')->willReturn('xyz');
 

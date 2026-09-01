@@ -11,6 +11,7 @@ use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\CampaignFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign as CampaignResource;
 use Ordo\Automation\Test\Unit\Controller\AbstractAdminActionTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class DeleteTest extends AbstractAdminActionTestCase
 {
@@ -25,9 +26,9 @@ class DeleteTest extends AbstractAdminActionTestCase
 
         $this->messageManager->expects(self::once())->method('addErrorMessage');
 
-        $campaignFactory = $this->createMock(CampaignFactory::class);
-        $campaignResource = $this->createMock(CampaignResource::class);
-        $cache = $this->createMock(CacheInterface::class);
+        $campaignFactory = $this->createStub(CampaignFactory::class);
+        $campaignResource = $this->createStub(CampaignResource::class);
+        $cache = $this->createStub(CacheInterface::class);
 
         $controller = new Delete($context, $campaignFactory, $campaignResource, $cache);
         self::assertSame($redirect, $controller->execute());
@@ -44,8 +45,8 @@ class DeleteTest extends AbstractAdminActionTestCase
 
         $this->messageManager->expects(self::once())->method('addSuccessMessage');
 
-        $campaign = $this->createMock(Campaign::class);
-        $campaignFactory = $this->createMock(CampaignFactory::class);
+        $campaign = $this->createStub(Campaign::class);
+        $campaignFactory = $this->createStub(CampaignFactory::class);
         $campaignFactory->method('create')->willReturn($campaign);
 
         $campaignResource = $this->createMock(CampaignResource::class);
@@ -58,6 +59,7 @@ class DeleteTest extends AbstractAdminActionTestCase
         self::assertSame($redirect, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsWithErrorWhenDeleteThrows(): void
     {
         $context = $this->makeContext();
@@ -69,8 +71,8 @@ class DeleteTest extends AbstractAdminActionTestCase
 
         $this->messageManager->expects(self::once())->method('addErrorMessage');
 
-        $campaign = $this->createMock(Campaign::class);
-        $campaignFactory = $this->createMock(CampaignFactory::class);
+        $campaign = $this->createStub(Campaign::class);
+        $campaignFactory = $this->createStub(CampaignFactory::class);
         $campaignFactory->method('create')->willReturn($campaign);
 
         $campaignResource = $this->createMock(CampaignResource::class);

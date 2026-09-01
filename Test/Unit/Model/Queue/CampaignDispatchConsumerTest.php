@@ -8,6 +8,7 @@ use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\Queue\CampaignDispatchConsumer;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class CampaignDispatchConsumerTest extends TestCase
 {
@@ -28,6 +29,7 @@ class CampaignDispatchConsumerTest extends TestCase
         (new CampaignDispatchConsumer($dispatcher, $serializer, $logger))->execute('raw-message');
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsAndSkipsDispatchWhenTriggerEventMissing(): void
     {
         $dispatcher = $this->createMock(CampaignDispatcher::class);

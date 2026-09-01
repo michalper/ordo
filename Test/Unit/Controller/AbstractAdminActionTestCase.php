@@ -30,20 +30,20 @@ abstract class AbstractAdminActionTestCase extends TestCase
     {
         $this->request = $this->createMock(Http::class);
         $this->messageManager = $this->createMock(MessageManagerInterface::class);
-        $this->resultRedirectFactory = $this->createMock(RedirectFactory::class);
+        $this->resultRedirectFactory = $this->createStub(RedirectFactory::class);
 
-        $context = $this->createMock(Context::class);
+        $context = $this->createStub(Context::class);
         $context->method('getRequest')->willReturn($this->request);
-        $context->method('getResponse')->willReturn($this->createMock(\Magento\Framework\App\ResponseInterface::class));
-        $context->method('getObjectManager')->willReturn($this->createMock(ObjectManagerInterface::class));
-        $context->method('getEventManager')->willReturn($this->createMock(EventManagerInterface::class));
-        $context->method('getUrl')->willReturn($this->createMock(UrlInterface::class));
-        $context->method('getRedirect')->willReturn($this->createMock(RedirectInterface::class));
-        $context->method('getActionFlag')->willReturn($this->createMock(ActionFlag::class));
-        $context->method('getView')->willReturn($this->createMock(ViewInterface::class));
+        $context->method('getResponse')->willReturn($this->createStub(\Magento\Framework\App\ResponseInterface::class));
+        $context->method('getObjectManager')->willReturn($this->createStub(ObjectManagerInterface::class));
+        $context->method('getEventManager')->willReturn($this->createStub(EventManagerInterface::class));
+        $context->method('getUrl')->willReturn($this->createStub(UrlInterface::class));
+        $context->method('getRedirect')->willReturn($this->createStub(RedirectInterface::class));
+        $context->method('getActionFlag')->willReturn($this->createStub(ActionFlag::class));
+        $context->method('getView')->willReturn($this->createStub(ViewInterface::class));
         $context->method('getMessageManager')->willReturn($this->messageManager);
         $context->method('getResultRedirectFactory')->willReturn($this->resultRedirectFactory);
-        $context->method('getResultFactory')->willReturn($this->createMock(\Magento\Framework\Controller\ResultFactory::class));
+        $context->method('getResultFactory')->willReturn($this->createStub(\Magento\Framework\Controller\ResultFactory::class));
 
         return $context;
     }

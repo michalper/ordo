@@ -18,7 +18,7 @@ class PrunePendingPopupsTest extends TestCase
             ->with('ordo_pending_popup', self::isArray())
             ->willReturnOnConsecutiveCalls(3, 2);
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 

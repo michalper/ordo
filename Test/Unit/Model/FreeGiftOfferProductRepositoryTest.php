@@ -16,6 +16,7 @@ use Ordo\Automation\Model\ResourceModel\FreeGiftOfferProduct as FreeGiftOfferPro
 use Ordo\Automation\Model\ResourceModel\FreeGiftOfferProduct\Collection;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOfferProduct\CollectionFactory;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class FreeGiftOfferProductRepositoryTest extends TestCase
 {
@@ -29,10 +30,10 @@ class FreeGiftOfferProductRepositoryTest extends TestCase
     protected function setUp(): void
     {
         $this->resource = $this->createMock(FreeGiftOfferProductResource::class);
-        $this->productFactory = $this->createMock(FreeGiftOfferProductFactory::class);
-        $this->collectionFactory = $this->createMock(CollectionFactory::class);
-        $this->searchResultsFactory = $this->createMock(FreeGiftOfferProductSearchResultsInterfaceFactory::class);
-        $this->collectionProcessor = $this->createMock(CollectionProcessorInterface::class);
+        $this->productFactory = $this->createStub(FreeGiftOfferProductFactory::class);
+        $this->collectionFactory = $this->createStub(CollectionFactory::class);
+        $this->searchResultsFactory = $this->createStub(FreeGiftOfferProductSearchResultsInterfaceFactory::class);
+        $this->collectionProcessor = $this->createStub(CollectionProcessorInterface::class);
 
         $this->repository = new FreeGiftOfferProductRepository(
             $this->resource,
@@ -45,33 +46,36 @@ class FreeGiftOfferProductRepositoryTest extends TestCase
 
     public function testSaveReturnsSavedProduct(): void
     {
-        $product = $this->createMock(FreeGiftOfferProduct::class);
+        $product = $this->createStub(FreeGiftOfferProduct::class);
         $this->resource->expects(self::once())->method('save')->with($product);
 
         self::assertSame($product, $this->repository->save($product));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSaveWrapsExceptionInCouldNotSaveException(): void
     {
-        $product = $this->createMock(FreeGiftOfferProduct::class);
+        $product = $this->createStub(FreeGiftOfferProduct::class);
         $this->resource->method('save')->willThrowException(new \Exception('db down'));
 
         $this->expectException(CouldNotSaveException::class);
         $this->repository->save($product);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetByIdReturnsLoadedProduct(): void
     {
-        $product = $this->createMock(FreeGiftOfferProduct::class);
+        $product = $this->createStub(FreeGiftOfferProduct::class);
         $product->method('getEntityId')->willReturn(5);
         $this->productFactory->method('create')->willReturn($product);
 
         self::assertSame($product, $this->repository->getById(5));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetByIdThrowsWhenNotFound(): void
     {
-        $product = $this->createMock(FreeGiftOfferProduct::class);
+        $product = $this->createStub(FreeGiftOfferProduct::class);
         $product->method('getEntityId')->willReturn(null);
         $this->productFactory->method('create')->willReturn($product);
 
@@ -79,10 +83,11 @@ class FreeGiftOfferProductRepositoryTest extends TestCase
         $this->repository->getById(99);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetListBuildsSearchResults(): void
     {
-        $criteria = $this->createMock(SearchCriteriaInterface::class);
-        $collection = $this->createMock(Collection::class);
+        $criteria = $this->createStub(SearchCriteriaInterface::class);
+        $collection = $this->createStub(Collection::class);
         $collection->method('getItems')->willReturn([]);
         $collection->method('getSize')->willReturn(0);
         $this->collectionFactory->method('create')->willReturn($collection);
@@ -98,7 +103,7 @@ class FreeGiftOfferProductRepositoryTest extends TestCase
 
     public function testDeleteByIdLoadsThenDeletes(): void
     {
-        $product = $this->createMock(FreeGiftOfferProduct::class);
+        $product = $this->createStub(FreeGiftOfferProduct::class);
         $product->method('getEntityId')->willReturn(5);
         $this->productFactory->method('create')->willReturn($product);
         $this->resource->expects(self::once())->method('delete')->with($product);
@@ -106,9 +111,10 @@ class FreeGiftOfferProductRepositoryTest extends TestCase
         self::assertTrue($this->repository->deleteById(5));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDeleteByIdThrowsWhenNotFound(): void
     {
-        $product = $this->createMock(FreeGiftOfferProduct::class);
+        $product = $this->createStub(FreeGiftOfferProduct::class);
         $product->method('getEntityId')->willReturn(null);
         $this->productFactory->method('create')->willReturn($product);
 
@@ -116,9 +122,10 @@ class FreeGiftOfferProductRepositoryTest extends TestCase
         $this->repository->deleteById(99);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDeleteWrapsExceptionInCouldNotSaveException(): void
     {
-        $product = $this->createMock(FreeGiftOfferProduct::class);
+        $product = $this->createStub(FreeGiftOfferProduct::class);
         $this->resource->method('delete')->willThrowException(new \Exception('locked'));
 
         $this->expectException(CouldNotSaveException::class);

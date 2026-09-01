@@ -11,6 +11,7 @@ use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Model\VisitorAggregator;
 use Ordo\Automation\Model\VisitorTagManager;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class VisitorAggregatorTest extends TestCase
 {
@@ -23,14 +24,14 @@ class VisitorAggregatorTest extends TestCase
         return new VisitorAggregator(
             $config,
             $resourceConnection,
-            $customerTagManager ?? $this->createMock(CustomerTagManager::class),
-            $visitorTagManager ?? $this->createMock(VisitorTagManager::class)
+            $customerTagManager ?? $this->createStub(CustomerTagManager::class),
+            $visitorTagManager ?? $this->createStub(VisitorTagManager::class)
         );
     }
 
     public function testAggregateForCustomerDoesNothingWhenTrackingDisabled(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isTrackingEnabled')->willReturn(false);
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
@@ -43,19 +44,20 @@ class VisitorAggregatorTest extends TestCase
         $aggregator->aggregateForCustomer(42);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testAggregateForCustomerTagsWhenThresholdMet(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isTrackingEnabled')->willReturn(true);
         $config->method('getTrackingViewThreshold')->willReturn(3);
 
-        $select = $this->createMock(Select::class);
+        $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
         $select->method('group')->willReturnSelf();
         $select->method('having')->willReturnSelf();
 
-        $connection = $this->createMock(AdapterInterface::class);
+        $connection = $this->createStub(AdapterInterface::class);
         $connection->method('select')->willReturn($select);
         $connection->method('fetchAll')->willReturn([
             ['event_type' => 'view_category', 'event_key' => '15', 'occurrences' => 3],
@@ -74,7 +76,7 @@ class VisitorAggregatorTest extends TestCase
 
     public function testAggregateForVisitorDoesNothingWhenTrackingDisabled(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isTrackingEnabled')->willReturn(false);
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
@@ -87,19 +89,20 @@ class VisitorAggregatorTest extends TestCase
         $aggregator->aggregateForVisitor('v1');
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testAggregateForVisitorTagsWhenThresholdMet(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isTrackingEnabled')->willReturn(true);
         $config->method('getTrackingViewThreshold')->willReturn(3);
 
-        $select = $this->createMock(Select::class);
+        $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
         $select->method('group')->willReturnSelf();
         $select->method('having')->willReturnSelf();
 
-        $connection = $this->createMock(AdapterInterface::class);
+        $connection = $this->createStub(AdapterInterface::class);
         $connection->method('select')->willReturn($select);
         $connection->method('fetchAll')->willReturn([
             ['event_type' => 'view_category', 'event_key' => '15', 'occurrences' => 3],

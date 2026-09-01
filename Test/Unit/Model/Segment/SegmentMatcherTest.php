@@ -11,6 +11,7 @@ use Ordo\Automation\Model\Segment\SegmentMatcher;
 use Ordo\Automation\Model\SegmentCondition;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class SegmentMatcherTest extends TestCase
 {
@@ -42,6 +43,7 @@ class SegmentMatcherTest extends TestCase
         return $row;
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testNotInSegmentWhenSegmentHasNoConditions(): void
     {
         $this->collection->method('getSize')->willReturn(0);
@@ -50,6 +52,7 @@ class SegmentMatcherTest extends TestCase
         self::assertFalse($this->matcher->isCustomerInSegment(3, 42));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testInSegmentWhenAllConditionsAreSatisfied(): void
     {
         $row = $this->makeConditionRow('tag', ['tag' => 'vip']);
@@ -63,6 +66,7 @@ class SegmentMatcherTest extends TestCase
         self::assertTrue($this->matcher->isCustomerInSegment(3, 42));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testNotInSegmentWhenAnyConditionFails(): void
     {
         $row = $this->makeConditionRow('tag', ['tag' => 'vip']);
@@ -76,6 +80,7 @@ class SegmentMatcherTest extends TestCase
         self::assertFalse($this->matcher->isCustomerInSegment(3, 42));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testFailsClosedOnUnknownConditionType(): void
     {
         $row = $this->makeConditionRow('this_type_does_not_exist', []);

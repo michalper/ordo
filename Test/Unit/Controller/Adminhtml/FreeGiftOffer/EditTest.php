@@ -14,6 +14,7 @@ use Ordo\Automation\Model\FreeGiftOffer;
 use Ordo\Automation\Model\FreeGiftOfferFactory;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer as FreeGiftOfferResource;
 use Ordo\Automation\Test\Unit\Controller\AbstractAdminActionTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class EditTest extends AbstractAdminActionTestCase
 {
@@ -24,23 +25,24 @@ class EditTest extends AbstractAdminActionTestCase
             fn ($phrase) => (string) $phrase === $expectedTitle
         ));
 
-        $pageConfig = $this->createMock(PageConfig::class);
+        $pageConfig = $this->createStub(PageConfig::class);
         $pageConfig->method('getTitle')->willReturn($title);
 
-        $resultPage = $this->createMock(Page::class);
+        $resultPage = $this->createStub(Page::class);
         $resultPage->method('setActiveMenu')->willReturnSelf();
         $resultPage->method('getConfig')->willReturn($pageConfig);
 
         return $resultPage;
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteBuildsNewOfferPageWhenNoEntityId(): void
     {
         $context = $this->makeContext();
         $this->request->method('getParam')->with('entity_id')->willReturn(0);
 
-        $offer = $this->createMock(FreeGiftOffer::class);
-        $offerFactory = $this->createMock(FreeGiftOfferFactory::class);
+        $offer = $this->createStub(FreeGiftOffer::class);
+        $offerFactory = $this->createStub(FreeGiftOfferFactory::class);
         $offerFactory->method('create')->willReturn($offer);
 
         $offerResource = $this->createMock(FreeGiftOfferResource::class);
@@ -57,22 +59,23 @@ class EditTest extends AbstractAdminActionTestCase
         self::assertSame($resultPage, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLoadsExistingOffer(): void
     {
         $context = $this->makeContext();
         $this->request->method('getParam')->with('entity_id')->willReturn(5);
 
-        $offer = $this->createMock(FreeGiftOffer::class);
+        $offer = $this->createStub(FreeGiftOffer::class);
         $offer->method('getEntityId')->willReturn(5);
         $offer->method('getName')->willReturn('Spend more, get more');
 
-        $offerFactory = $this->createMock(FreeGiftOfferFactory::class);
+        $offerFactory = $this->createStub(FreeGiftOfferFactory::class);
         $offerFactory->method('create')->willReturn($offer);
 
         $offerResource = $this->createMock(FreeGiftOfferResource::class);
         $offerResource->expects(self::once())->method('load')->with($offer, 5);
 
-        $registry = $this->createMock(Registry::class);
+        $registry = $this->createStub(Registry::class);
 
         $resultPage = $this->makeResultPage('Edit Free Gift Offer "Spend more, get more"');
         $resultPageFactory = $this->createMock(PageFactory::class);
@@ -87,13 +90,13 @@ class EditTest extends AbstractAdminActionTestCase
         $context = $this->makeContext();
         $this->request->method('getParam')->with('entity_id')->willReturn(99);
 
-        $offer = $this->createMock(FreeGiftOffer::class);
+        $offer = $this->createStub(FreeGiftOffer::class);
         $offer->method('getEntityId')->willReturn(null);
 
-        $offerFactory = $this->createMock(FreeGiftOfferFactory::class);
+        $offerFactory = $this->createStub(FreeGiftOfferFactory::class);
         $offerFactory->method('create')->willReturn($offer);
 
-        $offerResource = $this->createMock(FreeGiftOfferResource::class);
+        $offerResource = $this->createStub(FreeGiftOfferResource::class);
 
         $registry = $this->createMock(Registry::class);
         $registry->expects(self::never())->method('register');

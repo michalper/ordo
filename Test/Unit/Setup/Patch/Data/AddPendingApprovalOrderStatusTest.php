@@ -16,7 +16,7 @@ class AddPendingApprovalOrderStatusTest extends TestCase
         $connection = $this->createMock(AdapterInterface::class);
         $connection->expects(self::exactly(2))->method('insertOnDuplicate');
 
-        $moduleDataSetup = $this->createMock(ModuleDataSetupInterface::class);
+        $moduleDataSetup = $this->createStub(ModuleDataSetupInterface::class);
         $moduleDataSetup->method('getConnection')->willReturn($connection);
         $moduleDataSetup->method('getTable')->willReturnCallback(fn (string $t) => $t);
 
@@ -28,7 +28,7 @@ class AddPendingApprovalOrderStatusTest extends TestCase
     {
         self::assertSame([], AddPendingApprovalOrderStatus::getDependencies());
 
-        $moduleDataSetup = $this->createMock(ModuleDataSetupInterface::class);
+        $moduleDataSetup = $this->createStub(ModuleDataSetupInterface::class);
         $patch = new AddPendingApprovalOrderStatus($moduleDataSetup);
 
         self::assertSame([], $patch->getAliases());

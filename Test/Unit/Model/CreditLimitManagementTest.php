@@ -10,6 +10,7 @@ use Ordo\Automation\Model\CreditLimitManagement;
 use Ordo\Automation\Model\CreditLimitStatus;
 use Ordo\Automation\Model\CreditLimitStatusFactory;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class CreditLimitManagementTest extends TestCase
 {
@@ -20,9 +21,9 @@ class CreditLimitManagementTest extends TestCase
     protected function setUp(): void
     {
         $this->calculator = $this->createMock(CreditLimitCalculator::class);
-        $statusFactory = $this->createMock(CreditLimitStatusFactory::class);
+        $statusFactory = $this->createStub(CreditLimitStatusFactory::class);
         $statusFactory->method('create')->willReturnCallback(fn () => new CreditLimitStatus());
-        $this->userContext = $this->createMock(UserContextInterface::class);
+        $this->userContext = $this->createStub(UserContextInterface::class);
 
         $this->management = new CreditLimitManagement($this->calculator, $statusFactory, $this->userContext);
     }
@@ -42,6 +43,7 @@ class CreditLimitManagementTest extends TestCase
         self::assertSame(30.0, $status->getUtilizationPercent());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetMyStatusThrowsWhenNoAuthenticatedCustomer(): void
     {
         $this->userContext->method('getUserId')->willReturn(null);

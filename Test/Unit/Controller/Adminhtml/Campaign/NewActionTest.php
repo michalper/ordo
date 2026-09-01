@@ -5,9 +5,11 @@ namespace Ordo\Automation\Test\Unit\Controller\Adminhtml\Campaign;
 
 use Magento\Backend\App\Action\Context;
 use Ordo\Automation\Test\Unit\Controller\AbstractAdminActionTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class NewActionTest extends AbstractAdminActionTestCase
 {
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteForwardsToEdit(): void
     {
         $context = $this->makeContext();

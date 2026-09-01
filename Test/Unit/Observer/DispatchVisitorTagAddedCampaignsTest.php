@@ -13,13 +13,13 @@ class DispatchVisitorTagAddedCampaignsTest extends TestCase
 {
     public function testExecutePublishesWhenVisitorAndTagPresent(): void
     {
-        $event = $this->createMock(Event::class);
+        $event = $this->createStub(Event::class);
         $event->method('getData')->willReturnMap([
             ['visitor_id', null, 'v1'],
             ['tag', null, 'vip'],
         ]);
 
-        $observer = $this->createMock(EventObserver::class);
+        $observer = $this->createStub(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);
 
         $publisher = $this->createMock(CampaignDispatchPublisher::class);
@@ -33,13 +33,13 @@ class DispatchVisitorTagAddedCampaignsTest extends TestCase
 
     public function testExecuteDoesNothingWhenTagEmpty(): void
     {
-        $event = $this->createMock(Event::class);
+        $event = $this->createStub(Event::class);
         $event->method('getData')->willReturnMap([
             ['visitor_id', null, 'v1'],
             ['tag', null, ''],
         ]);
 
-        $observer = $this->createMock(EventObserver::class);
+        $observer = $this->createStub(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);
 
         $publisher = $this->createMock(CampaignDispatchPublisher::class);
@@ -50,13 +50,13 @@ class DispatchVisitorTagAddedCampaignsTest extends TestCase
 
     public function testExecuteDoesNothingWhenVisitorIdEmpty(): void
     {
-        $event = $this->createMock(Event::class);
+        $event = $this->createStub(Event::class);
         $event->method('getData')->willReturnMap([
             ['visitor_id', null, ''],
             ['tag', null, 'vip'],
         ]);
 
-        $observer = $this->createMock(EventObserver::class);
+        $observer = $this->createStub(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);
 
         $publisher = $this->createMock(CampaignDispatchPublisher::class);

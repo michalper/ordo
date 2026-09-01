@@ -9,9 +9,11 @@ use Magento\Backend\Model\View\Result\Page;
 use Magento\Framework\View\Result\PageFactory;
 use Ordo\Automation\Controller\Adminhtml\ReorderCycle\Index;
 use Ordo\Automation\Test\Unit\Controller\AbstractAdminActionTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class IndexTest extends AbstractAdminActionTestCase
 {
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteBuildsResultPage(): void
     {
         $context = $this->makeContext();
@@ -19,14 +21,14 @@ class IndexTest extends AbstractAdminActionTestCase
         $title = $this->createMock(Title::class);
         $title->expects(self::once())->method('prepend')->with(__('Reorder Cycles'));
 
-        $pageConfig = $this->createMock(PageConfig::class);
+        $pageConfig = $this->createStub(PageConfig::class);
         $pageConfig->method('getTitle')->willReturn($title);
 
         $resultPage = $this->createMock(Page::class);
         $resultPage->expects(self::once())->method('setActiveMenu')->with('Ordo_Automation::reorder_cycles')->willReturnSelf();
         $resultPage->method('getConfig')->willReturn($pageConfig);
 
-        $resultPageFactory = $this->createMock(PageFactory::class);
+        $resultPageFactory = $this->createStub(PageFactory::class);
         $resultPageFactory->method('create')->willReturn($resultPage);
 
         $controller = new Index($context, $resultPageFactory);

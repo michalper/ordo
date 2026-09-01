@@ -14,6 +14,7 @@ use Ordo\Automation\Model\ResourceModel\Segment\Condition as SegmentConditionRes
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\Collection as SegmentConditionCollection;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\CollectionFactory as SegmentConditionCollectionFactory;
 use Ordo\Automation\Test\Unit\Controller\AbstractAdminActionTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class SaveTest extends AbstractAdminActionTestCase
 {
@@ -29,7 +30,7 @@ class SaveTest extends AbstractAdminActionTestCase
         $this->segmentResource = $this->createMock(SegmentResource::class);
         $this->segmentConditionFactory = $this->createMock(SegmentConditionFactory::class);
         $this->segmentConditionResource = $this->createMock(SegmentConditionResource::class);
-        $this->segmentConditionCollectionFactory = $this->createMock(SegmentConditionCollectionFactory::class);
+        $this->segmentConditionCollectionFactory = $this->createStub(SegmentConditionCollectionFactory::class);
     }
 
     private function makeController(): Save
@@ -46,12 +47,13 @@ class SaveTest extends AbstractAdminActionTestCase
 
     private function emptyConditionCollection(): SegmentConditionCollection
     {
-        $collection = $this->createMock(SegmentConditionCollection::class);
+        $collection = $this->createStub(SegmentConditionCollection::class);
         $collection->method('addSegmentFilter')->willReturnSelf();
         $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
         return $collection;
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsImmediatelyWhenNoPostData(): void
     {
         $controller = $this->makeController();
@@ -66,6 +68,7 @@ class SaveTest extends AbstractAdminActionTestCase
         self::assertSame($redirect, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSavesNewSegmentAndRedirectsToGrid(): void
     {
         $controller = $this->makeController();
@@ -105,6 +108,7 @@ class SaveTest extends AbstractAdminActionTestCase
         self::assertSame($redirect, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLoadsExistingSegmentAndDeletesOldConditions(): void
     {
         $controller = $this->makeController();
@@ -119,8 +123,8 @@ class SaveTest extends AbstractAdminActionTestCase
         $this->segmentFactory->method('create')->willReturn($segment);
         $this->segmentResource->expects(self::once())->method('load')->with($segment, 7);
 
-        $existingCondition = $this->createMock(SegmentCondition::class);
-        $conditionCollection = $this->createMock(SegmentConditionCollection::class);
+        $existingCondition = $this->createStub(SegmentCondition::class);
+        $conditionCollection = $this->createStub(SegmentConditionCollection::class);
         $conditionCollection->method('addSegmentFilter')->willReturnSelf();
         $conditionCollection->method('getIterator')->willReturn(new \ArrayIterator([$existingCondition]));
         $this->segmentConditionCollectionFactory->method('create')->willReturn($conditionCollection);
@@ -133,6 +137,7 @@ class SaveTest extends AbstractAdminActionTestCase
         $controller->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsConditionRowsWithoutType(): void
     {
         $controller = $this->makeController();
@@ -156,6 +161,7 @@ class SaveTest extends AbstractAdminActionTestCase
         $controller->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsToEditWhenBackParamSet(): void
     {
         $controller = $this->makeController();
@@ -175,12 +181,13 @@ class SaveTest extends AbstractAdminActionTestCase
         self::assertSame($redirect, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsToEditWithErrorWhenSaveThrows(): void
     {
         $controller = $this->makeController();
         $this->request->method('getPostValue')->willReturn(['entity_id' => 3, 'name' => 'VIP customers']);
 
-        $segment = $this->createMock(Segment::class);
+        $segment = $this->createStub(Segment::class);
         $this->segmentFactory->method('create')->willReturn($segment);
         $this->segmentResource->method('save')->willThrowException(new \RuntimeException('db down'));
 
@@ -193,6 +200,7 @@ class SaveTest extends AbstractAdminActionTestCase
         self::assertSame($redirect, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteDefaultsParamsToEmptyJsonObjectWhenAbsent(): void
     {
         $controller = $this->makeController();

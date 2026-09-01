@@ -11,6 +11,7 @@ use Ordo\Automation\Model\Offer;
 use Ordo\Automation\Model\OfferManagement;
 use Ordo\Automation\Api\OfferRepositoryInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class OfferManagementTest extends TestCase
 {
@@ -22,12 +23,13 @@ class OfferManagementTest extends TestCase
     protected function setUp(): void
     {
         $this->offerRepository = $this->createMock(OfferRepositoryInterface::class);
-        $this->config = $this->createMock(Config::class);
-        $this->userContext = $this->createMock(UserContextInterface::class);
+        $this->config = $this->createStub(Config::class);
+        $this->userContext = $this->createStub(UserContextInterface::class);
 
         $this->management = new OfferManagement($this->offerRepository, $this->config, $this->userContext);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSelfExtendThrowsWhenOfferBelongsToDifferentCustomer(): void
     {
         $offer = $this->createMock(Offer::class);
@@ -40,6 +42,7 @@ class OfferManagementTest extends TestCase
         $this->management->selfExtend(10);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSelfExtendThrowsWhenUserContextHasNoCustomerId(): void
     {
         $offer = $this->createMock(Offer::class);
@@ -52,6 +55,7 @@ class OfferManagementTest extends TestCase
         $this->management->selfExtend(10);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSelfExtendThrowsWhenAlreadyAtMaxExtensions(): void
     {
         $offer = $this->createMock(Offer::class);

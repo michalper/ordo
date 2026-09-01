@@ -26,6 +26,7 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as TriggerCo
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class CampaignDispatcherTest extends TestCase
 {
@@ -50,7 +51,7 @@ class CampaignDispatcherTest extends TestCase
         $this->campaignScheduledActionResource = $this->createMock(CampaignScheduledActionResource::class);
         $this->conditionPool = new ConditionPool();
         $this->actionPool = new ActionPool();
-        $this->cache = $this->createMock(CacheInterface::class);
+        $this->cache = $this->createStub(CacheInterface::class);
         $this->cache->method('load')->willReturn(false);
         $this->logger = $this->createMock(LoggerInterface::class);
     }
@@ -76,12 +77,12 @@ class CampaignDispatcherTest extends TestCase
     {
         $triggers = [];
         foreach ($campaignIds as $campaignId) {
-            $trigger = $this->createMock(CampaignTrigger::class);
+            $trigger = $this->createStub(CampaignTrigger::class);
             $trigger->method('getCampaignId')->willReturn($campaignId);
             $triggers[] = $trigger;
         }
 
-        $collection = $this->createMock(TriggerCollection::class);
+        $collection = $this->createStub(TriggerCollection::class);
         $collection->method('addTriggerEventFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator($triggers));
 
@@ -90,7 +91,7 @@ class CampaignDispatcherTest extends TestCase
 
     private function makeCampaignCollection(array $campaigns): CampaignCollection
     {
-        $collection = $this->createMock(CampaignCollection::class);
+        $collection = $this->createStub(CampaignCollection::class);
         $collection->method('addIdsFilter');
         $collection->method('addEnabledFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator($campaigns));
@@ -103,7 +104,7 @@ class CampaignDispatcherTest extends TestCase
      */
     private function makeConditionCollection(array $rows): ConditionCollection
     {
-        $collection = $this->createMock(ConditionCollection::class);
+        $collection = $this->createStub(ConditionCollection::class);
         $collection->method('addCampaignIdsFilter')->willReturn($collection);
         $collection->method('getIterator')->willReturn(new \ArrayIterator($rows));
 
@@ -115,7 +116,7 @@ class CampaignDispatcherTest extends TestCase
      */
     private function makeActionCollection(array $rows): ActionCollection
     {
-        $collection = $this->createMock(ActionCollection::class);
+        $collection = $this->createStub(ActionCollection::class);
         $collection->method('addCampaignIdsFilter')->willReturn($collection);
         $collection->method('getIterator')->willReturn(new \ArrayIterator($rows));
 
@@ -124,11 +125,12 @@ class CampaignDispatcherTest extends TestCase
 
     private function makeCampaign(int $id): \Ordo\Automation\Model\Campaign
     {
-        $campaign = $this->createMock(\Ordo\Automation\Model\Campaign::class);
+        $campaign = $this->createStub(\Ordo\Automation\Model\Campaign::class);
         $campaign->method('getId')->willReturn($id);
         return $campaign;
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDispatchRunsActionWhenNoConditions(): void
     {
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
@@ -148,6 +150,7 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDispatchReturnsEarlyWhenNoTriggerMatches(): void
     {
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([]));
@@ -159,9 +162,10 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->dispatch('order_placed', []);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDispatchUsesCachedCampaignIdsWithoutRequeryingTriggersOrCampaigns(): void
     {
-        $this->cache = $this->createMock(CacheInterface::class);
+        $this->cache = $this->createStub(CacheInterface::class);
         $this->cache->method('load')->willReturn('[1]');
 
         $this->triggerCollectionFactory->expects(self::never())->method('create');
@@ -182,6 +186,7 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->dispatch('order_placed', []);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDispatchDeduplicatesCampaignWithMultipleMatchingTriggers(): void
     {
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1, 1]));
@@ -198,6 +203,7 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->dispatch('order_placed', []);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDispatchSkipsCampaignWhenConditionNotSatisfied(): void
     {
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
@@ -209,7 +215,7 @@ class CampaignDispatcherTest extends TestCase
         $conditionRow->method('getParams')->willReturn([]);
         $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([$conditionRow]));
 
-        $condition = $this->createMock(ConditionInterface::class);
+        $condition = $this->createStub(ConditionInterface::class);
         $condition->method('isSatisfied')->willReturn(false);
         $this->conditionPool = new ConditionPool(['has_tag' => $condition]);
 
@@ -223,6 +229,7 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->dispatch('order_placed', []);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDispatchLogsAndSkipsWhenConditionTypeUnknown(): void
     {
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
@@ -239,6 +246,7 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->dispatch('order_placed', []);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDispatchLogsAndContinuesWhenActionTypeUnknown(): void
     {
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
@@ -255,13 +263,14 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->dispatch('order_placed', []);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDispatchSchedulesInsteadOfRunningWhenActionHasDelay(): void
     {
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
         $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
         $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
 
-        $delayedAction = $this->createMock(CampaignAction::class);
+        $delayedAction = $this->createStub(CampaignAction::class);
         $delayedAction->method('getCampaignId')->willReturn(1);
         $delayedAction->method('getEntityId')->willReturn(42);
         $delayedAction->method('getDelayMinutes')->willReturn(1440);
@@ -282,6 +291,7 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDispatchRunsNonDelayedActionsThenSchedulesRemainingChain(): void
     {
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
@@ -295,7 +305,7 @@ class CampaignDispatcherTest extends TestCase
         $immediateAction->method('getData')->with('type')->willReturn('tag_customer');
         $immediateAction->method('getParams')->willReturn(['tag' => 'vip']);
 
-        $delayedAction = $this->createMock(CampaignAction::class);
+        $delayedAction = $this->createStub(CampaignAction::class);
         $delayedAction->method('getCampaignId')->willReturn(1);
         $delayedAction->method('getEntityId')->willReturn(11);
         $delayedAction->method('getDelayMinutes')->willReturn(60);
@@ -316,6 +326,7 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDispatchBatchesConditionsAndActionsAcrossMultipleCampaignsInOneQueryEach(): void
     {
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1, 2]));
@@ -351,6 +362,7 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->dispatch('order_placed', []);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testResumeScheduledActionRunsFromResumePointOnward(): void
     {
         $firstAction = $this->createMock(CampaignAction::class);
@@ -378,6 +390,7 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->resumeScheduledAction(1, 11, ['customer_id' => 1]);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testResumeScheduledActionDoesNothingWhenActionNoLongerExists(): void
     {
         $actionCollection = $this->createMock(ActionCollection::class);
@@ -390,6 +403,7 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->resumeScheduledAction(1, 999, []);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDispatchLogsAndAbortsWhenBatchLoadingConditionsThrows(): void
     {
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
@@ -402,6 +416,7 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->dispatch('order_placed', []);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDispatchLogsAndContinuesToNextCampaignWhenAnActionThrows(): void
     {
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1, 2]));

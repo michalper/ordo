@@ -13,13 +13,13 @@ class DispatchTagAddedCampaignsTest extends TestCase
 {
     public function testExecutePublishesWhenCustomerAndTagPresent(): void
     {
-        $event = $this->createMock(Event::class);
+        $event = $this->createStub(Event::class);
         $event->method('getData')->willReturnMap([
             ['customer_id', null, 42],
             ['tag', null, 'vip'],
         ]);
 
-        $observer = $this->createMock(EventObserver::class);
+        $observer = $this->createStub(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);
 
         $publisher = $this->createMock(CampaignDispatchPublisher::class);
@@ -33,13 +33,13 @@ class DispatchTagAddedCampaignsTest extends TestCase
 
     public function testExecuteDoesNothingWhenTagEmpty(): void
     {
-        $event = $this->createMock(Event::class);
+        $event = $this->createStub(Event::class);
         $event->method('getData')->willReturnMap([
             ['customer_id', null, 42],
             ['tag', null, ''],
         ]);
 
-        $observer = $this->createMock(EventObserver::class);
+        $observer = $this->createStub(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);
 
         $publisher = $this->createMock(CampaignDispatchPublisher::class);

@@ -4,9 +4,11 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Controller\Adminhtml\FreeGiftOffer;
 
 use Ordo\Automation\Test\Unit\Controller\AbstractAdminActionTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class NewActionTest extends AbstractAdminActionTestCase
 {
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteForwardsToEdit(): void
     {
         $context = $this->makeContext();

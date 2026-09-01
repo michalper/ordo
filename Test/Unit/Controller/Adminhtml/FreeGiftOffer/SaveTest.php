@@ -19,6 +19,7 @@ use Ordo\Automation\Model\ResourceModel\FreeGiftOfferTier as FreeGiftOfferTierRe
 use Ordo\Automation\Model\ResourceModel\FreeGiftOfferTier\Collection as TierCollection;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOfferTier\CollectionFactory as TierCollectionFactory;
 use Ordo\Automation\Test\Unit\Controller\AbstractAdminActionTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class SaveTest extends AbstractAdminActionTestCase
 {
@@ -37,10 +38,10 @@ class SaveTest extends AbstractAdminActionTestCase
         $this->offerResource = $this->createMock(FreeGiftOfferResource::class);
         $this->tierFactory = $this->createMock(FreeGiftOfferTierFactory::class);
         $this->tierResource = $this->createMock(FreeGiftOfferTierResource::class);
-        $this->tierCollectionFactory = $this->createMock(TierCollectionFactory::class);
+        $this->tierCollectionFactory = $this->createStub(TierCollectionFactory::class);
         $this->productFactory = $this->createMock(FreeGiftOfferProductFactory::class);
         $this->productResource = $this->createMock(FreeGiftOfferProductResource::class);
-        $this->productCollectionFactory = $this->createMock(ProductCollectionFactory::class);
+        $this->productCollectionFactory = $this->createStub(ProductCollectionFactory::class);
     }
 
     private function makeController(): Save
@@ -58,6 +59,7 @@ class SaveTest extends AbstractAdminActionTestCase
         );
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsImmediatelyWhenNoPostData(): void
     {
         $controller = $this->makeController();
@@ -72,6 +74,7 @@ class SaveTest extends AbstractAdminActionTestCase
         self::assertSame($redirect, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSavesNewOfferWithTiersAndProducts(): void
     {
         $controller = $this->makeController();
@@ -92,7 +95,7 @@ class SaveTest extends AbstractAdminActionTestCase
 
         $this->offerResource->expects(self::once())->method('save')->with($offer);
 
-        $emptyTierCollection = $this->createMock(TierCollection::class);
+        $emptyTierCollection = $this->createStub(TierCollection::class);
         $emptyTierCollection->method('addOfferFilter');
         $emptyTierCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->tierCollectionFactory->method('create')->willReturn($emptyTierCollection);
@@ -106,7 +109,7 @@ class SaveTest extends AbstractAdminActionTestCase
         $this->tierFactory->method('create')->willReturn($tier);
         $this->tierResource->expects(self::once())->method('save')->with($tier);
 
-        $emptyProductCollection = $this->createMock(ProductCollection::class);
+        $emptyProductCollection = $this->createStub(ProductCollection::class);
         $emptyProductCollection->method('addOfferFilter');
         $emptyProductCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->productCollectionFactory->method('create')->willReturn($emptyProductCollection);
@@ -128,6 +131,7 @@ class SaveTest extends AbstractAdminActionTestCase
         self::assertSame($redirect, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLoadsExistingOfferAndDeletesOldChildRows(): void
     {
         $controller = $this->makeController();
@@ -142,15 +146,15 @@ class SaveTest extends AbstractAdminActionTestCase
         $this->offerFactory->method('create')->willReturn($offer);
         $this->offerResource->expects(self::once())->method('load')->with($offer, 7);
 
-        $existingTier = $this->createMock(FreeGiftOfferTier::class);
-        $tierCollection = $this->createMock(TierCollection::class);
+        $existingTier = $this->createStub(FreeGiftOfferTier::class);
+        $tierCollection = $this->createStub(TierCollection::class);
         $tierCollection->method('addOfferFilter');
         $tierCollection->method('getIterator')->willReturn(new \ArrayIterator([$existingTier]));
         $this->tierCollectionFactory->method('create')->willReturn($tierCollection);
         $this->tierResource->expects(self::once())->method('delete')->with($existingTier);
 
-        $existingProduct = $this->createMock(FreeGiftOfferProduct::class);
-        $productCollection = $this->createMock(ProductCollection::class);
+        $existingProduct = $this->createStub(FreeGiftOfferProduct::class);
+        $productCollection = $this->createStub(ProductCollection::class);
         $productCollection->method('addOfferFilter');
         $productCollection->method('getIterator')->willReturn(new \ArrayIterator([$existingProduct]));
         $this->productCollectionFactory->method('create')->willReturn($productCollection);
@@ -163,6 +167,7 @@ class SaveTest extends AbstractAdminActionTestCase
         $controller->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsTierRowsMissingRequiredFields(): void
     {
         $controller = $this->makeController();
@@ -176,11 +181,11 @@ class SaveTest extends AbstractAdminActionTestCase
         $offer->method('getEntityId')->willReturn(1);
         $this->offerFactory->method('create')->willReturn($offer);
 
-        $emptyTierCollection = $this->createMock(TierCollection::class);
+        $emptyTierCollection = $this->createStub(TierCollection::class);
         $emptyTierCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->tierCollectionFactory->method('create')->willReturn($emptyTierCollection);
 
-        $emptyProductCollection = $this->createMock(ProductCollection::class);
+        $emptyProductCollection = $this->createStub(ProductCollection::class);
         $emptyProductCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->productCollectionFactory->method('create')->willReturn($emptyProductCollection);
 
@@ -194,6 +199,7 @@ class SaveTest extends AbstractAdminActionTestCase
         $controller->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsToEditWhenBackParamSet(): void
     {
         $controller = $this->makeController();
@@ -204,11 +210,11 @@ class SaveTest extends AbstractAdminActionTestCase
         $offer->method('getEntityId')->willReturn(7);
         $this->offerFactory->method('create')->willReturn($offer);
 
-        $emptyTierCollection = $this->createMock(TierCollection::class);
+        $emptyTierCollection = $this->createStub(TierCollection::class);
         $emptyTierCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->tierCollectionFactory->method('create')->willReturn($emptyTierCollection);
 
-        $emptyProductCollection = $this->createMock(ProductCollection::class);
+        $emptyProductCollection = $this->createStub(ProductCollection::class);
         $emptyProductCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->productCollectionFactory->method('create')->willReturn($emptyProductCollection);
 
@@ -219,12 +225,13 @@ class SaveTest extends AbstractAdminActionTestCase
         self::assertSame($redirect, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsToEditWithErrorWhenSaveThrows(): void
     {
         $controller = $this->makeController();
         $this->request->method('getPostValue')->willReturn(['entity_id' => 3, 'name' => 'Spend more, get more']);
 
-        $offer = $this->createMock(FreeGiftOffer::class);
+        $offer = $this->createStub(FreeGiftOffer::class);
         $this->offerFactory->method('create')->willReturn($offer);
         $this->offerResource->method('save')->willThrowException(new \RuntimeException('db down'));
 

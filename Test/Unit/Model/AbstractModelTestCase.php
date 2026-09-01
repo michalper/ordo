@@ -16,17 +16,17 @@ abstract class AbstractModelTestCase extends TestCase
 {
     protected function makeModelContext(): Context
     {
-        return $this->createMock(Context::class);
+        return $this->createStub(Context::class);
     }
 
     protected function makeRegistry(): Registry
     {
-        return $this->createMock(Registry::class);
+        return $this->createStub(Registry::class);
     }
 
     protected function makeModelResource(string $idFieldName = 'entity_id'): AbstractDb
     {
-        $resource = $this->createMock(AbstractDb::class);
+        $resource = $this->createStub(AbstractDb::class);
         $resource->method('getIdFieldName')->willReturn($idFieldName);
 
         return $resource;

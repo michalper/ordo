@@ -11,7 +11,7 @@ class ActionPoolTest extends TestCase
 {
     public function testGetReturnsRegisteredAction(): void
     {
-        $action = $this->createMock(ActionInterface::class);
+        $action = $this->createStub(ActionInterface::class);
         $pool = new ActionPool(['tag_customer' => $action]);
 
         self::assertSame($action, $pool->get('tag_customer'));

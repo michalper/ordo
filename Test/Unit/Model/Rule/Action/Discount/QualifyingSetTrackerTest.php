@@ -9,6 +9,7 @@ use Magento\SalesRule\Model\Rule;
 use Magento\SalesRule\Model\Rule\Condition\Combine;
 use Ordo\Automation\Model\Rule\Action\Discount\QualifyingSetTracker;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class QualifyingSetTrackerTest extends TestCase
 {
@@ -19,6 +20,7 @@ class QualifyingSetTrackerTest extends TestCase
         $this->tracker = new QualifyingSetTracker();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testCheapestQualifyingItemIsChosenAsFree(): void
     {
         $expensive = $this->item(sku: 'expensive-sku', price: 100.0);
@@ -33,6 +35,7 @@ class QualifyingSetTrackerTest extends TestCase
         self::assertTrue($this->tracker->isFreeItem($rule, $cheap));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testItemNotMatchingRuleConditionsIsNeverFree(): void
     {
         $onlyItem = $this->item(sku: 'only-sku', price: 20.0);
@@ -55,7 +58,7 @@ class QualifyingSetTrackerTest extends TestCase
         // would be called more than twice (once per isFreeItem() call below).
         $conditions->expects(self::exactly(1))->method('validate')->willReturn(true);
 
-        $rule = $this->createMock(Rule::class);
+        $rule = $this->createStub(Rule::class);
         $rule->method('getId')->willReturn(10);
         $rule->method('getConditions')->willReturn($conditions);
 
@@ -69,47 +72,47 @@ class QualifyingSetTrackerTest extends TestCase
      * Model\Rule\Action\Discount\QualifyingSetTracker's docblock and VERIFICATION.md #17),
      * which is exactly the real bug a getItemId()-based mock here would have hidden.
      */
-    private function item(string $sku, float $price): Item&\PHPUnit\Framework\MockObject\MockObject
+    private function item(string $sku, float $price): Item
     {
-        $item = $this->createMock(Item::class);
+        $item = $this->createStub(Item::class);
         $item->method('getSku')->willReturn($sku);
         $item->method('getCalculationPrice')->willReturn($price);
 
         return $item;
     }
 
-    private function quoteWithItems(int $quoteId, array $items): Quote&\PHPUnit\Framework\MockObject\MockObject
+    private function quoteWithItems(int $quoteId, array $items): Quote
     {
-        $quote = $this->createMock(Quote::class);
+        $quote = $this->createStub(Quote::class);
         $quote->method('getId')->willReturn($quoteId);
         $quote->method('getAllItems')->willReturn($items);
 
         return $quote;
     }
 
-    private function assignQuote(Item&\PHPUnit\Framework\MockObject\MockObject $item, Quote $quote): void
+    private function assignQuote(Item $item, Quote $quote): void
     {
         $item->method('getQuote')->willReturn($quote);
     }
 
-    private function ruleThatQualifiesEverything(int $ruleId): Rule&\PHPUnit\Framework\MockObject\MockObject
+    private function ruleThatQualifiesEverything(int $ruleId): Rule
     {
         $conditions = $this->createMock(Combine::class);
         $conditions->method('validate')->willReturn(true);
 
-        $rule = $this->createMock(Rule::class);
+        $rule = $this->createStub(Rule::class);
         $rule->method('getId')->willReturn($ruleId);
         $rule->method('getConditions')->willReturn($conditions);
 
         return $rule;
     }
 
-    private function ruleThatQualifiesNothing(int $ruleId): Rule&\PHPUnit\Framework\MockObject\MockObject
+    private function ruleThatQualifiesNothing(int $ruleId): Rule
     {
         $conditions = $this->createMock(Combine::class);
         $conditions->method('validate')->willReturn(false);
 
-        $rule = $this->createMock(Rule::class);
+        $rule = $this->createStub(Rule::class);
         $rule->method('getId')->willReturn($ruleId);
         $rule->method('getConditions')->willReturn($conditions);
 

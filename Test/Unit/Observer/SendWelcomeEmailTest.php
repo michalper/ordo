@@ -21,30 +21,30 @@ class SendWelcomeEmailTest extends TestCase
 {
     public function testExecuteSkipsWhenLifecycleEmailsDisabled(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isLifecycleEmailsEnabled')->willReturn(false);
 
         $tagManager = $this->createMock(CustomerTagManager::class);
         $tagManager->expects(self::never())->method('addTag');
 
-        $observer = $this->createMock(EventObserver::class);
+        $observer = $this->createStub(EventObserver::class);
 
         $this->makeObserver($config, $tagManager)->execute($observer);
     }
 
     public function testExecuteTagsAndSendsEmail(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isLifecycleEmailsEnabled')->willReturn(true);
 
-        $customer = $this->createMock(CustomerInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getId')->willReturn(42);
         $customer->method('getFirstname')->willReturn('Jan');
         $customer->method('getEmail')->willReturn('jan@example.com');
 
         $event = new Event(['customer' => $customer]);
 
-        $observer = $this->createMock(EventObserver::class);
+        $observer = $this->createStub(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);
 
         $tagManager = $this->createMock(CustomerTagManager::class);
@@ -55,12 +55,12 @@ class SendWelcomeEmailTest extends TestCase
 
     public function testExecuteDoesNothingWhenCustomerMissing(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isLifecycleEmailsEnabled')->willReturn(true);
 
         $event = new Event([]);
 
-        $observer = $this->createMock(EventObserver::class);
+        $observer = $this->createStub(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);
 
         $tagManager = $this->createMock(CustomerTagManager::class);
@@ -71,26 +71,26 @@ class SendWelcomeEmailTest extends TestCase
 
     public function testExecuteLogsErrorWhenTransportThrows(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isLifecycleEmailsEnabled')->willReturn(true);
 
-        $customer = $this->createMock(CustomerInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getId')->willReturn(42);
         $customer->method('getFirstname')->willReturn('Jan');
         $customer->method('getEmail')->willReturn('jan@example.com');
 
         $event = new Event(['customer' => $customer]);
-        $observer = $this->createMock(EventObserver::class);
+        $observer = $this->createStub(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);
 
-        $tagManager = $this->createMock(CustomerTagManager::class);
+        $tagManager = $this->createStub(CustomerTagManager::class);
 
-        $store = $this->createMock(StoreInterface::class);
+        $store = $this->createStub(StoreInterface::class);
         $store->method('getId')->willReturn(1);
-        $storeManager = $this->createMock(StoreManagerInterface::class);
+        $storeManager = $this->createStub(StoreManagerInterface::class);
         $storeManager->method('getStore')->willReturn($store);
 
-        $transportBuilder = $this->createMock(TransportBuilder::class);
+        $transportBuilder = $this->createStub(TransportBuilder::class);
         $transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
         $transportBuilder->method('setTemplateOptions')->willReturnSelf();
         $transportBuilder->method('setTemplateVars')->willReturnSelf();
@@ -106,7 +106,7 @@ class SendWelcomeEmailTest extends TestCase
             $tagManager,
             $transportBuilder,
             $storeManager,
-            $this->createMock(StateInterface::class),
+            $this->createStub(StateInterface::class),
             $logger
         );
 
@@ -115,20 +115,20 @@ class SendWelcomeEmailTest extends TestCase
 
     private function makeObserver(Config $config, CustomerTagManager $tagManager): SendWelcomeEmail
     {
-        $store = $this->createMock(StoreInterface::class);
+        $store = $this->createStub(StoreInterface::class);
         $store->method('getId')->willReturn(1);
 
-        $storeManager = $this->createMock(StoreManagerInterface::class);
+        $storeManager = $this->createStub(StoreManagerInterface::class);
         $storeManager->method('getStore')->willReturn($store);
 
-        $transportBuilder = $this->createMock(TransportBuilder::class);
+        $transportBuilder = $this->createStub(TransportBuilder::class);
         $transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
         $transportBuilder->method('setTemplateOptions')->willReturnSelf();
         $transportBuilder->method('setTemplateVars')->willReturnSelf();
         $transportBuilder->method('setFromByScope')->willReturnSelf();
         $transportBuilder->method('addTo')->willReturnSelf();
 
-        $transport = $this->createMock(TransportInterface::class);
+        $transport = $this->createStub(TransportInterface::class);
         $transportBuilder->method('getTransport')->willReturn($transport);
 
         return new SendWelcomeEmail(
@@ -136,8 +136,8 @@ class SendWelcomeEmailTest extends TestCase
             $tagManager,
             $transportBuilder,
             $storeManager,
-            $this->createMock(StateInterface::class),
-            $this->createMock(LoggerInterface::class)
+            $this->createStub(StateInterface::class),
+            $this->createStub(LoggerInterface::class)
         );
     }
 }

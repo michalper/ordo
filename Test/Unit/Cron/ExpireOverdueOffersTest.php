@@ -19,11 +19,11 @@ class ExpireOverdueOffersTest extends TestCase
         $offer = $this->createMock(Offer::class);
         $offer->expects(self::once())->method('setStatus')->with(OfferInterface::STATUS_EXPIRED);
 
-        $collection = $this->createMock(Collection::class);
+        $collection = $this->createStub(Collection::class);
         $collection->method('addPastExpiryFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([$offer]));
 
-        $collectionFactory = $this->createMock(CollectionFactory::class);
+        $collectionFactory = $this->createStub(CollectionFactory::class);
         $collectionFactory->method('create')->willReturn($collection);
 
         $offerResource = $this->createMock(OfferResource::class);
@@ -37,11 +37,11 @@ class ExpireOverdueOffersTest extends TestCase
 
     public function testExecuteHandlesEmptyCollection(): void
     {
-        $collection = $this->createMock(Collection::class);
+        $collection = $this->createStub(Collection::class);
         $collection->method('addPastExpiryFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
 
-        $collectionFactory = $this->createMock(CollectionFactory::class);
+        $collectionFactory = $this->createStub(CollectionFactory::class);
         $collectionFactory->method('create')->willReturn($collection);
 
         $offerResource = $this->createMock(OfferResource::class);

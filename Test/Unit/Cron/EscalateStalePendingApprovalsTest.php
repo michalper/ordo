@@ -19,6 +19,7 @@ use Ordo\Automation\Model\ResourceModel\OrderApproval\Collection as ApprovalColl
 use Ordo\Automation\Model\ResourceModel\OrderApproval\CollectionFactory as ApprovalCollectionFactory;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class EscalateStalePendingApprovalsTest extends TestCase
 {
@@ -33,15 +34,15 @@ class EscalateStalePendingApprovalsTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->config = $this->createMock(Config::class);
+        $this->config = $this->createStub(Config::class);
         $this->config->method('isOrderApprovalEnabled')->willReturn(true);
         $this->config->method('getOrderApprovalEscalationDays')->willReturn(2);
         $this->approvalCollectionFactory = $this->createMock(ApprovalCollectionFactory::class);
         $this->orderApprovalResource = $this->createMock(OrderApprovalResource::class);
         $this->orderCollectionFactory = $this->createMock(OrderCollectionFactory::class);
-        $this->transportBuilder = $this->createMock(TransportBuilder::class);
-        $this->storeManager = $this->createMock(StoreManagerInterface::class);
-        $this->inlineTranslation = $this->createMock(StateInterface::class);
+        $this->transportBuilder = $this->createStub(TransportBuilder::class);
+        $this->storeManager = $this->createStub(StoreManagerInterface::class);
+        $this->inlineTranslation = $this->createStub(StateInterface::class);
         $this->logger = $this->createMock(LoggerInterface::class);
     }
 
@@ -59,9 +60,10 @@ class EscalateStalePendingApprovalsTest extends TestCase
         );
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsWhenApprovalDisabled(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isOrderApprovalEnabled')->willReturn(false);
         $this->config = $config;
 
@@ -70,12 +72,13 @@ class EscalateStalePendingApprovalsTest extends TestCase
         $this->makeCron()->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsApprovalAtMaxEscalations(): void
     {
         $approval = $this->createMock(OrderApproval::class);
         $approval->method('getRemindersSent')->willReturn(3);
 
-        $collection = $this->createMock(ApprovalCollection::class);
+        $collection = $this->createStub(ApprovalCollection::class);
         $collection->method('addStalePendingFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([$approval]));
         $this->approvalCollectionFactory->method('create')->willReturn($collection);
@@ -86,6 +89,7 @@ class EscalateStalePendingApprovalsTest extends TestCase
         $this->makeCron()->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSendsEscalationAndIncrementsCounter(): void
     {
         $approval = $this->createMock(OrderApproval::class);
@@ -95,23 +99,23 @@ class EscalateStalePendingApprovalsTest extends TestCase
         $approval->method('getAdminEmail')->willReturn('admin@example.com');
         $approval->expects(self::once())->method('setData')->with('reminders_sent', 1);
 
-        $collection = $this->createMock(ApprovalCollection::class);
+        $collection = $this->createStub(ApprovalCollection::class);
         $collection->method('addStalePendingFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([$approval]));
         $this->approvalCollectionFactory->method('create')->willReturn($collection);
 
-        $order = $this->createMock(Order::class);
+        $order = $this->createStub(Order::class);
         $order->method('getId')->willReturn(7);
         $order->method('getEntityId')->willReturn(7);
         $order->method('getIncrementId')->willReturn('000000007');
         $order->method('getGrandTotal')->willReturn(150.0);
 
-        $orderCollection = $this->createMock(OrderCollection::class);
+        $orderCollection = $this->createStub(OrderCollection::class);
         $orderCollection->method('addFieldToFilter')->willReturnSelf();
         $orderCollection->method('getFirstItem')->willReturn($order);
         $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
 
-        $store = $this->createMock(Store::class);
+        $store = $this->createStub(Store::class);
         $store->method('getId')->willReturn(1);
         $store->method('getBaseUrl')->willReturn('https://example.com/');
         $this->storeManager->method('getStore')->willReturn($store);
@@ -132,21 +136,22 @@ class EscalateStalePendingApprovalsTest extends TestCase
         $this->makeCron()->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsWhenOrderNotFound(): void
     {
         $approval = $this->createMock(OrderApproval::class);
         $approval->method('getRemindersSent')->willReturn(0);
         $approval->method('getOrderId')->willReturn(999);
 
-        $collection = $this->createMock(ApprovalCollection::class);
+        $collection = $this->createStub(ApprovalCollection::class);
         $collection->method('addStalePendingFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([$approval]));
         $this->approvalCollectionFactory->method('create')->willReturn($collection);
 
-        $order = $this->createMock(Order::class);
+        $order = $this->createStub(Order::class);
         $order->method('getId')->willReturn(null);
 
-        $orderCollection = $this->createMock(OrderCollection::class);
+        $orderCollection = $this->createStub(OrderCollection::class);
         $orderCollection->method('addFieldToFilter')->willReturnSelf();
         $orderCollection->method('getFirstItem')->willReturn($order);
         $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
@@ -156,22 +161,23 @@ class EscalateStalePendingApprovalsTest extends TestCase
         $this->makeCron()->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsErrorWhenEmailSendingThrows(): void
     {
         $approval = $this->createMock(OrderApproval::class);
         $approval->method('getRemindersSent')->willReturn(0);
         $approval->method('getOrderId')->willReturn(7);
 
-        $collection = $this->createMock(ApprovalCollection::class);
+        $collection = $this->createStub(ApprovalCollection::class);
         $collection->method('addStalePendingFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([$approval]));
         $this->approvalCollectionFactory->method('create')->willReturn($collection);
 
-        $order = $this->createMock(Order::class);
+        $order = $this->createStub(Order::class);
         $order->method('getId')->willReturn(7);
         $order->method('getEntityId')->willReturn(7);
 
-        $orderCollection = $this->createMock(OrderCollection::class);
+        $orderCollection = $this->createStub(OrderCollection::class);
         $orderCollection->method('addFieldToFilter')->willReturnSelf();
         $orderCollection->method('getFirstItem')->willReturn($order);
         $this->orderCollectionFactory->method('create')->willReturn($orderCollection);

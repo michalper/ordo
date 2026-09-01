@@ -11,6 +11,7 @@ use Ordo\Automation\Model\ResourceModel\Campaign\ScheduledAction\Collection as S
 use Ordo\Automation\Model\ResourceModel\Campaign\ScheduledAction\CollectionFactory as ScheduledActionCollectionFactory;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class RunScheduledCampaignActionsTest extends TestCase
 {
@@ -21,7 +22,7 @@ class RunScheduledCampaignActionsTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->collectionFactory = $this->createMock(ScheduledActionCollectionFactory::class);
+        $this->collectionFactory = $this->createStub(ScheduledActionCollectionFactory::class);
         $this->resource = $this->createMock(CampaignScheduledActionResource::class);
         $this->dispatcher = $this->createMock(CampaignDispatcher::class);
         $this->logger = $this->createMock(LoggerInterface::class);
@@ -32,6 +33,7 @@ class RunScheduledCampaignActionsTest extends TestCase
         return new RunScheduledCampaignActions($this->collectionFactory, $this->resource, $this->dispatcher, $this->logger);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteClaimsAndResumesDueRows(): void
     {
         $scheduled = $this->createMock(CampaignScheduledAction::class);
@@ -40,7 +42,7 @@ class RunScheduledCampaignActionsTest extends TestCase
         $scheduled->method('getContext')->willReturn(['customer_id' => 1]);
         $scheduled->expects(self::once())->method('setExecutedAt');
 
-        $collection = $this->createMock(ScheduledActionCollection::class);
+        $collection = $this->createStub(ScheduledActionCollection::class);
         $collection->method('addDueFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([$scheduled]));
         $this->collectionFactory->method('create')->willReturn($collection);
@@ -52,6 +54,7 @@ class RunScheduledCampaignActionsTest extends TestCase
         $this->makeCron()->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsAndContinuesWhenResumeThrows(): void
     {
         $scheduled = $this->createMock(CampaignScheduledAction::class);
@@ -60,7 +63,7 @@ class RunScheduledCampaignActionsTest extends TestCase
         $scheduled->method('getResumeActionId')->willReturn(9);
         $scheduled->method('getContext')->willReturn([]);
 
-        $collection = $this->createMock(ScheduledActionCollection::class);
+        $collection = $this->createStub(ScheduledActionCollection::class);
         $collection->method('addDueFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([$scheduled]));
         $this->collectionFactory->method('create')->willReturn($collection);
@@ -72,9 +75,10 @@ class RunScheduledCampaignActionsTest extends TestCase
         $this->makeCron()->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteDoesNothingWhenNoRowsDue(): void
     {
-        $collection = $this->createMock(ScheduledActionCollection::class);
+        $collection = $this->createStub(ScheduledActionCollection::class);
         $collection->method('addDueFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->collectionFactory->method('create')->willReturn($collection);
@@ -84,6 +88,7 @@ class RunScheduledCampaignActionsTest extends TestCase
         $this->makeCron()->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteQueriesASecondBatchWhenFirstBatchIsFull(): void
     {
         $scheduled = $this->createMock(CampaignScheduledAction::class);
@@ -91,11 +96,11 @@ class RunScheduledCampaignActionsTest extends TestCase
         $scheduled->method('getResumeActionId')->willReturn(9);
         $scheduled->method('getContext')->willReturn([]);
 
-        $fullBatch = $this->createMock(ScheduledActionCollection::class);
+        $fullBatch = $this->createStub(ScheduledActionCollection::class);
         $fullBatch->method('addDueFilter');
         $fullBatch->method('getIterator')->willReturn(new \ArrayIterator(array_fill(0, 500, $scheduled)));
 
-        $emptyBatch = $this->createMock(ScheduledActionCollection::class);
+        $emptyBatch = $this->createStub(ScheduledActionCollection::class);
         $emptyBatch->method('addDueFilter');
         $emptyBatch->method('getIterator')->willReturn(new \ArrayIterator([]));
 
@@ -107,6 +112,7 @@ class RunScheduledCampaignActionsTest extends TestCase
         $this->makeCron()->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsWarningWhenBatchCapReached(): void
     {
         $scheduled = $this->createMock(CampaignScheduledAction::class);
@@ -114,7 +120,7 @@ class RunScheduledCampaignActionsTest extends TestCase
         $scheduled->method('getResumeActionId')->willReturn(9);
         $scheduled->method('getContext')->willReturn([]);
 
-        $fullBatch = $this->createMock(ScheduledActionCollection::class);
+        $fullBatch = $this->createStub(ScheduledActionCollection::class);
         $fullBatch->method('addDueFilter');
         $fullBatch->method('getIterator')->willReturn(new \ArrayIterator(array_fill(0, 500, $scheduled)));
 

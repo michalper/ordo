@@ -12,6 +12,7 @@ use Ordo\Automation\Model\ResourceModel\Segment\CollectionFactory as SegmentColl
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\Collection as ConditionCollection;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\CollectionFactory as ConditionCollectionFactory;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class DataProviderTest extends TestCase
 {
@@ -20,13 +21,13 @@ class DataProviderTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->conditionCollectionFactory = $this->createMock(ConditionCollectionFactory::class);
+        $this->conditionCollectionFactory = $this->createStub(ConditionCollectionFactory::class);
         $this->dataPersistor = $this->createMock(DataPersistorInterface::class);
     }
 
     private function makeProvider(SegmentCollection $collection): DataProvider
     {
-        $collectionFactory = $this->createMock(SegmentCollectionFactory::class);
+        $collectionFactory = $this->createStub(SegmentCollectionFactory::class);
         $collectionFactory->method('create')->willReturn($collection);
 
         return new DataProvider(
@@ -41,26 +42,27 @@ class DataProviderTest extends TestCase
 
     private function makeEmptyConditionCollection(): ConditionCollection
     {
-        $collection = $this->createMock(ConditionCollection::class);
+        $collection = $this->createStub(ConditionCollection::class);
         $collection->method('addSegmentFilter')->willReturnSelf();
         $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
 
         return $collection;
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetDataMergesConditionRows(): void
     {
-        $segment = $this->createMock(Segment::class);
+        $segment = $this->createStub(Segment::class);
         $segment->method('getData')->willReturn(['entity_id' => 1, 'name' => 'VIP customers']);
         $segment->method('getEntityId')->willReturn(1);
 
-        $collection = $this->createMock(SegmentCollection::class);
+        $collection = $this->createStub(SegmentCollection::class);
         $collection->method('getItems')->willReturn([$segment]);
 
-        $conditionRow = $this->createMock(SegmentCondition::class);
+        $conditionRow = $this->createStub(SegmentCondition::class);
         $conditionRow->method('getType')->willReturn('lifetime_spend');
         $conditionRow->method('getParamsJson')->willReturn(json_encode(['min' => '500']));
-        $conditionCollection = $this->createMock(ConditionCollection::class);
+        $conditionCollection = $this->createStub(ConditionCollection::class);
         $conditionCollection->method('addSegmentFilter')->willReturnSelf();
         $conditionCollection->method('getIterator')->willReturn(new \ArrayIterator([$conditionRow]));
         $this->conditionCollectionFactory->method('create')->willReturn($conditionCollection);
@@ -79,7 +81,7 @@ class DataProviderTest extends TestCase
 
     public function testGetDataAppliesPersistedDataAndClearsIt(): void
     {
-        $collection = $this->createMock(SegmentCollection::class);
+        $collection = $this->createStub(SegmentCollection::class);
         $collection->method('getItems')->willReturn([]);
 
         $this->conditionCollectionFactory->method('create')->willReturn($this->makeEmptyConditionCollection());
@@ -95,7 +97,7 @@ class DataProviderTest extends TestCase
 
     public function testGetDataIgnoresPersistedDataWithoutEntityId(): void
     {
-        $collection = $this->createMock(SegmentCollection::class);
+        $collection = $this->createStub(SegmentCollection::class);
         $collection->method('getItems')->willReturn([]);
 
         $this->conditionCollectionFactory->method('create')->willReturn($this->makeEmptyConditionCollection());

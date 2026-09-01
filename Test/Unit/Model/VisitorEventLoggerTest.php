@@ -19,7 +19,7 @@ class VisitorEventLoggerTest extends TestCase
             self::callback(fn (array $row) => $row['visitor_id'] === 'v1' && $row['customer_id'] === 42)
         );
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
@@ -33,8 +33,8 @@ class VisitorEventLoggerTest extends TestCase
 
     public function testLogPublishesForVisitorWhenCustomerUnknown(): void
     {
-        $connection = $this->createMock(AdapterInterface::class);
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $connection = $this->createStub(AdapterInterface::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
@@ -55,7 +55,7 @@ class VisitorEventLoggerTest extends TestCase
             ['visitor_id = ?' => 'v1', 'customer_id IS NULL']
         );
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 

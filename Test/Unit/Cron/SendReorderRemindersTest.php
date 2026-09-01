@@ -21,12 +21,13 @@ use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory;
 use Ordo\Automation\Model\SalesRepEmailContext;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class SendReorderRemindersTest extends TestCase
 {
     private function makeSelect(): Select
     {
-        $select = $this->createMock(Select::class);
+        $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
 
@@ -35,28 +36,29 @@ class SendReorderRemindersTest extends TestCase
 
     public function testExecuteSkipsWhenDisabled(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isReorderReminderEnabled')->willReturn(false);
 
         $collectionFactory = $this->createMock(CollectionFactory::class);
         $collectionFactory->expects(self::never())->method('create');
 
-        $this->makeCron($config, $collectionFactory, $this->createMock(ResourceConnection::class))->execute();
+        $this->makeCron($config, $collectionFactory, $this->createStub(ResourceConnection::class))->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSendsReminderAndLogsIt(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isReorderReminderEnabled')->willReturn(true);
         $config->method('getReorderLeadDays')->willReturn(2);
 
-        $cycle = $this->createMock(ReorderCycle::class);
+        $cycle = $this->createStub(ReorderCycle::class);
         $cycle->method('getEntityId')->willReturn(3);
         $cycle->method('getCustomerId')->willReturn(5);
         $cycle->method('getSku')->willReturn('SKU-1');
         $cycle->method('getAvgIntervalDays')->willReturn(30);
 
-        $collection = $this->createMock(Collection::class);
+        $collection = $this->createStub(Collection::class);
         $collection->method('addDueTodayFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([$cycle]));
 
@@ -68,7 +70,7 @@ class SendReorderRemindersTest extends TestCase
         $connection->method('fetchOne')->willReturn(0);
         $connection->expects(self::once())->method('insert');
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
@@ -78,16 +80,17 @@ class SendReorderRemindersTest extends TestCase
         $this->makeCron($config, $collectionFactory, $resourceConnection, $logger)->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsCycleAlreadyRemindedToday(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isReorderReminderEnabled')->willReturn(true);
         $config->method('getReorderLeadDays')->willReturn(2);
 
-        $cycle = $this->createMock(ReorderCycle::class);
+        $cycle = $this->createStub(ReorderCycle::class);
         $cycle->method('getEntityId')->willReturn(3);
 
-        $collection = $this->createMock(Collection::class);
+        $collection = $this->createStub(Collection::class);
         $collection->method('addDueTodayFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([$cycle]));
 
@@ -99,24 +102,25 @@ class SendReorderRemindersTest extends TestCase
         $connection->method('fetchOne')->willReturn(1);
         $connection->expects(self::never())->method('insert');
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $this->makeCron($config, $collectionFactory, $resourceConnection)->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsErrorWhenSendingReminderThrows(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isReorderReminderEnabled')->willReturn(true);
         $config->method('getReorderLeadDays')->willReturn(2);
 
-        $cycle = $this->createMock(ReorderCycle::class);
+        $cycle = $this->createStub(ReorderCycle::class);
         $cycle->method('getEntityId')->willReturn(3);
         $cycle->method('getCustomerId')->willReturn(5);
 
-        $collection = $this->createMock(Collection::class);
+        $collection = $this->createStub(Collection::class);
         $collection->method('addDueTodayFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([$cycle]));
 
@@ -127,11 +131,11 @@ class SendReorderRemindersTest extends TestCase
         $connection->method('select')->willReturn($this->makeSelect());
         $connection->method('fetchOne')->willReturn(0);
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
         $customerRepository->method('getById')->willThrowException(new \RuntimeException('lookup failed'));
 
         $logger = $this->createMock(LoggerInterface::class);
@@ -142,10 +146,10 @@ class SendReorderRemindersTest extends TestCase
             $collectionFactory,
             $resourceConnection,
             $customerRepository,
-            $this->createMock(TransportBuilder::class),
-            $this->createMock(StoreManagerInterface::class),
-            $this->createMock(StateInterface::class),
-            $this->createMock(SalesRepEmailContext::class),
+            $this->createStub(TransportBuilder::class),
+            $this->createStub(StoreManagerInterface::class),
+            $this->createStub(StateInterface::class),
+            $this->createStub(SalesRepEmailContext::class),
             $logger
         ))->execute();
     }
@@ -156,27 +160,27 @@ class SendReorderRemindersTest extends TestCase
         ResourceConnection $resourceConnection,
         ?LoggerInterface $logger = null
     ): SendReorderReminders {
-        $customer = $this->createMock(CustomerInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getFirstname')->willReturn('Jan');
         $customer->method('getEmail')->willReturn('jan@example.com');
 
-        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
         $customerRepository->method('getById')->willReturn($customer);
 
-        $store = $this->createMock(Store::class);
+        $store = $this->createStub(Store::class);
         $store->method('getId')->willReturn(1);
-        $storeManager = $this->createMock(StoreManagerInterface::class);
+        $storeManager = $this->createStub(StoreManagerInterface::class);
         $storeManager->method('getStore')->willReturn($store);
 
-        $transportBuilder = $this->createMock(TransportBuilder::class);
+        $transportBuilder = $this->createStub(TransportBuilder::class);
         $transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
         $transportBuilder->method('setTemplateOptions')->willReturnSelf();
         $transportBuilder->method('setTemplateVars')->willReturnSelf();
         $transportBuilder->method('setFromByScope')->willReturnSelf();
         $transportBuilder->method('addTo')->willReturnSelf();
-        $transportBuilder->method('getTransport')->willReturn($this->createMock(TransportInterface::class));
+        $transportBuilder->method('getTransport')->willReturn($this->createStub(TransportInterface::class));
 
-        $salesRepEmailContext = $this->createMock(SalesRepEmailContext::class);
+        $salesRepEmailContext = $this->createStub(SalesRepEmailContext::class);
         $salesRepEmailContext->method('getForCustomer')->willReturn([]);
 
         return new SendReorderReminders(
@@ -186,9 +190,9 @@ class SendReorderRemindersTest extends TestCase
             $customerRepository,
             $transportBuilder,
             $storeManager,
-            $this->createMock(StateInterface::class),
+            $this->createStub(StateInterface::class),
             $salesRepEmailContext,
-            $logger ?? $this->createMock(LoggerInterface::class)
+            $logger ?? $this->createStub(LoggerInterface::class)
         );
     }
 }

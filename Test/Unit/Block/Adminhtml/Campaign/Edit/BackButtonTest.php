@@ -16,9 +16,9 @@ class BackButtonTest extends TestCase
         $urlBuilder = $this->createMock(UrlInterface::class);
         $urlBuilder->method('getUrl')->with('*/*/')->willReturn('https://example.com/admin/ordo/campaign/');
 
-        $request = $this->createMock(RequestInterface::class);
+        $request = $this->createStub(RequestInterface::class);
 
-        $context = $this->createMock(Context::class);
+        $context = $this->createStub(Context::class);
         $context->method('getUrlBuilder')->willReturn($urlBuilder);
         $context->method('getRequest')->willReturn($request);
 

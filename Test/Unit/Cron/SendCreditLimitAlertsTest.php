@@ -19,12 +19,13 @@ use Ordo\Automation\Model\CreditLimitCalculator;
 use Ordo\Automation\Model\SalesRepEmailContext;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class SendCreditLimitAlertsTest extends TestCase
 {
     private function makeSelect(): Select
     {
-        $select = $this->createMock(Select::class);
+        $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
 
@@ -33,18 +34,18 @@ class SendCreditLimitAlertsTest extends TestCase
 
     public function testExecuteSkipsWhenDisabled(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isCreditLimitAlertEnabled')->willReturn(false);
 
         $calculator = $this->createMock(CreditLimitCalculator::class);
         $calculator->expects(self::never())->method('getCustomerIdsWithCreditLimit');
 
-        $this->makeCron($config, $calculator, $this->createMock(ResourceConnection::class))->execute();
+        $this->makeCron($config, $calculator, $this->createStub(ResourceConnection::class))->execute();
     }
 
     public function testExecuteSkipsCustomerBelowThreshold(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isCreditLimitAlertEnabled')->willReturn(true);
         $config->method('getCreditLimitWarningThreshold')->willReturn(80);
 
@@ -58,9 +59,10 @@ class SendCreditLimitAlertsTest extends TestCase
         $this->makeCron($config, $calculator, $resourceConnection)->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSendsWarningBandAlert(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isCreditLimitAlertEnabled')->willReturn(true);
         $config->method('getCreditLimitWarningThreshold')->willReturn(80);
         $config->method('getCreditLimitAlertCooldownDays')->willReturn(7);
@@ -86,9 +88,10 @@ class SendCreditLimitAlertsTest extends TestCase
         $this->makeCron($config, $calculator, $resourceConnection, $logger)->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsWhenAlertedRecently(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isCreditLimitAlertEnabled')->willReturn(true);
         $config->method('getCreditLimitWarningThreshold')->willReturn(80);
         $config->method('getCreditLimitAlertCooldownDays')->willReturn(7);
@@ -109,9 +112,10 @@ class SendCreditLimitAlertsTest extends TestCase
         $this->makeCron($config, $calculator, $resourceConnection)->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsErrorWhenSendingAlertThrows(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isCreditLimitAlertEnabled')->willReturn(true);
         $config->method('getCreditLimitWarningThreshold')->willReturn(80);
         $config->method('getCreditLimitAlertCooldownDays')->willReturn(7);
@@ -128,12 +132,12 @@ class SendCreditLimitAlertsTest extends TestCase
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
         $customerRepository->method('getById')->willThrowException(new \RuntimeException('customer lookup failed'));
 
-        $storeManager = $this->createMock(StoreManagerInterface::class);
-        $transportBuilder = $this->createMock(TransportBuilder::class);
-        $salesRepEmailContext = $this->createMock(SalesRepEmailContext::class);
+        $storeManager = $this->createStub(StoreManagerInterface::class);
+        $transportBuilder = $this->createStub(TransportBuilder::class);
+        $salesRepEmailContext = $this->createStub(SalesRepEmailContext::class);
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('error');
@@ -145,7 +149,7 @@ class SendCreditLimitAlertsTest extends TestCase
             $customerRepository,
             $transportBuilder,
             $storeManager,
-            $this->createMock(StateInterface::class),
+            $this->createStub(StateInterface::class),
             $salesRepEmailContext,
             $logger
         ))->execute();
@@ -157,27 +161,27 @@ class SendCreditLimitAlertsTest extends TestCase
         ResourceConnection $resourceConnection,
         ?LoggerInterface $logger = null
     ): SendCreditLimitAlerts {
-        $customer = $this->createMock(CustomerInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getFirstname')->willReturn('Jan');
         $customer->method('getEmail')->willReturn('jan@example.com');
 
-        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
         $customerRepository->method('getById')->willReturn($customer);
 
-        $store = $this->createMock(Store::class);
+        $store = $this->createStub(Store::class);
         $store->method('getId')->willReturn(1);
-        $storeManager = $this->createMock(StoreManagerInterface::class);
+        $storeManager = $this->createStub(StoreManagerInterface::class);
         $storeManager->method('getStore')->willReturn($store);
 
-        $transportBuilder = $this->createMock(TransportBuilder::class);
+        $transportBuilder = $this->createStub(TransportBuilder::class);
         $transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
         $transportBuilder->method('setTemplateOptions')->willReturnSelf();
         $transportBuilder->method('setTemplateVars')->willReturnSelf();
         $transportBuilder->method('setFromByScope')->willReturnSelf();
         $transportBuilder->method('addTo')->willReturnSelf();
-        $transportBuilder->method('getTransport')->willReturn($this->createMock(TransportInterface::class));
+        $transportBuilder->method('getTransport')->willReturn($this->createStub(TransportInterface::class));
 
-        $salesRepEmailContext = $this->createMock(SalesRepEmailContext::class);
+        $salesRepEmailContext = $this->createStub(SalesRepEmailContext::class);
         $salesRepEmailContext->method('getForCustomer')->willReturn([]);
 
         return new SendCreditLimitAlerts(
@@ -187,9 +191,9 @@ class SendCreditLimitAlertsTest extends TestCase
             $customerRepository,
             $transportBuilder,
             $storeManager,
-            $this->createMock(StateInterface::class),
+            $this->createStub(StateInterface::class),
             $salesRepEmailContext,
-            $logger ?? $this->createMock(LoggerInterface::class)
+            $logger ?? $this->createStub(LoggerInterface::class)
         );
     }
 }

@@ -23,6 +23,7 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as 
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as TriggerCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class FlowTest extends TestCase
 {
@@ -37,26 +38,26 @@ class FlowTest extends TestCase
     protected function setUp(): void
     {
         $this->registry = $this->createMock(Registry::class);
-        $this->triggerCollectionFactory = $this->createMock(TriggerCollectionFactory::class);
-        $this->conditionCollectionFactory = $this->createMock(ConditionCollectionFactory::class);
-        $this->actionCollectionFactory = $this->createMock(ActionCollectionFactory::class);
-        $this->triggerEventSource = $this->createMock(TriggerEvent::class);
+        $this->triggerCollectionFactory = $this->createStub(TriggerCollectionFactory::class);
+        $this->conditionCollectionFactory = $this->createStub(ConditionCollectionFactory::class);
+        $this->actionCollectionFactory = $this->createStub(ActionCollectionFactory::class);
+        $this->triggerEventSource = $this->createStub(TriggerEvent::class);
         $this->triggerEventSource->method('toOptionArray')->willReturn([
             ['value' => 'order_placed', 'label' => __('Order Placed')],
         ]);
-        $this->conditionPool = $this->createMock(ConditionPool::class);
+        $this->conditionPool = $this->createStub(ConditionPool::class);
         $this->conditionPool->method('getAvailableTypes')->willReturn(['order_total_gte', 'tag']);
-        $this->actionPool = $this->createMock(ActionPool::class);
+        $this->actionPool = $this->createStub(ActionPool::class);
         $this->actionPool->method('getAvailableTypes')->willReturn(['add_tag', 'send_email']);
     }
 
     private function makeBlock(): Flow
     {
-        $escaper = $this->createMock(\Magento\Framework\Escaper::class);
+        $escaper = $this->createStub(\Magento\Framework\Escaper::class);
         $escaper->method('escapeHtml')->willReturnArgument(0);
         $escaper->method('escapeHtmlAttr')->willReturnArgument(0);
 
-        $context = $this->createMock(Context::class);
+        $context = $this->createStub(Context::class);
         $context->method('getEscaper')->willReturn($escaper);
 
         return new Flow(
@@ -70,8 +71,8 @@ class FlowTest extends TestCase
             $this->actionPool,
             new TypeLabels(),
             [],
-            $this->createMock(JsonHelper::class),
-            $this->createMock(DirectoryHelper::class)
+            $this->createStub(JsonHelper::class),
+            $this->createStub(DirectoryHelper::class)
         );
     }
 
@@ -79,12 +80,12 @@ class FlowTest extends TestCase
     {
         $triggers = [];
         foreach ($triggerEvents as $triggerEvent) {
-            $trigger = $this->createMock(CampaignTrigger::class);
+            $trigger = $this->createStub(CampaignTrigger::class);
             $trigger->method('getTriggerEvent')->willReturn($triggerEvent);
             $triggers[] = $trigger;
         }
 
-        $collection = $this->createMock(TriggerCollection::class);
+        $collection = $this->createStub(TriggerCollection::class);
         $collection->method('addCampaignFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator($triggers));
 
@@ -100,18 +101,20 @@ class FlowTest extends TestCase
 
     public function testHasCampaignFalseForUnsavedCampaign(): void
     {
-        $campaign = $this->createMock(Campaign::class);
+        $campaign = $this->createStub(Campaign::class);
         $campaign->method('getEntityId')->willReturn(null);
         $this->registry->method('registry')->with('ordo_campaign')->willReturn($campaign);
 
         self::assertFalse($this->makeBlock()->hasCampaign());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetTriggerEventLabelsMapsValueToLabel(): void
     {
         self::assertSame(['order_placed' => 'Order Placed'], $this->makeBlock()->getTriggerEventLabels());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetConditionTypeLabelsMapsTypeToLabel(): void
     {
         self::assertSame(
@@ -120,6 +123,7 @@ class FlowTest extends TestCase
         );
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetActionTypeLabelsMapsTypeToLabel(): void
     {
         self::assertSame(
@@ -128,6 +132,7 @@ class FlowTest extends TestCase
         );
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetFlowDataJsonReturnsEmptyObjectWithoutCampaign(): void
     {
         $this->registry->method('registry')->willReturn(null);
@@ -137,25 +142,25 @@ class FlowTest extends TestCase
 
     public function testGetFlowDataJsonChainsTriggerConditionAndAction(): void
     {
-        $campaign = $this->createMock(Campaign::class);
+        $campaign = $this->createStub(Campaign::class);
         $campaign->method('getEntityId')->willReturn(3);
         $this->registry->method('registry')->with('ordo_campaign')->willReturn($campaign);
 
         $this->triggerCollectionFactory->method('create')->willReturn($this->triggerCollectionWith(['order_placed']));
 
-        $condition = $this->createMock(CampaignCondition::class);
+        $condition = $this->createStub(CampaignCondition::class);
         $condition->method('getType')->willReturn('order_total_gte');
         $condition->method('getParamsJson')->willReturn('{"amount":"100"}');
-        $conditionCollection = $this->createMock(ConditionCollection::class);
+        $conditionCollection = $this->createStub(ConditionCollection::class);
         $conditionCollection->method('addCampaignFilter');
         $conditionCollection->method('getIterator')->willReturn(new \ArrayIterator([$condition]));
         $this->conditionCollectionFactory->method('create')->willReturn($conditionCollection);
 
-        $action = $this->createMock(CampaignAction::class);
+        $action = $this->createStub(CampaignAction::class);
         $action->method('getType')->willReturn('add_tag');
         $action->method('getParamsJson')->willReturn('{"tag":"vip"}');
         $action->method('getDelayMinutes')->willReturn(1440);
-        $actionCollection = $this->createMock(ActionCollection::class);
+        $actionCollection = $this->createStub(ActionCollection::class);
         $actionCollection->method('addCampaignFilter');
         $actionCollection->method('setOrder');
         $actionCollection->method('getIterator')->willReturn(new \ArrayIterator([$action]));
@@ -185,22 +190,22 @@ class FlowTest extends TestCase
 
     public function testGetFlowDataJsonConnectsTriggerDirectlyToActionsWhenNoConditions(): void
     {
-        $campaign = $this->createMock(Campaign::class);
+        $campaign = $this->createStub(Campaign::class);
         $campaign->method('getEntityId')->willReturn(4);
         $this->registry->method('registry')->with('ordo_campaign')->willReturn($campaign);
 
         $this->triggerCollectionFactory->method('create')->willReturn($this->triggerCollectionWith(['order_placed']));
 
-        $emptyConditionCollection = $this->createMock(ConditionCollection::class);
+        $emptyConditionCollection = $this->createStub(ConditionCollection::class);
         $emptyConditionCollection->method('addCampaignFilter');
         $emptyConditionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->conditionCollectionFactory->method('create')->willReturn($emptyConditionCollection);
 
-        $action = $this->createMock(CampaignAction::class);
+        $action = $this->createStub(CampaignAction::class);
         $action->method('getType')->willReturn('send_email');
         $action->method('getParamsJson')->willReturn('{}');
         $action->method('getDelayMinutes')->willReturn(0);
-        $actionCollection = $this->createMock(ActionCollection::class);
+        $actionCollection = $this->createStub(ActionCollection::class);
         $actionCollection->method('addCampaignFilter');
         $actionCollection->method('setOrder');
         $actionCollection->method('getIterator')->willReturn(new \ArrayIterator([$action]));
@@ -215,7 +220,7 @@ class FlowTest extends TestCase
 
     public function testGetFlowDataJsonConnectsMultipleTriggersToSameCondition(): void
     {
-        $campaign = $this->createMock(Campaign::class);
+        $campaign = $this->createStub(Campaign::class);
         $campaign->method('getEntityId')->willReturn(5);
         $this->registry->method('registry')->with('ordo_campaign')->willReturn($campaign);
 
@@ -223,15 +228,15 @@ class FlowTest extends TestCase
             $this->triggerCollectionWith(['order_placed', 'order_placed'])
         );
 
-        $condition = $this->createMock(CampaignCondition::class);
+        $condition = $this->createStub(CampaignCondition::class);
         $condition->method('getType')->willReturn('tag');
         $condition->method('getParamsJson')->willReturn('{}');
-        $conditionCollection = $this->createMock(ConditionCollection::class);
+        $conditionCollection = $this->createStub(ConditionCollection::class);
         $conditionCollection->method('addCampaignFilter');
         $conditionCollection->method('getIterator')->willReturn(new \ArrayIterator([$condition]));
         $this->conditionCollectionFactory->method('create')->willReturn($conditionCollection);
 
-        $emptyActionCollection = $this->createMock(ActionCollection::class);
+        $emptyActionCollection = $this->createStub(ActionCollection::class);
         $emptyActionCollection->method('addCampaignFilter');
         $emptyActionCollection->method('setOrder');
         $emptyActionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
@@ -252,28 +257,28 @@ class FlowTest extends TestCase
 
     public function testGetFlowDataJsonChainsSecondActionToFirstNotToUpstream(): void
     {
-        $campaign = $this->createMock(Campaign::class);
+        $campaign = $this->createStub(Campaign::class);
         $campaign->method('getEntityId')->willReturn(6);
         $this->registry->method('registry')->with('ordo_campaign')->willReturn($campaign);
 
         $this->triggerCollectionFactory->method('create')->willReturn($this->triggerCollectionWith(['order_placed']));
 
-        $emptyConditionCollection = $this->createMock(ConditionCollection::class);
+        $emptyConditionCollection = $this->createStub(ConditionCollection::class);
         $emptyConditionCollection->method('addCampaignFilter');
         $emptyConditionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->conditionCollectionFactory->method('create')->willReturn($emptyConditionCollection);
 
-        $firstAction = $this->createMock(CampaignAction::class);
+        $firstAction = $this->createStub(CampaignAction::class);
         $firstAction->method('getType')->willReturn('add_tag');
         $firstAction->method('getParamsJson')->willReturn('{}');
         $firstAction->method('getDelayMinutes')->willReturn(0);
 
-        $secondAction = $this->createMock(CampaignAction::class);
+        $secondAction = $this->createStub(CampaignAction::class);
         $secondAction->method('getType')->willReturn('send_email');
         $secondAction->method('getParamsJson')->willReturn('{}');
         $secondAction->method('getDelayMinutes')->willReturn(0);
 
-        $actionCollection = $this->createMock(ActionCollection::class);
+        $actionCollection = $this->createStub(ActionCollection::class);
         $actionCollection->method('addCampaignFilter');
         $actionCollection->method('setOrder');
         $actionCollection->method('getIterator')->willReturn(new \ArrayIterator([$firstAction, $secondAction]));
@@ -289,6 +294,7 @@ class FlowTest extends TestCase
         self::assertSame([], $data[3]['outputs']['output_1']['connections']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetFieldsConfigListsKnownConditionAndActionFields(): void
     {
         $config = $this->makeBlock()->getFieldsConfig();
@@ -306,6 +312,7 @@ class FlowTest extends TestCase
         );
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetFieldsConfigJsonEncodesTheSameConfig(): void
     {
         $block = $this->makeBlock();

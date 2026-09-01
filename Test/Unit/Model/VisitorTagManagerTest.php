@@ -9,12 +9,13 @@ use Magento\Framework\DB\Select;
 use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
 use Ordo\Automation\Model\VisitorTagManager;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class VisitorTagManagerTest extends TestCase
 {
     private function makeSelect(): Select
     {
-        $select = $this->createMock(Select::class);
+        $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
 
@@ -28,7 +29,7 @@ class VisitorTagManagerTest extends TestCase
         $connection->method('fetchOne')->willReturn(0);
         $connection->expects(self::once())->method('insert');
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
@@ -47,7 +48,7 @@ class VisitorTagManagerTest extends TestCase
         $connection->method('fetchOne')->willReturn(1);
         $connection->expects(self::never())->method('insert');
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
@@ -66,39 +67,41 @@ class VisitorTagManagerTest extends TestCase
             ['visitor_id = ?' => 'v1', 'tag = ?' => 'vip']
         );
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        $manager = new VisitorTagManager($resourceConnection, $this->createMock(EventManagerInterface::class));
+        $manager = new VisitorTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
         $manager->removeTag('v1', 'vip');
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testHasTagReturnsTrueWhenCountPositive(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
         $connection->method('fetchOne')->willReturn(2);
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        $manager = new VisitorTagManager($resourceConnection, $this->createMock(EventManagerInterface::class));
+        $manager = new VisitorTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
         self::assertTrue($manager->hasTag('v1', 'vip'));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetTagsReturnsColumn(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
         $connection->method('fetchCol')->willReturn(['vip', 'reorder']);
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        $manager = new VisitorTagManager($resourceConnection, $this->createMock(EventManagerInterface::class));
+        $manager = new VisitorTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
         self::assertSame(['vip', 'reorder'], $manager->getTags('v1'));
     }
 }

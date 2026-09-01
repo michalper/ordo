@@ -14,6 +14,7 @@ use Ordo\Automation\Model\Segment;
 use Ordo\Automation\Model\SegmentFactory;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Test\Unit\Controller\AbstractAdminActionTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class EditTest extends AbstractAdminActionTestCase
 {
@@ -24,23 +25,24 @@ class EditTest extends AbstractAdminActionTestCase
             fn ($phrase) => (string) $phrase === $expectedTitle
         ));
 
-        $pageConfig = $this->createMock(PageConfig::class);
+        $pageConfig = $this->createStub(PageConfig::class);
         $pageConfig->method('getTitle')->willReturn($title);
 
-        $resultPage = $this->createMock(Page::class);
+        $resultPage = $this->createStub(Page::class);
         $resultPage->method('setActiveMenu')->willReturnSelf();
         $resultPage->method('getConfig')->willReturn($pageConfig);
 
         return $resultPage;
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteBuildsNewSegmentPageWhenNoEntityId(): void
     {
         $context = $this->makeContext();
         $this->request->method('getParam')->with('entity_id')->willReturn(0);
 
-        $segment = $this->createMock(Segment::class);
-        $segmentFactory = $this->createMock(SegmentFactory::class);
+        $segment = $this->createStub(Segment::class);
+        $segmentFactory = $this->createStub(SegmentFactory::class);
         $segmentFactory->method('create')->willReturn($segment);
 
         $segmentResource = $this->createMock(SegmentResource::class);
@@ -57,22 +59,23 @@ class EditTest extends AbstractAdminActionTestCase
         self::assertSame($resultPage, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLoadsExistingSegment(): void
     {
         $context = $this->makeContext();
         $this->request->method('getParam')->with('entity_id')->willReturn(5);
 
-        $segment = $this->createMock(Segment::class);
+        $segment = $this->createStub(Segment::class);
         $segment->method('getEntityId')->willReturn(5);
         $segment->method('getName')->willReturn('VIP customers');
 
-        $segmentFactory = $this->createMock(SegmentFactory::class);
+        $segmentFactory = $this->createStub(SegmentFactory::class);
         $segmentFactory->method('create')->willReturn($segment);
 
         $segmentResource = $this->createMock(SegmentResource::class);
         $segmentResource->expects(self::once())->method('load')->with($segment, 5);
 
-        $registry = $this->createMock(Registry::class);
+        $registry = $this->createStub(Registry::class);
 
         $resultPage = $this->makeResultPage('Edit Segment "VIP customers"');
         $resultPageFactory = $this->createMock(PageFactory::class);
@@ -87,13 +90,13 @@ class EditTest extends AbstractAdminActionTestCase
         $context = $this->makeContext();
         $this->request->method('getParam')->with('entity_id')->willReturn(99);
 
-        $segment = $this->createMock(Segment::class);
+        $segment = $this->createStub(Segment::class);
         $segment->method('getEntityId')->willReturn(null);
 
-        $segmentFactory = $this->createMock(SegmentFactory::class);
+        $segmentFactory = $this->createStub(SegmentFactory::class);
         $segmentFactory->method('create')->willReturn($segment);
 
-        $segmentResource = $this->createMock(SegmentResource::class);
+        $segmentResource = $this->createStub(SegmentResource::class);
 
         $registry = $this->createMock(Registry::class);
         $registry->expects(self::never())->method('register');

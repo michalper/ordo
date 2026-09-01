@@ -30,7 +30,7 @@ class CollectionTest extends TestCase
 {
     protected function tearDown(): void
     {
-        ObjectManager::setInstance($this->createMock(ObjectManagerInterface::class));
+        ObjectManager::setInstance($this->createStub(ObjectManagerInterface::class));
     }
 
     public function testInitSelectJoinsTriggerEventsAndGroupsByEntityId(): void
@@ -44,16 +44,16 @@ class CollectionTest extends TestCase
         )->willReturnSelf();
         $select->expects(self::once())->method('group')->with('main_table.entity_id')->willReturnSelf();
 
-        $connection = $this->createMock(AdapterInterface::class);
+        $connection = $this->createStub(AdapterInterface::class);
         $connection->method('select')->willReturn($select);
 
-        $resource = $this->createMock(AbstractDb::class);
+        $resource = $this->createStub(AbstractDb::class);
         $resource->method('getConnection')->willReturn($connection);
         $resource->method('getMainTable')->willReturn('ordo_campaign');
         $resource->method('getIdFieldName')->willReturn('entity_id');
         $resource->method('getTable')->willReturnCallback(fn (string $table) => $table);
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         // SearchResult::__construct() calls setMainTable(true) once before the real table name,
         // so this stub must tolerate a non-string first call, not just the later real one.
@@ -67,10 +67,10 @@ class CollectionTest extends TestCase
         ObjectManager::setInstance($objectManager);
 
         new Collection(
-            $this->createMock(EntityFactoryInterface::class),
-            $this->createMock(LoggerInterface::class),
-            $this->createMock(FetchStrategyInterface::class),
-            $this->createMock(ManagerInterface::class),
+            $this->createStub(EntityFactoryInterface::class),
+            $this->createStub(LoggerInterface::class),
+            $this->createStub(FetchStrategyInterface::class),
+            $this->createStub(ManagerInterface::class),
             'ordo_campaign',
             \Ordo\Automation\Model\ResourceModel\Campaign::class
         );

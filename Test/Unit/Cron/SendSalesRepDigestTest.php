@@ -18,21 +18,22 @@ use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Setup\Patch\Data\AddSalesRepAttributes;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class SendSalesRepDigestTest extends TestCase
 {
     public function testExecuteSkipsWhenDigestDisabled(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isSalesRepDigestEnabled')->willReturn(false);
 
         $tagManager = $this->createMock(CustomerTagManager::class);
         $tagManager->expects(self::never())->method('getCustomerIdsWithTag');
 
-        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
-        $storeManager = $this->createMock(StoreManagerInterface::class);
-        $transportBuilder = $this->createMock(TransportBuilder::class);
-        $logger = $this->createMock(LoggerInterface::class);
+        $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
+        $storeManager = $this->createStub(StoreManagerInterface::class);
+        $transportBuilder = $this->createStub(TransportBuilder::class);
+        $logger = $this->createStub(LoggerInterface::class);
 
         (new SendSalesRepDigest(
             $config,
@@ -40,20 +41,20 @@ class SendSalesRepDigestTest extends TestCase
             $customerRepository,
             $transportBuilder,
             $storeManager,
-            $this->createMock(StateInterface::class),
+            $this->createStub(StateInterface::class),
             $logger
         ))->execute();
     }
 
     public function testExecuteGroupsByRepAndSendsOneDigest(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isSalesRepDigestEnabled')->willReturn(true);
 
         $tagManager = $this->createMock(CustomerTagManager::class);
         $tagManager->method('getCustomerIdsWithTag')->with(TagInactiveCustomers::TAG_INACTIVE)->willReturn([5, 6]);
 
-        $repAttr = $this->createMock(AttributeInterface::class);
+        $repAttr = $this->createStub(AttributeInterface::class);
         $repAttr->method('getValue')->willReturn('rep@example.com');
 
         $customer5 = $this->createMock(CustomerInterface::class);
@@ -64,15 +65,15 @@ class SendSalesRepDigestTest extends TestCase
         $customer6 = $this->createMock(CustomerInterface::class);
         $customer6->method('getCustomAttribute')->with(AddSalesRepAttributes::ATTRIBUTE_REP_EMAIL)->willReturn(null);
 
-        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
         $customerRepository->method('getById')->willReturnMap([
             [5, $customer5],
             [6, $customer6],
         ]);
 
-        $store = $this->createMock(Store::class);
+        $store = $this->createStub(Store::class);
         $store->method('getId')->willReturn(1);
-        $storeManager = $this->createMock(StoreManagerInterface::class);
+        $storeManager = $this->createStub(StoreManagerInterface::class);
         $storeManager->method('getStore')->willReturn($store);
 
         $transportBuilder = $this->createMock(TransportBuilder::class);
@@ -95,20 +96,21 @@ class SendSalesRepDigestTest extends TestCase
             $customerRepository,
             $transportBuilder,
             $storeManager,
-            $this->createMock(StateInterface::class),
+            $this->createStub(StateInterface::class),
             $logger
         ))->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsCustomerWhenLookupThrows(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isSalesRepDigestEnabled')->willReturn(true);
 
         $tagManager = $this->createMock(CustomerTagManager::class);
         $tagManager->method('getCustomerIdsWithTag')->willReturn([5]);
 
-        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
         $customerRepository->method('getById')->willThrowException(new \RuntimeException('not found'));
 
         $transportBuilder = $this->createMock(TransportBuilder::class);
@@ -122,32 +124,33 @@ class SendSalesRepDigestTest extends TestCase
             $tagManager,
             $customerRepository,
             $transportBuilder,
-            $this->createMock(StoreManagerInterface::class),
-            $this->createMock(StateInterface::class),
+            $this->createStub(StoreManagerInterface::class),
+            $this->createStub(StateInterface::class),
             $logger
         ))->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsErrorWhenSendingDigestThrows(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isSalesRepDigestEnabled')->willReturn(true);
 
         $tagManager = $this->createMock(CustomerTagManager::class);
         $tagManager->method('getCustomerIdsWithTag')->willReturn([5]);
 
-        $repAttr = $this->createMock(AttributeInterface::class);
+        $repAttr = $this->createStub(AttributeInterface::class);
         $repAttr->method('getValue')->willReturn('rep@example.com');
 
-        $customer = $this->createMock(CustomerInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getCustomAttribute')->willReturn($repAttr);
         $customer->method('getFirstname')->willReturn('Jan');
         $customer->method('getLastname')->willReturn('Kowalski');
 
-        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
         $customerRepository->method('getById')->willReturn($customer);
 
-        $storeManager = $this->createMock(StoreManagerInterface::class);
+        $storeManager = $this->createStub(StoreManagerInterface::class);
         $storeManager->method('getStore')->willThrowException(new \RuntimeException('no store'));
 
         $logger = $this->createMock(LoggerInterface::class);
@@ -157,9 +160,9 @@ class SendSalesRepDigestTest extends TestCase
             $config,
             $tagManager,
             $customerRepository,
-            $this->createMock(TransportBuilder::class),
+            $this->createStub(TransportBuilder::class),
             $storeManager,
-            $this->createMock(StateInterface::class),
+            $this->createStub(StateInterface::class),
             $logger
         ))->execute();
     }

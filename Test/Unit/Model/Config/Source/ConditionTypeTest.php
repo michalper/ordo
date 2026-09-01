@@ -12,7 +12,7 @@ class ConditionTypeTest extends TestCase
 {
     public function testToOptionArrayReflectsPool(): void
     {
-        $pool = new ConditionPool(['has_tag' => $this->createMock(\Ordo\Automation\Api\Campaign\ConditionInterface::class)]);
+        $pool = new ConditionPool(['has_tag' => $this->createStub(\Ordo\Automation\Api\Campaign\ConditionInterface::class)]);
         $source = new ConditionType($pool, new TypeLabels());
 
         self::assertSame(

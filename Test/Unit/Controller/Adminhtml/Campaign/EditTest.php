@@ -14,6 +14,7 @@ use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\CampaignFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign as CampaignResource;
 use Ordo\Automation\Test\Unit\Controller\AbstractAdminActionTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class EditTest extends AbstractAdminActionTestCase
 {
@@ -24,23 +25,24 @@ class EditTest extends AbstractAdminActionTestCase
             fn ($phrase) => (string) $phrase === $expectedTitle
         ));
 
-        $pageConfig = $this->createMock(PageConfig::class);
+        $pageConfig = $this->createStub(PageConfig::class);
         $pageConfig->method('getTitle')->willReturn($title);
 
-        $resultPage = $this->createMock(Page::class);
+        $resultPage = $this->createStub(Page::class);
         $resultPage->method('setActiveMenu')->willReturnSelf();
         $resultPage->method('getConfig')->willReturn($pageConfig);
 
         return $resultPage;
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteBuildsNewCampaignPageWhenNoEntityId(): void
     {
         $context = $this->makeContext();
         $this->request->method('getParam')->with('entity_id')->willReturn(0);
 
-        $campaign = $this->createMock(Campaign::class);
-        $campaignFactory = $this->createMock(CampaignFactory::class);
+        $campaign = $this->createStub(Campaign::class);
+        $campaignFactory = $this->createStub(CampaignFactory::class);
         $campaignFactory->method('create')->willReturn($campaign);
 
         $campaignResource = $this->createMock(CampaignResource::class);
@@ -57,22 +59,23 @@ class EditTest extends AbstractAdminActionTestCase
         self::assertSame($resultPage, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLoadsExistingCampaign(): void
     {
         $context = $this->makeContext();
         $this->request->method('getParam')->with('entity_id')->willReturn(5);
 
-        $campaign = $this->createMock(Campaign::class);
+        $campaign = $this->createStub(Campaign::class);
         $campaign->method('getEntityId')->willReturn(5);
         $campaign->method('getName')->willReturn('Welcome');
 
-        $campaignFactory = $this->createMock(CampaignFactory::class);
+        $campaignFactory = $this->createStub(CampaignFactory::class);
         $campaignFactory->method('create')->willReturn($campaign);
 
         $campaignResource = $this->createMock(CampaignResource::class);
         $campaignResource->expects(self::once())->method('load')->with($campaign, 5);
 
-        $registry = $this->createMock(Registry::class);
+        $registry = $this->createStub(Registry::class);
 
         $resultPage = $this->makeResultPage('Edit Campaign "Welcome"');
         $resultPageFactory = $this->createMock(PageFactory::class);
@@ -87,13 +90,13 @@ class EditTest extends AbstractAdminActionTestCase
         $context = $this->makeContext();
         $this->request->method('getParam')->with('entity_id')->willReturn(99);
 
-        $campaign = $this->createMock(Campaign::class);
+        $campaign = $this->createStub(Campaign::class);
         $campaign->method('getEntityId')->willReturn(null);
 
-        $campaignFactory = $this->createMock(CampaignFactory::class);
+        $campaignFactory = $this->createStub(CampaignFactory::class);
         $campaignFactory->method('create')->willReturn($campaign);
 
-        $campaignResource = $this->createMock(CampaignResource::class);
+        $campaignResource = $this->createStub(CampaignResource::class);
 
         $registry = $this->createMock(Registry::class);
         $registry->expects(self::never())->method('register');

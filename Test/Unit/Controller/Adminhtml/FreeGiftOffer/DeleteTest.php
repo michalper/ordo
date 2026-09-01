@@ -9,6 +9,7 @@ use Ordo\Automation\Model\FreeGiftOffer;
 use Ordo\Automation\Model\FreeGiftOfferFactory;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer as FreeGiftOfferResource;
 use Ordo\Automation\Test\Unit\Controller\AbstractAdminActionTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class DeleteTest extends AbstractAdminActionTestCase
 {
@@ -23,8 +24,8 @@ class DeleteTest extends AbstractAdminActionTestCase
 
         $this->messageManager->expects(self::once())->method('addErrorMessage');
 
-        $offerFactory = $this->createMock(FreeGiftOfferFactory::class);
-        $offerResource = $this->createMock(FreeGiftOfferResource::class);
+        $offerFactory = $this->createStub(FreeGiftOfferFactory::class);
+        $offerResource = $this->createStub(FreeGiftOfferResource::class);
 
         $controller = new Delete($context, $offerFactory, $offerResource);
         self::assertSame($redirect, $controller->execute());
@@ -41,8 +42,8 @@ class DeleteTest extends AbstractAdminActionTestCase
 
         $this->messageManager->expects(self::once())->method('addSuccessMessage');
 
-        $offer = $this->createMock(FreeGiftOffer::class);
-        $offerFactory = $this->createMock(FreeGiftOfferFactory::class);
+        $offer = $this->createStub(FreeGiftOffer::class);
+        $offerFactory = $this->createStub(FreeGiftOfferFactory::class);
         $offerFactory->method('create')->willReturn($offer);
 
         $offerResource = $this->createMock(FreeGiftOfferResource::class);
@@ -52,6 +53,7 @@ class DeleteTest extends AbstractAdminActionTestCase
         self::assertSame($redirect, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsWithErrorWhenDeleteThrows(): void
     {
         $context = $this->makeContext();
@@ -63,8 +65,8 @@ class DeleteTest extends AbstractAdminActionTestCase
 
         $this->messageManager->expects(self::once())->method('addErrorMessage');
 
-        $offer = $this->createMock(FreeGiftOffer::class);
-        $offerFactory = $this->createMock(FreeGiftOfferFactory::class);
+        $offer = $this->createStub(FreeGiftOffer::class);
+        $offerFactory = $this->createStub(FreeGiftOfferFactory::class);
         $offerFactory->method('create')->willReturn($offer);
 
         $offerResource = $this->createMock(FreeGiftOfferResource::class);

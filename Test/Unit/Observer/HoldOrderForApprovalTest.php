@@ -26,6 +26,7 @@ use Ordo\Automation\Setup\Patch\Data\AddCustomerSpendLimitAttributes;
 use Ordo\Automation\Setup\Patch\Data\AddPendingApprovalOrderStatus;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class HoldOrderForApprovalTest extends TestCase
 {
@@ -42,16 +43,16 @@ class HoldOrderForApprovalTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->config = $this->createMock(Config::class);
+        $this->config = $this->createStub(Config::class);
         $this->config->method('isOrderApprovalEnabled')->willReturn(true);
         $this->customerRepository = $this->createMock(CustomerRepositoryInterface::class);
         $this->orderResource = $this->createMock(OrderResource::class);
-        $this->orderApprovalFactory = $this->createMock(OrderApprovalFactory::class);
+        $this->orderApprovalFactory = $this->createStub(OrderApprovalFactory::class);
         $this->orderApprovalResource = $this->createMock(OrderApprovalResource::class);
-        $this->random = $this->createMock(Random::class);
-        $this->transportBuilder = $this->createMock(TransportBuilder::class);
-        $this->storeManager = $this->createMock(StoreManagerInterface::class);
-        $this->inlineTranslation = $this->createMock(StateInterface::class);
+        $this->random = $this->createStub(Random::class);
+        $this->transportBuilder = $this->createStub(TransportBuilder::class);
+        $this->storeManager = $this->createStub(StoreManagerInterface::class);
+        $this->inlineTranslation = $this->createStub(StateInterface::class);
         $this->logger = $this->createMock(LoggerInterface::class);
     }
 
@@ -75,15 +76,16 @@ class HoldOrderForApprovalTest extends TestCase
     {
         $event = new Event(['order' => $order]);
 
-        $observer = $this->createMock(EventObserver::class);
+        $observer = $this->createStub(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);
 
         return $observer;
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsWhenApprovalDisabled(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isOrderApprovalEnabled')->willReturn(false);
         $this->config = $config;
 
@@ -92,6 +94,7 @@ class HoldOrderForApprovalTest extends TestCase
         $this->makeObserverInstance()->execute($this->makeEventObserver(null));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteDoesNothingWhenOrderHasNoCustomer(): void
     {
         $order = $this->createMock(Order::class);
@@ -102,6 +105,7 @@ class HoldOrderForApprovalTest extends TestCase
         $this->makeObserverInstance()->execute($this->makeEventObserver($order));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteReturnsWhenCustomerLookupFails(): void
     {
         $order = $this->createMock(Order::class);
@@ -113,18 +117,19 @@ class HoldOrderForApprovalTest extends TestCase
         $this->makeObserverInstance()->execute($this->makeEventObserver($order));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteDoesNothingWhenOrderBelowSpendLimit(): void
     {
         $order = $this->createMock(Order::class);
         $order->method('getCustomerId')->willReturn(42);
         $order->method('getGrandTotal')->willReturn(50.0);
 
-        $spendLimitAttr = $this->createMock(AttributeInterface::class);
+        $spendLimitAttr = $this->createStub(AttributeInterface::class);
         $spendLimitAttr->method('getValue')->willReturn('100');
-        $adminEmailAttr = $this->createMock(AttributeInterface::class);
+        $adminEmailAttr = $this->createStub(AttributeInterface::class);
         $adminEmailAttr->method('getValue')->willReturn('admin@example.com');
 
-        $customer = $this->createMock(CustomerInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getCustomAttribute')->willReturnMap([
             [AddCustomerSpendLimitAttributes::ATTRIBUTE_SPEND_LIMIT, $spendLimitAttr],
             [AddCustomerSpendLimitAttributes::ATTRIBUTE_APPROVAL_ADMIN_EMAIL, $adminEmailAttr],
@@ -136,6 +141,7 @@ class HoldOrderForApprovalTest extends TestCase
         $this->makeObserverInstance()->execute($this->makeEventObserver($order));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteHoldsOrderAndSendsApprovalEmailWhenOverLimit(): void
     {
         $order = $this->createMock(Order::class);
@@ -147,12 +153,12 @@ class HoldOrderForApprovalTest extends TestCase
         $order->method('getCustomerLastname')->willReturn('Kowalski');
         $order->expects(self::once())->method('setStatus')->with(AddPendingApprovalOrderStatus::STATUS_PENDING_APPROVAL);
 
-        $spendLimitAttr = $this->createMock(AttributeInterface::class);
+        $spendLimitAttr = $this->createStub(AttributeInterface::class);
         $spendLimitAttr->method('getValue')->willReturn('100');
-        $adminEmailAttr = $this->createMock(AttributeInterface::class);
+        $adminEmailAttr = $this->createStub(AttributeInterface::class);
         $adminEmailAttr->method('getValue')->willReturn('admin@example.com');
 
-        $customer = $this->createMock(CustomerInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getCustomAttribute')->willReturnMap([
             [AddCustomerSpendLimitAttributes::ATTRIBUTE_SPEND_LIMIT, $spendLimitAttr],
             [AddCustomerSpendLimitAttributes::ATTRIBUTE_APPROVAL_ADMIN_EMAIL, $adminEmailAttr],
@@ -173,7 +179,7 @@ class HoldOrderForApprovalTest extends TestCase
         $this->orderApprovalFactory->method('create')->willReturn($approval);
         $this->orderApprovalResource->expects(self::once())->method('save')->with($approval);
 
-        $store = $this->createMock(Store::class);
+        $store = $this->createStub(Store::class);
         $store->method('getId')->willReturn(1);
         $store->method('getBaseUrl')->willReturn('https://example.com/');
         $this->storeManager->method('getStore')->willReturn($store);
@@ -191,6 +197,7 @@ class HoldOrderForApprovalTest extends TestCase
         $this->makeObserverInstance()->execute($this->makeEventObserver($order));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsErrorWhenEmailSendingFails(): void
     {
         $order = $this->createMock(Order::class);
@@ -198,12 +205,12 @@ class HoldOrderForApprovalTest extends TestCase
         $order->method('getGrandTotal')->willReturn(500.0);
         $order->method('getEntityId')->willReturn(7);
 
-        $spendLimitAttr = $this->createMock(AttributeInterface::class);
+        $spendLimitAttr = $this->createStub(AttributeInterface::class);
         $spendLimitAttr->method('getValue')->willReturn('100');
-        $adminEmailAttr = $this->createMock(AttributeInterface::class);
+        $adminEmailAttr = $this->createStub(AttributeInterface::class);
         $adminEmailAttr->method('getValue')->willReturn('admin@example.com');
 
-        $customer = $this->createMock(CustomerInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getCustomAttribute')->willReturnMap([
             [AddCustomerSpendLimitAttributes::ATTRIBUTE_SPEND_LIMIT, $spendLimitAttr],
             [AddCustomerSpendLimitAttributes::ATTRIBUTE_APPROVAL_ADMIN_EMAIL, $adminEmailAttr],
@@ -211,7 +218,7 @@ class HoldOrderForApprovalTest extends TestCase
         $this->customerRepository->method('getById')->willReturn($customer);
 
         $this->random->method('getUniqueHash')->willReturn('token123');
-        $this->orderApprovalFactory->method('create')->willReturn($this->createMock(OrderApproval::class));
+        $this->orderApprovalFactory->method('create')->willReturn($this->createStub(OrderApproval::class));
 
         $this->storeManager->method('getStore')->willThrowException(new \RuntimeException('no store'));
 

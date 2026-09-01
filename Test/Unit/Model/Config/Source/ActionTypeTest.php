@@ -12,7 +12,7 @@ class ActionTypeTest extends TestCase
 {
     public function testToOptionArrayReflectsPool(): void
     {
-        $pool = new ActionPool(['tag_customer' => $this->createMock(\Ordo\Automation\Api\Campaign\ActionInterface::class)]);
+        $pool = new ActionPool(['tag_customer' => $this->createStub(\Ordo\Automation\Api\Campaign\ActionInterface::class)]);
         $source = new ActionType($pool, new TypeLabels());
 
         self::assertSame(

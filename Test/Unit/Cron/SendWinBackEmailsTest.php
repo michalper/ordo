@@ -21,7 +21,7 @@ class SendWinBackEmailsTest extends TestCase
 {
     public function testExecuteSkipsWhenDisabled(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isLifecycleEmailsEnabled')->willReturn(false);
 
         $tagManager = $this->createMock(CustomerTagManager::class);
@@ -32,7 +32,7 @@ class SendWinBackEmailsTest extends TestCase
 
     public function testExecuteSkipsCustomerAlreadySent(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isLifecycleEmailsEnabled')->willReturn(true);
 
         $tagManager = $this->createMock(CustomerTagManager::class);
@@ -45,7 +45,7 @@ class SendWinBackEmailsTest extends TestCase
 
     public function testExecuteSendsAndTagsCustomer(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isLifecycleEmailsEnabled')->willReturn(true);
 
         $tagManager = $this->createMock(CustomerTagManager::class);
@@ -58,7 +58,7 @@ class SendWinBackEmailsTest extends TestCase
 
     public function testExecuteLogsErrorWhenSendingThrows(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isLifecycleEmailsEnabled')->willReturn(true);
 
         $tagManager = $this->createMock(CustomerTagManager::class);
@@ -66,7 +66,7 @@ class SendWinBackEmailsTest extends TestCase
         $tagManager->method('hasTag')->willReturn(false);
         $tagManager->expects(self::never())->method('addTag');
 
-        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
         $customerRepository->method('getById')->willThrowException(new \RuntimeException('lookup failed'));
 
         $logger = $this->createMock(LoggerInterface::class);
@@ -76,34 +76,34 @@ class SendWinBackEmailsTest extends TestCase
             $config,
             $tagManager,
             $customerRepository,
-            $this->createMock(TransportBuilder::class),
-            $this->createMock(StoreManagerInterface::class),
-            $this->createMock(StateInterface::class),
+            $this->createStub(TransportBuilder::class),
+            $this->createStub(StoreManagerInterface::class),
+            $this->createStub(StateInterface::class),
             $logger
         ))->execute();
     }
 
     private function makeCron(Config $config, CustomerTagManager $tagManager): SendWinBackEmails
     {
-        $customer = $this->createMock(CustomerInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getFirstname')->willReturn('Jan');
         $customer->method('getEmail')->willReturn('jan@example.com');
 
-        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
         $customerRepository->method('getById')->willReturn($customer);
 
-        $store = $this->createMock(Store::class);
+        $store = $this->createStub(Store::class);
         $store->method('getId')->willReturn(1);
-        $storeManager = $this->createMock(StoreManagerInterface::class);
+        $storeManager = $this->createStub(StoreManagerInterface::class);
         $storeManager->method('getStore')->willReturn($store);
 
-        $transportBuilder = $this->createMock(TransportBuilder::class);
+        $transportBuilder = $this->createStub(TransportBuilder::class);
         $transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
         $transportBuilder->method('setTemplateOptions')->willReturnSelf();
         $transportBuilder->method('setTemplateVars')->willReturnSelf();
         $transportBuilder->method('setFromByScope')->willReturnSelf();
         $transportBuilder->method('addTo')->willReturnSelf();
-        $transportBuilder->method('getTransport')->willReturn($this->createMock(TransportInterface::class));
+        $transportBuilder->method('getTransport')->willReturn($this->createStub(TransportInterface::class));
 
         return new SendWinBackEmails(
             $config,
@@ -111,8 +111,8 @@ class SendWinBackEmailsTest extends TestCase
             $customerRepository,
             $transportBuilder,
             $storeManager,
-            $this->createMock(StateInterface::class),
-            $this->createMock(LoggerInterface::class)
+            $this->createStub(StateInterface::class),
+            $this->createStub(LoggerInterface::class)
         );
     }
 }

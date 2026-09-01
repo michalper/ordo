@@ -38,7 +38,32 @@
             assumed safe.
         -->
         <exclude name="Magento2.CodeAnalysis.EmptyBlock.DetectedCatch"/>
+
+        <!--
+            This module has zero .graphqls files (no GraphQL service contracts) — these sniffs
+            exist purely to validate GraphQL schema naming conventions, which don't apply here.
+            Excluding the whole family removes pure noise, not a real check we're skipping;
+            magento-coding-standard registers them unconditionally regardless of whether a repo
+            has any GraphQL schemas at all.
+        -->
+        <exclude name="Magento2.GraphQL.ValidFieldName"/>
+        <exclude name="Magento2.GraphQL.ValidTopLevelFieldName"/>
+        <exclude name="Magento2.GraphQL.ValidTypeName"/>
+        <exclude name="Magento2.GraphQL.ValidArgumentName"/>
+        <exclude name="Magento2.GraphQL.ValidEnumValue"/>
     </rule>
+
+    <!--
+        The remaining PHPCS stderr chatter ("DEPRECATED: Scanning CSS/JS files is deprecated",
+        "Squiz.CSS.NamedColours ... deprecated since v3.9.0") is magento-coding-standard's own
+        CSS sniffs relying on PHP_CodeSniffer's custom-tokenizer mechanism, which PHPCS core
+        itself is deprecating in favor of a different internal approach in PHPCS 4.0 — this is
+        upstream (magento/magento-coding-standard's own implementation, not this repo's code)
+        and not fixable here short of dropping CSS linting entirely, which would lose real
+        coverage (this ruleset caught a genuine WCAG contrast issue in flow.css earlier). Tracked
+        as a dependency to watch for a magento-coding-standard release that migrates off it, not
+        swept under the rug.
+    -->
 
     <rule ref="Generic.Files.LineLength">
         <properties>

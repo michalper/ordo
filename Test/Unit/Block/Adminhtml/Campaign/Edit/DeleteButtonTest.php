@@ -16,7 +16,7 @@ class DeleteButtonTest extends TestCase
         $request = $this->createMock(RequestInterface::class);
         $request->method('getParam')->with('entity_id')->willReturn(null);
 
-        $context = $this->createMock(Context::class);
+        $context = $this->createStub(Context::class);
         $context->method('getRequest')->willReturn($request);
 
         self::assertSame([], (new DeleteButton($context))->getButtonData());
@@ -31,7 +31,7 @@ class DeleteButtonTest extends TestCase
         $urlBuilder->method('getUrl')->with('*/*/delete', ['entity_id' => 5])
             ->willReturn('https://example.com/admin/ordo/campaign/delete/entity_id/5/');
 
-        $context = $this->createMock(Context::class);
+        $context = $this->createStub(Context::class);
         $context->method('getRequest')->willReturn($request);
         $context->method('getUrlBuilder')->willReturn($urlBuilder);
 

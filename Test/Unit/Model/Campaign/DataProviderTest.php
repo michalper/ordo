@@ -17,6 +17,7 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as 
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as TriggerCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class DataProviderTest extends TestCase
 {
@@ -27,16 +28,16 @@ class DataProviderTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->triggerCollectionFactory = $this->createMock(TriggerCollectionFactory::class);
+        $this->triggerCollectionFactory = $this->createStub(TriggerCollectionFactory::class);
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeEmptyTriggerCollection());
-        $this->conditionCollectionFactory = $this->createMock(ConditionCollectionFactory::class);
-        $this->actionCollectionFactory = $this->createMock(ActionCollectionFactory::class);
+        $this->conditionCollectionFactory = $this->createStub(ConditionCollectionFactory::class);
+        $this->actionCollectionFactory = $this->createStub(ActionCollectionFactory::class);
         $this->dataPersistor = $this->createMock(DataPersistorInterface::class);
     }
 
     private function makeProvider(CampaignCollection $collection): DataProvider
     {
-        $collectionFactory = $this->createMock(CampaignCollectionFactory::class);
+        $collectionFactory = $this->createStub(CampaignCollectionFactory::class);
         $collectionFactory->method('create')->willReturn($collection);
 
         return new DataProvider(
@@ -53,35 +54,36 @@ class DataProviderTest extends TestCase
 
     private function makeEmptyTriggerCollection(): TriggerCollection
     {
-        $collection = $this->createMock(TriggerCollection::class);
+        $collection = $this->createStub(TriggerCollection::class);
         $collection->method('addCampaignFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
 
         return $collection;
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetDataMergesChildRowsWithDedicatedFields(): void
     {
-        $campaign = $this->createMock(Campaign::class);
+        $campaign = $this->createStub(Campaign::class);
         $campaign->method('getData')->willReturn(['entity_id' => 1, 'name' => 'Welcome']);
         $campaign->method('getEntityId')->willReturn(1);
 
-        $collection = $this->createMock(CampaignCollection::class);
+        $collection = $this->createStub(CampaignCollection::class);
         $collection->method('getItems')->willReturn([$campaign]);
 
-        $conditionRow = $this->createMock(CampaignCondition::class);
+        $conditionRow = $this->createStub(CampaignCondition::class);
         $conditionRow->method('getType')->willReturn('has_tag');
         $conditionRow->method('getParamsJson')->willReturn(json_encode(['tag' => 'vip']));
-        $conditionCollection = $this->createMock(ConditionCollection::class);
+        $conditionCollection = $this->createStub(ConditionCollection::class);
         $conditionCollection->method('addCampaignFilter');
         $conditionCollection->method('getIterator')->willReturn(new \ArrayIterator([$conditionRow]));
         $this->conditionCollectionFactory->method('create')->willReturn($conditionCollection);
 
-        $actionRow = $this->createMock(CampaignAction::class);
+        $actionRow = $this->createStub(CampaignAction::class);
         $actionRow->method('getType')->willReturn('tag_customer');
         $actionRow->method('getParamsJson')->willReturn(json_encode(['tag' => 'reordered']));
         $actionRow->method('getDelayMinutes')->willReturn(60);
-        $actionCollection = $this->createMock(ActionCollection::class);
+        $actionCollection = $this->createStub(ActionCollection::class);
         $actionCollection->method('addCampaignFilter');
         $actionCollection->method('getIterator')->willReturn(new \ArrayIterator([$actionRow]));
         $this->actionCollectionFactory->method('create')->willReturn($actionCollection);
@@ -99,19 +101,20 @@ class DataProviderTest extends TestCase
         self::assertSame($data, $provider->getData());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetDataKeepsParamsJsonOnlyWhenDecodeFails(): void
     {
-        $campaign = $this->createMock(Campaign::class);
+        $campaign = $this->createStub(Campaign::class);
         $campaign->method('getData')->willReturn(['entity_id' => 2]);
         $campaign->method('getEntityId')->willReturn(2);
 
-        $collection = $this->createMock(CampaignCollection::class);
+        $collection = $this->createStub(CampaignCollection::class);
         $collection->method('getItems')->willReturn([$campaign]);
 
-        $conditionRow = $this->createMock(CampaignCondition::class);
+        $conditionRow = $this->createStub(CampaignCondition::class);
         $conditionRow->method('getType')->willReturn('has_tag');
         $conditionRow->method('getParamsJson')->willReturn('not-json');
-        $conditionCollection = $this->createMock(ConditionCollection::class);
+        $conditionCollection = $this->createStub(ConditionCollection::class);
         $conditionCollection->method('addCampaignFilter');
         $conditionCollection->method('getIterator')->willReturn(new \ArrayIterator([$conditionRow]));
         $this->conditionCollectionFactory->method('create')->willReturn($conditionCollection);
@@ -126,21 +129,22 @@ class DataProviderTest extends TestCase
         self::assertArrayNotHasKey('tag', $data[2]['conditions'][0]);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetDataIncludesTriggerRows(): void
     {
-        $campaign = $this->createMock(Campaign::class);
+        $campaign = $this->createStub(Campaign::class);
         $campaign->method('getData')->willReturn(['entity_id' => 1, 'name' => 'Welcome']);
         $campaign->method('getEntityId')->willReturn(1);
 
-        $collection = $this->createMock(CampaignCollection::class);
+        $collection = $this->createStub(CampaignCollection::class);
         $collection->method('getItems')->willReturn([$campaign]);
 
-        $triggerRow = $this->createMock(\Ordo\Automation\Model\CampaignTrigger::class);
+        $triggerRow = $this->createStub(\Ordo\Automation\Model\CampaignTrigger::class);
         $triggerRow->method('getTriggerEvent')->willReturn('order_placed');
-        $triggerCollection = $this->createMock(TriggerCollection::class);
+        $triggerCollection = $this->createStub(TriggerCollection::class);
         $triggerCollection->method('addCampaignFilter');
         $triggerCollection->method('getIterator')->willReturn(new \ArrayIterator([$triggerRow]));
-        $this->triggerCollectionFactory = $this->createMock(TriggerCollectionFactory::class);
+        $this->triggerCollectionFactory = $this->createStub(TriggerCollectionFactory::class);
         $this->triggerCollectionFactory->method('create')->willReturn($triggerCollection);
 
         $this->conditionCollectionFactory->method('create')->willReturn($this->makeEmptyConditionCollection());
@@ -155,7 +159,7 @@ class DataProviderTest extends TestCase
 
     public function testGetDataAppliesPersistedDataAndClearsIt(): void
     {
-        $collection = $this->createMock(CampaignCollection::class);
+        $collection = $this->createStub(CampaignCollection::class);
         $collection->method('getItems')->willReturn([]);
 
         $this->conditionCollectionFactory->method('create')->willReturn(
@@ -176,7 +180,7 @@ class DataProviderTest extends TestCase
 
     private function makeEmptyConditionCollection(): ConditionCollection
     {
-        $collection = $this->createMock(ConditionCollection::class);
+        $collection = $this->createStub(ConditionCollection::class);
         $collection->method('addCampaignFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
 
@@ -185,7 +189,7 @@ class DataProviderTest extends TestCase
 
     private function makeEmptyActionCollection(): ActionCollection
     {
-        $collection = $this->createMock(ActionCollection::class);
+        $collection = $this->createStub(ActionCollection::class);
         $collection->method('addCampaignFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
 

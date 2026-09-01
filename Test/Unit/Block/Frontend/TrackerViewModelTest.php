@@ -11,7 +11,7 @@ class TrackerViewModelTest extends TestCase
 {
     public function testIsTrackingEnabledReflectsConfig(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isTrackingEnabled')->willReturn(true);
 
         self::assertTrue((new TrackerViewModel($config))->isTrackingEnabled());
@@ -19,7 +19,7 @@ class TrackerViewModelTest extends TestCase
 
     public function testIsTrackingEnabledReturnsFalseWhenDisabled(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isTrackingEnabled')->willReturn(false);
 
         self::assertFalse((new TrackerViewModel($config))->isTrackingEnabled());
@@ -27,7 +27,7 @@ class TrackerViewModelTest extends TestCase
 
     public function testIsPopupEnabledReflectsConfig(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isPopupEnabled')->willReturn(true);
 
         self::assertTrue((new TrackerViewModel($config))->isPopupEnabled());
@@ -35,7 +35,7 @@ class TrackerViewModelTest extends TestCase
 
     public function testGetPopupPollIntervalSecondsReflectsConfig(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('getPopupPollIntervalSeconds')->willReturn(20);
 
         self::assertSame(20, (new TrackerViewModel($config))->getPopupPollIntervalSeconds());

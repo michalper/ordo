@@ -11,7 +11,7 @@ class SaveButtonTest extends TestCase
 {
     public function testGetButtonDataReturnsSaveConfig(): void
     {
-        $context = $this->createMock(Context::class);
+        $context = $this->createStub(Context::class);
 
         $data = (new SaveButton($context))->getButtonData();
 

@@ -20,18 +20,18 @@ abstract class AbstractDbTestCase extends TestCase
 {
     protected function makeDbContext(): Context
     {
-        $connection = $this->createMock(AdapterInterface::class);
+        $connection = $this->createStub(AdapterInterface::class);
 
-        $resources = $this->createMock(ResourceConnection::class);
+        $resources = $this->createStub(ResourceConnection::class);
         $resources->method('getConnection')->willReturn($connection);
         $resources->method('getTableName')->willReturnCallback(fn (string $table) => $table);
 
-        $context = $this->createMock(Context::class);
+        $context = $this->createStub(Context::class);
         $context->method('getResources')->willReturn($resources);
         $context->method('getTransactionManager')
-            ->willReturn($this->createMock(TransactionManagerInterface::class));
+            ->willReturn($this->createStub(TransactionManagerInterface::class));
         $context->method('getObjectRelationProcessor')
-            ->willReturn($this->createMock(ObjectRelationProcessor::class));
+            ->willReturn($this->createStub(ObjectRelationProcessor::class));
 
         return $context;
     }

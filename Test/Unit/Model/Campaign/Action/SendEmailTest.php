@@ -14,6 +14,7 @@ use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Model\Campaign\Action\SendEmail;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class SendEmailTest extends TestCase
 {
@@ -28,11 +29,11 @@ class SendEmailTest extends TestCase
     {
         $this->customerRepository = $this->createMock(CustomerRepositoryInterface::class);
         $this->transportBuilder = $this->createMock(TransportBuilder::class);
-        $this->storeManager = $this->createMock(StoreManagerInterface::class);
+        $this->storeManager = $this->createStub(StoreManagerInterface::class);
         $this->inlineTranslation = $this->createMock(StateInterface::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->store = $this->createMock(StoreInterface::class);
+        $this->store = $this->createStub(StoreInterface::class);
         $this->store->method('getId')->willReturn(1);
         $this->storeManager->method('getStore')->willReturn($this->store);
     }
@@ -48,9 +49,10 @@ class SendEmailTest extends TestCase
         );
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSendsTransport(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getFirstname')->willReturn('Jan');
         $customer->method('getEmail')->willReturn('jan@example.com');
         $this->customerRepository->method('getById')->with(42)->willReturn($customer);
@@ -72,6 +74,7 @@ class SendEmailTest extends TestCase
         $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsErrorWhenCustomerIdMissing(): void
     {
         $this->customerRepository->expects(self::never())->method('getById');
@@ -81,6 +84,7 @@ class SendEmailTest extends TestCase
         $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsErrorWhenTemplateMissing(): void
     {
         $this->logger->expects(self::once())->method('error');
@@ -89,6 +93,7 @@ class SendEmailTest extends TestCase
         $this->makeAction()->execute($context, []);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteReturnsSilentlyWhenCustomerNotFound(): void
     {
         $this->customerRepository->method('getById')->willThrowException(new LocalizedException(__('no such customer')));
@@ -98,9 +103,10 @@ class SendEmailTest extends TestCase
         $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsErrorWhenTransportThrows(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getFirstname')->willReturn('Jan');
         $customer->method('getEmail')->willReturn('jan@example.com');
         $this->customerRepository->method('getById')->willReturn($customer);

@@ -10,6 +10,7 @@ use Ordo\Automation\Controller\Track\Event;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\VisitorEventLogger;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class EventTest extends AbstractFrontendActionTestCase
 {
@@ -21,10 +22,10 @@ class EventTest extends AbstractFrontendActionTestCase
 
     protected function setUp(): void
     {
-        $this->resultJsonFactory = $this->createMock(JsonFactory::class);
+        $this->resultJsonFactory = $this->createStub(JsonFactory::class);
         $this->visitorEventLogger = $this->createMock(VisitorEventLogger::class);
-        $this->customerSession = $this->createMock(CustomerSession::class);
-        $this->config = $this->createMock(Config::class);
+        $this->customerSession = $this->createStub(CustomerSession::class);
+        $this->config = $this->createStub(Config::class);
 
         $this->jsonResult = $this->createMock(Json::class);
         $this->jsonResult->method('setData')->willReturnSelf();
@@ -42,6 +43,7 @@ class EventTest extends AbstractFrontendActionTestCase
         );
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteReturnsDisabledWhenTrackingOff(): void
     {
         $controller = $this->makeController();
@@ -53,6 +55,7 @@ class EventTest extends AbstractFrontendActionTestCase
         $controller->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteReturnsInvalidPayloadWhenVisitorIdMissing(): void
     {
         $controller = $this->makeController();
@@ -68,6 +71,7 @@ class EventTest extends AbstractFrontendActionTestCase
         $controller->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteReturnsInvalidPayloadWhenEventTypeNotAllowed(): void
     {
         $controller = $this->makeController();
@@ -82,6 +86,7 @@ class EventTest extends AbstractFrontendActionTestCase
         $controller->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsEventForAnonymousVisitor(): void
     {
         $controller = $this->makeController();
@@ -100,6 +105,7 @@ class EventTest extends AbstractFrontendActionTestCase
         $controller->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsEventForLoggedInCustomer(): void
     {
         $controller = $this->makeController();
@@ -119,12 +125,14 @@ class EventTest extends AbstractFrontendActionTestCase
         $controller->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testCreateCsrfValidationExceptionReturnsNull(): void
     {
         $controller = $this->makeController();
         self::assertNull($controller->createCsrfValidationException($this->request));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testValidateForCsrfReturnsTrue(): void
     {
         $controller = $this->makeController();

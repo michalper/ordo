@@ -22,13 +22,13 @@ abstract class AbstractCollectionTestCase extends TestCase
 {
     protected function makeConnection(): AdapterInterface
     {
-        $select = $this->createMock(Select::class);
+        $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
         $select->method('order')->willReturnSelf();
         $select->method('__toString')->willReturn('SELECT 1');
 
-        $connection = $this->createMock(AdapterInterface::class);
+        $connection = $this->createStub(AdapterInterface::class);
         $connection->method('select')->willReturn($select);
 
         return $connection;
@@ -38,7 +38,7 @@ abstract class AbstractCollectionTestCase extends TestCase
     {
         $connection = $this->makeConnection();
 
-        $resource = $this->createMock(AbstractDb::class);
+        $resource = $this->createStub(AbstractDb::class);
         $resource->method('getConnection')->willReturn($connection);
         $resource->method('getMainTable')->willReturn($mainTable);
         $resource->method('getIdFieldName')->willReturn('entity_id');
@@ -52,10 +52,10 @@ abstract class AbstractCollectionTestCase extends TestCase
     protected function makeCollectionDeps(): array
     {
         return [
-            $this->createMock(EntityFactoryInterface::class),
-            $this->createMock(LoggerInterface::class),
-            $this->createMock(FetchStrategyInterface::class),
-            $this->createMock(ManagerInterface::class),
+            $this->createStub(EntityFactoryInterface::class),
+            $this->createStub(LoggerInterface::class),
+            $this->createStub(FetchStrategyInterface::class),
+            $this->createStub(ManagerInterface::class),
         ];
     }
 }

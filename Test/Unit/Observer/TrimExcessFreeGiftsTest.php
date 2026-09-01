@@ -22,6 +22,7 @@ use Ordo\Automation\Model\ResourceModel\QuoteGiftItem\CollectionFactory as GiftI
 use Ordo\Automation\Observer\TrimExcessFreeGifts;
 use Ordo\Automation\Test\Unit\QuoteTestDouble;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class TrimExcessFreeGiftsTest extends TestCase
 {
@@ -38,7 +39,7 @@ class TrimExcessFreeGiftsTest extends TestCase
         $this->tierCollectionFactory = $this->createMock(TierCollectionFactory::class);
         $this->giftItemCollectionFactory = $this->createMock(GiftItemCollectionFactory::class);
         $this->giftItemResource = $this->createMock(QuoteGiftItemResource::class);
-        $this->config = $this->createMock(Config::class);
+        $this->config = $this->createStub(Config::class);
         $this->config->method('isFreeGiftEnabled')->willReturn(true);
 
         $this->observer = new TrimExcessFreeGifts(
@@ -60,9 +61,9 @@ class TrimExcessFreeGiftsTest extends TestCase
 
     private function giftItemRow(int $quoteItemId): QuoteGiftItem
     {
-        $resource = $this->createMock(AbstractDb::class);
+        $resource = $this->createStub(AbstractDb::class);
         $resource->method('getIdFieldName')->willReturn('entity_id');
-        $row = new QuoteGiftItem($this->createMock(Context::class), $this->createMock(Registry::class), $resource);
+        $row = new QuoteGiftItem($this->createStub(Context::class), $this->createStub(Registry::class), $resource);
         $row->setQuoteItemId($quoteItemId);
         return $row;
     }
@@ -78,20 +79,21 @@ class TrimExcessFreeGiftsTest extends TestCase
             ->getMock();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testRemovesExcessGiftsWhenSubtotalDropsBelowEarnedSlots(): void
     {
-        $offerCollection = $this->createMock(OfferCollection::class);
+        $offerCollection = $this->createStub(OfferCollection::class);
         $offerCollection->method('addEnabledFilter')->willReturn($offerCollection);
         $offerCollection->method('getAllIds')->willReturn([1]);
         $this->offerCollectionFactory->method('create')->willReturn($offerCollection);
 
-        $resource = $this->createMock(AbstractDb::class);
+        $resource = $this->createStub(AbstractDb::class);
         $resource->method('getIdFieldName')->willReturn('entity_id');
-        $tier = new FreeGiftOfferTier($this->createMock(Context::class), $this->createMock(Registry::class), $resource);
+        $tier = new FreeGiftOfferTier($this->createStub(Context::class), $this->createStub(Registry::class), $resource);
         $tier->setOfferId(1);
         $tier->setMinSubtotal(0.0);
         $tier->setGiftSlots(1);
-        $tierCollection = $this->createMock(TierCollection::class);
+        $tierCollection = $this->createStub(TierCollection::class);
         $tierCollection->method('addOffersFilter')->willReturn($tierCollection);
         $tierCollection->method('getIterator')->willReturn(new \ArrayIterator([$tier]));
         $this->tierCollectionFactory->method('create')->willReturn($tierCollection);
@@ -100,7 +102,7 @@ class TrimExcessFreeGiftsTest extends TestCase
         $row2 = $this->giftItemRow(11);
         $rows = [$row1, $row2];
 
-        $giftCollection = $this->createMock(GiftItemCollection::class);
+        $giftCollection = $this->createStub(GiftItemCollection::class);
         $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
         $giftCollection->method('getSize')->willReturn(2);
         $giftCollection->method('getItems')->willReturn($rows);
@@ -116,9 +118,10 @@ class TrimExcessFreeGiftsTest extends TestCase
         $this->observer->execute($this->eventObserver($quote));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDoesNothingWhenNoGiftsInCart(): void
     {
-        $giftCollection = $this->createMock(GiftItemCollection::class);
+        $giftCollection = $this->createStub(GiftItemCollection::class);
         $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
         $giftCollection->method('getSize')->willReturn(0);
         $this->giftItemCollectionFactory->method('create')->willReturn($giftCollection);
@@ -130,6 +133,7 @@ class TrimExcessFreeGiftsTest extends TestCase
         $this->observer->execute($this->eventObserver($quote));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSkipsQuoteWithoutId(): void
     {
         $this->giftItemCollectionFactory->expects(self::never())->method('create');
@@ -140,9 +144,10 @@ class TrimExcessFreeGiftsTest extends TestCase
         $this->observer->execute($this->eventObserver($quote));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testTreatsEarnedSlotsAsZeroWhenMasterSwitchDisabled(): void
     {
-        $this->config = $this->createMock(Config::class);
+        $this->config = $this->createStub(Config::class);
         $this->config->method('isFreeGiftEnabled')->willReturn(false);
         $this->observer = new TrimExcessFreeGifts(
             $this->offerCollectionFactory,
@@ -154,7 +159,7 @@ class TrimExcessFreeGiftsTest extends TestCase
 
         $row = $this->giftItemRow(10);
 
-        $giftCollection = $this->createMock(GiftItemCollection::class);
+        $giftCollection = $this->createStub(GiftItemCollection::class);
         $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
         $giftCollection->method('getSize')->willReturn(1);
         $giftCollection->method('getItems')->willReturn([$row]);
@@ -171,25 +176,26 @@ class TrimExcessFreeGiftsTest extends TestCase
         $this->observer->execute($this->eventObserver($quote));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDoesNothingWhenEarnedSlotsStillCoverCurrentGifts(): void
     {
-        $offerCollection = $this->createMock(OfferCollection::class);
+        $offerCollection = $this->createStub(OfferCollection::class);
         $offerCollection->method('addEnabledFilter')->willReturn($offerCollection);
         $offerCollection->method('getAllIds')->willReturn([1]);
         $this->offerCollectionFactory->method('create')->willReturn($offerCollection);
 
-        $resource = $this->createMock(AbstractDb::class);
+        $resource = $this->createStub(AbstractDb::class);
         $resource->method('getIdFieldName')->willReturn('entity_id');
-        $tier = new FreeGiftOfferTier($this->createMock(Context::class), $this->createMock(Registry::class), $resource);
+        $tier = new FreeGiftOfferTier($this->createStub(Context::class), $this->createStub(Registry::class), $resource);
         $tier->setOfferId(1);
         $tier->setMinSubtotal(0.0);
         $tier->setGiftSlots(2);
-        $tierCollection = $this->createMock(TierCollection::class);
+        $tierCollection = $this->createStub(TierCollection::class);
         $tierCollection->method('addOffersFilter')->willReturn($tierCollection);
         $tierCollection->method('getIterator')->willReturn(new \ArrayIterator([$tier]));
         $this->tierCollectionFactory->method('create')->willReturn($tierCollection);
 
-        $giftCollection = $this->createMock(GiftItemCollection::class);
+        $giftCollection = $this->createStub(GiftItemCollection::class);
         $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
         $giftCollection->method('getSize')->willReturn(2);
         $this->giftItemCollectionFactory->method('create')->willReturn($giftCollection);
@@ -202,27 +208,28 @@ class TrimExcessFreeGiftsTest extends TestCase
         $this->observer->execute($this->eventObserver($quote));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDeletesStaleMarkerRowEvenWhenRemoveItemThrows(): void
     {
-        $offerCollection = $this->createMock(OfferCollection::class);
+        $offerCollection = $this->createStub(OfferCollection::class);
         $offerCollection->method('addEnabledFilter')->willReturn($offerCollection);
         $offerCollection->method('getAllIds')->willReturn([1]);
         $this->offerCollectionFactory->method('create')->willReturn($offerCollection);
 
-        $resource = $this->createMock(AbstractDb::class);
+        $resource = $this->createStub(AbstractDb::class);
         $resource->method('getIdFieldName')->willReturn('entity_id');
-        $tier = new FreeGiftOfferTier($this->createMock(Context::class), $this->createMock(Registry::class), $resource);
+        $tier = new FreeGiftOfferTier($this->createStub(Context::class), $this->createStub(Registry::class), $resource);
         $tier->setOfferId(1);
         $tier->setMinSubtotal(0.0);
         $tier->setGiftSlots(0);
-        $tierCollection = $this->createMock(TierCollection::class);
+        $tierCollection = $this->createStub(TierCollection::class);
         $tierCollection->method('addOffersFilter')->willReturn($tierCollection);
         $tierCollection->method('getIterator')->willReturn(new \ArrayIterator([$tier]));
         $this->tierCollectionFactory->method('create')->willReturn($tierCollection);
 
         $row = $this->giftItemRow(10);
 
-        $giftCollection = $this->createMock(GiftItemCollection::class);
+        $giftCollection = $this->createStub(GiftItemCollection::class);
         $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
         $giftCollection->method('getSize')->willReturn(1);
         $giftCollection->method('getItems')->willReturn([$row]);
@@ -238,9 +245,10 @@ class TrimExcessFreeGiftsTest extends TestCase
         $this->observer->execute($this->eventObserver($quote));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testEarnedSlotsIsZeroWhenNoOffersAreEnabled(): void
     {
-        $offerCollection = $this->createMock(OfferCollection::class);
+        $offerCollection = $this->createStub(OfferCollection::class);
         $offerCollection->method('addEnabledFilter')->willReturn($offerCollection);
         $offerCollection->method('getAllIds')->willReturn([]);
         $this->offerCollectionFactory->method('create')->willReturn($offerCollection);
@@ -249,7 +257,7 @@ class TrimExcessFreeGiftsTest extends TestCase
 
         $row = $this->giftItemRow(10);
 
-        $giftCollection = $this->createMock(GiftItemCollection::class);
+        $giftCollection = $this->createStub(GiftItemCollection::class);
         $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
         $giftCollection->method('getSize')->willReturn(1);
         $giftCollection->method('getItems')->willReturn([$row]);

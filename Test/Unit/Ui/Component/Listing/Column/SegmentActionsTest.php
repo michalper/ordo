@@ -20,16 +20,16 @@ class SegmentActionsTest extends TestCase
 
     public function testPrepareDataSourceAddsEditAndDeleteLinks(): void
     {
-        $urlBuilder = $this->createMock(UrlInterface::class);
+        $urlBuilder = $this->createStub(UrlInterface::class);
         $urlBuilder->method('getUrl')->willReturnMap([
             ['ordo/segment/edit', ['entity_id' => 5], 'https://example.com/admin/ordo/segment/edit/entity_id/5/'],
             ['ordo/segment/delete', ['entity_id' => 5], 'https://example.com/admin/ordo/segment/delete/entity_id/5/'],
         ]);
 
-        $context = $this->createMock(ContextInterface::class);
-        $context->method('getProcessor')->willReturn($this->createMock(\Magento\Framework\View\Element\UiComponent\Processor::class));
+        $context = $this->createStub(ContextInterface::class);
+        $context->method('getProcessor')->willReturn($this->createStub(\Magento\Framework\View\Element\UiComponent\Processor::class));
 
-        $column = new SegmentActions($context, $this->createMock(UiComponentFactory::class), $urlBuilder);
+        $column = new SegmentActions($context, $this->createStub(UiComponentFactory::class), $urlBuilder);
         $column->setData('name', 'actions');
 
         $dataSource = [
@@ -51,13 +51,13 @@ class SegmentActionsTest extends TestCase
 
     private function makeColumn(): SegmentActions
     {
-        $context = $this->createMock(ContextInterface::class);
-        $context->method('getProcessor')->willReturn($this->createMock(\Magento\Framework\View\Element\UiComponent\Processor::class));
+        $context = $this->createStub(ContextInterface::class);
+        $context->method('getProcessor')->willReturn($this->createStub(\Magento\Framework\View\Element\UiComponent\Processor::class));
 
         return new SegmentActions(
             $context,
-            $this->createMock(UiComponentFactory::class),
-            $this->createMock(UrlInterface::class)
+            $this->createStub(UiComponentFactory::class),
+            $this->createStub(UrlInterface::class)
         );
     }
 }

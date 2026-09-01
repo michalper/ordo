@@ -26,6 +26,7 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Trigger as CampaignTriggerResou
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as TriggerCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
 use Ordo\Automation\Test\Unit\Controller\AbstractAdminActionTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class SaveTest extends AbstractAdminActionTestCase
 {
@@ -46,15 +47,15 @@ class SaveTest extends AbstractAdminActionTestCase
     {
         $this->campaignFactory = $this->createMock(CampaignFactory::class);
         $this->campaignResource = $this->createMock(CampaignResource::class);
-        $this->campaignTriggerFactory = $this->createMock(CampaignTriggerFactory::class);
+        $this->campaignTriggerFactory = $this->createStub(CampaignTriggerFactory::class);
         $this->campaignTriggerResource = $this->createMock(CampaignTriggerResource::class);
-        $this->triggerCollectionFactory = $this->createMock(TriggerCollectionFactory::class);
+        $this->triggerCollectionFactory = $this->createStub(TriggerCollectionFactory::class);
         $this->campaignConditionFactory = $this->createMock(CampaignConditionFactory::class);
         $this->campaignConditionResource = $this->createMock(CampaignConditionResource::class);
-        $this->conditionCollectionFactory = $this->createMock(ConditionCollectionFactory::class);
+        $this->conditionCollectionFactory = $this->createStub(ConditionCollectionFactory::class);
         $this->campaignActionFactory = $this->createMock(CampaignActionFactory::class);
         $this->campaignActionResource = $this->createMock(CampaignActionResource::class);
-        $this->actionCollectionFactory = $this->createMock(ActionCollectionFactory::class);
+        $this->actionCollectionFactory = $this->createStub(ActionCollectionFactory::class);
         $this->cache = $this->createMock(CacheInterface::class);
     }
 
@@ -79,12 +80,13 @@ class SaveTest extends AbstractAdminActionTestCase
 
     private function emptyTriggerCollection(): TriggerCollection
     {
-        $collection = $this->createMock(TriggerCollection::class);
+        $collection = $this->createStub(TriggerCollection::class);
         $collection->method('addCampaignFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
         return $collection;
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsImmediatelyWhenNoPostData(): void
     {
         $controller = $this->makeController();
@@ -99,6 +101,7 @@ class SaveTest extends AbstractAdminActionTestCase
         self::assertSame($redirect, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSavesNewCampaignAndRedirectsToGrid(): void
     {
         $controller = $this->makeController();
@@ -130,7 +133,7 @@ class SaveTest extends AbstractAdminActionTestCase
         $this->campaignTriggerFactory->method('create')->willReturn($trigger);
         $this->campaignTriggerResource->expects(self::once())->method('save')->with($trigger);
 
-        $emptyConditionCollection = $this->createMock(ConditionCollection::class);
+        $emptyConditionCollection = $this->createStub(ConditionCollection::class);
         $emptyConditionCollection->method('addCampaignFilter');
         $emptyConditionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->conditionCollectionFactory->method('create')->willReturn($emptyConditionCollection);
@@ -142,7 +145,7 @@ class SaveTest extends AbstractAdminActionTestCase
         $this->campaignConditionFactory->method('create')->willReturn($condition);
         $this->campaignConditionResource->expects(self::once())->method('save')->with($condition);
 
-        $emptyActionCollection = $this->createMock(ActionCollection::class);
+        $emptyActionCollection = $this->createStub(ActionCollection::class);
         $emptyActionCollection->method('addCampaignFilter');
         $emptyActionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->actionCollectionFactory->method('create')->willReturn($emptyActionCollection);
@@ -167,6 +170,7 @@ class SaveTest extends AbstractAdminActionTestCase
         self::assertSame($redirect, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteDeduplicatesRepeatedTriggerEvents(): void
     {
         $controller = $this->makeController();
@@ -187,15 +191,15 @@ class SaveTest extends AbstractAdminActionTestCase
 
         $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
 
-        $trigger = $this->createMock(CampaignTrigger::class);
+        $trigger = $this->createStub(CampaignTrigger::class);
         $this->campaignTriggerFactory->method('create')->willReturn($trigger);
         $this->campaignTriggerResource->expects(self::once())->method('save')->with($trigger);
 
-        $emptyConditionCollection = $this->createMock(ConditionCollection::class);
+        $emptyConditionCollection = $this->createStub(ConditionCollection::class);
         $emptyConditionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->conditionCollectionFactory->method('create')->willReturn($emptyConditionCollection);
 
-        $emptyActionCollection = $this->createMock(ActionCollection::class);
+        $emptyActionCollection = $this->createStub(ActionCollection::class);
         $emptyActionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->actionCollectionFactory->method('create')->willReturn($emptyActionCollection);
 
@@ -206,6 +210,7 @@ class SaveTest extends AbstractAdminActionTestCase
         $controller->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLoadsExistingCampaignAndDeletesOldChildRows(): void
     {
         $controller = $this->makeController();
@@ -220,22 +225,22 @@ class SaveTest extends AbstractAdminActionTestCase
         $this->campaignFactory->method('create')->willReturn($campaign);
         $this->campaignResource->expects(self::once())->method('load')->with($campaign, 7);
 
-        $existingTrigger = $this->createMock(CampaignTrigger::class);
-        $triggerCollection = $this->createMock(TriggerCollection::class);
+        $existingTrigger = $this->createStub(CampaignTrigger::class);
+        $triggerCollection = $this->createStub(TriggerCollection::class);
         $triggerCollection->method('addCampaignFilter');
         $triggerCollection->method('getIterator')->willReturn(new \ArrayIterator([$existingTrigger]));
         $this->triggerCollectionFactory->method('create')->willReturn($triggerCollection);
         $this->campaignTriggerResource->expects(self::once())->method('delete')->with($existingTrigger);
 
-        $existingCondition = $this->createMock(CampaignCondition::class);
-        $conditionCollection = $this->createMock(ConditionCollection::class);
+        $existingCondition = $this->createStub(CampaignCondition::class);
+        $conditionCollection = $this->createStub(ConditionCollection::class);
         $conditionCollection->method('addCampaignFilter');
         $conditionCollection->method('getIterator')->willReturn(new \ArrayIterator([$existingCondition]));
         $this->conditionCollectionFactory->method('create')->willReturn($conditionCollection);
         $this->campaignConditionResource->expects(self::once())->method('delete')->with($existingCondition);
 
-        $existingAction = $this->createMock(CampaignAction::class);
-        $actionCollection = $this->createMock(ActionCollection::class);
+        $existingAction = $this->createStub(CampaignAction::class);
+        $actionCollection = $this->createStub(ActionCollection::class);
         $actionCollection->method('addCampaignFilter');
         $actionCollection->method('getIterator')->willReturn(new \ArrayIterator([$existingAction]));
         $this->actionCollectionFactory->method('create')->willReturn($actionCollection);
@@ -248,6 +253,7 @@ class SaveTest extends AbstractAdminActionTestCase
         $controller->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteFallsBackToJsonTextareaWhenNoDedicatedFields(): void
     {
         $controller = $this->makeController();
@@ -263,7 +269,7 @@ class SaveTest extends AbstractAdminActionTestCase
 
         $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
 
-        $emptyConditionCollection = $this->createMock(ConditionCollection::class);
+        $emptyConditionCollection = $this->createStub(ConditionCollection::class);
         $emptyConditionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->conditionCollectionFactory->method('create')->willReturn($emptyConditionCollection);
 
@@ -273,7 +279,7 @@ class SaveTest extends AbstractAdminActionTestCase
         ));
         $this->campaignConditionFactory->method('create')->willReturn($condition);
 
-        $emptyActionCollection = $this->createMock(ActionCollection::class);
+        $emptyActionCollection = $this->createStub(ActionCollection::class);
         $emptyActionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->actionCollectionFactory->method('create')->willReturn($emptyActionCollection);
 
@@ -284,6 +290,7 @@ class SaveTest extends AbstractAdminActionTestCase
         $controller->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteDefaultsDelayMinutesToZeroWhenAbsent(): void
     {
         $controller = $this->makeController();
@@ -298,11 +305,11 @@ class SaveTest extends AbstractAdminActionTestCase
 
         $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
 
-        $emptyConditionCollection = $this->createMock(ConditionCollection::class);
+        $emptyConditionCollection = $this->createStub(ConditionCollection::class);
         $emptyConditionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->conditionCollectionFactory->method('create')->willReturn($emptyConditionCollection);
 
-        $emptyActionCollection = $this->createMock(ActionCollection::class);
+        $emptyActionCollection = $this->createStub(ActionCollection::class);
         $emptyActionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->actionCollectionFactory->method('create')->willReturn($emptyActionCollection);
 
@@ -319,6 +326,7 @@ class SaveTest extends AbstractAdminActionTestCase
         $controller->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsToEditWhenBackParamSet(): void
     {
         $controller = $this->makeController();
@@ -331,11 +339,11 @@ class SaveTest extends AbstractAdminActionTestCase
 
         $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
 
-        $emptyConditionCollection = $this->createMock(ConditionCollection::class);
+        $emptyConditionCollection = $this->createStub(ConditionCollection::class);
         $emptyConditionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->conditionCollectionFactory->method('create')->willReturn($emptyConditionCollection);
 
-        $emptyActionCollection = $this->createMock(ActionCollection::class);
+        $emptyActionCollection = $this->createStub(ActionCollection::class);
         $emptyActionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->actionCollectionFactory->method('create')->willReturn($emptyActionCollection);
 
@@ -346,12 +354,13 @@ class SaveTest extends AbstractAdminActionTestCase
         self::assertSame($redirect, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsToEditWithErrorWhenSaveThrows(): void
     {
         $controller = $this->makeController();
         $this->request->method('getPostValue')->willReturn(['entity_id' => 3, 'name' => 'Welcome']);
 
-        $campaign = $this->createMock(Campaign::class);
+        $campaign = $this->createStub(Campaign::class);
         $this->campaignFactory->method('create')->willReturn($campaign);
         $this->campaignResource->method('save')->willThrowException(new \RuntimeException('db down'));
 
@@ -365,6 +374,7 @@ class SaveTest extends AbstractAdminActionTestCase
         self::assertSame($redirect, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsRowsWithoutType(): void
     {
         $controller = $this->makeController();
@@ -380,11 +390,11 @@ class SaveTest extends AbstractAdminActionTestCase
 
         $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
 
-        $emptyConditionCollection = $this->createMock(ConditionCollection::class);
+        $emptyConditionCollection = $this->createStub(ConditionCollection::class);
         $emptyConditionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->conditionCollectionFactory->method('create')->willReturn($emptyConditionCollection);
 
-        $emptyActionCollection = $this->createMock(ActionCollection::class);
+        $emptyActionCollection = $this->createStub(ActionCollection::class);
         $emptyActionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->actionCollectionFactory->method('create')->willReturn($emptyActionCollection);
 

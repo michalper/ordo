@@ -13,6 +13,7 @@ use Ordo\Automation\Model\SalesRepEmailContext;
 use Ordo\Automation\Setup\Patch\Data\AddSalesRepAttributes;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 /**
  * Seed unit test for the Test/ directory — establishes the mocking pattern
@@ -31,9 +32,10 @@ class SalesRepEmailContextTest extends TestCase
         $this->context = new SalesRepEmailContext($this->customerRepository, $this->storeManager);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testReturnsAssignedRepWhenNameAndEmailAreSet(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getCustomAttribute')->willReturnMap([
             [AddSalesRepAttributes::ATTRIBUTE_REP_NAME, $this->attribute('Anna Kowalski')],
             [AddSalesRepAttributes::ATTRIBUTE_REP_EMAIL, $this->attribute('anna@example.com')],
@@ -49,13 +51,14 @@ class SalesRepEmailContextTest extends TestCase
         self::assertTrue($result['has_assigned_rep']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testFallsBackToStoreNameWhenNoRepIsAssigned(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getCustomAttribute')->willReturn(null);
         $this->customerRepository->method('getById')->with(7)->willReturn($customer);
 
-        $store = $this->createMock(StoreInterface::class);
+        $store = $this->createStub(StoreInterface::class);
         $store->method('getName')->willReturn('Acme Supplies');
         $this->storeManager->method('getStore')->willReturn($store);
 
@@ -66,9 +69,10 @@ class SalesRepEmailContextTest extends TestCase
         self::assertFalse($result['has_assigned_rep']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testFallsBackToGenericTeamWhenStoreLookupThrows(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getCustomAttribute')->willReturn(null);
         $this->customerRepository->method('getById')->with(8)->willReturn($customer);
 
@@ -80,13 +84,14 @@ class SalesRepEmailContextTest extends TestCase
         self::assertFalse($result['has_assigned_rep']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testFallsBackWhenCustomerDoesNotExist(): void
     {
         $this->customerRepository->method('getById')
             ->with(999)
             ->willThrowException(new NoSuchEntityException(__('not found')));
 
-        $store = $this->createMock(StoreInterface::class);
+        $store = $this->createStub(StoreInterface::class);
         $store->method('getName')->willReturn('');
         $this->storeManager->method('getStore')->willReturn($store);
 
@@ -96,9 +101,9 @@ class SalesRepEmailContextTest extends TestCase
         self::assertFalse($result['has_assigned_rep']);
     }
 
-    private function attribute(string $value): AttributeInterface&MockObject
+    private function attribute(string $value): AttributeInterface
     {
-        $attribute = $this->createMock(AttributeInterface::class);
+        $attribute = $this->createStub(AttributeInterface::class);
         $attribute->method('getValue')->willReturn($value);
 
         return $attribute;

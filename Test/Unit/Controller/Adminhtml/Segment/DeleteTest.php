@@ -9,6 +9,7 @@ use Ordo\Automation\Model\Segment;
 use Ordo\Automation\Model\SegmentFactory;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Test\Unit\Controller\AbstractAdminActionTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class DeleteTest extends AbstractAdminActionTestCase
 {
@@ -25,12 +26,13 @@ class DeleteTest extends AbstractAdminActionTestCase
 
         $segmentFactory = $this->createMock(SegmentFactory::class);
         $segmentFactory->expects(self::never())->method('create');
-        $segmentResource = $this->createMock(SegmentResource::class);
+        $segmentResource = $this->createStub(SegmentResource::class);
 
         $controller = new Delete($context, $segmentFactory, $segmentResource);
         self::assertSame($redirect, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteDeletesAndRedirectsOnSuccess(): void
     {
         $context = $this->makeContext();
@@ -42,7 +44,7 @@ class DeleteTest extends AbstractAdminActionTestCase
 
         $this->messageManager->expects(self::once())->method('addSuccessMessage');
 
-        $segment = $this->createMock(Segment::class);
+        $segment = $this->createStub(Segment::class);
         $segmentFactory = $this->createMock(SegmentFactory::class);
         $segmentFactory->method('create')->willReturn($segment);
 
@@ -54,6 +56,7 @@ class DeleteTest extends AbstractAdminActionTestCase
         self::assertSame($redirect, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsWithErrorWhenDeleteThrows(): void
     {
         $context = $this->makeContext();
@@ -65,7 +68,7 @@ class DeleteTest extends AbstractAdminActionTestCase
 
         $this->messageManager->expects(self::once())->method('addErrorMessage');
 
-        $segment = $this->createMock(Segment::class);
+        $segment = $this->createStub(Segment::class);
         $segmentFactory = $this->createMock(SegmentFactory::class);
         $segmentFactory->method('create')->willReturn($segment);
 

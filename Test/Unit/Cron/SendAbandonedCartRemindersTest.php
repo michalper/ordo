@@ -18,12 +18,13 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class SendAbandonedCartRemindersTest extends TestCase
 {
     private function makeSelect(): Select
     {
-        $select = $this->createMock(Select::class);
+        $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('joinLeft')->willReturnSelf();
         $select->method('where')->willReturnSelf();
@@ -35,7 +36,7 @@ class SendAbandonedCartRemindersTest extends TestCase
 
     public function testExecuteSkipsWhenDisabled(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isAbandonedCartEnabled')->willReturn(false);
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
@@ -44,9 +45,10 @@ class SendAbandonedCartRemindersTest extends TestCase
         $this->makeCron($config, $resourceConnection)->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSendsReminderAndDispatchesCampaignForKnownCustomer(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isAbandonedCartEnabled')->willReturn(true);
         $config->method('getAbandonedCartDelayMinutes')->willReturn(120);
         $config->method('getAbandonedCartMinSubtotal')->willReturn(0.0);
@@ -81,9 +83,10 @@ class SendAbandonedCartRemindersTest extends TestCase
         $this->makeCron($config, $resourceConnection, $dispatcher, $logger)->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsCampaignDispatchForGuestQuote(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isAbandonedCartEnabled')->willReturn(true);
         $config->method('getAbandonedCartDelayMinutes')->willReturn(120);
         $config->method('getAbandonedCartMinSubtotal')->willReturn(0.0);
@@ -111,9 +114,10 @@ class SendAbandonedCartRemindersTest extends TestCase
         $this->makeCron($config, $resourceConnection, $dispatcher)->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsErrorWhenSendingReminderThrows(): void
     {
-        $config = $this->createMock(Config::class);
+        $config = $this->createStub(Config::class);
         $config->method('isAbandonedCartEnabled')->willReturn(true);
         $config->method('getAbandonedCartDelayMinutes')->willReturn(120);
         $config->method('getAbandonedCartMinSubtotal')->willReturn(0.0);
@@ -135,7 +139,7 @@ class SendAbandonedCartRemindersTest extends TestCase
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        $quoteFactory = $this->createMock(QuoteFactory::class);
+        $quoteFactory = $this->createStub(QuoteFactory::class);
         $quoteFactory->method('create')->willThrowException(new \RuntimeException('quote load failed'));
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
@@ -148,9 +152,9 @@ class SendAbandonedCartRemindersTest extends TestCase
             $config,
             $resourceConnection,
             $quoteFactory,
-            $this->createMock(TransportBuilder::class),
-            $this->createMock(StoreManagerInterface::class),
-            $this->createMock(StateInterface::class),
+            $this->createStub(TransportBuilder::class),
+            $this->createStub(StoreManagerInterface::class),
+            $this->createStub(StateInterface::class),
             $dispatcher,
             $logger
         ))->execute();
@@ -162,29 +166,29 @@ class SendAbandonedCartRemindersTest extends TestCase
         ?CampaignDispatcher $dispatcher = null,
         ?LoggerInterface $logger = null
     ): SendAbandonedCartReminders {
-        $quoteItem = $this->createMock(\Magento\Quote\Model\Quote\Item::class);
+        $quoteItem = $this->createStub(\Magento\Quote\Model\Quote\Item::class);
         $quoteItem->method('getName')->willReturn('Widget');
         $quoteItem->method('getQty')->willReturn(2.0);
 
-        $quote = $this->createMock(Quote::class);
+        $quote = $this->createStub(Quote::class);
         $quote->method('load')->willReturnSelf();
         $quote->method('getAllVisibleItems')->willReturn([$quoteItem]);
 
-        $quoteFactory = $this->createMock(QuoteFactory::class);
+        $quoteFactory = $this->createStub(QuoteFactory::class);
         $quoteFactory->method('create')->willReturn($quote);
 
-        $store = $this->createMock(Store::class);
+        $store = $this->createStub(Store::class);
         $store->method('getId')->willReturn(1);
-        $storeManager = $this->createMock(StoreManagerInterface::class);
+        $storeManager = $this->createStub(StoreManagerInterface::class);
         $storeManager->method('getStore')->willReturn($store);
 
-        $transportBuilder = $this->createMock(TransportBuilder::class);
+        $transportBuilder = $this->createStub(TransportBuilder::class);
         $transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
         $transportBuilder->method('setTemplateOptions')->willReturnSelf();
         $transportBuilder->method('setTemplateVars')->willReturnSelf();
         $transportBuilder->method('setFromByScope')->willReturnSelf();
         $transportBuilder->method('addTo')->willReturnSelf();
-        $transportBuilder->method('getTransport')->willReturn($this->createMock(TransportInterface::class));
+        $transportBuilder->method('getTransport')->willReturn($this->createStub(TransportInterface::class));
 
         return new SendAbandonedCartReminders(
             $config,
@@ -192,9 +196,9 @@ class SendAbandonedCartRemindersTest extends TestCase
             $quoteFactory,
             $transportBuilder,
             $storeManager,
-            $this->createMock(StateInterface::class),
-            $dispatcher ?? $this->createMock(CampaignDispatcher::class),
-            $logger ?? $this->createMock(LoggerInterface::class)
+            $this->createStub(StateInterface::class),
+            $dispatcher ?? $this->createStub(CampaignDispatcher::class),
+            $logger ?? $this->createStub(LoggerInterface::class)
         );
     }
 }

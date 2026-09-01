@@ -18,6 +18,7 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Trigger as CampaignTriggerResou
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class CampaignTriggerRepositoryTest extends TestCase
 {
@@ -32,10 +33,10 @@ class CampaignTriggerRepositoryTest extends TestCase
     protected function setUp(): void
     {
         $this->resource = $this->createMock(CampaignTriggerResource::class);
-        $this->triggerFactory = $this->createMock(CampaignTriggerFactory::class);
-        $this->collectionFactory = $this->createMock(CollectionFactory::class);
-        $this->searchResultsFactory = $this->createMock(CampaignTriggerSearchResultsInterfaceFactory::class);
-        $this->collectionProcessor = $this->createMock(CollectionProcessorInterface::class);
+        $this->triggerFactory = $this->createStub(CampaignTriggerFactory::class);
+        $this->collectionFactory = $this->createStub(CollectionFactory::class);
+        $this->searchResultsFactory = $this->createStub(CampaignTriggerSearchResultsInterfaceFactory::class);
+        $this->collectionProcessor = $this->createStub(CollectionProcessorInterface::class);
         $this->cache = $this->createMock(CacheInterface::class);
 
         $this->repository = new CampaignTriggerRepository(
@@ -50,16 +51,17 @@ class CampaignTriggerRepositoryTest extends TestCase
 
     public function testSaveReturnsSavedTriggerAndCleansDispatchCache(): void
     {
-        $trigger = $this->createMock(CampaignTrigger::class);
+        $trigger = $this->createStub(CampaignTrigger::class);
         $this->resource->expects(self::once())->method('save')->with($trigger);
         $this->cache->expects(self::once())->method('clean')->with([CampaignDispatcher::CACHE_TAG]);
 
         self::assertSame($trigger, $this->repository->save($trigger));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSaveWrapsExceptionInCouldNotSaveException(): void
     {
-        $trigger = $this->createMock(CampaignTrigger::class);
+        $trigger = $this->createStub(CampaignTrigger::class);
         $this->resource->method('save')->willThrowException(new \Exception('db down'));
         $this->cache->expects(self::never())->method('clean');
 
@@ -67,18 +69,20 @@ class CampaignTriggerRepositoryTest extends TestCase
         $this->repository->save($trigger);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetByIdReturnsLoadedTrigger(): void
     {
-        $trigger = $this->createMock(CampaignTrigger::class);
+        $trigger = $this->createStub(CampaignTrigger::class);
         $trigger->method('getEntityId')->willReturn(5);
         $this->triggerFactory->method('create')->willReturn($trigger);
 
         self::assertSame($trigger, $this->repository->getById(5));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetByIdThrowsWhenNotFound(): void
     {
-        $trigger = $this->createMock(CampaignTrigger::class);
+        $trigger = $this->createStub(CampaignTrigger::class);
         $trigger->method('getEntityId')->willReturn(null);
         $this->triggerFactory->method('create')->willReturn($trigger);
 
@@ -86,10 +90,11 @@ class CampaignTriggerRepositoryTest extends TestCase
         $this->repository->getById(99);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetListBuildsSearchResults(): void
     {
-        $criteria = $this->createMock(SearchCriteriaInterface::class);
-        $collection = $this->createMock(Collection::class);
+        $criteria = $this->createStub(SearchCriteriaInterface::class);
+        $collection = $this->createStub(Collection::class);
         $collection->method('getItems')->willReturn([]);
         $collection->method('getSize')->willReturn(0);
         $this->collectionFactory->method('create')->willReturn($collection);
@@ -105,7 +110,7 @@ class CampaignTriggerRepositoryTest extends TestCase
 
     public function testDeleteByIdLoadsThenDeletesAndCleansDispatchCache(): void
     {
-        $trigger = $this->createMock(CampaignTrigger::class);
+        $trigger = $this->createStub(CampaignTrigger::class);
         $trigger->method('getEntityId')->willReturn(5);
         $this->triggerFactory->method('create')->willReturn($trigger);
         $this->resource->expects(self::once())->method('delete')->with($trigger);
@@ -114,9 +119,10 @@ class CampaignTriggerRepositoryTest extends TestCase
         self::assertTrue($this->repository->deleteById(5));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDeleteByIdThrowsWhenNotFound(): void
     {
-        $trigger = $this->createMock(CampaignTrigger::class);
+        $trigger = $this->createStub(CampaignTrigger::class);
         $trigger->method('getEntityId')->willReturn(null);
         $this->triggerFactory->method('create')->willReturn($trigger);
 
@@ -124,9 +130,10 @@ class CampaignTriggerRepositoryTest extends TestCase
         $this->repository->deleteById(99);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDeleteByIdWrapsExceptionInCouldNotSaveException(): void
     {
-        $trigger = $this->createMock(CampaignTrigger::class);
+        $trigger = $this->createStub(CampaignTrigger::class);
         $trigger->method('getEntityId')->willReturn(5);
         $this->triggerFactory->method('create')->willReturn($trigger);
         $this->resource->method('delete')->willThrowException(new \Exception('locked'));

@@ -11,7 +11,7 @@ class SimpleActionOptionsProviderPluginTest extends TestCase
 {
     public function testAfterToOptionArrayAppendsCheapestItemFreeOption(): void
     {
-        $subject = $this->createMock(SimpleActionOptionsProvider::class);
+        $subject = $this->createStub(SimpleActionOptionsProvider::class);
         $native = [
             ['label' => 'Percent of product price discount', 'value' => 'by_percent'],
         ];

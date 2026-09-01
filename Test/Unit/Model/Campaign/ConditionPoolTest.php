@@ -11,7 +11,7 @@ class ConditionPoolTest extends TestCase
 {
     public function testGetReturnsRegisteredCondition(): void
     {
-        $condition = $this->createMock(ConditionInterface::class);
+        $condition = $this->createStub(ConditionInterface::class);
         $pool = new ConditionPool(['tag' => $condition]);
 
         self::assertSame($condition, $pool->get('tag'));
@@ -27,8 +27,8 @@ class ConditionPoolTest extends TestCase
     public function testGetAvailableTypesReturnsRegisteredKeys(): void
     {
         $pool = new ConditionPool([
-            'tag' => $this->createMock(ConditionInterface::class),
-            'order_total_gte' => $this->createMock(ConditionInterface::class),
+            'tag' => $this->createStub(ConditionInterface::class),
+            'order_total_gte' => $this->createStub(ConditionInterface::class),
         ]);
 
         self::assertSame(['tag', 'order_total_gte'], $pool->getAvailableTypes());

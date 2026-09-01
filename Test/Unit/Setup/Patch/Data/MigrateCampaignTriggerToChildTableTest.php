@@ -13,7 +13,7 @@ class MigrateCampaignTriggerToChildTableTest extends TestCase
 {
     private function makeSelect(): Select
     {
-        $select = $this->createMock(Select::class);
+        $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
 
@@ -26,7 +26,7 @@ class MigrateCampaignTriggerToChildTableTest extends TestCase
         $connection->method('isTableExists')->willReturn(false);
         $connection->expects(self::never())->method('fetchAll');
 
-        $moduleDataSetup = $this->createMock(ModuleDataSetupInterface::class);
+        $moduleDataSetup = $this->createStub(ModuleDataSetupInterface::class);
         $moduleDataSetup->method('getConnection')->willReturn($connection);
         $moduleDataSetup->method('getTable')->willReturnCallback(fn (string $t) => $t);
 
@@ -41,7 +41,7 @@ class MigrateCampaignTriggerToChildTableTest extends TestCase
         $connection->method('tableColumnExists')->willReturn(false);
         $connection->expects(self::never())->method('fetchAll');
 
-        $moduleDataSetup = $this->createMock(ModuleDataSetupInterface::class);
+        $moduleDataSetup = $this->createStub(ModuleDataSetupInterface::class);
         $moduleDataSetup->method('getConnection')->willReturn($connection);
         $moduleDataSetup->method('getTable')->willReturnCallback(fn (string $t) => $t);
 
@@ -68,7 +68,7 @@ class MigrateCampaignTriggerToChildTableTest extends TestCase
             ['campaign_id' => 2, 'trigger_event' => 'customer_registered']
         );
 
-        $moduleDataSetup = $this->createMock(ModuleDataSetupInterface::class);
+        $moduleDataSetup = $this->createStub(ModuleDataSetupInterface::class);
         $moduleDataSetup->method('getConnection')->willReturn($connection);
         $moduleDataSetup->method('getTable')->willReturnCallback(fn (string $t) => $t);
 
@@ -80,7 +80,7 @@ class MigrateCampaignTriggerToChildTableTest extends TestCase
     {
         self::assertSame([], MigrateCampaignTriggerToChildTable::getDependencies());
 
-        $moduleDataSetup = $this->createMock(ModuleDataSetupInterface::class);
+        $moduleDataSetup = $this->createStub(ModuleDataSetupInterface::class);
         $patch = new MigrateCampaignTriggerToChildTable($moduleDataSetup);
 
         self::assertSame([], $patch->getAliases());

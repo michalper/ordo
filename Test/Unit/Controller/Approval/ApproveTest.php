@@ -11,6 +11,7 @@ use Ordo\Automation\Controller\Approval\Approve;
 use Ordo\Automation\Model\OrderApproval;
 use Ordo\Automation\Model\OrderApprovalManagement;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class ApproveTest extends AbstractFrontendActionTestCase
 {
@@ -28,6 +29,7 @@ class ApproveTest extends AbstractFrontendActionTestCase
         return new Approve($this->makeContext(), $this->orderApprovalManagement, $this->orderRepository);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsWithErrorWhenTokenInvalid(): void
     {
         $controller = $this->makeController();
@@ -41,6 +43,7 @@ class ApproveTest extends AbstractFrontendActionTestCase
         self::assertSame($this->resultRedirect, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsWithErrorWhenOrderCannotBeFound(): void
     {
         $controller = $this->makeController();
@@ -58,11 +61,11 @@ class ApproveTest extends AbstractFrontendActionTestCase
         $controller = $this->makeController();
         $this->request->method('getParam')->with('token')->willReturn('tok');
 
-        $approval = $this->createMock(OrderApproval::class);
+        $approval = $this->createStub(OrderApproval::class);
         $approval->method('getOrderId')->willReturn(7);
         $this->orderApprovalManagement->method('approveByToken')->with('tok')->willReturn($approval);
 
-        $order = $this->createMock(OrderInterface::class);
+        $order = $this->createStub(OrderInterface::class);
         $order->method('getIncrementId')->willReturn('000000007');
         $this->orderRepository->method('get')->with(7)->willReturn($order);
 

@@ -11,12 +11,13 @@ use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\DB\Select;
 use Ordo\Automation\Model\CreditLimitCalculator;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class CreditLimitCalculatorTest extends TestCase
 {
     private function makeSelect(): Select
     {
-        $select = $this->createMock(Select::class);
+        $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
         $select->method('joinInner')->willReturnSelf();
@@ -26,7 +27,7 @@ class CreditLimitCalculatorTest extends TestCase
 
     private function makeConnectionMock(): AdapterInterface
     {
-        $connection = $this->createMock(AdapterInterface::class);
+        $connection = $this->createStub(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
 
         return $connection;
@@ -34,28 +35,29 @@ class CreditLimitCalculatorTest extends TestCase
 
     public function testGetCreditLimitReturnsAttributeValue(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
-        $attribute = $this->createMock(AttributeInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
+        $attribute = $this->createStub(AttributeInterface::class);
         $attribute->method('getValue')->willReturn('5000');
         $customer->method('getCustomAttribute')->willReturn($attribute);
 
         $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
         $customerRepository->method('getById')->with(42)->willReturn($customer);
 
-        $calculator = new CreditLimitCalculator($this->createMock(ResourceConnection::class), $customerRepository);
+        $calculator = new CreditLimitCalculator($this->createStub(ResourceConnection::class), $customerRepository);
 
         self::assertSame(5000.0, $calculator->getCreditLimit(42));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetCreditLimitReturnsZeroWhenAttributeMissing(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getCustomAttribute')->willReturn(null);
 
         $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
         $customerRepository->method('getById')->willReturn($customer);
 
-        $calculator = new CreditLimitCalculator($this->createMock(ResourceConnection::class), $customerRepository);
+        $calculator = new CreditLimitCalculator($this->createStub(ResourceConnection::class), $customerRepository);
 
         self::assertSame(0.0, $calculator->getCreditLimit(42));
     }
@@ -65,32 +67,34 @@ class CreditLimitCalculatorTest extends TestCase
         $connection = $this->makeConnectionMock();
         $connection->method('fetchOne')->willReturn('1250.50');
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        $calculator = new CreditLimitCalculator($resourceConnection, $this->createMock(CustomerRepositoryInterface::class));
+        $calculator = new CreditLimitCalculator($resourceConnection, $this->createStub(CustomerRepositoryInterface::class));
 
         self::assertSame(1250.5, $calculator->getUsedCredit(42));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetUtilizationPercentReturnsZeroWhenNoLimit(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getCustomAttribute')->willReturn(null);
 
         $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
         $customerRepository->method('getById')->willReturn($customer);
 
-        $calculator = new CreditLimitCalculator($this->createMock(ResourceConnection::class), $customerRepository);
+        $calculator = new CreditLimitCalculator($this->createStub(ResourceConnection::class), $customerRepository);
 
         self::assertSame(0.0, $calculator->getUtilizationPercent(42));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetUtilizationPercentComputesRatio(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
-        $attribute = $this->createMock(AttributeInterface::class);
+        $customer = $this->createStub(CustomerInterface::class);
+        $attribute = $this->createStub(AttributeInterface::class);
         $attribute->method('getValue')->willReturn('1000');
         $customer->method('getCustomAttribute')->willReturn($attribute);
 
@@ -100,7 +104,7 @@ class CreditLimitCalculatorTest extends TestCase
         $connection = $this->makeConnectionMock();
         $connection->method('fetchOne')->willReturn('500');
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
@@ -114,11 +118,11 @@ class CreditLimitCalculatorTest extends TestCase
         $connection = $this->makeConnectionMock();
         $connection->method('fetchOne')->willReturn(false);
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        $calculator = new CreditLimitCalculator($resourceConnection, $this->createMock(CustomerRepositoryInterface::class));
+        $calculator = new CreditLimitCalculator($resourceConnection, $this->createStub(CustomerRepositoryInterface::class));
 
         self::assertSame([], $calculator->getCustomerIdsWithCreditLimit());
     }
@@ -129,11 +133,11 @@ class CreditLimitCalculatorTest extends TestCase
         $connection->method('fetchOne')->willReturn('9');
         $connection->method('fetchCol')->willReturn(['1', '3']);
 
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        $calculator = new CreditLimitCalculator($resourceConnection, $this->createMock(CustomerRepositoryInterface::class));
+        $calculator = new CreditLimitCalculator($resourceConnection, $this->createStub(CustomerRepositoryInterface::class));
 
         self::assertSame([1, 3], $calculator->getCustomerIdsWithCreditLimit());
     }

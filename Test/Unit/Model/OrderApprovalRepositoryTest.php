@@ -27,11 +27,11 @@ class OrderApprovalRepositoryTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->resource = $this->createMock(OrderApprovalResource::class);
-        $this->orderApprovalFactory = $this->createMock(OrderApprovalFactory::class);
-        $this->collectionFactory = $this->createMock(CollectionFactory::class);
-        $this->searchResultsFactory = $this->createMock(OrderApprovalSearchResultsInterfaceFactory::class);
-        $this->collectionProcessor = $this->createMock(CollectionProcessorInterface::class);
+        $this->resource = $this->createStub(OrderApprovalResource::class);
+        $this->orderApprovalFactory = $this->createStub(OrderApprovalFactory::class);
+        $this->collectionFactory = $this->createStub(CollectionFactory::class);
+        $this->searchResultsFactory = $this->createStub(OrderApprovalSearchResultsInterfaceFactory::class);
+        $this->collectionProcessor = $this->createStub(CollectionProcessorInterface::class);
 
         $this->repository = new OrderApprovalRepository(
             $this->resource,
@@ -44,7 +44,7 @@ class OrderApprovalRepositoryTest extends TestCase
 
     public function testGetByIdReturnsLoadedApproval(): void
     {
-        $approval = $this->createMock(OrderApproval::class);
+        $approval = $this->createStub(OrderApproval::class);
         $approval->method('getEntityId')->willReturn(5);
         $this->orderApprovalFactory->method('create')->willReturn($approval);
 
@@ -53,7 +53,7 @@ class OrderApprovalRepositoryTest extends TestCase
 
     public function testGetByIdThrowsWhenNotFound(): void
     {
-        $approval = $this->createMock(OrderApproval::class);
+        $approval = $this->createStub(OrderApproval::class);
         $approval->method('getEntityId')->willReturn(null);
         $this->orderApprovalFactory->method('create')->willReturn($approval);
 
@@ -63,8 +63,8 @@ class OrderApprovalRepositoryTest extends TestCase
 
     public function testGetListBuildsSearchResults(): void
     {
-        $criteria = $this->createMock(SearchCriteriaInterface::class);
-        $collection = $this->createMock(Collection::class);
+        $criteria = $this->createStub(SearchCriteriaInterface::class);
+        $collection = $this->createStub(Collection::class);
         $collection->method('getItems')->willReturn([]);
         $collection->method('getSize')->willReturn(0);
         $this->collectionFactory->method('create')->willReturn($collection);

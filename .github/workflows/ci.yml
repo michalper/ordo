@@ -59,7 +59,14 @@ jobs:
         run: composer audit --no-interaction --abandoned=report
 
       - name: Run unit tests
-        run: vendor/bin/phpunit
+        # Show (and fail on) every PHPUnit-level notice/warning/deprecation, not just genuine
+        # test failures — PHPUnit's default behavior is to print a one-line "OK, but there were
+        # issues!" summary and still exit 0, which silently hides real signal (e.g. PHPUnit 12's
+        # "no expectations configured, use createStub() instead" notices) behind a green check.
+        run: >-
+          vendor/bin/phpunit
+          --display-phpunit-notices --display-notices --display-warnings --display-deprecations
+          --fail-on-phpunit-notice --fail-on-notice --fail-on-warning --fail-on-deprecation
 
   static-analysis:
     runs-on: ubuntu-latest

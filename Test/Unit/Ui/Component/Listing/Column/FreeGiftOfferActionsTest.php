@@ -20,16 +20,16 @@ class FreeGiftOfferActionsTest extends TestCase
 
     public function testPrepareDataSourceAddsEditAndDeleteLinks(): void
     {
-        $urlBuilder = $this->createMock(UrlInterface::class);
+        $urlBuilder = $this->createStub(UrlInterface::class);
         $urlBuilder->method('getUrl')->willReturnMap([
             ['ordo/freegiftoffer/edit', ['entity_id' => 5], 'https://example.com/admin/ordo/freegiftoffer/edit/entity_id/5/'],
             ['ordo/freegiftoffer/delete', ['entity_id' => 5], 'https://example.com/admin/ordo/freegiftoffer/delete/entity_id/5/'],
         ]);
 
-        $context = $this->createMock(ContextInterface::class);
-        $context->method('getProcessor')->willReturn($this->createMock(\Magento\Framework\View\Element\UiComponent\Processor::class));
+        $context = $this->createStub(ContextInterface::class);
+        $context->method('getProcessor')->willReturn($this->createStub(\Magento\Framework\View\Element\UiComponent\Processor::class));
 
-        $column = new FreeGiftOfferActions($context, $this->createMock(UiComponentFactory::class), $urlBuilder);
+        $column = new FreeGiftOfferActions($context, $this->createStub(UiComponentFactory::class), $urlBuilder);
         $column->setData('name', 'actions');
 
         $dataSource = [
@@ -49,13 +49,13 @@ class FreeGiftOfferActionsTest extends TestCase
 
     private function makeColumn(): FreeGiftOfferActions
     {
-        $context = $this->createMock(ContextInterface::class);
-        $context->method('getProcessor')->willReturn($this->createMock(\Magento\Framework\View\Element\UiComponent\Processor::class));
+        $context = $this->createStub(ContextInterface::class);
+        $context->method('getProcessor')->willReturn($this->createStub(\Magento\Framework\View\Element\UiComponent\Processor::class));
 
         return new FreeGiftOfferActions(
             $context,
-            $this->createMock(UiComponentFactory::class),
-            $this->createMock(UrlInterface::class)
+            $this->createStub(UiComponentFactory::class),
+            $this->createStub(UrlInterface::class)
         );
     }
 }
