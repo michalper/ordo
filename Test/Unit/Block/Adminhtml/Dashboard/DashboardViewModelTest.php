@@ -145,4 +145,45 @@ class DashboardViewModelTest extends TestCase
 
         self::assertSame('No trigger configured', $viewModel->getTriggerLabelsForCampaign(5));
     }
+
+    public function testGetTriggerLabelIncludesVisitorTagAdded(): void
+    {
+        $viewModel = $this->makeViewModel();
+
+        self::assertSame(
+            'Visitor Tag Added (anonymous)',
+            $viewModel->getTriggerLabel(CampaignTriggerInterface::TRIGGER_VISITOR_TAG_ADDED)
+        );
+    }
+
+    public function testGetCampaignCountForTriggerFiltersByTriggerEvent(): void
+    {
+        $collection = $this->createMock(CampaignTriggerCollection::class);
+        $collection->expects(self::once())->method('addFieldToFilter')
+            ->with('trigger_event', CampaignTriggerInterface::TRIGGER_ORDER_PLACED);
+        $collection->method('getSize')->willReturn(3);
+
+        $campaignTriggerCollectionFactory = $this->createMock(CampaignTriggerCollectionFactory::class);
+        $campaignTriggerCollectionFactory->method('create')->willReturn($collection);
+
+        $viewModel = $this->makeViewModel(null, null, null, $campaignTriggerCollectionFactory);
+
+        self::assertSame(3, $viewModel->getCampaignCountForTrigger(CampaignTriggerInterface::TRIGGER_ORDER_PLACED));
+    }
+
+    public function testGetFixedTriggerEventsReturnsAllKnownTriggers(): void
+    {
+        $viewModel = $this->makeViewModel();
+
+        self::assertSame(
+            [
+                CampaignTriggerInterface::TRIGGER_ORDER_PLACED,
+                CampaignTriggerInterface::TRIGGER_CUSTOMER_REGISTERED,
+                CampaignTriggerInterface::TRIGGER_TAG_ADDED,
+                CampaignTriggerInterface::TRIGGER_CART_ABANDONED,
+                CampaignTriggerInterface::TRIGGER_VISITOR_TAG_ADDED,
+            ],
+            $viewModel->getFixedTriggerEvents()
+        );
+    }
 }

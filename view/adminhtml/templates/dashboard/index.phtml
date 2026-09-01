@@ -26,6 +26,20 @@ $campaigns = $viewModel->getCampaigns();
         </div>
     </div>
 
+    <div class="ordo-dashboard-triggers">
+        <div class="ordo-section-head">
+            <h2><?= $escaper->escapeHtml(__('Campaigns by trigger')) ?></h2>
+        </div>
+        <div class="ordo-trigger-stats">
+            <?php foreach ($viewModel->getFixedTriggerEvents() as $triggerEvent): ?>
+                <div class="ordo-trigger-stat-row">
+                    <span class="ordo-trigger-stat-label"><?= $escaper->escapeHtml($viewModel->getTriggerLabel($triggerEvent)) ?></span>
+                    <span class="ordo-trigger-stat-value"><?= $escaper->escapeHtml((string) $viewModel->getCampaignCountForTrigger($triggerEvent)) ?></span>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+
     <div class="ordo-dashboard-nav">
         <a class="ordo-nav-card" href="<?= $escaper->escapeUrl($block->getUrl('ordo/campaign/index')) ?>">
             <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('Campaigns')) ?></span>

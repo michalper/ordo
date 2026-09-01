@@ -65,6 +65,28 @@
 
 .ordo-section-head h2 { font-size: 16px; margin: 0; }
 
+.ordo-dashboard-triggers { margin-bottom: 32px; }
+
+.ordo-trigger-stats {
+  background: #fff;
+  border: 1px solid var(--ordo-border);
+  border-radius: var(--ordo-radius);
+  overflow: hidden;
+}
+
+.ordo-trigger-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  font-size: 13px;
+}
+
+.ordo-trigger-stat-row + .ordo-trigger-stat-row { border-top: 1px solid var(--ordo-border); }
+
+.ordo-trigger-stat-label { color: #1b1f2a; }
+.ordo-trigger-stat-value { font-weight: 700; color: var(--ordo-primary); }
+
 .ordo-btn {
   display: inline-block;
   border-radius: 8px;
