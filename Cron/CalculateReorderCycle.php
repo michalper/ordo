@@ -60,13 +60,12 @@ class CalculateReorderCycle
             [$customerId, $sku] = explode('|', $key, 2);
             $dates = array_slice($dates, -self::LOOKBACK_ORDERS_PER_SKU);
 
+            // $dates always has >= MIN_ORDERS_TO_DETECT_PATTERN (3) entries here (checked
+            // above), so this loop always runs at least twice and $intervals is never empty —
+            // no empty-guard needed.
             $intervals = [];
             for ($i = 1, $count = count($dates); $i < $count; $i++) {
                 $intervals[] = ((int) strtotime($dates[$i]) - (int) strtotime($dates[$i - 1])) / 86400;
-            }
-
-            if (empty($intervals)) {
-                continue;
             }
 
             $avgIntervalDays = (int) round(array_sum($intervals) / count($intervals));
