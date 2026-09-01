@@ -31,6 +31,11 @@ response, no mocks) using a portable, self-contained HTTP client instead, so the
   confirming a second call with the same token is rejected), and `decision-links` (admin
   fetches the approve/reject URLs by entity_id, extracts the token, and actually uses it to
   approve the order — proving the URL is real and usable, not just correctly formatted).
+- **`CreditLimitApiTest.php`** — admin by-id lookup (asserts `available_credit` really is
+  `credit_limit - used_credit` on the live response, not just on the model), 404 for a
+  nonexistent customer, 403 for a customer token hitting the admin-only by-id route, 401 for
+  both routes unauthenticated, and the customer-scoped `mine` endpoint returning the exact same
+  figures as the admin lookup for the same customer.
 
 **All of the above were actually run against a live Magento 2.4.7 instance while writing this
 pass** (Docker Compose stack: `ordo_test_php` + `ordo_test_db`, PHP built-in server on
