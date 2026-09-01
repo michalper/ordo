@@ -1,17 +1,34 @@
 version: 2
+
+# Lets Dependabot's own dependency-resolution step authenticate to repo.magento.com, so its
+# composer-ecosystem PRs propose real, resolvable magento/* version bumps instead of guessing —
+# uses Dependabot's own secret store (Settings -> Secrets and variables -> Dependabot), which is
+# separate from the Actions secrets of the same name used by ci.yml/coverage.yml/mftf.yml. Add
+# MAGENTO_COMPOSER_USERNAME/PASSWORD there too (same Marketplace access-key values) for this to
+# take effect: `gh secret set MAGENTO_COMPOSER_USERNAME --app dependabot --body "<value>"` (and
+# the same for MAGENTO_COMPOSER_PASSWORD).
+#
+# This does NOT make the resulting PR's own CI checks pass — GitHub withholds Actions secrets
+# from every Dependabot-triggered workflow run regardless of ecosystem, a separate, unrelated
+# restriction with no per-repo opt-out. A composer-ecosystem PR will still show a red CI check
+# even once this registry is configured; the real value is that Dependabot itself now proposes
+# the *correct* version instead of one it can't verify at all, so applying it manually (as
+# already done for actions/checkout in this repo's history) is just copying a verified-correct
+# version bump instead of guessing one.
+registries:
+  magento-repo:
+    type: composer-repository
+    url: https://repo.magento.com
+    username: ${{secrets.MAGENTO_COMPOSER_USERNAME}}
+    password: ${{secrets.MAGENTO_COMPOSER_PASSWORD}}
+
 updates:
-  # composer.json's require-dev deps (phpstan/phpstan, phpunit/phpunit, etc.) are on public
-  # Packagist and update normally. The require block (magento/framework and friends) lives on
-  # repo.magento.com — Dependabot can't authenticate there with the repo's MAGENTO_COMPOSER_*
-  # secrets (it only reads registries.json / a small fixed set of secret names it needs
-  # explicitly granted access to), so PRs bumping those will likely fail their own CI checks
-  # until that's set up. Left enabled anyway: a PR that fails CI due to missing registry auth is
-  # still a useful, visible signal that a newer Magento release exists — better than the version
-  # pin silently going stale with no PR at all.
   - package-ecosystem: composer
     directory: "/"
     schedule:
       interval: weekly
+    registries:
+      - magento-repo
     open-pull-requests-limit: 10
 
   # Keeps actions/checkout, github/codeql-action, etc. pinned to current major versions and
