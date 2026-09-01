@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<ruleset name="Ordo_Automation">
+    <description>Magento 2's own official coding standard (magento/magento-coding-standard), applied to this module.</description>
+
+    <file>.</file>
+
+    <exclude-pattern>vendor/*</exclude-pattern>
+
+    <rule ref="Magento2"/>
+</ruleset>
