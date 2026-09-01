@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCreateSegmentTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Saved segments"/>
+            <title value="Admin can create a saved segment with one condition"/>
+            <description value="Covers the admin UI for segments: create a segment via the form's conditions dynamicRows section, save it, and confirm it appears in the grid. This is the same shape AdminCreateCampaignTest already proved for campaigns (double-nested dynamicRows field names, the toggle-switch enabled checkbox needing a label click) applied to the segment form, which shares those same conventions."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <amOnPage url="admin/ordo/segment/new" stepKey="goToNewSegmentPage"/>
+        <waitForPageLoad stepKey="waitForNewSegmentPage"/>
+
+        <fillField selector="[name='name']" userInput="Test High Value Customers" stepKey="fillName"/>
+        <!-- Same toggle-switch checkbox as the campaign form's "enabled" field — the real
+             <input> is visually covered by its own wrapper, so click the adjacent <label>
+             instead of the input itself. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableSegment"/>
+
+        <!-- dynamicRows posts fields double-nested under the section's own name
+             (conditions[conditions][0][...]), same shape as the campaign form's conditions
+             section — see Controller/Adminhtml/Segment/Save.php. -->
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRow"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRow"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="selectConditionType"/>
+        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;amount&quot;: &quot;500&quot;}" stepKey="fillConditionParams"/>
+
+        <click selector="#save" stepKey="clickSave"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The segment has been saved." stepKey="seeSuccessMessage"/>
+
+        <amOnPage url="admin/ordo/segment/index" stepKey="goToSegmentGrid"/>
+        <waitForPageLoad stepKey="waitForGrid"/>
+        <see selector="table.data-grid" userInput="Test High Value Customers" stepKey="seeSegmentInGrid"/>
+    </test>
+</tests>
