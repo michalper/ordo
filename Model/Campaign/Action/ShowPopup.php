@@ -3,9 +3,12 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Campaign\Action;
 
+use Magento\Framework\Stdlib\DateTime\DateTime;
 use Ordo\Automation\Api\Campaign\ActionInterface;
+use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\PendingPopupFactory;
 use Ordo\Automation\Model\ResourceModel\PendingPopup as PendingPopupResource;
+use Ordo\Automation\Model\ResourceModel\PendingPopup\CollectionFactory as PendingPopupCollectionFactory;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -20,12 +23,19 @@ use Psr\Log\LoggerInterface;
  * visitor_tag_added trigger. At least one must be present, or there is no browser to eventually
  * deliver this to and the action is a no-op (logged, not thrown — same fail-closed pattern as
  * every other action here).
+ *
+ * Frequency-capped: if the target already received a popup within the configured window
+ * (Config::getPopupFrequencyCapHours(), default 24h, 0 disables it), this is a silent no-op —
+ * not logged as an error, since skipping is the intended behavior, not a failure.
  */
 class ShowPopup implements ActionInterface
 {
     public function __construct(
         private readonly PendingPopupFactory $pendingPopupFactory,
         private readonly PendingPopupResource $pendingPopupResource,
+        private readonly PendingPopupCollectionFactory $pendingPopupCollectionFactory,
+        private readonly Config $config,
+        private readonly DateTime $dateTime,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -48,6 +58,17 @@ class ShowPopup implements ActionInterface
         if ($headline === '') {
             $this->logger->error('Ordo_Automation: popup action is missing a headline.');
             return;
+        }
+
+        $capHours = $this->config->getPopupFrequencyCapHours();
+        if ($capHours > 0) {
+            $since = date('Y-m-d H:i:s', $this->dateTime->gmtTimestamp() - $capHours * 3600);
+            $recentlyShown = $this->pendingPopupCollectionFactory->create()
+                ->targetHasRecentlyReceivedPopup($customerId, $visitorId, $since);
+
+            if ($recentlyShown) {
+                return;
+            }
         }
 
         $popup = $this->pendingPopupFactory->create();

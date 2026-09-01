@@ -41,6 +41,7 @@ class Config extends AbstractHelper
 
     private const XML_PATH_POPUP_ENABLED = 'ordo_automation/tracking/popup_enabled';
     private const XML_PATH_POPUP_POLL_INTERVAL_SECONDS = 'ordo_automation/tracking/popup_poll_interval_seconds';
+    private const XML_PATH_POPUP_FREQUENCY_CAP_HOURS = 'ordo_automation/tracking/popup_frequency_cap_hours';
 
     private const XML_PATH_FREE_GIFT_ENABLED = 'ordo_automation/free_gift/enabled';
 
@@ -221,6 +222,15 @@ class Config extends AbstractHelper
     public function getPopupPollIntervalSeconds(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_POPUP_POLL_INTERVAL_SECONDS, 15, $storeId);
+    }
+
+    /**
+     * Minimum gap, in hours, between two popups delivered to the same visitor/customer.
+     * 0 disables capping (every campaign popup action always queues a new popup).
+     */
+    public function getPopupFrequencyCapHours(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_POPUP_FREQUENCY_CAP_HOURS, 24, $storeId);
     }
 
     public function isFreeGiftEnabled(?int $storeId = null): bool

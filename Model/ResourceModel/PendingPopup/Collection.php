@@ -46,4 +46,31 @@ class Collection extends AbstractCollection
 
         return $this;
     }
+
+    /**
+     * Frequency capping: has this customer/visitor already been handed a popup since $since?
+     * `delivered_at >= $since` naturally excludes not-yet-delivered rows too, since comparing
+     * NULL with `>=` in SQL is never true — no separate "delivered_at is not null" needed.
+     */
+    public function targetHasRecentlyReceivedPopup(?int $customerId, ?string $visitorId, string $since): bool
+    {
+        $conditions = [];
+        if ($customerId !== null) {
+            $conditions[] = ['field' => 'customer_id', 'condition' => ['eq' => $customerId]];
+        }
+        if ($visitorId !== null && $visitorId !== '') {
+            $conditions[] = ['field' => 'visitor_id', 'condition' => ['eq' => $visitorId]];
+        }
+
+        if ($conditions) {
+            $this->addFieldToFilter(
+                array_column($conditions, 'field'),
+                array_column($conditions, 'condition')
+            );
+        }
+
+        $this->addFieldToFilter('delivered_at', ['gteq' => $since]);
+
+        return $this->getSize() > 0;
+    }
 }

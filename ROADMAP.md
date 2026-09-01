@@ -70,6 +70,8 @@ Every action used to end in an email, tag, or coupon — nothing ever rendered b
 
 **Aggregation itself moved off the request thread.** `VisitorEventLogger` used to run `VisitorAggregator`'s `GROUP BY`/`HAVING` query (plus any resulting tag writes) synchronously inline in the `/ordo/track/event` and `customer_login` requests — the same class of problem Phase 7 fixed for `CampaignDispatcher`. A new `ordo.automation.visitor.aggregate` topic (`Model\Queue\VisitorAggregationPublisher`/`VisitorAggregationConsumer`, mirroring `CampaignDispatchPublisher`/`Consumer` exactly) means a tracking or login request never waits on it. Found and fixed a small real bug along the way: `StitchVisitorIdentity` was calling aggregation twice on login. 469 unit + 16 integration tests passing after this change.
 
+**Popup display-frequency capping — done.** Closes the first bullet of the "Popup targeting refinements" gap below. `Model\Campaign\Action\ShowPopup` now checks `Helper\Config::getPopupFrequencyCapHours()` (`ordo_automation/tracking/popup_frequency_cap_hours`, default 24h, 0 disables it) against `ordo_pending_popup` before queuing a new row — if the same customer/visitor already received a popup within that window, the action is a silent no-op (not logged as an error; skipping is the intended behavior). `Model\ResourceModel\PendingPopup\Collection::targetHasRecentlyReceivedPopup()` implements the OR-across-customer_id/visitor_id lookup, same identifier-matching approach as `addTargetFilter()`. Verified against a real database in `Test/Integration/CampaignVisitorPopupScenarioTest.php` — a real, already-delivered row inside the cap window suppresses a subsequent dispatch's popup action.
+
 ## Phase 7 — dispatch performance at scale
 
 An audit found the campaign engine worked correctly but would not survive real traffic:
@@ -197,9 +199,10 @@ incidentally:
   genuinely different data model (an `ordo_customer_score` type table, plus rules mapping event →
   points, and a threshold check in the condition pool) than tags are.
 - **Popup targeting refinements** — the on-site popup shipped above (Phase 5) targets a
-  visitor/customer identifier and a behavioral tag threshold; it doesn't yet support
-  event-driven triggers finer than that (e.g. "this specific element was clicked", not just "a
-  page/product/category view threshold was crossed") or display-frequency capping per visitor.
+  visitor/customer identifier and a behavioral tag threshold; display-frequency capping per
+  visitor is done (see Phase 5). Still missing: event-driven triggers finer than a tag threshold
+  (e.g. "this specific element was clicked", not just "a page/product/category view threshold
+  was crossed").
 - **Dynamic content blocks** (reusable text/HTML snippets, RSS-driven auto-newsletters, product
   feed inside a campaign email) — not built; every email template today is static.
 - **Saved/reusable segments** — a segment (built from attributes + behavior) saved once and

@@ -68,14 +68,22 @@ Trzy pliki, różny zakres:
 
 ### Uruchomienie
 
+**Ważne od czasu automatyzacji konsumentów przez supervisord (patrz sekcja wyżej): zatrzymaj oba stałe konsumery przed testami integracyjnymi, inaczej testy zawisną w nieskończoność.** `CampaignQueueWiringTest` i `CampaignVisitorPopupScenarioTest::drainPendingMessages()` publikują wiadomość, po czym same odpalają `bin/magento queue:consumers:start <temat> --max-messages=1` jako podproces i czekają, aż on skonsumuje *tę konkretną* wiadomość. Jeśli w tle działa też stały konsument z supervisorda (`consumer-campaign-dispatch`/`consumer-visitor-aggregate`), on zjada wiadomość pierwszy — podproces testu czeka wtedy na wiadomość, która już zniknęła, i wisi bez końca (napotkane i naprawione: dwa zawieszone przebiegi `phpunit` trzeba było ręcznie ubić przez `kill -9` po PID z `/proc/[0-9]*/cmdline`, bo `ps`/`pkill` nie ma w tym obrazie).
+
 ```bash
 cd /Users/michalper/Projects/magento-ordo-test
 docker compose up -d
 docker compose exec php sh -c "rm -rf vendor/ordo/module-automation && composer update ordo/module-automation"
 
+# zatrzymaj stałe konsumery na czas testów integracyjnych
+docker compose exec php supervisorctl stop consumer-campaign-dispatch consumer-visitor-aggregate
+
 # z katalogu Magento (nie modułu!) — wymaga --bootstrap app/bootstrap.php, inaczej BP nie istnieje
 docker compose exec php vendor/bin/phpunit --bootstrap app/bootstrap.php \
     vendor/ordo/module-automation/Test/Integration
+
+# odpal je z powrotem po testach
+docker compose exec php supervisorctl start consumer-campaign-dispatch consumer-visitor-aggregate
 ```
 
 Wymaga działającego `app/etc/env.php` (baza, cache) tego środowiska — to nie jest tryb bezstanowy, testy faktycznie łączą się z bazą dev. `CampaignQueueWiringTest` dodatkowo uruchamia `bin/magento` jako podproces (`exec()`), więc PHP w kontenerze musi mieć prawo odpalać poleceń powłoki.

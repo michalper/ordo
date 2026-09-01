@@ -160,6 +160,15 @@
                         <field id="popup_enabled">1</field>
                     </depends>
                 </field>
+                <field id="popup_frequency_cap_hours" translate="label comment" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Popup frequency cap (hours)</label>
+                    <comment>Minimum time between two popups shown to the same visitor/customer. 0 disables the cap.</comment>
+                    <validate>validate-digits</validate>
+                    <depends>
+                        <field id="enabled">1</field>
+                        <field id="popup_enabled">1</field>
+                    </depends>
+                </field>
             </group>
 
             <group id="free_gift" translate="label" type="text" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">

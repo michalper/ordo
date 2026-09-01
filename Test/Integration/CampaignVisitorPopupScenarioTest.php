@@ -330,4 +330,30 @@ class CampaignVisitorPopupScenarioTest extends TestCase
         $afterClaim->addTargetFilter(null, $visitorId, date('Y-m-d H:i:s'));
         self::assertCount(0, $afterClaim);
     }
+
+    public function testPopupActionIsFrequencyCappedAgainstARealPreviouslyDeliveredRow(): void
+    {
+        $visitorId = 'itest-' . uniqid('', true);
+        $this->cleanupVisitorId = $visitorId;
+
+        $campaignId = $this->createCampaign('visitor_tag_added');
+        $this->addAction($campaignId, 'popup', ['headline' => 'Hello!']);
+        $this->cache->clean([CampaignDispatcher::CACHE_TAG]);
+
+        // A popup for this visitor was already delivered a minute ago — well inside the
+        // default 24h cap window (Config::getPopupFrequencyCapHours()).
+        $resourceConnection = self::$objectManager->get(ResourceConnection::class);
+        $connection = $resourceConnection->getConnection();
+        $connection->insert($resourceConnection->getTableName('ordo_pending_popup'), [
+            'visitor_id' => $visitorId,
+            'headline' => 'Already shown',
+            'delivered_at' => date('Y-m-d H:i:s', time() - 60),
+        ]);
+
+        $this->dispatcher->dispatch('visitor_tag_added', ['visitor_id' => $visitorId, 'tag' => 'irrelevant']);
+
+        // Only the pre-existing, already-delivered row exists — the action must not have
+        // queued a fresh one on top of it.
+        self::assertSame(1, $this->countPendingPopupsForVisitor($visitorId));
+    }
 }
