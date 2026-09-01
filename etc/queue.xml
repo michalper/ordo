@@ -5,4 +5,8 @@
         <queue name="ordo.automation.campaign.dispatch" consumer="ordo.automation.campaign.dispatch"
                handler="Ordo\Automation\Model\Queue\CampaignDispatchConsumer::execute"/>
     </broker>
+    <broker topic="ordo.automation.visitor.aggregate" exchange="magento">
+        <queue name="ordo.automation.visitor.aggregate" consumer="ordo.automation.visitor.aggregate"
+               handler="Ordo\Automation\Model\Queue\VisitorAggregationConsumer::execute"/>
+    </broker>
 </config>

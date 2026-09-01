@@ -164,7 +164,16 @@ class CampaignVisitorPopupScenarioTest extends TestCase
         $resource->save($action);
     }
 
-    public function testAnonymousVisitorEventsAggregateIntoARealVisitorTag(): void
+    /**
+     * VisitorEventLogger::log() no longer aggregates synchronously — it publishes onto
+     * ordo.automation.visitor.aggregate (see Model\Queue\VisitorAggregationPublisher) and
+     * returns immediately, the same move CampaignDispatcher's callers made earlier. So proving
+     * "anonymous events actually turn into a tag" now means proving the whole
+     * publish -> queue -> consumer -> VisitorAggregator chain, the same way
+     * CampaignQueueWiringTest proves campaign dispatch: run the real consumer as a subprocess,
+     * not call VisitorAggregator directly.
+     */
+    public function testAnonymousVisitorEventsAggregateIntoARealVisitorTagThroughTheRealQueue(): void
     {
         $visitorId = 'itest-' . uniqid('', true);
         $this->cleanupVisitorId = $visitorId;
@@ -174,17 +183,66 @@ class CampaignVisitorPopupScenarioTest extends TestCase
         self::assertFalse($this->visitorTagManager->hasTag($visitorId, $tag));
 
         // Config::getTrackingViewThreshold() defaults to 3 — three anonymous, never-logged-in
-        // events for the same category should cross it exactly.
+        // events for the same category should cross it exactly. Each call publishes a message;
+        // nothing has been consumed yet at this point.
         for ($i = 0; $i < 3; $i++) {
             $this->visitorEventLogger->log($visitorId, 'category_view', $categoryId, null);
         }
 
+        self::assertFalse(
+            $this->visitorTagManager->hasTag($visitorId, $tag),
+            'sanity check: aggregation must NOT have happened yet — nothing has consumed the queue'
+        );
+
+        $this->drainPendingMessages('ordo.automation.visitor.aggregate');
+
         self::assertTrue(
             $this->visitorTagManager->hasTag($visitorId, $tag),
-            'three anonymous category views must aggregate into a real ordo_visitor_tag row without ever logging in'
+            'three anonymous category views must aggregate into a real ordo_visitor_tag row, through the real queue, without ever logging in'
         );
 
         $this->visitorTagsToClean[] = ['visitorId' => $visitorId, 'tag' => $tag];
+    }
+
+    /**
+     * Same backlog problem CampaignQueueWiringTest documents: other tests in this run (and
+     * VisitorEventLogger's other callers) publish onto this same topic, so the exact pending
+     * count must be counted and drained, not guessed — see that class's drainPendingMessages()
+     * for why a fixed --max-messages either flakes or hangs on this install's DB queue driver.
+     */
+    private function drainPendingMessages(string $consumerName): void
+    {
+        $resourceConnection = self::$objectManager->get(ResourceConnection::class);
+        $connection = $resourceConnection->getConnection();
+
+        $pendingCount = (int) $connection->fetchOne(
+            $connection->select()
+                ->from(
+                    ['qms' => $resourceConnection->getTableName('queue_message_status')],
+                    ['COUNT(*)']
+                )
+                ->joinInner(
+                    ['q' => $resourceConnection->getTableName('queue')],
+                    'q.id = qms.queue_id',
+                    []
+                )
+                ->where('q.name = ?', $consumerName)
+                ->where('qms.status = ?', 2) // Magento\MysqlMq\Model\QueueManagement::MESSAGE_STATUS_NEW
+        );
+
+        self::assertGreaterThan(0, $pendingCount, 'sanity check: our own just-published message(s) must be pending');
+
+        $command = sprintf(
+            '%s %s/bin/magento queue:consumers:start %s --max-messages=%d 2>&1',
+            escapeshellarg(PHP_BINARY),
+            escapeshellarg(rtrim(BP, '/')),
+            escapeshellarg($consumerName),
+            $pendingCount
+        );
+
+        exec($command, $output, $exitCode);
+
+        self::assertSame(0, $exitCode, 'queue:consumers:start must exit cleanly; output: ' . implode("\n", $output));
     }
 
     public function testVisitorTagAddedCampaignWithPopupActionCreatesARealPendingPopup(): void

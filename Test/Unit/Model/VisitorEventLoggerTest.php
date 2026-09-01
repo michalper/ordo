@@ -5,13 +5,13 @@ namespace Ordo\Automation\Test\Unit\Model;
 
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
-use Ordo\Automation\Model\VisitorAggregator;
+use Ordo\Automation\Model\Queue\VisitorAggregationPublisher;
 use Ordo\Automation\Model\VisitorEventLogger;
 use PHPUnit\Framework\TestCase;
 
 class VisitorEventLoggerTest extends TestCase
 {
-    public function testLogInsertsRowAndAggregatesWhenCustomerKnown(): void
+    public function testLogInsertsRowAndPublishesForCustomerWhenCustomerKnown(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
         $connection->expects(self::once())->method('insert')->with(
@@ -23,29 +23,30 @@ class VisitorEventLoggerTest extends TestCase
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        $aggregator = $this->createMock(VisitorAggregator::class);
-        $aggregator->expects(self::once())->method('aggregateForCustomer')->with(42);
+        $publisher = $this->createMock(VisitorAggregationPublisher::class);
+        $publisher->expects(self::once())->method('publishForCustomer')->with(42);
+        $publisher->expects(self::never())->method('publishForVisitor');
 
-        $logger = new VisitorEventLogger($resourceConnection, $aggregator);
+        $logger = new VisitorEventLogger($resourceConnection, $publisher);
         $logger->log('v1', 'view_category', '15', 42);
     }
 
-    public function testLogAggregatesForVisitorWhenCustomerUnknown(): void
+    public function testLogPublishesForVisitorWhenCustomerUnknown(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        $aggregator = $this->createMock(VisitorAggregator::class);
-        $aggregator->expects(self::never())->method('aggregateForCustomer');
-        $aggregator->expects(self::once())->method('aggregateForVisitor')->with('v1');
+        $publisher = $this->createMock(VisitorAggregationPublisher::class);
+        $publisher->expects(self::never())->method('publishForCustomer');
+        $publisher->expects(self::once())->method('publishForVisitor')->with('v1');
 
-        $logger = new VisitorEventLogger($resourceConnection, $aggregator);
+        $logger = new VisitorEventLogger($resourceConnection, $publisher);
         $logger->log('v1', 'view_category', '15', null);
     }
 
-    public function testAttributeVisitorToCustomerUpdatesAndAggregates(): void
+    public function testAttributeVisitorToCustomerUpdatesAndPublishesForCustomer(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
         $connection->expects(self::once())->method('update')->with(
@@ -58,10 +59,10 @@ class VisitorEventLoggerTest extends TestCase
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        $aggregator = $this->createMock(VisitorAggregator::class);
-        $aggregator->expects(self::once())->method('aggregateForCustomer')->with(42);
+        $publisher = $this->createMock(VisitorAggregationPublisher::class);
+        $publisher->expects(self::once())->method('publishForCustomer')->with(42);
 
-        $logger = new VisitorEventLogger($resourceConnection, $aggregator);
+        $logger = new VisitorEventLogger($resourceConnection, $publisher);
         $logger->attributeVisitorToCustomer('v1', 42);
     }
 }

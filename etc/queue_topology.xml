@@ -4,5 +4,7 @@
     <exchange name="magento">
         <binding id="OrdoAutomationCampaignDispatch" topic="ordo.automation.campaign.dispatch"
                  destination="ordo.automation.campaign.dispatch"/>
+        <binding id="OrdoAutomationVisitorAggregate" topic="ordo.automation.visitor.aggregate"
+                 destination="ordo.automation.visitor.aggregate"/>
     </exchange>
 </config>

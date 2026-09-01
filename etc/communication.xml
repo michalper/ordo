@@ -5,4 +5,8 @@
         <handler name="ordoAutomationCampaignDispatch"
                  type="Ordo\Automation\Model\Queue\CampaignDispatchConsumer" method="execute"/>
     </topic>
+    <topic name="ordo.automation.visitor.aggregate" is_synchronous="false" request="string">
+        <handler name="ordoAutomationVisitorAggregate"
+                 type="Ordo\Automation\Model\Queue\VisitorAggregationConsumer" method="execute"/>
+    </topic>
 </config>

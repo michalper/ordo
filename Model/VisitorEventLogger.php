@@ -4,21 +4,25 @@ declare(strict_types=1);
 namespace Ordo\Automation\Model;
 
 use Magento\Framework\App\ResourceConnection;
+use Ordo\Automation\Model\Queue\VisitorAggregationPublisher;
 
 /**
  * Writes one row to the short-lived ordo_visitor_event table (see PruneVisitorEvents for why
- * it's short-lived) and immediately runs aggregation, so a threshold crossed mid-session tags
- * right away instead of waiting for a batch job — against the customer if the event already has
- * a customer_id (visitor was already identified — logged in, or stitched by
+ * it's short-lived) and publishes a request to check aggregation — against the customer if the
+ * event already has a customer_id (visitor was already identified — logged in, or stitched by
  * StitchVisitorIdentity earlier in the session), against the anonymous visitor_id otherwise.
- * Real-time behavior tracking for a visitor who never logs in depends on that second branch —
- * without it, anonymous behavior only ever got tagged retroactively at login.
+ *
+ * Aggregation itself (VisitorAggregator's GROUP BY/HAVING query, plus any resulting tag writes)
+ * used to run synchronously right here, inline in the /ordo/track/event request — the same
+ * class of problem CampaignDispatcher had before it moved to the queue (see
+ * Model\Queue\CampaignDispatchPublisher). VisitorAggregationConsumer now does that work off the
+ * request thread; a checkout/tracking request never waits on it.
  */
 class VisitorEventLogger
 {
     public function __construct(
         private readonly ResourceConnection $resourceConnection,
-        private readonly VisitorAggregator $visitorAggregator
+        private readonly VisitorAggregationPublisher $visitorAggregationPublisher
     ) {
     }
 
@@ -34,9 +38,9 @@ class VisitorEventLogger
         ]);
 
         if ($customerId !== null) {
-            $this->visitorAggregator->aggregateForCustomer($customerId);
+            $this->visitorAggregationPublisher->publishForCustomer($customerId);
         } else {
-            $this->visitorAggregator->aggregateForVisitor($visitorId);
+            $this->visitorAggregationPublisher->publishForVisitor($visitorId);
         }
     }
 
@@ -53,6 +57,6 @@ class VisitorEventLogger
             ['visitor_id = ?' => $visitorId, 'customer_id IS NULL']
         );
 
-        $this->visitorAggregator->aggregateForCustomer($customerId);
+        $this->visitorAggregationPublisher->publishForCustomer($customerId);
     }
 }

@@ -6,14 +6,14 @@ namespace Ordo\Automation\Observer;
 use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Stdlib\CookieManagerInterface;
-use Ordo\Automation\Model\VisitorAggregator;
 use Ordo\Automation\Model\VisitorEventLogger;
 
 /**
  * Fires on login: reads the anonymous visitor cookie the JS tracker set before this person
- * ever had a customer_id, backfills their pre-login events with the now-known customer_id,
- * and runs aggregation immediately so any threshold already crossed while browsing anonymously
- * turns into a tag right away instead of waiting for the next event or a cron.
+ * ever had a customer_id, and backfills their pre-login events with the now-known customer_id
+ * — attributeVisitorToCustomer() itself publishes the aggregation check (see
+ * Model\Queue\VisitorAggregationPublisher), so any threshold already crossed while browsing
+ * anonymously still turns into a tag, just off the request thread rather than blocking login.
  */
 class StitchVisitorIdentity implements ObserverInterface
 {
@@ -21,8 +21,7 @@ class StitchVisitorIdentity implements ObserverInterface
 
     public function __construct(
         private readonly CookieManagerInterface $cookieManager,
-        private readonly VisitorEventLogger $visitorEventLogger,
-        private readonly VisitorAggregator $visitorAggregator
+        private readonly VisitorEventLogger $visitorEventLogger
     ) {
     }
 
@@ -38,8 +37,6 @@ class StitchVisitorIdentity implements ObserverInterface
             return;
         }
 
-        $customerId = (int) $customer->getId();
-        $this->visitorEventLogger->attributeVisitorToCustomer($visitorId, $customerId);
-        $this->visitorAggregator->aggregateForCustomer($customerId);
+        $this->visitorEventLogger->attributeVisitorToCustomer($visitorId, (int) $customer->getId());
     }
 }

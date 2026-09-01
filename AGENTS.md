@@ -48,7 +48,7 @@ To środowisko testowe **nie ma RabbitMQ** — Magento używa domyślnej kolejki
 'cron_consumers_runner' => [
     'cron_run' => true,
     'max_messages' => 20000,
-    'consumers' => ['ordo.automation.campaign.dispatch'],
+    'consumers' => ['ordo.automation.campaign.dispatch', 'ordo.automation.visitor.aggregate'],
 ],
 ```
 

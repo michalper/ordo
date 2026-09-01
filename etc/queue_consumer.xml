@@ -3,4 +3,6 @@
         xsi:noNamespaceSchemaLocation="urn:magento:framework-message-queue:etc/consumer.xsd">
     <consumer name="ordo.automation.campaign.dispatch" queue="ordo.automation.campaign.dispatch"
               handler="Ordo\Automation\Model\Queue\CampaignDispatchConsumer::execute"/>
+    <consumer name="ordo.automation.visitor.aggregate" queue="ordo.automation.visitor.aggregate"
+              handler="Ordo\Automation\Model\Queue\VisitorAggregationConsumer::execute"/>
 </config>
