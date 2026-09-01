@@ -1,18 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\Campaign\\Edit\\BackButton\:\:getButtonData\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Block/Adminhtml/Campaign/Edit/BackButton.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\Campaign\\Edit\\DeleteButton\:\:getButtonData\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Block/Adminhtml/Campaign/Edit/DeleteButton.php
-
-		-
 			message: '#^Cannot access an offset on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 2
@@ -103,24 +91,6 @@ parameters:
 			path: Block/Adminhtml/Campaign/Edit/GenericButton.php
 
 		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\Campaign\\Edit\\GenericButton\:\:getUrl\(\) has parameter \$params with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Block/Adminhtml/Campaign/Edit/GenericButton.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\Campaign\\Edit\\SaveAndContinueButton\:\:getButtonData\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Block/Adminhtml/Campaign/Edit/SaveAndContinueButton.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\Campaign\\Edit\\SaveButton\:\:getButtonData\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Block/Adminhtml/Campaign/Edit/SaveButton.php
-
-		-
 			message: '#^Cannot call method getTriggerEvent\(\) on mixed\.$#'
 			identifier: method.nonObject
 			count: 1
@@ -145,76 +115,16 @@ parameters:
 			path: Block/Adminhtml/Dashboard/DashboardViewModel.php
 
 		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\FreeGiftOffer\\Edit\\BackButton\:\:getButtonData\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Block/Adminhtml/FreeGiftOffer/Edit/BackButton.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\FreeGiftOffer\\Edit\\DeleteButton\:\:getButtonData\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Block/Adminhtml/FreeGiftOffer/Edit/DeleteButton.php
-
-		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
 			path: Block/Adminhtml/FreeGiftOffer/Edit/GenericButton.php
 
 		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\FreeGiftOffer\\Edit\\GenericButton\:\:getUrl\(\) has parameter \$params with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Block/Adminhtml/FreeGiftOffer/Edit/GenericButton.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\FreeGiftOffer\\Edit\\SaveAndContinueButton\:\:getButtonData\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Block/Adminhtml/FreeGiftOffer/Edit/SaveAndContinueButton.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\FreeGiftOffer\\Edit\\SaveButton\:\:getButtonData\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Block/Adminhtml/FreeGiftOffer/Edit/SaveButton.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\Segment\\Edit\\BackButton\:\:getButtonData\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Block/Adminhtml/Segment/Edit/BackButton.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\Segment\\Edit\\DeleteButton\:\:getButtonData\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Block/Adminhtml/Segment/Edit/DeleteButton.php
-
-		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
 			path: Block/Adminhtml/Segment/Edit/GenericButton.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\Segment\\Edit\\GenericButton\:\:getUrl\(\) has parameter \$params with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Block/Adminhtml/Segment/Edit/GenericButton.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\Segment\\Edit\\SaveAndContinueButton\:\:getButtonData\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Block/Adminhtml/Segment/Edit/SaveAndContinueButton.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\Segment\\Edit\\SaveButton\:\:getButtonData\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Block/Adminhtml/Segment/Edit/SaveButton.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -273,29 +183,11 @@ parameters:
 		-
 			message: '#^Cannot access offset ''actions'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
+			count: 1
 			path: Controller/Adminhtml/Campaign/Save.php
 
 		-
 			message: '#^Cannot access offset ''conditions'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: Controller/Adminhtml/Campaign/Save.php
-
-		-
-			message: '#^Cannot access offset ''enabled'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Controller/Adminhtml/Campaign/Save.php
-
-		-
-			message: '#^Cannot access offset ''entity_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Controller/Adminhtml/Campaign/Save.php
-
-		-
-			message: '#^Cannot access offset ''name'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: Controller/Adminhtml/Campaign/Save.php
@@ -303,7 +195,7 @@ parameters:
 		-
 			message: '#^Cannot access offset ''triggers'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
+			count: 1
 			path: Controller/Adminhtml/Campaign/Save.php
 
 		-
@@ -328,24 +220,6 @@ parameters:
 			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:delete\(\) expects Magento\\Framework\\Model\\AbstractModel, mixed given\.$#'
 			identifier: argument.type
 			count: 3
-			path: Controller/Adminhtml/Campaign/Save.php
-
-		-
-			message: '#^Parameter \#2 \$conditionRows of method Ordo\\Automation\\Controller\\Adminhtml\\Campaign\\Save\:\:saveChildRows\(\) expects array\<int, array\<string, mixed\>\>, array given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Adminhtml/Campaign/Save.php
-
-		-
-			message: '#^Parameter \#2 \$triggerRows of method Ordo\\Automation\\Controller\\Adminhtml\\Campaign\\Save\:\:saveTriggers\(\) expects array\<int, array\<string, mixed\>\>, array given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Adminhtml/Campaign/Save.php
-
-		-
-			message: '#^Parameter \#3 \$actionRows of method Ordo\\Automation\\Controller\\Adminhtml\\Campaign\\Save\:\:saveChildRows\(\) expects array\<int, array\<string, mixed\>\>, array given\.$#'
-			identifier: argument.type
-			count: 1
 			path: Controller/Adminhtml/Campaign/Save.php
 
 		-
@@ -415,33 +289,15 @@ parameters:
 			path: Controller/Adminhtml/FreeGiftOffer/Save.php
 
 		-
-			message: '#^Cannot access offset ''enabled'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Controller/Adminhtml/FreeGiftOffer/Save.php
-
-		-
-			message: '#^Cannot access offset ''entity_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Controller/Adminhtml/FreeGiftOffer/Save.php
-
-		-
-			message: '#^Cannot access offset ''name'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Controller/Adminhtml/FreeGiftOffer/Save.php
-
-		-
 			message: '#^Cannot access offset ''products'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
+			count: 1
 			path: Controller/Adminhtml/FreeGiftOffer/Save.php
 
 		-
 			message: '#^Cannot access offset ''tiers'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
+			count: 1
 			path: Controller/Adminhtml/FreeGiftOffer/Save.php
 
 		-
@@ -466,18 +322,6 @@ parameters:
 			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:delete\(\) expects Magento\\Framework\\Model\\AbstractModel, mixed given\.$#'
 			identifier: argument.type
 			count: 2
-			path: Controller/Adminhtml/FreeGiftOffer/Save.php
-
-		-
-			message: '#^Parameter \#2 \$tierRows of method Ordo\\Automation\\Controller\\Adminhtml\\FreeGiftOffer\\Save\:\:saveChildRows\(\) expects array\<int, array\<string, mixed\>\>, array given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Adminhtml/FreeGiftOffer/Save.php
-
-		-
-			message: '#^Parameter \#3 \$productRows of method Ordo\\Automation\\Controller\\Adminhtml\\FreeGiftOffer\\Save\:\:saveChildRows\(\) expects array\<int, array\<string, mixed\>\>, array given\.$#'
-			identifier: argument.type
-			count: 1
 			path: Controller/Adminhtml/FreeGiftOffer/Save.php
 
 		-
@@ -549,24 +393,6 @@ parameters:
 		-
 			message: '#^Cannot access offset ''conditions'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: Controller/Adminhtml/Segment/Save.php
-
-		-
-			message: '#^Cannot access offset ''enabled'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Controller/Adminhtml/Segment/Save.php
-
-		-
-			message: '#^Cannot access offset ''entity_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Controller/Adminhtml/Segment/Save.php
-
-		-
-			message: '#^Cannot access offset ''name'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: Controller/Adminhtml/Segment/Save.php
 
@@ -584,12 +410,6 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:delete\(\) expects Magento\\Framework\\Model\\AbstractModel, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Adminhtml/Segment/Save.php
-
-		-
-			message: '#^Parameter \#2 \$conditionRows of method Ordo\\Automation\\Controller\\Adminhtml\\Segment\\Save\:\:saveConditions\(\) expects array\<int, array\<string, mixed\>\>, array given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/Segment/Save.php
@@ -673,42 +493,6 @@ parameters:
 			path: Controller/Track/Popup.php
 
 		-
-			message: '#^Binary operation "\." between mixed and '' \+ '' results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: Cron/CalculateReorderCycle.php
-
-		-
-			message: '#^Binary operation "\." between mixed and ''\|'' results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: Cron/CalculateReorderCycle.php
-
-		-
-			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: Cron/CalculateReorderCycle.php
-
-		-
-			message: '#^Cannot access offset ''created_at'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Cron/CalculateReorderCycle.php
-
-		-
-			message: '#^Cannot access offset ''customer_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Cron/CalculateReorderCycle.php
-
-		-
-			message: '#^Cannot access offset ''sku'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Cron/CalculateReorderCycle.php
-
-		-
 			message: '#^Cannot call method fetchOne\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
 			identifier: method.nonObject
 			count: 1
@@ -721,21 +505,9 @@ parameters:
 			path: Cron/CalculateReorderCycle.php
 
 		-
-			message: '#^Parameter \#1 \$datetime of function strtotime expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 2
-			path: Cron/CalculateReorderCycle.php
-
-		-
 			message: '#^Parameter \#2 \$timestamp of function date expects int\|null, int\|false given\.$#'
 			identifier: argument.type
 			count: 2
-			path: Cron/CalculateReorderCycle.php
-
-		-
-			message: '#^Parameter \#4 \$lastOrderDate of method Ordo\\Automation\\Cron\\CalculateReorderCycle\:\:upsertCycle\(\) expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
 			path: Cron/CalculateReorderCycle.php
 
 		-
@@ -1015,8 +787,8 @@ parameters:
 			path: Cron/SendSalesRepDigest.php
 
 		-
-			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''intval'' given\.$#'
-			identifier: argument.type
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
 			count: 1
 			path: Cron/TagInactiveCustomers.php
 
@@ -1053,19 +825,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 1
-			path: Model/Campaign.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\Campaign\:\:getCreatedAt\(\) should return string\|null but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: Model/Campaign.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\Campaign\:\:getUpdatedAt\(\) should return string\|null but returns mixed\.$#'
-			identifier: return.type
-			count: 1
+			count: 3
 			path: Model/Campaign.php
 
 		-
@@ -1177,45 +937,27 @@ parameters:
 			path: Model/Campaign/Condition/VisitorHasTag.php
 
 		-
-			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
-			identifier: foreach.nonIterable
-			count: 1
-			path: Model/Campaign/DataProvider.php
-
-		-
-			message: '#^Cannot access offset ''actions'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Model/Campaign/DataProvider.php
-
-		-
-			message: '#^Cannot access offset ''conditions'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Model/Campaign/DataProvider.php
-
-		-
-			message: '#^Cannot access offset ''entity_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Model/Campaign/DataProvider.php
-
-		-
-			message: '#^Cannot access offset ''triggers'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Model/Campaign/DataProvider.php
-
-		-
-			message: '#^Cannot call method addCampaignFilter\(\) on mixed\.$#'
+			message: '#^Cannot call method getDelayMinutes\(\) on mixed\.$#'
 			identifier: method.nonObject
 			count: 1
 			path: Model/Campaign/DataProvider.php
 
 		-
-			message: '#^Cannot call method getData\(\) on mixed\.$#'
+			message: '#^Cannot call method getParamsJson\(\) on mixed\.$#'
 			identifier: method.nonObject
-			count: 6
+			count: 2
+			path: Model/Campaign/DataProvider.php
+
+		-
+			message: '#^Cannot call method getTriggerEvent\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/Campaign/DataProvider.php
+
+		-
+			message: '#^Cannot call method getType\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 2
 			path: Model/Campaign/DataProvider.php
 
 		-
@@ -1225,51 +967,27 @@ parameters:
 			path: Model/Campaign/DataProvider.php
 
 		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
+			message: '#^Method Ordo\\Automation\\Model\\Campaign\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/Campaign/DataProvider.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\Campaign\\DataProvider\:\:loadActionRows\(\) should return array\<int, array\<string, mixed\>\> but returns list\<array\<mixed\>\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/Campaign/DataProvider.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\Campaign\\DataProvider\:\:loadChildRows\(\) should return array\<int, array\<string, mixed\>\> but returns list\<array\<mixed\>\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/Campaign/DataProvider.php
+
+		-
+			message: '#^Parameter \#1 \$json of function json_decode expects string, mixed given\.$#'
+			identifier: argument.type
 			count: 2
-			path: Model/Campaign/DataProvider.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\Campaign\\DataProvider\:\:__construct\(\) has parameter \$data with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Model/Campaign/DataProvider.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\Campaign\\DataProvider\:\:__construct\(\) has parameter \$meta with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Model/Campaign/DataProvider.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\Campaign\\DataProvider\:\:getData\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Model/Campaign/DataProvider.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\Campaign\\DataProvider\:\:loadActionRows\(\) should return array\<int, array\<string, mixed\>\> but returns list\<array\>\.$#'
-			identifier: return.type
-			count: 1
-			path: Model/Campaign/DataProvider.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\Campaign\\DataProvider\:\:loadChildRows\(\) has parameter \$collection with no type specified\.$#'
-			identifier: missingType.parameter
-			count: 1
-			path: Model/Campaign/DataProvider.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\Campaign\\DataProvider\:\:loadChildRows\(\) should return array\<int, array\<string, mixed\>\> but returns list\<array\>\.$#'
-			identifier: return.type
-			count: 1
-			path: Model/Campaign/DataProvider.php
-
-		-
-			message: '#^Possibly invalid array key type mixed\.$#'
-			identifier: offsetAccess.invalidOffset
-			count: 1
 			path: Model/Campaign/DataProvider.php
 
 		-
@@ -1627,12 +1345,6 @@ parameters:
 			path: Model/FreeGiftManagement.php
 
 		-
-			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
-			identifier: arrayValues.list
-			count: 1
-			path: Model/FreeGiftManagement.php
-
-		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''intval'' given\.$#'
 			identifier: argument.type
 			count: 1
@@ -1723,50 +1435,26 @@ parameters:
 			path: Model/FreeGiftOffer.php
 
 		-
-			message: '#^Cannot access offset ''entity_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Model/FreeGiftOffer/DataProvider.php
-
-		-
-			message: '#^Cannot access offset ''products'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Model/FreeGiftOffer/DataProvider.php
-
-		-
-			message: '#^Cannot access offset ''tiers'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Model/FreeGiftOffer/DataProvider.php
-
-		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
+			count: 2
+			path: Model/FreeGiftOffer/DataProvider.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\FreeGiftOffer\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\.$#'
+			identifier: return.type
 			count: 1
 			path: Model/FreeGiftOffer/DataProvider.php
 
 		-
-			message: '#^Method Ordo\\Automation\\Model\\FreeGiftOffer\\DataProvider\:\:__construct\(\) has parameter \$data with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
+			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(Magento\\Framework\\DataObject\)\: mixed\)\|null, Closure\(Ordo\\Automation\\Model\\FreeGiftOfferProduct\)\: array\{sku\: string\} given\.$#'
+			identifier: argument.type
 			count: 1
 			path: Model/FreeGiftOffer/DataProvider.php
 
 		-
-			message: '#^Method Ordo\\Automation\\Model\\FreeGiftOffer\\DataProvider\:\:__construct\(\) has parameter \$meta with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Model/FreeGiftOffer/DataProvider.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\FreeGiftOffer\\DataProvider\:\:getData\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Model/FreeGiftOffer/DataProvider.php
-
-		-
-			message: '#^Possibly invalid array key type mixed\.$#'
-			identifier: offsetAccess.invalidOffset
+			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(Magento\\Framework\\DataObject\)\: mixed\)\|null, Closure\(Ordo\\Automation\\Model\\FreeGiftOfferTier\)\: array\{min_subtotal\: float, gift_slots\: int\} given\.$#'
+			identifier: argument.type
 			count: 1
 			path: Model/FreeGiftOffer/DataProvider.php
 
@@ -2041,12 +1729,6 @@ parameters:
 			path: Model/ResourceModel/Campaign/Condition/Collection.php
 
 		-
-			message: '#^Method Ordo\\Automation\\Model\\ResourceModel\\Campaign\\Grid\\Collection\:\:_initSelect\(\) with return type void returns \$this\(Ordo\\Automation\\Model\\ResourceModel\\Campaign\\Grid\\Collection\) but should not return anything\.$#'
-			identifier: return.void
-			count: 1
-			path: Model/ResourceModel/Campaign/Grid/Collection.php
-
-		-
 			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, int given\.$#'
 			identifier: argument.type
 			count: 1
@@ -2167,56 +1849,26 @@ parameters:
 			path: Model/Segment.php
 
 		-
-			message: '#^Cannot access offset ''conditions'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Model/Segment/DataProvider.php
-
-		-
-			message: '#^Cannot access offset ''entity_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Model/Segment/DataProvider.php
-
-		-
-			message: '#^Cannot call method getData\(\) on mixed\.$#'
+			message: '#^Cannot call method getParamsJson\(\) on mixed\.$#'
 			identifier: method.nonObject
-			count: 2
+			count: 1
+			path: Model/Segment/DataProvider.php
+
+		-
+			message: '#^Cannot call method getType\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
 			path: Model/Segment/DataProvider.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 1
+			count: 2
 			path: Model/Segment/DataProvider.php
 
 		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 1
-			path: Model/Segment/DataProvider.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\Segment\\DataProvider\:\:__construct\(\) has parameter \$data with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Model/Segment/DataProvider.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\Segment\\DataProvider\:\:__construct\(\) has parameter \$meta with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Model/Segment/DataProvider.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\Segment\\DataProvider\:\:getData\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Model/Segment/DataProvider.php
-
-		-
-			message: '#^Possibly invalid array key type mixed\.$#'
-			identifier: offsetAccess.invalidOffset
+			message: '#^Method Ordo\\Automation\\Model\\Segment\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\.$#'
+			identifier: return.type
 			count: 1
 			path: Model/Segment/DataProvider.php
 

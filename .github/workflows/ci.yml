@@ -73,10 +73,8 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
-      - name: TEMP generate baseline
-        run: |
-          vendor/bin/phpstan analyse --no-progress --generate-baseline=phpstan-baseline.neon || true
-          cat phpstan-baseline.neon
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --no-progress
 
   coding-standard:
     runs-on: ubuntu-latest
