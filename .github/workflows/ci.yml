@@ -80,10 +80,7 @@ jobs:
         run: composer install --no-interaction --no-progress --prefer-dist
 
       - name: Run PHPStan
-        run: vendor/bin/phpstan analyse --no-progress --generate-baseline=phpstan-baseline.neon || true
-
-      - name: Dump regenerated baseline
-        run: cat phpstan-baseline.neon
+        run: vendor/bin/phpstan analyse --no-progress
 
   coding-standard:
     runs-on: ubuntu-latest

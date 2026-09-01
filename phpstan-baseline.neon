@@ -19,68 +19,8 @@ parameters:
 			path: Block/Adminhtml/Campaign/Edit/Flow.php
 
 		-
-			message: '#^Cannot access offset ''inputs'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Block/Adminhtml/Campaign/Edit/Flow.php
-
-		-
-			message: '#^Cannot access offset ''label'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Block/Adminhtml/Campaign/Edit/Flow.php
-
-		-
 			message: '#^Cannot access offset ''output_1'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Block/Adminhtml/Campaign/Edit/Flow.php
-
-		-
-			message: '#^Cannot access offset ''outputs'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Block/Adminhtml/Campaign/Edit/Flow.php
-
-		-
-			message: '#^Cannot access offset ''value'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Block/Adminhtml/Campaign/Edit/Flow.php
-
-		-
-			message: '#^Cannot call method getData\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 6
-			path: Block/Adminhtml/Campaign/Edit/Flow.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Block/Adminhtml/Campaign/Edit/Flow.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 7
-			path: Block/Adminhtml/Campaign/Edit/Flow.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\Campaign\\Edit\\Flow\:\:__construct\(\) has parameter \$data with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Block/Adminhtml/Campaign/Edit/Flow.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\Campaign\\Edit\\Flow\:\:connect\(\) has parameter \$nodes with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Block/Adminhtml/Campaign/Edit/Flow.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\Campaign\\Edit\\Flow\:\:getTriggerEventTypes\(\) should return array\<string\> but returns list\.$#'
-			identifier: return.type
 			count: 1
 			path: Block/Adminhtml/Campaign/Edit/Flow.php
 
@@ -89,30 +29,6 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Block/Adminhtml/Shared/Edit/GenericButton.php
-
-		-
-			message: '#^Cannot call method getTriggerEvent\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Block/Adminhtml/Dashboard/DashboardViewModel.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\Dashboard\\DashboardViewModel\:\:getCampaigns\(\) should return array\<Ordo\\Automation\\Api\\Data\\CampaignInterface\> but returns array\<Magento\\Framework\\DataObject\>\.$#'
-			identifier: return.type
-			count: 1
-			path: Block/Adminhtml/Dashboard/DashboardViewModel.php
-
-		-
-			message: '#^Parameter \#1 \$triggerEvent of method Ordo\\Automation\\Block\\Adminhtml\\Dashboard\\DashboardViewModel\:\:getTriggerLabel\(\) expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Block/Adminhtml/Dashboard/DashboardViewModel.php
-
-		-
-			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, int given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Block/Adminhtml/Dashboard/DashboardViewModel.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -403,100 +319,10 @@ parameters:
 			path: Controller/Adminhtml/Segment/Save.php
 
 		-
-			message: '#^Method Ordo\\Automation\\Controller\\Approval\\AbstractApprovalAction\:\:redirectHome\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: Controller/Approval/AbstractApprovalAction.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 1
-			path: Controller/Approval/Approve.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Controller\\Approval\\Approve\:\:execute\(\) should return Magento\\Framework\\App\\ResponseInterface\|Magento\\Framework\\Controller\\ResultInterface but returns mixed\.$#'
-			identifier: return.type
-			count: 3
-			path: Controller/Approval/Approve.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 1
-			path: Controller/Approval/Reject.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Controller\\Approval\\Reject\:\:execute\(\) should return Magento\\Framework\\App\\ResponseInterface\|Magento\\Framework\\Controller\\ResultInterface but returns mixed\.$#'
-			identifier: return.type
-			count: 3
-			path: Controller/Approval/Reject.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 3
-			path: Controller/Track/Event.php
-
-		-
-			message: '#^Cannot call method getBody\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Controller/Track/Popup.php
-
-		-
-			message: '#^Cannot call method getCtaLabel\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Controller/Track/Popup.php
-
-		-
-			message: '#^Cannot call method getCtaUrl\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Controller/Track/Popup.php
-
-		-
-			message: '#^Cannot call method getHeadline\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Controller/Track/Popup.php
-
-		-
-			message: '#^Cannot call method getId\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Controller/Track/Popup.php
-
-		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
 			path: Controller/Track/Popup.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 1
-			path: Controller/Track/Popup.php
-
-		-
-			message: '#^Cannot call method fetchOne\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Cron/CalculateReorderCycle.php
-
-		-
-			message: '#^Cannot call method select\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Cron/CalculateReorderCycle.php
-
-		-
-			message: '#^Parameter \#2 \$timestamp of function date expects int\|null, int\|false given\.$#'
-			identifier: argument.type
-			count: 2
-			path: Cron/CalculateReorderCycle.php
 
 		-
 			message: '#^Use service contracts to persist entities in favour of Ordo\\Automation\\Model\\ReorderCycle\:\:load\(\) method$#'
@@ -505,181 +331,25 @@ parameters:
 			path: Cron/CalculateReorderCycle.php
 
 		-
-			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 2
-			path: Cron/EscalateStalePendingApprovals.php
-
-		-
-			message: '#^Cannot call method getData\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 5
-			path: Cron/EscalateStalePendingApprovals.php
-
-		-
-			message: '#^Cannot call method getGrandTotal\(\) on mixed\.$#'
-			identifier: method.nonObject
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
 			count: 1
 			path: Cron/EscalateStalePendingApprovals.php
 
 		-
-			message: '#^Cannot call method getIncrementId\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Cron/EscalateStalePendingApprovals.php
-
-		-
-			message: '#^Cannot call method setData\(\) on mixed\.$#'
-			identifier: method.nonObject
+			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, int given\.$#'
+			identifier: argument.type
 			count: 1
 			path: Cron/EscalateStalePendingApprovals.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 2
-			path: Cron/EscalateStalePendingApprovals.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Cron\\EscalateStalePendingApprovals\:\:sendEscalationEmail\(\) has parameter \$approval with no type specified\.$#'
-			identifier: missingType.parameter
-			count: 1
-			path: Cron/EscalateStalePendingApprovals.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Cron\\EscalateStalePendingApprovals\:\:sendEscalationEmail\(\) has parameter \$order with no type specified\.$#'
-			identifier: missingType.parameter
-			count: 1
-			path: Cron/EscalateStalePendingApprovals.php
-
-		-
-			message: '#^Negated boolean expression is always false\.$#'
-			identifier: booleanNot.alwaysFalse
-			count: 1
-			path: Cron/EscalateStalePendingApprovals.php
-
-		-
-			message: '#^Parameter \#1 \$address of method Magento\\Framework\\Mail\\Template\\TransportBuilder\:\:addTo\(\) expects array\|string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/EscalateStalePendingApprovals.php
-
-		-
-			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:save\(\) expects Magento\\Framework\\Model\\AbstractModel, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/EscalateStalePendingApprovals.php
-
-		-
-			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/EscalateStalePendingApprovals.php
-
-		-
-			message: '#^Parameter \#2 \$timestamp of function date expects int\|null, int\|false given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/EscalateStalePendingApprovals.php
-
-		-
-			message: '#^Parameter \#2 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/EscalateStalePendingApprovals.php
-
-		-
-			message: '#^Cannot call method setStatus\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Cron/ExpireOverdueOffers.php
-
-		-
-			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:save\(\) expects Magento\\Framework\\Model\\AbstractModel, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/ExpireOverdueOffers.php
-
-		-
-			message: '#^Parameter \#2 \$timestamp of function date expects int\|null, int\|false given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/PruneVisitorEvents.php
-
-		-
-			message: '#^Parameter \#1 \$scheduled of method Ordo\\Automation\\Cron\\RunScheduledCampaignActions\:\:resumeOne\(\) expects Ordo\\Automation\\Model\\CampaignScheduledAction, mixed given\.$#'
-			identifier: argument.type
 			count: 1
 			path: Cron/RunScheduledCampaignActions.php
-
-		-
-			message: '#^Parameter \#2 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/RunScheduledCampaignActions.php
-
-		-
-			message: '#^Cannot access offset ''entity_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: Cron/SendAbandonedCartReminders.php
-
-		-
-			message: '#^Cannot cast mixed to float\.$#'
-			identifier: cast.double
-			count: 1
-			path: Cron/SendAbandonedCartReminders.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 3
-			path: Cron/SendAbandonedCartReminders.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Cron\\SendAbandonedCartReminders\:\:dispatchCampaigns\(\) has parameter \$row with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Cron/SendAbandonedCartReminders.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Cron\\SendAbandonedCartReminders\:\:sendReminder\(\) has parameter \$row with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Cron/SendAbandonedCartReminders.php
-
-		-
-			message: '#^Parameter \#1 \$address of method Magento\\Framework\\Mail\\Template\\TransportBuilder\:\:addTo\(\) expects array\|string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/SendAbandonedCartReminders.php
-
-		-
-			message: '#^Parameter \#1 \$row of method Ordo\\Automation\\Cron\\SendAbandonedCartReminders\:\:dispatchCampaigns\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/SendAbandonedCartReminders.php
-
-		-
-			message: '#^Parameter \#1 \$row of method Ordo\\Automation\\Cron\\SendAbandonedCartReminders\:\:sendReminder\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/SendAbandonedCartReminders.php
 
 		-
 			message: '#^Parameter \#1 \$sql of method Magento\\Framework\\DB\\Adapter\\AdapterInterface\:\:fetchAll\(\) expects Magento\\Framework\\DB\\Select\|string, Zend_Db_Select given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/SendAbandonedCartReminders.php
-
-		-
-			message: '#^Parameter \#2 \$name of method Magento\\Framework\\Mail\\Template\\TransportBuilder\:\:addTo\(\) expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/SendAbandonedCartReminders.php
-
-		-
-			message: '#^Parameter \#2 \$timestamp of function date expects int\|null, int\|false given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Cron/SendAbandonedCartReminders.php
@@ -691,103 +361,13 @@ parameters:
 			path: Cron/SendAbandonedCartReminders.php
 
 		-
-			message: '#^Parameter \#2 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/SendAbandonedCartReminders.php
-
-		-
 			message: '#^Use service contracts to persist entities in favour of Magento\\Quote\\Model\\Quote\:\:load\(\) method$#'
 			identifier: bitExpertMagento.abstractModelUseServiceContract
 			count: 1
 			path: Cron/SendAbandonedCartReminders.php
 
 		-
-			message: '#^Parameter \#2 \$timestamp of function date expects int\|null, int\|false given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/SendCreditLimitAlerts.php
-
-		-
-			message: '#^Cannot call method getEntityId\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 3
-			path: Cron/SendOfferExpiryReminders.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 2
-			path: Cron/SendOfferExpiryReminders.php
-
-		-
-			message: '#^Parameter \#1 \$offer of method Ordo\\Automation\\Cron\\SendOfferExpiryReminders\:\:sendReminder\(\) expects Ordo\\Automation\\Model\\Offer, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/SendOfferExpiryReminders.php
-
-		-
-			message: '#^Parameter \#2 \$timestamp of function date expects int\|null, int\|false given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/SendOfferExpiryReminders.php
-
-		-
-			message: '#^Parameter \#2 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/SendOfferExpiryReminders.php
-
-		-
-			message: '#^Cannot call method getId\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 3
-			path: Cron/SendReorderReminders.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 4
-			path: Cron/SendReorderReminders.php
-
-		-
-			message: '#^Parameter \#1 \$cycle of method Ordo\\Automation\\Cron\\SendReorderReminders\:\:sendReminder\(\) expects Ordo\\Automation\\Model\\ReorderCycle, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/SendReorderReminders.php
-
-		-
-			message: '#^Parameter \#2 \$timestamp of function date expects int\|null, int\|false given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/SendReorderReminders.php
-
-		-
-			message: '#^Parameter \#2 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/SendReorderReminders.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 1
-			path: Cron/SendSalesRepDigest.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Cron/TagInactiveCustomers.php
-
-		-
 			message: '#^Parameter \#1 \$sql of method Magento\\Framework\\DB\\Adapter\\AdapterInterface\:\:fetchCol\(\) expects Magento\\Framework\\DB\\Select\|string, Zend_Db_Select given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Cron/TagInactiveCustomers.php
-
-		-
-			message: '#^Parameter \#2 \$timestamp of function date expects int\|null, int\|false given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Cron/TagInactiveCustomers.php
@@ -807,14 +387,32 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 1
-			path: Model/Campaign.php
+			count: 3
+			path: Model/AbstractCampaignChildModel.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
 			count: 3
-			path: Model/Campaign.php
+			path: Model/AbstractCampaignChildModel.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\AbstractCampaignChildModel\:\:getParams\(\) should return array\<string, mixed\> but returns array\<mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/AbstractCampaignChildModel.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/AbstractNamedToggleableEntityModel.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
+			path: Model/AbstractNamedToggleableEntityModel.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -987,18 +585,6 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 4
-			path: Model/CampaignAction.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 3
-			path: Model/CampaignAction.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\CampaignAction\:\:getParams\(\) should return array\<string, mixed\> but returns array\<mixed\>\.$#'
-			identifier: return.type
 			count: 1
 			path: Model/CampaignAction.php
 
@@ -1019,24 +605,6 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Model/CampaignActionRepository.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 3
-			path: Model/CampaignCondition.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 3
-			path: Model/CampaignCondition.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\CampaignCondition\:\:getParams\(\) should return array\<string, mixed\> but returns array\<mixed\>\.$#'
-			identifier: return.type
-			count: 1
-			path: Model/CampaignCondition.php
 
 		-
 			message: '#^Parameter \#1 \$items of method Ordo\\Automation\\Api\\Data\\CampaignConditionSearchResultsInterface\:\:setItems\(\) expects array\<Ordo\\Automation\\Api\\Data\\CampaignConditionInterface\>, array\<Magento\\Framework\\DataObject\> given\.$#'
@@ -1219,12 +787,6 @@ parameters:
 			path: Model/Config/Source/ConditionType.php
 
 		-
-			message: '#^Method Ordo\\Automation\\Model\\Config\\Source\\TriggerEvent\:\:toOptionArray\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Model/Config/Source/TriggerEvent.php
-
-		-
 			message: '#^Cannot cast mixed to float\.$#'
 			identifier: cast.double
 			count: 1
@@ -1397,30 +959,6 @@ parameters:
 			identifier: offsetAccess.invalidOffset
 			count: 3
 			path: Model/FreeGiftManagement.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/FreeGiftOffer.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 1
-			path: Model/FreeGiftOffer.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\FreeGiftOffer\:\:getCreatedAt\(\) should return string\|null but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: Model/FreeGiftOffer.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\FreeGiftOffer\:\:getUpdatedAt\(\) should return string\|null but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: Model/FreeGiftOffer.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
