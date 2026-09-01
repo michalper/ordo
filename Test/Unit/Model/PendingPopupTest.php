@@ -46,6 +46,14 @@ class PendingPopupTest extends AbstractModelTestCase
         self::assertNull($this->makeModel()->getBody());
     }
 
+    public function testBodyRoundTrip(): void
+    {
+        $model = $this->makeModel();
+        $model->setBody('Limited time offer.');
+
+        self::assertSame('Limited time offer.', $model->getBody());
+    }
+
     public function testCtaLabelAndUrlRoundTrip(): void
     {
         $model = $this->makeModel();
@@ -67,5 +75,13 @@ class PendingPopupTest extends AbstractModelTestCase
         $model->setDeliveredAt('2026-01-01 12:00:00');
 
         self::assertSame('2026-01-01 12:00:00', $model->getDeliveredAt());
+    }
+
+    public function testSetExpiresAt(): void
+    {
+        $model = $this->makeModel();
+        $model->setExpiresAt('2026-02-01 12:00:00');
+
+        self::assertSame('2026-02-01 12:00:00', $model->getData(PendingPopup::EXPIRES_AT));
     }
 }

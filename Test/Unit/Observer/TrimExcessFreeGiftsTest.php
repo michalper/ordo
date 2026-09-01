@@ -133,4 +133,130 @@ class TrimExcessFreeGiftsTest extends TestCase
 
         $this->observer->execute($this->eventObserver($quote));
     }
+
+    public function testTreatsEarnedSlotsAsZeroWhenMasterSwitchDisabled(): void
+    {
+        $this->config = $this->createMock(Config::class);
+        $this->config->method('isFreeGiftEnabled')->willReturn(false);
+        $this->observer = new TrimExcessFreeGifts(
+            $this->offerCollectionFactory,
+            $this->tierCollectionFactory,
+            $this->giftItemCollectionFactory,
+            $this->giftItemResource,
+            $this->config
+        );
+
+        $row = $this->getMockBuilder(QuoteGiftItem::class)->disableOriginalConstructor()->addMethods(['getQuoteItemId'])->getMock();
+        $row->method('getQuoteItemId')->willReturn(10);
+
+        $giftCollection = $this->createMock(GiftItemCollection::class);
+        $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
+        $giftCollection->method('getSize')->willReturn(1);
+        $giftCollection->method('getItems')->willReturn([$row]);
+        $this->giftItemCollectionFactory->method('create')->willReturn($giftCollection);
+
+        // Disabled master switch means earnedSlots() is never called at all.
+        $this->offerCollectionFactory->expects(self::never())->method('create');
+
+        $quote = $this->mockQuote();
+        $quote->method('getId')->willReturn(42);
+        $quote->method('getSubtotal')->willReturn(1000.0);
+        $quote->expects(self::once())->method('removeItem')->with(10);
+
+        $this->observer->execute($this->eventObserver($quote));
+    }
+
+    public function testDoesNothingWhenEarnedSlotsStillCoverCurrentGifts(): void
+    {
+        $offerCollection = $this->createMock(OfferCollection::class);
+        $offerCollection->method('addEnabledFilter')->willReturn($offerCollection);
+        $offerCollection->method('getAllIds')->willReturn([1]);
+        $this->offerCollectionFactory->method('create')->willReturn($offerCollection);
+
+        $resource = $this->createMock(AbstractDb::class);
+        $resource->method('getIdFieldName')->willReturn('entity_id');
+        $tier = new FreeGiftOfferTier($this->createMock(Context::class), $this->createMock(Registry::class), $resource);
+        $tier->setOfferId(1);
+        $tier->setMinSubtotal(0.0);
+        $tier->setGiftSlots(2);
+        $tierCollection = $this->createMock(TierCollection::class);
+        $tierCollection->method('addOffersFilter')->willReturn($tierCollection);
+        $tierCollection->method('getIterator')->willReturn(new \ArrayIterator([$tier]));
+        $this->tierCollectionFactory->method('create')->willReturn($tierCollection);
+
+        $giftCollection = $this->createMock(GiftItemCollection::class);
+        $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
+        $giftCollection->method('getSize')->willReturn(2);
+        $this->giftItemCollectionFactory->method('create')->willReturn($giftCollection);
+
+        $quote = $this->mockQuote();
+        $quote->method('getId')->willReturn(42);
+        $quote->method('getSubtotal')->willReturn(100.0);
+        $quote->expects(self::never())->method('removeItem');
+
+        $this->observer->execute($this->eventObserver($quote));
+    }
+
+    public function testDeletesStaleMarkerRowEvenWhenRemoveItemThrows(): void
+    {
+        $offerCollection = $this->createMock(OfferCollection::class);
+        $offerCollection->method('addEnabledFilter')->willReturn($offerCollection);
+        $offerCollection->method('getAllIds')->willReturn([1]);
+        $this->offerCollectionFactory->method('create')->willReturn($offerCollection);
+
+        $resource = $this->createMock(AbstractDb::class);
+        $resource->method('getIdFieldName')->willReturn('entity_id');
+        $tier = new FreeGiftOfferTier($this->createMock(Context::class), $this->createMock(Registry::class), $resource);
+        $tier->setOfferId(1);
+        $tier->setMinSubtotal(0.0);
+        $tier->setGiftSlots(0);
+        $tierCollection = $this->createMock(TierCollection::class);
+        $tierCollection->method('addOffersFilter')->willReturn($tierCollection);
+        $tierCollection->method('getIterator')->willReturn(new \ArrayIterator([$tier]));
+        $this->tierCollectionFactory->method('create')->willReturn($tierCollection);
+
+        $row = $this->getMockBuilder(QuoteGiftItem::class)->disableOriginalConstructor()->addMethods(['getQuoteItemId'])->getMock();
+        $row->method('getQuoteItemId')->willReturn(10);
+
+        $giftCollection = $this->createMock(GiftItemCollection::class);
+        $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
+        $giftCollection->method('getSize')->willReturn(1);
+        $giftCollection->method('getItems')->willReturn([$row]);
+        $this->giftItemCollectionFactory->method('create')->willReturn($giftCollection);
+
+        $quote = $this->mockQuote();
+        $quote->method('getId')->willReturn(42);
+        $quote->method('getSubtotal')->willReturn(100.0);
+        $quote->method('removeItem')->willThrowException(new \Exception('item already gone'));
+
+        $this->giftItemResource->expects(self::once())->method('delete')->with($row);
+
+        $this->observer->execute($this->eventObserver($quote));
+    }
+
+    public function testEarnedSlotsIsZeroWhenNoOffersAreEnabled(): void
+    {
+        $offerCollection = $this->createMock(OfferCollection::class);
+        $offerCollection->method('addEnabledFilter')->willReturn($offerCollection);
+        $offerCollection->method('getAllIds')->willReturn([]);
+        $this->offerCollectionFactory->method('create')->willReturn($offerCollection);
+
+        $this->tierCollectionFactory->expects(self::never())->method('create');
+
+        $row = $this->getMockBuilder(QuoteGiftItem::class)->disableOriginalConstructor()->addMethods(['getQuoteItemId'])->getMock();
+        $row->method('getQuoteItemId')->willReturn(10);
+
+        $giftCollection = $this->createMock(GiftItemCollection::class);
+        $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
+        $giftCollection->method('getSize')->willReturn(1);
+        $giftCollection->method('getItems')->willReturn([$row]);
+        $this->giftItemCollectionFactory->method('create')->willReturn($giftCollection);
+
+        $quote = $this->mockQuote();
+        $quote->method('getId')->willReturn(42);
+        $quote->method('getSubtotal')->willReturn(100.0);
+        $quote->expects(self::once())->method('removeItem')->with(10);
+
+        $this->observer->execute($this->eventObserver($quote));
+    }
 }

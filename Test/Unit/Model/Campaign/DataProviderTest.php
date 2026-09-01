@@ -126,6 +126,33 @@ class DataProviderTest extends TestCase
         self::assertArrayNotHasKey('tag', $data[2]['conditions'][0]);
     }
 
+    public function testGetDataIncludesTriggerRows(): void
+    {
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getData')->willReturn(['entity_id' => 1, 'name' => 'Welcome']);
+        $campaign->method('getEntityId')->willReturn(1);
+
+        $collection = $this->createMock(CampaignCollection::class);
+        $collection->method('getItems')->willReturn([$campaign]);
+
+        $triggerRow = $this->createMock(\Ordo\Automation\Model\CampaignTrigger::class);
+        $triggerRow->method('getTriggerEvent')->willReturn('order_placed');
+        $triggerCollection = $this->createMock(TriggerCollection::class);
+        $triggerCollection->method('addCampaignFilter');
+        $triggerCollection->method('getIterator')->willReturn(new \ArrayIterator([$triggerRow]));
+        $this->triggerCollectionFactory = $this->createMock(TriggerCollectionFactory::class);
+        $this->triggerCollectionFactory->method('create')->willReturn($triggerCollection);
+
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeEmptyConditionCollection());
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeEmptyActionCollection());
+        $this->dataPersistor->method('get')->willReturn(null);
+
+        $provider = $this->makeProvider($collection);
+        $data = $provider->getData();
+
+        self::assertSame(['trigger_event' => 'order_placed'], $data[1]['triggers'][0]);
+    }
+
     public function testGetDataAppliesPersistedDataAndClearsIt(): void
     {
         $collection = $this->createMock(CampaignCollection::class);

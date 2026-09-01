@@ -115,4 +115,13 @@ class FreeGiftOfferProductRepositoryTest extends TestCase
         $this->expectException(NoSuchEntityException::class);
         $this->repository->deleteById(99);
     }
+
+    public function testDeleteWrapsExceptionInCouldNotSaveException(): void
+    {
+        $product = $this->createMock(FreeGiftOfferProduct::class);
+        $this->resource->method('delete')->willThrowException(new \Exception('locked'));
+
+        $this->expectException(CouldNotSaveException::class);
+        $this->repository->delete($product);
+    }
 }

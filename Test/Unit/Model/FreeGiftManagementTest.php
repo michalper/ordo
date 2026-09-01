@@ -308,4 +308,85 @@ class FreeGiftManagementTest extends AbstractModelTestCase
 
         self::assertSame(1, $eligibility->getEarnedSlots());
     }
+
+    public function testGetEligibilityReturnsZeroWhenNoOffersAreEnabled(): void
+    {
+        $this->stubOffersAndTiers([], []);
+        $this->stubGiftItems([]);
+
+        $quote = $this->quote(1000.0);
+        $this->cartRepository->method('get')->willReturn($quote);
+
+        $eligibility = $this->management->getEligibility(7);
+
+        self::assertSame(0, $eligibility->getEarnedSlots());
+        self::assertSame([], $eligibility->getEligibleSkus());
+    }
+
+    public function testSelectGiftsThrowsWhenAddProductReturnsAnErrorString(): void
+    {
+        $this->stubOffersAndTiers([1], [$this->tier(1, 100.0, 1)]);
+        $this->stubProducts([$this->product(1, 'SKU-A')]);
+        $this->stubGiftItems([]);
+
+        $quote = $this->quote(150.0);
+        $this->cartRepository->method('get')->willReturn($quote);
+
+        $product = $this->createMock(Product::class);
+        $this->productRepository->method('get')->with('SKU-A')->willReturn($product);
+        $quote->method('addProduct')->with($product, 1)->willReturn('Not enough stock.');
+
+        $this->expectException(LocalizedException::class);
+        $this->management->selectGifts(7, $this->selection(['SKU-A']));
+    }
+
+    public function testSelectGiftsRemovesStaleMarkerRowEvenWhenQuoteItemAlreadyGone(): void
+    {
+        $this->stubOffersAndTiers([1], [$this->tier(1, 100.0, 1)]);
+        $this->stubProducts([$this->product(1, 'SKU-A')]);
+
+        $staleRow = $this->getMockBuilder(QuoteGiftItem::class)
+            ->disableOriginalConstructor()
+            ->addMethods(['getQuoteItemId'])
+            ->getMock();
+        $staleRow->method('getQuoteItemId')->willReturn(999);
+        $this->stubGiftItems([$staleRow]);
+
+        $quote = $this->quote(150.0);
+        $this->cartRepository->method('get')->willReturn($quote);
+        $quote->method('removeItem')->with(999)->willThrowException(new \Exception('item already gone'));
+
+        // The stale marker row must still be deleted even though removeItem() failed.
+        $this->giftItemResource->expects(self::once())->method('delete')->with($staleRow);
+
+        $product = $this->createMock(Product::class);
+        $this->productRepository->method('get')->with('SKU-A')->willReturn($product);
+
+        $item = $this->getMockBuilder(Item::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['setCustomPrice', 'getId', 'getProduct'])
+            ->addMethods(['setOriginalCustomPrice'])
+            ->getMock();
+        $item->method('setCustomPrice')->willReturnSelf();
+        $item->method('setOriginalCustomPrice')->willReturnSelf();
+        $item->method('getId')->willReturn(101);
+        $itemProduct = $this->getMockBuilder(Product::class)
+            ->disableOriginalConstructor()
+            ->addMethods(['setIsSuperMode'])
+            ->getMock();
+        $item->method('getProduct')->willReturn($itemProduct);
+        $quote->method('addProduct')->willReturn($item);
+
+        $newGiftItem = $this->getMockBuilder(QuoteGiftItem::class)
+            ->disableOriginalConstructor()
+            ->addMethods(['setQuoteId', 'setQuoteItemId', 'setOfferId', 'setSku'])
+            ->getMock();
+        $newGiftItem->method('setQuoteId')->willReturnSelf();
+        $newGiftItem->method('setQuoteItemId')->willReturnSelf();
+        $newGiftItem->method('setOfferId')->willReturnSelf();
+        $newGiftItem->method('setSku')->willReturnSelf();
+        $this->giftItemFactory->method('create')->willReturn($newGiftItem);
+
+        $this->management->selectGifts(7, $this->selection(['SKU-A']));
+    }
 }

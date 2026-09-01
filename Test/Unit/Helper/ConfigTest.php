@@ -36,6 +36,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isSalesRepDigestEnabled());
         self::assertTrue($this->config->isTrackingEnabled());
         self::assertTrue($this->config->isPopupEnabled());
+        self::assertTrue($this->config->isFreeGiftEnabled());
     }
 
     public function testIntGettersUseDefaultWhenUnset(): void
@@ -56,6 +57,7 @@ class ConfigTest extends TestCase
         self::assertSame(7, $this->config->getTrackingRetentionDays());
         self::assertSame(3, $this->config->getTrackingViewThreshold());
         self::assertSame(15, $this->config->getPopupPollIntervalSeconds());
+        self::assertSame(24, $this->config->getPopupFrequencyCapHours());
     }
 
     public function testIntGetterHonorsExplicitZero(): void

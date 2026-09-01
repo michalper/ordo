@@ -401,4 +401,44 @@ class CampaignDispatcherTest extends TestCase
 
         $this->makeDispatcher()->dispatch('order_placed', []);
     }
+
+    public function testDispatchLogsAndContinuesToNextCampaignWhenAnActionThrows(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1, 2]));
+        $this->campaignCollectionFactory->method('create')->willReturn(
+            $this->makeCampaignCollection([$this->makeCampaign(1), $this->makeCampaign(2)])
+        );
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $actionOfCampaign1 = $this->createMock(CampaignAction::class);
+        $actionOfCampaign1->method('getCampaignId')->willReturn(1);
+        $actionOfCampaign1->method('getData')->with('type')->willReturn('tag_customer');
+        $actionOfCampaign1->method('getParams')->willReturn([]);
+
+        $actionOfCampaign2 = $this->createMock(CampaignAction::class);
+        $actionOfCampaign2->method('getCampaignId')->willReturn(2);
+        $actionOfCampaign2->method('getData')->with('type')->willReturn('tag_customer');
+        $actionOfCampaign2->method('getParams')->willReturn([]);
+
+        $this->actionCollectionFactory->method('create')->willReturn(
+            $this->makeActionCollection([$actionOfCampaign1, $actionOfCampaign2])
+        );
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::exactly(2))->method('execute')
+            ->willReturnCallback(function (): void {
+                static $calls = 0;
+                $calls++;
+                if ($calls === 1) {
+                    throw new \RuntimeException('mailer down');
+                }
+            });
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        // Campaign 1's action throws and is logged; campaign 2 still runs — one campaign
+        // failing must not abort the whole dispatch for every other matched campaign.
+        $this->logger->expects(self::once())->method('error');
+
+        $this->makeDispatcher()->dispatch('order_placed', []);
+    }
 }
