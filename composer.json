@@ -19,7 +19,7 @@
         "bitexpert/phpstan-magento": "^0.43",
         "phpunit/phpunit": "^9.6 || ^10.0",
         "magento/magento2-functional-testing-framework": "^4.0",
-        "magento/magento-coding-standard": "^33"
+        "magento/magento-coding-standard": "^41"
     },
     "autoload": {
         "files": ["registration.php"],
