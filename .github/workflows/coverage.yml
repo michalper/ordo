@@ -25,9 +25,10 @@ jobs:
           php-version: "8.2"
           coverage: xdebug
 
-      - name: Configure Composer auth for repo.magento.com
+      - name: Configure Composer for repo.magento.com
         run: |
-          composer config --global http-basic.repo.magento.com "${{ secrets.MAGENTO_COMPOSER_USERNAME }}" "${{ secrets.MAGENTO_COMPOSER_PASSWORD }}"
+          composer config repositories.magento composer https://repo.magento.com
+          composer config http-basic.repo.magento.com "${{ secrets.MAGENTO_COMPOSER_USERNAME }}" "${{ secrets.MAGENTO_COMPOSER_PASSWORD }}"
 
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
