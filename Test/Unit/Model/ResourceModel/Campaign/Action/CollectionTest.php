@@ -15,4 +15,12 @@ class CollectionTest extends AbstractCollectionTestCase
 
         self::assertSame($collection, $collection->addCampaignFilter(5));
     }
+
+    public function testAddCampaignIdsFilterIsFluent(): void
+    {
+        [$entityFactory, $logger, $fetchStrategy, $eventManager] = $this->makeCollectionDeps();
+        $collection = new Collection($entityFactory, $logger, $fetchStrategy, $eventManager, null, $this->makeResource());
+
+        self::assertSame($collection, $collection->addCampaignIdsFilter([5, 6]));
+    }
 }
