@@ -42,17 +42,17 @@ Testy modułu wchodzą w skład standardowego testsuite `Magento_Unit_Tests_Othe
 
 Triggery (`order_placed`, `customer_registered`, `tag_added`) nie wołają już `CampaignDispatcher::dispatch()` bezpośrednio z observera — publikują wiadomość na temat `ordo.automation.campaign.dispatch` (`Model/Queue/CampaignDispatchPublisher.php`), którą odbiera `Model/Queue/CampaignDispatchConsumer.php`. To po to, żeby checkout/rejestracja klienta nie czekały na wykonanie warunków/akcji kampanii.
 
-To środowisko testowe **nie ma RabbitMQ** — Magento używa domyślnej kolejki opartej o bazę danych (DB queue driver). Żeby konsument faktycznie ruszał automatycznie (a nie tylko zbierał wiadomości w tabeli kolejki), trzeba w `magento/app/etc/env.php` środowiska testowego dodać sekcję `cron_consumers_runner`, np.:
+To środowisko testowe **nie ma RabbitMQ** — Magento używa domyślnej kolejki opartej o bazę danych (DB queue driver). Konsument musi więc realnie działać w tle, nie tylko zbierać wiadomości w tabeli kolejki.
 
-```php
-'cron_consumers_runner' => [
-    'cron_run' => true,
-    'max_messages' => 20000,
-    'consumers' => ['ordo.automation.campaign.dispatch', 'ordo.automation.visitor.aggregate'],
-],
-```
+**To jest już zautomatyzowane w środowisku testowym, nie trzeba nic robić ręcznie.** Kontener `php` (`Dockerfile.php` + `docker/entrypoint.sh` + `supervisord.conf` w `magento-ordo-test/`) startuje przez `supervisord` zamiast `sleep infinity`:
+- `entrypoint.sh` przy każdym starcie kontenera dopisuje do `app/etc/env.php` sekcję `cron_consumers_runner` z `cron_run => false` (jeśli `env.php` już istnieje, czyli Magento jest zainstalowane).
+- `cron_run` jest celowo `false`, bo konsumery **nie** są uruchamiane przez cron — supervisord trzyma je jako stałe, długo żyjące procesy (`docker/run-consumer.sh ordo.automation.campaign.dispatch` / `...visitor.aggregate`, z `autorestart=true`), więc nie ma sensu, żeby cron *też* je odpalał (dublowałoby się to z realnym procesem konsumenta i marnowało cykle).
+- `docker/run-magento-cron.sh` osobno pętli `bin/magento cron:run` co 60s — to obsługuje zwykłe zadania cronowe modułu (np. `Cron\PrunePendingPopups`), niezależnie od konsumentów kolejki.
+- Wszystkie trzy skrypty czekają w pętli, aż `bin/magento`/`env.php` faktycznie istnieją (na wypadek świeżo zbudowanego obrazu przed instalacją Magento), więc bezpiecznie przetrwają `docker compose up -d --build` na pustym `magento/`.
 
-Po dodaniu tej sekcji uruchom `bin/magento setup:upgrade` (żeby zarejestrować konfigurację kolejki/consumera) i sprawdź `bin/magento queue:consumers:list` — powinien pokazać `ordo.automation.campaign.dispatch`.
+Po świeżej instalacji Magento (`setup:install`/`setup:upgrade`) wystarczy `docker compose restart php`, żeby entrypoint dopisał `cron_consumers_runner` i supervisord zaczął trzymać konsumery żywe. Sprawdź `bin/magento queue:consumers:list` — powinien pokazać `ordo.automation.campaign.dispatch` i `ordo.automation.visitor.aggregate`.
+
+Przy okazji `docker-compose.yml`'s `db` service ma teraz na stałe `--log_bin_trust_function_creators=1` w `command`, więc `SET GLOBAL log_bin_trust_function_creators = 1;` nie trzeba już ręcznie odtwarzać po każdym restarcie kontenera bazy przed `setup:upgrade`.
 
 `CampaignDispatcher` cachuje też lookup "które kampanie są aktywne dla danego triggera" (tag cache `CampaignDispatcher::CACHE_TAG`, czyszczony przy zapisie/usunięciu kampanii/triggera — zobacz `Controller/Adminhtml/Campaign/Save.php`, `Delete.php`, `CampaignRepository.php`, `CampaignTriggerRepository.php`). Jeśli po zmianie triggera w adminie kampania "nie widzi" nowego triggera w testach manualnych, sprawdź najpierw czy cache faktycznie się wyczyścił (`bin/magento cache:flush` jako obejście, jeśli coś nie zadziała).
 
