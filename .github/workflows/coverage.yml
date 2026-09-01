@@ -11,33 +11,25 @@ name: PHP Coverage Report
 #   SonarCloud (Administration -> Analysis Method) — coverage import only works in that mode,
 #   not with the GitHub App's automatic analysis.
 
-# Two PR trigger paths — see the matching comment in ci.yml for the full reasoning: pull_request
-# (safe, no secrets, the default for anyone's PR) plus pull_request_target (secrets available,
-# but gated below to only actually run when the PR's author is dependabot[bot] AND its branch
-# starts with "dependabot/" (github.actor alone is a weaker, spoofable signal — SonarCloud's
-# githubactions:S8232 flagged that in an earlier version of this check) so Dependabot's own
-# PRs can be verified without exposing every external contributor's PR to these secrets.
+# Single PR trigger path — see the matching comment in ci.yml for the full reasoning: we tried
+# pull_request_target to give Dependabot's own PRs secret access, but SonarCloud's
+# githubactions:S7631 flags checking out a PR's head ref under pull_request_target categorically,
+# regardless of how the actor is verified. Reverted to plain pull_request; Dependabot PRs get a
+# red check here (no secrets, expected), in exchange for a clean Security Rating on main.
 
 on:
   push:
     branches: [main, master]
   pull_request:
     branches: [main, master]
-  pull_request_target:
-    branches: [main, master]
 
 jobs:
   coverage:
     runs-on: ubuntu-latest
-    if: >-
-      (github.event_name != 'pull_request_target' && github.event.pull_request.user.login != 'dependabot[bot]') ||
-      (github.event_name == 'pull_request_target' && github.event.pull_request.user.login == 'dependabot[bot]' &&
-       startsWith(github.event.pull_request.head.ref, 'dependabot/'))
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
 
       - name: Setup PHP
