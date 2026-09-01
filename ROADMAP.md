@@ -68,6 +68,8 @@ Every action used to end in an email, tag, or coupon — nothing ever rendered b
 
 **Verified, not just unit-tested with mocks.** `Test/Integration/CampaignVisitorPopupScenarioTest.php` proves the whole anonymous-visitor path against a real database: real `ordo_visitor_event` rows aggregating into a real `ordo_visitor_tag` without ever logging in, a real `visitor_tag_added` dispatch through a real `visitor_tag` condition into a real `ordo_pending_popup` row, and — since a mocked SQL builder can't prove this — a real conditional `UPDATE ... WHERE delivered_at IS NULL` against the real table confirming a second claim attempt on the same row affects zero rows. 480 total tests (464 unit + 16 integration) passing.
 
+**Aggregation itself moved off the request thread.** `VisitorEventLogger` used to run `VisitorAggregator`'s `GROUP BY`/`HAVING` query (plus any resulting tag writes) synchronously inline in the `/ordo/track/event` and `customer_login` requests — the same class of problem Phase 7 fixed for `CampaignDispatcher`. A new `ordo.automation.visitor.aggregate` topic (`Model\Queue\VisitorAggregationPublisher`/`VisitorAggregationConsumer`, mirroring `CampaignDispatchPublisher`/`Consumer` exactly) means a tracking or login request never waits on it. Found and fixed a small real bug along the way: `StitchVisitorIdentity` was calling aggregation twice on login. 469 unit + 16 integration tests passing after this change.
+
 ## Phase 7 — dispatch performance at scale
 
 An audit found the campaign engine worked correctly but would not survive real traffic:
