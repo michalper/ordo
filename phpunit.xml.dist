@@ -19,7 +19,7 @@
             <directory>Test/Unit</directory>
         </testsuite>
     </testsuites>
-    <coverage processUncoveredFiles="true">
+    <source>
         <include>
             <directory suffix=".php">.</directory>
         </include>
@@ -27,5 +27,5 @@
             <directory suffix=".php">Test</directory>
             <directory suffix=".php">vendor</directory>
         </exclude>
-    </coverage>
+    </source>
 </phpunit>

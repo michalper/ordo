@@ -50,8 +50,11 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
+      - name: Audit dependencies for known vulnerabilities
+        run: composer audit --no-interaction
+
       - name: Run unit tests
-        run: vendor/bin/phpunit --display-phpunit-deprecations
+        run: vendor/bin/phpunit
 
   static-analysis:
     runs-on: ubuntu-latest

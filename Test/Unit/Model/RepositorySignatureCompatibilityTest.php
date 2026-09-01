@@ -57,7 +57,7 @@ class RepositorySignatureCompatibilityTest extends TestCase
         }
     }
 
-    public function repositoryProvider(): array
+    public static function repositoryProvider(): array
     {
         return [
             'CampaignRepository' => [CampaignRepositoryInterface::class, CampaignRepository::class],

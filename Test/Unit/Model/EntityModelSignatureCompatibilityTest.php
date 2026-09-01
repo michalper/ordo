@@ -41,7 +41,7 @@ class EntityModelSignatureCompatibilityTest extends TestCase
         );
     }
 
-    public function modelClassProvider(): array
+    public static function modelClassProvider(): array
     {
         return [
             'Campaign' => [Campaign::class],
