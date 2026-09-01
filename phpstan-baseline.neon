@@ -88,7 +88,7 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
-			path: Block/Adminhtml/Campaign/Edit/GenericButton.php
+			path: Block/Adminhtml/Shared/Edit/GenericButton.php
 
 		-
 			message: '#^Cannot call method getTriggerEvent\(\) on mixed\.$#'
@@ -113,18 +113,6 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Block/Adminhtml/Dashboard/DashboardViewModel.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Block/Adminhtml/FreeGiftOffer/Edit/GenericButton.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Block/Adminhtml/Segment/Edit/GenericButton.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
