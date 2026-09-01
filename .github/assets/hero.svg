@@ -1,0 +1,106 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', -apple-system, Helvetica, Arial, sans-serif">
+  <defs>
+    <pattern id="dotgrid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="1.5" cy="1.5" r="1.5" fill="#1E293B" />
+    </pattern>
+    <linearGradient id="magenta" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E879F9" />
+      <stop offset="100%" stop-color="#C026D3" />
+    </linearGradient>
+    <linearGradient id="logoMark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E879F9" />
+      <stop offset="100%" stop-color="#0EA5E9" />
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="640" fill="#0F172A" />
+  <rect width="1280" height="640" fill="url(#dotgrid)" />
+
+  <!-- Left: branding -->
+  <g transform="translate(72, 220)">
+    <g transform="translate(0, -80)">
+      <circle cx="18" cy="18" r="16" fill="none" stroke="url(#logoMark)" stroke-width="3" />
+      <circle cx="18" cy="18" r="5" fill="url(#logoMark)" />
+      <circle cx="4" cy="4" r="3" fill="#E879F9" />
+      <circle cx="32" cy="4" r="3" fill="#0EA5E9" />
+      <circle cx="4" cy="32" r="3" fill="#0EA5E9" />
+      <circle cx="32" cy="32" r="3" fill="#E879F9" />
+      <line x1="18" y1="18" x2="4" y2="4" stroke="#E879F9" stroke-width="1.5" opacity="0.7" />
+      <line x1="18" y1="18" x2="32" y2="4" stroke="#0EA5E9" stroke-width="1.5" opacity="0.7" />
+      <line x1="18" y1="18" x2="4" y2="32" stroke="#0EA5E9" stroke-width="1.5" opacity="0.7" />
+      <line x1="18" y1="18" x2="32" y2="32" stroke="#E879F9" stroke-width="1.5" opacity="0.7" />
+      <text x="56" y="28" fill="#F8FAFC" font-size="40" font-weight="700">ordo</text>
+    </g>
+
+    <text x="0" y="4" fill="#94A3B8" font-size="20" font-weight="600" letter-spacing="0.3">Automation for Magento 2</text>
+
+    <text x="0" y="56" fill="#CBD5E1" font-size="17">Native Magento 2 Marketing</text>
+    <text x="0" y="84" fill="#CBD5E1" font-size="17">Automation Engine. B2B &amp; B2C.</text>
+    <text x="0" y="112" fill="#CBD5E1" font-size="17">Inside stock Magento. No external SaaS.</text>
+
+    <g transform="translate(0, 150)">
+      <rect x="0" y="0" width="146" height="34" rx="17" fill="#1E293B" stroke="#334155" />
+      <text x="73" y="22" fill="#93C5FD" font-size="13" font-weight="600" text-anchor="middle">PHP 8.2+</text>
+
+      <rect x="158" y="0" width="196" height="34" rx="17" fill="#1E293B" stroke="#334155" />
+      <text x="256" y="22" fill="#86EFAC" font-size="13" font-weight="600" text-anchor="middle">PHPStan: Level Max</text>
+
+      <rect x="0" y="46" width="180" height="34" rx="17" fill="#1E293B" stroke="#334155" />
+      <text x="90" y="68" fill="#FDE68A" font-size="13" font-weight="600" text-anchor="middle">No External SaaS</text>
+
+      <rect x="192" y="46" width="162" height="34" rx="17" fill="#1E293B" stroke="#334155" />
+      <text x="273" y="68" fill="#F0ABFC" font-size="13" font-weight="600" text-anchor="middle">B2B + B2C</text>
+    </g>
+  </g>
+
+  <!-- Right: Drawflow canvas mockup, isometric tilt -->
+  <g transform="translate(700, 96) rotate(-3)">
+    <rect x="0" y="0" width="500" height="460" rx="14" fill="#111827" stroke="#243046" stroke-width="1.5" />
+
+    <!-- window chrome -->
+    <rect x="0" y="0" width="500" height="40" rx="14" fill="#161F32" />
+    <rect x="0" y="26" width="500" height="14" fill="#161F32" />
+    <circle cx="24" cy="20" r="5" fill="#EF4444" />
+    <circle cx="44" cy="20" r="5" fill="#F59E0B" />
+    <circle cx="64" cy="20" r="5" fill="#22C55E" />
+    <text x="250" y="25" fill="#64748B" font-size="13" text-anchor="middle">Campaign Builder Canvas (Drawflow)</text>
+
+    <!-- canvas dot background -->
+    <rect x="0" y="40" width="500" height="420" fill="url(#dotgrid)" opacity="0.6" />
+
+    <!-- connector paths -->
+    <path d="M 130 110 L 130 165 L 240 165 L 240 220" fill="none" stroke="url(#magenta)" stroke-width="2.5" filter="url(#glow)" />
+    <path d="M 240 260 L 240 300 L 330 300 L 330 335" fill="none" stroke="#0EA5E9" stroke-width="2.5" filter="url(#glow)" />
+
+    <!-- Trigger node -->
+    <g transform="translate(58, 70)">
+      <rect width="220" height="46" rx="8" fill="#1E1329" stroke="#C026D3" stroke-width="1.5" />
+      <circle cx="18" cy="23" r="4" fill="#E879F9" />
+      <text x="34" y="19" fill="#F0ABFC" font-size="11" font-weight="700">TRIGGER</text>
+      <text x="34" y="35" fill="#E2E8F0" font-size="12">Order Placed</text>
+    </g>
+
+    <!-- Condition node -->
+    <g transform="translate(150, 220)">
+      <rect width="220" height="46" rx="8" fill="#0B1E2E" stroke="#0EA5E9" stroke-width="1.5" />
+      <circle cx="18" cy="23" r="4" fill="#38BDF8" />
+      <text x="34" y="19" fill="#7DD3FC" font-size="11" font-weight="700">CONDITION</text>
+      <text x="34" y="35" fill="#E2E8F0" font-size="12">Total &#8805; $500</text>
+    </g>
+
+    <!-- Action node -->
+    <g transform="translate(220, 335)">
+      <rect width="230" height="52" rx="8" fill="#1E1329" stroke="#C026D3" stroke-width="1.5" />
+      <circle cx="18" cy="26" r="4" fill="#E879F9" />
+      <text x="34" y="21" fill="#F0ABFC" font-size="11" font-weight="700">ACTION</text>
+      <text x="34" y="38" fill="#E2E8F0" font-size="12">Generate Coupon &amp; Send Email</text>
+    </g>
+  </g>
+</svg>

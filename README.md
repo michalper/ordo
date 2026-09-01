@@ -1,5 +1,7 @@
 # Ordo Automation for Magento 2
 
+![Ordo Automation](.github/assets/hero.svg)
+
 [![CI](https://github.com/michalper/ordo/actions/workflows/ci.yml/badge.svg)](https://github.com/michalper/ordo/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/michalper/ordo/graph/badge.svg?token=JYXG9P7692)](https://codecov.io/gh/michalper/ordo)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=michalper_ordo&metric=alert_status)](https://sonarcloud.io/project/overview?id=michalper_ordo)
