@@ -1,0 +1,190 @@
+name: MFTF
+
+# Real, full-stack acceptance tests (Test/Mftf/) — a live Magento install, MySQL, OpenSearch,
+# and a real Chrome browser via Selenium, driven by the MFTF (Magento Functional Testing
+# Framework) test runner. This is deliberately NOT wired to run on every push/PR like ci.yml:
+# a from-scratch Magento install plus browser automation takes tens of minutes and the site
+# under test lives entirely inside this one job (no separate deploy), so cost/runtime don't
+# scale the way a unit-test job does. Trigger manually (Actions tab -> MFTF -> Run workflow) or
+# on a schedule once this is proven stable.
+#
+# Every step below mirrors a real, already-solved pitfall documented in AGENTS.md's "Uruchomienie
+# MFTF w tym środowisku" section, discovered running these exact tests locally in
+# magento-ordo-test/ (PHP_CLI_SERVER_WORKERS, static content deploy, the cli-bridge symlink,
+# realtime indexers). Same two repository secrets as ci.yml/coverage.yml
+# (MAGENTO_COMPOSER_USERNAME / MAGENTO_COMPOSER_PASSWORD) — see the comment in ci.yml for how to
+# get them.
+#
+# NOT yet verified end-to-end in GitHub Actions itself (unlike every other workflow in this repo,
+# which was iterated against real CI runs) — a full Magento install + Selenium session in a fresh
+# runner has a wide surface area (service container health-check timing, network reachability
+# between the runner and service containers, disk space) that's realistically only fully proven by
+# actually running it and fixing whatever breaks, the same way the local pitfalls list was built.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tests:
+        description: "Space-separated MFTF test names to run (default: everything except the slow full end-to-end scenario)"
+        required: false
+        default: >-
+          AdminCreateCampaignTest AdminCreateSegmentTest AdminCreateMultiTriggerCampaignTest
+          AdminCreateCampaignWithConditionsAndActionsTest AdminViewDashboardTest
+          AdminViewReorderCyclesGridTest StorefrontTrackerSetsVisitorCookieTest
+
+jobs:
+  mftf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+          MYSQL_DATABASE: magento
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+
+      opensearch:
+        image: opensearchproject/opensearch:2.19.4
+        env:
+          discovery.type: single-node
+          DISABLE_SECURITY_PLUGIN: "true"
+          DISABLE_INSTALL_DEMO_CONFIG: "true"
+          OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd="curl -sf http://127.0.0.1:9200/_cluster/health"
+          --health-interval=10s --health-timeout=5s --health-retries=15
+
+      selenium:
+        image: selenium/standalone-chrome:latest
+        ports:
+          - 4444:4444
+        options: --shm-size=2g
+
+    steps:
+      - name: Checkout module
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          path: ordo-module
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
+        with:
+          php-version: "8.3"
+          extensions: bcmath, ctype, curl, dom, ftp, gd, intl, mbstring, mysqli, pdo_mysql, simplexml, soap, sodium, xsl, zip, opcache, sockets
+          coverage: none
+
+      - name: Checkout Magento 2.4.9
+        run: git clone --branch 2.4.9 --depth 1 https://github.com/magento/magento2.git magento
+
+      - name: Configure Composer for repo.magento.com and the local module
+        working-directory: magento
+        env:
+          MAGENTO_COMPOSER_USERNAME: ${{ secrets.MAGENTO_COMPOSER_USERNAME }}
+          MAGENTO_COMPOSER_PASSWORD: ${{ secrets.MAGENTO_COMPOSER_PASSWORD }}
+        run: |
+          composer config repositories.magento composer https://repo.magento.com
+          composer config http-basic.repo.magento.com "$MAGENTO_COMPOSER_USERNAME" "$MAGENTO_COMPOSER_PASSWORD"
+          composer config repositories.ordo-automation path ../ordo-module
+          composer config allow-plugins.magento/composer-dependency-version-audit-plugin true
+          composer config allow-plugins.magento/magento-composer-installer true
+          composer config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer require ordo/module-automation:@dev --no-interaction --no-update
+
+      - name: Install dependencies
+        working-directory: magento
+        run: composer update --no-interaction --no-progress --with-dependencies
+
+      - name: Install Magento
+        working-directory: magento
+        run: |
+          bin/magento setup:install \
+            --base-url=http://127.0.0.1:8080/ \
+            --db-host=127.0.0.1 --db-name=magento --db-user=root \
+            --admin-firstname=Admin --admin-lastname=User \
+            --admin-email=admin@example.com --admin-user=admin --admin-password='Admin123!' \
+            --language=en_US --currency=USD --timezone=America/Chicago \
+            --use-rewrites=1 \
+            --search-engine=opensearch --opensearch-host=127.0.0.1 --opensearch-port=9200 \
+            --backend-frontname=admin
+
+          bin/magento module:enable Ordo_Automation
+          bin/magento setup:upgrade
+          bin/magento deploy:mode:set developer
+
+          # Newly-created MFTF test fixtures (products, etc.) aren't salable/addable to cart
+          # until stock/price indexes recompute — set once globally instead of forcing a
+          # reindex in every test. Deliberately excludes catalogsearch_fulltext: no test here
+          # needs it, and it cascades on OpenSearch hiccups.
+          bin/magento indexer:set-mode realtime cataloginventory_stock catalog_product_price \
+            catalog_product_attribute catalog_category_product catalog_product_category
+
+          bin/magento setup:static-content:deploy -f en_US -a adminhtml
+          bin/magento setup:static-content:deploy -f en_US -a frontend
+          bin/magento cache:flush
+
+      - name: Wire the MFTF CLI bridge and .env
+        working-directory: magento
+        run: |
+          # <magentoCLI> MFTF actions POST to this path; it must resolve to exactly 3 directory
+          # levels under pub/ because command.php locates bin/magento via 4x "../" relative to
+          # the PHP built-in server's CWD (docroot + request path), not the symlink's real
+          # location. See AGENTS.md for how this was worked out.
+          mkdir -p pub/cli-bridge/a/b
+          ln -sf "$(pwd)/dev/tests/acceptance/utils/command.php" pub/cli-bridge/a/b/command.php
+
+          cat >> dev/tests/acceptance/.env <<'EOF'
+          MAGENTO_BASE_URL=http://127.0.0.1:8080/
+          MAGENTO_BACKEND_NAME=admin
+          MAGENTO_CLI_COMMAND_PATH=cli-bridge/a/b/command.php
+          MAGENTO_CLI_COMMAND_PARAMETER=command
+          MAGENTO_ADMIN_USERNAME=admin
+          MAGENTO_ADMIN_PASSWORD=Admin123!
+          SELENIUM_HOST=127.0.0.1
+          SELENIUM_PORT=4444
+          BROWSER=chrome
+          MODULE_ALLOWLIST=Ordo_Automation
+          EOF
+
+      - name: Start PHP built-in server
+        working-directory: magento
+        env:
+          # Mandatory: the built-in server otherwise handles one request at a time, and
+          # Selenium/Chrome fires many concurrent asset requests — without workers, admin pages
+          # render with broken assets (RequireJS "Script error") or hang until timeout.
+          PHP_CLI_SERVER_WORKERS: 8
+        run: |
+          nohup php -S 0.0.0.0:8080 -t pub dev/tests/acceptance/utils/router.php \
+            > /tmp/php-server.log 2>&1 &
+          for i in $(seq 1 15); do
+            curl -sf http://127.0.0.1:8080/ -o /dev/null && break
+            sleep 2
+          done
+          curl -sf http://127.0.0.1:8080/ -o /dev/null || (cat /tmp/php-server.log && exit 1)
+
+      - name: Generate MFTF tests
+        working-directory: magento
+        run: |
+          vendor/bin/mftf build:project
+          vendor/bin/mftf generate:tests ${{ inputs.tests }}
+
+      - name: Run MFTF tests
+        working-directory: magento
+        run: vendor/bin/mftf run:test ${{ inputs.tests }}
+
+      - name: Upload MFTF results on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mftf-results
+          path: |
+            magento/dev/tests/acceptance/tests/_output
+            /tmp/php-server.log
+          retention-days: 7
