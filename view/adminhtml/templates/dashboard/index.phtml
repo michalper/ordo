@@ -39,6 +39,10 @@ $campaigns = $viewModel->getCampaigns();
             <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('Free Gift Offers')) ?></span>
             <span class="ordo-nav-desc"><?= $escaper->escapeHtml(__('Manage cascading-tier gift offers and their gift pools')) ?></span>
         </a>
+        <a class="ordo-nav-card" href="<?= $escaper->escapeUrl($block->getUrl('ordo/segment/index')) ?>">
+            <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('Segments')) ?></span>
+            <span class="ordo-nav-desc"><?= $escaper->escapeHtml(__('Saved, reusable customer conditions — reference from any campaign via the "In Segment" condition')) ?></span>
+        </a>
         <a class="ordo-nav-card" href="<?= $escaper->escapeUrl($block->getUrl('adminhtml/system_config/edit/section/ordo_automation')) ?>">
             <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('Configuration')) ?></span>
             <span class="ordo-nav-desc"><?= $escaper->escapeHtml(__('Triggers, thresholds, tracking, and more')) ?></span>

@@ -19,6 +19,10 @@ class TypeLabels
         'order_total_gte' => 'Order Total ≥',
         'visitor_tag' => 'Visitor Has Tag (anonymous)',
         'score_at_least' => 'Score At Least',
+        'recency_days_at_most' => 'Recency (days since last order) At Most',
+        'order_frequency_at_least' => 'Order Frequency At Least',
+        'monetary_total_at_least' => 'Monetary Total At Least',
+        'in_segment' => 'In Segment',
     ];
 
     private const ACTION_LABELS = [

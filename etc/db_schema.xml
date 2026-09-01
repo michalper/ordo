@@ -100,6 +100,34 @@
         </index>
     </table>
 
+    <table name="ordo_segment" resource="default" engine="innodb" comment="A saved, reusable set of AND-ed conditions (customer attributes/behavior) — built from the same ConditionPool campaigns use, so any condition type (tag, order total, RFM, score) works here too. Referenced by the in_segment campaign condition and reused across as many campaigns as needed, instead of re-declaring the same conditions inline in every campaign that wants them.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="name" nullable="false" length="255" comment="Admin-facing name"/>
+        <column xsi:type="boolean" name="enabled" nullable="false" default="1" comment="Enabled"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+    </table>
+
+    <table name="ordo_segment_condition" resource="default" engine="innodb" comment="One AND-ed condition on a segment — same type/params shape as ordo_campaign_condition, evaluated through the same ConditionPool">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="segment_id" padding="10" unsigned="true" nullable="false" comment="ordo_segment.entity_id"/>
+        <column xsi:type="varchar" name="type" nullable="false" length="64" comment="Condition type key, matches Model\Campaign\ConditionPool registration"/>
+        <column xsi:type="text" name="params" nullable="true" comment="JSON-encoded condition configuration"/>
+        <column xsi:type="smallint" name="sort_order" unsigned="true" nullable="false" default="0" comment="Sort Order"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="ORDO_SEGMENT_CONDITION_SEGMENT_ID_SEGMENT_ENTITY_ID"
+                    table="ordo_segment_condition" column="segment_id"
+                    referenceTable="ordo_segment" referenceColumn="entity_id" onDelete="CASCADE"/>
+        <index referenceId="ORDO_SEGMENT_CONDITION_SEGMENT_ID" indexType="btree">
+            <column name="segment_id"/>
+        </index>
+    </table>
+
     <table name="ordo_customer_score" resource="default" engine="innodb" comment="Lead scoring — a running points total per customer, accumulated by the add_points campaign action and read by the score_at_least condition. One row per customer; points accumulate via UPSERT, never a separate ledger row per event.">
         <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
         <column xsi:type="int" name="score" nullable="false" default="0" comment="Running points total — can go negative if a rule subtracts more than the balance"/>

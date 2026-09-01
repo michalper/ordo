@@ -47,4 +47,9 @@ class TypeLabelsTest extends TestCase
     {
         self::assertSame('Add Points', (new TypeLabels())->actionLabel('add_points'));
     }
+
+    public function testConditionLabelUsesInSegmentMapping(): void
+    {
+        self::assertSame('In Segment', (new TypeLabels())->conditionLabel('in_segment'));
+    }
 }

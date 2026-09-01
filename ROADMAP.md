@@ -74,6 +74,8 @@ Every action used to end in an email, tag, or coupon — nothing ever rendered b
 
 **Lead scoring (MVP) — done.** Closes the core of the "Lead scoring" gap below, deliberately built as a small addition to the existing condition/action pool rather than a separate rule engine — the same primitive relationship tags already have (`add_tag` writes, `tag` reads) now exists for points: a new `ordo_customer_score` table (one row per customer, `score` accumulated via `INSERT ... ON DUPLICATE KEY UPDATE score = score + VALUES(score)` so concurrent awards never race on a read-then-write) behind `Model\CustomerScoreManager`, a new `add_points` action (any campaign action chain can award — or, with a negative value, deduct — points), and a new `score_at_least` condition (gates on the customer's current running total). Any existing trigger can drive both, e.g. `order_placed` → `add_points` to award points for a purchase, or a condition-gated campaign that only fires once a customer's score clears a threshold. Verified against a real database in `CampaignDispatchScenarioTest.php` — one test proves points genuinely accumulate across repeated dispatches (not overwritten), another proves `score_at_least` is unsatisfied below the threshold and satisfied once the real accumulated score crosses it. **Deliberately not built in this pass** (see the narrowed gap below): demographic-attribute scoring rules and a dedicated "campaign fires automatically the instant a threshold is crossed" push mechanism (today the threshold is checked when *some* trigger fires and a `score_at_least` condition happens to be on that campaign, not proactively on every point award — the same tradeoff `tag_added`/`visitor_tag_added` made deliberate and explicit for tags).
 
+**Saved/reusable segments + RFM (MVP) — done.** A segment is a named, reusable set of AND-ed conditions (`ordo_segment` + `ordo_segment_condition`, mirroring `ordo_campaign`/`ordo_campaign_condition`) evaluated through the exact same `ConditionPool` campaigns already use — a segment isn't a parallel condition system, it's a saved, named grouping of the same condition types. `Model\Segment\SegmentMatcher::isCustomerInSegment()` ANDs a segment's conditions against a customer, fail-closed on both an unknown condition type and (deliberately) on a segment with zero conditions — an empty AND is vacuously true in boolean logic, but "matches everyone" is almost certainly not what an admin who forgot to add conditions intended. A new `in_segment` campaign condition (`{"segment_id": "3"}`) lets any campaign react to segment membership instead of re-declaring the same conditions inline — this is what makes a segment "reusable across scenarios" rather than a UI-only convenience. Alongside this, three new RFM conditions — `recency_days_at_most`, `order_frequency_at_least`, `monetary_total_at_least` (`Model\Rfm\RfmCalculator`, reading straight from `sales_order` the same way `CreditLimitCalculator` reads used credit, no separate ledger) — are usable both standalone on any campaign *and* inside a segment, so "build an RFM segment" is just adding these three condition types to one saved segment rather than a bespoke RFM subsystem. A DI note worth recording: `ConditionPool → InSegment → SegmentMatcher → ConditionPool` is a genuine constructor cycle (`ConditionPool`'s array argument builds every registered condition eagerly, including `InSegment`); broken with a `ConditionPool\Proxy` injected into `SegmentMatcher` (`etc/di.xml`) so the real pool only gets built lazily on first use, by which point construction has already finished — verified live against the real DI container, not just by reasoning about it. Admin CRUD for segments (`ordo/segment/*`) mirrors the campaign admin controllers/grid, with one deliberate simplification: segment conditions are entered as raw params JSON only, no per-type dedicated fields like the campaign form's `switcherConfig` has — narrows the diff for this pass; the same dedicated-field polish campaigns got could be added later if the JSON entry proves too rough in practice. Verified against a real database in `Test/Integration/SegmentAndRfmScenarioTest.php` — real orders inserted directly into `sales_order`, RFM conditions checked against them individually, a segment ANDing two RFM conditions matching a qualifying customer and rejecting a partially-qualifying one, an empty segment matching no one, and a real campaign dispatch gated by `in_segment` tagging only the customer who actually qualifies. **Deliberately not built in this pass** (see the narrowed gap below): bulk actions on a segment's current members, a standalone RFM report, and percentile/quintile-based RFM scoring.
+
 ## Phase 7 — dispatch performance at scale
 
 An audit found the campaign engine worked correctly but would not survive real traffic:
@@ -186,6 +188,7 @@ Not failures — not attempted, or explicitly deferred:
 - Visual identity system (Phase 4).
 - `Test/Api/` coverage for the credit-limit endpoints (Phase 6).
 - A measured throughput/load number for the Phase 7 dispatch performance work — the architectural bottlenecks are fixed, but nothing has put a concurrent-dispatch number on it yet.
+- The segment admin grid/form's HTML was never actually browser-rendered this pass — the underlying engine (`SegmentMatcher`, the RFM conditions, `in_segment`) is proven end to end against a real database in `Test/Integration/SegmentAndRfmScenarioTest.php`, and the DI wiring (including the `ConditionPool`/`SegmentMatcher` proxy cycle) was verified live via a real object-manager resolution, but a scripted `curl` admin login hit this environment's default two-factor auth and couldn't get past it to load the actual grid/form pages. Worth an MFTF pass alongside the other Phase 6 MFTF gaps below, or a manual check with a real browser session.
 
 ## Gaps vs. a full-market MA platform
 
@@ -210,14 +213,17 @@ incidentally:
   was crossed").
 - **Dynamic content blocks** (reusable text/HTML snippets, RSS-driven auto-newsletters, product
   feed inside a campaign email) — not built; every email template today is static.
-- **Saved/reusable segments** — a segment (built from attributes + behavior) saved once and
-  reused across scenarios, plus bulk actions on a segment (assign tag, add note). We have no
-  standalone segment entity — conditions are inline, per-campaign, not a reusable named thing.
-  This overlaps with the RFM gap below: a saved-segment feature would be the natural place to add
-  RFM-style segmentation too, rather than two separate builds.
-- **RFM segmentation** — a dedicated recency/frequency/monetary report and segment-by-RFM
-  workflow. Our "segmentation" today is just campaign conditions (`has_tag`,
-  `order_total_gte`), not a standalone RFM engine or report.
+- **Saved/reusable segments and RFM segmentation** — done as a combined MVP (see the writeup
+  below); a saved segment can be built from any condition type, including the new RFM trio.
+  Still missing: bulk actions on a segment (assign tag / add note to every current member in one
+  click — today a segment only ever gets *read* one customer at a time, via the `in_segment`
+  condition during a dispatch, there's no "run this over everyone in the segment right now"
+  action), a standalone RFM *report* (a recency/frequency/monetary breakdown of the whole
+  customer base, as opposed to condition types you can test one customer against), and quintile/
+  percentile-based RFM scoring (today's conditions are absolute thresholds an admin picks, e.g.
+  "at least 3 orders" — not "top 20% by order count", which needs computing distribution across
+  the whole customer base, a meaningfully bigger and slower calculation than a per-customer
+  lookup).
 - **Multichannel recovery** (SMS/WhatsApp/push, not just email) — `cart_abandoned`/win-back
   campaigns only ever send email today; no other channel is wired into `ActionPool`.
 

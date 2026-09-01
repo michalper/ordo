@@ -55,7 +55,15 @@
                 <item name="ordo_campaign_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Campaign\Grid\Collection</item>
                 <item name="ordo_reorder_cycle_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\ReorderCycle\Grid\Collection</item>
                 <item name="ordo_free_gift_offer_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\FreeGiftOffer\Grid\Collection</item>
+                <item name="ordo_segment_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Segment\Grid\Collection</item>
             </argument>
+        </arguments>
+    </type>
+
+    <type name="Ordo\Automation\Model\ResourceModel\Segment\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">ordo_segment</argument>
+            <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\Segment</argument>
         </arguments>
     </type>
 
@@ -97,7 +105,25 @@
                 <item name="order_total_gte" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\OrderTotalAtLeast</item>
                 <item name="visitor_tag" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\VisitorHasTag</item>
                 <item name="score_at_least" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\ScoreAtLeast</item>
+                <item name="recency_days_at_most" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\RecencyDaysAtMost</item>
+                <item name="order_frequency_at_least" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\OrderFrequencyAtLeast</item>
+                <item name="monetary_total_at_least" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\MonetaryTotalAtLeast</item>
+                <item name="in_segment" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\InSegment</item>
             </argument>
+        </arguments>
+    </type>
+
+    <!--
+        ConditionPool -> InSegment -> SegmentMatcher -> ConditionPool would otherwise be a
+        genuine constructor cycle (ConditionPool's array argument instantiates every condition,
+        including InSegment, eagerly at construction time). Breaking it with a Proxy here means
+        SegmentMatcher gets a lazy stand-in that only actually builds the real ConditionPool the
+        first time isCustomerInSegment() calls ->get(), by which point ConditionPool itself has
+        already finished constructing.
+    -->
+    <type name="Ordo\Automation\Model\Segment\SegmentMatcher">
+        <arguments>
+            <argument name="conditionPool" xsi:type="object">Ordo\Automation\Model\Campaign\ConditionPool\Proxy</argument>
         </arguments>
     </type>
 
