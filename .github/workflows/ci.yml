@@ -40,6 +40,8 @@ jobs:
         run: |
           composer config repositories.magento composer https://repo.magento.com
           composer config http-basic.repo.magento.com "${{ secrets.MAGENTO_COMPOSER_USERNAME }}" "${{ secrets.MAGENTO_COMPOSER_PASSWORD }}"
+          composer config allow-plugins.magento/composer-dependency-version-audit-plugin true
+          composer config allow-plugins.magento/magento-composer-installer true
 
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
@@ -63,6 +65,8 @@ jobs:
         run: |
           composer config repositories.magento composer https://repo.magento.com
           composer config http-basic.repo.magento.com "${{ secrets.MAGENTO_COMPOSER_USERNAME }}" "${{ secrets.MAGENTO_COMPOSER_PASSWORD }}"
+          composer config allow-plugins.magento/composer-dependency-version-audit-plugin true
+          composer config allow-plugins.magento/magento-composer-installer true
 
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
