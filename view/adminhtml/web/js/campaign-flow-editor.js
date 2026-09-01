@@ -213,11 +213,14 @@ define([
                     nodeId,
                     inputCount = kind === 'trigger' ? 0 : 1;
 
+                // Math.random() here only jitters where a new node lands on the canvas so
+                // stacked nodes don't overlap exactly — cosmetic layout, not a security or
+                // cryptographic use, so a predictable PRNG is fine. NOSONAR: javascript:S2245
                 if (posX === undefined) {
-                    posX = kind === 'trigger' ? 60 : (60 + Math.random() * 400);
+                    posX = kind === 'trigger' ? 60 : (60 + Math.random() * 400); // NOSONAR
                 }
                 if (posY === undefined) {
-                    posY = 260 + Math.random() * 120;
+                    posY = 260 + Math.random() * 120; // NOSONAR
                 }
 
                 nodeId = editor.addNode(

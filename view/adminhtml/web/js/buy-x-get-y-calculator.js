@@ -13,7 +13,7 @@ define([
 ], function ($, Abstract, ko) {
     'use strict';
 
-    var $t = $.mage.__;
+    const $t = $.mage.__;
 
     return Abstract.extend({
         defaults: {
@@ -71,9 +71,9 @@ define([
          * @return {String}
          */
         buildPreview: function () {
-            var x = parseInt(this.discountStep(), 10),
-                y = parseInt(this.discountAmount(), 10),
-                total;
+            const x = parseInt(this.discountStep(), 10),
+                y = parseInt(this.discountAmount(), 10);
+            let total;
 
             if (!x || x <= 0 || isNaN(y) || y < 0) {
                 return $t('Enter "Discount Qty Step (Buy X)" and "Discount Amount" (as Y, free qty) to see a preview.');

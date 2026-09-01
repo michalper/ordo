@@ -5,7 +5,7 @@
  * the admin), which silently breaks `new window.Drawflow(...)`. Mapping it to a real path here
  * lets it load the way it actually expects to.
  */
-var config = {
+const config = {
     paths: {
         drawflow: 'Ordo_Automation/lib/drawflow/drawflow.min'
     }
