@@ -390,6 +390,57 @@ the free-gift and credit-limit-API code added since hasn't had a fresh PHPStan p
 
 **i18n — `en_US`/`pl_PL` only**, more locales added on actual demand, not speculatively.
 
+
+Flagged for follow-up, not yet wired in:
+
+- **[Flags](https://docs.codecov.com/docs/flags)** — split coverage reporting by test layer (unit
+  vs. MFTF vs. API functional) instead of one blended number. Worth doing once MFTF/API tests
+  themselves upload coverage, not just unit tests.
+- **[Components](https://docs.codecov.com/docs/components)** — group coverage by functional area
+  (Campaign engine, Free gift, Credit limit, Segment, Tracking) instead of only by raw file path.
+  Straightforward to configure once the flag split above exists to build on.
+- **[Test Analytics / failed test reporting](https://docs.codecov.com/docs/test-analytics#failed-test-reporting)**
+  — upload PHPUnit's JUnit XML output (`--log-junit`) alongside the coverage report so Codecov can
+  track flaky/failing tests over time, not just line coverage.
+- **[GitHub Checks](https://docs.codecov.com/docs/github-checks)** — surface Codecov's pass/fail
+  status directly as a GitHub check on PRs instead of only a dashboard visit.
+- **JS bundle analysis** ([docs](https://docs.codecov.com/docs/javascript-bundle-analysis)) — not
+  applicable right now: this module's admin/frontend JS is plain RequireJS/AMD served through
+  Magento's own static-content pipeline, no Vite/Webpack/Rollup bundler in the loop for the plugin
+  to hook into. Revisit only if that ever changes.
+
+### Other tooling/design ideas raised but not yet actioned
+
+- **Reuse the README hero banner's color palette (Deep Logic Magenta / Blueprint Cyan) inside the
+  actual admin UI** — specifically the Flow editor's canvas nodes — so the visual identity is
+  consistent from the repo down to the product itself, not just marketing.
+- **Split the MFTF GitHub Actions pipeline into a matrix by functional area** (Campaign, Segment,
+  Dashboard/ReorderCycle, Tracking) using MFTF's own `<group>` tags, so tests run in parallel and
+  it's clearer where to add new ones. Deliberately deferred until the single, unified pipeline has
+  had at least one successful real run — no point parallelizing something not yet proven to work.
+- **PHP-CS-Fixer** — named explicitly alongside CodeQL/Dependabot/PHPCS in the original
+  "let's add tooling" pass; CodeQL turned out not to support PHP (removed), Dependabot and PHPCS
+  (Magento2 standard) landed, PHP-CS-Fixer never did. Different role than PHPCS: automatic
+  formatting rather than violation detection — would need a decision on whether it runs as a CI
+  check (fail on unformatted code) or a pre-commit-only convenience.
+- **Psalm and/or Infection (mutation testing)** — suggested as options alongside PHPStan early on,
+  never decided either way. Psalm would be a second, differently-opinionated static analyzer
+  overlapping heavily with PHPStan; Infection would test the tests themselves (does the suite
+  actually fail when the code is mutated), which is a genuinely different signal than line
+  coverage — worth considering once coverage itself is no longer the active focus.
+- **SonarQube Cloud's agent-centric maintenance loop** — [Hunter
+  Agent](https://docs.sonarsource.com/agent-centric-development-cycle/in-your-long-living-branches-the-code-maintenance-loop/hunter-agent)
+  (proactively finds issues in long-lived branches) and [Remediation
+  Agent](https://docs.sonarsource.com/agent-centric-development-cycle/in-your-long-living-branches-the-code-maintenance-loop/remediation-agent)
+  (proposes fixes for what Hunter finds) — see the [overview](https://docs.sonarsource.com/sonarqube-cloud)
+  for how these fit into the rest of the Sonar setup already in place (Quality Gate, PR
+  decoration). Not yet investigated whether these need a paid tier or additional GitHub App
+  permissions beyond what's already configured.
+- **More [shields.io](https://shields.io/) badges for the README** — candidates already discussed:
+  a static "Magento 2.4.x compatible" badge (no dynamic source exists for this), a dynamic GitHub
+  open-issues count, a static Dependabot badge, and a static PHPCS/Magento2-coding-standard badge.
+  A dynamic release/version badge only makes sense once this repo actually cuts a tagged release.
+
 ## Known gaps / still genuinely open
 
 Not failures — not attempted, or explicitly deferred:
