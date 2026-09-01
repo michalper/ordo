@@ -13,7 +13,9 @@ name: PHP Coverage Report
 
 # Two PR trigger paths — see the matching comment in ci.yml for the full reasoning: pull_request
 # (safe, no secrets, the default for anyone's PR) plus pull_request_target (secrets available,
-# but gated below to only actually run for github.actor == dependabot[bot]) so Dependabot's own
+# but gated below to only actually run when the PR's author is dependabot[bot] AND its branch
+# starts with "dependabot/" (github.actor alone is a weaker, spoofable signal — SonarCloud's
+# githubactions:S8232 flagged that in an earlier version of this check) so Dependabot's own
 # PRs can be verified without exposing every external contributor's PR to these secrets.
 
 on:
@@ -28,8 +30,9 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     if: >-
-      github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]' ||
-      github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]'
+      (github.event_name != 'pull_request_target' && github.event.pull_request.user.login != 'dependabot[bot]') ||
+      (github.event_name == 'pull_request_target' && github.event.pull_request.user.login == 'dependabot[bot]' &&
+       startsWith(github.event.pull_request.head.ref, 'dependabot/'))
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

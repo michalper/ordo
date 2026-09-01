@@ -21,7 +21,9 @@ name: CI
 # - pull_request: the normal, safe path for anyone's PR — GitHub withholds Actions secrets from
 #   these runs by design (this is what makes it safe to run untrusted PR code at all).
 # - pull_request_target: runs in main's context WITH secrets, but every job below is gated to
-#   only actually execute when github.actor is dependabot[bot] on this event. Dependabot's own
+#   only actually execute when the PR's author is dependabot[bot] AND its branch starts with
+#   "dependabot/" on this event (github.actor alone is a weaker, spoofable signal — SonarCloud's
+#   githubactions:S8232 flagged that in an earlier version of this check). Dependabot's own
 #   PRs get zero secrets under plain pull_request (a hard GitHub restriction, no per-repo
 #   opt-out) even though the bump itself is low-risk and worth actually verifying — this trades
 #   a real security surface (a compromised dependency version *could* run code with these
@@ -40,8 +42,9 @@ jobs:
   unit-tests:
     runs-on: ubuntu-latest
     if: >-
-      github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]' ||
-      github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]'
+      (github.event_name != 'pull_request_target' && github.event.pull_request.user.login != 'dependabot[bot]') ||
+      (github.event_name == 'pull_request_target' && github.event.pull_request.user.login == 'dependabot[bot]' &&
+       startsWith(github.event.pull_request.head.ref, 'dependabot/'))
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -89,8 +92,9 @@ jobs:
   static-analysis:
     runs-on: ubuntu-latest
     if: >-
-      github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]' ||
-      github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]'
+      (github.event_name != 'pull_request_target' && github.event.pull_request.user.login != 'dependabot[bot]') ||
+      (github.event_name == 'pull_request_target' && github.event.pull_request.user.login == 'dependabot[bot]' &&
+       startsWith(github.event.pull_request.head.ref, 'dependabot/'))
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -123,8 +127,9 @@ jobs:
   coding-standard:
     runs-on: ubuntu-latest
     if: >-
-      github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]' ||
-      github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]'
+      (github.event_name != 'pull_request_target' && github.event.pull_request.user.login != 'dependabot[bot]') ||
+      (github.event_name == 'pull_request_target' && github.event.pull_request.user.login == 'dependabot[bot]' &&
+       startsWith(github.event.pull_request.head.ref, 'dependabot/'))
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
