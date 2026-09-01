@@ -1,0 +1,33 @@
+name: CodeQL
+
+# GitHub's native static security analysis (SQLi, XSS, path traversal, and similar) for the PHP
+# in this repo. Unlike ci.yml/coverage.yml, this needs NO composer install at all — CodeQL builds
+# its own code database directly from the source files, so it doesn't need magento/framework or
+# any other dependency resolved. No secrets required.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    # Weekly sweep catches newly-published CodeQL query patterns even on weeks with no push.
+    - cron: "17 3 * * 1"
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: php
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3

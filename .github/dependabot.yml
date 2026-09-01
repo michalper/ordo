@@ -1,0 +1,22 @@
+version: 2
+updates:
+  # composer.json's require-dev deps (phpstan/phpstan, phpunit/phpunit, etc.) are on public
+  # Packagist and update normally. The require block (magento/framework and friends) lives on
+  # repo.magento.com — Dependabot can't authenticate there with the repo's MAGENTO_COMPOSER_*
+  # secrets (it only reads registries.json / a small fixed set of secret names it needs
+  # explicitly granted access to), so PRs bumping those will likely fail their own CI checks
+  # until that's set up. Left enabled anyway: a PR that fails CI due to missing registry auth is
+  # still a useful, visible signal that a newer Magento release exists — better than the version
+  # pin silently going stale with no PR at all.
+  - package-ecosystem: composer
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+
+  # Keeps actions/checkout, github/codeql-action, etc. pinned to current major versions and
+  # patches CVEs in the Actions runners/marketplace actions themselves.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
