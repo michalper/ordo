@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Block\Adminhtml\FreeGiftOffer\Edit;
 
 use Magento\Framework\View\Element\UiComponent\Control\ButtonProviderInterface;
+use Ordo\Automation\Block\Adminhtml\Shared\Edit\GenericButton;
 
 class SaveAndContinueButton extends GenericButton implements ButtonProviderInterface
 {

@@ -72,7 +72,13 @@ class EscalateStalePendingApprovals
                 $this->orderApprovalResource->save($approval);
                 $sent++;
             } catch (\Throwable $e) {
-                $this->logger->error(sprintf('Ordo_Automation: failed to send approval escalation for order #%d: %s', (int) $order->getEntityId(), $e->getMessage()));
+                $this->logger->error(
+                    sprintf(
+                        'Ordo_Automation: failed to send approval escalation for order #%d: %s',
+                        (int) $order->getEntityId(),
+                        $e->getMessage()
+                    )
+                );
             }
         }
 

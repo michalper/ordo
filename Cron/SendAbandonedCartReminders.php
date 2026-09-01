@@ -23,6 +23,15 @@ use Psr\Log\LoggerInterface;
  * onto cart recovery via a campaign without touching this cron. Guest quotes (no
  * customer_id) only get the fixed email, since campaign conditions/actions here all
  * assume a real customer_id.
+ *
+ * @phpstan-type AbandonedCartRow array{
+ *     entity_id: int|string,
+ *     customer_id: int|string|null,
+ *     customer_email: string,
+ *     customer_firstname: string|null,
+ *     subtotal: float|string,
+ *     reminders_sent: int|string
+ * }
  */
 class SendAbandonedCartReminders
 {
@@ -71,7 +80,7 @@ class SendAbandonedCartReminders
             ->group('q.entity_id')
             ->having('reminders_sent < ?', $maxReminders);
 
-        /** @var array<int, array{entity_id: int|string, customer_id: int|string|null, customer_email: string, customer_firstname: string|null, subtotal: float|string, reminders_sent: int|string}> $rows */
+        /** @var array<int, AbandonedCartRow> $rows */
         $rows = $connection->fetchAll($select);
 
         $sent = 0;
@@ -96,7 +105,7 @@ class SendAbandonedCartReminders
     }
 
     /**
-     * @param array{entity_id: int|string, customer_id: int|string|null, customer_email: string, customer_firstname: string|null, subtotal: float|string, reminders_sent: int|string} $row
+     * @param AbandonedCartRow $row
      */
     private function sendReminder(array $row): void
     {
@@ -132,7 +141,7 @@ class SendAbandonedCartReminders
     }
 
     /**
-     * @param array{entity_id: int|string, customer_id: int|string|null, customer_email: string, customer_firstname: string|null, subtotal: float|string, reminders_sent: int|string} $row
+     * @param AbandonedCartRow $row
      */
     private function dispatchCampaigns(array $row): void
     {
