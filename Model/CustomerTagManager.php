@@ -8,8 +8,8 @@ use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
 use Ordo\Automation\Api\CustomerTagManagementInterface;
 
 /**
- * Behavioral tagging, the same primitive general-purpose MA platforms (SalesManago, iPresso,
- * Klaviyo...) build their segmentation on: a customer either has a tag or doesn't, and every
+ * Behavioral tagging, the same primitive general-purpose MA platforms build their segmentation
+ * on: a customer either has a tag or doesn't, and every
  * trigger/segment in this module reads or writes tags instead of inventing its own ad-hoc flag.
  * Kept intentionally dumb — no rule engine, just add/remove/check — so it stays easy to reason
  * about and easy to extend later (a rule-based auto-tagger is just another cron that calls this).

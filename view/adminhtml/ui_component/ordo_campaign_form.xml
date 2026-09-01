@@ -200,6 +200,30 @@
                                         </action>
                                     </actions>
                                 </rule>
+                                <!-- Reuses the same "tag" field as the "tag" rule above — the
+                                     visitor_tag condition has the exact same single param shape
+                                     (just checked against ordo_visitor_tag instead of
+                                     ordo_customer_tag at dispatch time), no reason for a second
+                                     physical input. -->
+                                <rule name="2">
+                                    <value>visitor_tag</value>
+                                    <actions>
+                                        <action name="0">
+                                            <target>${ $.parentName }.tag</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">true</param>
+                                            </params>
+                                        </action>
+                                        <action name="1">
+                                            <target>${ $.parentName }.amount</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                    </actions>
+                                </rule>
                             </rules>
                         </switcherConfig>
                     </settings>
@@ -294,6 +318,26 @@
                                             <callback>visible</callback>
                                             <params><param name="0" xsi:type="boolean">false</param></params>
                                         </action>
+                                        <action name="5">
+                                            <target>${ $.parentName }.headline</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="6">
+                                            <target>${ $.parentName }.body</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="7">
+                                            <target>${ $.parentName }.cta_label</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.cta_url</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="1">
@@ -324,6 +368,26 @@
                                             <callback>visible</callback>
                                             <params><param name="0" xsi:type="boolean">false</param></params>
                                         </action>
+                                        <action name="5">
+                                            <target>${ $.parentName }.headline</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="6">
+                                            <target>${ $.parentName }.body</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="7">
+                                            <target>${ $.parentName }.cta_label</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.cta_url</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="2">
@@ -351,6 +415,76 @@
                                         </action>
                                         <action name="4">
                                             <target>${ $.parentName }.message</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">true</param></params>
+                                        </action>
+                                        <action name="5">
+                                            <target>${ $.parentName }.headline</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="6">
+                                            <target>${ $.parentName }.body</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="7">
+                                            <target>${ $.parentName }.cta_label</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.cta_url</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                    </actions>
+                                </rule>
+                                <rule name="3">
+                                    <value>popup</value>
+                                    <actions>
+                                        <action name="0">
+                                            <target>${ $.parentName }.tag</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="1">
+                                            <target>${ $.parentName }.rule_id</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="2">
+                                            <target>${ $.parentName }.prefix</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="3">
+                                            <target>${ $.parentName }.template</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="4">
+                                            <target>${ $.parentName }.message</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="5">
+                                            <target>${ $.parentName }.headline</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">true</param></params>
+                                        </action>
+                                        <action name="6">
+                                            <target>${ $.parentName }.body</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">true</param></params>
+                                        </action>
+                                        <action name="7">
+                                            <target>${ $.parentName }.cta_label</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">true</param></params>
+                                        </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.cta_url</target>
                                             <callback>visible</callback>
                                             <params><param name="0" xsi:type="boolean">true</param></params>
                                         </action>
@@ -413,6 +547,34 @@
                     <settings>
                         <dataType>text</dataType>
                         <label translate="true">Message</label>
+                        <visible>false</visible>
+                    </settings>
+                </field>
+                <field name="headline" formElement="input" sortOrder="21">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Popup headline</label>
+                        <visible>false</visible>
+                    </settings>
+                </field>
+                <field name="body" formElement="textarea" sortOrder="22">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Popup body</label>
+                        <visible>false</visible>
+                    </settings>
+                </field>
+                <field name="cta_label" formElement="input" sortOrder="23">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Call-to-action button label</label>
+                        <visible>false</visible>
+                    </settings>
+                </field>
+                <field name="cta_url" formElement="input" sortOrder="24">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Call-to-action button URL</label>
                         <visible>false</visible>
                     </settings>
                 </field>

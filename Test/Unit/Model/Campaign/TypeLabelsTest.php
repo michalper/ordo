@@ -27,4 +27,14 @@ class TypeLabelsTest extends TestCase
     {
         self::assertSame('Push Notification', (new TypeLabels())->actionLabel('push_notification'));
     }
+
+    public function testConditionLabelUsesVisitorTagMapping(): void
+    {
+        self::assertSame('Visitor Has Tag (anonymous)', (new TypeLabels())->conditionLabel('visitor_tag'));
+    }
+
+    public function testActionLabelUsesPopupMapping(): void
+    {
+        self::assertSame('Show Popup', (new TypeLabels())->actionLabel('popup'));
+    }
 }

@@ -18,7 +18,7 @@ use Ordo\Automation\Model\VisitorEventLogger;
  * Public, unauthenticated endpoint the frontend JS tracker (view/frontend/web/js/tracker.js)
  * posts to. No CSRF token — this is meant to be callable by anonymous visitors who have no
  * session/form key yet, which is exactly the same trust model as any third-party "pixel"
- * tracking endpoint (SalesManago/iPresso's own JS SDKs work the same way).
+ * tracking endpoint.
  */
 class Event extends Action implements HttpPostActionInterface, CsrfAwareActionInterface
 {

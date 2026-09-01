@@ -39,6 +39,9 @@ class Config extends AbstractHelper
     private const XML_PATH_TRACKING_RETENTION_DAYS = 'ordo_automation/tracking/retention_days';
     private const XML_PATH_TRACKING_VIEW_THRESHOLD = 'ordo_automation/tracking/view_threshold';
 
+    private const XML_PATH_POPUP_ENABLED = 'ordo_automation/tracking/popup_enabled';
+    private const XML_PATH_POPUP_POLL_INTERVAL_SECONDS = 'ordo_automation/tracking/popup_poll_interval_seconds';
+
     private const XML_PATH_FREE_GIFT_ENABLED = 'ordo_automation/free_gift/enabled';
 
     public function __construct(Context $context)
@@ -204,6 +207,20 @@ class Config extends AbstractHelper
     public function getTrackingViewThreshold(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_TRACKING_VIEW_THRESHOLD, 3, $storeId);
+    }
+
+    public function isPopupEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_POPUP_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getPopupPollIntervalSeconds(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_POPUP_POLL_INTERVAL_SECONDS, 15, $storeId);
     }
 
     public function isFreeGiftEnabled(?int $storeId = null): bool

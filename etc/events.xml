@@ -11,6 +11,9 @@
     <event name="ordo_customer_tag_added">
         <observer name="ordo_automation_dispatch_tag_added_campaigns" instance="Ordo\Automation\Observer\DispatchTagAddedCampaigns"/>
     </event>
+    <event name="ordo_visitor_tag_added">
+        <observer name="ordo_automation_dispatch_visitor_tag_added_campaigns" instance="Ordo\Automation\Observer\DispatchVisitorTagAddedCampaigns"/>
+    </event>
     <event name="customer_login">
         <observer name="ordo_automation_stitch_visitor_identity" instance="Ordo\Automation\Observer\StitchVisitorIdentity"/>
     </event>

@@ -253,6 +253,45 @@
         </index>
     </table>
 
+    <table name="ordo_visitor_tag" resource="default" engine="innodb" comment="Behavioral tags for anonymous, never-logged-in visitors — the same segmentation primitive as ordo_customer_tag, keyed by visitor_id instead of customer_id since an anonymous visitor has no customer row to attach to yet">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="visitor_id" nullable="false" length="64" comment="Anonymous first-party cookie value, matches ordo_visitor_event.visitor_id"/>
+        <column xsi:type="varchar" name="tag" nullable="false" length="64" comment="Tag, e.g. viewed_category_view_15"/>
+        <column xsi:type="timestamp" name="added_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Added At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="ORDO_VISITOR_TAG_VISITOR_ID_TAG">
+            <column name="visitor_id"/>
+            <column name="tag"/>
+        </constraint>
+        <index referenceId="ORDO_VISITOR_TAG_TAG" indexType="btree">
+            <column name="tag"/>
+        </index>
+    </table>
+
+    <table name="ordo_pending_popup" resource="default" engine="innodb" comment="A popup/banner a campaign popup action queued for a visitor or customer to see on their next poll — claimed (delivered_at set) the moment Controller\Track\Popup hands it out, the same claim-before-use pattern as ordo_campaign_scheduled_action, so a slow/duplicate poll can never deliver the same popup twice.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="true" comment="Set when the campaign context that produced this popup had a logged-in customer"/>
+        <column xsi:type="varchar" name="visitor_id" nullable="true" length="64" comment="Set when the campaign context that produced this popup had an anonymous visitor_id — at least one of customer_id/visitor_id is always set"/>
+        <column xsi:type="varchar" name="headline" nullable="false" length="255" comment="Popup headline"/>
+        <column xsi:type="text" name="body" nullable="true" comment="Popup body text"/>
+        <column xsi:type="varchar" name="cta_label" nullable="true" length="128" comment="Call-to-action button label"/>
+        <column xsi:type="varchar" name="cta_url" nullable="true" length="255" comment="Call-to-action button target URL"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="datetime" name="delivered_at" nullable="true" comment="Set the moment Controller\Track\Popup claims and hands this row out — not before, or a slow concurrent poll could double-deliver"/>
+        <column xsi:type="datetime" name="expires_at" nullable="true" comment="If never polled by this time, PrunePendingPopups deletes it as stale rather than delivering something no longer relevant"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="ORDO_PENDING_POPUP_CUSTOMER_ID" indexType="btree">
+            <column name="customer_id"/>
+        </index>
+        <index referenceId="ORDO_PENDING_POPUP_VISITOR_ID" indexType="btree">
+            <column name="visitor_id"/>
+        </index>
+    </table>
+
     <table name="ordo_free_gift_offer" resource="default" engine="innodb" comment="Free-gift-above-threshold offer header">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="name" nullable="false" length="255" comment="Admin-facing name"/>

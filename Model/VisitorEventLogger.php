@@ -7,10 +7,12 @@ use Magento\Framework\App\ResourceConnection;
 
 /**
  * Writes one row to the short-lived ordo_visitor_event table (see PruneVisitorEvents for why
- * it's short-lived) and, if the event already has a customer_id (visitor was already
- * identified — logged in, or stitched by StitchVisitorIdentity earlier in the session),
- * immediately runs aggregation so a threshold crossed mid-session tags the customer right
- * away instead of waiting for a batch job.
+ * it's short-lived) and immediately runs aggregation, so a threshold crossed mid-session tags
+ * right away instead of waiting for a batch job — against the customer if the event already has
+ * a customer_id (visitor was already identified — logged in, or stitched by
+ * StitchVisitorIdentity earlier in the session), against the anonymous visitor_id otherwise.
+ * Real-time behavior tracking for a visitor who never logs in depends on that second branch —
+ * without it, anonymous behavior only ever got tagged retroactively at login.
  */
 class VisitorEventLogger
 {
@@ -33,6 +35,8 @@ class VisitorEventLogger
 
         if ($customerId !== null) {
             $this->visitorAggregator->aggregateForCustomer($customerId);
+        } else {
+            $this->visitorAggregator->aggregateForVisitor($visitorId);
         }
     }
 

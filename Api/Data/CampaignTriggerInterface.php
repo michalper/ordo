@@ -19,6 +19,7 @@ interface CampaignTriggerInterface
     public const TRIGGER_CUSTOMER_REGISTERED = 'customer_registered';
     public const TRIGGER_TAG_ADDED = 'tag_added';
     public const TRIGGER_CART_ABANDONED = 'cart_abandoned';
+    public const TRIGGER_VISITOR_TAG_ADDED = 'visitor_tag_added';
 
     /**
      * @return int|null

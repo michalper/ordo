@@ -17,12 +17,14 @@ class TypeLabels
     private const CONDITION_LABELS = [
         'tag' => 'Has Tag',
         'order_total_gte' => 'Order Total ≥',
+        'visitor_tag' => 'Visitor Has Tag (anonymous)',
     ];
 
     private const ACTION_LABELS = [
         'add_tag' => 'Add Tag',
         'send_email' => 'Send Email',
         'generate_coupon' => 'Generate Coupon',
+        'popup' => 'Show Popup',
     ];
 
     public function conditionLabel(string $type): string

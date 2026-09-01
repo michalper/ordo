@@ -2,7 +2,7 @@
 
 *[Read in English](README.md)*
 
-Marketing automation działający *wewnątrz* **czystego Magento Open Source** — bez licencji Adobe Commerce B2B, bez zewnętrznej subskrypcji MA (Klaviyo, iPresso, SalesManago...). Każdy trigger liczony jest z danych, które Magento już ma (zamówienia, koszyki, klienci), albo z niewielkiego własnego modelu danych dołożonego obok.
+Marketing automation działający *wewnątrz* **czystego Magento Open Source** — bez licencji Adobe Commerce B2B, bez zewnętrznej subskrypcji MA. Każdy trigger liczony jest z danych, które Magento już ma (zamówienia, koszyki, klienci), albo z niewielkiego własnego modelu danych dołożonego obok.
 
 Celem tego modułu jest bycie realną alternatywą dla ogólnej platformy MA na sklepie Magento — nie garstką dodatków "w stylu B2B" — obejmującą zarówno klasyczną automatyzację cyklu życia B2C, jak i triggery B2B, których strukturalnie nie widzi większość zewnętrznych narzędzi MA.
 

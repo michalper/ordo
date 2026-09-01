@@ -37,5 +37,8 @@
         <job name="ordo_automation_run_scheduled_campaign_actions" instance="Ordo\Automation\Cron\RunScheduledCampaignActions" method="execute">
             <schedule>*/5 * * * *</schedule>
         </job>
+        <job name="ordo_automation_prune_pending_popups" instance="Ordo\Automation\Cron\PrunePendingPopups" method="execute">
+            <schedule>30 4 * * *</schedule>
+        </job>
     </group>
 </config>

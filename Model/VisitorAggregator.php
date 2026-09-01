@@ -24,7 +24,8 @@ class VisitorAggregator
     public function __construct(
         private readonly Config $config,
         private readonly ResourceConnection $resourceConnection,
-        private readonly CustomerTagManager $customerTagManager
+        private readonly CustomerTagManager $customerTagManager,
+        private readonly VisitorTagManager $visitorTagManager
     ) {
     }
 
@@ -50,6 +51,39 @@ class VisitorAggregator
         foreach ($rows as $row) {
             $tag = sprintf('viewed_%s_%s', $row['event_type'], $row['event_key']);
             $this->customerTagManager->addTag($customerId, $tag);
+        }
+    }
+
+    /**
+     * Same aggregation as aggregateForCustomer(), for a visitor who has never logged in —
+     * without this, an anonymous visitor's behavior only ever gets tagged retroactively at
+     * login (StitchVisitorIdentity), which defeats "real-time" for anyone who converts by
+     * registering/checking out as guest without ever having logged in mid-session, and gives
+     * no signal at all for a visitor who never converts.
+     */
+    public function aggregateForVisitor(string $visitorId): void
+    {
+        if (!$this->config->isTrackingEnabled()) {
+            return;
+        }
+
+        $threshold = $this->config->getTrackingViewThreshold();
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('ordo_visitor_event');
+
+        $rows = $connection->fetchAll(
+            $connection->select()
+                ->from($table, ['event_type', 'event_key', 'occurrences' => new \Zend_Db_Expr('COUNT(*)')])
+                ->where('visitor_id = ?', $visitorId)
+                ->where('customer_id IS NULL')
+                ->where('event_key IS NOT NULL')
+                ->group(['event_type', 'event_key'])
+                ->having('occurrences >= ?', $threshold)
+        );
+
+        foreach ($rows as $row) {
+            $tag = sprintf('viewed_%s_%s', $row['event_type'], $row['event_key']);
+            $this->visitorTagManager->addTag($visitorId, $tag);
         }
     }
 }

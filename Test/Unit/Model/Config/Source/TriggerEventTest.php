@@ -19,6 +19,7 @@ class TriggerEventTest extends TestCase
                 CampaignTriggerInterface::TRIGGER_CUSTOMER_REGISTERED,
                 CampaignTriggerInterface::TRIGGER_TAG_ADDED,
                 CampaignTriggerInterface::TRIGGER_CART_ABANDONED,
+                CampaignTriggerInterface::TRIGGER_VISITOR_TAG_ADDED,
             ],
             $values
         );

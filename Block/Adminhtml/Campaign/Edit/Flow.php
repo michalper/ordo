@@ -143,6 +143,7 @@ class Flow extends Template
             'condition' => [
                 'tag' => [['name' => 'tag', 'label' => (string) __('Tag')]],
                 'order_total_gte' => [['name' => 'amount', 'label' => (string) __('Minimum order total')]],
+                'visitor_tag' => [['name' => 'tag', 'label' => (string) __('Tag')]],
             ],
             'action' => [
                 'add_tag' => [['name' => 'tag', 'label' => (string) __('Tag')]],
@@ -153,6 +154,12 @@ class Flow extends Template
                 'send_email' => [
                     ['name' => 'template', 'label' => (string) __('Email template identifier')],
                     ['name' => 'message', 'label' => (string) __('Message')],
+                ],
+                'popup' => [
+                    ['name' => 'headline', 'label' => (string) __('Popup headline')],
+                    ['name' => 'body', 'label' => (string) __('Popup body')],
+                    ['name' => 'cta_label', 'label' => (string) __('CTA button label')],
+                    ['name' => 'cta_url', 'label' => (string) __('CTA button URL')],
                 ],
             ],
         ];

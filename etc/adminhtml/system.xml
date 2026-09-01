@@ -146,6 +146,20 @@
                     <validate>validate-digits validate-greater-than-zero</validate>
                     <depends><field id="enabled">1</field></depends>
                 </field>
+                <field id="popup_enabled" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable on-site popups</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Lets a campaign's "Show Popup" action queue a banner for the visitor/customer's browser to pick up on its next poll (see tracker.js). Requires tracking to be enabled above.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="popup_poll_interval_seconds" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Popup poll interval (seconds)</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends>
+                        <field id="enabled">1</field>
+                        <field id="popup_enabled">1</field>
+                    </depends>
+                </field>
             </group>
 
             <group id="free_gift" translate="label" type="text" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">

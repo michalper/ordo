@@ -30,7 +30,7 @@ class VisitorEventLoggerTest extends TestCase
         $logger->log('v1', 'view_category', '15', 42);
     }
 
-    public function testLogSkipsAggregationWhenCustomerUnknown(): void
+    public function testLogAggregatesForVisitorWhenCustomerUnknown(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
         $resourceConnection = $this->createMock(ResourceConnection::class);
@@ -39,6 +39,7 @@ class VisitorEventLoggerTest extends TestCase
 
         $aggregator = $this->createMock(VisitorAggregator::class);
         $aggregator->expects(self::never())->method('aggregateForCustomer');
+        $aggregator->expects(self::once())->method('aggregateForVisitor')->with('v1');
 
         $logger = new VisitorEventLogger($resourceConnection, $aggregator);
         $logger->log('v1', 'view_category', '15', null);
