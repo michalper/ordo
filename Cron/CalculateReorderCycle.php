@@ -74,7 +74,10 @@ class CalculateReorderCycle
                 continue;
             }
 
-            $lastOrderDate = end($dates);
+            // end() only returns false on an empty array, which $dates never is here (the
+            // count() guard above and array_slice() both preserve that) — PHPStan can't verify
+            // that itself, so the cast documents it instead of reintroducing a dead check.
+            $lastOrderDate = (string) end($dates);
             $nextExpectedDate = date('Y-m-d', (int) strtotime($lastOrderDate . ' + ' . $avgIntervalDays . ' days'));
 
             $this->upsertCycle((int) $customerId, $sku, $avgIntervalDays, $lastOrderDate, $nextExpectedDate, count($dates));
