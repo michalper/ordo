@@ -25,12 +25,13 @@ on:
   workflow_dispatch:
     inputs:
       tests:
-        description: "Space-separated MFTF test names to run (default: everything except the slow full end-to-end scenario)"
+        description: "Space-separated MFTF test names to run (default: the full suite)"
         required: false
         default: >-
           AdminCreateCampaignTest AdminCreateSegmentTest AdminCreateMultiTriggerCampaignTest
           AdminCreateCampaignWithConditionsAndActionsTest AdminViewDashboardTest
           AdminViewReorderCyclesGridTest StorefrontTrackerSetsVisitorCookieTest
+          AdminCampaignScenarioEndToEndTest
 
 jobs:
   mftf:
