@@ -1,0 +1,42 @@
+name: PHP Coverage Report
+
+# Same "fast lane" scope and same repo.magento.com auth requirement as ci.yml — see the comment
+# at the top of that file. This workflow additionally needs a CODECOV_TOKEN repository secret
+# (Settings -> Secrets and variables -> Actions -> New repository secret), pasted from your
+# Codecov project's setup page. Never commit the token value itself anywhere in this repo — it
+# only ever belongs in that GitHub secret.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          coverage: xdebug
+
+      - name: Configure Composer auth for repo.magento.com
+        run: |
+          composer config --global http-basic.repo.magento.com "${{ secrets.MAGENTO_COMPOSER_USERNAME }}" "${{ secrets.MAGENTO_COMPOSER_PASSWORD }}"
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run PHPUnit with coverage
+        run: vendor/bin/phpunit --coverage-clover clover.xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./clover.xml

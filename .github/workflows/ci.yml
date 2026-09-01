@@ -1,0 +1,69 @@
+name: CI
+
+# Fast lane only: unit tests (Test/Unit) and static analysis. Neither needs a live Magento
+# install — Test/Unit mocks every Magento dependency, and PHPStan (bitexpert/phpstan-magento)
+# only needs the framework/module *classes* available via Composer, not a running store.
+# Test/Integration, Test/Api, and MFTF are NOT run here: they require a real, installed Magento
+# application (database, env.php, and for MFTF a browser + webserver) — see AGENTS.md for how
+# to run those against the docker-compose environment in magento-ordo-test/. Wiring a full
+# Magento install into CI is a real, separate decision (build time, service containers), not
+# something folded into this workflow — see ROADMAP.md.
+#
+# Requires two repository secrets — MAGENTO_COMPOSER_USERNAME / MAGENTO_COMPOSER_PASSWORD —
+# because magento/framework and magento/module-* are not on public Packagist, only on
+# repo.magento.com. Get a free public/private key pair from a Marketplace account at
+# https://marketplace.magento.com (Home → My Profile → Access Keys), no purchase required for
+# Open Source packages. Add them as Settings → Secrets and variables → Actions → New repository
+# secret. Without them, the "Install dependencies" step below fails with a 401 from
+# repo.magento.com — that's expected until the secrets are set, not a bug in this workflow.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          coverage: none
+
+      - name: Configure Composer auth for repo.magento.com
+        run: |
+          composer config --global http-basic.repo.magento.com "${{ secrets.MAGENTO_COMPOSER_USERNAME }}" "${{ secrets.MAGENTO_COMPOSER_PASSWORD }}"
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run unit tests
+        run: vendor/bin/phpunit
+
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          coverage: none
+
+      - name: Configure Composer auth for repo.magento.com
+        run: |
+          composer config --global http-basic.repo.magento.com "${{ secrets.MAGENTO_COMPOSER_USERNAME }}" "${{ secrets.MAGENTO_COMPOSER_PASSWORD }}"
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --no-progress
