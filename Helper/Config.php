@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Ordo\Automation\Helper;
 
 use Magento\Framework\App\Helper\AbstractHelper;
-use Magento\Framework\App\Helper\Context;
 use Magento\Store\Model\ScopeInterface;
 
 class Config extends AbstractHelper
@@ -44,11 +43,6 @@ class Config extends AbstractHelper
     private const XML_PATH_POPUP_FREQUENCY_CAP_HOURS = 'ordo_automation/tracking/popup_frequency_cap_hours';
 
     private const XML_PATH_FREE_GIFT_ENABLED = 'ordo_automation/free_gift/enabled';
-
-    public function __construct(Context $context)
-    {
-        parent::__construct($context);
-    }
 
     /**
      * Every int-valued setting in this class goes through here instead of `?: $default` —

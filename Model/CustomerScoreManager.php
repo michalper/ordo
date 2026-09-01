@@ -25,7 +25,11 @@ class CustomerScoreManager
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName('ordo_customer_score');
 
+        // ON DUPLICATE KEY UPDATE has no equivalent in Magento's query builder API; parameters
+        // are still bound below, not interpolated, and the table name comes from
+        // getTableName()/quoteIdentifier(), never from user input.
         $connection->query(
+            // phpcs:ignore Magento2.SQL.RawQuery.FoundRawSql
             'INSERT INTO ' . $connection->quoteIdentifier($table) . ' (customer_id, score) VALUES (?, ?) '
             . 'ON DUPLICATE KEY UPDATE score = score + VALUES(score)',
             [$customerId, $points]

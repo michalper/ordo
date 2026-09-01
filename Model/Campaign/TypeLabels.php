@@ -35,15 +35,15 @@ class TypeLabels
 
     public function conditionLabel(string $type): string
     {
-        return self::CONDITION_LABELS[$type] ?? self::humanize($type);
+        return self::CONDITION_LABELS[$type] ?? $this->humanize($type);
     }
 
     public function actionLabel(string $type): string
     {
-        return self::ACTION_LABELS[$type] ?? self::humanize($type);
+        return self::ACTION_LABELS[$type] ?? $this->humanize($type);
     }
 
-    private static function humanize(string $type): string
+    private function humanize(string $type): string
     {
         return ucwords(str_replace('_', ' ', $type));
     }
