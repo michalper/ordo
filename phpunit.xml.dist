@@ -1,8 +1,10 @@
 <?xml version="1.0"?>
 <!--
     Module-local PHPUnit config for Test/Unit ONLY — these tests mock every Magento
-    dependency, so they need nothing more than this module's own composer autoloader (see
-    composer.json's autoload-dev). Test/Integration and Test/Api are deliberately excluded:
+    dependency, so they need nothing more than this module's own composer autoloader plus
+    Magento's own standalone Factory-class generator (Test/Unit/bootstrap.php — createMock()ing
+    an XFactory class needs it to exist as a real class, which Magento normally only generates
+    as part of a full app bootstrap). Test/Integration and Test/Api are deliberately excluded:
     they bootstrap a real, installed Magento application (require_once BP . '/app/bootstrap.php')
     and/or hit a live HTTP instance — see AGENTS.md and Test/Api/README.md for how to run those
     against the docker-compose environment in magento-ordo-test/. This file exists so CI (and
@@ -10,7 +12,7 @@
 -->
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
+         bootstrap="Test/Unit/bootstrap.php"
          colors="true">
     <testsuites>
         <testsuite name="Ordo_Automation Unit Tests">
