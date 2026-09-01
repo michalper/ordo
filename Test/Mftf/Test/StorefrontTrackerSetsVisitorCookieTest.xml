@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="StorefrontTrackerSetsVisitorCookieTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="On-site behavior tracking"/>
+            <title value="Storefront tracker.js issues a real ordo_visitor_id cookie on first visit"/>
+            <description value="The one piece of Phase 5's tracking snippet no unit test can cover — real client-side JS running in a real browser, setting a real first-party cookie. view/frontend/web/js/tracker.js only ever runs when Helper\Config::isTrackingEnabled() is true (Block\Frontend\TrackerViewModel gates the &lt;script&gt; tag itself, see view/frontend/layout/default.xml) — this test assumes tracking is already enabled in the target environment's config (ordo_automation/tracking/enabled), same assumption the popup/RFM features' own manual verification passes made, since flipping that config via MFTF itself would need a config-data entity this module doesn't ship."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+        </annotations>
+
+        <amOnPage url="/" stepKey="goToStorefrontHome"/>
+        <waitForPageLoad stepKey="waitForHomePage"/>
+        <!-- tracker.js issues the cookie synchronously on load, but give it a brief moment in
+             case anything upstream (RequireJS, other page scripts) delays execution. -->
+        <wait time="1" stepKey="waitForCookieToBeSet"/>
+        <seeCookie userInput="ordo_visitor_id" stepKey="seeVisitorCookie"/>
+        <grabCookie userInput="ordo_visitor_id" stepKey="grabVisitorCookieValue"/>
+        <assertNotEmpty stepKey="assertVisitorCookieHasAValue">
+            <actualResult type="variable">grabVisitorCookieValue</actualResult>
+        </assertNotEmpty>
+
+        <!-- Reloading the same page must NOT issue a second, different visitor_id — the whole
+             point of a first-party cookie is that the same browser keeps the same identity
+             across visits. -->
+        <reloadPage stepKey="reloadHomePage"/>
+        <waitForPageLoad stepKey="waitForReload"/>
+        <grabCookie userInput="ordo_visitor_id" stepKey="grabVisitorCookieValueAfterReload"/>
+        <assertEquals stepKey="assertVisitorIdIsStableAcrossReloads">
+            <actualResult type="variable">grabVisitorCookieValueAfterReload</actualResult>
+            <expectedResult type="variable">grabVisitorCookieValue</expectedResult>
+        </assertEquals>
+    </test>
+</tests>
