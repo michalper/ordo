@@ -36,7 +36,7 @@ class AddSalesRepAttributes implements DataPatchInterface
         return [];
     }
 
-    public function apply(): void
+    public function apply(): self
     {
         $this->moduleDataSetup->getConnection()->startSetup();
 
@@ -72,5 +72,7 @@ class AddSalesRepAttributes implements DataPatchInterface
         }
 
         $this->moduleDataSetup->getConnection()->endSetup();
+
+        return $this;
     }
 }

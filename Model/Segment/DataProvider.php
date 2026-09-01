@@ -14,10 +14,7 @@ use Ordo\Automation\Model\ResourceModel\Segment\Condition\CollectionFactory as S
  */
 class DataProvider extends AbstractDataProvider
 {
-    /**
-     * @var array
-     */
-    protected $loadedData;
+    protected ?array $loadedData = null;
 
     public function __construct(
         $name,
@@ -35,7 +32,7 @@ class DataProvider extends AbstractDataProvider
 
     public function getData(): array
     {
-        if (isset($this->loadedData)) {
+        if ($this->loadedData !== null) {
             return $this->loadedData;
         }
 

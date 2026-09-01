@@ -33,7 +33,7 @@ class AddCustomerCreditLimitAttribute implements DataPatchInterface
         return [];
     }
 
-    public function apply(): void
+    public function apply(): self
     {
         $this->moduleDataSetup->getConnection()->startSetup();
 
@@ -63,5 +63,7 @@ class AddCustomerCreditLimitAttribute implements DataPatchInterface
         $attribute->save();
 
         $this->moduleDataSetup->getConnection()->endSetup();
+
+        return $this;
     }
 }

@@ -35,7 +35,7 @@ class AddCustomerSpendLimitAttributes implements DataPatchInterface
         return [];
     }
 
-    public function apply(): void
+    public function apply(): self
     {
         $this->moduleDataSetup->getConnection()->startSetup();
 
@@ -83,5 +83,7 @@ class AddCustomerSpendLimitAttributes implements DataPatchInterface
         $adminEmailAttribute->save();
 
         $this->moduleDataSetup->getConnection()->endSetup();
+
+        return $this;
     }
 }

@@ -32,7 +32,7 @@ class AddPendingApprovalOrderStatus implements DataPatchInterface
         return [];
     }
 
-    public function apply(): void
+    public function apply(): self
     {
         $this->moduleDataSetup->getConnection()->startSetup();
         $connection = $this->moduleDataSetup->getConnection();
@@ -57,5 +57,7 @@ class AddPendingApprovalOrderStatus implements DataPatchInterface
         );
 
         $this->moduleDataSetup->getConnection()->endSetup();
+
+        return $this;
     }
 }

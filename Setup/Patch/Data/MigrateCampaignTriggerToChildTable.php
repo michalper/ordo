@@ -35,14 +35,14 @@ class MigrateCampaignTriggerToChildTable implements DataPatchInterface
         return [];
     }
 
-    public function apply(): void
+    public function apply(): self
     {
         $connection = $this->moduleDataSetup->getConnection();
         $campaignTable = $this->moduleDataSetup->getTable('ordo_campaign');
         $triggerTable = $this->moduleDataSetup->getTable('ordo_campaign_trigger');
 
         if (!$connection->isTableExists($campaignTable) || !$connection->tableColumnExists($campaignTable, 'trigger_event')) {
-            return;
+            return $this;
         }
 
         $rows = $connection->fetchAll(
@@ -69,5 +69,7 @@ class MigrateCampaignTriggerToChildTable implements DataPatchInterface
                 'trigger_event' => $row['trigger_event'],
             ]);
         }
+
+        return $this;
     }
 }
