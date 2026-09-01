@@ -101,7 +101,10 @@ jobs:
 
       - name: Install dependencies
         working-directory: magento
-        run: composer update --no-interaction --no-progress --with-dependencies
+        # Scoped to just the package this workflow itself added (ordo/module-automation) so the
+        # rest of Magento 2.4.9's own committed composer.lock stays pinned/predictable, instead
+        # of a full `composer update` re-resolving every dependency to whatever's newest today.
+        run: composer update ordo/module-automation --no-interaction --no-progress --with-dependencies
 
       - name: Install Magento
         working-directory: magento
@@ -172,13 +175,17 @@ jobs:
 
       - name: Generate MFTF tests
         working-directory: magento
+        env:
+          MFTF_TESTS: ${{ inputs.tests }}
         run: |
           vendor/bin/mftf build:project
-          vendor/bin/mftf generate:tests ${{ inputs.tests }}
+          vendor/bin/mftf generate:tests $MFTF_TESTS
 
       - name: Run MFTF tests
         working-directory: magento
-        run: vendor/bin/mftf run:test ${{ inputs.tests }}
+        env:
+          MFTF_TESTS: ${{ inputs.tests }}
+        run: vendor/bin/mftf run:test $MFTF_TESTS
 
       - name: Upload MFTF results on failure
         if: failure()

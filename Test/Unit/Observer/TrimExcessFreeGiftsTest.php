@@ -20,6 +20,7 @@ use Ordo\Automation\Model\ResourceModel\QuoteGiftItem as QuoteGiftItemResource;
 use Ordo\Automation\Model\ResourceModel\QuoteGiftItem\Collection as GiftItemCollection;
 use Ordo\Automation\Model\ResourceModel\QuoteGiftItem\CollectionFactory as GiftItemCollectionFactory;
 use Ordo\Automation\Observer\TrimExcessFreeGifts;
+use Ordo\Automation\Test\Unit\QuoteTestDouble;
 use PHPUnit\Framework\TestCase;
 
 class TrimExcessFreeGiftsTest extends TestCase
@@ -57,16 +58,23 @@ class TrimExcessFreeGiftsTest extends TestCase
         return $observer;
     }
 
-    /**
-     * getSubtotal() is magic (__call via AbstractModel), not a real declared method on Quote —
-     * createMock() alone can't stub it, needs addMethods().
-     */
+    private function giftItemRow(int $quoteItemId): QuoteGiftItem
+    {
+        $resource = $this->createMock(AbstractDb::class);
+        $resource->method('getIdFieldName')->willReturn('entity_id');
+        $row = new QuoteGiftItem($this->createMock(Context::class), $this->createMock(Registry::class), $resource);
+        $row->setQuoteItemId($quoteItemId);
+        return $row;
+    }
+
     private function mockQuote(): Quote
     {
-        return $this->getMockBuilder(Quote::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['getId', 'removeItem', 'getStoreId'])
-            ->addMethods(['getSubtotal'])
+        // getSubtotal() is magic (__call via AbstractModel) on the real Quote class — PHPUnit 12
+        // removed addMethods(), the only way to stub a magic method, with no replacement.
+        // QuoteTestDouble gives it a real, declared, therefore-mockable-via-onlyMethods()
+        // implementation instead.
+        return $this->getMockBuilder(QuoteTestDouble::class)
+            ->onlyMethods(['getId', 'removeItem', 'getStoreId', 'getSubtotal'])
             ->getMock();
     }
 
@@ -88,10 +96,8 @@ class TrimExcessFreeGiftsTest extends TestCase
         $tierCollection->method('getIterator')->willReturn(new \ArrayIterator([$tier]));
         $this->tierCollectionFactory->method('create')->willReturn($tierCollection);
 
-        $row1 = $this->getMockBuilder(QuoteGiftItem::class)->disableOriginalConstructor()->addMethods(['getQuoteItemId'])->getMock();
-        $row1->method('getQuoteItemId')->willReturn(10);
-        $row2 = $this->getMockBuilder(QuoteGiftItem::class)->disableOriginalConstructor()->addMethods(['getQuoteItemId'])->getMock();
-        $row2->method('getQuoteItemId')->willReturn(11);
+        $row1 = $this->giftItemRow(10);
+        $row2 = $this->giftItemRow(11);
         $rows = [$row1, $row2];
 
         $giftCollection = $this->createMock(GiftItemCollection::class);
@@ -146,8 +152,7 @@ class TrimExcessFreeGiftsTest extends TestCase
             $this->config
         );
 
-        $row = $this->getMockBuilder(QuoteGiftItem::class)->disableOriginalConstructor()->addMethods(['getQuoteItemId'])->getMock();
-        $row->method('getQuoteItemId')->willReturn(10);
+        $row = $this->giftItemRow(10);
 
         $giftCollection = $this->createMock(GiftItemCollection::class);
         $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
@@ -215,8 +220,7 @@ class TrimExcessFreeGiftsTest extends TestCase
         $tierCollection->method('getIterator')->willReturn(new \ArrayIterator([$tier]));
         $this->tierCollectionFactory->method('create')->willReturn($tierCollection);
 
-        $row = $this->getMockBuilder(QuoteGiftItem::class)->disableOriginalConstructor()->addMethods(['getQuoteItemId'])->getMock();
-        $row->method('getQuoteItemId')->willReturn(10);
+        $row = $this->giftItemRow(10);
 
         $giftCollection = $this->createMock(GiftItemCollection::class);
         $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
@@ -243,8 +247,7 @@ class TrimExcessFreeGiftsTest extends TestCase
 
         $this->tierCollectionFactory->expects(self::never())->method('create');
 
-        $row = $this->getMockBuilder(QuoteGiftItem::class)->disableOriginalConstructor()->addMethods(['getQuoteItemId'])->getMock();
-        $row->method('getQuoteItemId')->willReturn(10);
+        $row = $this->giftItemRow(10);
 
         $giftCollection = $this->createMock(GiftItemCollection::class);
         $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);

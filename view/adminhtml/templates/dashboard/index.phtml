@@ -33,8 +33,12 @@ $campaigns = $viewModel->getCampaigns();
         <div class="ordo-trigger-stats">
             <?php foreach ($viewModel->getFixedTriggerEvents() as $triggerEvent): ?>
                 <div class="ordo-trigger-stat-row">
-                    <span class="ordo-trigger-stat-label"><?= $escaper->escapeHtml($viewModel->getTriggerLabel($triggerEvent)) ?></span>
-                    <span class="ordo-trigger-stat-value"><?= $escaper->escapeHtml((string) $viewModel->getCampaignCountForTrigger($triggerEvent)) ?></span>
+                    <span class="ordo-trigger-stat-label"><?=
+                        $escaper->escapeHtml($viewModel->getTriggerLabel($triggerEvent))
+                    ?></span>
+                    <span class="ordo-trigger-stat-value"><?=
+                        $escaper->escapeHtml((string) $viewModel->getCampaignCountForTrigger($triggerEvent))
+                    ?></span>
                 </div>
             <?php endforeach; ?>
         </div>

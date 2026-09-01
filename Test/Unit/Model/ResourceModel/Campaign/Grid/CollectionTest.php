@@ -40,7 +40,7 @@ class CollectionTest extends TestCase
         $select->expects(self::once())->method('joinLeft')->with(
             ['ordo_campaign_trigger' => 'ordo_campaign_trigger'],
             'ordo_campaign_trigger.campaign_id = main_table.entity_id',
-            self::isType('array')
+            self::isArray()
         )->willReturnSelf();
         $select->expects(self::once())->method('group')->with('main_table.entity_id')->willReturnSelf();
 

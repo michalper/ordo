@@ -117,7 +117,7 @@ class PopupTest extends AbstractFrontendActionTestCase
 
         $this->pendingPopupCollectionFactory->method('create')->willReturn($this->makeCollection([$popup]));
         $this->connection->expects(self::once())->method('update')
-            ->with('ordo_pending_popup', self::isType('array'), self::callback(
+            ->with('ordo_pending_popup', self::isArray(), self::callback(
                 fn (array $where) => $where['entity_id = ?'] === 9
             ))
             ->willReturn(1);

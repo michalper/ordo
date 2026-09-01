@@ -19,7 +19,7 @@ class PruneVisitorEventsTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->expects(self::once())->method('delete')
-            ->with('ordo_visitor_event', self::isType('array'))
+            ->with('ordo_visitor_event', self::isArray())
             ->willReturn(5);
 
         $resourceConnection = $this->createMock(ResourceConnection::class);

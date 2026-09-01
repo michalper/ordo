@@ -6,6 +6,7 @@ namespace Ordo\Automation\Test\Unit\Model;
 use Magento\Framework\Model\AbstractModel;
 use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\Offer;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -19,9 +20,7 @@ use PHPUnit\Framework\TestCase;
  */
 class EntityModelSignatureCompatibilityTest extends TestCase
 {
-    /**
-     * @dataProvider modelClassProvider
-     */
+    #[DataProvider('modelClassProvider')]
     public function testSetEntityIdParameterHasNoStricterTypeThanParent(string $modelClass): void
     {
         $parentParam = (new \ReflectionMethod(AbstractModel::class, 'setEntityId'))->getParameters()[0];

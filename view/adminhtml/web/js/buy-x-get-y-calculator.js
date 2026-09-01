@@ -71,8 +71,8 @@ define([
          * @return {String}
          */
         buildPreview: function () {
-            const x = parseInt(this.discountStep(), 10),
-                y = parseInt(this.discountAmount(), 10);
+            const x = Number.parseInt(this.discountStep(), 10),
+                y = Number.parseInt(this.discountAmount(), 10);
             let total;
 
             if (!x || x <= 0 || isNaN(y) || y < 0) {

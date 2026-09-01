@@ -15,7 +15,7 @@ class PrunePendingPopupsTest extends TestCase
     {
         $connection = $this->createMock(AdapterInterface::class);
         $connection->expects(self::exactly(2))->method('delete')
-            ->with('ordo_pending_popup', self::isType('array'))
+            ->with('ordo_pending_popup', self::isArray())
             ->willReturnOnConsecutiveCalls(3, 2);
 
         $resourceConnection = $this->createMock(ResourceConnection::class);

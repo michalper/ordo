@@ -11,7 +11,6 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Model\Quote;
-use Magento\Quote\Model\Quote\Item;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\FreeGiftEligibility;
 use Ordo\Automation\Model\FreeGiftEligibilityFactory;
@@ -31,6 +30,9 @@ use Ordo\Automation\Model\ResourceModel\FreeGiftOfferTier\CollectionFactory as T
 use Ordo\Automation\Model\ResourceModel\QuoteGiftItem as QuoteGiftItemResource;
 use Ordo\Automation\Model\ResourceModel\QuoteGiftItem\Collection as GiftItemCollection;
 use Ordo\Automation\Model\ResourceModel\QuoteGiftItem\CollectionFactory as GiftItemCollectionFactory;
+use Ordo\Automation\Test\Unit\CatalogProductTestDouble;
+use Ordo\Automation\Test\Unit\QuoteItemTestDouble;
+use Ordo\Automation\Test\Unit\QuoteTestDouble;
 class FreeGiftManagementTest extends AbstractModelTestCase
 {
     private CartRepositoryInterface $cartRepository;
@@ -142,15 +144,16 @@ class FreeGiftManagementTest extends AbstractModelTestCase
     private function quote(float $subtotal, int $id = 42, int $customerId = 0, int $storeId = 1): Quote
     {
         // getSubtotal()/getCustomerId() are magic (__call via AbstractModel), not real declared
-        // methods on Quote — createMock() alone can't stub them, needs addMethods().
-        $quote = $this->getMockBuilder(Quote::class)
-            ->disableOriginalConstructor()
+        // methods on Quote — PHPUnit 12 removed addMethods(), the only way to stub those, with
+        // no replacement (a mock's own generated __call() shadows Quote's, so stubbing getData()
+        // doesn't route through it either). QuoteTestDouble gives them a real, declared,
+        // therefore-mockable implementation instead.
+        $quote = $this->getMockBuilder(QuoteTestDouble::class)
             ->onlyMethods(['getId', 'getStoreId', 'collectTotals', 'addProduct', 'removeItem'])
-            ->addMethods(['getSubtotal', 'getCustomerId'])
             ->getMock();
         $quote->method('getId')->willReturn($id);
-        $quote->method('getSubtotal')->willReturn($subtotal);
-        $quote->method('getCustomerId')->willReturn($customerId);
+        $quote->setTestSubtotal($subtotal);
+        $quote->setTestCustomerId($customerId);
         $quote->method('getStoreId')->willReturn($storeId);
         return $quote;
     }
@@ -276,37 +279,33 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         $product = $this->createMock(Product::class);
         $this->productRepository->method('get')->with('SKU-A')->willReturn($product);
 
-        $item = $this->getMockBuilder(Item::class)
-            ->disableOriginalConstructor()
+        // setOriginalCustomPrice()/setIsSuperMode() are magic (__call via AbstractModel), not
+        // real declared methods — PHPUnit 12 removed addMethods(), the only way to stub those,
+        // with no replacement. The TestDoubles give them a real, declared implementation and
+        // state is asserted afterward instead of via expects()->with().
+        $item = $this->getMockBuilder(QuoteItemTestDouble::class)
             ->onlyMethods(['setCustomPrice', 'getId', 'getProduct'])
-            ->addMethods(['setOriginalCustomPrice'])
             ->getMock();
         $item->expects(self::once())->method('setCustomPrice')->with(0.0)->willReturnSelf();
-        $item->expects(self::once())->method('setOriginalCustomPrice')->with(0.0)->willReturnSelf();
         $item->method('getId')->willReturn(101);
-        $itemProduct = $this->getMockBuilder(Product::class)
-            ->disableOriginalConstructor()
-            ->addMethods(['setIsSuperMode'])
-            ->getMock();
-        $itemProduct->expects(self::once())->method('setIsSuperMode')->with(true);
+        $itemProduct = new CatalogProductTestDouble();
         $item->method('getProduct')->willReturn($itemProduct);
 
         $quote->expects(self::once())->method('addProduct')->with($product, 1)->willReturn($item);
 
-        $giftItem = $this->getMockBuilder(QuoteGiftItem::class)
-            ->disableOriginalConstructor()
-            ->addMethods(['setQuoteId', 'setQuoteItemId', 'setOfferId', 'setSku'])
-            ->getMock();
-        $giftItem->expects(self::once())->method('setQuoteId')->with(42)->willReturnSelf();
-        $giftItem->expects(self::once())->method('setQuoteItemId')->with(101)->willReturnSelf();
-        $giftItem->expects(self::once())->method('setOfferId')->with(1)->willReturnSelf();
-        $giftItem->expects(self::once())->method('setSku')->with('SKU-A')->willReturnSelf();
+        $giftItem = new QuoteGiftItem($this->makeModelContext(), $this->makeRegistry(), $this->makeModelResource());
         $this->giftItemFactory->method('create')->willReturn($giftItem);
         $this->giftItemResource->expects(self::once())->method('save')->with($giftItem);
 
         $eligibility = $this->management->selectGifts(7, $this->selection(['SKU-A']));
 
         self::assertSame(1, $eligibility->getEarnedSlots());
+        self::assertSame(0.0, $item->getTestOriginalCustomPrice());
+        self::assertTrue($itemProduct->getTestIsSuperMode());
+        self::assertSame(42, $giftItem->getQuoteId());
+        self::assertSame(101, $giftItem->getQuoteItemId());
+        self::assertSame(1, $giftItem->getOfferId());
+        self::assertSame('SKU-A', $giftItem->getSku());
     }
 
     public function testGetEligibilityReturnsZeroWhenNoOffersAreEnabled(): void
@@ -345,11 +344,8 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         $this->stubOffersAndTiers([1], [$this->tier(1, 100.0, 1)]);
         $this->stubProducts([$this->product(1, 'SKU-A')]);
 
-        $staleRow = $this->getMockBuilder(QuoteGiftItem::class)
-            ->disableOriginalConstructor()
-            ->addMethods(['getQuoteItemId'])
-            ->getMock();
-        $staleRow->method('getQuoteItemId')->willReturn(999);
+        $staleRow = new QuoteGiftItem($this->makeModelContext(), $this->makeRegistry(), $this->makeModelResource());
+        $staleRow->setQuoteItemId(999);
         $this->stubGiftItems([$staleRow]);
 
         $quote = $this->quote(150.0);
@@ -362,29 +358,16 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         $product = $this->createMock(Product::class);
         $this->productRepository->method('get')->with('SKU-A')->willReturn($product);
 
-        $item = $this->getMockBuilder(Item::class)
-            ->disableOriginalConstructor()
+        $item = $this->getMockBuilder(QuoteItemTestDouble::class)
             ->onlyMethods(['setCustomPrice', 'getId', 'getProduct'])
-            ->addMethods(['setOriginalCustomPrice'])
             ->getMock();
         $item->method('setCustomPrice')->willReturnSelf();
-        $item->method('setOriginalCustomPrice')->willReturnSelf();
         $item->method('getId')->willReturn(101);
-        $itemProduct = $this->getMockBuilder(Product::class)
-            ->disableOriginalConstructor()
-            ->addMethods(['setIsSuperMode'])
-            ->getMock();
+        $itemProduct = new CatalogProductTestDouble();
         $item->method('getProduct')->willReturn($itemProduct);
         $quote->method('addProduct')->willReturn($item);
 
-        $newGiftItem = $this->getMockBuilder(QuoteGiftItem::class)
-            ->disableOriginalConstructor()
-            ->addMethods(['setQuoteId', 'setQuoteItemId', 'setOfferId', 'setSku'])
-            ->getMock();
-        $newGiftItem->method('setQuoteId')->willReturnSelf();
-        $newGiftItem->method('setQuoteItemId')->willReturnSelf();
-        $newGiftItem->method('setOfferId')->willReturnSelf();
-        $newGiftItem->method('setSku')->willReturnSelf();
+        $newGiftItem = new QuoteGiftItem($this->makeModelContext(), $this->makeRegistry(), $this->makeModelResource());
         $this->giftItemFactory->method('create')->willReturn($newGiftItem);
 
         $this->management->selectGifts(7, $this->selection(['SKU-A']));

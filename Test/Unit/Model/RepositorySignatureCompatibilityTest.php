@@ -7,6 +7,7 @@ use Ordo\Automation\Api\CampaignRepositoryInterface;
 use Ordo\Automation\Api\OfferRepositoryInterface;
 use Ordo\Automation\Model\CampaignRepository;
 use Ordo\Automation\Model\OfferRepository;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -19,9 +20,7 @@ use PHPUnit\Framework\TestCase;
  */
 class RepositorySignatureCompatibilityTest extends TestCase
 {
-    /**
-     * @dataProvider repositoryProvider
-     */
+    #[DataProvider('repositoryProvider')]
     public function testImplementationReturnTypesMatchInterface(string $interface, string $implementation): void
     {
         foreach ((new \ReflectionClass($interface))->getMethods() as $interfaceMethod) {
