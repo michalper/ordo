@@ -66,6 +66,8 @@ Every action used to end in an email, tag, or coupon — nothing ever rendered b
 - Deliberately built on MySQL + polling rather than a push-based transport (Redis pub/sub, websockets) — the poll interval, not storage speed, is what bounds how "live" this feels, and a hard dependency on infrastructure not every Magento install has (Redis for application data, not just cache/session) was judged not worth it for this. Worth revisiting only if a genuine sub-second push requirement shows up later.
 - `Cron\PrunePendingPopups` deletes delivered rows after a grace window and undelivered-but-expired rows, same enforcement role as `PruneVisitorEvents`.
 
+**Verified, not just unit-tested with mocks.** `Test/Integration/CampaignVisitorPopupScenarioTest.php` proves the whole anonymous-visitor path against a real database: real `ordo_visitor_event` rows aggregating into a real `ordo_visitor_tag` without ever logging in, a real `visitor_tag_added` dispatch through a real `visitor_tag` condition into a real `ordo_pending_popup` row, and — since a mocked SQL builder can't prove this — a real conditional `UPDATE ... WHERE delivered_at IS NULL` against the real table confirming a second claim attempt on the same row affects zero rows. 480 total tests (464 unit + 16 integration) passing.
+
 ## Phase 7 — dispatch performance at scale
 
 An audit found the campaign engine worked correctly but would not survive real traffic:
