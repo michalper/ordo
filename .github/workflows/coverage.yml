@@ -50,7 +50,11 @@ jobs:
         run: vendor/bin/phpunit --coverage-clover clover.xml
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@cb6530fbecd68d5f1ee7a3dcd113450ea8d5d6d4 # v5.1.2
+        # Bumped from v5.1.2 after a real CI failure: Codecov's own CLI-signing key rotated and
+        # the old action's embedded wrapper couldn't verify it ("gpg: Can't check signature: No
+        # public key") — a Codecov-side issue, not this repo's config; v7 ships an updated
+        # wrapper that trusts the current key.
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./clover.xml
