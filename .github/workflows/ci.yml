@@ -16,22 +16,40 @@ name: CI
 # Open Source packages. Add them as Settings → Secrets and variables → Actions → New repository
 # secret. Without them, the "Install dependencies" step below fails with a 401 from
 # repo.magento.com — that's expected until the secrets are set, not a bug in this workflow.
+#
+# Two PR trigger paths, deliberately kept separate rather than one blanket switch:
+# - pull_request: the normal, safe path for anyone's PR — GitHub withholds Actions secrets from
+#   these runs by design (this is what makes it safe to run untrusted PR code at all).
+# - pull_request_target: runs in main's context WITH secrets, but every job below is gated to
+#   only actually execute when github.actor is dependabot[bot] on this event. Dependabot's own
+#   PRs get zero secrets under plain pull_request (a hard GitHub restriction, no per-repo
+#   opt-out) even though the bump itself is low-risk and worth actually verifying — this trades
+#   a real security surface (a compromised dependency version *could* run code with these
+#   secrets during composer install) for that verification, scoped as tightly as possible to
+#   just Dependabot rather than every external contributor's PR.
 
 on:
   push:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  pull_request_target:
+    branches: [main, master]
 
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]' ||
+      github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]'
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: "8.3"
           coverage: none
@@ -70,12 +88,17 @@ jobs:
 
   static-analysis:
     runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]' ||
+      github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]'
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: "8.3"
           coverage: none
@@ -99,12 +122,17 @@ jobs:
 
   coding-standard:
     runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]' ||
+      github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]'
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: "8.3"
           coverage: none

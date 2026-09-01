@@ -391,14 +391,14 @@ the free-gift and credit-limit-API code added since hasn't had a fresh PHPStan p
 **i18n — `en_US`/`pl_PL` only**, more locales added on actual demand, not speculatively.
 
 
-Flagged for follow-up, not yet wired in:
+**[Flags](https://docs.codecov.com/docs/flags) and [Components](https://docs.codecov.com/docs/components) — done**
+(see `codecov.yml`'s `flag_management`/`component_management`): a single `unittests` flag today
+(MFTF/API tests don't upload coverage yet, so there's only one real flag to define), and 7
+components grouped by functional area (campaign engine, free gift, segments, B2B triggers, B2C
+lifecycle, tracking, admin UI) filtered from that same upload.
 
-- **[Flags](https://docs.codecov.com/docs/flags)** — split coverage reporting by test layer (unit
-  vs. MFTF vs. API functional) instead of one blended number. Worth doing once MFTF/API tests
-  themselves upload coverage, not just unit tests.
-- **[Components](https://docs.codecov.com/docs/components)** — group coverage by functional area
-  (Campaign engine, Free gift, Credit limit, Segment, Tracking) instead of only by raw file path.
-  Straightforward to configure once the flag split above exists to build on.
+Still flagged for follow-up, not yet wired in:
+
 - **[Test Analytics / failed test reporting](https://docs.codecov.com/docs/test-analytics#failed-test-reporting)**
   — upload PHPUnit's JUnit XML output (`--log-junit`) alongside the coverage report so Codecov can
   track flaky/failing tests over time, not just line coverage.

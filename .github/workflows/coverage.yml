@@ -11,23 +11,34 @@ name: PHP Coverage Report
 #   SonarCloud (Administration -> Analysis Method) — coverage import only works in that mode,
 #   not with the GitHub App's automatic analysis.
 
+# Two PR trigger paths — see the matching comment in ci.yml for the full reasoning: pull_request
+# (safe, no secrets, the default for anyone's PR) plus pull_request_target (secrets available,
+# but gated below to only actually run for github.actor == dependabot[bot]) so Dependabot's own
+# PRs can be verified without exposing every external contributor's PR to these secrets.
+
 on:
   push:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  pull_request_target:
+    branches: [main, master]
 
 jobs:
   coverage:
     runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]' ||
+      github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]'
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: "8.3"
           coverage: xdebug
@@ -47,7 +58,25 @@ jobs:
         run: composer install --no-interaction --no-progress --prefer-dist
 
       - name: Run PHPUnit with coverage
-        run: vendor/bin/phpunit --coverage-clover clover.xml
+        # Same strict notice/warning/deprecation handling as ci.yml's unit-tests job — see the
+        # comment there for why. --log-junit feeds the Test Analytics upload step below.
+        run: >-
+          vendor/bin/phpunit --coverage-clover clover.xml --log-junit junit.xml
+          --display-phpunit-notices --display-notices --display-warnings --display-deprecations
+          --fail-on-phpunit-notice --fail-on-notice --fail-on-warning --fail-on-deprecation
+
+      - name: Upload test results to Codecov
+        # Codecov Test Analytics: tracks flaky/failing tests over time from the same JUnit XML
+        # report every CI system already produces, separate from (and uploaded regardless of)
+        # the line-coverage report below — runs even if the PHPUnit step above failed, so a run
+        # that fails on a real test failure still gets its results recorded.
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@6ba3fdeec616fb91fd6a389b788a2366835a0fa2 # v1.2.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./junit.xml
+          flags: unittests
+          slug: michalper/ordo
 
       - name: Upload coverage to Codecov
         # Bumped from v5.1.2 after a real CI failure: Codecov's own CLI-signing key rotated and
