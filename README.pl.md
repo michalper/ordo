@@ -1,5 +1,11 @@
 # Ordo Automation dla Magento 2
 
+[![CI](https://github.com/michalper/ordo/actions/workflows/ci.yml/badge.svg)](https://github.com/michalper/ordo/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/michalper/ordo/graph/badge.svg?token=JYXG9P7692)](https://codecov.io/gh/michalper/ordo)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=michalper_ordo&metric=alert_status)](https://sonarcloud.io/project/overview?id=michalper_ordo)
+[![PHP](https://img.shields.io/badge/php-8.1%2B-777bb4)](composer.json)
+[![License: OSL-3.0](https://img.shields.io/badge/license-OSL--3.0-blue)](https://opensource.org/licenses/OSL-3.0)
+
 *[Read in English](README.md)*
 
 Marketing automation działający *wewnątrz* **czystego Magento Open Source** — bez licencji Adobe Commerce B2B, bez zewnętrznej subskrypcji MA. Każdy trigger liczony jest z danych, które Magento już ma (zamówienia, koszyki, klienci), albo z niewielkiego własnego modelu danych dołożonego obok.
