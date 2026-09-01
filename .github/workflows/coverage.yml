@@ -1,10 +1,15 @@
 name: PHP Coverage Report
 
 # Same "fast lane" scope and same repo.magento.com auth requirement as ci.yml — see the comment
-# at the top of that file. This workflow additionally needs a CODECOV_TOKEN repository secret
-# (Settings -> Secrets and variables -> Actions -> New repository secret), pasted from your
-# Codecov project's setup page. Never commit the token value itself anywhere in this repo — it
-# only ever belongs in that GitHub secret.
+# at the top of that file. This workflow needs two repository secrets (Settings -> Secrets and
+# variables -> Actions -> New repository secret), neither ever committed anywhere in this repo:
+# - CODECOV_TOKEN, pasted from your Codecov project's setup page.
+# - SONAR_TOKEN, a SonarQube Cloud user token (My Account -> Security -> Generate Token).
+#   sonar-project.properties (repo root) has the project/organization keys; this workflow only
+#   needs to run the scanner after coverage.clover.xml exists so php.coverage.reportPaths can
+#   pick it up. Requires the michalper_ordo project's Analysis Method set to "CI-based" in
+#   SonarCloud (Administration -> Analysis Method) — coverage import only works in that mode,
+#   not with the GitHub App's automatic analysis.
 
 on:
   push:
@@ -18,6 +23,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
 
       - name: Setup PHP
         uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
@@ -49,3 +56,8 @@ jobs:
           files: ./clover.xml
           slug: michalper/ordo
           fail_ci_if_error: true
+
+      - name: SonarQube Cloud Scan
+        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
