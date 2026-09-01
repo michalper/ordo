@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Cron;
 
 use Ordo\Automation\Api\Data\OfferInterface;
+use Ordo\Automation\Model\Offer;
 use Ordo\Automation\Model\ResourceModel\Offer as OfferResource;
 use Ordo\Automation\Model\ResourceModel\Offer\CollectionFactory as OfferCollectionFactory;
 use Psr\Log\LoggerInterface;
@@ -29,6 +30,7 @@ class ExpireOverdueOffers
 
         $expired = 0;
         foreach ($collection as $offer) {
+            /** @var Offer $offer */
             $offer->setStatus(OfferInterface::STATUS_EXPIRED);
             $this->offerResource->save($offer);
             $expired++;

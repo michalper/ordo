@@ -21,7 +21,8 @@ class Reject extends AbstractApprovalAction
 
     public function execute()
     {
-        $token = (string) $this->getRequest()->getParam('token');
+        $token = $this->getRequest()->getParam('token');
+        $token = is_string($token) ? $token : '';
 
         try {
             $approval = $this->orderApprovalManagement->rejectByToken($token);

@@ -6,9 +6,11 @@ namespace Ordo\Automation\Cron;
 use Magento\Framework\App\Area;
 use Magento\Framework\Mail\Template\TransportBuilder;
 use Magento\Framework\Translate\Inline\StateInterface;
+use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\OrderApproval;
 use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
 use Ordo\Automation\Model\ResourceModel\OrderApproval\CollectionFactory as OrderApprovalCollectionFactory;
 use Psr\Log\LoggerInterface;
@@ -43,43 +45,45 @@ class EscalateStalePendingApprovals
         }
 
         $escalationDays = $this->config->getOrderApprovalEscalationDays();
-        $cutoff = date('Y-m-d H:i:s', strtotime("-{$escalationDays} days"));
+        $cutoff = date('Y-m-d H:i:s', (int) strtotime("-{$escalationDays} days"));
 
         $collection = $this->orderApprovalCollectionFactory->create();
         $collection->addStalePendingFilter($cutoff);
 
         $sent = 0;
         foreach ($collection as $approval) {
-            if ((int) $approval->getData('reminders_sent') >= self::MAX_ESCALATIONS) {
+            /** @var OrderApproval $approval */
+            if ($approval->getRemindersSent() >= self::MAX_ESCALATIONS) {
                 continue;
             }
 
+            /** @var Order $order */
             $order = $this->orderCollectionFactory->create()
-                ->addFieldToFilter('entity_id', $approval->getData('order_id'))
+                ->addFieldToFilter('entity_id', $approval->getOrderId())
                 ->getFirstItem();
 
-            if (!$order || !$order->getId()) {
+            if (!$order->getId()) {
                 continue;
             }
 
             try {
                 $this->sendEscalationEmail($approval, $order);
-                $approval->setData('reminders_sent', (int) $approval->getData('reminders_sent') + 1);
+                $approval->setData('reminders_sent', $approval->getRemindersSent() + 1);
                 $this->orderApprovalResource->save($approval);
                 $sent++;
             } catch (\Throwable $e) {
-                $this->logger->error(sprintf('Ordo_Automation: failed to send approval escalation for order #%d: %s', $order->getEntityId(), $e->getMessage()));
+                $this->logger->error(sprintf('Ordo_Automation: failed to send approval escalation for order #%d: %s', (int) $order->getEntityId(), $e->getMessage()));
             }
         }
 
         $this->logger->info(sprintf('Ordo_Automation: sent %d order approval escalations.', $sent));
     }
 
-    private function sendEscalationEmail($approval, $order): void
+    private function sendEscalationEmail(OrderApproval $approval, Order $order): void
     {
         $store = $this->storeManager->getStore();
         $baseUrl = rtrim((string) $store->getBaseUrl(), '/');
-        $token = $approval->getData('token');
+        $token = $approval->getToken();
 
         $this->inlineTranslation->suspend();
 
@@ -94,7 +98,7 @@ class EscalateStalePendingApprovals
                 'store' => $store,
             ])
             ->setFromByScope(self::XML_PATH_EMAIL_SENDER, $store->getId())
-            ->addTo($approval->getData('admin_email'))
+            ->addTo($approval->getAdminEmail())
             ->getTransport();
 
         $transport->sendMessage();

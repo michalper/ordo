@@ -13,6 +13,7 @@ use Magento\Framework\App\RequestInterface;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\PendingPopup;
 use Ordo\Automation\Model\ResourceModel\PendingPopup\CollectionFactory as PendingPopupCollectionFactory;
 
 /**
@@ -45,7 +46,8 @@ class Popup extends Action implements HttpGetActionInterface, CsrfAwareActionInt
             return $result->setData(['popup' => null]);
         }
 
-        $visitorId = (string) $this->getRequest()->getParam('visitor_id');
+        $visitorId = $this->getRequest()->getParam('visitor_id');
+        $visitorId = is_string($visitorId) ? $visitorId : '';
         $customerId = $this->customerSession->isLoggedIn() ? (int) $this->customerSession->getCustomerId() : null;
 
         if ($visitorId === '' && $customerId === null) {
@@ -64,6 +66,7 @@ class Popup extends Action implements HttpGetActionInterface, CsrfAwareActionInt
         $table = $this->resourceConnection->getTableName('ordo_pending_popup');
 
         foreach ($collection as $popup) {
+            /** @var PendingPopup $popup */
             // The actual claim: an UPDATE conditioned on delivered_at still being NULL, not a
             // blind save of the in-memory model — two concurrent requests can both load the same
             // row from the SELECT above, but only one of their UPDATEs can match this WHERE

@@ -26,7 +26,7 @@ class PruneVisitorEvents
     public function execute(): void
     {
         $retentionDays = $this->config->getTrackingRetentionDays();
-        $cutoff = date('Y-m-d H:i:s', strtotime("-{$retentionDays} days"));
+        $cutoff = date('Y-m-d H:i:s', (int) strtotime("-{$retentionDays} days"));
 
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName('ordo_visitor_event');

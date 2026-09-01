@@ -51,12 +51,10 @@ class SendReorderRemindersTest extends TestCase
         $config->method('getReorderLeadDays')->willReturn(2);
 
         $cycle = $this->createMock(ReorderCycle::class);
-        $cycle->method('getId')->willReturn(3);
-        $cycle->method('getData')->willReturnMap([
-            ['customer_id', null, 5],
-            ['sku', null, 'SKU-1'],
-            ['avg_interval_days', null, 30],
-        ]);
+        $cycle->method('getEntityId')->willReturn(3);
+        $cycle->method('getCustomerId')->willReturn(5);
+        $cycle->method('getSku')->willReturn('SKU-1');
+        $cycle->method('getAvgIntervalDays')->willReturn(30);
 
         $collection = $this->createMock(Collection::class);
         $collection->method('addDueTodayFilter');
@@ -87,7 +85,7 @@ class SendReorderRemindersTest extends TestCase
         $config->method('getReorderLeadDays')->willReturn(2);
 
         $cycle = $this->createMock(ReorderCycle::class);
-        $cycle->method('getId')->willReturn(3);
+        $cycle->method('getEntityId')->willReturn(3);
 
         $collection = $this->createMock(Collection::class);
         $collection->method('addDueTodayFilter');
@@ -115,10 +113,8 @@ class SendReorderRemindersTest extends TestCase
         $config->method('getReorderLeadDays')->willReturn(2);
 
         $cycle = $this->createMock(ReorderCycle::class);
-        $cycle->method('getId')->willReturn(3);
-        $cycle->method('getData')->willReturnMap([
-            ['customer_id', null, 5],
-        ]);
+        $cycle->method('getEntityId')->willReturn(3);
+        $cycle->method('getCustomerId')->willReturn(5);
 
         $collection = $this->createMock(Collection::class);
         $collection->method('addDueTodayFilter');

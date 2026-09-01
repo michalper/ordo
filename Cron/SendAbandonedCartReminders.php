@@ -50,7 +50,7 @@ class SendAbandonedCartReminders
         $delayMinutes = $this->config->getAbandonedCartDelayMinutes();
         $minSubtotal = $this->config->getAbandonedCartMinSubtotal();
         $maxReminders = $this->config->getAbandonedCartMaxReminders();
-        $cutoff = date('Y-m-d H:i:s', strtotime("-{$delayMinutes} minutes"));
+        $cutoff = date('Y-m-d H:i:s', (int) strtotime("-{$delayMinutes} minutes"));
 
         $connection = $this->resourceConnection->getConnection();
         $quoteTable = $this->resourceConnection->getTableName('quote');
@@ -71,6 +71,7 @@ class SendAbandonedCartReminders
             ->group('q.entity_id')
             ->having('reminders_sent < ?', $maxReminders);
 
+        /** @var array<int, array{entity_id: int|string, customer_id: int|string|null, customer_email: string, customer_firstname: string|null, subtotal: float|string, reminders_sent: int|string}> $rows */
         $rows = $connection->fetchAll($select);
 
         $sent = 0;
@@ -84,7 +85,7 @@ class SendAbandonedCartReminders
                 $this->logger->error(
                     sprintf(
                         'Ordo_Automation: failed to send abandoned cart reminder for quote #%d: %s',
-                        $row['entity_id'],
+                        (int) $row['entity_id'],
                         $e->getMessage()
                     )
                 );
@@ -94,6 +95,9 @@ class SendAbandonedCartReminders
         $this->logger->info(sprintf('Ordo_Automation: sent %d abandoned cart reminders.', $sent));
     }
 
+    /**
+     * @param array{entity_id: int|string, customer_id: int|string|null, customer_email: string, customer_firstname: string|null, subtotal: float|string, reminders_sent: int|string} $row
+     */
     private function sendReminder(array $row): void
     {
         $quote = $this->quoteFactory->create()->load((int) $row['entity_id']);
@@ -127,6 +131,9 @@ class SendAbandonedCartReminders
         $this->inlineTranslation->resume();
     }
 
+    /**
+     * @param array{entity_id: int|string, customer_id: int|string|null, customer_email: string, customer_firstname: string|null, subtotal: float|string, reminders_sent: int|string} $row
+     */
     private function dispatchCampaigns(array $row): void
     {
         if (empty($row['customer_id'])) {

@@ -73,7 +73,7 @@ class EscalateStalePendingApprovalsTest extends TestCase
     public function testExecuteSkipsApprovalAtMaxEscalations(): void
     {
         $approval = $this->createMock(OrderApproval::class);
-        $approval->method('getData')->with('reminders_sent')->willReturn(3);
+        $approval->method('getRemindersSent')->willReturn(3);
 
         $collection = $this->createMock(ApprovalCollection::class);
         $collection->method('addStalePendingFilter');
@@ -89,12 +89,10 @@ class EscalateStalePendingApprovalsTest extends TestCase
     public function testExecuteSendsEscalationAndIncrementsCounter(): void
     {
         $approval = $this->createMock(OrderApproval::class);
-        $approval->method('getData')->willReturnMap([
-            ['reminders_sent', null, 0],
-            ['order_id', null, 7],
-            ['token', null, 'tok'],
-            ['admin_email', null, 'admin@example.com'],
-        ]);
+        $approval->method('getRemindersSent')->willReturn(0);
+        $approval->method('getOrderId')->willReturn(7);
+        $approval->method('getToken')->willReturn('tok');
+        $approval->method('getAdminEmail')->willReturn('admin@example.com');
         $approval->expects(self::once())->method('setData')->with('reminders_sent', 1);
 
         $collection = $this->createMock(ApprovalCollection::class);
@@ -137,10 +135,8 @@ class EscalateStalePendingApprovalsTest extends TestCase
     public function testExecuteSkipsWhenOrderNotFound(): void
     {
         $approval = $this->createMock(OrderApproval::class);
-        $approval->method('getData')->willReturnMap([
-            ['reminders_sent', null, 0],
-            ['order_id', null, 999],
-        ]);
+        $approval->method('getRemindersSent')->willReturn(0);
+        $approval->method('getOrderId')->willReturn(999);
 
         $collection = $this->createMock(ApprovalCollection::class);
         $collection->method('addStalePendingFilter');
@@ -163,10 +159,8 @@ class EscalateStalePendingApprovalsTest extends TestCase
     public function testExecuteLogsErrorWhenEmailSendingThrows(): void
     {
         $approval = $this->createMock(OrderApproval::class);
-        $approval->method('getData')->willReturnMap([
-            ['reminders_sent', null, 0],
-            ['order_id', null, 7],
-        ]);
+        $approval->method('getRemindersSent')->willReturn(0);
+        $approval->method('getOrderId')->willReturn(7);
 
         $collection = $this->createMock(ApprovalCollection::class);
         $collection->method('addStalePendingFilter');

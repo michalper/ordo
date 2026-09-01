@@ -49,6 +49,7 @@ class RunScheduledCampaignActions
 
             $rowCount = 0;
             foreach ($due as $scheduled) {
+                /** @var CampaignScheduledAction $scheduled */
                 $rowCount++;
                 $this->resumeOne($scheduled);
             }
@@ -83,7 +84,7 @@ class RunScheduledCampaignActions
         } catch (\Throwable $e) {
             $this->logger->error(sprintf(
                 'Ordo_Automation: scheduled campaign action #%d (campaign #%d) failed: %s',
-                $scheduled->getEntityId(),
+                (int) $scheduled->getEntityId(),
                 $scheduled->getCampaignId(),
                 $e->getMessage()
             ));

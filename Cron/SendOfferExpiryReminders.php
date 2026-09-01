@@ -47,13 +47,14 @@ class SendOfferExpiryReminders
         }
 
         $leadDays = $this->config->getOfferLeadDays();
-        $targetDate = date('Y-m-d', strtotime("+{$leadDays} days"));
+        $targetDate = date('Y-m-d', (int) strtotime("+{$leadDays} days"));
 
         $collection = $this->offerCollectionFactory->create();
         $collection->addExpiringOnFilter($targetDate);
 
         $sent = 0;
         foreach ($collection as $offer) {
+            /** @var Offer $offer */
             if ($this->reminderAlreadySent((int) $offer->getEntityId(), self::REMINDER_TYPE_EXPIRING_SOON)) {
                 continue;
             }

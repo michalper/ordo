@@ -80,7 +80,7 @@ class FlowTest extends TestCase
         $triggers = [];
         foreach ($triggerEvents as $triggerEvent) {
             $trigger = $this->createMock(CampaignTrigger::class);
-            $trigger->method('getData')->with('trigger_event')->willReturn($triggerEvent);
+            $trigger->method('getTriggerEvent')->willReturn($triggerEvent);
             $triggers[] = $trigger;
         }
 
@@ -144,21 +144,17 @@ class FlowTest extends TestCase
         $this->triggerCollectionFactory->method('create')->willReturn($this->triggerCollectionWith(['order_placed']));
 
         $condition = $this->createMock(CampaignCondition::class);
-        $condition->method('getData')->willReturnMap([
-            ['type', null, 'order_total_gte'],
-            ['params', null, '{"amount":"100"}'],
-        ]);
+        $condition->method('getType')->willReturn('order_total_gte');
+        $condition->method('getParamsJson')->willReturn('{"amount":"100"}');
         $conditionCollection = $this->createMock(ConditionCollection::class);
         $conditionCollection->method('addCampaignFilter');
         $conditionCollection->method('getIterator')->willReturn(new \ArrayIterator([$condition]));
         $this->conditionCollectionFactory->method('create')->willReturn($conditionCollection);
 
         $action = $this->createMock(CampaignAction::class);
-        $action->method('getData')->willReturnMap([
-            ['type', null, 'add_tag'],
-            ['params', null, '{"tag":"vip"}'],
-            ['delay_minutes', null, 1440],
-        ]);
+        $action->method('getType')->willReturn('add_tag');
+        $action->method('getParamsJson')->willReturn('{"tag":"vip"}');
+        $action->method('getDelayMinutes')->willReturn(1440);
         $actionCollection = $this->createMock(ActionCollection::class);
         $actionCollection->method('addCampaignFilter');
         $actionCollection->method('setOrder');
@@ -201,10 +197,9 @@ class FlowTest extends TestCase
         $this->conditionCollectionFactory->method('create')->willReturn($emptyConditionCollection);
 
         $action = $this->createMock(CampaignAction::class);
-        $action->method('getData')->willReturnMap([
-            ['type', null, 'send_email'],
-            ['params', null, '{}'],
-        ]);
+        $action->method('getType')->willReturn('send_email');
+        $action->method('getParamsJson')->willReturn('{}');
+        $action->method('getDelayMinutes')->willReturn(0);
         $actionCollection = $this->createMock(ActionCollection::class);
         $actionCollection->method('addCampaignFilter');
         $actionCollection->method('setOrder');
@@ -229,10 +224,8 @@ class FlowTest extends TestCase
         );
 
         $condition = $this->createMock(CampaignCondition::class);
-        $condition->method('getData')->willReturnMap([
-            ['type', null, 'tag'],
-            ['params', null, '{}'],
-        ]);
+        $condition->method('getType')->willReturn('tag');
+        $condition->method('getParamsJson')->willReturn('{}');
         $conditionCollection = $this->createMock(ConditionCollection::class);
         $conditionCollection->method('addCampaignFilter');
         $conditionCollection->method('getIterator')->willReturn(new \ArrayIterator([$condition]));

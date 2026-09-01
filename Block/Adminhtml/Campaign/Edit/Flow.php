@@ -12,6 +12,9 @@ use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\Campaign\ActionPool;
 use Ordo\Automation\Model\Campaign\ConditionPool;
 use Ordo\Automation\Model\Campaign\TypeLabels;
+use Ordo\Automation\Model\CampaignAction;
+use Ordo\Automation\Model\CampaignCondition;
+use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as ConditionCollectionFactory;
@@ -32,6 +35,9 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as Tr
  */
 class Flow extends Template
 {
+    /**
+     * @param array<string, mixed> $data
+     */
     public function __construct(
         Context $context,
         private readonly Registry $registry,
@@ -276,6 +282,9 @@ class Flow extends Template
         ];
     }
 
+    /**
+     * @param array<int, array<string, mixed>> $nodes
+     */
     private function connect(array &$nodes, int $fromId, int $toId): void
     {
         $nodes[$fromId]['outputs']['output_1']['connections'][] = ['node' => (string) $toId, 'output' => 'input_1'];
@@ -301,8 +310,9 @@ class Flow extends Template
         $triggers->addCampaignFilter($campaignId);
         $triggerIds = [];
         foreach ($triggers as $trigger) {
+            /** @var CampaignTrigger $trigger */
             $id = $nextId++;
-            $triggerEvent = (string) $trigger->getData('trigger_event');
+            $triggerEvent = $trigger->getTriggerEvent();
             $nodes[$id] = $this->buildNode(
                 $id,
                 'ordo-flow-trigger',
@@ -318,15 +328,16 @@ class Flow extends Template
         $conditions->addCampaignFilter($campaignId);
         $lastConditionIds = [];
         foreach ($conditions as $condition) {
+            /** @var CampaignCondition $condition */
             $id = $nextId++;
-            $type = (string) $condition->getData('type');
+            $type = $condition->getType();
             $nodes[$id] = $this->buildNode(
                 $id,
                 'ordo-flow-condition',
                 $this->editableNodeHtml(
                     'condition',
                     (string) __('Condition'),
-                    (string) $condition->getData('params'),
+                    $condition->getParamsJson(),
                     $this->typeOptionsHtml($this->getConditionTypes(), $type, $this->getConditionTypeLabels())
                 ),
                 $x,
@@ -346,17 +357,18 @@ class Flow extends Template
         $actions->setOrder('sort_order', 'ASC');
         $previousActionId = null;
         foreach ($actions as $action) {
+            /** @var CampaignAction $action */
             $id = $nextId++;
-            $type = (string) $action->getData('type');
+            $type = $action->getType();
             $nodes[$id] = $this->buildNode(
                 $id,
                 'ordo-flow-action',
                 $this->editableNodeHtml(
                     'action',
                     (string) __('Action'),
-                    (string) $action->getData('params'),
+                    $action->getParamsJson(),
                     $this->typeOptionsHtml($this->getActionTypes(), $type, $this->getActionTypeLabels()),
-                    (int) $action->getData('delay_minutes')
+                    $action->getDelayMinutes()
                 ),
                 $x,
                 150

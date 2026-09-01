@@ -8,6 +8,9 @@ use Ordo\Automation\Api\Data\CampaignTriggerInterface;
 
 class TriggerEvent implements OptionSourceInterface
 {
+    /**
+     * @return array<int, array{value: string, label: \Magento\Framework\Phrase}>
+     */
     public function toOptionArray(): array
     {
         return [

@@ -6,6 +6,8 @@ namespace Ordo\Automation\Block\Adminhtml\Dashboard;
 use Magento\Framework\View\Element\Block\ArgumentInterface;
 use Ordo\Automation\Api\Data\CampaignInterface;
 use Ordo\Automation\Api\Data\CampaignTriggerInterface;
+use Ordo\Automation\Model\Campaign;
+use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as CampaignTriggerCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\CollectionFactory as FreeGiftOfferCollectionFactory;
@@ -56,7 +58,13 @@ class DashboardViewModel implements ArgumentInterface
         $collection = $this->campaignCollectionFactory->create();
         $collection->setOrder('entity_id', 'DESC');
 
-        return $collection->getItems();
+        $campaigns = [];
+        foreach ($collection as $campaign) {
+            /** @var Campaign $campaign */
+            $campaigns[] = $campaign;
+        }
+
+        return $campaigns;
     }
 
     public function getTotalCampaignCount(): int
@@ -67,7 +75,7 @@ class DashboardViewModel implements ArgumentInterface
     public function getEnabledCampaignCount(): int
     {
         $collection = $this->campaignCollectionFactory->create();
-        $collection->addFieldToFilter('enabled', 1);
+        $collection->addFieldToFilter('enabled', '1');
 
         return $collection->getSize();
     }
@@ -120,6 +128,7 @@ class DashboardViewModel implements ArgumentInterface
 
         $labels = [];
         foreach ($triggers as $trigger) {
+            /** @var CampaignTrigger $trigger */
             $labels[] = $this->getTriggerLabel($trigger->getTriggerEvent());
         }
 

@@ -9,6 +9,7 @@ use Magento\Framework\Mail\Template\TransportBuilder;
 use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\ReorderCycle;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory as ReorderCycleCollectionFactory;
 use Ordo\Automation\Model\SalesRepEmailContext;
 use Psr\Log\LoggerInterface;
@@ -43,26 +44,27 @@ class SendReorderReminders
         }
 
         $leadDays = $this->config->getReorderLeadDays();
-        $targetDate = date('Y-m-d', strtotime("+{$leadDays} days"));
+        $targetDate = date('Y-m-d', (int) strtotime("+{$leadDays} days"));
 
         $collection = $this->reorderCycleCollectionFactory->create();
         $collection->addDueTodayFilter($targetDate);
 
         $sent = 0;
         foreach ($collection as $cycle) {
-            if ($this->reminderAlreadySentToday((int) $cycle->getId())) {
+            /** @var ReorderCycle $cycle */
+            if ($this->reminderAlreadySentToday((int) $cycle->getEntityId())) {
                 continue;
             }
 
             try {
                 $this->sendReminder($cycle);
-                $this->logReminderSent((int) $cycle->getId());
+                $this->logReminderSent((int) $cycle->getEntityId());
                 $sent++;
             } catch (\Throwable $e) {
                 $this->logger->error(
                     sprintf(
                         'Ordo_Automation: failed to send reorder reminder for cycle #%d: %s',
-                        $cycle->getId(),
+                        (int) $cycle->getEntityId(),
                         $e->getMessage()
                     )
                 );
@@ -72,9 +74,9 @@ class SendReorderReminders
         $this->logger->info(sprintf('Ordo_Automation: sent %d reorder reminders.', $sent));
     }
 
-    private function sendReminder(\Ordo\Automation\Model\ReorderCycle $cycle): void
+    private function sendReminder(ReorderCycle $cycle): void
     {
-        $customer = $this->customerRepository->getById((int) $cycle->getData('customer_id'));
+        $customer = $this->customerRepository->getById($cycle->getCustomerId());
         $store = $this->storeManager->getStore();
 
         $this->inlineTranslation->suspend();
@@ -84,10 +86,10 @@ class SendReorderReminders
             ->setTemplateOptions(['area' => \Magento\Framework\App\Area::AREA_FRONTEND, 'store' => $store->getId()])
             ->setTemplateVars(array_merge([
                 'customer_name' => $customer->getFirstname(),
-                'sku' => $cycle->getData('sku'),
-                'avg_interval_days' => $cycle->getData('avg_interval_days'),
+                'sku' => $cycle->getSku(),
+                'avg_interval_days' => $cycle->getAvgIntervalDays(),
                 'store' => $store,
-            ], $this->salesRepEmailContext->getForCustomer((int) $cycle->getData('customer_id'))))
+            ], $this->salesRepEmailContext->getForCustomer($cycle->getCustomerId())))
             ->setFromByScope(self::XML_PATH_EMAIL_SENDER, $store->getId())
             ->addTo($customer->getEmail(), $customer->getFirstname())
             ->getTransport();

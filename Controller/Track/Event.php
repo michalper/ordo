@@ -43,15 +43,18 @@ class Event extends Action implements HttpPostActionInterface, CsrfAwareActionIn
             return $result->setData(['ok' => false, 'reason' => 'tracking_disabled']);
         }
 
-        $visitorId = (string) $this->getRequest()->getParam('visitor_id');
-        $eventType = (string) $this->getRequest()->getParam('event_type');
+        $visitorId = $this->getRequest()->getParam('visitor_id');
+        $visitorId = is_string($visitorId) ? $visitorId : '';
+        $eventType = $this->getRequest()->getParam('event_type');
+        $eventType = is_string($eventType) ? $eventType : '';
         $eventKey = $this->getRequest()->getParam('event_key');
+        $eventKey = is_scalar($eventKey) ? (string) $eventKey : null;
 
         if ($visitorId === '' || !in_array($eventType, self::ALLOWED_EVENT_TYPES, true)) {
             return $result->setData(['ok' => false, 'reason' => 'invalid_payload']);
         }
 
-        $eventKey = $eventKey !== null ? substr((string) $eventKey, 0, self::MAX_KEY_LENGTH) : null;
+        $eventKey = $eventKey !== null ? substr($eventKey, 0, self::MAX_KEY_LENGTH) : null;
         $customerId = $this->customerSession->isLoggedIn() ? (int) $this->customerSession->getCustomerId() : null;
 
         $this->visitorEventLogger->log($visitorId, $eventType, $eventKey, $customerId);

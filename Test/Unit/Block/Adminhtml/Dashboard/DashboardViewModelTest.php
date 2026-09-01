@@ -5,6 +5,7 @@ namespace Ordo\Automation\Test\Unit\Block\Adminhtml\Dashboard;
 
 use Ordo\Automation\Api\Data\CampaignTriggerInterface;
 use Ordo\Automation\Block\Adminhtml\Dashboard\DashboardViewModel;
+use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\ResourceModel\Campaign\Collection as CampaignCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as CampaignTriggerCollection;
@@ -33,16 +34,18 @@ class DashboardViewModelTest extends TestCase
 
     public function testGetCampaignsOrdersByEntityIdDescending(): void
     {
+        $campaign = $this->createMock(Campaign::class);
+
         $collection = $this->createMock(CampaignCollection::class);
         $collection->expects(self::once())->method('setOrder')->with('entity_id', 'DESC');
-        $collection->method('getItems')->willReturn(['campaign1']);
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$campaign]));
 
         $campaignCollectionFactory = $this->createMock(CampaignCollectionFactory::class);
         $campaignCollectionFactory->method('create')->willReturn($collection);
 
         $viewModel = $this->makeViewModel($campaignCollectionFactory);
 
-        self::assertSame(['campaign1'], $viewModel->getCampaigns());
+        self::assertSame([$campaign], $viewModel->getCampaigns());
     }
 
     public function testGetTotalCampaignCount(): void
@@ -61,7 +64,7 @@ class DashboardViewModelTest extends TestCase
     public function testGetEnabledCampaignCountFilters(): void
     {
         $collection = $this->createMock(CampaignCollection::class);
-        $collection->expects(self::once())->method('addFieldToFilter')->with('enabled', 1);
+        $collection->expects(self::once())->method('addFieldToFilter')->with('enabled', '1');
         $collection->method('getSize')->willReturn(2);
 
         $campaignCollectionFactory = $this->createMock(CampaignCollectionFactory::class);

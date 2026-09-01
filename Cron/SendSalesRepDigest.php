@@ -70,7 +70,8 @@ class SendSalesRepDigest
             }
 
             $repEmailAttribute = $customer->getCustomAttribute(AddSalesRepAttributes::ATTRIBUTE_REP_EMAIL);
-            $repEmail = $repEmailAttribute ? (string) $repEmailAttribute->getValue() : '';
+            $repEmailValue = $repEmailAttribute ? $repEmailAttribute->getValue() : null;
+            $repEmail = is_scalar($repEmailValue) ? (string) $repEmailValue : '';
 
             if ($repEmail === '') {
                 continue;

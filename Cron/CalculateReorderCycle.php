@@ -62,7 +62,7 @@ class CalculateReorderCycle
 
             $intervals = [];
             for ($i = 1, $count = count($dates); $i < $count; $i++) {
-                $intervals[] = (strtotime($dates[$i]) - strtotime($dates[$i - 1])) / 86400;
+                $intervals[] = ((int) strtotime($dates[$i]) - (int) strtotime($dates[$i - 1])) / 86400;
             }
 
             if (empty($intervals)) {
@@ -76,7 +76,7 @@ class CalculateReorderCycle
             }
 
             $lastOrderDate = end($dates);
-            $nextExpectedDate = date('Y-m-d', strtotime($lastOrderDate . ' + ' . $avgIntervalDays . ' days'));
+            $nextExpectedDate = date('Y-m-d', (int) strtotime($lastOrderDate . ' + ' . $avgIntervalDays . ' days'));
 
             $this->upsertCycle((int) $customerId, $sku, $avgIntervalDays, $lastOrderDate, $nextExpectedDate, count($dates));
             $processed++;
@@ -93,7 +93,10 @@ class CalculateReorderCycle
         string $nextExpectedDate,
         int $ordersConsidered
     ): void {
-        $connection = $this->reorderCycleResource->getConnection();
+        // ResourceConnection::getConnection() (unlike a ResourceModel's own getConnection())
+        // is typed AdapterInterface, never AdapterInterface|false — same underlying connection
+        // in practice, just a narrower, accurate signature.
+        $connection = $this->resourceConnection->getConnection();
         $table = $this->reorderCycleResource->getMainTable();
 
         $existingId = $connection->fetchOne(
@@ -111,7 +114,7 @@ class CalculateReorderCycle
             'customer_id' => $customerId,
             'sku' => $sku,
             'avg_interval_days' => $avgIntervalDays,
-            'last_order_date' => date('Y-m-d', strtotime($lastOrderDate)),
+            'last_order_date' => date('Y-m-d', (int) strtotime($lastOrderDate)),
             'next_expected_date' => $nextExpectedDate,
             'orders_considered' => $ordersConsidered,
         ]);

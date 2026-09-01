@@ -92,7 +92,7 @@ class SendCreditLimitAlerts
         $cooldownDays = $this->config->getCreditLimitAlertCooldownDays();
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName('ordo_credit_limit_alert_log');
-        $cutoff = date('Y-m-d H:i:s', strtotime("-{$cooldownDays} days"));
+        $cutoff = date('Y-m-d H:i:s', (int) strtotime("-{$cooldownDays} days"));
 
         $count = $connection->fetchOne(
             $connection->select()

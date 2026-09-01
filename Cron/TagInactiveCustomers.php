@@ -32,7 +32,7 @@ class TagInactiveCustomers
         }
 
         $inactiveDays = $this->config->getWinBackInactiveDays();
-        $cutoff = date('Y-m-d H:i:s', strtotime("-{$inactiveDays} days"));
+        $cutoff = date('Y-m-d H:i:s', (int) strtotime("-{$inactiveDays} days"));
 
         $connection = $this->resourceConnection->getConnection();
         $orderTable = $this->resourceConnection->getTableName('sales_order');
@@ -52,9 +52,10 @@ class TagInactiveCustomers
             ->group('c.entity_id')
             ->having('last_order_at IS NULL OR last_order_at <= ?', $cutoff);
 
+        /** @var array<int, int|string> $customerIds */
         $customerIds = $connection->fetchCol($select);
 
-        $stillInactiveIds = array_map(static fn ($id) => (int) $id, $customerIds);
+        $stillInactiveIds = array_map(static fn (int|string $id): int => (int) $id, $customerIds);
 
         $tagged = 0;
         foreach ($stillInactiveIds as $customerId) {
