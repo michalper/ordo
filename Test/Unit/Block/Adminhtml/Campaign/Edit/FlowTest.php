@@ -249,4 +249,67 @@ class FlowTest extends TestCase
         self::assertSame('3', $data[1]['outputs']['output_1']['connections'][0]['node']);
         self::assertSame('3', $data[2]['outputs']['output_1']['connections'][0]['node']);
     }
+
+    public function testGetFlowDataJsonChainsSecondActionToFirstNotToUpstream(): void
+    {
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(6);
+        $this->registry->method('registry')->with('ordo_campaign')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->triggerCollectionWith(['order_placed']));
+
+        $emptyConditionCollection = $this->createMock(ConditionCollection::class);
+        $emptyConditionCollection->method('addCampaignFilter');
+        $emptyConditionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
+        $this->conditionCollectionFactory->method('create')->willReturn($emptyConditionCollection);
+
+        $firstAction = $this->createMock(CampaignAction::class);
+        $firstAction->method('getType')->willReturn('add_tag');
+        $firstAction->method('getParamsJson')->willReturn('{}');
+        $firstAction->method('getDelayMinutes')->willReturn(0);
+
+        $secondAction = $this->createMock(CampaignAction::class);
+        $secondAction->method('getType')->willReturn('send_email');
+        $secondAction->method('getParamsJson')->willReturn('{}');
+        $secondAction->method('getDelayMinutes')->willReturn(0);
+
+        $actionCollection = $this->createMock(ActionCollection::class);
+        $actionCollection->method('addCampaignFilter');
+        $actionCollection->method('setOrder');
+        $actionCollection->method('getIterator')->willReturn(new \ArrayIterator([$firstAction, $secondAction]));
+        $this->actionCollectionFactory->method('create')->willReturn($actionCollection);
+
+        $json = $this->makeBlock()->getFlowDataJson();
+        $data = json_decode($json, true)['drawflow']['Home']['data'];
+
+        // trigger (1) -> first action (2) -> second action (3), not trigger -> both actions.
+        self::assertCount(3, $data);
+        self::assertSame('2', $data[1]['outputs']['output_1']['connections'][0]['node']);
+        self::assertSame('3', $data[2]['outputs']['output_1']['connections'][0]['node']);
+        self::assertSame([], $data[3]['outputs']['output_1']['connections']);
+    }
+
+    public function testGetFieldsConfigListsKnownConditionAndActionFields(): void
+    {
+        $config = $this->makeBlock()->getFieldsConfig();
+
+        self::assertSame(
+            [['name' => 'tag', 'label' => 'Tag']],
+            $config['condition']['tag']
+        );
+        self::assertSame(
+            [
+                ['name' => 'rule_id', 'label' => 'Cart price rule ID'],
+                ['name' => 'prefix', 'label' => 'Coupon code prefix'],
+            ],
+            $config['action']['generate_coupon']
+        );
+    }
+
+    public function testGetFieldsConfigJsonEncodesTheSameConfig(): void
+    {
+        $block = $this->makeBlock();
+
+        self::assertSame(json_encode($block->getFieldsConfig()), $block->getFieldsConfigJson());
+    }
 }
