@@ -23,6 +23,98 @@ ignore:
   - "vendor/**/*"
 
 comment:
-  layout: "reach, diff, flags, files"
+  layout: "reach, diff, flags, components, files"
   behavior: default
   require_changes: false
+
+# Only one flag exists today (unittests, uploaded by coverage.yml) since MFTF/API functional
+# tests don't upload coverage yet — see ROADMAP.md's "CI/CD tooling backlog". Adding this now
+# means turning on a second flag later (mftf, api) is just one more `-F`/`flags:` upload input,
+# not a codecov.yml redesign. carryforward: false because coverage.yml always runs the full unit
+# suite in one shot, never a partial subset that would need the previous run's data filled in.
+flag_management:
+  default_rules:
+    carryforward: false
+    statuses:
+      - type: project
+        target: auto
+        threshold: 1%
+        informational: true
+      - type: patch
+        target: auto
+        threshold: 1%
+        informational: true
+  individual_flags:
+    - name: unittests
+      # No paths restriction: this flag covers the whole codebase, same scope as `ignore` above.
+
+# Per-functional-area coverage, filtered from the same single unit-test upload above — no
+# separate upload needed per component (that's what Flags are for). Grouped to mirror this
+# module's real feature areas (see README's Features section / AGENTS.md's Architecture map),
+# not raw directory structure, since a feature like "free gift" spans Model/, Controller/,
+# Block/, and Observer/ all at once.
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+        threshold: 1%
+        informational: true
+  individual_components:
+    - component_id: campaign_engine
+      name: Campaign engine
+      paths:
+        - "Model/Campaign*.php"
+        - "Model/CampaignDispatcher.php"
+        - "Cron/RunScheduledCampaignActions.php"
+        - "Controller/Adminhtml/Campaign/**"
+        - "Block/Adminhtml/Campaign/**"
+    - component_id: free_gift
+      name: Free gift
+      paths:
+        - "Model/FreeGift*.php"
+        - "Model/QuoteGiftItem*.php"
+        - "Observer/TrimExcessFreeGifts.php"
+        - "Controller/Adminhtml/FreeGiftOffer/**"
+        - "Block/Adminhtml/FreeGiftOffer/**"
+        - "Model/Rule/Action/Discount/**"
+    - component_id: segments
+      name: Segments
+      paths:
+        - "Model/Segment*.php"
+        - "Controller/Adminhtml/Segment/**"
+        - "Block/Adminhtml/Segment/**"
+    - component_id: b2b_triggers
+      name: B2B triggers (credit limit, order approval, offers)
+      paths:
+        - "Model/CreditLimit*.php"
+        - "Model/Offer*.php"
+        - "Controller/Approval/**"
+        - "Observer/HoldOrderForApproval.php"
+        - "Cron/EscalateStalePendingApprovals.php"
+        - "Cron/SendCreditLimitAlerts.php"
+        - "Cron/SendOfferExpiryReminders.php"
+        - "Cron/ExpireOverdueOffers.php"
+    - component_id: b2c_lifecycle
+      name: B2C lifecycle (reorder, abandoned cart, win-back)
+      paths:
+        - "Model/ReorderCycle*.php"
+        - "Model/CustomerTagManager.php"
+        - "Cron/SendReorderReminders.php"
+        - "Cron/CalculateReorderCycle.php"
+        - "Cron/SendAbandonedCartReminders.php"
+        - "Cron/SendWinBackEmails.php"
+        - "Cron/TagInactiveCustomers.php"
+        - "Observer/SendWelcomeEmail.php"
+    - component_id: tracking
+      name: On-site behavior tracking
+      paths:
+        - "Controller/Track/**"
+        - "Model/Visitor*.php"
+        - "Model/PendingPopup*.php"
+        - "Model/ResourceModel/PendingPopup*"
+    - component_id: admin_ui
+      name: Admin UI (shared)
+      paths:
+        - "Block/Adminhtml/**"
+        - "Ui/Component/**"

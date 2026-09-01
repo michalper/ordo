@@ -58,6 +58,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./clover.xml
+          flags: unittests
           slug: michalper/ordo
           fail_ci_if_error: true
 
