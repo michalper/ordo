@@ -37,6 +37,7 @@ class Save extends AbstractFreeGiftOfferAction implements HttpPostActionInterfac
 
     public function execute()
     {
+        /** @var array<string, mixed> $data */
         $data = $this->getRequest()->getPostValue();
         $resultRedirect = $this->resultRedirectFactory->create();
 
@@ -54,12 +55,17 @@ class Save extends AbstractFreeGiftOfferAction implements HttpPostActionInterfac
         $offer->setName((string) ($data['name'] ?? ''));
         $offer->setEnabled(!empty($data['enabled']));
 
+        /** @var array<int, array<string, mixed>> $tierRows */
+        $tierRows = (array) ($data['tiers']['tiers'] ?? []);
+        /** @var array<int, array<string, mixed>> $productRows */
+        $productRows = (array) ($data['products']['products'] ?? []);
+
         try {
             $this->offerResource->save($offer);
             $this->saveChildRows(
                 (int) $offer->getEntityId(),
-                (array) ($data['tiers']['tiers'] ?? []),
-                (array) ($data['products']['products'] ?? [])
+                $tierRows,
+                $productRows
             );
 
             $this->messageManager->addSuccessMessage(__('The free gift offer has been saved.'));

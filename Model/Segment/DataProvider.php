@@ -16,6 +16,10 @@ class DataProvider extends AbstractDataProvider
 {
     protected ?array $loadedData = null;
 
+    /**
+     * @param array<string, mixed> $meta
+     * @param array<string, mixed> $data
+     */
     public function __construct(
         $name,
         $primaryFieldName,
@@ -30,6 +34,9 @@ class DataProvider extends AbstractDataProvider
         parent::__construct($name, $primaryFieldName, $requestFieldName, $meta, $data);
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function getData(): array
     {
         if ($this->loadedData !== null) {
@@ -39,6 +46,7 @@ class DataProvider extends AbstractDataProvider
         $this->loadedData = [];
 
         foreach ($this->collection->getItems() as $segment) {
+            /** @var array<string, mixed> $segmentData */
             $segmentData = $segment->getData();
             $segmentId = (int) $segment->getEntityId();
 
@@ -47,9 +55,10 @@ class DataProvider extends AbstractDataProvider
             $this->loadedData[$segmentId] = $segmentData;
         }
 
+        /** @var array<string, mixed>|null $persisted */
         $persisted = $this->dataPersistor->get('ordo_segment');
         if ($persisted) {
-            $segmentId = $persisted['entity_id'] ?? null;
+            $segmentId = (int) ($persisted['entity_id'] ?? 0);
             if ($segmentId) {
                 $this->loadedData[$segmentId] = $persisted;
             }
@@ -70,8 +79,8 @@ class DataProvider extends AbstractDataProvider
         $rows = [];
         foreach ($collection as $row) {
             $rows[] = [
-                'type' => $row->getData('type'),
-                'params_json' => (string) $row->getData('params'),
+                'type' => $row->getType(),
+                'params_json' => $row->getParamsJson(),
             ];
         }
 

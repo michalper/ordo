@@ -54,7 +54,7 @@ class TagInactiveCustomers
 
         $customerIds = $connection->fetchCol($select);
 
-        $stillInactiveIds = array_map('intval', $customerIds);
+        $stillInactiveIds = array_map(static fn ($id) => (int) $id, $customerIds);
 
         $tagged = 0;
         foreach ($stillInactiveIds as $customerId) {

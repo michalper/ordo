@@ -41,8 +41,10 @@ class CalculateReorderCycle
             ->where('o.state != ?', 'canceled')
             ->order(['o.customer_id ASC', 'oi.sku ASC', 'o.created_at ASC']);
 
+        /** @var array<int, array{customer_id: int|string, sku: string, created_at: string}> $rows */
         $rows = $connection->fetchAll($select);
 
+        /** @var array<string, array<int, string>> $ordersByCustomerSku */
         $ordersByCustomerSku = [];
         foreach ($rows as $row) {
             $key = $row['customer_id'] . '|' . $row['sku'];

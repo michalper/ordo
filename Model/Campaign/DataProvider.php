@@ -6,6 +6,7 @@ namespace Ordo\Automation\Model\Campaign;
 use Magento\Framework\App\Request\DataPersistorInterface;
 use Magento\Ui\DataProvider\AbstractDataProvider;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as CampaignActionCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign\Condition\Collection as CampaignConditionCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as CampaignConditionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as CampaignTriggerCollectionFactory;
@@ -20,6 +21,10 @@ class DataProvider extends AbstractDataProvider
 {
     protected ?array $loadedData = null;
 
+    /**
+     * @param array<string, mixed> $meta
+     * @param array<string, mixed> $data
+     */
     public function __construct(
         $name,
         $primaryFieldName,
@@ -36,6 +41,9 @@ class DataProvider extends AbstractDataProvider
         parent::__construct($name, $primaryFieldName, $requestFieldName, $meta, $data);
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function getData(): array
     {
         if ($this->loadedData !== null) {
@@ -45,6 +53,7 @@ class DataProvider extends AbstractDataProvider
         $this->loadedData = [];
 
         foreach ($this->collection->getItems() as $campaign) {
+            /** @var array<string, mixed> $campaignData */
             $campaignData = $campaign->getData();
             $campaignId = (int) $campaign->getEntityId();
 
@@ -55,9 +64,10 @@ class DataProvider extends AbstractDataProvider
             $this->loadedData[$campaignId] = $campaignData;
         }
 
+        /** @var array<string, mixed>|null $persisted */
         $persisted = $this->dataPersistor->get('ordo_campaign');
         if ($persisted) {
-            $campaignId = $persisted['entity_id'] ?? null;
+            $campaignId = (int) ($persisted['entity_id'] ?? 0);
             if ($campaignId) {
                 $this->loadedData[$campaignId] = $persisted;
             }
@@ -75,17 +85,18 @@ class DataProvider extends AbstractDataProvider
      *
      * @return array<int, array<string, mixed>>
      */
-    private function loadChildRows($collection, int $campaignId): array
+    private function loadChildRows(CampaignConditionCollection $collection, int $campaignId): array
     {
         $collection->addCampaignFilter($campaignId);
 
         $rows = [];
         foreach ($collection as $row) {
-            $paramsJson = (string) $row->getData('params');
+            $paramsJson = $row->getParamsJson();
             $decoded = json_decode($paramsJson, true);
 
+            /** @var array<string, mixed> $rowData */
             $rowData = [
-                'type' => $row->getData('type'),
+                'type' => $row->getType(),
                 'params_json' => $paramsJson,
             ];
 
@@ -113,13 +124,14 @@ class DataProvider extends AbstractDataProvider
 
         $rows = [];
         foreach ($collection as $row) {
-            $paramsJson = (string) $row->getData('params');
+            $paramsJson = $row->getParamsJson();
             $decoded = json_decode($paramsJson, true);
 
+            /** @var array<string, mixed> $rowData */
             $rowData = [
-                'type' => $row->getData('type'),
+                'type' => $row->getType(),
                 'params_json' => $paramsJson,
-                'delay_minutes' => (int) $row->getData('delay_minutes'),
+                'delay_minutes' => $row->getDelayMinutes(),
             ];
 
             if (is_array($decoded)) {
@@ -142,7 +154,7 @@ class DataProvider extends AbstractDataProvider
 
         $rows = [];
         foreach ($collection as $row) {
-            $rows[] = ['trigger_event' => $row->getData('trigger_event')];
+            $rows[] = ['trigger_event' => $row->getTriggerEvent()];
         }
 
         return $rows;

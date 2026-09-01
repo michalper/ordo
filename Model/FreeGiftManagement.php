@@ -219,7 +219,7 @@ class FreeGiftManagement implements FreeGiftManagementInterface
             }
         }
 
-        $eligibleSkus = array_values(array_keys($this->mapEligibleSkusToOfferId($activeOfferIds)));
+        $eligibleSkus = array_keys($this->mapEligibleSkusToOfferId($activeOfferIds));
         $used = $this->giftItemCollectionFactory->create()->addQuoteFilter((int) $quote->getId())->getSize();
         $remaining = max(0, $earned - $used);
 

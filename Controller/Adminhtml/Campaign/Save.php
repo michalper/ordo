@@ -47,6 +47,7 @@ class Save extends AbstractCampaignAction implements HttpPostActionInterface
 
     public function execute()
     {
+        /** @var array<string, mixed> $data */
         $data = $this->getRequest()->getPostValue();
         $resultRedirect = $this->resultRedirectFactory->create();
 
@@ -64,13 +65,20 @@ class Save extends AbstractCampaignAction implements HttpPostActionInterface
         $campaign->setName((string) ($data['name'] ?? ''));
         $campaign->setEnabled(!empty($data['enabled']));
 
+        /** @var array<int, array<string, mixed>> $triggerRows */
+        $triggerRows = (array) ($data['triggers']['triggers'] ?? []);
+        /** @var array<int, array<string, mixed>> $conditionRows */
+        $conditionRows = (array) ($data['conditions']['conditions'] ?? []);
+        /** @var array<int, array<string, mixed>> $actionRows */
+        $actionRows = (array) ($data['actions']['actions'] ?? []);
+
         try {
             $this->campaignResource->save($campaign);
-            $this->saveTriggers((int) $campaign->getEntityId(), (array) ($data['triggers']['triggers'] ?? []));
+            $this->saveTriggers((int) $campaign->getEntityId(), $triggerRows);
             $this->saveChildRows(
                 (int) $campaign->getEntityId(),
-                (array) ($data['conditions']['conditions'] ?? []),
-                (array) ($data['actions']['actions'] ?? [])
+                $conditionRows,
+                $actionRows
             );
 
             // This is the admin UI's actual write path for triggers/enabled status — it saves

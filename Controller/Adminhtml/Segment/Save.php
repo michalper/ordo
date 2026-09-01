@@ -31,6 +31,7 @@ class Save extends AbstractSegmentAction implements HttpPostActionInterface
 
     public function execute()
     {
+        /** @var array<string, mixed> $data */
         $data = $this->getRequest()->getPostValue();
         $resultRedirect = $this->resultRedirectFactory->create();
 
@@ -48,9 +49,12 @@ class Save extends AbstractSegmentAction implements HttpPostActionInterface
         $segment->setName((string) ($data['name'] ?? ''));
         $segment->setEnabled(!empty($data['enabled']));
 
+        /** @var array<int, array<string, mixed>> $conditionRows */
+        $conditionRows = (array) ($data['conditions']['conditions'] ?? []);
+
         try {
             $this->segmentResource->save($segment);
-            $this->saveConditions((int) $segment->getEntityId(), (array) ($data['conditions']['conditions'] ?? []));
+            $this->saveConditions((int) $segment->getEntityId(), $conditionRows);
 
             $this->messageManager->addSuccessMessage(__('The segment has been saved.'));
 

@@ -24,6 +24,9 @@ abstract class GenericButton
         return $entityId ? (int) $entityId : null;
     }
 
+    /**
+     * @param array<string, mixed> $params
+     */
     protected function getUrl(string $route = '*/*/', array $params = []): string
     {
         return $this->getUrlBuilder()->getUrl($route, $params);

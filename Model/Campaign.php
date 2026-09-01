@@ -50,11 +50,13 @@ class Campaign extends AbstractModel implements CampaignInterface
 
     public function getCreatedAt(): ?string
     {
-        return $this->getData(self::CREATED_AT);
+        $value = $this->getData(self::CREATED_AT);
+        return $value === null ? null : (string) $value;
     }
 
     public function getUpdatedAt(): ?string
     {
-        return $this->getData(self::UPDATED_AT);
+        $value = $this->getData(self::UPDATED_AT);
+        return $value === null ? null : (string) $value;
     }
 }

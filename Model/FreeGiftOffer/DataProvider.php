@@ -5,6 +5,8 @@ namespace Ordo\Automation\Model\FreeGiftOffer;
 
 use Magento\Framework\App\Request\DataPersistorInterface;
 use Magento\Ui\DataProvider\AbstractDataProvider;
+use Ordo\Automation\Model\FreeGiftOfferProduct;
+use Ordo\Automation\Model\FreeGiftOfferTier;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\CollectionFactory as FreeGiftOfferCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOfferProduct\CollectionFactory as FreeGiftOfferProductCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOfferTier\CollectionFactory as FreeGiftOfferTierCollectionFactory;
@@ -19,6 +21,10 @@ class DataProvider extends AbstractDataProvider
 {
     protected ?array $loadedData = null;
 
+    /**
+     * @param array<string, mixed> $meta
+     * @param array<string, mixed> $data
+     */
     public function __construct(
         $name,
         $primaryFieldName,
@@ -34,6 +40,9 @@ class DataProvider extends AbstractDataProvider
         parent::__construct($name, $primaryFieldName, $requestFieldName, $meta, $data);
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function getData(): array
     {
         if ($this->loadedData !== null) {
@@ -43,13 +52,14 @@ class DataProvider extends AbstractDataProvider
         $this->loadedData = [];
 
         foreach ($this->collection->getItems() as $offer) {
+            /** @var array<string, mixed> $offerData */
             $offerData = $offer->getData();
             $offerId = (int) $offer->getEntityId();
 
             $tierCollection = $this->tierCollectionFactory->create();
             $tierCollection->addOfferFilter($offerId);
             $offerData['tiers'] = array_values(array_map(
-                static fn ($tier) => [
+                static fn (FreeGiftOfferTier $tier) => [
                     'min_subtotal' => $tier->getMinSubtotal(),
                     'gift_slots' => $tier->getGiftSlots(),
                 ],
@@ -59,16 +69,17 @@ class DataProvider extends AbstractDataProvider
             $productCollection = $this->productCollectionFactory->create();
             $productCollection->addOfferFilter($offerId);
             $offerData['products'] = array_values(array_map(
-                static fn ($product) => ['sku' => $product->getSku()],
+                static fn (FreeGiftOfferProduct $product) => ['sku' => $product->getSku()],
                 $productCollection->getItems()
             ));
 
             $this->loadedData[$offerId] = $offerData;
         }
 
+        /** @var array<string, mixed>|null $persisted */
         $persisted = $this->dataPersistor->get('ordo_free_gift_offer');
         if ($persisted) {
-            $offerId = $persisted['entity_id'] ?? null;
+            $offerId = (int) ($persisted['entity_id'] ?? 0);
             if ($offerId) {
                 $this->loadedData[$offerId] = $persisted;
             }

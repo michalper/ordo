@@ -70,21 +70,17 @@ class DataProviderTest extends TestCase
         $collection->method('getItems')->willReturn([$campaign]);
 
         $conditionRow = $this->createMock(CampaignCondition::class);
-        $conditionRow->method('getData')->willReturnMap([
-            ['type', null, 'has_tag'],
-            ['params', null, json_encode(['tag' => 'vip'])],
-        ]);
+        $conditionRow->method('getType')->willReturn('has_tag');
+        $conditionRow->method('getParamsJson')->willReturn(json_encode(['tag' => 'vip']));
         $conditionCollection = $this->createMock(ConditionCollection::class);
         $conditionCollection->method('addCampaignFilter');
         $conditionCollection->method('getIterator')->willReturn(new \ArrayIterator([$conditionRow]));
         $this->conditionCollectionFactory->method('create')->willReturn($conditionCollection);
 
         $actionRow = $this->createMock(CampaignAction::class);
-        $actionRow->method('getData')->willReturnMap([
-            ['type', null, 'tag_customer'],
-            ['params', null, json_encode(['tag' => 'reordered'])],
-            ['delay_minutes', null, 60],
-        ]);
+        $actionRow->method('getType')->willReturn('tag_customer');
+        $actionRow->method('getParamsJson')->willReturn(json_encode(['tag' => 'reordered']));
+        $actionRow->method('getDelayMinutes')->willReturn(60);
         $actionCollection = $this->createMock(ActionCollection::class);
         $actionCollection->method('addCampaignFilter');
         $actionCollection->method('getIterator')->willReturn(new \ArrayIterator([$actionRow]));
@@ -113,10 +109,8 @@ class DataProviderTest extends TestCase
         $collection->method('getItems')->willReturn([$campaign]);
 
         $conditionRow = $this->createMock(CampaignCondition::class);
-        $conditionRow->method('getData')->willReturnMap([
-            ['type', null, 'has_tag'],
-            ['params', null, 'not-json'],
-        ]);
+        $conditionRow->method('getType')->willReturn('has_tag');
+        $conditionRow->method('getParamsJson')->willReturn('not-json');
         $conditionCollection = $this->createMock(ConditionCollection::class);
         $conditionCollection->method('addCampaignFilter');
         $conditionCollection->method('getIterator')->willReturn(new \ArrayIterator([$conditionRow]));

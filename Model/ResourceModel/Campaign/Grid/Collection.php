@@ -21,7 +21,7 @@ class Collection extends SearchResult
      * "Triggers" column needs every row's trigger events aggregated into one comma-separated
      * string, so it's a GROUP_CONCAT join here rather than a plain column select.
      */
-    protected function _initSelect()
+    protected function _initSelect(): void
     {
         parent::_initSelect();
 
@@ -30,7 +30,5 @@ class Collection extends SearchResult
             'ordo_campaign_trigger.campaign_id = main_table.entity_id',
             ['triggers' => new \Zend_Db_Expr('GROUP_CONCAT(DISTINCT ordo_campaign_trigger.trigger_event SEPARATOR \', \')')]
         )->group('main_table.entity_id');
-
-        return $this;
     }
 }
