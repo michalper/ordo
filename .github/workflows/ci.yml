@@ -51,7 +51,12 @@ jobs:
         run: composer install --no-interaction --no-progress --prefer-dist
 
       - name: Audit dependencies for known vulnerabilities
-        run: composer audit --no-interaction
+        # --abandoned=report: still shown, but doesn't fail the build — the abandoned packages
+        # here are transitive dependencies of magento/magento2-functional-testing-framework
+        # (laminas/*, doctrine/annotations), not anything this module requires directly, so
+        # there's nothing this repo can do about them beyond waiting on MFTF's own upstream.
+        # Real security advisories (a different, more serious flag) still fail the build.
+        run: composer audit --no-interaction --abandoned=report
 
       - name: Run unit tests
         run: vendor/bin/phpunit
