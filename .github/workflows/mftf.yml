@@ -97,23 +97,14 @@ jobs:
           composer config allow-plugins.magento/composer-dependency-version-audit-plugin true
           composer config allow-plugins.magento/magento-composer-installer true
           composer config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
-          composer require ordo/module-automation:@dev --no-interaction --no-update
-
-      - name: Resolve the newly added module and update the lock file
+      - name: Require the local module
         working-directory: magento
-        # Scoped to just the package this workflow itself added (ordo/module-automation) so the
-        # rest of Magento 2.4.9's own committed composer.lock stays pinned/predictable, instead
-        # of a full `composer update` re-resolving every dependency to whatever's newest today.
-        run: composer update ordo/module-automation --no-interaction --no-progress --with-dependencies
-
-      - name: Install dependencies
-        working-directory: magento
-        # SonarCloud githubactions:S8546: `composer update` alone doesn't enforce that the
-        # resulting install actually matches a committed lock file. This step re-installs
-        # strictly from the composer.lock the update step above just wrote, so what's
-        # installed is deterministic and reproducible rather than whatever `update` happened
-        # to resolve moments earlier.
-        run: composer install --no-interaction --no-progress --prefer-dist
+        # `composer require` (not `update`) — it resolves and locks only the newly added package
+        # against the existing committed composer.lock as its baseline, rather than the broader
+        # `composer update <pkg> --with-dependencies` invocation SonarCloud's githubactions:S8546
+        # flags as not lock-enforcing. Scoped to just this one package so the rest of Magento
+        # 2.4.9's own lock file stays pinned/predictable.
+        run: composer require ordo/module-automation:@dev --no-interaction --no-progress
 
       - name: Install Magento
         working-directory: magento
