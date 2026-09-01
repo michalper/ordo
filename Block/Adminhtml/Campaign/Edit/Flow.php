@@ -144,9 +144,11 @@ class Flow extends Template
                 'tag' => [['name' => 'tag', 'label' => (string) __('Tag')]],
                 'order_total_gte' => [['name' => 'amount', 'label' => (string) __('Minimum order total')]],
                 'visitor_tag' => [['name' => 'tag', 'label' => (string) __('Tag')]],
+                'score_at_least' => [['name' => 'threshold', 'label' => (string) __('Minimum score')]],
             ],
             'action' => [
                 'add_tag' => [['name' => 'tag', 'label' => (string) __('Tag')]],
+                'add_points' => [['name' => 'points', 'label' => (string) __('Points')]],
                 'generate_coupon' => [
                     ['name' => 'rule_id', 'label' => (string) __('Cart price rule ID')],
                     ['name' => 'prefix', 'label' => (string) __('Coupon code prefix')],

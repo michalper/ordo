@@ -179,6 +179,13 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
+                                        <action name="2">
+                                            <target>${ $.parentName }.threshold</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="1">
@@ -193,6 +200,13 @@
                                         </action>
                                         <action name="1">
                                             <target>${ $.parentName }.tag</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="2">
+                                            <target>${ $.parentName }.threshold</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -222,6 +236,39 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
+                                        <action name="2">
+                                            <target>${ $.parentName }.threshold</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                    </actions>
+                                </rule>
+                                <rule name="3">
+                                    <value>score_at_least</value>
+                                    <actions>
+                                        <action name="0">
+                                            <target>${ $.parentName }.tag</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="1">
+                                            <target>${ $.parentName }.amount</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="2">
+                                            <target>${ $.parentName }.threshold</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">true</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                             </rules>
@@ -249,11 +296,21 @@
                         <visible>false</visible>
                     </settings>
                 </field>
+                <field name="threshold" formElement="input" sortOrder="17">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Minimum score</label>
+                        <visible>false</visible>
+                        <validation>
+                            <rule name="validate-digits" xsi:type="boolean">true</rule>
+                        </validation>
+                    </settings>
+                </field>
                 <field name="params_json" formElement="textarea" sortOrder="20">
                     <settings>
                         <dataType>text</dataType>
                         <label translate="true">Params (JSON) — only needed for a condition type without a dedicated field above</label>
-                        <notice translate="true">Leave blank if you filled in Tag / Minimum order total above.</notice>
+                        <notice translate="true">Leave blank if you filled in Tag / Minimum order total / Minimum score above.</notice>
                     </settings>
                 </field>
             </container>
@@ -338,6 +395,11 @@
                                             <callback>visible</callback>
                                             <params><param name="0" xsi:type="boolean">false</param></params>
                                         </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.points</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="1">
@@ -385,6 +447,11 @@
                                         </action>
                                         <action name="8">
                                             <target>${ $.parentName }.cta_url</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.points</target>
                                             <callback>visible</callback>
                                             <params><param name="0" xsi:type="boolean">false</param></params>
                                         </action>
@@ -438,6 +505,11 @@
                                             <callback>visible</callback>
                                             <params><param name="0" xsi:type="boolean">false</param></params>
                                         </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.points</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="3">
@@ -485,6 +557,66 @@
                                         </action>
                                         <action name="8">
                                             <target>${ $.parentName }.cta_url</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">true</param></params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.points</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                    </actions>
+                                </rule>
+                                <rule name="4">
+                                    <value>add_points</value>
+                                    <actions>
+                                        <action name="0">
+                                            <target>${ $.parentName }.tag</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="1">
+                                            <target>${ $.parentName }.rule_id</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="2">
+                                            <target>${ $.parentName }.prefix</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="3">
+                                            <target>${ $.parentName }.template</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="4">
+                                            <target>${ $.parentName }.message</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="5">
+                                            <target>${ $.parentName }.headline</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="6">
+                                            <target>${ $.parentName }.body</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="7">
+                                            <target>${ $.parentName }.cta_label</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.cta_url</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.points</target>
                                             <callback>visible</callback>
                                             <params><param name="0" xsi:type="boolean">true</param></params>
                                         </action>
@@ -575,6 +707,14 @@
                     <settings>
                         <dataType>text</dataType>
                         <label translate="true">Call-to-action button URL</label>
+                        <visible>false</visible>
+                    </settings>
+                </field>
+                <field name="points" formElement="input" sortOrder="25">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Points</label>
+                        <notice translate="true">Can be negative (a penalty rule).</notice>
                         <visible>false</visible>
                     </settings>
                 </field>

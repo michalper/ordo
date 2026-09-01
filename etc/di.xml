@@ -96,6 +96,7 @@
                 <item name="tag" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\HasTag</item>
                 <item name="order_total_gte" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\OrderTotalAtLeast</item>
                 <item name="visitor_tag" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\VisitorHasTag</item>
+                <item name="score_at_least" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\ScoreAtLeast</item>
             </argument>
         </arguments>
     </type>
@@ -107,6 +108,7 @@
                 <item name="send_email" xsi:type="object">Ordo\Automation\Model\Campaign\Action\SendEmail</item>
                 <item name="generate_coupon" xsi:type="object">Ordo\Automation\Model\Campaign\Action\GenerateCoupon</item>
                 <item name="popup" xsi:type="object">Ordo\Automation\Model\Campaign\Action\ShowPopup</item>
+                <item name="add_points" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddPoints</item>
             </argument>
         </arguments>
     </type>

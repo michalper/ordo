@@ -37,4 +37,14 @@ class TypeLabelsTest extends TestCase
     {
         self::assertSame('Show Popup', (new TypeLabels())->actionLabel('popup'));
     }
+
+    public function testConditionLabelUsesScoreAtLeastMapping(): void
+    {
+        self::assertSame('Score At Least', (new TypeLabels())->conditionLabel('score_at_least'));
+    }
+
+    public function testActionLabelUsesAddPointsMapping(): void
+    {
+        self::assertSame('Add Points', (new TypeLabels())->actionLabel('add_points'));
+    }
 }

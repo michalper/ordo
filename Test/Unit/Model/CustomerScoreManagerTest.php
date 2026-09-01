@@ -1,0 +1,65 @@
+<?php
+declare(strict_types=1);
+
+namespace Ordo\Automation\Test\Unit\Model;
+
+use Magento\Framework\App\ResourceConnection;
+use Magento\Framework\DB\Adapter\AdapterInterface;
+use Magento\Framework\DB\Select;
+use Ordo\Automation\Model\CustomerScoreManager;
+use PHPUnit\Framework\TestCase;
+
+class CustomerScoreManagerTest extends TestCase
+{
+    public function testAddPointsUpsertsWithTheCustomerIdAndPoints(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::once())->method('query')
+            ->with(self::stringContains('ON DUPLICATE KEY UPDATE'), [42, 10]);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $manager = new CustomerScoreManager($resourceConnection);
+        $manager->addPoints(42, 10);
+    }
+
+    public function testGetScoreReturnsStoredScore(): void
+    {
+        $select = $this->createMock(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchOne')->willReturn('35');
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $manager = new CustomerScoreManager($resourceConnection);
+
+        self::assertSame(35, $manager->getScore(42));
+    }
+
+    public function testGetScoreReturnsZeroWhenCustomerHasNoRowYet(): void
+    {
+        $select = $this->createMock(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchOne')->willReturn(false);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $manager = new CustomerScoreManager($resourceConnection);
+
+        self::assertSame(0, $manager->getScore(42));
+    }
+}

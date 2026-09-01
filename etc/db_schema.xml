@@ -100,6 +100,15 @@
         </index>
     </table>
 
+    <table name="ordo_customer_score" resource="default" engine="innodb" comment="Lead scoring — a running points total per customer, accumulated by the add_points campaign action and read by the score_at_least condition. One row per customer; points accumulate via UPSERT, never a separate ledger row per event.">
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
+        <column xsi:type="int" name="score" nullable="false" default="0" comment="Running points total — can go negative if a rule subtracts more than the balance"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="customer_id"/>
+        </constraint>
+    </table>
+
     <table name="ordo_customer_tag" resource="default" engine="innodb" comment="Behavioral tags — the segmentation primitive every B2C trigger and future campaign targeting reads from">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>

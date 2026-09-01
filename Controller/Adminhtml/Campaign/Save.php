@@ -182,7 +182,7 @@ class Save extends AbstractCampaignAction implements HttpPostActionInterface
      */
     private const DEDICATED_PARAM_FIELDS = [
         'tag', 'amount', 'rule_id', 'prefix', 'template', 'message',
-        'headline', 'body', 'cta_label', 'cta_url',
+        'headline', 'body', 'cta_label', 'cta_url', 'points', 'threshold',
     ];
 
     /**

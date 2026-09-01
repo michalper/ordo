@@ -72,6 +72,8 @@ Every action used to end in an email, tag, or coupon — nothing ever rendered b
 
 **Popup display-frequency capping — done.** Closes the first bullet of the "Popup targeting refinements" gap below. `Model\Campaign\Action\ShowPopup` now checks `Helper\Config::getPopupFrequencyCapHours()` (`ordo_automation/tracking/popup_frequency_cap_hours`, default 24h, 0 disables it) against `ordo_pending_popup` before queuing a new row — if the same customer/visitor already received a popup within that window, the action is a silent no-op (not logged as an error; skipping is the intended behavior). `Model\ResourceModel\PendingPopup\Collection::targetHasRecentlyReceivedPopup()` implements the OR-across-customer_id/visitor_id lookup, same identifier-matching approach as `addTargetFilter()`. Verified against a real database in `Test/Integration/CampaignVisitorPopupScenarioTest.php` — a real, already-delivered row inside the cap window suppresses a subsequent dispatch's popup action.
 
+**Lead scoring (MVP) — done.** Closes the core of the "Lead scoring" gap below, deliberately built as a small addition to the existing condition/action pool rather than a separate rule engine — the same primitive relationship tags already have (`add_tag` writes, `tag` reads) now exists for points: a new `ordo_customer_score` table (one row per customer, `score` accumulated via `INSERT ... ON DUPLICATE KEY UPDATE score = score + VALUES(score)` so concurrent awards never race on a read-then-write) behind `Model\CustomerScoreManager`, a new `add_points` action (any campaign action chain can award — or, with a negative value, deduct — points), and a new `score_at_least` condition (gates on the customer's current running total). Any existing trigger can drive both, e.g. `order_placed` → `add_points` to award points for a purchase, or a condition-gated campaign that only fires once a customer's score clears a threshold. Verified against a real database in `CampaignDispatchScenarioTest.php` — one test proves points genuinely accumulate across repeated dispatches (not overwritten), another proves `score_at_least` is unsatisfied below the threshold and satisfied once the real accumulated score crosses it. **Deliberately not built in this pass** (see the narrowed gap below): demographic-attribute scoring rules and a dedicated "campaign fires automatically the instant a threshold is crossed" push mechanism (today the threshold is checked when *some* trigger fires and a `score_at_least` condition happens to be on that campaign, not proactively on every point award — the same tradeoff `tag_added`/`visitor_tag_added` made deliberate and explicit for tags).
+
 ## Phase 7 — dispatch performance at scale
 
 An audit found the campaign engine worked correctly but would not survive real traffic:
@@ -180,6 +182,7 @@ Not failures — not attempted, or explicitly deferred:
 - A confirmed green run of `AdminCampaignScenarioEndToEndTest.xml` specifically (Phase 7 — `AdminCreateCampaignWithConditionsAndActionsTest.xml` and `AdminCreateMultiTriggerCampaignTest.xml` both run green repeatably; this one is blocked on host memory contention, not the test or the code — see Phase 7 for detail).
 - Dashboard stats per fixed trigger (Phase 4).
 - **Repo/package health badges for README.md** (Shields.io download/version/CI badges, Packagist stats if ever published there, Codecov/Coveralls coverage badges, SonarCloud/Scrutinizer/Code Climate quality scores, Dependabot/Snyk dependency-vulnerability scanning) — genuinely useful once (if) this repo is public and/or published as a Composer package on Packagist; not wired up now because doing so means deciding to make the repo public and signing up for third-party services, both of which are calls for whoever owns that decision, not something to default into.
+- **GitHub Actions CI** (a PHP/Composer build-and-test workflow — GitHub's own suggested templates for a PHP or Laravel-style project cover the shape needed: install deps, run the unit suite, run PHPStan) — not wired up yet. This module's tests currently need a live Magento install to run against (see `AGENTS.md`), so a real CI workflow means either standing up a disposable Magento instance in the runner (slow, heavier than most PHP-package CI) or splitting out a fast lane that only needs `vendor/` (PHPStan, and any test that doesn't need a live Magento bootstrap) — a real decision to make, not a one-line template drop-in.
 - Visual identity system (Phase 4).
 - `Test/Api/` coverage for the credit-limit endpoints (Phase 6).
 - A measured throughput/load number for the Phase 7 dispatch performance work — the architectural bottlenecks are fixed, but nothing has put a concurrent-dispatch number on it yet.
@@ -193,12 +196,13 @@ incidentally:
 
 - **Product recommendations** — dynamic "recommended for you" blocks in email/on-site based on
   browsing/purchase history. We have none; every email is static content.
-- **Lead scoring** — points-based scoring (demographic attributes, behavioral events like page
-  visits or email link clicks) with automations triggered by crossing a point threshold. We only
-  have binary tags (`ordo_customer_tag`/`ordo_visitor_tag` — has it or doesn't), no point
-  accumulation or threshold model at all; this is a bigger gap than "no scoring" sounds — it's a
-  genuinely different data model (an `ordo_customer_score` type table, plus rules mapping event →
-  points, and a threshold check in the condition pool) than tags are.
+- **Lead scoring** — the core points model (accumulate, read, gate a campaign on a threshold) is
+  done, see Phase 5 above. Still missing: demographic-attribute-based scoring rules (as opposed
+  to a campaign author manually wiring `add_points` onto whichever trigger they choose), an
+  admin UI for managing scoring rules declaratively (today it's just another campaign action —
+  no dedicated "event → points" rule table/grid), and a trigger that fires the instant a
+  threshold is crossed rather than being checked opportunistically on whatever trigger already
+  ran (the same tradeoff `tag_added`/`visitor_tag_added` made for tags).
 - **Popup targeting refinements** — the on-site popup shipped above (Phase 5) targets a
   visitor/customer identifier and a behavioral tag threshold; display-frequency capping per
   visitor is done (see Phase 5). Still missing: event-driven triggers finer than a tag threshold

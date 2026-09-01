@@ -20,6 +20,7 @@ use Ordo\Automation\Model\CampaignFactory;
 use Ordo\Automation\Model\CampaignScheduledAction;
 use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\CampaignTriggerFactory;
+use Ordo\Automation\Model\CustomerScoreManager;
 use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Model\ResourceModel\Campaign as CampaignResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action as CampaignActionResource;
@@ -51,12 +52,16 @@ class CampaignDispatchScenarioTest extends TestCase
     private CampaignDispatcher $dispatcher;
     private CacheInterface $cache;
     private CustomerTagManager $tagManager;
+    private CustomerScoreManager $scoreManager;
 
     /** @var int[] */
     private array $campaignIds = [];
 
     /** @var array{customerId: int, tag: string}[] */
     private array $tagsToClean = [];
+
+    /** @var int[] */
+    private array $scoresToClean = [];
 
     /** @var int[] */
     private array $ruleIdsToClean = [];
@@ -79,6 +84,7 @@ class CampaignDispatchScenarioTest extends TestCase
         $this->dispatcher = self::$objectManager->get(CampaignDispatcher::class);
         $this->cache = self::$objectManager->get(CacheInterface::class);
         $this->tagManager = self::$objectManager->get(CustomerTagManager::class);
+        $this->scoreManager = self::$objectManager->get(CustomerScoreManager::class);
     }
 
     protected function tearDown(): void
@@ -87,6 +93,15 @@ class CampaignDispatchScenarioTest extends TestCase
             $this->tagManager->removeTag($entry['customerId'], $entry['tag']);
         }
         $this->tagsToClean = [];
+
+        foreach ($this->scoresToClean as $customerId) {
+            $resourceConnection = self::$objectManager->get(ResourceConnection::class);
+            $resourceConnection->getConnection()->delete(
+                $resourceConnection->getTableName('ordo_customer_score'),
+                ['customer_id = ?' => $customerId]
+            );
+        }
+        $this->scoresToClean = [];
 
         foreach ($this->campaignIds as $campaignId) {
             $this->deleteCampaign($campaignId);
@@ -394,6 +409,53 @@ class CampaignDispatchScenarioTest extends TestCase
         self::assertSame($ruleId, (int) $coupon->getRuleId());
 
         self::$objectManager->get(CouponResource::class)->delete($coupon);
+        $this->deleteCustomer($customerId);
+    }
+
+    public function testAddPointsActionIncrementsARealScoreAcrossMultipleDispatches(): void
+    {
+        $customerId = $this->createCustomer();
+        $this->scoresToClean[] = $customerId;
+
+        $triggerEvent = 'test_add_points_' . uniqid('', true);
+        $campaignId = $this->createCampaign($triggerEvent);
+        $this->addAction($campaignId, 'add_points', ['points' => '10']);
+        $this->flushCampaignCache();
+
+        $this->dispatcher->dispatch($triggerEvent, ['customer_id' => $customerId]);
+        self::assertSame(10, $this->scoreManager->getScore($customerId));
+
+        // A second dispatch accumulates on top of the first — proves the UPSERT increments
+        // rather than overwriting.
+        $this->dispatcher->dispatch($triggerEvent, ['customer_id' => $customerId]);
+        self::assertSame(20, $this->scoreManager->getScore($customerId));
+
+        $this->deleteCustomer($customerId);
+    }
+
+    public function testScoreAtLeastConditionGatesTheActionOnARealAccumulatedScore(): void
+    {
+        $customerId = $this->createCustomer();
+        $this->scoresToClean[] = $customerId;
+        $this->scoreManager->addPoints($customerId, 40);
+
+        $triggerEvent = 'test_score_at_least_' . uniqid('', true);
+        $campaignId = $this->createCampaign($triggerEvent);
+        $this->addCondition($campaignId, 'score_at_least', ['threshold' => '50']);
+        $resultTag = 'high-scorer-' . uniqid('', true);
+        $this->addAction($campaignId, 'add_tag', ['tag' => $resultTag]);
+        $this->tagsToClean[] = ['customerId' => $customerId, 'tag' => $resultTag];
+        $this->flushCampaignCache();
+
+        // Below threshold — condition must not be satisfied yet.
+        $this->dispatcher->dispatch($triggerEvent, ['customer_id' => $customerId]);
+        self::assertFalse($this->tagManager->hasTag($customerId, $resultTag));
+
+        // Cross the threshold for real, then dispatch again.
+        $this->scoreManager->addPoints($customerId, 15);
+        $this->dispatcher->dispatch($triggerEvent, ['customer_id' => $customerId]);
+        self::assertTrue($this->tagManager->hasTag($customerId, $resultTag));
+
         $this->deleteCustomer($customerId);
     }
 

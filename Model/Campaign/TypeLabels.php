@@ -18,6 +18,7 @@ class TypeLabels
         'tag' => 'Has Tag',
         'order_total_gte' => 'Order Total ≥',
         'visitor_tag' => 'Visitor Has Tag (anonymous)',
+        'score_at_least' => 'Score At Least',
     ];
 
     private const ACTION_LABELS = [
@@ -25,6 +26,7 @@ class TypeLabels
         'send_email' => 'Send Email',
         'generate_coupon' => 'Generate Coupon',
         'popup' => 'Show Popup',
+        'add_points' => 'Add Points',
     ];
 
     public function conditionLabel(string $type): string
