@@ -99,12 +99,21 @@ jobs:
           composer config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
           composer require ordo/module-automation:@dev --no-interaction --no-update
 
-      - name: Install dependencies
+      - name: Resolve the newly added module and update the lock file
         working-directory: magento
         # Scoped to just the package this workflow itself added (ordo/module-automation) so the
         # rest of Magento 2.4.9's own committed composer.lock stays pinned/predictable, instead
         # of a full `composer update` re-resolving every dependency to whatever's newest today.
         run: composer update ordo/module-automation --no-interaction --no-progress --with-dependencies
+
+      - name: Install dependencies
+        working-directory: magento
+        # SonarCloud githubactions:S8546: `composer update` alone doesn't enforce that the
+        # resulting install actually matches a committed lock file. This step re-installs
+        # strictly from the composer.lock the update step above just wrote, so what's
+        # installed is deterministic and reproducible rather than whatever `update` happened
+        # to resolve moments earlier.
+        run: composer install --no-interaction --no-progress --prefer-dist
 
       - name: Install Magento
         working-directory: magento
