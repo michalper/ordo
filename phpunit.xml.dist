@@ -29,6 +29,11 @@
             <!-- Config, not application code — read by the php-cs-fixer CLI, never executed by
                  anything PHPUnit runs, so it can only ever show as 0% covered. -->
             <file>.php-cs-fixer.dist.php</file>
+            <!-- Magento's own module-registration bootstrap — Composer's autoload.files require
+                 it once at framework bootstrap, never something this module's own test suite
+                 exercises. Already in codecov.yml's ignore list; mirrored here so local coverage
+                 runs report the same thing. -->
+            <file>registration.php</file>
         </exclude>
     </source>
 </phpunit>

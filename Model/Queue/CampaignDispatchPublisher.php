@@ -30,11 +30,25 @@ class CampaignDispatchPublisher
 {
     public const TOPIC = 'ordo.automation.campaign.dispatch';
 
+    /**
+     * @var callable(callable(): void): void
+     */
+    private $shutdownScheduler;
+
+    /**
+     * @param (callable(callable(): void): void)|null $shutdownScheduler Defaults to the real
+     *  register_shutdown_function() — overridable so a test can substitute an immediate
+     *  invocation and actually assert what the deferred publish does, instead of the deferred
+     *  branch being unreachable from a unit test entirely.
+     */
     public function __construct(
         private readonly PublisherInterface $publisher,
         private readonly SerializerInterface $serializer,
-        private readonly CampaignDispatchGuard $dispatchGuard
+        private readonly CampaignDispatchGuard $dispatchGuard,
+        ?callable $shutdownScheduler = null
     ) {
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction
+        $this->shutdownScheduler = $shutdownScheduler ?? register_shutdown_function(...);
     }
 
     /**
@@ -48,8 +62,7 @@ class CampaignDispatchPublisher
         ]);
 
         if ($this->dispatchGuard->isConsuming()) {
-            // phpcs:ignore Magento2.Functions.DiscouragedFunction
-            register_shutdown_function(function () use ($payload): void {
+            ($this->shutdownScheduler)(function () use ($payload): void {
                 $this->publisher->publish(self::TOPIC, $payload);
             });
             return;

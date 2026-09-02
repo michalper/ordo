@@ -38,9 +38,8 @@ class CampaignDispatchPublisherTest extends TestCase
      * confirmed via a real CI run to self-deadlock the DB queue driver otherwise (see the class
      * doc). CampaignDispatchGuard::setConsuming(true) is what CampaignDispatchConsumer flags
      * around its dispatch() call; publish() must not call the underlying publisher synchronously
-     * in that window — only register_shutdown_function() defers it, which isn't itself
-     * practically assertable from a unit test, so "the immediate call never happens" is the
-     * behavior this test can actually pin down.
+     * in that window — the scheduler (real register_shutdown_function() in production) is what
+     * defers it instead.
      */
     public function testPublishDefersInsteadOfPublishingImmediatelyWhileConsuming(): void
     {
@@ -53,8 +52,39 @@ class CampaignDispatchPublisherTest extends TestCase
 
         $publisher->expects(self::never())->method('publish');
 
+        $scheduledCalls = [];
+        $scheduler = function (callable $deferred) use (&$scheduledCalls): void {
+            $scheduledCalls[] = $deferred;
+        };
+
         $dispatchGuard->setConsuming(true);
-        (new CampaignDispatchPublisher($publisher, $serializer, $dispatchGuard))
+        (new CampaignDispatchPublisher($publisher, $serializer, $dispatchGuard, $scheduler))
+            ->publish('tag_added', ['customer_id' => 1, 'tag' => 'vip']);
+
+        self::assertCount(1, $scheduledCalls);
+    }
+
+    /**
+     * Proves what the deferred closure actually does once it eventually runs (real
+     * register_shutdown_function() only fires at process shutdown, which a unit test can't
+     * observe directly) — substitutes an immediately-invoking scheduler so the closure body
+     * itself executes inside this test instead of being permanently unreachable from one.
+     */
+    public function testDeferredPublishActuallyPublishesOnceInvoked(): void
+    {
+        $publisher = $this->createMock(PublisherInterface::class);
+        $serializer = $this->createStub(SerializerInterface::class);
+        $dispatchGuard = new CampaignDispatchGuard();
+
+        $serializer->method('serialize')->willReturn('{"trigger_event":"tag_added"}');
+
+        $publisher->expects(self::once())->method('publish')
+            ->with(CampaignDispatchPublisher::TOPIC, '{"trigger_event":"tag_added"}');
+
+        $immediateScheduler = static fn (callable $deferred) => $deferred();
+
+        $dispatchGuard->setConsuming(true);
+        (new CampaignDispatchPublisher($publisher, $serializer, $dispatchGuard, $immediateScheduler))
             ->publish('tag_added', ['customer_id' => 1, 'tag' => 'vip']);
     }
 }
