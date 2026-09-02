@@ -97,7 +97,24 @@
              utils/command.php) already captures and returns that output regardless, so this is
              the cheapest way to actually see what's failing instead of adding another
              diagnostic dump. -->
+        <!-- EXPERIMENT: the single "max messages 1" run's ORDO_DEBUG trace (added above) proved
+             the whole dispatch to action chain — including CouponResource::save() inside
+             GenerateCoupon — runs to completion and logs success, yet salesrule_coupon stays
+             empty and queue_message_status still ends at status 4 ("retry required"), with zero
+             matching exception anywhere at any log level. That's the signature of the DB-queue
+             driver's own message-processing transaction rolling back AFTER our code already
+             returned normally, for a reason that's the framework's own, not
+             CampaignDispatcher's — and "retry required" is explicitly a retry signal, not a
+             terminal failure. Deliberately NOT raising the max-messages count instead: with this
+             install's consumers_wait_for_messages=1 (env.php), a consumer given more messages
+             than currently exist blocks polling for one that isn't there yet — and our own
+             reentrancy-deferred tag_added publish (see CampaignDispatchPublisher) only actually
+             fires at process shutdown, i.e. never while that same process is still blocked
+             waiting for it. A fresh, separate invocation is what actually gives a
+             retry-required message another attempt. -->
         <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=1 -vvv" stepKey="runCampaignDispatchConsumer"/>
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=1 -vvv" stepKey="runCampaignDispatchConsumerRetry1"/>
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=1 -vvv" stepKey="runCampaignDispatchConsumerRetry2"/>
 
         <!-- Step 4: the only assertion in this whole module's test suite that checks a REAL,
              merchant-visible side effect — a coupon code that only CampaignDispatcher's
