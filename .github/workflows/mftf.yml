@@ -220,8 +220,13 @@ jobs:
         env:
           # Mandatory: the built-in server otherwise handles one request at a time, and
           # Selenium/Chrome fires many concurrent asset requests — without workers, admin pages
-          # render with broken assets (RequireJS "Script error") or hang until timeout.
-          PHP_CLI_SERVER_WORKERS: 8
+          # render with broken assets (RequireJS "Script error") or hang until timeout. Bumped
+          # from 8 to 32 after the first real run: every one of the 8 tests failed identically at
+          # the exact same point (the post-login page's asset burst / the logout page's re-render)
+          # with net::ERR_CONNECTION_REFUSED — php-server.log showed the server still alive and
+          # accepting connections throughout, so this wasn't a crash, just too few workers for the
+          # concurrent request burst a full admin page triggers.
+          PHP_CLI_SERVER_WORKERS: 32
         run: |
           nohup php -S 0.0.0.0:8080 -t pub /tmp/router.php \
             > /tmp/php-server.log 2>&1 &
