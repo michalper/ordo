@@ -157,21 +157,6 @@ jobs:
 
           bin/magento module:enable Ordo_Automation
           bin/magento setup:upgrade
-
-          # Found the real root cause of every "[name='name'] not found" / redirect-to-dashboard
-          # failure (runs 14-19) by comparing this fresh CI install against this repo's own
-          # local magento-ordo-test/ sandbox directly: Magento_TwoFactorAuth (core, mandatory
-          # since Magento 2.4.x) simply doesn't exist in that older, long-lived sandbox
-          # (`module:status Magento_TwoFactorAuth` -> "Module does not exist"), but IS present in
-          # a fresh `git clone --branch 2.4.9`. It intercepts every admin controller dispatch to
-          # enforce 2FA setup/verification, redirecting anywhere it isn't satisfied — exactly
-          # matching every symptom seen (a valid, authenticated session; correct ACL; correct
-          # Host; every GET landing back on the dashboard). Disabling it for this disposable,
-          # single-job CI instance is the standard, widely-documented approach for Magento 2.4
-          # test automation, not a workaround specific to this repo.
-          bin/magento module:disable Magento_TwoFactorAuth
-          bin/magento setup:upgrade
-
           bin/magento deploy:mode:set developer
 
           # StorefrontTrackerSetsVisitorCookieTest explicitly documents (see its own test XML)
@@ -384,6 +369,7 @@ jobs:
           cp var/log/exception.log /tmp/server-logs/magento-exception.log 2>/dev/null || true
           cp var/log/system.log /tmp/server-logs/magento-system.log 2>/dev/null || true
           cp var/log/debug.log /tmp/server-logs/magento-debug.log 2>/dev/null || true
+          bin/magento module:status > /tmp/server-logs/module-status.txt 2>&1 || true
 
       - name: Reproduce the redirect via curl and dump raw response headers
         # ACL is provably fine, the "Broken reference" layout warnings are unchanged whether the
@@ -404,6 +390,14 @@ jobs:
           echo "--- GET campaign/new ---" >> /tmp/server-logs/curl-repro.txt
           curl -s -b "$JAR" -c "$JAR" -D - -o /tmp/server-logs/curl-campaign-new-body.html \
             "$BASE/admin/ordo/campaign/new" >> /tmp/server-logs/curl-repro.txt
+          echo "--- GET campaign/new, following redirects to the real final page ---" >> /tmp/server-logs/curl-repro.txt
+          curl -sL -b "$JAR" -c "$JAR" -o /tmp/server-logs/curl-campaign-new-final.html \
+            "$BASE/admin/ordo/campaign/new"
+          # Flash messages (the "why" behind whatever page we actually landed on) and the module
+          # list Magento itself believes is active, straight from the live instance rather than
+          # inferred from install-time logs.
+          grep -oE '<li[^>]*class="[^"]*message-(error|warning)[^"]*"[^>]*>.*</li>' \
+            /tmp/server-logs/curl-campaign-new-final.html >> /tmp/server-logs/curl-repro.txt 2>/dev/null || true
           cat /tmp/server-logs/cookies.txt >> /tmp/server-logs/curl-repro.txt 2>/dev/null || true
 
       - name: Upload MFTF results on failure
