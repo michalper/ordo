@@ -303,7 +303,7 @@ define([
                     return;
                 }
 
-                if (!payload || !payload.kind) {
+                if (!payload?.kind) {
                     return;
                 }
 
