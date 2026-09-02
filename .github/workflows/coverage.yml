@@ -48,6 +48,7 @@ jobs:
           composer config allow-plugins.magento/composer-dependency-version-audit-plugin true
           composer config allow-plugins.magento/magento-composer-installer true
           composer config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer config allow-plugins.infection/extension-installer true
 
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
@@ -95,3 +96,51 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  mutation-testing:
+    # Separate job, not a step in `coverage` above — Infection re-runs the whole unit suite once
+    # per surviving mutant, which is a materially different (much longer) cost profile than a
+    # single coverage pass, and infection.json5's minMsi/minCoveredMsi are deliberately 0 for now
+    # (see that file's own comment): this job is here to start reporting a real Mutation Score
+    # Indicator for the first time, not to gate merges on a threshold nobody has measured yet.
+    # continue-on-error keeps that non-blocking even once a real min-msi is set — flip it off at
+    # the same time a real threshold goes in, if the team wants this to start failing builds.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: "8.3"
+          coverage: xdebug
+
+      - name: Configure Composer for repo.magento.com
+        env:
+          MAGENTO_COMPOSER_USERNAME: ${{ secrets.MAGENTO_COMPOSER_USERNAME }}
+          MAGENTO_COMPOSER_PASSWORD: ${{ secrets.MAGENTO_COMPOSER_PASSWORD }}
+        run: |
+          composer config repositories.magento composer https://repo.magento.com
+          composer config http-basic.repo.magento.com "$MAGENTO_COMPOSER_USERNAME" "$MAGENTO_COMPOSER_PASSWORD"
+          composer config allow-plugins.magento/composer-dependency-version-audit-plugin true
+          composer config allow-plugins.magento/magento-composer-installer true
+          composer config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer config allow-plugins.infection/extension-installer true
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run Infection
+        run: vendor/bin/infection --threads=$(nproc) --logger-github --no-interaction
+
+      - name: Upload mutation testing log
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: infection-report
+          path: |
+            infection.log
+            infection-summary.log
+          retention-days: 30

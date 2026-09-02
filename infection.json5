@@ -1,0 +1,27 @@
+{
+    "$schema": "vendor/infection/infection/resources/schema.json",
+    "source": {
+        "directories": [
+            "Api",
+            "Block",
+            "Controller",
+            "Cron",
+            "Helper",
+            "Model",
+            "Observer",
+            "Plugin",
+            "Ui"
+        ]
+    },
+    "logs": {
+        "text": "infection.log",
+        "summary": "infection-summary.log",
+        "github": true
+    },
+    // Starting low on purpose — the goal of the first CI runs is to see a real, honest MSI number
+    // for a 184-file unit suite whose mutation coverage has never been measured, not to gate merges
+    // on a guessed threshold. Raise both once a baseline run has actually reported a number.
+    "minMsi": 0,
+    "minCoveredMsi": 0,
+    "testFramework": "phpunit"
+}

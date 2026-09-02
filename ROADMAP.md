@@ -29,8 +29,11 @@ scoped from real hands-on marketing automation experience.
 
 - **Split the MFTF pipeline into a matrix by functional area** (Campaign, Segment, Dashboard/ReorderCycle, Tracking)
   using MFTF's own `<group>` tags. Deliberately deferred until the single pipeline has had one confirmed green run.
-- **Psalm and/or Infection (mutation testing)** — undecided. Psalm overlaps heavily with PHPStan; Infection would test
-  whether the suite actually fails when the code is mutated, a different signal than line coverage.
+- ~~Psalm and/or Infection (mutation testing)~~ — decided: skip Psalm (overlaps heavily with PHPStan `level: max` +
+  `bitexpert/phpstan-magento`, not worth a second baseline to maintain for marginal extra signal). Infection added
+  (`infection.json5`, `mutation-testing` job in `coverage.yml`) — non-blocking (`continue-on-error`, `minMsi`/
+  `minCoveredMsi` at 0) until a real first Mutation Score Indicator has actually been reported; raise the thresholds
+  and drop `continue-on-error` once that number exists.
 - **SonarQube Cloud's Hunter/Remediation agents** — not yet investigated whether they need a paid tier or additional
   GitHub App permissions beyond what's configured.
 
