@@ -8,6 +8,18 @@
   --ordo-off-bg: #f1f1f5;
   --ordo-off-text: #6b7180;
   --ordo-radius: 10px;
+
+  /* Type scale — every font-size/font-weight in this file (and flow.css's matching
+     copy) snaps to one of these, instead of each rule picking its own ad-hoc number. */
+  --ordo-font-xs: 11px;
+  --ordo-font-sm: 12px;
+  --ordo-font-base: 13px;
+  --ordo-font-md: 14px;
+  --ordo-font-lg: 16px;
+  --ordo-font-display: 26px;
+  --ordo-weight-regular: 400;
+  --ordo-weight-medium: 600;
+  --ordo-weight-bold: 700;
 }
 
 .ordo-dashboard-stats {
@@ -24,8 +36,8 @@
   padding: 18px 20px;
 }
 
-.ordo-stat-value { font-size: 26px; font-weight: 700; line-height: 1.2; }
-.ordo-stat-label { font-size: 13px; color: var(--ordo-text-muted); margin-top: 2px; }
+.ordo-stat-value { font-size: var(--ordo-font-display); font-weight: var(--ordo-weight-bold); line-height: 1.2; }
+.ordo-stat-label { font-size: var(--ordo-font-base); color: var(--ordo-text-muted); margin-top: 2px; }
 
 .ordo-dashboard-nav {
   display: grid;
@@ -48,13 +60,13 @@
 
 .ordo-nav-title {
   display: block;
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: var(--ordo-weight-medium);
+  font-size: var(--ordo-font-md);
   color: #1b1f2a;
   margin-bottom: 4px;
 }
 
-.ordo-nav-desc { display: block; font-size: 12px; color: var(--ordo-text-muted); }
+.ordo-nav-desc { display: block; font-size: var(--ordo-font-sm); color: var(--ordo-text-muted); }
 
 .ordo-section-head {
   display: flex;
@@ -63,7 +75,7 @@
   margin-bottom: 16px;
 }
 
-.ordo-section-head h2 { font-size: 16px; margin: 0; }
+.ordo-section-head h2 { font-size: var(--ordo-font-lg); font-weight: var(--ordo-weight-medium); margin: 0; }
 
 .ordo-dashboard-triggers { margin-bottom: 32px; }
 
@@ -79,13 +91,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
-  font-size: 13px;
+  font-size: var(--ordo-font-base);
 }
 
 .ordo-trigger-stat-row + .ordo-trigger-stat-row { border-top: 1px solid var(--ordo-border); }
 
 .ordo-trigger-stat-label { color: #1b1f2a; }
-.ordo-trigger-stat-value { font-weight: 700; color: var(--ordo-primary); }
+.ordo-trigger-stat-value { font-weight: var(--ordo-weight-bold); color: var(--ordo-primary); }
 
 .ordo-trigger-outcome-table {
   width: 100%;
@@ -94,7 +106,7 @@
   border: 1px solid var(--ordo-border);
   border-radius: var(--ordo-radius);
   overflow: hidden;
-  font-size: 13px;
+  font-size: var(--ordo-font-base);
 }
 
 .ordo-trigger-outcome-table th,
@@ -105,29 +117,29 @@
 
 .ordo-trigger-outcome-table th {
   color: var(--ordo-text-muted);
-  font-weight: 600;
-  font-size: 12px;
+  font-weight: var(--ordo-weight-medium);
+  font-size: var(--ordo-font-sm);
   text-transform: uppercase;
   border-bottom: 1px solid var(--ordo-border);
 }
 
 .ordo-trigger-outcome-table tbody tr + tr { border-top: 1px solid var(--ordo-border); }
 
-.ordo-trigger-outcome-table td:nth-child(4) { font-weight: 700; color: var(--ordo-primary); }
+.ordo-trigger-outcome-table td:nth-child(4) { font-weight: var(--ordo-weight-bold); color: var(--ordo-primary); }
 
 .ordo-btn {
   display: inline-block;
   border-radius: 8px;
   padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ordo-font-base);
+  font-weight: var(--ordo-weight-medium);
   text-decoration: none;
 }
 
 .ordo-btn-primary { background: var(--ordo-primary); color: #fff; }
 .ordo-btn-primary:hover { background: var(--ordo-primary-dark); color: #fff; }
 
-.ordo-empty-state { color: var(--ordo-text-muted); font-size: 14px; }
+.ordo-empty-state { color: var(--ordo-text-muted); font-size: var(--ordo-font-md); }
 
 .ordo-campaigns-grid {
   display: grid;
@@ -156,12 +168,12 @@
   margin-bottom: 8px;
 }
 
-.ordo-campaign-name { font-weight: 600; font-size: 14px; color: #1b1f2a; }
+.ordo-campaign-name { font-weight: var(--ordo-weight-medium); font-size: var(--ordo-font-md); color: #1b1f2a; }
 
 .ordo-badge {
   display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--ordo-font-xs);
+  font-weight: var(--ordo-weight-bold);
   letter-spacing: .02em;
   text-transform: uppercase;
   padding: 3px 8px;
@@ -172,4 +184,4 @@
 .ordo-badge-on { background: var(--ordo-success-bg); color: var(--ordo-success); }
 .ordo-badge-off { background: var(--ordo-off-bg); color: var(--ordo-off-text); }
 
-.ordo-campaign-trigger { font-size: 13px; color: var(--ordo-text-muted); }
+.ordo-campaign-trigger { font-size: var(--ordo-font-base); color: var(--ordo-text-muted); }

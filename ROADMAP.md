@@ -15,10 +15,6 @@ scoped from real hands-on marketing automation experience.
   redirect-to-dashboard failure across all 8 existing tests is still unconfirmed. `AdminApproveOrderViaEmailTest.xml`
   (order-approval round trip via a real MailHog-caught email) is written and wired in, not yet confirmed green.
 
-## Admin UI
-
-- **Typography** — still stock Magento admin typography; no brand-specific type scale defined.
-
 ## Test coverage
 
 - **MFTF: the tracking snippet posting an event.** `StorefrontTrackerSetsVisitorCookieTest` covers the cookie; nothing

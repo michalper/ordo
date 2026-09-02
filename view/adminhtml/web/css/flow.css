@@ -1,4 +1,17 @@
 .ordo-flow-wrapper {
+    /* Same type scale as dashboard.css's .ordo-dashboard — this page and the dashboard never
+       render together, so there's no shared :root to hang one copy of these off; kept as two
+       identical token sets rather than one file's scale silently drifting from the other's. */
+    --ordo-font-2xs: 10px;
+    --ordo-font-xs: 11px;
+    --ordo-font-sm: 12px;
+    --ordo-font-base: 13px;
+    --ordo-font-md: 14px;
+    --ordo-font-xl: 18px;
+    --ordo-weight-regular: 400;
+    --ordo-weight-medium: 600;
+    --ordo-weight-bold: 700;
+
     margin-bottom: 24px;
     background: #fff;
     border: 1px solid #e2e2e2;
@@ -9,15 +22,15 @@
 
 .ordo-flow-head h2 {
     margin: 0 0 4px;
-    font-size: 17px;
-    font-weight: 600;
+    font-size: var(--ordo-font-xl);
+    font-weight: var(--ordo-weight-medium);
     color: #11263c;
 }
 
 .ordo-flow-head p {
     margin: 0 0 16px;
     color: #767676;
-    font-size: 12px;
+    font-size: var(--ordo-font-sm);
     max-width: 720px;
     line-height: 1.5;
 }
@@ -36,7 +49,7 @@
     border: 1px solid #f4b7ae;
     border-radius: 6px;
     color: #9b3126;
-    font-size: 12px;
+    font-size: var(--ordo-font-sm);
     line-height: 1.5;
 }
 
@@ -48,8 +61,8 @@
     margin: 0;
     border-radius: 20px;
     padding: 7px 18px;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: var(--ordo-font-sm);
+    font-weight: var(--ordo-weight-medium);
     letter-spacing: .2px;
     border: 1px solid transparent;
 }
@@ -97,8 +110,8 @@
 
 .ordo-flow-palette-group h3 {
     margin: 0 0 6px;
-    font-size: 11px;
-    font-weight: 600;
+    font-size: var(--ordo-font-xs);
+    font-weight: var(--ordo-weight-medium);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: #6b7680;
@@ -110,7 +123,7 @@
     border: 1px solid #dde3e8;
     border-radius: 6px;
     background: #fff;
-    font-size: 12px;
+    font-size: var(--ordo-font-sm);
     color: #2f3944;
     cursor: grab;
     user-select: none;
@@ -169,7 +182,7 @@
 
 .ordo-flow-node {
     padding: 12px 14px 14px;
-    font-size: 12px;
+    font-size: var(--ordo-font-sm);
     color: #fff;
     width: 100%;
     box-sizing: border-box;
@@ -180,8 +193,8 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 8px;
-    font-weight: 600;
-    font-size: 12px;
+    font-weight: var(--ordo-weight-medium);
+    font-size: var(--ordo-font-sm);
     letter-spacing: .3px;
     text-transform: uppercase;
     opacity: .9;
@@ -206,7 +219,7 @@
     height: 20px;
     min-width: 20px;
     border-radius: 50%;
-    font-size: 13px;
+    font-size: var(--ordo-font-base);
     flex-shrink: 0;
 }
 
@@ -219,7 +232,7 @@
     display: block;
     width: 100%;
     box-sizing: border-box;
-    font-size: 11px;
+    font-size: var(--ordo-font-xs);
     margin-bottom: 6px;
     color: #2b2b2b;
     border: none;
@@ -237,8 +250,8 @@
 
 .ordo-flow-field-label {
     display: block;
-    font-size: 10px;
-    font-weight: 600;
+    font-size: var(--ordo-font-2xs);
+    font-weight: var(--ordo-weight-medium);
     text-transform: uppercase;
     letter-spacing: .3px;
     opacity: .85;
@@ -249,7 +262,7 @@
     display: block;
     width: 100%;
     box-sizing: border-box;
-    font-size: 11px;
+    font-size: var(--ordo-font-xs);
     margin-bottom: 8px;
     color: #2b2b2b;
     border: none;
