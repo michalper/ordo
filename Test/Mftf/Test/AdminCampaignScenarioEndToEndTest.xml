@@ -89,7 +89,15 @@
              nothing consumes the message DispatchOrderPlacedCampaigns just published until a
              consumer actually runs. In production that's cron_consumers_runner; here, run it
              directly, exactly once, for exactly this module's consumer. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=1" stepKey="runCampaignDispatchConsumer"/>
+        <!-- -vvv: a real CI run's queue_message_status dump showed this exact message stuck at
+             status 2 (in progress) or 4 (retry required) — never 3 (complete) — on every attempt,
+             with zero matching entries in exception.log/system.log/debug.log. Magento's consumer
+             command only prints a caught handler exception's full trace to its own
+             stdout/stderr at high verbosity; command.php's CLI bridge (dev/tests/acceptance/
+             utils/command.php) already captures and returns that output regardless, so this is
+             the cheapest way to actually see what's failing instead of adding another
+             diagnostic dump. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=1 -vvv" stepKey="runCampaignDispatchConsumer"/>
 
         <!-- Step 4: the only assertion in this whole module's test suite that checks a REAL,
              merchant-visible side effect — a coupon code that only CampaignDispatcher's
