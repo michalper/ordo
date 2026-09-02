@@ -168,6 +168,9 @@ jobs:
           bin/magento config:set ordo_automation/tracking/enabled 1
           # AdminApproveOrderViaEmailTest needs order-hold-for-approval actually active.
           bin/magento config:set ordo_automation/order_approval/enabled 1
+          # AdminScoreThresholdCampaignTest needs Observer/EvaluateCustomerScoreRules.php to
+          # actually run on customer_save_after — off by default, same as the two flags above.
+          bin/magento config:set ordo_automation/lead_scoring/enabled 1
 
           # Every admin test that navigates straight to a URL (amOnPage) rather than
           # clicking a rendered link was silently redirected to the Dashboard — confirmed

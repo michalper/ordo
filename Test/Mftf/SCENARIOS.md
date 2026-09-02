@@ -10,26 +10,26 @@ jobs — not guessed from memory. Each scenario is marked:
 Cross-reference: `Test/Mftf/README.md` for what already passed and why; `ROADMAP.md`'s
 "Test coverage" section for the standing priority list this feeds.
 
-**Scope check, done against the actual codebase, not memory** — asked directly: do we have every
-API endpoint, every admin form/grid, every real MA scenario, the whole module? Verified:
+**Scope check, done against the actual codebase, not memory** — asked directly: do we have every API endpoint, every
+admin form/grid, every real MA scenario, the whole module? Verified:
 
-- **57 REST routes** (`etc/webapi.xml`, 8 resource groups: campaigns + their trigger/condition/
-  action children, offers + self-extend, reorder-cycles, customer/visitor tags, order-approvals +
-  approve/reject/decision-links, free-gift-offers + tiers + products + cart eligibility/redemption,
-  credit-limit). These are **out of MFTF's scope by design** — MFTF drives a real browser, REST
-  endpoints don't have one — and are **already covered** by a dedicated suite: `Test/Api/*ApiTest.php`
+- **57 REST routes** (`etc/webapi.xml`, 8 resource groups: campaigns + their trigger/condition/ action children,
+  offers + self-extend, reorder-cycles, customer/visitor tags, order-approvals + approve/reject/decision-links,
+  free-gift-offers + tiers + products + cart eligibility/redemption, credit-limit). These are **out of MFTF's scope by
+  design** — MFTF drives a real browser, REST endpoints don't have one — and are **already covered** by a dedicated
+  suite: `Test/Api/*ApiTest.php`
   (8 files, `AbstractApiTestCase`-based `webapi_rest` calls). Not duplicated here.
-- **All 7 admin form/grid areas** (`view/adminhtml/layout/*.xml` + `ui_component/*.xml`) —
-  Campaign, Dashboard, FreeGiftOffer, ReorderCycle, Rfm, ScoreRule, Segment — are represented in
-  §§1–9 below. No admin area was missing structurally; most rows within each are still ⬜.
+- **All 7 admin form/grid areas** (`view/adminhtml/layout/*.xml` + `ui_component/*.xml`) — Campaign, Dashboard,
+  FreeGiftOffer, ReorderCycle, Rfm, ScoreRule, Segment — are represented in §§1–9 below. No admin area was missing
+  structurally; most rows within each are still ⬜.
 - **Storefront controllers** (`Controller/{Approval,Offer,Track}/`) cross-checked file-by-file:
-  caught one real gap this document's first pass missed — `Controller/Offer/Index.php` ("My
-  Offers", a whole page) — now added to §5.
+  caught one real gap this document's first pass missed — `Controller/Offer/Index.php` ("My Offers", a whole page) — now
+  added to §5.
 - **Credit limit** (`Model/CreditLimitCalculator.php`, `Model/CreditLimitStatus.php`,
-  `/V1/ordo/credit-limit/*`) has a REST API (covered by `Test/Api/CreditLimitApiTest.php`) and a
-  cron-driven warning email, but **no storefront UI at all** — confirmed by grepping
-  `view/frontend/` for any credit-limit block/template and finding only the email. Correctly out
-  of this MFTF document's scope (there's no browser page to drive); not a documentation gap.
+  `/V1/ordo/credit-limit/*`) has a REST API (covered by `Test/Api/CreditLimitApiTest.php`) and a cron-driven warning
+  email, but **no storefront UI at all** — confirmed by grepping
+  `view/frontend/` for any credit-limit block/template and finding only the email. Correctly out of this MFTF document's
+  scope (there's no browser page to drive); not a documentation gap.
 
 ## 1. Campaign engine
 
@@ -47,7 +47,7 @@ cases separately from the type-by-type ones.
 | `tag_added`               | `Observer/DispatchTagAddedCampaigns.php` (`ordo_customer_tag_added`)       | ⬜ (only reached indirectly, as a side effect, inside `AdminCampaignScenarioEndToEndTest` — never asserted on directly) |
 | `cart_abandoned`          | `Cron/SendAbandonedCartReminders.php`'s own dispatch, not a live observer  | ⬜                                                                                                                      |
 | `visitor_tag_added`       | `Observer/DispatchVisitorTagAddedCampaigns.php` (`ordo_visitor_tag_added`) | ⬜                                                                                                                      |
-| `score_threshold_crossed` | `Observer/DispatchScoreThresholdCampaigns.php` (lead scoring, see §4)      | ⬜                                                                                                                      |
+| `score_threshold_crossed` | `Observer/DispatchScoreThresholdCampaigns.php` (lead scoring, see §4)      | ✅ `AdminScoreThresholdCampaignTest`                                                                                    |
 
 ### 1b. Conditions (`Model\Campaign\ConditionPool`)
 
@@ -117,28 +117,29 @@ cases separately from the type-by-type ones.
 
 | Scenario                                                                                                 | Status |
 |----------------------------------------------------------------------------------------------------------|--------|
-| Create a score rule (attribute code, operator, value, points) via admin CRUD                             | ⬜     |
-| Operator: `equals`                                                                                       | ⬜     |
+| Create a score rule (attribute code, operator, value, points) via admin CRUD                             | ✅ `AdminScoreThresholdCampaignTest` |
+| Operator: `equals`                                                                                       | ✅ `AdminScoreThresholdCampaignTest` |
 | Operator: `not_equals`                                                                                   | ⬜     |
 | Operator: `contains`                                                                                     | ⬜     |
-| Customer save triggers `Observer/EvaluateCustomerScoreRules.php`, delta applied to `ordo_customer_score` | ⬜     |
-| Crossing the configured threshold fires `score_threshold_crossed` (chains §1a)                           | ⬜     |
+| Customer save triggers `Observer/EvaluateCustomerScoreRules.php`, delta applied to `ordo_customer_score` | ✅ `AdminScoreThresholdCampaignTest` |
+| Crossing the configured threshold fires `score_threshold_crossed` (chains §1a)                           | ✅ `AdminScoreThresholdCampaignTest` |
 | Score rule edited/disabled — no longer contributes on next customer save                                 | ⬜     |
 | Score rule deleted                                                                                       | ⬜     |
 
 ## 5. Free gift offers (`Model/FreeGiftOffer.php`, `Model/FreeGiftManagement.php`,
+
 `Controller/Adminhtml/FreeGiftOffer/`, `Controller/Offer/`)
 
-| Scenario                                                                                  | Status |
-|-------------------------------------------------------------------------------------------|--------|
-| Create a free gift offer (tiers, product pool) via admin CRUD                             | ⬜     |
-| Real cart crosses a tier's `min_subtotal` — gift slot becomes available on the storefront | ⬜     |
-| Customer selects a free gift, it's added to cart at zero cost                             | ⬜     |
-| Cart drops below the tier threshold — previously-added gift is removed                    | ⬜     |
-| Offer self-extension (`Controller/Offer/Extend.php`, `Offer::canSelfExtend()`)            | ⬜     |
+| Scenario                                                                                                                                                                            | Status                                                                                                                                                 |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Create a free gift offer (tiers, product pool) via admin CRUD                                                                                                                       | ⬜                                                                                                                                                     |
+| Real cart crosses a tier's `min_subtotal` — gift slot becomes available on the storefront                                                                                           | ⬜                                                                                                                                                     |
+| Customer selects a free gift, it's added to cart at zero cost                                                                                                                       | ⬜                                                                                                                                                     |
+| Cart drops below the tier threshold — previously-added gift is removed                                                                                                              | ⬜                                                                                                                                                     |
+| Offer self-extension (`Controller/Offer/Extend.php`, `Offer::canSelfExtend()`)                                                                                                      | ⬜                                                                                                                                                     |
 | "My Offers" storefront customer-account page (`Controller/Offer/Index.php`) lists the logged-in customer's offers, self-extend action visible only when `canSelfExtend()` allows it | ⬜ — missed entirely in the first pass of this document; caught auditing `Controller/Offer/*.php` directly against the doc rather than trusting memory |
-| `Cron\SendOfferExpiryReminders` — reminder email before expiry                            | ⬜     |
-| `Cron\ExpireOverdueOffers` — offer past expiry marked expired, no longer redeemable       | ⬜     |
+| `Cron\SendOfferExpiryReminders` — reminder email before expiry                                                                                                                      | ⬜                                                                                                                                                     |
+| `Cron\ExpireOverdueOffers` — offer past expiry marked expired, no longer redeemable                                                                                                 | ⬜                                                                                                                                                     |
 
 ## 6. Order approval (`Model/OrderApproval.php`, `Controller/Approval/`)
 
@@ -195,9 +196,9 @@ cases separately from the type-by-type ones.
 
 ## Suggested next batch (highest signal per test written)
 
-1. **`score_threshold_crossed` end to end** (§4 + §1a) — newest feature, zero coverage, same shape as
-   `AdminCampaignScenarioEndToEndTest` (admin CRUD → real customer save → dispatch → assert). Natural next pick given
-   the campaign-engine pattern is now proven reliable.
+1. ~~`score_threshold_crossed` end to end~~ (§4 + §1a) — done: `AdminScoreThresholdCampaignTest.xml` (`campaign`
+   group). Deliberately no condition on the campaign (an empty conditions list is vacuously satisfied), so the coupon
+   appearing is entirely down to the score-rule → threshold → dispatch chain actually working.
 2. **`send_email` action + MailHog** (§1c) — reuses the exact MailHog wiring
    `AdminApproveOrderViaEmailTest`/`MailHogHelper` already established; closes the last uncovered action type.
 3. **Free gift storefront flow** (§5) — the only *storefront cart* interaction pattern (adding a zero-cost item
