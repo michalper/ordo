@@ -26,7 +26,6 @@ scoped from real hands-on marketing automation experience.
   would need either a real PDP/PLP hook or a scripted `executeJS` call plus a DB-assertion custom action.
 - **A confirmed green run of `AdminCampaignScenarioEndToEndTest.xml`** — was blocked on local-sandbox host memory
   contention; now blocked on the CI pipeline issue above instead.
-- **Fresh PHPStan pass** on the free-gift and credit-limit API code specifically (added after the last full review).
 - **Load/soak test** for Phase 7's dispatch performance work — the architectural bottlenecks (N+1, sync blocking,
   unbounded cron) are fixed, but no test has put a concurrent-throughput number on it.
 
