@@ -194,6 +194,17 @@ jobs:
           MODULE_ALLOWLIST=Ordo_Automation
           EOF
 
+          # Not used by anything this workflow actually tests — none of the tests in `inputs.tests`
+          # need a credential — but `mftf generate:tests` parses EVERY Suite XML Magento core ships
+          # (e.g. the TwoFactorAuth module's default backend suite references
+          # {{_CREDS.magento/tfa/OTP_SHARED_SECRET}}) regardless of which tests were asked for, and
+          # fails outright ("Password not found in credentials file") if the file is simply missing.
+          # Dummy values are fine: nothing here reads them for real.
+          cat > dev/tests/acceptance/.credentials <<'EOF'
+          magento/tfa/OTP_SHARED_SECRET=dummy
+          magento/MAGENTO_ADMIN_PASSWORD=Admin123!
+          EOF
+
       - name: Start PHP built-in server
         working-directory: magento
         env:
