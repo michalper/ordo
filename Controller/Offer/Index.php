@@ -17,7 +17,7 @@ class Index extends AbstractOfferAction implements HttpGetActionInterface
     {
         /** @var Page $resultPage */
         $resultPage = $this->resultFactory->create(ResultFactory::TYPE_PAGE);
-        $resultPage->getConfig()->getTitle()->set(__('My Offers'));
+        $resultPage->getConfig()->getTitle()->set((string) __('My Offers'));
 
         return $resultPage;
     }

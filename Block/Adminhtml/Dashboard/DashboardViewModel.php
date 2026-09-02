@@ -76,7 +76,7 @@ class DashboardViewModel implements ArgumentInterface
 
     public function formatCurrency(float $amount): string
     {
-        return $this->pricingHelper->currency($amount, true, false);
+        return (string) $this->pricingHelper->currency($amount, true, false);
     }
 
     /**

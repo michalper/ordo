@@ -30,7 +30,7 @@ class IndexTest extends AbstractFrontendActionTestCase
         $this->makeContext();
 
         $title = $this->createMock(Title::class);
-        $title->expects(self::once())->method('set')->with(__('My Offers'));
+        $title->expects(self::once())->method('set')->with('My Offers');
 
         $pageConfig = $this->createStub(PageConfig::class);
         $pageConfig->method('getTitle')->willReturn($title);

@@ -1751,3 +1751,33 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: Ui/Component/Listing/Column/AbstractEntityActionsColumn.php
+
+		-
+			message: '#^Parameter \#1 \$loginUrl of method Magento\\Customer\\Model\\Session\:\:authenticate\(\) expects bool\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Offer/AbstractOfferAction.php
+
+		-
+			message: '#^Parameter \#3 \$value of method Magento\\Framework\\App\\ActionFlag\:\:set\(\) expects string, true given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Offer/AbstractOfferAction.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Offer/Extend.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Observer/RecordTriggerOutcome.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Plugin/Quote/BlockOverLimitCheckout.php

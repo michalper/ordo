@@ -7,6 +7,7 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Quote\Api\CartManagementInterface;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Api\Data\PaymentInterface;
+use Magento\Quote\Model\Quote;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CreditLimitCalculator;
 
@@ -28,6 +29,7 @@ class BlockOverLimitCheckout
     }
 
     /**
+     * @return array{int, PaymentInterface|null}
      * @throws LocalizedException
      */
     public function beforePlaceOrder(
@@ -39,6 +41,7 @@ class BlockOverLimitCheckout
             return [$cartId, $payment];
         }
 
+        /** @var Quote $quote */
         $quote = $this->cartRepository->get($cartId);
         $customerId = (int) $quote->getCustomerId();
 
