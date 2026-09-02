@@ -33,7 +33,16 @@ class CouponGenerator
         $coupon->setType(\Magento\SalesRule\Model\Rule::COUPON_TYPE_SPECIFIC);
         $coupon->setUsageLimit($usageLimit);
         $coupon->setUsagePerCustomer(1);
-        $coupon->setIsPrimary(false);
+        // Deliberately NOT calling setIsPrimary() at all — leave the column NULL. The admin's
+        // own "Manage Coupon Codes" grid (Magento\SalesRule\Model\ResourceModel\Coupon\
+        // Collection::addGeneratedCouponsFilter()) filters is_primary with an explicit
+        // ['null' => 1] condition, not "is_primary = 0" — a coupon saved with is_primary=false
+        // (which persists as 0, not NULL) is silently excluded from that query. Confirmed via a
+        // real CI run: the coupon generates successfully every time (logged, code returned) but
+        // never appeared in the grid even after a full 60s poll, with salesrule_coupon
+        // unreachable post-hoc since the test's own cleanup deletes the rule (cascades its
+        // coupons) before any diagnostic dump could run — this filter mismatch is the actual
+        // root cause, not a display/timing race.
 
         $this->couponResource->save($coupon);
 

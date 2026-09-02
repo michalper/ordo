@@ -27,7 +27,9 @@ class CouponGeneratorTest extends TestCase
         $coupon->expects(self::once())->method('setType')->with(Rule::COUPON_TYPE_SPECIFIC);
         $coupon->expects(self::once())->method('setUsageLimit')->with(1);
         $coupon->expects(self::once())->method('setUsagePerCustomer')->with(1);
-        $coupon->expects(self::once())->method('setIsPrimary')->with(false);
+        // Deliberately never called — see CouponGenerator's own comment: leaving is_primary
+        // unset keeps the column NULL, which is what the admin's coupon codes grid filters on.
+        $coupon->expects(self::never())->method('setIsPrimary');
         $couponFactory->method('create')->willReturn($coupon);
 
         $couponResource->expects(self::once())->method('save')->with($coupon);
