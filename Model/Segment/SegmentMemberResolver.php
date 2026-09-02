@@ -23,6 +23,16 @@ use Psr\Log\LoggerInterface;
  */
 class SegmentMemberResolver
 {
+    /**
+     * Cached per top-level getMatchingCustomerIds() call (reset at the start of each one) so a
+     * segment with more than one RFM condition (e.g. recency_days_at_most AND
+     * monetary_total_at_least) doesn't run RfmCalculator's grouped aggregate query once per
+     * condition — every RFM condition in the same resolve reads the same snapshot.
+     *
+     * @var array<int, array{frequency: int, monetary: float, recency_days: int|null}>|null
+     */
+    private ?array $aggregatesCache = null;
+
     public function __construct(
         private readonly SegmentConditionCollectionFactory $segmentConditionCollectionFactory,
         private readonly CustomerTagManager $customerTagManager,
@@ -39,6 +49,12 @@ class SegmentMemberResolver
      */
     public function getMatchingCustomerIds(int $segmentId, array $visitedSegmentIds = []): array
     {
+        if ($visitedSegmentIds === []) {
+            // Fresh top-level call (not a recursive in_segment hop) — start a new aggregates
+            // snapshot for this resolve. A recursive call keeps reusing the same one.
+            $this->aggregatesCache = null;
+        }
+
         $conditions = $this->segmentConditionCollectionFactory->create();
         $conditions->addSegmentFilter($segmentId);
 
@@ -142,7 +158,7 @@ class SegmentMemberResolver
         $threshold = (int) $days;
         $matching = [];
 
-        foreach ($this->rfmCalculator->getAggregatesForAllCustomers() as $customerId => $aggregate) {
+        foreach ($this->getAggregates() as $customerId => $aggregate) {
             if ($aggregate['recency_days'] !== null && $aggregate['recency_days'] <= $threshold) {
                 $matching[] = $customerId;
             }
@@ -166,7 +182,7 @@ class SegmentMemberResolver
         $threshold = (int) $count;
         $matching = [];
 
-        foreach ($this->rfmCalculator->getAggregatesForAllCustomers() as $customerId => $aggregate) {
+        foreach ($this->getAggregates() as $customerId => $aggregate) {
             if ($aggregate['frequency'] >= $threshold) {
                 $matching[] = $customerId;
             }
@@ -190,7 +206,7 @@ class SegmentMemberResolver
         $threshold = (float) $amount;
         $matching = [];
 
-        foreach ($this->rfmCalculator->getAggregatesForAllCustomers() as $customerId => $aggregate) {
+        foreach ($this->getAggregates() as $customerId => $aggregate) {
             if ($aggregate['monetary'] >= $threshold) {
                 $matching[] = $customerId;
             }
@@ -219,5 +235,17 @@ class SegmentMemberResolver
         }
 
         return $this->getMatchingCustomerIds($targetSegmentId, $visitedSegmentIds);
+    }
+
+    /**
+     * @return array<int, array{frequency: int, monetary: float, recency_days: int|null}>
+     */
+    private function getAggregates(): array
+    {
+        if ($this->aggregatesCache === null) {
+            $this->aggregatesCache = $this->rfmCalculator->getAggregatesForAllCustomers();
+        }
+
+        return $this->aggregatesCache;
     }
 }

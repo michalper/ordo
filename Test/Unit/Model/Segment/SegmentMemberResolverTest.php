@@ -140,6 +140,23 @@ class SegmentMemberResolverTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testMultipleRfmConditionsShareOneAggregateQuery(): void
+    {
+        $this->stubSegment(1, [
+            ['type' => 'recency_days_at_most', 'params' => ['days' => '30']],
+            ['type' => 'monetary_total_at_least', 'params' => ['amount' => '100']],
+        ]);
+        $this->primeFactory();
+
+        $this->rfmCalculator->expects(self::once())->method('getAggregatesForAllCustomers')->willReturn([
+            1 => ['frequency' => 0, 'monetary' => 100.0, 'recency_days' => 10],
+            2 => ['frequency' => 0, 'monetary' => 100.0, 'recency_days' => 90],
+        ]);
+
+        self::assertSame([1], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testMonetaryTotalAtLeastFiltersInclusively(): void
     {
         $this->stubSegment(1, [['type' => 'monetary_total_at_least', 'params' => ['amount' => '100']]]);
