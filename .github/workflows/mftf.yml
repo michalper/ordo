@@ -141,14 +141,35 @@ jobs:
 
       - name: Build the MFTF project
         working-directory: magento
-        # `mftf build:project` is what actually scaffolds dev/tests/acceptance/ (utils/router.php,
-        # utils/command.php, .env, etc.) from magento/magento2-functional-testing-framework's
-        # templates — none of those files exist in the magento/magento2 checkout itself. Must run
-        # before anything below that references them (the CLI-bridge symlink, the PHP built-in
-        # server's router script, or .env) — an earlier version of this workflow ran build:project
-        # only right before generate:tests, which is too late and failed with "Failed opening
-        # required '.../router.php'" the first time this workflow was actually run.
+        # `mftf build:project` scaffolds dev/tests/acceptance/ (utils/command.php, .env.example,
+        # codeception config, etc.) from magento/magento2-functional-testing-framework's own
+        # templates — magento/magento2 doesn't ship any of dev/tests/acceptance/utils itself
+        # (confirmed: that directory only has .gitignore/.htaccess.sample/staticRuleset.json/tests/
+        # in the core repo). Must run before anything below that references its output (the
+        # CLI-bridge symlink or .env).
         run: vendor/bin/mftf build:project
+
+      - name: Write the PHP built-in server's router script
+        working-directory: magento
+        # PHP's built-in server needs an explicit router when serving Magento's pub/ docroot,
+        # since Magento's real .htaccess/nginx rewrite rules (everything that isn't a real static
+        # file goes to index.php) have no equivalent here. This script is NOT something MFTF or
+        # Magento ships anywhere — it doesn't exist in either repo — so it's authored directly
+        # here rather than assumed to come from mftf build:project (an earlier version of this
+        # workflow wrongly assumed dev/tests/acceptance/utils/router.php would be scaffolded by
+        # that command; it never was, causing "Failed opening required '.../router.php'").
+        run: |
+          cat > /tmp/router.php <<'PHP'
+          <?php
+          $root = $_SERVER['DOCUMENT_ROOT'];
+          $path = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+          $file = $root . $path;
+          if ($path !== '/' && is_file($file)) {
+              return false;
+          }
+          chdir($root);
+          require $root . '/index.php';
+          PHP
 
       - name: Wire the MFTF CLI bridge and .env
         working-directory: magento
@@ -181,7 +202,7 @@ jobs:
           # render with broken assets (RequireJS "Script error") or hang until timeout.
           PHP_CLI_SERVER_WORKERS: 8
         run: |
-          nohup php -S 0.0.0.0:8080 -t pub dev/tests/acceptance/utils/router.php \
+          nohup php -S 0.0.0.0:8080 -t pub /tmp/router.php \
             > /tmp/php-server.log 2>&1 &
           for i in $(seq 1 15); do
             curl -sf http://127.0.0.1:8080/ -o /dev/null && break
