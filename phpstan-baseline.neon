@@ -175,6 +175,18 @@ parameters:
 			path: Controller/Adminhtml/ReorderCycle/Index.php
 
 		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/Rfm/Index.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/Rfm/Index.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
@@ -221,18 +233,6 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/Segment/Index.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Rfm/Index.php
-
-		-
-			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Adminhtml/Rfm/Index.php
 
 		-
 			message: '#^Method Ordo\\Automation\\Controller\\Adminhtml\\Segment\\NewAction\:\:execute\(\) should return Magento\\Framework\\App\\ResponseInterface\|Magento\\Framework\\Controller\\ResultInterface but returns null\.$#'
@@ -496,31 +496,25 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
-			path: Model/Campaign/Condition/MonetaryTotalAtLeast.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
 			path: Model/Campaign/Condition/MonetaryPercentileAtLeast.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
-			path: Model/Campaign/Condition/OrderFrequencyPercentileAtLeast.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/Campaign/Condition/RecencyPercentileAtLeast.php
+			path: Model/Campaign/Condition/MonetaryTotalAtLeast.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
 			path: Model/Campaign/Condition/OrderFrequencyAtLeast.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Campaign/Condition/OrderFrequencyPercentileAtLeast.php
 
 		-
 			message: '#^Cannot cast mixed to float\.$#'
@@ -533,6 +527,12 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Model/Campaign/Condition/RecencyDaysAtMost.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Campaign/Condition/RecencyPercentileAtLeast.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -663,7 +663,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 4
+			count: 2
 			path: Model/CampaignDispatcher.php
 
 		-

@@ -89,32 +89,7 @@
              nothing consumes the message DispatchOrderPlacedCampaigns just published until a
              consumer actually runs. In production that's cron_consumers_runner; here, run it
              directly, exactly once, for exactly this module's consumer. -->
-        <!-- -vvv: a real CI run's queue_message_status dump showed this exact message stuck at
-             status 2 (in progress) or 4 (retry required) — never 3 (complete) — on every attempt,
-             with zero matching entries in exception.log/system.log/debug.log. Magento's consumer
-             command only prints a caught handler exception's full trace to its own
-             stdout/stderr at high verbosity; command.php's CLI bridge (dev/tests/acceptance/
-             utils/command.php) already captures and returns that output regardless, so this is
-             the cheapest way to actually see what's failing instead of adding another
-             diagnostic dump. -->
-        <!-- EXPERIMENT: the single "max messages 1" run's ORDO_DEBUG trace (added above) proved
-             the whole dispatch to action chain — including CouponResource::save() inside
-             GenerateCoupon — runs to completion and logs success, yet salesrule_coupon stays
-             empty and queue_message_status still ends at status 4 ("retry required"), with zero
-             matching exception anywhere at any log level. That's the signature of the DB-queue
-             driver's own message-processing transaction rolling back AFTER our code already
-             returned normally, for a reason that's the framework's own, not
-             CampaignDispatcher's — and "retry required" is explicitly a retry signal, not a
-             terminal failure. Deliberately NOT raising the max-messages count instead: with this
-             install's consumers_wait_for_messages=1 (env.php), a consumer given more messages
-             than currently exist blocks polling for one that isn't there yet — and our own
-             reentrancy-deferred tag_added publish (see CampaignDispatchPublisher) only actually
-             fires at process shutdown, i.e. never while that same process is still blocked
-             waiting for it. A fresh, separate invocation is what actually gives a
-             retry-required message another attempt. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=1 -vvv" stepKey="runCampaignDispatchConsumer"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=1 -vvv" stepKey="runCampaignDispatchConsumerRetry1"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=1 -vvv" stepKey="runCampaignDispatchConsumerRetry2"/>
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=1" stepKey="runCampaignDispatchConsumer"/>
 
         <!-- Step 4: the only assertion in this whole module's test suite that checks a REAL,
              merchant-visible side effect — a coupon code that only CampaignDispatcher's
@@ -125,6 +100,15 @@
         <conditionalClick selector="{{AdminCartPriceRulesFormSection.manageCouponCodesHeader}}"
                            dependentSelector="#couponCodesGrid_table" visible="false" stepKey="openCouponCodesTab"/>
         <waitForElementVisible selector="#couponCodesGrid_table" stepKey="waitForCouponCodesGrid"/>
-        <see selector="#couponCodesGrid_table" userInput="E2ETEST-" stepKey="seeGeneratedCouponInGrid"/>
+        <!-- waitForText, not <see>: a real CI run's ORDO_DEBUG-instrumented trace (since removed)
+             proved the dispatch->action chain, GenerateCoupon's own CouponResource::save()
+             included, genuinely completes and logs success — queue_message_status ending at 4
+             (COMPLETE, per Magento\MysqlMq\Model\QueueManagement, not "retry required" as an
+             earlier version of this test wrongly assumed). The actual bug was here: this grid's
+             rows load via a separate AJAX call after the table element is already in the DOM, so
+             waitForElementVisible on the table only proves the still-empty skeleton rendered,
+             not that the row data arrived — a one-shot <see> could fire before it did.
+             <waitForText> polls for the text instead of checking once. -->
+        <waitForText selector="#couponCodesGrid_table" userInput="E2ETEST-" stepKey="seeGeneratedCouponInGrid"/>
     </test>
 </tests>

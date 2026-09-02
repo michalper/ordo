@@ -16,15 +16,15 @@ use Magento\Framework\Serialize\SerializerInterface;
  * "ordo_customer_tag_added", which DispatchTagAddedCampaigns turns right back into a
  * publish('tag_added', ...) call on this exact same topic/queue, from inside
  * CampaignDispatchConsumer::execute() while it's still consuming the message that triggered it.
- * Confirmed via a real CI run (queue_message_status): a message whose action chain re-entered
- * publish() this way consistently ended at status 4 ("retry required"), never 3 ("complete"),
- * with no matching exception anywhere — consistent with the DB-queue driver self-deadlocking on
- * its own `queue`/`queue_message` locks when a second message is inserted onto the same queue a
- * still-open consumer transaction already holds a lock on. CampaignDispatchConsumer flags
- * CampaignDispatchGuard around its dispatch() call; a publish() that happens while that flag is
- * set defers the actual insert to register_shutdown_function, i.e. after the consumer's own
- * transaction has already committed and released its lock — a normal (non-reentrant) publish
- * from an HTTP request observer is completely unaffected and stays immediate.
+ * That's a second INSERT into a queue a still-open consumer transaction already touches —
+ * defensively deferred rather than risking lock contention with it, even though a real CI
+ * investigation (queue_message_status ending at status 4 = COMPLETE, per
+ * Magento\MysqlMq\Model\QueueManagement — not a deadlock) later showed the dispatch chain itself
+ * completes fine either way. CampaignDispatchConsumer flags CampaignDispatchGuard around its
+ * dispatch() call; a publish() that happens while that flag is set defers the actual insert to
+ * register_shutdown_function, i.e. after the consumer's own transaction has already committed —
+ * a normal (non-reentrant) publish from an HTTP request observer is completely unaffected and
+ * stays immediate.
  */
 class CampaignDispatchPublisher
 {
