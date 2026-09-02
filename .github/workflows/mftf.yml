@@ -180,6 +180,15 @@ jobs:
           # with no error message. ACL was already proven fine (see the dump below).
           bin/magento config:set admin/security/use_form_key 0
 
+          # queue:consumers:start --max-messages=N blocks polling (sleep(1) in a loop) until N
+          # messages actually exist, by default — confirmed via a real CI run: AdminScoreThreshold
+          # CampaignTest asking for more messages than were queued hung until the CLI bridge's own
+          # HTTP proxy timed out with a 504. There's no background consumer running between MFTF
+          # tests in this same CI job (DB queue driver only, see above), so a test can't always
+          # know exactly how many messages are actually pending when it wants to drain a backlog.
+          # This makes queue:consumers:start return as soon as the queue is empty instead.
+          bin/magento setup:config:set --consumers-wait-for-messages=0 -n
+
           # Newly-created MFTF test fixtures (products, etc.) aren't salable/addable to cart
           # until stock/price indexes recompute — set once globally instead of forcing a
           # reindex in every test. Deliberately excludes catalogsearch_fulltext: no test here

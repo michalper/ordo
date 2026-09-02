@@ -72,9 +72,12 @@
              nothing consumes the message DispatchScoreThresholdCampaigns just published until a
              consumer actually runs. max-messages is 5, not 1: other tests in this same CI job
              (same DB, no background consumer running between them) can leave their own already
-             order-placed/registered dispatch messages sitting unconsumed in the same queue ahead
-             of ours; draining a few keeps this test from picking up a stale message referencing
-             a rule another test's own after-hook already deleted, and leaving ours unprocessed. -->
+             order-placed/registered dispatch message sitting unconsumed in the queue ahead of
+             ours; draining a few keeps this test from picking up a stale message referencing a
+             rule another test's own after-hook already deleted, and leaving ours unprocessed.
+             Safe to ask for more than are actually queued: the workflow sets
+             consumers-wait-for-messages=0, so the consumer returns as soon as the queue is empty
+             instead of blocking — see mftf.yml's install step for why that's needed here. -->
         <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=5" stepKey="runCampaignDispatchConsumer"/>
 
         <!-- Step 5: the only assertion that checks a real, merchant-visible side effect — a
