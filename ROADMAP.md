@@ -24,9 +24,12 @@ scoped from real hands-on marketing automation experience.
 
 ## Test coverage
 
-- **MFTF: the tracking snippet posting an event.** `StorefrontTrackerSetsVisitorCookieTest` covers the cookie; nothing
-  covers `window.ordoTrack()` actually posting to `/ordo/track/event`, since no theme in this environment calls it —
-  would need either a real PDP/PLP hook or a scripted `executeJS` call plus a DB-assertion custom action.
+- ~~MFTF: the tracking snippet posting an event~~ — done. `StorefrontTrackerPostsEventsTest.xml` (`tracking` group)
+  confirms `window.ordoTrack()` actually reaches `Controller/Track/Event.php` and persists into
+  `ordo_visitor_event` — `page_view` fires automatically (no scripting needed), `product_view` is triggered via a
+  scripted `executeJS` call standing in for a real theme's PDP hook (tracker.js does no page-type detection of its
+  own by design). Verified against the database directly via a new `VisitorEventHelper` (same out-of-band pattern
+  as `MailHogHelper`), since MFTF has no built-in "assert a database row" action.
 - **Load/soak test** for Phase 7's dispatch performance work — the architectural bottlenecks (N+1, sync blocking,
   unbounded cron) are fixed, but no test has put a concurrent-throughput number on it.
 

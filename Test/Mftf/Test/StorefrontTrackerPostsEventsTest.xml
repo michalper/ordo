@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="StorefrontTrackerPostsEventsTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="On-site behavior tracking"/>
+            <title value="tracker.js actually posts page_view/product_view events to the backend, not just the cookie"/>
+            <description value="StorefrontTrackerSetsVisitorCookieTest only ever proved tracker.js sets a cookie — this is the gap ROADMAP.md called out: nothing confirmed window.ordoTrack() actually reaches Controller/Track/Event.php and gets persisted into ordo_visitor_event. page_view fires automatically on every page load (tracker.js's own last line), so that half needs no scripting. product_view has no automatic page-type detection (tracker.js's own docblock: 'there is no automatic page-type detection here, since that varies by theme') — no theme in this environment calls window.ordoTrack('product_view', sku) on the PDP, so this test calls it directly via executeJS, exactly the call a real theme integration would make, and confirms the backend actually persisted it. VisitorEventHelper connects to the DB directly (same pattern as MailHogHelper's out-of-band HTTP checks) since MFTF has no built-in way to assert a database row."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="tracking"/>
+        </annotations>
+        <before>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+        </after>
+
+        <!-- Step 1: page_view — automatic, no scripting needed. tracker.js's fetch() call is
+             fire-and-forget (keepalive, no await on the page), so give it a moment to actually
+             land before asserting against the database. -->
+        <amOnPage url="/" stepKey="goToStorefrontHome"/>
+        <waitForPageLoad stepKey="waitForHomePage"/>
+        <wait time="1" stepKey="waitForCookieToBeSet"/>
+        <grabCookie userInput="ordo_visitor_id" stepKey="grabVisitorId"/>
+        <wait time="2" stepKey="waitForPageViewEventToLand"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertEventLogged" stepKey="assertPageViewLogged">
+            <argument name="visitorId">{$grabVisitorId}</argument>
+            <argument name="eventType">page_view</argument>
+        </helper>
+
+        <!-- Step 2: product_view — the part that genuinely needs a theme (or, here, a scripted
+             stand-in) to call window.ordoTrack() explicitly, since tracker.js deliberately does
+             no page-type detection of its own. -->
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <executeJS function="window.ordoTrack('product_view', '{$createProduct.sku}')" stepKey="callOrdoTrackForProductView"/>
+        <wait time="2" stepKey="waitForProductViewEventToLand"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertEventLogged" stepKey="assertProductViewLogged">
+            <argument name="visitorId">{$grabVisitorId}</argument>
+            <argument name="eventType">product_view</argument>
+            <argument name="eventKey">{$createProduct.sku}</argument>
+        </helper>
+    </test>
+</tests>
