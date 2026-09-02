@@ -65,15 +65,15 @@
 }
 
 .ordo-flow-toolbar button[data-flow-action="apply"] {
-    /* #2196f3 against white text was only ~3.1:1 contrast, below WCAG AA's 4.5:1 for normal
-       text; #1565c0 keeps the same blue but reaches ~5.9:1. */
-    background: #1565c0;
+    /* Brand accent violet, shared with the dashboard's --ordo-primary; #7c3aed against
+       white text reaches ~5.5:1, above WCAG AA's 4.5:1 for normal text. */
+    background: #7c3aed;
     color: #fff;
     margin-left: auto;
 }
 
 .ordo-flow-toolbar button[data-flow-action="apply"]:hover {
-    background: #0d47a1;
+    background: #6425c9;
 }
 
 .ordo-flow-body {

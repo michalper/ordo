@@ -1,0 +1,11 @@
+/* Replaces the default generic admin menu icon with the brand mark used in the
+   README hero banner (.github/assets/hero.svg), so the module's top-level entry
+   is recognizable in the sidebar rather than falling back to a stock icon. */
+li[data-ui-id="menu-ordo-automation-top-level"] > a:before {
+  content: '';
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  background: url('../images/icon.svg') no-repeat center / contain;
+  vertical-align: middle;
+}

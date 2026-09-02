@@ -29,8 +29,7 @@ scoped from real hands-on marketing automation experience.
 
 ## Admin UI
 
-- **Visual identity system** — logo/mark, color palette, typography, admin menu icon. A brand direction was drafted
-  (dark "engine" aesthetic) but never built beyond the README hero banner and the Flow editor's canvas palette.
+- **Typography** — still stock Magento admin typography; no brand-specific type scale defined.
 
 ## Test coverage
 

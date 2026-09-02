@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <!-- Loaded on every admin page (not just this module's own) because the
+             menu item it styles renders in the global sidebar nav. -->
+        <css src="Ordo_Automation::css/menu-icon.css"/>
+    </head>
+</page>
