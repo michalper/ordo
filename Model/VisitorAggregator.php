@@ -21,6 +21,14 @@ use Ordo\Automation\Helper\Config;
  */
 class VisitorAggregator
 {
+    /**
+     * Event types whose tag reads as "clicked_X" rather than the default "viewed_TYPE_X" — a
+     * click is a distinct kind of signal from a view, and "viewed_element_clicked_X" reads
+     * oddly. Also the event types that use getTrackingClickThreshold() instead of
+     * getTrackingViewThreshold() below (see resolveThreshold()).
+     */
+    private const CLICK_EVENT_TYPES = ['element_clicked'];
+
     public function __construct(
         private readonly Config $config,
         private readonly ResourceConnection $resourceConnection,
@@ -35,7 +43,6 @@ class VisitorAggregator
             return;
         }
 
-        $threshold = $this->config->getTrackingViewThreshold();
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName('ordo_visitor_event');
 
@@ -45,12 +52,15 @@ class VisitorAggregator
                 ->where('customer_id = ?', $customerId)
                 ->where('event_key IS NOT NULL')
                 ->group(['event_type', 'event_key'])
-                ->having('occurrences >= ?', $threshold)
         );
 
+        /** @var array{event_type: string, event_key: string, occurrences: int|string} $row */
         foreach ($rows as $row) {
-            $tag = sprintf('viewed_%s_%s', $row['event_type'], $row['event_key']);
-            $this->customerTagManager->addTag($customerId, $tag);
+            if ((int) $row['occurrences'] < $this->resolveThreshold($row['event_type'])) {
+                continue;
+            }
+
+            $this->customerTagManager->addTag($customerId, $this->buildTag($row));
         }
     }
 
@@ -67,7 +77,6 @@ class VisitorAggregator
             return;
         }
 
-        $threshold = $this->config->getTrackingViewThreshold();
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName('ordo_visitor_event');
 
@@ -78,12 +87,38 @@ class VisitorAggregator
                 ->where('customer_id IS NULL')
                 ->where('event_key IS NOT NULL')
                 ->group(['event_type', 'event_key'])
-                ->having('occurrences >= ?', $threshold)
         );
 
+        /** @var array{event_type: string, event_key: string, occurrences: int|string} $row */
         foreach ($rows as $row) {
-            $tag = sprintf('viewed_%s_%s', $row['event_type'], $row['event_key']);
-            $this->visitorTagManager->addTag($visitorId, $tag);
+            if ((int) $row['occurrences'] < $this->resolveThreshold($row['event_type'])) {
+                continue;
+            }
+
+            $this->visitorTagManager->addTag($visitorId, $this->buildTag($row));
         }
+    }
+
+    /**
+     * Clicks are a higher-intent signal than views, so they get their own (lower by default)
+     * threshold — see Config::getTrackingClickThreshold()'s docblock.
+     */
+    private function resolveThreshold(string $eventType): int
+    {
+        return in_array($eventType, self::CLICK_EVENT_TYPES, true)
+            ? $this->config->getTrackingClickThreshold()
+            : $this->config->getTrackingViewThreshold();
+    }
+
+    /**
+     * @param array{event_type: string, event_key: string, occurrences: int|string} $row
+     */
+    private function buildTag(array $row): string
+    {
+        if (in_array($row['event_type'], self::CLICK_EVENT_TYPES, true)) {
+            return sprintf('clicked_%s', $row['event_key']);
+        }
+
+        return sprintf('viewed_%s_%s', $row['event_type'], $row['event_key']);
     }
 }

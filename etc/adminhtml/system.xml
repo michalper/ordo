@@ -145,6 +145,12 @@
                     <validate>validate-digits validate-greater-than-zero</validate>
                     <depends><field id="enabled">1</field></depends>
                 </field>
+                <field id="click_threshold" translate="label" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Tag a customer after this many clicks on the same tracked element</label>
+                    <comment>A click is higher-intent than a view — 1 is usually enough, unlike the view threshold above.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
                 <field id="retention_days" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Delete raw events older than this many days</label>
                     <comment>Only raw events are pruned — tags already derived from them are unaffected and stay permanently.</comment>

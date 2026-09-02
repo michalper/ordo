@@ -54,6 +54,7 @@ class ConfigTest extends TestCase
         self::assertSame(2, $this->config->getOrderApprovalEscalationDays());
         self::assertSame(7, $this->config->getTrackingRetentionDays());
         self::assertSame(3, $this->config->getTrackingViewThreshold());
+        self::assertSame(1, $this->config->getTrackingClickThreshold());
         self::assertSame(15, $this->config->getPopupPollIntervalSeconds());
         self::assertSame(24, $this->config->getPopupFrequencyCapHours());
         self::assertSame(100, $this->config->getScoreThreshold());

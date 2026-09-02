@@ -10,8 +10,8 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Model\VisitorAggregator;
 use Ordo\Automation\Model\VisitorTagManager;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
 
 class VisitorAggregatorTest extends TestCase
 {
@@ -69,6 +69,65 @@ class VisitorAggregatorTest extends TestCase
 
         $tagManager = $this->createMock(CustomerTagManager::class);
         $tagManager->expects(self::once())->method('addTag')->with(42, 'viewed_view_category_15');
+
+        $aggregator = $this->makeAggregator($config, $resourceConnection, $tagManager);
+        $aggregator->aggregateForCustomer(42);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAggregateForCustomerTagsElementClickedAsClickedNotViewed(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isTrackingEnabled')->willReturn(true);
+        $config->method('getTrackingViewThreshold')->willReturn(3);
+        $config->method('getTrackingClickThreshold')->willReturn(1);
+
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchAll')->willReturn([
+            ['event_type' => 'element_clicked', 'event_key' => 'newsletter-signup', 'occurrences' => 1],
+        ]);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $tagManager = $this->createMock(CustomerTagManager::class);
+        $tagManager->expects(self::once())->method('addTag')->with(42, 'clicked_newsletter-signup');
+
+        $aggregator = $this->makeAggregator($config, $resourceConnection, $tagManager);
+        $aggregator->aggregateForCustomer(42);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAggregateForCustomerSkipsElementClickedBelowClickThreshold(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isTrackingEnabled')->willReturn(true);
+        $config->method('getTrackingClickThreshold')->willReturn(2);
+
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchAll')->willReturn([
+            ['event_type' => 'element_clicked', 'event_key' => 'newsletter-signup', 'occurrences' => 1],
+        ]);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $tagManager = $this->createMock(CustomerTagManager::class);
+        $tagManager->expects(self::never())->method('addTag');
 
         $aggregator = $this->makeAggregator($config, $resourceConnection, $tagManager);
         $aggregator->aggregateForCustomer(42);

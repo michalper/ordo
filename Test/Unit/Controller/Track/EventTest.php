@@ -106,6 +106,26 @@ class EventTest extends AbstractFrontendActionTestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteLogsElementClickedEvent(): void
+    {
+        $controller = $this->makeController();
+        $this->config->method('isTrackingEnabled')->willReturn(true);
+        $this->request->method('getParam')->willReturnMap([
+            ['visitor_id', null, 'v1'],
+            ['event_type', null, 'element_clicked'],
+            ['event_key', null, 'newsletter-signup'],
+        ]);
+
+        $this->customerSession->method('isLoggedIn')->willReturn(false);
+
+        $this->visitorEventLogger->expects(self::once())->method('log')
+            ->with('v1', 'element_clicked', 'newsletter-signup', null);
+        $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
+
+        $controller->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsEventForLoggedInCustomer(): void
     {
         $controller = $this->makeController();

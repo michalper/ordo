@@ -38,6 +38,7 @@ class Config
     private const XML_PATH_TRACKING_ENABLED = 'ordo_automation/tracking/enabled';
     private const XML_PATH_TRACKING_RETENTION_DAYS = 'ordo_automation/tracking/retention_days';
     private const XML_PATH_TRACKING_VIEW_THRESHOLD = 'ordo_automation/tracking/view_threshold';
+    private const XML_PATH_TRACKING_CLICK_THRESHOLD = 'ordo_automation/tracking/click_threshold';
 
     private const XML_PATH_POPUP_ENABLED = 'ordo_automation/tracking/popup_enabled';
     private const XML_PATH_POPUP_POLL_INTERVAL_SECONDS = 'ordo_automation/tracking/popup_poll_interval_seconds';
@@ -222,6 +223,16 @@ class Config
     public function getTrackingViewThreshold(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_TRACKING_VIEW_THRESHOLD, 3, $storeId);
+    }
+
+    /**
+     * A click is a higher-intent signal than a view — the default of 1 means a single click
+     * on a tracked element is enough to tag the visitor/customer, unlike getTrackingViewThreshold()'s
+     * default of 3 for page/product/category views.
+     */
+    public function getTrackingClickThreshold(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_TRACKING_CLICK_THRESHOLD, 1, $storeId);
     }
 
     public function isPopupEnabled(?int $storeId = null): bool
