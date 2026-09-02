@@ -245,6 +245,28 @@ jobs:
             exit 1
           )
 
+      - name: Diagnose selenium-container-to-host reachability
+        # Every one of runs 1-12 failed identically: nginx's access.log shows the job's own REST
+        # calls (createData/deleteEntity fixtures) succeeding, but zero entries for any browser
+        # navigation at all — meaning Chrome, running inside the `selenium` service container,
+        # never even reached nginx on the runner host via 127.0.0.1:8080 (from inside that
+        # container, 127.0.0.1 is the container's own loopback, not the runner's). Confirming
+        # this directly and finding a reachable address (docker0 gateway / host.docker.internal)
+        # before changing MAGENTO_BASE_URL to match, rather than guessing again.
+        run: |
+          SELENIUM_CID=$(docker ps --filter "ancestor=selenium/standalone-chrome:latest" --format '{{.ID}}' | head -1)
+          echo "selenium container: $SELENIUM_CID"
+          docker exec "$SELENIUM_CID" sh -c "cat /etc/hosts" || true
+          echo "--- docker0 gateway ---"
+          ip -4 addr show docker0 || true
+          echo "--- from selenium container: 127.0.0.1:8080 ---"
+          docker exec "$SELENIUM_CID" curl -sv --max-time 5 http://127.0.0.1:8080/ 2>&1 | tail -20 || true
+          echo "--- from selenium container: host.docker.internal:8080 ---"
+          docker exec "$SELENIUM_CID" curl -sv --max-time 5 http://host.docker.internal:8080/ 2>&1 | tail -20 || true
+          GATEWAY=$(ip -4 addr show docker0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+          echo "--- from selenium container: $GATEWAY:8080 (docker0 gateway) ---"
+          docker exec "$SELENIUM_CID" curl -sv --max-time 5 "http://$GATEWAY:8080/" 2>&1 | tail -20 || true
+
       - name: Wire the MFTF CLI bridge and .env
         working-directory: magento
         run: |
