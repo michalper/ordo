@@ -37,9 +37,16 @@
 
         <!-- The real point of this test: read the Approve link's actual href out of a real
              mailbox, the same way the admin this feature is built for would see it — not a
-             synthetic token grabbed from the database or the API. -->
+             synthetic token grabbed from the database or the API. toAddress must be passed:
+             a real checkout also sends the customer their own order-confirmation email, and
+             that one is not reliably older than the admin's approval-request email in MailHog
+             — without filtering by recipient, "most recent message overall" can grab the
+             customer's email instead, which has no Approve link at all (confirmed via a real
+             CI run). approver@example.com is OrdoApprovalCustomerData.xml's fixed (non-unique)
+             ordo_approval_admin_email value. -->
         <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="grabLinkFromLatestEmail" stepKey="grabApproveUrl">
             <argument name="linkText">Approve</argument>
+            <argument name="toAddress">approver@example.com</argument>
         </helper>
 
         <!-- No login: the approve link is a bearer-token URL by design (AbstractApprovalAction /

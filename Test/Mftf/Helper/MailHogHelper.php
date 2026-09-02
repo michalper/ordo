@@ -19,10 +19,24 @@ class MailHogHelper extends Helper
     /**
      * Fetches the most recent message from MailHog and returns the href of the first link
      * whose visible text matches $linkText (e.g. "Approve" or "Reject").
+     *
+     * $toAddress narrows to the most recent message sent *to* that address specifically —
+     * needed because a real checkout sends more than one email per order (the customer's own
+     * order-confirmation email included), and Observer/HoldOrderForApproval.php's
+     * approval-request email to the admin is not reliably the last one MailHog receives.
+     * Confirmed via a real CI run: plain "most recent message overall" grabbed the customer's
+     * order-confirmation email instead, which has no "Approve" link at all.
      */
-    public function grabLinkFromLatestEmail(string $linkText, string $mailhogUrl = 'http://127.0.0.1:8025'): string
-    {
-        $response = @file_get_contents($mailhogUrl . '/api/v2/messages?limit=1');
+    public function grabLinkFromLatestEmail(
+        string $linkText,
+        string $toAddress = '',
+        string $mailhogUrl = 'http://127.0.0.1:8025'
+    ): string {
+        $endpoint = $toAddress === ''
+            ? $mailhogUrl . '/api/v2/messages?limit=1'
+            : $mailhogUrl . '/api/v2/search?kind=to&query=' . rawurlencode($toAddress) . '&limit=1';
+
+        $response = @file_get_contents($endpoint);
         if ($response === false) {
             throw new \RuntimeException("Could not reach MailHog at {$mailhogUrl}");
         }
