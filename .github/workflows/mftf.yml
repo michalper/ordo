@@ -398,6 +398,21 @@ jobs:
           mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM ordo_campaign_trigger;" > /tmp/server-logs/ordo_campaign_trigger.txt 2>&1 || true
           mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM ordo_campaign_condition;" > /tmp/server-logs/ordo_campaign_condition.txt 2>&1 || true
           mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM ordo_campaign_action;" > /tmp/server-logs/ordo_campaign_action.txt 2>&1 || true
+          # Splits the remaining mystery in two: if a coupon row exists here, generation
+          # actually worked and this is purely an admin-grid display bug; if not, the
+          # trigger->condition->action chain (or the DB queue message that starts it) never ran.
+          mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM salesrule_coupon WHERE code LIKE 'E2ETEST-%';" > /tmp/server-logs/salesrule_coupon.txt 2>&1 || true
+          # The DB queue driver's own message/status tables — confirms whether
+          # CampaignDispatchPublisher::publish() actually enqueued anything at all, and if so
+          # whether the consumer picked it up (status: 'complete') or errored (status: 'error').
+          # Table/column names unconfirmed locally (this module's own vendor/ tree doesn't carry
+          # the full Magento app the DB queue driver ships in) — SHOW TABLES first so a wrong
+          # guess at exact names doesn't waste the run, then dump whatever queue-related tables
+          # actually exist without assuming a join key.
+          mysql -h127.0.0.1 -uroot magento -e "SHOW TABLES LIKE 'queue%';" > /tmp/server-logs/queue_tables.txt 2>&1 || true
+          mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM queue;" >> /tmp/server-logs/queue_tables.txt 2>&1 || true
+          mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM queue_message ORDER BY id DESC LIMIT 20;" >> /tmp/server-logs/queue_tables.txt 2>&1 || true
+          mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM queue_message_status ORDER BY updated_at DESC LIMIT 20;" >> /tmp/server-logs/queue_tables.txt 2>&1 || true
           cp var/log/exception.log /tmp/server-logs/magento-exception.log 2>/dev/null || true
           cp var/log/system.log /tmp/server-logs/magento-system.log 2>/dev/null || true
           cp var/log/debug.log /tmp/server-logs/magento-debug.log 2>/dev/null || true
