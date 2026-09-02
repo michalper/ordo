@@ -93,7 +93,12 @@ jobs:
         run: |
           composer config repositories.magento composer https://repo.magento.com
           composer config http-basic.repo.magento.com "$MAGENTO_COMPOSER_USERNAME" "$MAGENTO_COMPOSER_PASSWORD"
-          composer config repositories.ordo-automation path ../ordo-module
+          # symlink:false — a plain `path ../ordo-module` repo defaults to a symlinked install,
+          # and static:content:deploy's path validation rejects a template file whose realpath
+          # escapes the Magento root through that symlink ("Path ... cannot be used with
+          # directory ..."), exactly the same failure this repo's local magento-ordo-test/
+          # sandbox hit and fixed the same way.
+          composer config repositories.ordo-automation '{"type":"path","url":"../ordo-module","options":{"symlink":false}}'
           composer config allow-plugins.magento/composer-dependency-version-audit-plugin true
           composer config allow-plugins.magento/magento-composer-installer true
           composer config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
