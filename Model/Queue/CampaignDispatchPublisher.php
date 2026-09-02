@@ -27,9 +27,11 @@ class CampaignDispatchPublisher
      */
     public function publish(string $triggerEvent, array $context): void
     {
-        $this->publisher->publish(self::TOPIC, $this->serializer->serialize([
+        $payload = $this->serializer->serialize([
             'trigger_event' => $triggerEvent,
             'context' => $context,
-        ]));
+        ]);
+
+        $this->publisher->publish(self::TOPIC, $payload);
     }
 }

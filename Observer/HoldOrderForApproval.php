@@ -66,7 +66,9 @@ class HoldOrderForApproval implements ObserverInterface
         }
 
         $spendLimitAttribute = $customer->getCustomAttribute(AddCustomerSpendLimitAttributes::ATTRIBUTE_SPEND_LIMIT);
-        $adminEmailAttribute = $customer->getCustomAttribute(AddCustomerSpendLimitAttributes::ATTRIBUTE_APPROVAL_ADMIN_EMAIL);
+        $adminEmailAttribute = $customer->getCustomAttribute(
+            AddCustomerSpendLimitAttributes::ATTRIBUTE_APPROVAL_ADMIN_EMAIL
+        );
 
         $spendLimit = $spendLimitAttribute ? (float) $spendLimitAttribute->getValue() : 0.0;
         $adminEmail = $adminEmailAttribute ? (string) $adminEmailAttribute->getValue() : '';
@@ -100,7 +102,11 @@ class HoldOrderForApproval implements ObserverInterface
         try {
             $this->sendApprovalRequestEmail($order, $adminEmail, $token);
         } catch (\Throwable $e) {
-            $this->logger->error(sprintf('Ordo_Automation: failed to send approval request email for order #%d: %s', $order->getEntityId(), $e->getMessage()));
+            $this->logger->error(sprintf(
+                'Ordo_Automation: failed to send approval request email for order #%d: %s',
+                $order->getEntityId(),
+                $e->getMessage()
+            ));
         }
     }
 
@@ -117,7 +123,9 @@ class HoldOrderForApproval implements ObserverInterface
             ->setTemplateVars([
                 'order_increment_id' => $order->getIncrementId(),
                 'order_total' => $order->getGrandTotal(),
-                'customer_name' => trim((string) $order->getCustomerFirstname() . ' ' . (string) $order->getCustomerLastname()),
+                'customer_name' => trim(
+                    (string) $order->getCustomerFirstname() . ' ' . (string) $order->getCustomerLastname()
+                ),
                 'approve_url' => $baseUrl . '/ordo/approval/approve/token/' . $token,
                 'reject_url' => $baseUrl . '/ordo/approval/reject/token/' . $token,
                 'store' => $store,

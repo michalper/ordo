@@ -57,7 +57,10 @@ class AddCustomerSpendLimitAttributes implements DataPatchInterface
                 'system' => false,
             ]
         );
-        $spendLimitAttribute = $customerSetup->getEavConfig()->getAttribute(\Magento\Customer\Model\Customer::ENTITY, self::ATTRIBUTE_SPEND_LIMIT);
+        $spendLimitAttribute = $customerSetup->getEavConfig()->getAttribute(
+            \Magento\Customer\Model\Customer::ENTITY,
+            self::ATTRIBUTE_SPEND_LIMIT
+        );
         $spendLimitAttribute->setData('used_in_forms', ['adminhtml_customer']);
         $spendLimitAttribute->setData('scope', ScopedAttributeInterface::SCOPE_STORE);
         $spendLimitAttribute->save();
@@ -77,7 +80,10 @@ class AddCustomerSpendLimitAttributes implements DataPatchInterface
                 'system' => false,
             ]
         );
-        $adminEmailAttribute = $customerSetup->getEavConfig()->getAttribute(\Magento\Customer\Model\Customer::ENTITY, self::ATTRIBUTE_APPROVAL_ADMIN_EMAIL);
+        $adminEmailAttribute = $customerSetup->getEavConfig()->getAttribute(
+            \Magento\Customer\Model\Customer::ENTITY,
+            self::ATTRIBUTE_APPROVAL_ADMIN_EMAIL
+        );
         $adminEmailAttribute->setData('used_in_forms', ['adminhtml_customer']);
         $adminEmailAttribute->setData('scope', ScopedAttributeInterface::SCOPE_STORE);
         $adminEmailAttribute->save();

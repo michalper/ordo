@@ -36,6 +36,8 @@ class VisitorAggregationConsumer
             return;
         }
 
-        $this->logger->error('Ordo_Automation: dropped a visitor aggregation message with no customer_id or visitor_id.');
+        $this->logger->error(
+            'Ordo_Automation: dropped a visitor aggregation message with no customer_id or visitor_id.'
+        );
     }
 }

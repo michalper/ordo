@@ -77,6 +77,10 @@ class TagInactiveCustomers
             }
         }
 
-        $this->logger->info(sprintf('Ordo_Automation: tagged %d customers as inactive, cleared %d.', $tagged, $untagged));
+        $this->logger->info(sprintf(
+            'Ordo_Automation: tagged %d customers as inactive, cleared %d.',
+            $tagged,
+            $untagged
+        ));
     }
 }

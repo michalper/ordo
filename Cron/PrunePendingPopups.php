@@ -29,8 +29,15 @@ class PrunePendingPopups
         $now = date('Y-m-d H:i:s');
         $deliveredCutoff = date('Y-m-d H:i:s', strtotime('-' . self::DELIVERED_GRACE_HOURS . ' hours'));
 
-        $deletedDelivered = $connection->delete($table, ['delivered_at IS NOT NULL', 'delivered_at < ?' => $deliveredCutoff]);
-        $deletedExpired = $connection->delete($table, ['delivered_at IS NULL', 'expires_at IS NOT NULL', 'expires_at < ?' => $now]);
+        $deletedDelivered = $connection->delete($table, [
+            'delivered_at IS NOT NULL',
+            'delivered_at < ?' => $deliveredCutoff,
+        ]);
+        $deletedExpired = $connection->delete($table, [
+            'delivered_at IS NULL',
+            'expires_at IS NOT NULL',
+            'expires_at < ?' => $now,
+        ]);
 
         $this->logger->info(sprintf(
             'Ordo_Automation: pruned %d delivered and %d expired-undelivered pending popups.',

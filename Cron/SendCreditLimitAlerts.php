@@ -65,9 +65,11 @@ class SendCreditLimitAlerts
                 $this->logAlert($customerId, $band, $utilization);
                 $sent++;
             } catch (\Throwable $e) {
-                $this->logger->error(
-                    sprintf('Ordo_Automation: failed to send credit limit alert for customer #%d: %s', $customerId, $e->getMessage())
-                );
+                $this->logger->error(sprintf(
+                    'Ordo_Automation: failed to send credit limit alert for customer #%d: %s',
+                    $customerId,
+                    $e->getMessage()
+                ));
             }
         }
 

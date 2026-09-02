@@ -36,7 +36,9 @@ class SendEmail implements ActionInterface
         $templateIdentifier = (string) ($params['template'] ?? '');
 
         if ($customerId <= 0 || $templateIdentifier === '') {
-            $this->logger->error('Ordo_Automation: send_email action is missing customer_id in context or "template" in params.');
+            $this->logger->error(
+                'Ordo_Automation: send_email action is missing customer_id in context or "template" in params.'
+            );
             return;
         }
 
@@ -69,7 +71,11 @@ class SendEmail implements ActionInterface
 
             $transport->sendMessage();
         } catch (\Throwable $e) {
-            $this->logger->error(sprintf('Ordo_Automation: campaign send_email action failed for customer #%d: %s', $customerId, $e->getMessage()));
+            $this->logger->error(sprintf(
+                'Ordo_Automation: campaign send_email action failed for customer #%d: %s',
+                $customerId,
+                $e->getMessage()
+            ));
         } finally {
             $this->inlineTranslation->resume();
         }

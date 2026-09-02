@@ -1,7 +1,7 @@
 <!--@subject Approval needed: order #{{var order_increment_id}} @-->
 {{template config_path="design/email/header_template"}}
 
-<table>
+<table role="presentation">
     <tr class="email-intro">
         <td>
             <p class="greeting">Hi,</p>
@@ -10,9 +10,9 @@
                 <strong>{{var order_total}}</strong>, which is above their spend limit and needs your approval
                 before it's processed.
             </p>
-            <table class="button-container" cellspacing="0" cellpadding="0" style="margin: 20px 0;">
+            <table class="button-container" role="presentation" style="margin: 20px 0; border-collapse: collapse;">
                 <tr>
-                    <td>
+                    <td style="padding: 0;">
                         <a href="{{var approve_url}}" class="action primary">
                             <span>Approve</span>
                         </a>

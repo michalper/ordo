@@ -58,7 +58,10 @@ class DataProvider extends AbstractDataProvider
             $campaignId = (int) $campaign->getEntityId();
 
             $campaignData['triggers'] = $this->loadTriggerRows($campaignId);
-            $campaignData['conditions'] = $this->loadChildRows($this->campaignConditionCollectionFactory->create(), $campaignId);
+            $campaignData['conditions'] = $this->loadChildRows(
+                $this->campaignConditionCollectionFactory->create(),
+                $campaignId
+            );
             $campaignData['actions'] = $this->loadActionRows($campaignId);
 
             $this->loadedData[$campaignId] = $campaignData;

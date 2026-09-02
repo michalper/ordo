@@ -67,7 +67,7 @@ define([
              * @return {Array} field descriptors: [{name, label}]
              */
             function fieldsFor(kind, type) {
-                return (typesConfig.fields[kind] && typesConfig.fields[kind][type]) || [];
+                return typesConfig.fields[kind]?.[type] || [];
             }
 
             /**
@@ -91,7 +91,7 @@ define([
 
                 if (descriptors.length) {
                     descriptors.forEach(function (field) {
-                        var value = params && params[field.name] ? params[field.name] : '';
+                        var value = params?.[field.name] || '';
 
                         html += '<label class="ordo-flow-field-label">' + field.label + '</label>' +
                             '<input type="text" class="ordo-flow-field-input" data-field="' + field.name + '" value="' +
@@ -100,7 +100,7 @@ define([
                 } else {
                     html += '<label class="ordo-flow-field-label">Params (JSON) — advanced, no dedicated fields for this type</label>' +
                         '<textarea class="ordo-flow-params-textarea" data-field="params_json">' +
-                        $('<div>').text(params && Object.keys(params).length ? JSON.stringify(params) : '').html() +
+                        $('<div>').text(Object.keys(params ?? {}).length ? JSON.stringify(params) : '').html() +
                         '</textarea>';
                 }
 
@@ -133,7 +133,7 @@ define([
                 });
             }
 
-            if (flowData && flowData.drawflow) {
+            if (flowData?.drawflow) {
                 editor.import(flowData);
             }
 
@@ -324,6 +324,24 @@ define([
              * @param {String} kind
              * @return {Array}
              */
+            /**
+             * @param {jQuery} $field
+             * @param {Object} row
+             */
+            function collectFieldValue($field, row) {
+                row[$field.attr('data-field')] = $field.val();
+            }
+
+            /**
+             * @param {jQuery} $node
+             * @param {Object} row
+             */
+            function collectNodeFields($node, row) {
+                $node.find('[data-field]').each(function () {
+                    collectFieldValue($(this), row);
+                });
+            }
+
             function collectRows(kind) {
                 var rows = [];
 
@@ -345,11 +363,7 @@ define([
 
                     row = { type: type };
 
-                    $node.find('[data-field]').each(function () {
-                        var $field = $(this);
-
-                        row[$field.attr('data-field')] = $field.val();
-                    });
+                    collectNodeFields($node, row);
 
                     rows.push(row);
                 });
@@ -373,6 +387,40 @@ define([
              *
              * @return {{errors: Array<String>, badNodeIds: Array}}
              */
+            /**
+             * @param {Object} connection
+             * @param {Object} reachable
+             * @param {Array} queue
+             */
+            function markConnectionReachable(connection, reachable, queue) {
+                if (!reachable[connection.node]) {
+                    reachable[connection.node] = true;
+                    queue.push(connection.node);
+                }
+            }
+
+            /**
+             * @param {String} outputKey
+             * @param {Object} currentNode
+             * @param {Object} reachable
+             * @param {Array} queue
+             */
+            function expandReachableOutput(outputKey, currentNode, reachable, queue) {
+                currentNode.outputs[outputKey].connections.forEach(function (connection) {
+                    markConnectionReachable(connection, reachable, queue);
+                });
+            }
+
+            /**
+             * @param {Object} node
+             * @return {Number}
+             */
+            function countNodeOutputs(node) {
+                return Object.keys(node.outputs || {}).reduce(function (count, key) {
+                    return count + node.outputs[key].connections.length;
+                }, 0);
+            }
+
             function validateFlow() {
                 var exported = editor.export().drawflow.Home.data,
                     triggerIds = [],
@@ -417,12 +465,7 @@ define([
                     }
 
                     Object.keys(currentNode.outputs || {}).forEach(function (outputKey) {
-                        currentNode.outputs[outputKey].connections.forEach(function (connection) {
-                            if (!reachable[connection.node]) {
-                                reachable[connection.node] = true;
-                                queue.push(connection.node);
-                            }
-                        });
+                        expandReachableOutput(outputKey, currentNode, reachable, queue);
                     });
                 }
 
@@ -440,9 +483,7 @@ define([
                     }
 
                     if (node.name === 'ordo-flow-condition') {
-                        outputCount = Object.keys(node.outputs || {}).reduce(function (count, key) {
-                            return count + node.outputs[key].connections.length;
-                        }, 0);
+                        outputCount = countNodeOutputs(node);
 
                         if (outputCount === 0) {
                             badNodeIds.push(id);

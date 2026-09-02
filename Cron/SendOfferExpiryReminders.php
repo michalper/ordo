@@ -64,9 +64,11 @@ class SendOfferExpiryReminders
                 $this->logReminder((int) $offer->getEntityId(), self::REMINDER_TYPE_EXPIRING_SOON);
                 $sent++;
             } catch (\Throwable $e) {
-                $this->logger->error(
-                    sprintf('Ordo_Automation: failed to send offer expiry reminder for offer #%d: %s', $offer->getEntityId(), $e->getMessage())
-                );
+                $this->logger->error(sprintf(
+                    'Ordo_Automation: failed to send offer expiry reminder for offer #%d: %s',
+                    $offer->getEntityId(),
+                    $e->getMessage()
+                ));
             }
         }
 

@@ -1,14 +1,14 @@
 <!--@subject We miss you @-->
 {{template config_path="design/email/header_template"}}
 
-<table>
+<table role="presentation">
     <tr class="email-intro">
         <td>
             <p class="greeting">Hi {{var customer_name}},</p>
             <p>It's been a while since your last order — here's a reason to come back.</p>
-            <table class="button-container" cellspacing="0" cellpadding="0" style="margin: 20px 0;">
+            <table class="button-container" role="presentation" style="margin: 20px 0; border-collapse: collapse;">
                 <tr>
-                    <td>
+                    <td style="padding: 0;">
                         <a href="{{var store.getBaseUrl()}}" class="action primary">
                             <span>See what's new</span>
                         </a>

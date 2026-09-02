@@ -48,7 +48,11 @@ class SendSalesRepDigest
                 $this->sendDigest($repEmail, $customerNames);
                 $sent++;
             } catch (\Throwable $e) {
-                $this->logger->error(sprintf('Ordo_Automation: failed to send sales rep digest to %s: %s', $repEmail, $e->getMessage()));
+                $this->logger->error(sprintf(
+                    'Ordo_Automation: failed to send sales rep digest to %s: %s',
+                    $repEmail,
+                    $e->getMessage()
+                ));
             }
         }
 
@@ -77,7 +81,8 @@ class SendSalesRepDigest
                 continue;
             }
 
-            $grouped[$repEmail][] = trim($customer->getFirstname() . ' ' . $customer->getLastname()) . " (#{$customerId})";
+            $grouped[$repEmail][] = trim($customer->getFirstname() . ' ' . $customer->getLastname())
+                . " (#{$customerId})";
         }
 
         return $grouped;

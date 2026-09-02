@@ -18,7 +18,10 @@ class TriggerEvent implements OptionSourceInterface
             ['value' => CampaignTriggerInterface::TRIGGER_CUSTOMER_REGISTERED, 'label' => __('Customer Registered')],
             ['value' => CampaignTriggerInterface::TRIGGER_TAG_ADDED, 'label' => __('Tag Added')],
             ['value' => CampaignTriggerInterface::TRIGGER_CART_ABANDONED, 'label' => __('Cart Abandoned')],
-            ['value' => CampaignTriggerInterface::TRIGGER_VISITOR_TAG_ADDED, 'label' => __('Visitor Tag Added (anonymous)')],
+            [
+                'value' => CampaignTriggerInterface::TRIGGER_VISITOR_TAG_ADDED,
+                'label' => __('Visitor Tag Added (anonymous)'),
+            ],
         ];
     }
 }

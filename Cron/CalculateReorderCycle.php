@@ -36,7 +36,11 @@ class CalculateReorderCycle
         // registered customers (guest checkouts have no reliable identity to target).
         $select = $connection->select()
             ->from(['o' => $orderTable], ['customer_id'])
-            ->joinInner(['oi' => $orderItemTable], 'oi.order_id = o.entity_id', ['sku' => 'oi.sku', 'created_at' => 'o.created_at'])
+            ->joinInner(
+                ['oi' => $orderItemTable],
+                'oi.order_id = o.entity_id',
+                ['sku' => 'oi.sku', 'created_at' => 'o.created_at']
+            )
             ->where('o.customer_id IS NOT NULL')
             ->where('o.state != ?', 'canceled')
             ->order(['o.customer_id ASC', 'oi.sku ASC', 'o.created_at ASC']);
@@ -80,7 +84,14 @@ class CalculateReorderCycle
             $lastOrderDate = (string) end($dates);
             $nextExpectedDate = date('Y-m-d', (int) strtotime($lastOrderDate . ' + ' . $avgIntervalDays . ' days'));
 
-            $this->upsertCycle((int) $customerId, $sku, $avgIntervalDays, $lastOrderDate, $nextExpectedDate, count($dates));
+            $this->upsertCycle(
+                (int) $customerId,
+                $sku,
+                $avgIntervalDays,
+                $lastOrderDate,
+                $nextExpectedDate,
+                count($dates)
+            );
             $processed++;
         }
 

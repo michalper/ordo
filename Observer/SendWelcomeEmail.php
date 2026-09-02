@@ -64,7 +64,11 @@ class SendWelcomeEmail implements ObserverInterface
             $transport->sendMessage();
             $this->inlineTranslation->resume();
         } catch (\Throwable $e) {
-            $this->logger->error(sprintf('Ordo_Automation: failed to send welcome email to customer #%d: %s', $customer->getId(), $e->getMessage()));
+            $this->logger->error(sprintf(
+                'Ordo_Automation: failed to send welcome email to customer #%d: %s',
+                $customer->getId(),
+                $e->getMessage()
+            ));
         }
     }
 }

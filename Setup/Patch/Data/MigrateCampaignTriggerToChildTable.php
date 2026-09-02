@@ -41,7 +41,9 @@ class MigrateCampaignTriggerToChildTable implements DataPatchInterface
         $campaignTable = $this->moduleDataSetup->getTable('ordo_campaign');
         $triggerTable = $this->moduleDataSetup->getTable('ordo_campaign_trigger');
 
-        if (!$connection->isTableExists($campaignTable) || !$connection->tableColumnExists($campaignTable, 'trigger_event')) {
+        if (!$connection->isTableExists($campaignTable)
+            || !$connection->tableColumnExists($campaignTable, 'trigger_event')
+        ) {
             return $this;
         }
 

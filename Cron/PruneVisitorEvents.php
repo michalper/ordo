@@ -33,6 +33,10 @@ class PruneVisitorEvents
 
         $deleted = $connection->delete($table, ['created_at < ?' => $cutoff]);
 
-        $this->logger->info(sprintf('Ordo_Automation: pruned %d visitor events older than %d days.', $deleted, $retentionDays));
+        $this->logger->info(sprintf(
+            'Ordo_Automation: pruned %d visitor events older than %d days.',
+            $deleted,
+            $retentionDays
+        ));
     }
 }

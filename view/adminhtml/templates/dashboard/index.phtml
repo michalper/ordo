@@ -5,6 +5,9 @@
 /** @var \Ordo\Automation\Block\Adminhtml\Dashboard\DashboardViewModel $viewModel */
 $viewModel = $block->getData('view_model');
 $campaigns = $viewModel->getCampaigns();
+$segmentNavDesc = __(
+    'Saved, reusable customer conditions — reference from any campaign via the "In Segment" condition'
+);
 ?>
 <div class="ordo-dashboard">
     <div class="ordo-dashboard-stats">
@@ -13,7 +16,9 @@ $campaigns = $viewModel->getCampaigns();
             <div class="ordo-stat-label"><?= $escaper->escapeHtml(__('Total campaigns')) ?></div>
         </div>
         <div class="ordo-stat-card">
-            <div class="ordo-stat-value"><?= $escaper->escapeHtml((string) $viewModel->getEnabledCampaignCount()) ?></div>
+            <div class="ordo-stat-value"><?=
+                $escaper->escapeHtml((string) $viewModel->getEnabledCampaignCount())
+            ?></div>
             <div class="ordo-stat-label"><?= $escaper->escapeHtml(__('Enabled')) ?></div>
         </div>
         <div class="ordo-stat-card">
@@ -51,19 +56,26 @@ $campaigns = $viewModel->getCampaigns();
         </a>
         <a class="ordo-nav-card" href="<?= $escaper->escapeUrl($block->getUrl('ordo/reordercycle/index')) ?>">
             <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('Reorder Cycles')) ?></span>
-            <span class="ordo-nav-desc"><?= $escaper->escapeHtml(__('Diagnostic view of detected reorder patterns')) ?></span>
+            <span class="ordo-nav-desc"><?=
+                $escaper->escapeHtml(__('Diagnostic view of detected reorder patterns'))
+            ?></span>
         </a>
         <a class="ordo-nav-card" href="<?= $escaper->escapeUrl($block->getUrl('ordo/freegiftoffer/index')) ?>">
             <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('Free Gift Offers')) ?></span>
-            <span class="ordo-nav-desc"><?= $escaper->escapeHtml(__('Manage cascading-tier gift offers and their gift pools')) ?></span>
+            <span class="ordo-nav-desc"><?=
+                $escaper->escapeHtml(__('Manage cascading-tier gift offers and their gift pools'))
+            ?></span>
         </a>
         <a class="ordo-nav-card" href="<?= $escaper->escapeUrl($block->getUrl('ordo/segment/index')) ?>">
             <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('Segments')) ?></span>
-            <span class="ordo-nav-desc"><?= $escaper->escapeHtml(__('Saved, reusable customer conditions — reference from any campaign via the "In Segment" condition')) ?></span>
+            <span class="ordo-nav-desc"><?= $escaper->escapeHtml($segmentNavDesc) ?></span>
         </a>
-        <a class="ordo-nav-card" href="<?= $escaper->escapeUrl($block->getUrl('adminhtml/system_config/edit/section/ordo_automation')) ?>">
+        <a class="ordo-nav-card"
+           href="<?= $escaper->escapeUrl($block->getUrl('adminhtml/system_config/edit/section/ordo_automation')) ?>">
             <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('Configuration')) ?></span>
-            <span class="ordo-nav-desc"><?= $escaper->escapeHtml(__('Triggers, thresholds, tracking, and more')) ?></span>
+            <span class="ordo-nav-desc"><?=
+                $escaper->escapeHtml(__('Triggers, thresholds, tracking, and more'))
+            ?></span>
         </a>
     </div>
 
@@ -82,16 +94,30 @@ $campaigns = $viewModel->getCampaigns();
         <?php else: ?>
             <div class="ordo-campaigns-grid">
                 <?php foreach ($campaigns as $campaign): ?>
-                    <a class="ordo-campaign-card"
-                       href="<?= $escaper->escapeUrl($block->getUrl('ordo/campaign/edit', ['entity_id' => $campaign->getEntityId()])) ?>">
+                    <?php
+                    $campaignEditUrl = $block->getUrl(
+                        'ordo/campaign/edit',
+                        ['entity_id' => $campaign->getEntityId()]
+                    );
+                    ?>
+                    <a class="ordo-campaign-card" href="<?= $escaper->escapeUrl($campaignEditUrl) ?>">
                         <div class="ordo-campaign-card-head">
                             <span class="ordo-campaign-name"><?= $escaper->escapeHtml($campaign->getName()) ?></span>
                             <span class="ordo-badge <?= $campaign->isEnabled() ? 'ordo-badge-on' : 'ordo-badge-off' ?>">
-                                <?= $campaign->isEnabled() ? $escaper->escapeHtml(__('Enabled')) : $escaper->escapeHtml(__('Disabled')) ?>
+                                <?=
+                                    $campaign->isEnabled()
+                                        ? $escaper->escapeHtml(__('Enabled'))
+                                        : $escaper->escapeHtml(__('Disabled'))
+                                ?>
                             </span>
                         </div>
                         <div class="ordo-campaign-trigger">
-                            <?= $escaper->escapeHtml(__('Triggers: %1', $viewModel->getTriggerLabelsForCampaign((int) $campaign->getEntityId()))) ?>
+                            <?=
+                                $escaper->escapeHtml(__(
+                                    'Triggers: %1',
+                                    $viewModel->getTriggerLabelsForCampaign((int) $campaign->getEntityId())
+                                ))
+                            ?>
                         </div>
                     </a>
                 <?php endforeach; ?>

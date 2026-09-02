@@ -51,7 +51,11 @@ class SendWinBackEmails
                 $this->customerTagManager->addTag($customerId, self::TAG_WIN_BACK_SENT);
                 $sent++;
             } catch (\Throwable $e) {
-                $this->logger->error(sprintf('Ordo_Automation: failed to send win-back email to customer #%d: %s', $customerId, $e->getMessage()));
+                $this->logger->error(sprintf(
+                    'Ordo_Automation: failed to send win-back email to customer #%d: %s',
+                    $customerId,
+                    $e->getMessage()
+                ));
             }
         }
 

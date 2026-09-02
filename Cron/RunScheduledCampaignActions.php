@@ -6,7 +6,7 @@ namespace Ordo\Automation\Cron;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\CampaignScheduledAction;
 use Ordo\Automation\Model\ResourceModel\Campaign\ScheduledAction as CampaignScheduledActionResource;
-use Ordo\Automation\Model\ResourceModel\Campaign\ScheduledAction\CollectionFactory as CampaignScheduledActionCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign\ScheduledAction\CollectionFactory as ScheduledActionCollectionFactory;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -30,7 +30,7 @@ class RunScheduledCampaignActions
     private const MAX_BATCHES = 20;
 
     public function __construct(
-        private readonly CampaignScheduledActionCollectionFactory $campaignScheduledActionCollectionFactory,
+        private readonly ScheduledActionCollectionFactory $campaignScheduledActionCollectionFactory,
         private readonly CampaignScheduledActionResource $campaignScheduledActionResource,
         private readonly CampaignDispatcher $campaignDispatcher,
         private readonly LoggerInterface $logger

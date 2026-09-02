@@ -51,7 +51,9 @@ class ShowPopup implements ActionInterface
         $headline = trim((string) ($params['headline'] ?? ''));
 
         if ($customerId === null && $visitorId === null) {
-            $this->logger->error('Ordo_Automation: popup action has no customer_id or visitor_id in context to target.');
+            $this->logger->error(
+                'Ordo_Automation: popup action has no customer_id or visitor_id in context to target.'
+            );
             return;
         }
 

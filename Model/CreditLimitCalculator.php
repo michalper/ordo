@@ -80,7 +80,11 @@ class CreditLimitCalculator
         $customerIds = $connection->fetchCol(
             $connection->select()
                 ->from(['e' => $entityTable], [])
-                ->joinInner(['a' => $attributeTable], 'a.entity_id = e.entity_id AND a.attribute_id = ' . (int) $attributeId, ['entity_id'])
+                ->joinInner(
+                    ['a' => $attributeTable],
+                    'a.entity_id = e.entity_id AND a.attribute_id = ' . (int) $attributeId,
+                    ['entity_id']
+                )
                 ->where('a.value > 0')
         );
 

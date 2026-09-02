@@ -75,7 +75,7 @@ define([
                 y = Number.parseInt(this.discountAmount(), 10);
             let total;
 
-            if (!x || x <= 0 || isNaN(y) || y < 0) {
+            if (!x || x <= 0 || Number.isNaN(y) || y < 0) {
                 return $t('Enter "Discount Qty Step (Buy X)" and "Discount Amount" (as Y, free qty) to see a preview.');
             }
 

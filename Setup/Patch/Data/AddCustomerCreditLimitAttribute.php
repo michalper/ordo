@@ -56,7 +56,10 @@ class AddCustomerCreditLimitAttribute implements DataPatchInterface
             ]
         );
 
-        $attribute = $customerSetup->getEavConfig()->getAttribute(\Magento\Customer\Model\Customer::ENTITY, self::ATTRIBUTE_CODE);
+        $attribute = $customerSetup->getEavConfig()->getAttribute(
+            \Magento\Customer\Model\Customer::ENTITY,
+            self::ATTRIBUTE_CODE
+        );
         $attribute->setData('used_in_forms', ['adminhtml_customer']);
         $attribute->setData('is_visible_in_grid', true);
         $attribute->setData('scope', ScopedAttributeInterface::SCOPE_STORE);

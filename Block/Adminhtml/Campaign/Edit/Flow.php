@@ -207,7 +207,8 @@ class Flow extends Template
         return '<div class="ordo-flow-node" data-kind="trigger">'
             . '<div class="ordo-flow-node-head">'
             . '<span>' . $this->escapeHtml((string) __('Trigger')) . '</span>'
-            . '<button type="button" class="ordo-flow-delete" title="' . $this->escapeHtmlAttr((string) __('Remove')) . '">&times;</button>'
+            . '<button type="button" class="ordo-flow-delete" title="'
+            . $this->escapeHtmlAttr((string) __('Remove')) . '">&times;</button>'
             . '</div>'
             . '<select class="ordo-flow-type-select">' . $optionsHtml . '</select>'
             . '</div>';
@@ -223,8 +224,13 @@ class Flow extends Template
      * fields: someone who doesn't know what JSON is should never have to see one to configure
      * this. A type without a mapping still gets the JSON fallback field.
      */
-    private function editableNodeHtml(string $kind, string $label, string $paramsJson, string $optionsHtml, int $delayMinutes = 0): string
-    {
+    private function editableNodeHtml(
+        string $kind,
+        string $label,
+        string $paramsJson,
+        string $optionsHtml,
+        int $delayMinutes = 0
+    ): string {
         $decodedParams = json_decode($paramsJson, true);
         $paramsAttr = json_encode(is_array($decodedParams) ? $decodedParams : []);
 
@@ -249,7 +255,8 @@ class Flow extends Template
             . '" data-params="' . $this->escapeHtmlAttr((string) $paramsAttr) . '">'
             . '<div class="ordo-flow-node-head">'
             . '<span>' . $this->escapeHtml($label) . '</span>'
-            . '<button type="button" class="ordo-flow-delete" title="' . $this->escapeHtmlAttr((string) __('Remove')) . '">&times;</button>'
+            . '<button type="button" class="ordo-flow-delete" title="'
+            . $this->escapeHtmlAttr((string) __('Remove')) . '">&times;</button>'
             . '</div>'
             . '<select class="ordo-flow-type-select">' . $optionsHtml . '</select>'
             . $delayHtml
@@ -316,7 +323,10 @@ class Flow extends Template
             $nodes[$id] = $this->buildNode(
                 $id,
                 'ordo-flow-trigger',
-                $this->triggerNodeHtml($triggerEvent, $this->typeOptionsHtml($this->getTriggerEventTypes(), $triggerEvent, $this->getTriggerEventLabels())),
+                $this->triggerNodeHtml(
+                    $triggerEvent,
+                    $this->typeOptionsHtml($this->getTriggerEventTypes(), $triggerEvent, $this->getTriggerEventLabels())
+                ),
                 $x,
                 60 + count($triggerIds) * 160
             );

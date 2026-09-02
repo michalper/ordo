@@ -28,7 +28,11 @@ class Collection extends SearchResult
         $this->getSelect()->joinLeft(
             ['ordo_campaign_trigger' => $this->getTable('ordo_campaign_trigger')],
             'ordo_campaign_trigger.campaign_id = main_table.entity_id',
-            ['triggers' => new \Zend_Db_Expr('GROUP_CONCAT(DISTINCT ordo_campaign_trigger.trigger_event SEPARATOR \', \')')]
+            [
+                'triggers' => new \Zend_Db_Expr(
+                    'GROUP_CONCAT(DISTINCT ordo_campaign_trigger.trigger_event SEPARATOR \', \')'
+                ),
+            ]
         )->group('main_table.entity_id');
     }
 }

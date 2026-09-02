@@ -1,25 +1,29 @@
 <!--@subject You left something in your cart @-->
 {{template config_path="design/email/header_template"}}
 
-<table>
+<table role="presentation">
     <tr class="email-intro">
         <td>
             <p class="greeting">Hi {{var customer_name}},</p>
             <p>You still have items waiting in your cart:</p>
-            <table cellspacing="0" cellpadding="6" style="width:100%; border-collapse: collapse;">
+            <table style="width:100%; border-collapse: collapse;">
                 {{depend cart_items}}
+                <tr>
+                    <th scope="col" style="padding: 6px; text-align: left;">Item</th>
+                    <th scope="col" style="padding: 6px; text-align: left;">Qty</th>
+                </tr>
                 {{for item in cart_items}}
                 <tr>
-                    <td>{{var item.name}}</td>
-                    <td>Qty: {{var item.qty}}</td>
+                    <td style="padding: 6px;">{{var item.name}}</td>
+                    <td style="padding: 6px;">{{var item.qty}}</td>
                 </tr>
                 {{/for}}
                 {{/depend}}
             </table>
             <p><strong>Subtotal: {{var cart_subtotal}}</strong></p>
-            <table class="button-container" cellspacing="0" cellpadding="0" style="margin: 20px 0;">
+            <table class="button-container" role="presentation" style="margin: 20px 0; border-collapse: collapse;">
                 <tr>
-                    <td>
+                    <td style="padding: 0;">
                         <a href="{{var store.getBaseUrl()}}checkout/cart/" class="action primary">
                             <span>Return to cart</span>
                         </a>

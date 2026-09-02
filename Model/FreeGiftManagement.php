@@ -103,7 +103,10 @@ class FreeGiftManagement implements FreeGiftManagementInterface
     private function assertOwnership(Quote $quote): void
     {
         $customerId = $this->userContext->getUserId();
-        if ($customerId !== null && (int) $quote->getCustomerId() > 0 && (int) $quote->getCustomerId() !== (int) $customerId) {
+        if ($customerId !== null
+            && (int) $quote->getCustomerId() > 0
+            && (int) $quote->getCustomerId() !== (int) $customerId
+        ) {
             throw new NoSuchEntityException(__('Cart with id "%1" does not exist.', $quote->getId()));
         }
     }

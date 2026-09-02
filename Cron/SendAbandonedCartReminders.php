@@ -66,7 +66,10 @@ class SendAbandonedCartReminders
         $logTable = $this->resourceConnection->getTableName('ordo_abandoned_cart_reminder_log');
 
         $select = $connection->select()
-            ->from(['q' => $quoteTable], ['entity_id', 'customer_id', 'customer_email', 'customer_firstname', 'subtotal'])
+            ->from(
+                ['q' => $quoteTable],
+                ['entity_id', 'customer_id', 'customer_email', 'customer_firstname', 'subtotal']
+            )
             ->joinLeft(
                 ['l' => $logTable],
                 'l.quote_id = q.entity_id',

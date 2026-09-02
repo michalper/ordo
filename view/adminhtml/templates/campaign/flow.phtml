@@ -1,14 +1,24 @@
 <?php
 /** @var \Ordo\Automation\Block\Adminhtml\Campaign\Edit\Flow $block */
 /** @var \Magento\Framework\Escaper $escaper */
+
+$flowIntro = __(
+    'Drag a block from the palette onto the canvas, then drag from the small dot on the right edge of one node '
+    . 'to the dot on the left edge of the next to connect them. A campaign can start from more than one trigger '
+    . '— every one of them must lead all the way through to an Action before you can save. Then "Apply flow to '
+    . 'form & Save" writes the graph into the form below and saves through the same action the Save button uses.'
+);
+$applyFlowButtonLabel = __('Apply flow to form & Save');
 ?>
 <?php if ($block->hasCampaign()): ?>
 <div class="ordo-flow-wrapper">
     <div class="ordo-flow-head">
         <h2><?= $escaper->escapeHtml(__('Flow')) ?></h2>
-        <p><?= $escaper->escapeHtml(__('Drag a block from the palette onto the canvas, then drag from the small dot on the right edge of one node to the dot on the left edge of the next to connect them. A campaign can start from more than one trigger — every one of them must lead all the way through to an Action before you can save. Then "Apply flow to form & Save" writes the graph into the form below and saves through the same action the Save button uses.')) ?></p>
+        <p><?= $escaper->escapeHtml($flowIntro) ?></p>
         <div class="ordo-flow-toolbar">
-            <button type="button" class="action-primary" data-flow-action="apply"><?= $escaper->escapeHtml(__('Apply flow to form & Save')) ?></button>
+            <button type="button" class="action-primary" data-flow-action="apply"><?=
+                $escaper->escapeHtml($applyFlowButtonLabel)
+            ?></button>
         </div>
     </div>
     <div class="ordo-flow-body">
@@ -16,19 +26,22 @@
             <div class="ordo-flow-palette-group">
                 <h3><?= $escaper->escapeHtml(__('Triggers')) ?></h3>
                 <?php foreach ($block->getTriggerEventLabels() as $type => $label): ?>
-                <div class="ordo-flow-palette-item" draggable="true" data-flow-kind="trigger" data-flow-type="<?= $escaper->escapeHtmlAttr($type) ?>"><?= $escaper->escapeHtml($label) ?></div>
+                <div class="ordo-flow-palette-item" draggable="true" data-flow-kind="trigger"
+                     data-flow-type="<?= $escaper->escapeHtmlAttr($type) ?>"><?= $escaper->escapeHtml($label) ?></div>
                 <?php endforeach; ?>
             </div>
             <div class="ordo-flow-palette-group">
                 <h3><?= $escaper->escapeHtml(__('Conditions')) ?></h3>
                 <?php foreach ($block->getConditionTypeLabels() as $type => $label): ?>
-                <div class="ordo-flow-palette-item" draggable="true" data-flow-kind="condition" data-flow-type="<?= $escaper->escapeHtmlAttr($type) ?>"><?= $escaper->escapeHtml($label) ?></div>
+                <div class="ordo-flow-palette-item" draggable="true" data-flow-kind="condition"
+                     data-flow-type="<?= $escaper->escapeHtmlAttr($type) ?>"><?= $escaper->escapeHtml($label) ?></div>
                 <?php endforeach; ?>
             </div>
             <div class="ordo-flow-palette-group">
                 <h3><?= $escaper->escapeHtml(__('Actions')) ?></h3>
                 <?php foreach ($block->getActionTypeLabels() as $type => $label): ?>
-                <div class="ordo-flow-palette-item" draggable="true" data-flow-kind="action" data-flow-type="<?= $escaper->escapeHtmlAttr($type) ?>"><?= $escaper->escapeHtml($label) ?></div>
+                <div class="ordo-flow-palette-item" draggable="true" data-flow-kind="action"
+                     data-flow-type="<?= $escaper->escapeHtmlAttr($type) ?>"><?= $escaper->escapeHtml($label) ?></div>
                 <?php endforeach; ?>
             </div>
         </div>

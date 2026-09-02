@@ -1,7 +1,7 @@
 <!--@subject Reminder: order #{{var order_increment_id}} is still waiting for your approval @-->
 {{template config_path="design/email/header_template"}}
 
-<table>
+<table role="presentation">
     <tr class="email-intro">
         <td>
             <p class="greeting">Hi,</p>
@@ -9,9 +9,9 @@
                 Order <strong>#{{var order_increment_id}}</strong> ({{var order_total}}) is still waiting for your
                 decision.
             </p>
-            <table class="button-container" cellspacing="0" cellpadding="0" style="margin: 20px 0;">
+            <table class="button-container" role="presentation" style="margin: 20px 0; border-collapse: collapse;">
                 <tr>
-                    <td>
+                    <td style="padding: 0;">
                         <a href="{{var approve_url}}" class="action primary">
                             <span>Approve</span>
                         </a>

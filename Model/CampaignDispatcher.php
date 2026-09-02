@@ -93,9 +93,11 @@ class CampaignDispatcher
                 $this->campaignActionCollectionFactory->create()->addCampaignIdsFilter($campaignIds)
             );
         } catch (\Throwable $e) {
-            $this->logger->error(
-                sprintf('Ordo_Automation: failed loading conditions/actions for trigger "%s": %s', $triggerEvent, $e->getMessage())
-            );
+            $this->logger->error(sprintf(
+                'Ordo_Automation: failed loading conditions/actions for trigger "%s": %s',
+                $triggerEvent,
+                $e->getMessage()
+            ));
             return;
         }
 
@@ -107,9 +109,12 @@ class CampaignDispatcher
 
                 $this->runActionsFrom($campaignId, $actionsByCampaign[$campaignId] ?? [], 0, $context);
             } catch (\Throwable $e) {
-                $this->logger->error(
-                    sprintf('Ordo_Automation: campaign #%d failed for trigger "%s": %s', $campaignId, $triggerEvent, $e->getMessage())
-                );
+                $this->logger->error(sprintf(
+                    'Ordo_Automation: campaign #%d failed for trigger "%s": %s',
+                    $campaignId,
+                    $triggerEvent,
+                    $e->getMessage()
+                ));
             }
         }
     }
@@ -177,7 +182,10 @@ class CampaignDispatcher
             $condition = $this->conditionPool->get((string) $conditionRow->getData('type'));
 
             if ($condition === null) {
-                $this->logger->error(sprintf('Ordo_Automation: unknown campaign condition type "%s".', $conditionRow->getData('type')));
+                $this->logger->error(sprintf(
+                    'Ordo_Automation: unknown campaign condition type "%s".',
+                    $conditionRow->getData('type')
+                ));
                 return false;
             }
 
@@ -236,7 +244,12 @@ class CampaignDispatcher
             $actionRow = $actions[$i];
 
             if ($actionRow->getDelayMinutes() > 0) {
-                $this->scheduleResume($campaignId, (int) $actionRow->getEntityId(), $actionRow->getDelayMinutes(), $context);
+                $this->scheduleResume(
+                    $campaignId,
+                    (int) $actionRow->getEntityId(),
+                    $actionRow->getDelayMinutes(),
+                    $context
+                );
                 return;
             }
 
@@ -252,7 +265,10 @@ class CampaignDispatcher
         $action = $this->actionPool->get((string) $actionRow->getData('type'));
 
         if ($action === null) {
-            $this->logger->error(sprintf('Ordo_Automation: unknown campaign action type "%s".', $actionRow->getData('type')));
+            $this->logger->error(sprintf(
+                'Ordo_Automation: unknown campaign action type "%s".',
+                $actionRow->getData('type')
+            ));
             return;
         }
 
