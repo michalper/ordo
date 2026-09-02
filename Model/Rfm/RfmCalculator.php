@@ -14,6 +14,25 @@ use Magento\Framework\Stdlib\DateTime\DateTime;
  */
 class RfmCalculator
 {
+    /**
+     * getPercentileRanks() is a whole-customer-base scan+sort — cheap to call once per campaign
+     * dispatch, expensive if every percentile condition on every campaign recomputes it for the
+     * same single-customer check within the same event. Campaign\Condition\*PercentileAtLeast
+     * has no natural "start of this dispatch" hook to reset a cache against (unlike
+     * SegmentMemberResolver, which resets its own cache at the top of each resolve call), so this
+     * is time-bounded instead: fresh enough that a burst of campaigns/conditions checking the
+     * same trigger event all hit one cached computation, short enough that a long-lived queue
+     * consumer process (this module's campaign dispatch runs through one, see AGENTS.md) never
+     * serves data more than this many seconds stale.
+     *
+     * @var array<int, array{recency_percentile: float, frequency_percentile: float, monetary_percentile: float}>|null
+     */
+    private ?array $percentileRanksCache = null;
+
+    private ?int $percentileRanksCachedAt = null;
+
+    private const PERCENTILE_CACHE_TTL_SECONDS = 60;
+
     public function __construct(
         private readonly ResourceConnection $resourceConnection,
         private readonly DateTime $dateTime
@@ -154,6 +173,28 @@ class RfmCalculator
      * @return array<int, array{recency_percentile: float, frequency_percentile: float, monetary_percentile: float}>
      */
     public function getPercentileRanks(): array
+    {
+        $now = $this->dateTime->gmtTimestamp();
+
+        if ($this->percentileRanksCache !== null
+            && $this->percentileRanksCachedAt !== null
+            && ($now - $this->percentileRanksCachedAt) < self::PERCENTILE_CACHE_TTL_SECONDS
+        ) {
+            return $this->percentileRanksCache;
+        }
+
+        $ranks = $this->computePercentileRanks();
+
+        $this->percentileRanksCache = $ranks;
+        $this->percentileRanksCachedAt = $now;
+
+        return $ranks;
+    }
+
+    /**
+     * @return array<int, array{recency_percentile: float, frequency_percentile: float, monetary_percentile: float}>
+     */
+    private function computePercentileRanks(): array
     {
         $customerIds = $this->getAllCustomerIds();
         $total = count($customerIds);

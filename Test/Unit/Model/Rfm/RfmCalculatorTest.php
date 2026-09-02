@@ -271,4 +271,49 @@ class RfmCalculatorTest extends TestCase
 
         self::assertSame([], $calculator->getPercentileRanks());
     }
+
+    public function testGetPercentileRanksCachesWithinTheTtlWindow(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->expects(self::once())->method('fetchCol')->willReturn(['1']);
+        $connection->expects(self::once())->method('fetchAll')->willReturn([]);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        // 1700000000, then 30s later — still inside the 60s TTL, so the second call must reuse
+        // the cached result instead of hitting fetchCol()/fetchAll() again.
+        $dateTime = $this->createStub(DateTime::class);
+        $dateTime->method('gmtTimestamp')->willReturnOnConsecutiveCalls(1700000000, 1700000030);
+
+        $calculator = new RfmCalculator($resourceConnection, $dateTime);
+
+        $first = $calculator->getPercentileRanks();
+        $second = $calculator->getPercentileRanks();
+
+        self::assertSame($first, $second);
+    }
+
+    public function testGetPercentileRanksRecomputesAfterTheTtlExpires(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->expects(self::exactly(2))->method('fetchCol')->willReturn(['1']);
+        $connection->expects(self::exactly(2))->method('fetchAll')->willReturn([]);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        // 1700000000, then 61s later — past the 60s TTL, so the second call must recompute.
+        $dateTime = $this->createStub(DateTime::class);
+        $dateTime->method('gmtTimestamp')->willReturnOnConsecutiveCalls(1700000000, 1700000061);
+
+        $calculator = new RfmCalculator($resourceConnection, $dateTime);
+
+        $calculator->getPercentileRanks();
+        $calculator->getPercentileRanks();
+    }
 }
