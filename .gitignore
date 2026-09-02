@@ -3,3 +3,6 @@ node_modules/
 .magento_cache/
 *.log
 .idea/
+.phpunit.result.cache
+clover.xml
+junit.xml
