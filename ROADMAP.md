@@ -65,8 +65,11 @@ Not a code review — a capability comparison against the category. Each is a re
   crossing happens, instead of only being read opportunistically by whatever other trigger already ran. Rule
   authoring is a plain attribute-code text field, not a dynamic EAV-attribute picker — a deliberate scope cut, not a
   gap in the trigger/evaluation mechanics themselves.
-- **Popup targeting** — frequency capping exists. Missing: event-driven triggers finer than a tag threshold (e.g. "this
-  element was clicked").
+- **Popup targeting** — frequency capping and finer-grained triggers now both ship: `element_clicked` is a tracked
+  event type (theme calls `window.ordoTrack('element_clicked', 'key')` from its own click handler, same integration
+  pattern as `product_view`/`category_view`), aggregated with its own 1-click-by-default threshold
+  (`Config::getTrackingClickThreshold()`) instead of the 3-view default, flowing through the same visitor-tag →
+  campaign-trigger pipeline every other tracked signal already uses.
 - **Dynamic content blocks** — reusable snippets, RSS newsletters, product feeds inside a campaign email. Not built.
 - **Segments** — bulk actions on a segment's current members now ship (add tag / add points, resolved via
   `SegmentMemberResolver` and applied async), as do a standalone RFM report across the whole customer base
