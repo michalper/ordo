@@ -208,6 +208,21 @@ jobs:
           sudo sed -i "s#fastcgi_pass   fastcgi_backend;#fastcgi_pass unix:/run/php/php8.3-fpm.sock;#" nginx.conf.sample
           sudo ln -sf /etc/nginx/sites-available/magento.conf /etc/nginx/sites-enabled/magento.conf
           sudo rm -f /etc/nginx/sites-enabled/default
+
+          # PHP-FPM's default pool runs as www-data, but setup:install above already wrote
+          # var/, generated/, pub/static/, app/etc/env.php as this job's own runner user — run
+          # the pool as that same user instead of chown-ing the whole Magento tree to www-data
+          # (which would then need undoing for the CLI steps below that still run as the runner
+          # user directly, e.g. the magentoCLI bridge's exec() calls).
+          sudo sed -i "s/^user = .*/user = $(whoami)/; s/^group = .*/group = $(whoami)/" \
+            /etc/php/8.3/fpm/pool.d/www.conf
+          sudo sed -i "s/^listen.owner = .*/listen.owner = $(whoami)/; s/^listen.group = .*/listen.group = $(whoami)/" \
+            /etc/php/8.3/fpm/pool.d/www.conf
+          # nginx's worker processes still run as www-data (its own default) — 0666 so they can
+          # connect to a socket now owned by the runner user instead of also reconfiguring nginx's
+          # own user directive. Ephemeral CI runner, not a real permissions concern.
+          echo "listen.mode = 0666" | sudo tee -a /etc/php/8.3/fpm/pool.d/www.conf > /dev/null
+
           sudo nginx -t
           sudo systemctl restart php8.3-fpm
           sudo systemctl restart nginx
@@ -215,7 +230,12 @@ jobs:
             curl -sf http://127.0.0.1:8080/ -o /dev/null && break
             sleep 2
           done
-          curl -sf http://127.0.0.1:8080/ -o /dev/null || (sudo journalctl -u nginx -u php8.3-fpm --no-pager | tail -100 && exit 1)
+          curl -sf http://127.0.0.1:8080/ -o /dev/null || (
+            echo "--- curl -v ---"; curl -v http://127.0.0.1:8080/ 2>&1
+            echo "--- nginx error.log ---"; sudo tail -100 /var/log/nginx/error.log
+            echo "--- php8.3-fpm error log ---"; sudo tail -100 /var/log/php8.3-fpm.log
+            exit 1
+          )
 
       - name: Wire the MFTF CLI bridge and .env
         working-directory: magento
