@@ -223,6 +223,13 @@ jobs:
             /etc/php/8.3/fpm/pool.d/www.conf
           sudo sed -i "s/^listen.owner = .*/listen.owner = $(whoami)/; s/^listen.group = .*/listen.group = $(whoami)/" \
             /etc/php/8.3/fpm/pool.d/www.conf
+          # Ubuntu's default pool caps at pm.max_children = 5 — nowhere near enough for the
+          # burst of concurrent asset requests a real admin page triggers under Selenium/Chrome
+          # (the same class of problem PHP_CLI_SERVER_WORKERS existed to solve for php -S).
+          # static + a flat 32 avoids dynamic's slower ramp-up (start_servers/min_spare_servers)
+          # costing the first page load extra latency.
+          sudo sed -i "s/^pm = .*/pm = static/; s/^pm.max_children = .*/pm.max_children = 32/" \
+            /etc/php/8.3/fpm/pool.d/www.conf
 
           sudo nginx -t
           sudo systemctl restart php8.3-fpm
@@ -274,27 +281,6 @@ jobs:
           magento/MAGENTO_ADMIN_PASSWORD=Admin123!
           EOF
 
-      - name: Start PHP built-in server
-        working-directory: magento
-        env:
-          # Mandatory: the built-in server otherwise handles one request at a time, and
-          # Selenium/Chrome fires many concurrent asset requests — without workers, admin pages
-          # render with broken assets (RequireJS "Script error") or hang until timeout. Bumped
-          # from 8 to 32 after the first real run: every one of the 8 tests failed identically at
-          # the exact same point (the post-login page's asset burst / the logout page's re-render)
-          # with net::ERR_CONNECTION_REFUSED — php-server.log showed the server still alive and
-          # accepting connections throughout, so this wasn't a crash, just too few workers for the
-          # concurrent request burst a full admin page triggers.
-          PHP_CLI_SERVER_WORKERS: 32
-        run: |
-          nohup php -S 0.0.0.0:8080 -t pub /tmp/router.php \
-            > /tmp/php-server.log 2>&1 &
-          for i in $(seq 1 15); do
-            curl -sf http://127.0.0.1:8080/ -o /dev/null && break
-            sleep 2
-          done
-          curl -sf http://127.0.0.1:8080/ -o /dev/null || (cat /tmp/php-server.log && exit 1)
-
       - name: Generate MFTF tests
         working-directory: magento
         env:
@@ -307,6 +293,15 @@ jobs:
           MFTF_TESTS: ${{ inputs.tests }}
         run: vendor/bin/mftf run:test $MFTF_TESTS
 
+      - name: Copy nginx/PHP-FPM logs for the failure artifact
+        if: failure()
+        run: |
+          mkdir -p /tmp/server-logs
+          sudo cp /var/log/nginx/error.log /tmp/server-logs/nginx-error.log 2>/dev/null || true
+          sudo cp /var/log/nginx/access.log /tmp/server-logs/nginx-access.log 2>/dev/null || true
+          sudo cp /var/log/php8.3-fpm.log /tmp/server-logs/php8.3-fpm.log 2>/dev/null || true
+          sudo chmod -R a+r /tmp/server-logs
+
       - name: Upload MFTF results on failure
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -314,5 +309,5 @@ jobs:
           name: mftf-results
           path: |
             magento/dev/tests/acceptance/tests/_output
-            /tmp/php-server.log
+            /tmp/server-logs
           retention-days: 7
