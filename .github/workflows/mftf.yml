@@ -386,6 +386,18 @@ jobs:
         run: |
           mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM authorization_role;" > /tmp/server-logs/authorization_role.txt 2>&1 || true
           mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM authorization_rule;" > /tmp/server-logs/authorization_rule.txt 2>&1 || true
+          # AdminCampaignScenarioEndToEndTest: the campaign form saves fine ("has been saved"
+          # message appears) and the consumer CLI call exits successfully, but the coupon it
+          # should generate never shows up in the rule's grid, with zero errors logged anywhere
+          # — consistent with CampaignDispatcher silently finding 0 enabled campaigns for the
+          # trigger (its normal, non-error no-op path). These four tables are the ground truth
+          # for whether "enabled" and the trigger/condition/action rows actually persisted the
+          # way the UI claimed — the campaign itself is UI-created, not an MFTF createData
+          # fixture, so nothing deletes it before this step runs.
+          mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM ordo_campaign;" > /tmp/server-logs/ordo_campaign.txt 2>&1 || true
+          mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM ordo_campaign_trigger;" > /tmp/server-logs/ordo_campaign_trigger.txt 2>&1 || true
+          mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM ordo_campaign_condition;" > /tmp/server-logs/ordo_campaign_condition.txt 2>&1 || true
+          mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM ordo_campaign_action;" > /tmp/server-logs/ordo_campaign_action.txt 2>&1 || true
           cp var/log/exception.log /tmp/server-logs/magento-exception.log 2>/dev/null || true
           cp var/log/system.log /tmp/server-logs/magento-system.log 2>/dev/null || true
           cp var/log/debug.log /tmp/server-logs/magento-debug.log 2>/dev/null || true
