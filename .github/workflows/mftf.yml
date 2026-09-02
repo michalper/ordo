@@ -318,6 +318,17 @@ jobs:
           sudo cp /var/log/php8.3-fpm.log /tmp/server-logs/php8.3-fpm.log 2>/dev/null || true
           sudo chmod -R a+r /tmp/server-logs
 
+      - name: Dump ACL data for the failure artifact
+        # Run 15: every Ordo_Automation admin controller redirected to Magento's own default
+        # dashboard (the standard ACL-denied behavior), including admin/ordo/campaign/new which
+        # worked fine one run earlier — dumping the actual authorization_rule/role/admin_user
+        # rows rather than guessing again at why.
+        if: failure()
+        run: |
+          mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM authorization_role;" > /tmp/server-logs/authorization_role.txt 2>&1 || true
+          mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM authorization_rule;" > /tmp/server-logs/authorization_rule.txt 2>&1 || true
+          mysql -h127.0.0.1 -uroot magento -e "SELECT user_id, username, is_active, role_id FROM admin_user;" > /tmp/server-logs/admin_user.txt 2>&1 || true
+
       - name: Upload MFTF results on failure
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
