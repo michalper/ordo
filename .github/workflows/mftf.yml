@@ -171,8 +171,9 @@ jobs:
         # default apt PHP is already 8.3, matching the CLI version installed above.
         run: |
           sudo apt-get update -qq
+          # sodium isn't a separate apt package — it's bundled into PHP core since 7.2.
           sudo apt-get install -y -qq nginx php8.3-fpm php8.3-bcmath php8.3-curl php8.3-gd \
-            php8.3-intl php8.3-mbstring php8.3-mysql php8.3-soap php8.3-sodium php8.3-xsl \
+            php8.3-intl php8.3-mbstring php8.3-mysql php8.3-soap php8.3-xsl \
             php8.3-zip php8.3-opcache
 
       - name: Configure and start nginx + PHP-FPM for Magento
