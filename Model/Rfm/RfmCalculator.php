@@ -128,4 +128,28 @@ class RfmCalculator
 
         return $aggregates;
     }
+
+    /**
+     * Every customer ID in customer_entity, regardless of order history — used by
+     * SegmentMemberResolver's order_frequency_at_least/monetary_total_at_least handling for a
+     * threshold <= 0. getAggregatesForAllCustomers() only returns rows for customers with at
+     * least one non-canceled order (it's a GROUP BY over sales_order), but a customer with zero
+     * orders still satisfies "frequency >= 0" / "monetary >= 0" under the single-customer path
+     * (RfmCalculator::getFrequency()/getMonetaryTotal() return 0/0.0 for them, and 0 >= 0 is
+     * true) — so resolving a threshold <= 0 against the aggregate map alone would silently drop
+     * every zero-order customer instead of matching everyone, same as it should.
+     *
+     * @return int[]
+     */
+    public function getAllCustomerIds(): array
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $customerTable = $this->resourceConnection->getTableName('customer_entity');
+
+        $ids = $connection->fetchCol(
+            $connection->select()->from($customerTable, 'entity_id')
+        );
+
+        return array_map('intval', $ids);
+    }
 }

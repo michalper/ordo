@@ -60,7 +60,9 @@ class SegmentMatcherTest extends TestCase
         $this->collection->method('getIterator')->willReturn(new \ArrayIterator([$row]));
 
         $condition = $this->createMock(ConditionInterface::class);
-        $condition->method('isSatisfied')->with(['customer_id' => 42], ['tag' => 'vip'])->willReturn(true);
+        $condition->method('isSatisfied')
+            ->with(['customer_id' => 42, '_in_segment_visited' => [3]], ['tag' => 'vip'])
+            ->willReturn(true);
         $this->conditionPool->method('get')->with('tag')->willReturn($condition);
 
         self::assertTrue($this->matcher->isCustomerInSegment(3, 42));
@@ -91,5 +93,18 @@ class SegmentMatcherTest extends TestCase
         $this->logger->expects(self::once())->method('error');
 
         self::assertFalse($this->matcher->isCustomerInSegment(3, 42));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testFailsClosedWhenSegmentIsAlreadyBeingVisited(): void
+    {
+        // Simulates the recursive call InSegment::isSatisfied makes when a segment's own
+        // in_segment condition points back at a segment already in the call chain (segment 3
+        // referencing itself, directly or via a longer cycle) — must short-circuit before even
+        // querying its conditions, not recurse until the stack overflows.
+        $this->collection->expects(self::never())->method('getSize');
+        $this->collection->expects(self::never())->method('getIterator');
+
+        self::assertFalse($this->matcher->isCustomerInSegment(3, 42, [3]));
     }
 }

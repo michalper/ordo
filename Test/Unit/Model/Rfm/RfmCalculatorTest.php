@@ -146,4 +146,15 @@ class RfmCalculatorTest extends TestCase
 
         self::assertSame([], $calculator->getAggregatesForAllCustomers());
     }
+
+    public function testGetAllCustomerIdsReturnsEveryCustomerEntityId(): void
+    {
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchCol')->willReturn(['3', '7', '11']);
+
+        $calculator = $this->makeCalculator($connection);
+
+        self::assertSame([3, 7, 11], $calculator->getAllCustomerIds());
+    }
 }

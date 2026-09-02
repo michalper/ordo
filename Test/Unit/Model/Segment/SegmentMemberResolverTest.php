@@ -171,6 +171,38 @@ class SegmentMemberResolverTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testOrderFrequencyAtLeastZeroMatchesCustomersWithNoOrdersToo(): void
+    {
+        $this->stubSegment(1, [['type' => 'order_frequency_at_least', 'params' => ['count' => '0']]]);
+        $this->primeFactory();
+
+        // Customer 2 has never ordered, so it's absent from the aggregate map entirely — a
+        // threshold of 0 must still match them (RfmCalculator::getFrequency() would return 0 for
+        // them on the single-customer path, and 0 >= 0), so this must fall back to "everyone",
+        // not just customers who happen to appear in the aggregate query's results.
+        $this->rfmCalculator->method('getAggregatesForAllCustomers')->willReturn([
+            1 => ['frequency' => 3, 'monetary' => 0.0, 'recency_days' => null],
+        ]);
+        $this->rfmCalculator->method('getAllCustomerIds')->willReturn([1, 2]);
+
+        self::assertSame([1, 2], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testMonetaryTotalAtLeastZeroMatchesCustomersWithNoOrdersToo(): void
+    {
+        $this->stubSegment(1, [['type' => 'monetary_total_at_least', 'params' => ['amount' => '0']]]);
+        $this->primeFactory();
+
+        $this->rfmCalculator->method('getAggregatesForAllCustomers')->willReturn([
+            1 => ['frequency' => 0, 'monetary' => 50.0, 'recency_days' => null],
+        ]);
+        $this->rfmCalculator->method('getAllCustomerIds')->willReturn([1, 2]);
+
+        self::assertSame([1, 2], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testInSegmentRecursesIntoTargetSegment(): void
     {
         $this->stubSegment(1, [['type' => 'in_segment', 'params' => ['segment_id' => '2']]]);

@@ -26,6 +26,12 @@ class InSegment implements ConditionInterface
             return false;
         }
 
-        return $this->segmentMatcher->isCustomerInSegment((int) $segmentId, $customerId);
+        // Threaded through by SegmentMatcher itself when this condition is reached recursively
+        // (a segment's own in_segment condition referencing another segment) — absent on a
+        // campaign's top-level in_segment condition, which isn't part of any segment resolve.
+        $rawVisitedSegmentIds = $context['_in_segment_visited'] ?? [];
+        $visitedSegmentIds = is_array($rawVisitedSegmentIds) ? array_map('intval', $rawVisitedSegmentIds) : [];
+
+        return $this->segmentMatcher->isCustomerInSegment((int) $segmentId, $customerId, $visitedSegmentIds);
     }
 }

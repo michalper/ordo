@@ -5,8 +5,8 @@ namespace Ordo\Automation\Model\Segment;
 
 use Ordo\Automation\Model\CustomerScoreManager;
 use Ordo\Automation\Model\CustomerTagManager;
-use Ordo\Automation\Model\Rfm\RfmCalculator;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\CollectionFactory as SegmentConditionCollectionFactory;
+use Ordo\Automation\Model\Rfm\RfmCalculator;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -180,6 +180,15 @@ class SegmentMemberResolver
         }
 
         $threshold = (int) $count;
+
+        // A zero-order customer never appears in getAggregates() (it's a GROUP BY over
+        // sales_order), but still satisfies "frequency >= 0" under the single-customer path
+        // (RfmCalculator::getFrequency() returns 0 for them) — so threshold <= 0 matches
+        // everyone, not just customers who happen to have placed an order.
+        if ($threshold <= 0) {
+            return $this->rfmCalculator->getAllCustomerIds();
+        }
+
         $matching = [];
 
         foreach ($this->getAggregates() as $customerId => $aggregate) {
@@ -204,6 +213,14 @@ class SegmentMemberResolver
         }
 
         $threshold = (float) $amount;
+
+        // Same reasoning as resolveOrderFrequencyAtLeast(): a zero-order customer isn't in
+        // getAggregates() at all, but still satisfies "monetary >= 0" under the single-customer
+        // path (RfmCalculator::getMonetaryTotal() returns 0.0 for them).
+        if ($threshold <= 0.0) {
+            return $this->rfmCalculator->getAllCustomerIds();
+        }
+
         $matching = [];
 
         foreach ($this->getAggregates() as $customerId => $aggregate) {

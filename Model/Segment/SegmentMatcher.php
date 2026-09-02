@@ -26,8 +26,22 @@ class SegmentMatcher
     ) {
     }
 
-    public function isCustomerInSegment(int $segmentId, int $customerId): bool
+    /**
+     * @param int[] $visitedSegmentIds segment IDs already being evaluated in this call chain —
+     *  threaded through via the '_in_segment_visited' context key so a nested in_segment
+     *  condition (Model\Campaign\Condition\InSegment) can guard against cycles (segment A
+     *  references B references A) the same way Model\Segment\SegmentMemberResolver does for its
+     *  set-level resolve. Without this, a cyclic segment graph recurses until the call stack
+     *  overflows instead of failing closed.
+     */
+    public function isCustomerInSegment(int $segmentId, int $customerId, array $visitedSegmentIds = []): bool
     {
+        if (in_array($segmentId, $visitedSegmentIds, true)) {
+            return false;
+        }
+
+        $visitedSegmentIds[] = $segmentId;
+
         $conditions = $this->segmentConditionCollectionFactory->create();
         $conditions->addSegmentFilter($segmentId);
 
@@ -35,7 +49,7 @@ class SegmentMatcher
             return false;
         }
 
-        $context = ['customer_id' => $customerId];
+        $context = ['customer_id' => $customerId, '_in_segment_visited' => $visitedSegmentIds];
 
         foreach ($conditions as $conditionRow) {
             $type = (string) $conditionRow->getData('type');
