@@ -409,4 +409,28 @@
         </index>
     </table>
 
+    <table name="ordo_score_rule" resource="default" engine="innodb" comment="Declarative demographic-attribute lead scoring rule — if a customer's attribute value matches, points are awarded (or subtracted) toward their lead score">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="attribute_code" nullable="false" length="64" comment="Customer attribute code, e.g. group_id, website_id, email, store_id, or any EAV custom attribute code"/>
+        <column xsi:type="varchar" name="operator" nullable="false" length="32" comment="Comparison operator: equals, not_equals, contains"/>
+        <column xsi:type="varchar" name="value" nullable="false" length="255" comment="Value to compare the attribute against"/>
+        <column xsi:type="int" name="points" unsigned="false" nullable="false" default="0" comment="Points awarded when this rule matches — can be negative"/>
+        <column xsi:type="boolean" name="enabled" nullable="false" default="1" comment="Whether this rule is evaluated"/>
+        <column xsi:type="int" name="sort_order" unsigned="true" nullable="false" default="0" comment="Display/evaluation order"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+    </table>
+
+    <table name="ordo_customer_demographic_score" resource="default" engine="innodb" comment="Current sum of matching ordo_score_rule points per customer, tracked separately from ordo_customer_score so a rule change's delta can be computed and applied additively instead of re-summing every rule on every save">
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
+        <column xsi:type="int" name="score" unsigned="false" nullable="false" default="0" comment="Current sum of matching demographic scoring rule points"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="customer_id"/>
+        </constraint>
+    </table>
+
 </schema>

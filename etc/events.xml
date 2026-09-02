@@ -21,4 +21,10 @@
     <event name="sales_quote_collect_totals_after">
         <observer name="ordo_automation_trim_excess_free_gifts" instance="Ordo\Automation\Observer\TrimExcessFreeGifts"/>
     </event>
+    <event name="customer_save_after">
+        <observer name="ordo_automation_evaluate_customer_score_rules" instance="Ordo\Automation\Observer\EvaluateCustomerScoreRules"/>
+    </event>
+    <event name="ordo_customer_score_threshold_crossed">
+        <observer name="ordo_automation_dispatch_score_threshold_campaigns" instance="Ordo\Automation\Observer\DispatchScoreThresholdCampaigns"/>
+    </event>
 </config>

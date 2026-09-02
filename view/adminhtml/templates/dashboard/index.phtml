@@ -104,6 +104,12 @@ $segmentNavDesc = __(
                 $escaper->escapeHtml(__('Recency, frequency and spend quintiles across all customers'))
             ?></span>
         </a>
+        <a class="ordo-nav-card" href="<?= $escaper->escapeUrl($block->getUrl('ordo/scorerule/index')) ?>">
+            <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('Score Rules')) ?></span>
+            <span class="ordo-nav-desc"><?=
+                $escaper->escapeHtml(__('Demographic-attribute lead scoring rules'))
+            ?></span>
+        </a>
         <a class="ordo-nav-card"
            href="<?= $escaper->escapeUrl($block->getUrl('adminhtml/system_config/edit/section/ordo_automation')) ?>">
             <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('Configuration')) ?></span>

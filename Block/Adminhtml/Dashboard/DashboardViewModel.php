@@ -27,6 +27,7 @@ class DashboardViewModel implements ArgumentInterface
         CampaignTriggerInterface::TRIGGER_TAG_ADDED => 'Tag Added',
         CampaignTriggerInterface::TRIGGER_CART_ABANDONED => 'Cart Abandoned',
         CampaignTriggerInterface::TRIGGER_VISITOR_TAG_ADDED => 'Visitor Tag Added (anonymous)',
+        CampaignTriggerInterface::TRIGGER_SCORE_THRESHOLD_CROSSED => 'Score Threshold Crossed',
     ];
 
     /**
@@ -42,6 +43,7 @@ class DashboardViewModel implements ArgumentInterface
         CampaignTriggerInterface::TRIGGER_TAG_ADDED,
         CampaignTriggerInterface::TRIGGER_CART_ABANDONED,
         CampaignTriggerInterface::TRIGGER_VISITOR_TAG_ADDED,
+        CampaignTriggerInterface::TRIGGER_SCORE_THRESHOLD_CROSSED,
     ];
 
     /**

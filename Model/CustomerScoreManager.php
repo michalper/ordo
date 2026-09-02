@@ -69,4 +69,40 @@ class CustomerScoreManager
 
         return array_map('intval', $ids);
     }
+
+    /**
+     * Current sum of matching ordo_score_rule points for a customer — kept in a separate
+     * table (ordo_customer_demographic_score) from the running score total, so
+     * EvaluateCustomerScoreRules can compute a delta between the old and new sum instead of
+     * having to reverse out and reapply every rule's points on each customer save.
+     */
+    public function getDemographicScore(int $customerId): int
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('ordo_customer_demographic_score');
+
+        $score = $connection->fetchOne(
+            $connection->select()
+                ->from($table, 'score')
+                ->where('customer_id = ?', $customerId)
+        );
+
+        return $score !== false ? (int) $score : 0;
+    }
+
+    public function setDemographicScore(int $customerId, int $score): void
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('ordo_customer_demographic_score');
+
+        // Same upsert shape as addPoints(), but this one replaces the value outright (it's a
+        // recomputed sum, not a delta), so VALUES(score) becomes the new score rather than an
+        // increment.
+        $connection->query(
+            // phpcs:ignore Magento2.SQL.RawQuery.FoundRawSql
+            'INSERT INTO ' . $connection->quoteIdentifier($table) . ' (customer_id, score) VALUES (?, ?) '
+            . 'ON DUPLICATE KEY UPDATE score = VALUES(score)',
+            [$customerId, $score]
+        );
+    }
 }

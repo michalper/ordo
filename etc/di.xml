@@ -57,7 +57,15 @@
                 <item name="ordo_free_gift_offer_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\FreeGiftOffer\Grid\Collection</item>
                 <item name="ordo_segment_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Segment\Grid\Collection</item>
                 <item name="ordo_rfm_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Rfm\Grid\Collection</item>
+                <item name="ordo_scorerule_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\ScoreRule\Grid\Collection</item>
             </argument>
+        </arguments>
+    </type>
+
+    <type name="Ordo\Automation\Model\ResourceModel\ScoreRule\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">ordo_score_rule</argument>
+            <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\ScoreRule</argument>
         </arguments>
     </type>
 

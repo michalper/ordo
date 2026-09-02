@@ -85,4 +85,58 @@ class CustomerScoreManagerTest extends TestCase
 
         self::assertSame([1, 2], $manager->getCustomerIdsWithScoreAtLeast(50));
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetDemographicScoreReturnsStoredScore(): void
+    {
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchOne')->willReturn('12');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $manager = new CustomerScoreManager($resourceConnection);
+
+        self::assertSame(12, $manager->getDemographicScore(42));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetDemographicScoreReturnsZeroWhenCustomerHasNoRowYet(): void
+    {
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchOne')->willReturn(false);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $manager = new CustomerScoreManager($resourceConnection);
+
+        self::assertSame(0, $manager->getDemographicScore(42));
+    }
+
+    public function testSetDemographicScoreUpsertsWithTheCustomerIdAndScore(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::once())->method('query')
+            ->with(self::stringContains('ON DUPLICATE KEY UPDATE'), [42, 15]);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $manager = new CustomerScoreManager($resourceConnection);
+        $manager->setDemographicScore(42, 15);
+    }
 }

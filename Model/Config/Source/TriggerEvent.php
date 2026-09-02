@@ -22,6 +22,10 @@ class TriggerEvent implements OptionSourceInterface
                 'value' => CampaignTriggerInterface::TRIGGER_VISITOR_TAG_ADDED,
                 'label' => __('Visitor Tag Added (anonymous)'),
             ],
+            [
+                'value' => CampaignTriggerInterface::TRIGGER_SCORE_THRESHOLD_CROSSED,
+                'label' => __('Score Threshold Crossed'),
+            ],
         ];
     }
 }

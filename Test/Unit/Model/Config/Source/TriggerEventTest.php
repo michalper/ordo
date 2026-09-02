@@ -20,6 +20,7 @@ class TriggerEventTest extends TestCase
                 CampaignTriggerInterface::TRIGGER_TAG_ADDED,
                 CampaignTriggerInterface::TRIGGER_CART_ABANDONED,
                 CampaignTriggerInterface::TRIGGER_VISITOR_TAG_ADDED,
+                CampaignTriggerInterface::TRIGGER_SCORE_THRESHOLD_CROSSED,
             ],
             $values
         );

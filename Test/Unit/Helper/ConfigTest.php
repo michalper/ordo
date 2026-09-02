@@ -34,6 +34,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isPopupEnabled());
         self::assertTrue($this->config->isFreeGiftEnabled());
         self::assertTrue($this->config->isCreditLimitCheckoutBlockEnabled());
+        self::assertTrue($this->config->isLeadScoringEnabled());
     }
 
     public function testIntGettersUseDefaultWhenUnset(): void
@@ -55,6 +56,7 @@ class ConfigTest extends TestCase
         self::assertSame(3, $this->config->getTrackingViewThreshold());
         self::assertSame(15, $this->config->getPopupPollIntervalSeconds());
         self::assertSame(24, $this->config->getPopupFrequencyCapHours());
+        self::assertSame(100, $this->config->getScoreThreshold());
     }
 
     public function testIntGetterHonorsExplicitZero(): void

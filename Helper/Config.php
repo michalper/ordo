@@ -45,6 +45,9 @@ class Config
 
     private const XML_PATH_FREE_GIFT_ENABLED = 'ordo_automation/free_gift/enabled';
 
+    private const XML_PATH_LEAD_SCORING_ENABLED = 'ordo_automation/lead_scoring/enabled';
+    private const XML_PATH_LEAD_SCORING_THRESHOLD = 'ordo_automation/lead_scoring/score_threshold';
+
     private ScopeConfigInterface $scopeConfig;
 
     public function __construct(ScopeConfigInterface $scopeConfig)
@@ -251,5 +254,19 @@ class Config
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
+    }
+
+    public function isLeadScoringEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_LEAD_SCORING_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getScoreThreshold(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_LEAD_SCORING_THRESHOLD, 100, $storeId);
     }
 }

@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">ordo_scorerule_form.ordo_scorerule_form_data_source</item>
+        </item>
+        <item name="label" xsi:type="string" translate="true">Score Rule Information</item>
+        <item name="template" xsi:type="string">templates/form/collapsible</item>
+    </argument>
+    <settings>
+        <buttons>
+            <button name="back" class="Ordo\Automation\Block\Adminhtml\ScoreRule\Edit\BackButton"/>
+            <button name="delete" class="Ordo\Automation\Block\Adminhtml\ScoreRule\Edit\DeleteButton"/>
+            <button name="save" class="Ordo\Automation\Block\Adminhtml\ScoreRule\Edit\SaveButton"/>
+            <button name="save_and_continue" class="Ordo\Automation\Block\Adminhtml\ScoreRule\Edit\SaveAndContinueButton"/>
+        </buttons>
+        <namespace>ordo_scorerule_form</namespace>
+        <dataScope>data</dataScope>
+        <deps>
+            <dep>ordo_scorerule_form.ordo_scorerule_form_data_source</dep>
+        </deps>
+    </settings>
+
+    <dataSource name="ordo_scorerule_form_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Ordo\Automation\Model\ScoreRule\DataProvider</argument>
+            <argument name="name" xsi:type="string">ordo_scorerule_form_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">entity_id</argument>
+            <argument name="requestFieldName" xsi:type="string">entity_id</argument>
+        </argument>
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/form/provider</item>
+            </item>
+        </argument>
+        <settings>
+            <submitUrl path="ordo/scorerule/save"/>
+        </settings>
+    </dataSource>
+
+    <fieldset name="general">
+        <settings>
+            <label translate="true">General</label>
+        </settings>
+        <field name="entity_id" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <visible>false</visible>
+            </settings>
+        </field>
+        <field name="attribute_code" formElement="input" sortOrder="10">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Attribute Code</label>
+                <notice translate="true">Accepts any customer attribute code, including EAV custom attributes</notice>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+        </field>
+        <field name="operator" formElement="select" sortOrder="20">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Operator</label>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options class="Ordo\Automation\Model\Config\Source\ScoreRuleOperator"/>
+                    </settings>
+                </select>
+            </formElements>
+        </field>
+        <field name="value" formElement="input" sortOrder="30">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Value</label>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+        </field>
+        <field name="points" formElement="input" sortOrder="40">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Points</label>
+                <notice translate="true">Can be negative to subtract points when this rule matches</notice>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                    <rule name="validate-number" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+        </field>
+        <field name="sort_order" formElement="input" sortOrder="50">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Sort Order</label>
+                <validation>
+                    <rule name="validate-number" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+        </field>
+        <field name="enabled" formElement="checkbox" sortOrder="60">
+            <settings>
+                <dataType>boolean</dataType>
+                <label translate="true">Enabled</label>
+                <default>1</default>
+            </settings>
+            <formElements>
+                <checkbox>
+                    <settings>
+                        <valueMap>
+                            <map name="false" xsi:type="number">0</map>
+                            <map name="true" xsi:type="number">1</map>
+                        </valueMap>
+                        <prefer>toggle</prefer>
+                    </settings>
+                </checkbox>
+            </formElements>
+        </field>
+    </fieldset>
+</form>

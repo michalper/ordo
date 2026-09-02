@@ -20,6 +20,7 @@ interface CampaignTriggerInterface
     public const TRIGGER_TAG_ADDED = 'tag_added';
     public const TRIGGER_CART_ABANDONED = 'cart_abandoned';
     public const TRIGGER_VISITOR_TAG_ADDED = 'visitor_tag_added';
+    public const TRIGGER_SCORE_THRESHOLD_CROSSED = 'score_threshold_crossed';
 
     /**
      * @return int|null
