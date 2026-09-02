@@ -61,7 +61,11 @@ scoped from real hands-on marketing automation experience.
 
 Not a code review — a capability comparison against the category. Each is a real, separate stream of work:
 
-- **Product recommendations** — no "recommended for you" blocks anywhere; every email is static content.
+- ~~Product recommendations~~ — done. `add_product_recommendations` campaign action (`Model/Recommendation/ProductRecommender`
+  + `ProductRecommendationRenderer`) computes "customers who bought X also bought Y" co-purchase affinity via raw SQL
+  against `sales_order`/`sales_order_item`, falling back to store-wide best-sellers when the signal is thin, and
+  renders an inline-styled HTML block a `send_email` action later in the same campaign can embed via
+  `{{var recommended_products_html|raw}}` — wired into the shipped `ordo_campaign_generic` template.
 - **Lead scoring** — demographic-attribute scoring rules now ship (`ordo_score_rule`, admin CRUD, `ScoreRuleEvaluator`
   matching against core or EAV customer attributes), applied on `customer_save_after` as a delta against the
   customer's tracked demographic contribution. A `score_threshold_crossed` campaign trigger fires the instant a
