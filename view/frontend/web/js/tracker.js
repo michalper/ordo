@@ -108,7 +108,7 @@
             banner.appendChild(body);
         }
 
-        if (popup.cta_label && popup.cta_url) {
+        if (popup.cta_label && popup.cta_url && /^https?:\/\//i.test(popup.cta_url)) {
             var cta = document.createElement('a');
             cta.textContent = popup.cta_label;
             cta.href = popup.cta_url;
