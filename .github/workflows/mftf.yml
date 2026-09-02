@@ -201,7 +201,7 @@ jobs:
           sudo tee /etc/nginx/sites-available/magento.conf > /dev/null <<NGINX
           server {
               listen 8080;
-              server_name 127.0.0.1;
+              server_name ${SELENIUM_REACHABLE_HOST};
               set \$MAGE_ROOT $(pwd);
               set \$MAGE_MODE developer;
 
@@ -348,6 +348,27 @@ jobs:
           cp var/log/exception.log /tmp/server-logs/magento-exception.log 2>/dev/null || true
           cp var/log/system.log /tmp/server-logs/magento-system.log 2>/dev/null || true
           cp var/log/debug.log /tmp/server-logs/magento-debug.log 2>/dev/null || true
+
+      - name: Reproduce the redirect via curl and dump raw response headers
+        # ACL is provably fine, the "Broken reference" layout warnings are unchanged whether the
+        # cache is pre-warmed or not (206 either way) — neither explains the redirect. Logging
+        # in exactly like Selenium does and hitting the same failing URL directly from this same
+        # runner gets the actual Location/Set-Cookie headers Chrome never exposes to us, instead
+        # of guessing at a fifth theory.
+        if: failure()
+        run: |
+          BASE="http://${SELENIUM_REACHABLE_HOST}:8080"
+          JAR=/tmp/server-logs/cookies.txt
+          FORM_KEY=$(curl -s -c "$JAR" "$BASE/admin/admin/" | grep -oP "name=\"form_key\"\s+type=\"hidden\"\s+value=\"\K[^\"]+" | head -1)
+          echo "form_key: $FORM_KEY" > /tmp/server-logs/curl-repro.txt
+          curl -s -b "$JAR" -c "$JAR" -D - -o /tmp/server-logs/curl-login-body.html \
+            --data-urlencode "login[username]=admin" --data-urlencode "login[password]=Admin123!" \
+            --data-urlencode "form_key=$FORM_KEY" "$BASE/admin/admin/index/index/" \
+            >> /tmp/server-logs/curl-repro.txt
+          echo "--- GET campaign/new ---" >> /tmp/server-logs/curl-repro.txt
+          curl -s -b "$JAR" -c "$JAR" -D - -o /tmp/server-logs/curl-campaign-new-body.html \
+            "$BASE/admin/ordo/campaign/new" >> /tmp/server-logs/curl-repro.txt
+          cat /tmp/server-logs/cookies.txt >> /tmp/server-logs/curl-repro.txt 2>/dev/null || true
 
       - name: Upload MFTF results on failure
         if: failure()
