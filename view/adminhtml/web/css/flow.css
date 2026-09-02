@@ -121,8 +121,8 @@
 }
 
 .ordo-flow-palette-item:hover {
-    border-color: #2196f3;
-    background: #eef6fe;
+    border-color: #0ea5e9;
+    background: #eaf7fe;
 }
 
 .ordo-flow-palette-item:active {
@@ -164,7 +164,7 @@
 }
 
 .ordo-flow-canvas .drawflow-node.selected {
-    box-shadow: 0 0 0 2px #2196f3, 0 4px 10px rgba(0, 0, 0, .12);
+    box-shadow: 0 0 0 2px #0ea5e9, 0 4px 10px rgba(0, 0, 0, .12);
 }
 
 .ordo-flow-node {
@@ -263,37 +263,48 @@
     margin-bottom: 0;
 }
 
-/* drawflow.min.css's own `.drawflow .drawflow-node { background: #0ff; border: 2px solid #000 }`
+/* Palette matches the README hero banner (.github/assets/hero.svg)'s "Deep Logic Magenta" /
+   "Blueprint Cyan" identity — trigger/action nodes there are both magenta with a violet third
+   hue would blur into it, so Action gets its own distinct point on the same cool-vivid family
+   (violet, between magenta and cyan) rather than literally reusing Trigger's exact color —
+   the hero mockup only needed 2 hues for a 2-connector illustration, but the real editor needs
+   3 to stay tell-apart-at-a-glance for node type, which "Trigger === Action" would undermine.
+   drawflow.min.css's own `.drawflow .drawflow-node { background: #0ff; border: 2px solid #000 }`
    is two classes deep (specificity 0,2,0) — a bare `.ordo-flow-trigger {...}` (0,1,0) loses to
    it regardless of stylesheet load order, so every one of these repeats the
    `.ordo-flow-canvas .drawflow-node` prefix to outrank it. */
 .ordo-flow-canvas .drawflow-node.ordo-flow-trigger {
-    background: linear-gradient(135deg, #2196f3, #1565c0);
+    background: linear-gradient(135deg, #e879f9, #c026d3);
     border: none;
 }
 
 .ordo-flow-canvas .drawflow-node.ordo-flow-condition {
-    background: linear-gradient(135deg, #ff9142, #ea580c);
+    /* #0ea5e9 (the hero banner's exact cyan) as a gradient stop only reaches ~2.8:1 contrast
+       against this node's white text — well below WCAG AA's 4.5:1 for normal text (same
+       problem the "Apply flow to form & Save" button's own comment already documents fixing
+       for #2196f3). #0369a1 keeps the same blue hue family (Tailwind's sky-700) at ~5.9:1. */
+    background: linear-gradient(135deg, #38bdf8, #0369a1);
     border: none;
 }
 
 .ordo-flow-canvas .drawflow-node.ordo-flow-action {
-    background: linear-gradient(135deg, #4caf50, #2e7d32);
+    background: linear-gradient(135deg, #c084fc, #7c3aed);
     border: none;
 }
 
 /* Connection lines/dots — Drawflow's defaults are thin and grey by default; make them read
-   clearly against the dotted canvas background above. The arrowhead marker itself is defined
-   once as an inline SVG <marker> injected by campaign-flow-editor.js (Drawflow's own paths have
-   no direction indicator at all otherwise). */
+   clearly against the dotted canvas background above, in the same magenta/cyan pair the hero
+   banner's own connector paths use. The arrowhead marker itself is defined once as an inline
+   SVG <marker> injected by campaign-flow-editor.js (Drawflow's own paths have no direction
+   indicator at all otherwise). */
 .ordo-flow-canvas .connection .main-path {
-    stroke: #9aa7b0;
+    stroke: #c026d3;
     stroke-width: 3px;
     marker-end: url(#ordo-flow-arrowhead);
 }
 
 .ordo-flow-canvas .drawflow .connection .point {
-    stroke: #9aa7b0;
+    stroke: #0ea5e9;
     fill: #fff;
 }
 
@@ -309,7 +320,7 @@
 
 .ordo-flow-canvas .drawflow .output:hover,
 .ordo-flow-canvas .drawflow .input:hover {
-    border-color: #2196f3;
+    border-color: #c026d3;
     transform: scale(1.25);
     cursor: crosshair;
 }
