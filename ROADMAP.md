@@ -81,3 +81,15 @@ Not a code review — a capability comparison against the category. Each is a re
   original absolute thresholds). Still open: quintile-based conditions expressed as R/F/M *scores* (e.g. "555"), and
   scheduled recomputation so a large customer base doesn't rank on every dispatch.
 - **Multichannel recovery** — SMS/WhatsApp/push. `cart_abandoned`/win-back only ever send email.
+
+## Documentation
+
+- **GitHub Wiki (WIKI.md) covering every feature, bilingual PL/EN, with screenshots.** Not started. Scope: a walkthrough
+  of each shipped capability (campaigns, segments, RFM, lead scoring, free gifts, order approval, tracking/popups,
+  reorder cycles, dashboard) with a real admin-UI screenshot per feature and description text in both Polish and
+  English, published to the repo's GitHub Wiki (not just this ROADMAP/README). Needs a decision on structure first:
+  one bilingual page per feature vs. a language-split page tree (`Feature-Name` + `Feature-Name-PL`) — GitHub Wiki
+  has no built-in i18n, so this is a real information-architecture choice, not just a writing task. Screenshots
+  should come from a real, running instance (the MFTF pipeline's own screenshot-on-failure mechanism proved useful
+  for debugging — the same live-instance approach, deliberately captured on success this time, is the right source
+  here too, not mockups).
