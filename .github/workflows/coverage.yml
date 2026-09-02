@@ -65,11 +65,16 @@ jobs:
         # report every CI system already produces, separate from (and uploaded regardless of)
         # the line-coverage report below — runs even if the PHPUnit step above failed, so a run
         # that fails on a real test failure still gets its results recorded.
+        # codecov/test-results-action is deprecated in favor of codecov-action itself with
+        # report_type: test_results (Codecov's own recommendation, surfaced directly on this
+        # workflow's own run summary) — same action already used for coverage below, just a
+        # second invocation with a different report_type and file.
         if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@6ba3fdeec616fb91fd6a389b788a2366835a0fa2 # v1.2.1
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./junit.xml
+          report_type: test_results
           flags: unittests
           slug: michalper/ordo
 
