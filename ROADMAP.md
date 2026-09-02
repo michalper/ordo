@@ -397,13 +397,19 @@ the free-gift and credit-limit-API code added since hasn't had a fresh PHPStan p
 components grouped by functional area (campaign engine, free gift, segments, B2B triggers, B2C
 lifecycle, tracking, admin UI) filtered from that same upload.
 
+**[Test Analytics / failed test reporting](https://docs.codecov.com/docs/test-analytics#failed-test-reporting) — done.**
+`coverage.yml` runs PHPUnit with `--log-junit junit.xml` and a separate `codecov/test-results-action` step uploads it
+(runs even if the test step itself failed, via `if: ${{ !cancelled() }}`), so flaky/failing tests are tracked over time,
+not just line coverage.
+
+**[GitHub Checks](https://docs.codecov.com/docs/github-checks) — done.** Confirmed via the GitHub API that no
+Codecov check-run existed on commits before this — a real gap, not something `codecov-action` already did
+automatically. `codecov.yml`'s top-level `github_checks: {annotations: true}` turns on the native check plus inline
+"not covered" markers on changed lines in the PR diff; `informational: true` on every status means this only adds
+visibility, it can never fail the build on its own.
+
 Still flagged for follow-up, not yet wired in:
 
-- **[Test Analytics / failed test reporting](https://docs.codecov.com/docs/test-analytics#failed-test-reporting)**
-  — upload PHPUnit's JUnit XML output (`--log-junit`) alongside the coverage report so Codecov can
-  track flaky/failing tests over time, not just line coverage.
-- **[GitHub Checks](https://docs.codecov.com/docs/github-checks)** — surface Codecov's pass/fail
-  status directly as a GitHub check on PRs instead of only a dashboard visit.
 - **JS bundle analysis** ([docs](https://docs.codecov.com/docs/javascript-bundle-analysis)) — not
   applicable right now: this module's admin/frontend JS is plain RequireJS/AMD served through
   Magento's own static-content pipeline, no Vite/Webpack/Rollup bundler in the loop for the plugin

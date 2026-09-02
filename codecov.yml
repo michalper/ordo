@@ -17,6 +17,15 @@ coverage:
         threshold: 1%
         informational: true
 
+# Surfaces Codecov's own pass/fail as a native GitHub check on the commit/PR (in addition to the
+# dashboard-only comment already posted) — confirmed via the GitHub API that no such check-run
+# exists today, so this was a real gap, not something codecov-action already did automatically.
+# annotations: true additionally puts inline "not covered" markers directly on changed lines in
+# the PR diff view. informational: true above means these checks can never fail the build on
+# their own — this only adds visibility, it doesn't change what blocks a merge.
+github_checks:
+  annotations: true
+
 ignore:
   - "registration.php"
   - "Test/**/*"
