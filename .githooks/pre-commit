@@ -12,7 +12,13 @@
 
 set -e
 
-staged_php=$(git diff --cached --name-only --diff-filter=ACM -- '*.php')
+# Both phpcs.xml.dist and .php-cs-fixer.dist.php exclude Test/ entirely (same reasoning as
+# phpstan.neon's excludePaths — mocked/fixture-heavy test code isn't held to the same coding
+# standard as the code it tests). Passing Test/ paths to php-cs-fixer explicitly also errors
+# outright ("For multiple paths config parameter is required") once combined with a non-Test
+# path in the same invocation, on top of being pointless — filter them out up front instead of
+# discovering that mid-commit.
+staged_php=$(git diff --cached --name-only --diff-filter=ACM -- '*.php' | grep -Ev '(^|/)Test/' || true)
 
 if [ -z "$staged_php" ]; then
     exit 0
