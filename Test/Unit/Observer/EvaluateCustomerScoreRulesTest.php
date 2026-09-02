@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Observer;
 
+use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\Event;
 use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
@@ -21,6 +22,7 @@ class EvaluateCustomerScoreRulesTest extends TestCase
     private ScoreRuleEvaluator $scoreRuleEvaluator;
     private CustomerScoreManager $customerScoreManager;
     private EventManagerInterface $eventManager;
+    private CustomerRepositoryInterface $customerRepository;
     private LoggerInterface $logger;
 
     protected function setUp(): void
@@ -29,6 +31,7 @@ class EvaluateCustomerScoreRulesTest extends TestCase
         $this->scoreRuleEvaluator = $this->createStub(ScoreRuleEvaluator::class);
         $this->customerScoreManager = $this->createMock(CustomerScoreManager::class);
         $this->eventManager = $this->createMock(EventManagerInterface::class);
+        $this->customerRepository = $this->createStub(CustomerRepositoryInterface::class);
         $this->logger = $this->createStub(LoggerInterface::class);
     }
 
@@ -42,10 +45,16 @@ class EvaluateCustomerScoreRulesTest extends TestCase
         return $observer;
     }
 
+    /**
+     * Also wires customerRepository->getById($id) to return this same stub — matching the
+     * observer re-fetching a real CustomerInterface via the repository instead of trusting the
+     * customer_save_after event payload's own (possibly non-CustomerInterface) type.
+     */
     private function makeCustomer(int $id): CustomerInterface
     {
         $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getId')->willReturn($id);
+        $this->customerRepository->method('getById')->willReturn($customer);
 
         return $customer;
     }
@@ -57,6 +66,7 @@ class EvaluateCustomerScoreRulesTest extends TestCase
             $this->scoreRuleEvaluator,
             $this->customerScoreManager,
             $this->eventManager,
+            $this->customerRepository,
             $this->logger
         );
     }

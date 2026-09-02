@@ -70,8 +70,12 @@
 
         <!-- Step 4: this install has no RabbitMQ (DB queue driver only — see AGENTS.md), so
              nothing consumes the message DispatchScoreThresholdCampaigns just published until a
-             consumer actually runs. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=1" stepKey="runCampaignDispatchConsumer"/>
+             consumer actually runs. max-messages is 5, not 1: other tests in this same CI job
+             (same DB, no background consumer running between them) can leave their own already
+             order-placed/registered dispatch messages sitting unconsumed in the same queue ahead
+             of ours; draining a few keeps this test from picking up a stale message referencing
+             a rule another test's own after-hook already deleted, and leaving ours unprocessed. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=5" stepKey="runCampaignDispatchConsumer"/>
 
         <!-- Step 5: the only assertion that checks a real, merchant-visible side effect — a
              coupon code that only CampaignDispatcher's generate_coupon action, run via the full
