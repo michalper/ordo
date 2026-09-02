@@ -36,12 +36,12 @@
              no page-type detection of its own. -->
         <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
         <waitForPageLoad stepKey="waitForProductPage"/>
-        <executeJS function="window.ordoTrack('product_view', '{$createProduct.sku}')" stepKey="callOrdoTrackForProductView"/>
+        <executeJS function="window.ordoTrack('product_view', '$createProduct.sku$')" stepKey="callOrdoTrackForProductView"/>
         <wait time="2" stepKey="waitForProductViewEventToLand"/>
         <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertEventLogged" stepKey="assertProductViewLogged">
             <argument name="visitorId">{$grabVisitorId}</argument>
             <argument name="eventType">product_view</argument>
-            <argument name="eventKey">{$createProduct.sku}</argument>
+            <argument name="eventKey">$createProduct.sku$</argument>
         </helper>
     </test>
 </tests>
