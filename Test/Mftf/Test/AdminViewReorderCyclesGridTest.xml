@@ -9,6 +9,7 @@
             <description value="Covers Controller/Adminhtml/ReorderCycle/Index.php — the read-only diagnostic grid over what CalculateReorderCycle has computed. No edit/delete on this screen, so the assertion is just that the page loads with its grid and title, matching the controller's own doc comment ('for verifying the detected cycle looks right while debugging, not a CRUD screen')."/>
             <severity value="MINOR"/>
             <group value="ordo_automation"/>
+            <group value="dashboard"/>
         </annotations>
         <before>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>

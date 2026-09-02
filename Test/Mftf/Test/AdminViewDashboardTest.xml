@@ -9,6 +9,7 @@
             <description value="Covers the single-flat-menu-item UX decision (etc/adminhtml/menu.xml -> ordo/dashboard/index, no submenu) and DashboardViewModel's server-rendered stats — asserts the campaign/reorder-cycle summary numbers render without going through a separate REST/AJAX call."/>
             <severity value="MAJOR"/>
             <group value="ordo_automation"/>
+            <group value="dashboard"/>
         </annotations>
         <before>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>

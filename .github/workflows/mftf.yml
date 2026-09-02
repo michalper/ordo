@@ -8,35 +8,38 @@ name: MFTF
 # scale the way a unit-test job does. Trigger manually (Actions tab -> MFTF -> Run workflow) or
 # on a schedule once this is proven stable.
 #
-# Every step below mirrors a real, already-solved pitfall documented in AGENTS.md's "Uruchomienie
-# MFTF w tym środowisku" section, discovered running these exact tests locally in
-# magento-ordo-test/ (PHP_CLI_SERVER_WORKERS, static content deploy, the cli-bridge symlink,
-# realtime indexers). Same two repository secrets as ci.yml/coverage.yml
-# (MAGENTO_COMPOSER_USERNAME / MAGENTO_COMPOSER_PASSWORD) — see the comment in ci.yml for how to
-# get them.
+# Split into a matrix by functional area (the strategy.matrix.group below — see each test's own
+# <group> annotation in Test/Mftf/Test/*.xml) after the pipeline's first fully green run
+# confirmed the shared setup itself was sound: campaign, segment, dashboard, tracking each get
+# their own full Magento install + Selenium session, run concurrently, so one area's failure
+# doesn't block reading the others' results and a re-run only needs to touch the group that
+# actually broke.
 #
-# NOT yet verified end-to-end in GitHub Actions itself (unlike every other workflow in this repo,
-# which was iterated against real CI runs) — a full Magento install + Selenium session in a fresh
-# runner has a wide surface area (service container health-check timing, network reachability
-# between the runner and service containers, disk space) that's realistically only fully proven by
-# actually running it and fixing whatever breaks, the same way the local pitfalls list was built.
+# Every step below mirrors a real, already-solved pitfall — most documented in AGENTS.md's
+# "Uruchomienie MFTF w tym środowisku" (local docker-compose sandbox) and "MFTF w prawdziwym CI"
+# (this actual GitHub Actions environment) sections. Same two repository secrets as
+# ci.yml/coverage.yml (MAGENTO_COMPOSER_USERNAME / MAGENTO_COMPOSER_PASSWORD) — see the comment
+# in ci.yml for how to get them.
 
 on:
   workflow_dispatch:
-    inputs:
-      tests:
-        description: "Space-separated MFTF test names to run (default: the full suite)"
-        required: false
-        default: >-
-          AdminCreateCampaignTest AdminCreateSegmentTest AdminCreateMultiTriggerCampaignTest
-          AdminCreateCampaignWithConditionsAndActionsTest AdminViewDashboardTest
-          AdminViewReorderCyclesGridTest StorefrontTrackerSetsVisitorCookieTest
-          AdminCampaignScenarioEndToEndTest AdminApproveOrderViaEmailTest
 
 jobs:
   mftf:
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    # One full Magento install + Selenium session per group, run concurrently — each test's
+    # <group> annotation (Test/Mftf/Test/*.xml) says which of these it belongs to. Split out
+    # once the single, unified pipeline had its first fully green run (run 33654687881) —
+    # deliberately not before, so a real infra bug (there were several: secret-key URLs,
+    # ui_component XSD violations, sendmail_path quoting, CouponGenerator's is_primary/type)
+    # only ever needed diagnosing in one place, not four in parallel. fail-fast: false so one
+    # group's failure doesn't cancel the others mid-run — the whole point of splitting is
+    # independent, individually-readable results per area.
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [campaign, segment, dashboard, tracking]
 
     services:
       mysql:
@@ -341,28 +344,22 @@ jobs:
           MODULE_ALLOWLIST=Ordo_Automation
           EOF
 
-          # Not used by anything this workflow actually tests — none of the tests in `inputs.tests`
-          # need a credential — but `mftf generate:tests` parses EVERY Suite XML Magento core ships
-          # (e.g. the TwoFactorAuth module's default backend suite references
-          # {{_CREDS.magento/tfa/OTP_SHARED_SECRET}}) regardless of which tests were asked for, and
-          # fails outright ("Password not found in credentials file") if the file is simply missing.
-          # Dummy values are fine: nothing here reads them for real.
+          # Not used by anything this workflow actually tests — none of this repo's own tests
+          # need a credential — but `mftf generate:tests`/`run:group` parses EVERY Suite XML
+          # Magento core ships (e.g. the TwoFactorAuth module's default backend suite references
+          # {{_CREDS.magento/tfa/OTP_SHARED_SECRET}}) regardless of which group was asked for,
+          # and fails outright ("Password not found in credentials file") if the file is simply
+          # missing. Dummy values are fine: nothing here reads them for real.
           cat > dev/tests/acceptance/.credentials <<'EOF'
           magento/tfa/OTP_SHARED_SECRET=dummy
           magento/MAGENTO_ADMIN_PASSWORD=Admin123!
           EOF
 
-      - name: Generate MFTF tests
-        working-directory: magento
-        env:
-          MFTF_TESTS: ${{ inputs.tests }}
-        run: vendor/bin/mftf generate:tests $MFTF_TESTS
-
       - name: Run MFTF tests
+        # run:group both generates and executes every test carrying this <group> annotation —
+        # no separate generate step needed (unlike the old run:test invocation this replaced).
         working-directory: magento
-        env:
-          MFTF_TESTS: ${{ inputs.tests }}
-        run: vendor/bin/mftf run:test $MFTF_TESTS
+        run: vendor/bin/mftf run:group ${{ matrix.group }}
 
       - name: Copy nginx/PHP-FPM logs for the failure artifact
         if: failure()
@@ -451,7 +448,9 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: mftf-results
+          # Suffixed per matrix group — four parallel jobs uploading the same artifact name
+          # would otherwise collide.
+          name: mftf-results-${{ matrix.group }}
           path: |
             magento/dev/tests/acceptance/tests/_output
             /tmp/server-logs

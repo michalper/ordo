@@ -9,6 +9,7 @@
             <description value="Covers the admin UI for segments: create a segment via the form's conditions dynamicRows section, save it, and confirm it appears in the grid. This is the same shape AdminCreateCampaignTest already proved for campaigns (double-nested dynamicRows field names, the toggle-switch enabled checkbox needing a label click) applied to the segment form, which shares those same conventions."/>
             <severity value="MAJOR"/>
             <group value="ordo_automation"/>
+            <group value="segment"/>
         </annotations>
         <before>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>

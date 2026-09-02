@@ -9,6 +9,7 @@
             <description value="The order-approval round trip end to end (ROADMAP.md's longest-standing MFTF gap, previously blocked on having no way to read the approve/reject token out of a real mailbox): a real customer with a real spend limit places a real order that exceeds it through storefront checkout, Observer/HoldOrderForApproval.php sends a real email (via MailHog, wired into mftf.yml as a service container + mhsendmail), MailHogHelper.php reads the Approve link's real href straight out of that email exactly as an admin's mail client would show it, and the browser follows it with no login (by design — see AbstractApprovalAction) to confirm the order is genuinely released, not just that a token was generated."/>
             <severity value="CRITICAL"/>
             <group value="ordo_automation"/>
+            <group value="campaign"/>
         </annotations>
         <before>
             <createData entity="OrdoApprovalCustomer" stepKey="createCustomer"/>

@@ -9,6 +9,7 @@
             <description value="Covers the admin UI shipped in Phase 4: create a campaign via the form's dynamicRows sections, save it, and confirm it appears correctly in the grid. Does not yet exercise the dispatcher actually firing the campaign on a real trigger event — that's checkout-flow-level coverage, tracked as a separate, not-yet-written scenario (see README Phase 6)."/>
             <severity value="MAJOR"/>
             <group value="ordo_automation"/>
+            <group value="campaign"/>
         </annotations>
         <before>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>

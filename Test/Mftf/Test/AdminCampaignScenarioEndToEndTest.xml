@@ -9,6 +9,7 @@
             <description value="The one test in this module that proves the whole thing end to end with no shortcuts: build a scenario in the admin UI exactly like a real merchant would (trigger=order placed, condition=order total, action=generate coupon), place a REAL order through storefront checkout as a REAL customer, run the real async queue consumer (this install has no RabbitMQ — see AGENTS.md — so the DB-queue consumer is started directly), and assert the coupon that only CampaignDispatcher could have created actually exists in the admin coupon grid. Everything else in this module's test suite (Test/Unit, Test/Integration) either mocks collaborators or bypasses the UI/checkout — this is the only test where a human clicking through the admin and storefront would see the exact same thing."/>
             <severity value="CRITICAL"/>
             <group value="ordo_automation"/>
+            <group value="campaign"/>
         </annotations>
         <before>
             <createData entity="Simple_US_Customer" stepKey="createCustomer"/>

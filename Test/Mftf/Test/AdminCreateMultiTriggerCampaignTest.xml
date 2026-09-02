@@ -9,6 +9,7 @@
             <description value="Covers CampaignTriggerInterface (a campaign can fire on more than one trigger event now, its own child entity — see ROADMAP.md): add two trigger rows on the create form, save, confirm both round-trip on re-edit, and confirm the grid's aggregated Triggers column shows both, comma-separated."/>
             <severity value="MAJOR"/>
             <group value="ordo_automation"/>
+            <group value="campaign"/>
         </annotations>
         <before>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
