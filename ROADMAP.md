@@ -74,12 +74,12 @@ Not a code review — a capability comparison against the category. Each is a re
   (`Config::getTrackingClickThreshold()`) instead of the 3-view default, flowing through the same visitor-tag →
   campaign-trigger pipeline every other tracked signal already uses.
 - **Dynamic content blocks** — reusable snippets, RSS newsletters, product feeds inside a campaign email. Not built.
-- **Segments** — bulk actions on a segment's current members now ship (add tag / add points, resolved via
-  `SegmentMemberResolver` and applied async), as do a standalone RFM report across the whole customer base
-  (`ordo/rfm/index`, a SQL-paged grid with per-metric quintiles) and percentile-based RFM conditions
-  (`recency_percentile_at_least` / `order_frequency_percentile_at_least` / `monetary_percentile_at_least`, alongside the
-  original absolute thresholds). Still open: quintile-based conditions expressed as R/F/M *scores* (e.g. "555"), and
-  scheduled recomputation so a large customer base doesn't rank on every dispatch.
+- ~~Segments~~ — done. Bulk actions on a segment's current members (add tag / add points, resolved via
+  `SegmentMemberResolver` and applied async), a standalone RFM report across the whole customer base (`ordo/rfm/index`,
+  a SQL-paged grid with per-metric quintiles and an "RFM Score" column, e.g. "555" = best on all three), percentile-based
+  RFM conditions (`recency_percentile_at_least` / `order_frequency_percentile_at_least` / `monetary_percentile_at_least`,
+  alongside the original absolute thresholds), and `Cron\RecomputeRfmScores` precomputing percentiles/quintiles nightly
+  into `ordo_customer_rfm_score` so campaign dispatch reads one table instead of ranking the whole customer base live.
 - **Multichannel recovery** — SMS/WhatsApp/push. `cart_abandoned`/win-back only ever send email.
 
 ## Documentation
