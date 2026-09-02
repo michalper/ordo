@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Ordo\Automation\Cron;
 
 use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Customer\Api\Data\CustomerInterface;
+use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\App\Area;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Mail\Template\TransportBuilder;
@@ -32,6 +34,7 @@ class SendOfferExpiryReminders
         private readonly OfferCollectionFactory $offerCollectionFactory,
         private readonly ResourceConnection $resourceConnection,
         private readonly CustomerRepositoryInterface $customerRepository,
+        private readonly SearchCriteriaBuilder $searchCriteriaBuilder,
         private readonly TransportBuilder $transportBuilder,
         private readonly StoreManagerInterface $storeManager,
         private readonly StateInterface $inlineTranslation,
@@ -52,15 +55,30 @@ class SendOfferExpiryReminders
         $collection = $this->offerCollectionFactory->create();
         $collection->addExpiringOnFilter($targetDate);
 
-        $sent = 0;
+        $offers = [];
+        $customerIds = [];
         foreach ($collection as $offer) {
+            /** @var Offer $offer */
+            $offers[] = $offer;
+            $customerIds[] = (int) $offer->getCustomerId();
+        }
+
+        $customerMap = $this->buildCustomerMap($customerIds);
+
+        $sent = 0;
+        foreach ($offers as $offer) {
             /** @var Offer $offer */
             if ($this->reminderAlreadySent((int) $offer->getEntityId(), self::REMINDER_TYPE_EXPIRING_SOON)) {
                 continue;
             }
 
+            $customerId = (int) $offer->getCustomerId();
+            if (!isset($customerMap[$customerId])) {
+                continue;
+            }
+
             try {
-                $this->sendReminder($offer);
+                $this->sendReminder($offer, $customerMap[$customerId]);
                 $this->logReminder((int) $offer->getEntityId(), self::REMINDER_TYPE_EXPIRING_SOON);
                 $sent++;
             } catch (\Throwable $e) {
@@ -75,9 +93,30 @@ class SendOfferExpiryReminders
         $this->logger->info(sprintf('Ordo_Automation: sent %d offer expiry reminders.', $sent));
     }
 
-    private function sendReminder(Offer $offer): void
+    /**
+     * @param int[] $customerIds
+     * @return array<int, CustomerInterface>
+     */
+    private function buildCustomerMap(array $customerIds): array
     {
-        $customer = $this->customerRepository->getById($offer->getCustomerId());
+        if ($customerIds === []) {
+            return [];
+        }
+
+        $searchCriteria = $this->searchCriteriaBuilder
+            ->addFilter('entity_id', array_values(array_unique($customerIds)), 'in')
+            ->create();
+
+        $customerMap = [];
+        foreach ($this->customerRepository->getList($searchCriteria)->getItems() as $customer) {
+            $customerMap[(int) $customer->getId()] = $customer;
+        }
+
+        return $customerMap;
+    }
+
+    private function sendReminder(Offer $offer, CustomerInterface $customer): void
+    {
         $store = $this->storeManager->getStore();
 
         $this->inlineTranslation->suspend();

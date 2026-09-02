@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Ordo\Automation\Cron;
 
 use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Customer\Api\Data\CustomerInterface;
+use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\App\Area;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Mail\Template\TransportBuilder;
@@ -31,6 +33,7 @@ class SendCreditLimitAlerts
         private readonly CreditLimitCalculator $creditLimitCalculator,
         private readonly ResourceConnection $resourceConnection,
         private readonly CustomerRepositoryInterface $customerRepository,
+        private readonly SearchCriteriaBuilder $searchCriteriaBuilder,
         private readonly TransportBuilder $transportBuilder,
         private readonly StoreManagerInterface $storeManager,
         private readonly StateInterface $inlineTranslation,
@@ -48,7 +51,10 @@ class SendCreditLimitAlerts
         $warningThreshold = $this->config->getCreditLimitWarningThreshold();
         $sent = 0;
 
-        foreach ($this->creditLimitCalculator->getCustomerIdsWithCreditLimit() as $customerId) {
+        $customerIds = $this->creditLimitCalculator->getCustomerIdsWithCreditLimit();
+        $customerMap = $this->buildCustomerMap($customerIds);
+
+        foreach ($customerIds as $customerId) {
             $utilization = $this->creditLimitCalculator->getUtilizationPercent($customerId);
             $band = $this->resolveBand($utilization, $warningThreshold);
 
@@ -60,8 +66,12 @@ class SendCreditLimitAlerts
                 continue;
             }
 
+            if (!isset($customerMap[$customerId])) {
+                continue;
+            }
+
             try {
-                $this->sendAlert($customerId, $utilization, $band);
+                $this->sendAlert($customerMap[$customerId], $customerId, $utilization, $band);
                 $this->logAlert($customerId, $band, $utilization);
                 $sent++;
             } catch (\Throwable $e) {
@@ -107,9 +117,30 @@ class SendCreditLimitAlerts
         return (int) $count > 0;
     }
 
-    private function sendAlert(int $customerId, float $utilization, int $band): void
+    /**
+     * @param int[] $customerIds
+     * @return array<int, CustomerInterface>
+     */
+    private function buildCustomerMap(array $customerIds): array
     {
-        $customer = $this->customerRepository->getById($customerId);
+        if ($customerIds === []) {
+            return [];
+        }
+
+        $searchCriteria = $this->searchCriteriaBuilder
+            ->addFilter('entity_id', array_values(array_unique($customerIds)), 'in')
+            ->create();
+
+        $customerMap = [];
+        foreach ($this->customerRepository->getList($searchCriteria)->getItems() as $customer) {
+            $customerMap[(int) $customer->getId()] = $customer;
+        }
+
+        return $customerMap;
+    }
+
+    private function sendAlert(CustomerInterface $customer, int $customerId, float $utilization, int $band): void
+    {
         $store = $this->storeManager->getStore();
 
         $this->inlineTranslation->suspend();

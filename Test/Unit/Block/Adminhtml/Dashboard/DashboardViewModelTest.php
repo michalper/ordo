@@ -33,9 +33,11 @@ class DashboardViewModelTest extends TestCase
         );
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetCampaignsOrdersByEntityIdDescending(): void
     {
         $campaign = $this->createStub(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(5);
 
         $collection = $this->createMock(CampaignCollection::class);
         $collection->expects(self::once())->method('setOrder')->with('entity_id', 'DESC');
@@ -44,9 +46,52 @@ class DashboardViewModelTest extends TestCase
         $campaignCollectionFactory = $this->createStub(CampaignCollectionFactory::class);
         $campaignCollectionFactory->method('create')->willReturn($collection);
 
-        $viewModel = $this->makeViewModel($campaignCollectionFactory);
+        $triggerCollection = $this->createStub(CampaignTriggerCollection::class);
+        $triggerCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
+
+        $campaignTriggerCollectionFactory = $this->createStub(CampaignTriggerCollectionFactory::class);
+        $campaignTriggerCollectionFactory->method('create')->willReturn($triggerCollection);
+
+        $viewModel = $this->makeViewModel($campaignCollectionFactory, null, null, $campaignTriggerCollectionFactory);
 
         self::assertSame([$campaign], $viewModel->getCampaigns());
+    }
+
+    public function testGetCampaignsLoadsTriggerLabelsForAllCampaignsInOneQuery(): void
+    {
+        $campaignOne = $this->createStub(Campaign::class);
+        $campaignOne->method('getEntityId')->willReturn(5);
+
+        $campaignTwo = $this->createStub(Campaign::class);
+        $campaignTwo->method('getEntityId')->willReturn(9);
+
+        $collection = $this->createStub(CampaignCollection::class);
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$campaignOne, $campaignTwo]));
+
+        $campaignCollectionFactory = $this->createStub(CampaignCollectionFactory::class);
+        $campaignCollectionFactory->method('create')->willReturn($collection);
+
+        $triggerForFive = $this->createStub(\Ordo\Automation\Model\CampaignTrigger::class);
+        $triggerForFive->method('getCampaignId')->willReturn(5);
+        $triggerForFive->method('getTriggerEvent')->willReturn(CampaignTriggerInterface::TRIGGER_ORDER_PLACED);
+
+        $triggerForNine = $this->createStub(\Ordo\Automation\Model\CampaignTrigger::class);
+        $triggerForNine->method('getCampaignId')->willReturn(9);
+        $triggerForNine->method('getTriggerEvent')->willReturn(CampaignTriggerInterface::TRIGGER_TAG_ADDED);
+
+        $triggerCollection = $this->createMock(CampaignTriggerCollection::class);
+        $triggerCollection->expects(self::once())->method('addFieldToFilter')
+            ->with('campaign_id', ['in' => [5, 9]]);
+        $triggerCollection->method('getIterator')->willReturn(new \ArrayIterator([$triggerForFive, $triggerForNine]));
+
+        $campaignTriggerCollectionFactory = $this->createStub(CampaignTriggerCollectionFactory::class);
+        $campaignTriggerCollectionFactory->method('create')->willReturn($triggerCollection);
+
+        $viewModel = $this->makeViewModel($campaignCollectionFactory, null, null, $campaignTriggerCollectionFactory);
+        $viewModel->getCampaigns();
+
+        self::assertSame('Order Placed', $viewModel->getTriggerLabelsForCampaign(5));
+        self::assertSame('Tag Added', $viewModel->getTriggerLabelsForCampaign(9));
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -125,8 +170,11 @@ class DashboardViewModelTest extends TestCase
         $triggerTwo = $this->createStub(\Ordo\Automation\Model\CampaignTrigger::class);
         $triggerTwo->method('getTriggerEvent')->willReturn(CampaignTriggerInterface::TRIGGER_TAG_ADDED);
 
+        $triggerOne->method('getCampaignId')->willReturn(5);
+        $triggerTwo->method('getCampaignId')->willReturn(5);
+
         $collection = $this->createMock(CampaignTriggerCollection::class);
-        $collection->expects(self::once())->method('addCampaignFilter')->with(5);
+        $collection->expects(self::once())->method('addFieldToFilter')->with('campaign_id', ['in' => [5]]);
         $collection->method('getIterator')->willReturn(new \ArrayIterator([$triggerOne, $triggerTwo]));
 
         $campaignTriggerCollectionFactory = $this->createStub(CampaignTriggerCollectionFactory::class);
@@ -141,7 +189,7 @@ class DashboardViewModelTest extends TestCase
     public function testGetTriggerLabelsForCampaignFallsBackWhenEmpty(): void
     {
         $collection = $this->createMock(CampaignTriggerCollection::class);
-        $collection->method('addCampaignFilter');
+        $collection->method('addFieldToFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
 
         $campaignTriggerCollectionFactory = $this->createStub(CampaignTriggerCollectionFactory::class);

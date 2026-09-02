@@ -5,6 +5,9 @@ namespace Ordo\Automation\Test\Unit\Cron;
 
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Api\Data\CustomerInterface;
+use Magento\Customer\Api\Data\CustomerSearchResultsInterface;
+use Magento\Framework\Api\SearchCriteria;
+use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\DB\Select;
@@ -30,6 +33,26 @@ class SendCreditLimitAlertsTest extends TestCase
         $select->method('where')->willReturnSelf();
 
         return $select;
+    }
+
+    /**
+     * @param CustomerInterface[] $customers
+     * @return array{0: CustomerRepositoryInterface, 1: SearchCriteriaBuilder}
+     */
+    private function makeCustomerRepository(array $customers): array
+    {
+        $searchCriteria = $this->createStub(SearchCriteria::class);
+        $searchCriteriaBuilder = $this->createStub(SearchCriteriaBuilder::class);
+        $searchCriteriaBuilder->method('addFilter')->willReturnSelf();
+        $searchCriteriaBuilder->method('create')->willReturn($searchCriteria);
+
+        $searchResults = $this->createStub(CustomerSearchResultsInterface::class);
+        $searchResults->method('getItems')->willReturn($customers);
+
+        $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
+        $customerRepository->method('getList')->willReturn($searchResults);
+
+        return [$customerRepository, $searchCriteriaBuilder];
     }
 
     public function testExecuteSkipsWhenDisabled(): void
@@ -132,11 +155,15 @@ class SendCreditLimitAlertsTest extends TestCase
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
-        $customerRepository->method('getById')->willThrowException(new \RuntimeException('customer lookup failed'));
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getId')->willReturn(5);
+        $customer->method('getFirstname')->willReturn('Jan');
+        $customer->method('getEmail')->willReturn('jan@example.com');
+        [$customerRepository, $searchCriteriaBuilder] = $this->makeCustomerRepository([$customer]);
 
         $storeManager = $this->createStub(StoreManagerInterface::class);
         $transportBuilder = $this->createStub(TransportBuilder::class);
+        $transportBuilder->method('setTemplateIdentifier')->willThrowException(new \RuntimeException('send failed'));
         $salesRepEmailContext = $this->createStub(SalesRepEmailContext::class);
 
         $logger = $this->createMock(LoggerInterface::class);
@@ -147,10 +174,52 @@ class SendCreditLimitAlertsTest extends TestCase
             $calculator,
             $resourceConnection,
             $customerRepository,
+            $searchCriteriaBuilder,
             $transportBuilder,
             $storeManager,
             $this->createStub(StateInterface::class),
             $salesRepEmailContext,
+            $logger
+        ))->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSkipsCustomerMissingFromBatchLookup(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isCreditLimitAlertEnabled')->willReturn(true);
+        $config->method('getCreditLimitWarningThreshold')->willReturn(80);
+        $config->method('getCreditLimitAlertCooldownDays')->willReturn(7);
+
+        $calculator = $this->createMock(CreditLimitCalculator::class);
+        $calculator->method('getCustomerIdsWithCreditLimit')->willReturn([5]);
+        $calculator->method('getUtilizationPercent')->willReturn(85.0);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchOne')->willReturn(0);
+        $connection->expects(self::never())->method('insert');
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        [$customerRepository, $searchCriteriaBuilder] = $this->makeCustomerRepository([]);
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::never())->method('error');
+        $logger->expects(self::once())->method('info')->with(self::stringContains('0 credit limit alerts'));
+
+        (new SendCreditLimitAlerts(
+            $config,
+            $calculator,
+            $resourceConnection,
+            $customerRepository,
+            $searchCriteriaBuilder,
+            $this->createStub(TransportBuilder::class),
+            $this->createStub(StoreManagerInterface::class),
+            $this->createStub(StateInterface::class),
+            $this->createStub(SalesRepEmailContext::class),
             $logger
         ))->execute();
     }
@@ -162,11 +231,11 @@ class SendCreditLimitAlertsTest extends TestCase
         ?LoggerInterface $logger = null
     ): SendCreditLimitAlerts {
         $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getId')->willReturn(5);
         $customer->method('getFirstname')->willReturn('Jan');
         $customer->method('getEmail')->willReturn('jan@example.com');
 
-        $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
-        $customerRepository->method('getById')->willReturn($customer);
+        [$customerRepository, $searchCriteriaBuilder] = $this->makeCustomerRepository([$customer]);
 
         $store = $this->createStub(Store::class);
         $store->method('getId')->willReturn(1);
@@ -189,6 +258,7 @@ class SendCreditLimitAlertsTest extends TestCase
             $calculator,
             $resourceConnection,
             $customerRepository,
+            $searchCriteriaBuilder,
             $transportBuilder,
             $storeManager,
             $this->createStub(StateInterface::class),

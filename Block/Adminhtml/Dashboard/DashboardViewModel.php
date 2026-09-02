@@ -42,6 +42,13 @@ class DashboardViewModel implements ArgumentInterface
         CampaignTriggerInterface::TRIGGER_VISITOR_TAG_ADDED,
     ];
 
+    /**
+     * @var array<int, string>|null Trigger labels per campaign_id, keyed like
+     * getTriggerLabelsForCampaign()'s return value — built in one query by getCampaigns()
+     * so the per-campaign lookup below doesn't have to hit the database again.
+     */
+    private ?array $triggerLabelsByCampaignId = null;
+
     public function __construct(
         private readonly CampaignCollectionFactory $campaignCollectionFactory,
         private readonly CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory,
@@ -59,10 +66,14 @@ class DashboardViewModel implements ArgumentInterface
         $collection->setOrder('entity_id', 'DESC');
 
         $campaigns = [];
+        $campaignIds = [];
         foreach ($collection as $campaign) {
             /** @var Campaign $campaign */
             $campaigns[] = $campaign;
+            $campaignIds[] = (int) $campaign->getEntityId();
         }
+
+        $this->triggerLabelsByCampaignId = $this->loadTriggerLabelsByCampaignId($campaignIds);
 
         return $campaigns;
     }
@@ -123,15 +134,44 @@ class DashboardViewModel implements ArgumentInterface
      */
     public function getTriggerLabelsForCampaign(int $campaignId): string
     {
-        $triggers = $this->campaignTriggerCollectionFactory->create();
-        $triggers->addCampaignFilter($campaignId);
-
-        $labels = [];
-        foreach ($triggers as $trigger) {
-            /** @var CampaignTrigger $trigger */
-            $labels[] = $this->getTriggerLabel($trigger->getTriggerEvent());
+        if ($this->triggerLabelsByCampaignId === null) {
+            // Defensive fallback in case a caller asks before getCampaigns() has run — still a
+            // single query, just scoped to the one campaign instead of the batch.
+            $this->triggerLabelsByCampaignId = $this->loadTriggerLabelsByCampaignId([$campaignId]);
         }
 
-        return $labels ? implode(', ', $labels) : (string) __('No trigger configured');
+        return $this->triggerLabelsByCampaignId[$campaignId] ?? (string) __('No trigger configured');
+    }
+
+    /**
+     * One query for every campaign_id in $campaignIds, instead of one query per campaign —
+     * the fix for the dashboard's former N+1 (getTriggerLabelsForCampaign() used to run its own
+     * ordo_campaign_trigger query per campaign row).
+     *
+     * @param int[] $campaignIds
+     * @return array<int, string> Comma-separated trigger labels, keyed by campaign_id; a
+     * campaign with no triggers gets no entry here, resolved to "No trigger configured" by the
+     * caller instead, to keep the shape identical to the old per-campaign method.
+     */
+    private function loadTriggerLabelsByCampaignId(array $campaignIds): array
+    {
+        if (!$campaignIds) {
+            return [];
+        }
+
+        $triggers = $this->campaignTriggerCollectionFactory->create();
+        $triggers->addFieldToFilter('campaign_id', ['in' => $campaignIds]);
+
+        $labelsByCampaignId = [];
+        foreach ($triggers as $trigger) {
+            /** @var CampaignTrigger $trigger */
+            $campaignId = $trigger->getCampaignId();
+            $labelsByCampaignId[$campaignId][] = $this->getTriggerLabel($trigger->getTriggerEvent());
+        }
+
+        return array_map(
+            static fn (array $labels): string => implode(', ', $labels),
+            $labelsByCampaignId
+        );
     }
 }

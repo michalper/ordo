@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Cron;
 
 use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\App\Area;
 use Magento\Framework\Mail\Template\TransportBuilder;
 use Magento\Framework\Translate\Inline\StateInterface;
@@ -27,6 +28,7 @@ class SendSalesRepDigest
         private readonly Config $config,
         private readonly CustomerTagManager $customerTagManager,
         private readonly CustomerRepositoryInterface $customerRepository,
+        private readonly SearchCriteriaBuilder $searchCriteriaBuilder,
         private readonly TransportBuilder $transportBuilder,
         private readonly StoreManagerInterface $storeManager,
         private readonly StateInterface $inlineTranslation,
@@ -66,12 +68,15 @@ class SendSalesRepDigest
     {
         $grouped = [];
 
-        foreach ($this->customerTagManager->getCustomerIdsWithTag(TagInactiveCustomers::TAG_INACTIVE) as $customerId) {
-            try {
-                $customer = $this->customerRepository->getById($customerId);
-            } catch (\Throwable $e) {
+        $customerIds = $this->customerTagManager->getCustomerIdsWithTag(TagInactiveCustomers::TAG_INACTIVE);
+        $customerMap = $this->buildCustomerMap($customerIds);
+
+        foreach ($customerIds as $customerId) {
+            if (!isset($customerMap[$customerId])) {
                 continue;
             }
+
+            $customer = $customerMap[$customerId];
 
             $repEmailAttribute = $customer->getCustomAttribute(AddSalesRepAttributes::ATTRIBUTE_REP_EMAIL);
             $repEmailValue = $repEmailAttribute ? $repEmailAttribute->getValue() : null;
@@ -86,6 +91,28 @@ class SendSalesRepDigest
         }
 
         return $grouped;
+    }
+
+    /**
+     * @param int[] $customerIds
+     * @return array<int, \Magento\Customer\Api\Data\CustomerInterface>
+     */
+    private function buildCustomerMap(array $customerIds): array
+    {
+        if ($customerIds === []) {
+            return [];
+        }
+
+        $searchCriteria = $this->searchCriteriaBuilder
+            ->addFilter('entity_id', array_values(array_unique($customerIds)), 'in')
+            ->create();
+
+        $customerMap = [];
+        foreach ($this->customerRepository->getList($searchCriteria)->getItems() as $customer) {
+            $customerMap[(int) $customer->getId()] = $customer;
+        }
+
+        return $customerMap;
     }
 
     /**

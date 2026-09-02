@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Helper;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Framework\App\Helper\Context;
 use Ordo\Automation\Helper\Config;
 use PHPUnit\Framework\TestCase;
 
@@ -17,10 +16,7 @@ class ConfigTest extends TestCase
     {
         $this->scopeConfig = $this->createStub(ScopeConfigInterface::class);
 
-        $context = $this->createStub(Context::class);
-        $context->method('getScopeConfig')->willReturn($this->scopeConfig);
-
-        $this->config = new Config($context);
+        $this->config = new Config($this->scopeConfig);
     }
 
     public function testFlagGettersDelegateToScopeConfig(): void
