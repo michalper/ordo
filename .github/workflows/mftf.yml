@@ -261,6 +261,20 @@ jobs:
             exit 1
           )
 
+      - name: Warm the layout cache with serial requests before Selenium's concurrent load
+        # Magento's own application logs (var/log/system.log) on a failed run showed "Broken
+        # reference" warnings for the most basic layout containers (header, footer,
+        # page.formkey, page.messages) on EVERY page — admin AND storefront — right from the
+        # very first requests after a fresh cache:flush. That's consistent with a cold-cache
+        # stampede: pm.max_children=32 means up to 32 PHP-FPM workers can race to regenerate the
+        # same merged-layout cache file simultaneously on the very first hits, corrupting it.
+        # Force that regeneration to happen exactly once, serially, before Selenium's real
+        # concurrent asset-fetching load ever starts.
+        working-directory: magento
+        run: |
+          curl -sf "http://${SELENIUM_REACHABLE_HOST}:8080/" -o /dev/null
+          curl -sf "http://${SELENIUM_REACHABLE_HOST}:8080/admin/admin/" -o /dev/null
+
       - name: Wire the MFTF CLI bridge and .env
         working-directory: magento
         run: |
