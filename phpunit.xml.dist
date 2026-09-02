@@ -26,6 +26,9 @@
         <exclude>
             <directory suffix=".php">Test</directory>
             <directory suffix=".php">vendor</directory>
+            <!-- Config, not application code — read by the php-cs-fixer CLI, never executed by
+                 anything PHPUnit runs, so it can only ever show as 0% covered. -->
+            <file>.php-cs-fixer.dist.php</file>
         </exclude>
     </source>
 </phpunit>
