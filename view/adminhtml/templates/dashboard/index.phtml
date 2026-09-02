@@ -60,6 +60,7 @@ $segmentNavDesc = __(
                     <th><?= $escaper->escapeHtml(__('Sent')) ?></th>
                     <th><?= $escaper->escapeHtml(__('Responded')) ?></th>
                     <th><?= $escaper->escapeHtml(__('Response rate')) ?></th>
+                    <th><?= $escaper->escapeHtml(__('Recovered revenue')) ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -69,6 +70,7 @@ $segmentNavDesc = __(
                         <td><?= $escaper->escapeHtml((string) $triggerStat['sent']) ?></td>
                         <td><?= $escaper->escapeHtml((string) $triggerStat['responded']) ?></td>
                         <td><?= $escaper->escapeHtml(sprintf('%.1f%%', $triggerStat['response_rate'])) ?></td>
+                        <td><?= $escaper->escapeHtml($triggerStat['recovered_revenue_formatted']) ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>

@@ -15,11 +15,6 @@ scoped from real hands-on marketing automation experience.
   redirect-to-dashboard failure across all 8 existing tests is still unconfirmed. `AdminApproveOrderViaEmailTest.xml`
   (order-approval round trip via a real MailHog-caught email) is written and wired in, not yet confirmed green.
 
-## B2B triggers
-
-- **Estimated recovered revenue per trigger** — sent count and response rate now ship (dashboard "Trigger performance"
-  table, backed by `ordo_trigger_outcome_log`); attributing a $ figure to each response is still open.
-
 ## Admin UI
 
 - **Typography** — still stock Magento admin typography; no brand-specific type scale defined.

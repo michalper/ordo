@@ -72,24 +72,32 @@ class TriggerOutcomeLogger
     }
 
     /**
-     * Per trigger_type: sent count, responded count, response rate percent — one aggregate
-     * query, not one per trigger, so the dashboard doesn't reintroduce the N+1 pattern the
-     * campaign trigger stats were already fixed for.
+     * Per trigger_type: sent count, responded count, response rate percent, and estimated
+     * recovered revenue — one aggregate query (left-joined to sales_order for grand_total), not
+     * one per trigger, so the dashboard doesn't reintroduce the N+1 pattern the campaign trigger
+     * stats were already fixed for.
      *
-     * @return array<string, array{sent: int, responded: int, response_rate: float}>
+     * "Recovered revenue" is the sum of grand_total for orders matched via markActed() — same
+     * first-plausible-match semantics as response rate: directional, not billing-grade
+     * attribution (an order matched to a trigger isn't proof the trigger caused it).
+     *
+     * @return array<string, array{sent: int, responded: int, response_rate: float, recovered_revenue: float}>
      */
     public function getStats(): array
     {
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('ordo_trigger_outcome_log');
+        $outcomeTable = $this->resourceConnection->getTableName('ordo_trigger_outcome_log');
+        $orderTable = $this->resourceConnection->getTableName('sales_order');
 
         $rows = $connection->fetchAll(
             $connection->select()
-                ->from($table, [
+                ->from(['o' => $outcomeTable], [
                     'trigger_type',
                     'sent' => 'COUNT(*)',
-                    'responded' => 'SUM(CASE WHEN acted_at IS NOT NULL THEN 1 ELSE 0 END)',
+                    'responded' => 'SUM(CASE WHEN o.acted_at IS NOT NULL THEN 1 ELSE 0 END)',
+                    'recovered_revenue' => 'SUM(so.grand_total)',
                 ])
+                ->joinLeft(['so' => $orderTable], 'so.entity_id = o.order_id', [])
                 ->group('trigger_type')
         );
 
@@ -102,12 +110,18 @@ class TriggerOutcomeLogger
                 'sent' => $sent,
                 'responded' => $responded,
                 'response_rate' => $sent > 0 ? round($responded / $sent * 100, 1) : 0.0,
+                'recovered_revenue' => $row['recovered_revenue'] !== null ? (float) $row['recovered_revenue'] : 0.0,
             ];
         }
 
         foreach (self::TRIGGER_TYPES as $triggerType) {
             if (!isset($statsByTrigger[$triggerType])) {
-                $statsByTrigger[$triggerType] = ['sent' => 0, 'responded' => 0, 'response_rate' => 0.0];
+                $statsByTrigger[$triggerType] = [
+                    'sent' => 0,
+                    'responded' => 0,
+                    'response_rate' => 0.0,
+                    'recovered_revenue' => 0.0,
+                ];
             }
         }
 

@@ -15,6 +15,7 @@ use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\CollectionFactory as FreeG
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\Collection as ReorderCycleCollection;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory as ReorderCycleCollectionFactory;
 use Ordo\Automation\Model\TriggerOutcomeLogger;
+use Magento\Framework\Pricing\Helper\Data as PricingHelper;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
@@ -25,14 +26,21 @@ class DashboardViewModelTest extends TestCase
         ?ReorderCycleCollectionFactory $reorderCycleCollectionFactory = null,
         ?FreeGiftOfferCollectionFactory $freeGiftOfferCollectionFactory = null,
         ?CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory = null,
-        ?TriggerOutcomeLogger $triggerOutcomeLogger = null
+        ?TriggerOutcomeLogger $triggerOutcomeLogger = null,
+        ?PricingHelper $pricingHelper = null
     ): DashboardViewModel {
+        $pricingHelper ??= $this->createStub(PricingHelper::class);
+        $pricingHelper->method('currency')->willReturnCallback(
+            fn (float $amount): string => '$' . number_format($amount, 2)
+        );
+
         return new DashboardViewModel(
             $campaignCollectionFactory ?? $this->createStub(CampaignCollectionFactory::class),
             $campaignTriggerCollectionFactory ?? $this->createStub(CampaignTriggerCollectionFactory::class),
             $reorderCycleCollectionFactory ?? $this->createStub(ReorderCycleCollectionFactory::class),
             $freeGiftOfferCollectionFactory ?? $this->createStub(FreeGiftOfferCollectionFactory::class),
-            $triggerOutcomeLogger ?? $this->createStub(TriggerOutcomeLogger::class)
+            $triggerOutcomeLogger ?? $this->createStub(TriggerOutcomeLogger::class),
+            $pricingHelper
         );
     }
 
@@ -265,7 +273,12 @@ class DashboardViewModelTest extends TestCase
     {
         $triggerOutcomeLogger = $this->createStub(TriggerOutcomeLogger::class);
         $triggerOutcomeLogger->method('getStats')->willReturn([
-            TriggerOutcomeLogger::TRIGGER_WIN_BACK => ['sent' => 4, 'responded' => 1, 'response_rate' => 25.0],
+            TriggerOutcomeLogger::TRIGGER_WIN_BACK => [
+                'sent' => 4,
+                'responded' => 1,
+                'response_rate' => 25.0,
+                'recovered_revenue' => 149.99,
+            ],
         ]);
 
         $viewModel = $this->makeViewModel(null, null, null, null, $triggerOutcomeLogger);
@@ -274,11 +287,25 @@ class DashboardViewModelTest extends TestCase
 
         self::assertCount(5, $stats);
         self::assertSame(
-            ['label' => 'Win-Back', 'sent' => 4, 'responded' => 1, 'response_rate' => 25.0],
+            [
+                'label' => 'Win-Back',
+                'sent' => 4,
+                'responded' => 1,
+                'response_rate' => 25.0,
+                'recovered_revenue' => 149.99,
+                'recovered_revenue_formatted' => '$149.99',
+            ],
             $stats[TriggerOutcomeLogger::TRIGGER_WIN_BACK]
         );
         self::assertSame(
-            ['label' => 'Reorder Reminder', 'sent' => 0, 'responded' => 0, 'response_rate' => 0.0],
+            [
+                'label' => 'Reorder Reminder',
+                'sent' => 0,
+                'responded' => 0,
+                'response_rate' => 0.0,
+                'recovered_revenue' => 0.0,
+                'recovered_revenue_formatted' => '$0.00',
+            ],
             $stats[TriggerOutcomeLogger::TRIGGER_REORDER_REMINDER]
         );
     }

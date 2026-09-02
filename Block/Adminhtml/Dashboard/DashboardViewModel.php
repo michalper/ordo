@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Block\Adminhtml\Dashboard;
 
+use Magento\Framework\Pricing\Helper\Data as PricingHelper;
 use Magento\Framework\View\Element\Block\ArgumentInterface;
 use Ordo\Automation\Api\Data\CampaignInterface;
 use Ordo\Automation\Api\Data\CampaignTriggerInterface;
@@ -68,8 +69,14 @@ class DashboardViewModel implements ArgumentInterface
         private readonly CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory,
         private readonly ReorderCycleCollectionFactory $reorderCycleCollectionFactory,
         private readonly FreeGiftOfferCollectionFactory $freeGiftOfferCollectionFactory,
-        private readonly TriggerOutcomeLogger $triggerOutcomeLogger
+        private readonly TriggerOutcomeLogger $triggerOutcomeLogger,
+        private readonly PricingHelper $pricingHelper
     ) {
+    }
+
+    public function formatCurrency(float $amount): string
+    {
+        return $this->pricingHelper->currency($amount, true, false);
     }
 
     /**
@@ -201,7 +208,7 @@ class DashboardViewModel implements ArgumentInterface
      * getFixedTriggerEvents(), so a trigger that hasn't sent anything yet still gets a row.
      * One aggregate query via TriggerOutcomeLogger::getStats(), not one per trigger.
      *
-     * @return array<string, array{label: string, sent: int, responded: int, response_rate: float}>
+     * @return array<string, array{label: string, sent: int, responded: int, response_rate: float, recovered_revenue: float}>
      */
     public function getTriggerStats(): array
     {
@@ -209,12 +216,19 @@ class DashboardViewModel implements ArgumentInterface
 
         $result = [];
         foreach (TriggerOutcomeLogger::TRIGGER_TYPES as $triggerType) {
-            $triggerStats = $stats[$triggerType] ?? ['sent' => 0, 'responded' => 0, 'response_rate' => 0.0];
+            $triggerStats = $stats[$triggerType] ?? [
+                'sent' => 0,
+                'responded' => 0,
+                'response_rate' => 0.0,
+                'recovered_revenue' => 0.0,
+            ];
             $result[$triggerType] = [
                 'label' => $this->getTriggerOutcomeLabel($triggerType),
                 'sent' => $triggerStats['sent'],
                 'responded' => $triggerStats['responded'],
                 'response_rate' => $triggerStats['response_rate'],
+                'recovered_revenue' => $triggerStats['recovered_revenue'],
+                'recovered_revenue_formatted' => $this->formatCurrency($triggerStats['recovered_revenue']),
             ];
         }
 

@@ -16,6 +16,7 @@ class TriggerOutcomeLoggerTest extends TestCase
     {
         $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
+        $select->method('joinLeft')->willReturnSelf();
         $select->method('group')->willReturnSelf();
 
         return $select;
@@ -68,7 +69,12 @@ class TriggerOutcomeLoggerTest extends TestCase
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
         $connection->method('fetchAll')->willReturn([
-            ['trigger_type' => TriggerOutcomeLogger::TRIGGER_WIN_BACK, 'sent' => '4', 'responded' => '1'],
+            [
+                'trigger_type' => TriggerOutcomeLogger::TRIGGER_WIN_BACK,
+                'sent' => '4',
+                'responded' => '1',
+                'recovered_revenue' => '149.990000',
+            ],
         ]);
 
         $resourceConnection = $this->createStub(ResourceConnection::class);
@@ -79,11 +85,11 @@ class TriggerOutcomeLoggerTest extends TestCase
         $stats = $logger->getStats();
 
         self::assertSame(
-            ['sent' => 4, 'responded' => 1, 'response_rate' => 25.0],
+            ['sent' => 4, 'responded' => 1, 'response_rate' => 25.0, 'recovered_revenue' => 149.99],
             $stats[TriggerOutcomeLogger::TRIGGER_WIN_BACK]
         );
         self::assertSame(
-            ['sent' => 0, 'responded' => 0, 'response_rate' => 0.0],
+            ['sent' => 0, 'responded' => 0, 'response_rate' => 0.0, 'recovered_revenue' => 0.0],
             $stats[TriggerOutcomeLogger::TRIGGER_REORDER_REMINDER]
         );
         self::assertCount(5, $stats);
