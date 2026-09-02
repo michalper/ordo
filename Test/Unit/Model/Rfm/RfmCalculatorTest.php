@@ -157,4 +157,118 @@ class RfmCalculatorTest extends TestCase
 
         self::assertSame([3, 7, 11], $calculator->getAllCustomerIds());
     }
+
+    public function testGetPercentileRanksComputesRankAcrossWholeCustomerBase(): void
+    {
+        $now = 1700000000;
+
+        // Four customers, three of whom have ordered — hand-computed expectations below.
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchCol')->willReturn(['1', '2', '3', '4']);
+        $connection->method('fetchAll')->willReturn([
+            [
+                'customer_id' => '1',
+                'frequency' => '1',
+                'monetary' => '100',
+                'last_order_at' => date('Y-m-d H:i:s', $now - 30 * 86400),
+            ],
+            [
+                'customer_id' => '2',
+                'frequency' => '3',
+                'monetary' => '300',
+                'last_order_at' => date('Y-m-d H:i:s', $now - 10 * 86400),
+            ],
+            [
+                'customer_id' => '3',
+                'frequency' => '5',
+                'monetary' => '500',
+                'last_order_at' => date('Y-m-d H:i:s', $now - 5 * 86400),
+            ],
+            // Customer 4 has no orders at all, so no aggregate row.
+        ]);
+
+        $calculator = $this->makeCalculator($connection, $now);
+
+        // N = 4. Frequencies across the base are [0, 1, 3, 5] and monetaries [0, 100, 300, 500],
+        // so "count with metric <= mine / 4 * 100" gives 25/50/75/100. Recency days are
+        // [5, 10, 30, INF]; "count with days >= mine" inverts the order so the most recent
+        // customer still scores 100.
+        self::assertSame(
+            [
+                1 => [
+                    'recency_percentile' => 50.0,
+                    'frequency_percentile' => 50.0,
+                    'monetary_percentile' => 50.0,
+                ],
+                2 => [
+                    'recency_percentile' => 75.0,
+                    'frequency_percentile' => 75.0,
+                    'monetary_percentile' => 75.0,
+                ],
+                3 => [
+                    'recency_percentile' => 100.0,
+                    'frequency_percentile' => 100.0,
+                    'monetary_percentile' => 100.0,
+                ],
+                4 => [
+                    'recency_percentile' => 25.0,
+                    'frequency_percentile' => 25.0,
+                    'monetary_percentile' => 25.0,
+                ],
+            ],
+            $calculator->getPercentileRanks()
+        );
+    }
+
+    public function testGetPercentileRanksScoresZeroOrderCustomerAtTheBottom(): void
+    {
+        $now = 1700000000;
+        $lastOrderAt = date('Y-m-d H:i:s', $now - 3 * 86400);
+
+        // Nine customers who have ordered, one who hasn't — the zero-order customer is alone in
+        // the bottom tenth of every metric, so 10.0 is as close to 0 as N = 10 can express.
+        $orderRows = [];
+        for ($customerId = 1; $customerId <= 9; $customerId++) {
+            $orderRows[] = [
+                'customer_id' => (string) $customerId,
+                'frequency' => (string) $customerId,
+                'monetary' => (string) ($customerId * 100),
+                'last_order_at' => $lastOrderAt,
+            ];
+        }
+
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchCol')->willReturn(array_map('strval', range(1, 10)));
+        $connection->method('fetchAll')->willReturn($orderRows);
+
+        $calculator = $this->makeCalculator($connection, $now);
+        $ranks = $calculator->getPercentileRanks();
+
+        self::assertSame(
+            [
+                'recency_percentile' => 10.0,
+                'frequency_percentile' => 10.0,
+                'monetary_percentile' => 10.0,
+            ],
+            $ranks[10]
+        );
+        // The nine who ordered all share the same last_order_at, so they tie at the top of
+        // recency: every one of them has "days >= mine" true for all nine plus the never-ordered
+        // customer.
+        self::assertSame(100.0, $ranks[1]['recency_percentile']);
+        self::assertSame(100.0, $ranks[9]['monetary_percentile']);
+    }
+
+    public function testGetPercentileRanksReturnsEmptyArrayWhenStoreHasNoCustomers(): void
+    {
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchCol')->willReturn([]);
+
+        $calculator = $this->makeCalculator($connection);
+
+        self::assertSame([], $calculator->getPercentileRanks());
+    }
 }

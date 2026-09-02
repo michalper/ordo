@@ -22,6 +22,9 @@ class TypeLabels
         'recency_days_at_most' => 'Recency (days since last order) At Most',
         'order_frequency_at_least' => 'Order Frequency At Least',
         'monetary_total_at_least' => 'Monetary Total At Least',
+        'recency_percentile_at_least' => 'Recency Percentile At Least (top N% most recent)',
+        'order_frequency_percentile_at_least' => 'Order Frequency Percentile At Least (top N%)',
+        'monetary_percentile_at_least' => 'Monetary Percentile At Least (top N% by spend)',
         'in_segment' => 'In Segment',
     ];
 

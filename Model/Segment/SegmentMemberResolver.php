@@ -33,6 +33,15 @@ class SegmentMemberResolver
      */
     private ?array $aggregatesCache = null;
 
+    /**
+     * Same per-resolve caching as $aggregatesCache, for the percentile ranking — a segment
+     * combining e.g. monetary_percentile_at_least AND recency_percentile_at_least computes the
+     * ranking once, not once per condition.
+     *
+     * @var array<int, array{recency_percentile: float, frequency_percentile: float, monetary_percentile: float}>|null
+     */
+    private ?array $percentileRanksCache = null;
+
     public function __construct(
         private readonly SegmentConditionCollectionFactory $segmentConditionCollectionFactory,
         private readonly CustomerTagManager $customerTagManager,
@@ -53,6 +62,7 @@ class SegmentMemberResolver
             // Fresh top-level call (not a recursive in_segment hop) — start a new aggregates
             // snapshot for this resolve. A recursive call keeps reusing the same one.
             $this->aggregatesCache = null;
+            $this->percentileRanksCache = null;
         }
 
         $conditions = $this->segmentConditionCollectionFactory->create();
@@ -102,6 +112,12 @@ class SegmentMemberResolver
                 return $this->resolveOrderFrequencyAtLeast($params);
             case 'monetary_total_at_least':
                 return $this->resolveMonetaryTotalAtLeast($params);
+            case 'recency_percentile_at_least':
+                return $this->resolvePercentileAtLeast($params, 'recency_percentile');
+            case 'order_frequency_percentile_at_least':
+                return $this->resolvePercentileAtLeast($params, 'frequency_percentile');
+            case 'monetary_percentile_at_least':
+                return $this->resolvePercentileAtLeast($params, 'monetary_percentile');
             case 'in_segment':
                 return $this->resolveInSegment($params, $visitedSegmentIds);
             case 'order_total_gte':
@@ -233,6 +249,36 @@ class SegmentMemberResolver
     }
 
     /**
+     * The three percentile RFM conditions differ only in which metric of the shared percentile
+     * ranking they read, so they share one resolver keyed by that metric rather than three
+     * near-identical copies. Percentile 100 is the best end of every metric (see
+     * RfmCalculator::getPercentileRanks()), so ">= threshold" reads the same way for all three.
+     *
+     * @param array<string, mixed> $params
+     * @param 'recency_percentile'|'frequency_percentile'|'monetary_percentile' $metric
+     * @return int[]
+     */
+    private function resolvePercentileAtLeast(array $params, string $metric): array
+    {
+        $percentile = $params['percentile'] ?? null;
+
+        if ($percentile === null || !is_numeric($percentile)) {
+            return [];
+        }
+
+        $threshold = (float) $percentile;
+        $matching = [];
+
+        foreach ($this->getPercentileRanks() as $customerId => $ranks) {
+            if ($ranks[$metric] >= $threshold) {
+                $matching[] = $customerId;
+            }
+        }
+
+        return $matching;
+    }
+
+    /**
      * @param array<string, mixed> $params
      * @param int[] $visitedSegmentIds
      * @return int[]
@@ -264,5 +310,17 @@ class SegmentMemberResolver
         }
 
         return $this->aggregatesCache;
+    }
+
+    /**
+     * @return array<int, array{recency_percentile: float, frequency_percentile: float, monetary_percentile: float}>
+     */
+    private function getPercentileRanks(): array
+    {
+        if ($this->percentileRanksCache === null) {
+            $this->percentileRanksCache = $this->rfmCalculator->getPercentileRanks();
+        }
+
+        return $this->percentileRanksCache;
     }
 }

@@ -202,6 +202,93 @@ class SegmentMemberResolverTest extends TestCase
         self::assertSame([1, 2], $this->resolver->getMatchingCustomerIds(1));
     }
 
+    /**
+     * @return array<int, array{recency_percentile: float, frequency_percentile: float, monetary_percentile: float}>
+     */
+    private function percentileFixture(): array
+    {
+        return [
+            1 => [
+                'recency_percentile' => 100.0,
+                'frequency_percentile' => 100.0,
+                'monetary_percentile' => 80.0,
+            ],
+            2 => [
+                'recency_percentile' => 80.0,
+                'frequency_percentile' => 50.0,
+                'monetary_percentile' => 100.0,
+            ],
+            3 => [
+                'recency_percentile' => 25.0,
+                'frequency_percentile' => 25.0,
+                'monetary_percentile' => 25.0,
+            ],
+        ];
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testMonetaryPercentileAtLeastFiltersInclusively(): void
+    {
+        $this->stubSegment(1, [['type' => 'monetary_percentile_at_least', 'params' => ['percentile' => '80']]]);
+        $this->primeFactory();
+
+        $this->rfmCalculator->method('getPercentileRanks')->willReturn($this->percentileFixture());
+
+        self::assertSame([1, 2], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testOrderFrequencyPercentileAtLeastFiltersInclusively(): void
+    {
+        $this->stubSegment(
+            1,
+            [['type' => 'order_frequency_percentile_at_least', 'params' => ['percentile' => '80']]]
+        );
+        $this->primeFactory();
+
+        $this->rfmCalculator->method('getPercentileRanks')->willReturn($this->percentileFixture());
+
+        self::assertSame([1], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRecencyPercentileAtLeastFiltersInclusively(): void
+    {
+        $this->stubSegment(1, [['type' => 'recency_percentile_at_least', 'params' => ['percentile' => '80']]]);
+        $this->primeFactory();
+
+        $this->rfmCalculator->method('getPercentileRanks')->willReturn($this->percentileFixture());
+
+        self::assertSame([1, 2], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPercentileConditionWithNonNumericThresholdMatchesNobody(): void
+    {
+        $this->stubSegment(1, [['type' => 'monetary_percentile_at_least', 'params' => ['percentile' => 'top']]]);
+        $this->primeFactory();
+
+        $this->rfmCalculator->expects(self::never())->method('getPercentileRanks');
+
+        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testMultiplePercentileConditionsShareOneRankingComputation(): void
+    {
+        $this->stubSegment(1, [
+            ['type' => 'monetary_percentile_at_least', 'params' => ['percentile' => '80']],
+            ['type' => 'recency_percentile_at_least', 'params' => ['percentile' => '90']],
+        ]);
+        $this->primeFactory();
+
+        $this->rfmCalculator->expects(self::once())
+            ->method('getPercentileRanks')
+            ->willReturn($this->percentileFixture());
+
+        self::assertSame([1], $this->resolver->getMatchingCustomerIds(1));
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testInSegmentRecursesIntoTargetSegment(): void
     {

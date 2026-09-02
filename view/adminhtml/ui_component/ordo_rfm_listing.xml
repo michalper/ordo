@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">ordo_rfm_listing.ordo_rfm_listing_data_source</item>
+        </item>
+    </argument>
+    <settings>
+        <spinner>ordo_rfm_columns</spinner>
+        <deps>
+            <dep>ordo_rfm_listing.ordo_rfm_listing_data_source</dep>
+        </deps>
+    </settings>
+
+    <dataSource name="ordo_rfm_listing_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider</argument>
+            <argument name="name" xsi:type="string">ordo_rfm_listing_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">entity_id</argument>
+            <argument name="requestFieldName" xsi:type="string">entity_id</argument>
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="update_url" xsi:type="url" path="mui/index/render"/>
+                </item>
+            </argument>
+        </argument>
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/grid/provider</item>
+            </item>
+        </argument>
+    </dataSource>
+
+    <!--
+        Only the plain customer_entity columns are filterable. Everything below them is a
+        select-list alias over a joined aggregate (or a NTILE window function), which MySQL
+        allows in ORDER BY but not in WHERE — so those columns are sortable but carry no filter.
+    -->
+    <columns name="ordo_rfm_columns">
+        <column name="entity_id">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Customer ID</label>
+            </settings>
+        </column>
+        <column name="email">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Email</label>
+            </settings>
+        </column>
+        <column name="firstname">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">First Name</label>
+            </settings>
+        </column>
+        <column name="lastname">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Last Name</label>
+            </settings>
+        </column>
+        <column name="frequency">
+            <settings>
+                <label translate="true">Orders</label>
+            </settings>
+        </column>
+        <column name="monetary">
+            <settings>
+                <sorting>desc</sorting>
+                <label translate="true">Total Spend</label>
+            </settings>
+        </column>
+        <column name="recency_days">
+            <settings>
+                <label translate="true">Days Since Last Order</label>
+            </settings>
+        </column>
+        <column name="last_order_at" class="Magento\Ui\Component\Listing\Columns\Date">
+            <settings>
+                <dataType>date</dataType>
+                <label translate="true">Last Order</label>
+            </settings>
+        </column>
+        <column name="recency_quintile">
+            <settings>
+                <label translate="true">R Quintile</label>
+            </settings>
+        </column>
+        <column name="frequency_quintile">
+            <settings>
+                <label translate="true">F Quintile</label>
+            </settings>
+        </column>
+        <column name="monetary_quintile">
+            <settings>
+                <label translate="true">M Quintile</label>
+            </settings>
+        </column>
+    </columns>
+</listing>

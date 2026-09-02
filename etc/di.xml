@@ -56,6 +56,7 @@
                 <item name="ordo_reorder_cycle_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\ReorderCycle\Grid\Collection</item>
                 <item name="ordo_free_gift_offer_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\FreeGiftOffer\Grid\Collection</item>
                 <item name="ordo_segment_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Segment\Grid\Collection</item>
+                <item name="ordo_rfm_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Rfm\Grid\Collection</item>
             </argument>
         </arguments>
     </type>
@@ -64,6 +65,18 @@
         <arguments>
             <argument name="mainTable" xsi:type="string">ordo_segment</argument>
             <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\Segment</argument>
+        </arguments>
+    </type>
+
+    <!--
+        The RFM report grid has no entity table of its own — it reports over customer_entity,
+        with no Ordo resource model, so identifierName is given explicitly rather than being
+        derived from a resource model's getIdFieldName().
+    -->
+    <type name="Ordo\Automation\Model\ResourceModel\Rfm\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">customer_entity</argument>
+            <argument name="identifierName" xsi:type="string">entity_id</argument>
         </arguments>
     </type>
 
@@ -108,6 +121,9 @@
                 <item name="recency_days_at_most" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\RecencyDaysAtMost</item>
                 <item name="order_frequency_at_least" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\OrderFrequencyAtLeast</item>
                 <item name="monetary_total_at_least" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\MonetaryTotalAtLeast</item>
+                <item name="recency_percentile_at_least" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\RecencyPercentileAtLeast</item>
+                <item name="order_frequency_percentile_at_least" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\OrderFrequencyPercentileAtLeast</item>
+                <item name="monetary_percentile_at_least" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\MonetaryPercentileAtLeast</item>
                 <item name="in_segment" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\InSegment</item>
             </argument>
         </arguments>

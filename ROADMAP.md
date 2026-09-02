@@ -63,6 +63,9 @@ Not a code review — a capability comparison against the category. Each is a re
   element was clicked").
 - **Dynamic content blocks** — reusable snippets, RSS newsletters, product feeds inside a campaign email. Not built.
 - **Segments** — bulk actions on a segment's current members now ship (add tag / add points, resolved via
-  `SegmentMemberResolver` and applied async). Still open: a standalone RFM report across the whole customer base, and
-  percentile/quintile-based RFM scoring (today's conditions are absolute thresholds only).
+  `SegmentMemberResolver` and applied async), as do a standalone RFM report across the whole customer base
+  (`ordo/rfm/index`, a SQL-paged grid with per-metric quintiles) and percentile-based RFM conditions
+  (`recency_percentile_at_least` / `order_frequency_percentile_at_least` / `monetary_percentile_at_least`, alongside the
+  original absolute thresholds). Still open: quintile-based conditions expressed as R/F/M *scores* (e.g. "555"), and
+  scheduled recomputation so a large customer base doesn't rank on every dispatch.
 - **Multichannel recovery** — SMS/WhatsApp/push. `cart_abandoned`/win-back only ever send email.

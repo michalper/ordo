@@ -98,6 +98,12 @@ $segmentNavDesc = __(
             <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('Segments')) ?></span>
             <span class="ordo-nav-desc"><?= $escaper->escapeHtml($segmentNavDesc) ?></span>
         </a>
+        <a class="ordo-nav-card" href="<?= $escaper->escapeUrl($block->getUrl('ordo/rfm/index')) ?>">
+            <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('RFM Report')) ?></span>
+            <span class="ordo-nav-desc"><?=
+                $escaper->escapeHtml(__('Recency, frequency and spend quintiles across all customers'))
+            ?></span>
+        </a>
         <a class="ordo-nav-card"
            href="<?= $escaper->escapeUrl($block->getUrl('adminhtml/system_config/edit/section/ordo_automation')) ?>">
             <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('Configuration')) ?></span>
