@@ -448,10 +448,11 @@ drift across 6 files — fixed as part of landing this.
   for how these fit into the rest of the Sonar setup already in place (Quality Gate, PR
   decoration). Not yet investigated whether these need a paid tier or additional GitHub App
   permissions beyond what's already configured.
-- **More [shields.io](https://shields.io/) badges for the README** — candidates already discussed:
-  a static "Magento 2.4.x compatible" badge (no dynamic source exists for this), a dynamic GitHub
-  open-issues count, a static Dependabot badge, and a static PHPCS/Magento2-coding-standard badge.
-  A dynamic release/version badge only makes sense once this repo actually cuts a tagged release.
+**More [shields.io](https://shields.io/) badges for the README — done.** Added the four candidates already discussed
+(static "Magento 2.4.8 | 2.4.9 compatible", dynamic GitHub open-issues count, static Dependabot, static
+Magento2-coding-standard) to both README.md and README.pl.md, plus fixed the existing PHP badge (was stale at
+`8.1+`, composer.json's actual floor is `~8.2.0`). A dynamic release/version badge is still deferred — only makes
+sense once this repo actually cuts a tagged release.
 
 ## Known gaps / still genuinely open
 
