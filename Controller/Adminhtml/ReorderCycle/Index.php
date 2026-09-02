@@ -14,7 +14,14 @@ use Magento\Framework\View\Result\PageFactory;
  */
 class Index extends Action implements HttpGetActionInterface
 {
-    public const ADMIN_RESOURCE = 'Ordo_Automation::config';
+    // Every other admin controller in this module gates on one of its own top-level acl.xml
+    // resources (campaigns/free_gifts/segments) — this one wrongly used
+    // Ordo_Automation::config, which is nested under Magento_Config::config specifically for
+    // the System Configuration section, not a general "can use this module" resource. Found via
+    // a real CI run: a full-access admin got redirected to the dashboard (Magento's standard
+    // ACL-denied behavior) hitting this controller. Dashboard::ADMIN_RESOURCE already uses
+    // campaigns for the same reason (reorder cycles are part of the same B2C lifecycle area).
+    public const ADMIN_RESOURCE = 'Ordo_Automation::campaigns';
 
     public function __construct(
         Context $context,

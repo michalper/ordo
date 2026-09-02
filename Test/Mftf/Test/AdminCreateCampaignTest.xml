@@ -20,6 +20,13 @@
         <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
         <waitForPageLoad stepKey="waitForNewCampaignPage"/>
 
+        <!-- waitForPageLoad above only waits for document.readyState/jQuery.active — this
+             Magento_Ui form field renders after RequireJS/knockout finish applying bindings,
+             which a cold, freshly-deployed developer-mode instance's first admin page load can
+             lag noticeably behind that (see AGENTS.md's on-the-fly LESS/JS compilation note).
+             Found via a real CI run: "Field by name...[name='name'] was not found" on a fresh
+             instance where this had never been an issue in the already-warmed-up local sandbox. -->
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
         <fillField selector="[name='name']" userInput="Test Win-Back Coupon" stepKey="fillName"/>
         <!-- Trigger moved from a single select to its own dynamicRows section
              (CampaignTriggerInterface — a campaign can fire on more than one trigger event

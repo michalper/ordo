@@ -20,6 +20,10 @@
         <amOnPage url="admin/ordo/dashboard/index" stepKey="goToDashboard"/>
         <waitForPageLoad stepKey="waitForDashboard"/>
         <see selector="h1.page-title" userInput="Dashboard" stepKey="seePageTitle"/>
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait — waitForPageLoad above
+             only waits for document.readyState/jQuery.active, which a cold, freshly deployed
+             developer-mode instance's first admin page load can lag behind. -->
+        <waitForElementVisible selector="{{OrdoDashboardSection.statCardByLabel('Total campaigns')}}" stepKey="waitForTotalCampaignsStat"/>
         <seeElement selector="{{OrdoDashboardSection.statCardByLabel('Total campaigns')}}" stepKey="seeTotalCampaignsStat"/>
         <seeElement selector="{{OrdoDashboardSection.statCardByLabel('Tracked reorder cycles')}}" stepKey="seeReorderCycleStat"/>
         <seeElement selector="{{OrdoDashboardSection.navCardByTitle('Reorder Cycles')}}" stepKey="seeReorderCyclesNavCard"/>

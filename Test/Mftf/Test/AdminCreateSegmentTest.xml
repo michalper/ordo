@@ -20,6 +20,10 @@
         <amOnPage url="admin/ordo/segment/new" stepKey="goToNewSegmentPage"/>
         <waitForPageLoad stepKey="waitForNewSegmentPage"/>
 
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait — a cold, freshly
+             deployed developer-mode instance's first admin page load can lag behind
+             waitForPageLoad's document.readyState check. -->
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
         <fillField selector="[name='name']" userInput="Test High Value Customers" stepKey="fillName"/>
         <!-- Same toggle-switch checkbox as the campaign form's "enabled" field — the real
              <input> is visually covered by its own wrapper, so click the adjacent <label>

@@ -149,6 +149,11 @@ jobs:
           bin/magento setup:upgrade
           bin/magento deploy:mode:set developer
 
+          # StorefrontTrackerSetsVisitorCookieTest explicitly documents (see its own test XML)
+          # that it assumes this is already on — true of the long-lived local sandbox this suite
+          # was originally written/verified against, not of a from-scratch install like this one.
+          bin/magento config:set ordo_automation/tracking/enabled 1
+
           # Newly-created MFTF test fixtures (products, etc.) aren't salable/addable to cart
           # until stock/price indexes recompute — set once globally instead of forcing a
           # reindex in every test. Deliberately excludes catalogsearch_fulltext: no test here
