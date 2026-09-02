@@ -1,0 +1,30 @@
+#!/bin/sh
+# Auto-fixes what CI's coding-standard job only reports: PHPCS's fixable Magento2-standard
+# violations (phpcbf) and PHP-CS-Fixer's formatting/import-order rules. Both ran clean-but-manual
+# too many times in a row before this existed — this closes that gap by running automatically on
+# every commit instead of relying on remembering to run `composer cs-fix` first.
+#
+# Enable once per clone:
+#   git config core.hooksPath .githooks
+#
+# Only touches files that are actually staged, and re-stages anything it rewrites so the fix
+# ships in the same commit rather than being left as an unstaged surprise afterward.
+
+set -e
+
+staged_php=$(git diff --cached --name-only --diff-filter=ACM -- '*.php')
+
+if [ -z "$staged_php" ]; then
+    exit 0
+fi
+
+if [ -x vendor/bin/phpcbf ]; then
+    vendor/bin/phpcbf $staged_php > /dev/null 2>&1 || true
+fi
+
+if [ -x vendor/bin/php-cs-fixer ]; then
+    vendor/bin/php-cs-fixer fix --quiet $staged_php || true
+fi
+
+# Re-add only the files that were already staged — never sweep in unrelated working-tree changes.
+git add $staged_php

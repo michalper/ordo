@@ -24,8 +24,12 @@
         "friendsofphp/php-cs-fixer": "^3.95"
     },
     "scripts": {
-        "cs-fix": "php-cs-fixer fix",
-        "cs-check": "php-cs-fixer fix --dry-run --diff"
+        "cs-fix": [
+            "phpcbf || true",
+            "php-cs-fixer fix"
+        ],
+        "cs-check": "php-cs-fixer fix --dry-run --diff",
+        "phpcs-check": "phpcs"
     },
     "autoload": {
         "files": ["registration.php"],

@@ -38,6 +38,27 @@ docker compose exec php vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist
 
 Testy modułu wchodzą w skład standardowego testsuite `Magento_Unit_Tests_Other` zdefiniowanego w `magento/dev/tests/unit/phpunit.xml.dist` (obejmuje `vendor/*/module-*/Test/Unit`) — nie trzeba żadnej dodatkowej konfiguracji, wystarczy mieć aktualną kopię w `vendor/`.
 
+## Coding standard — napraw to lokalnie, nie w CI
+
+CI (`ci.yml`, job `coding-standard`) odpala dwa osobne narzędzia, oba tylko **raportujące**, żadne nie naprawia automatycznie:
+- `vendor/bin/phpcs` (Magento2 coding standard) — część jego naruszeń jest auto-fixable przez `phpcbf`, ale CI go nie woła.
+- `composer cs-check` (`php-cs-fixer fix --dry-run --diff`) — formatowanie, kolejność `use` itd.
+
+Oba potrafiły failować CI już po pushu (m.in. `$block->escapeHtml` zamiast `$escaper->escapeHtml` w nowym `.phtml`, kolejność importów w nowym pliku) — mimo że oba są w pełni auto-fixowalne. Żeby to przestało się powtarzać:
+
+**Włącz git hook raz per clone:**
+```bash
+git config core.hooksPath .githooks
+```
+`.githooks/pre-commit` odpala `phpcbf` + `php-cs-fixer fix` na plikach `.php` które akurat są staged, i re-stage'uje to co poprawi — nie trzeba o tym pamiętać przy każdym commicie.
+
+**Albo ręcznie przed pushem:**
+```bash
+composer cs-fix    # phpcbf + php-cs-fixer fix, naprawia na miejscu
+composer cs-check  # to samo co CI odpala — zero output = czysto
+vendor/bin/phpcs   # osobny check, bo phpcbf nie naprawia 100% swoich własnych naruszeń
+```
+
 ## Dispatch kampanii jest asynchroniczny (kolejka Magento)
 
 Triggery (`order_placed`, `customer_registered`, `tag_added`) nie wołają już `CampaignDispatcher::dispatch()` bezpośrednio z observera — publikują wiadomość na temat `ordo.automation.campaign.dispatch` (`Model/Queue/CampaignDispatchPublisher.php`), którą odbiera `Model/Queue/CampaignDispatchConsumer.php`. To po to, żeby checkout/rejestracja klienta nie czekały na wykonanie warunków/akcji kampanii.
