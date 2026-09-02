@@ -166,27 +166,34 @@ class RfmCalculatorTest extends TestCase
         $connection = $this->createStub(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
         $connection->method('fetchCol')->willReturn(['1', '2', '3', '4']);
-        $connection->method('fetchAll')->willReturn([
+        // First fetchAll is getPercentileRanks()'s own "read the precomputed table" check — []
+        // means nothing's been computed yet, forcing the live fallback this test is actually
+        // exercising. Every fetchAll call after that hits computePercentileRanks()'s aggregate
+        // query, so the real fixture rows just need to be returned from then on.
+        $connection->method('fetchAll')->willReturnOnConsecutiveCalls(
+            [],
             [
-                'customer_id' => '1',
-                'frequency' => '1',
-                'monetary' => '100',
-                'last_order_at' => date('Y-m-d H:i:s', $now - 30 * 86400),
-            ],
-            [
-                'customer_id' => '2',
-                'frequency' => '3',
-                'monetary' => '300',
-                'last_order_at' => date('Y-m-d H:i:s', $now - 10 * 86400),
-            ],
-            [
-                'customer_id' => '3',
-                'frequency' => '5',
-                'monetary' => '500',
-                'last_order_at' => date('Y-m-d H:i:s', $now - 5 * 86400),
-            ],
-            // Customer 4 has no orders at all, so no aggregate row.
-        ]);
+                [
+                    'customer_id' => '1',
+                    'frequency' => '1',
+                    'monetary' => '100',
+                    'last_order_at' => date('Y-m-d H:i:s', $now - 30 * 86400),
+                ],
+                [
+                    'customer_id' => '2',
+                    'frequency' => '3',
+                    'monetary' => '300',
+                    'last_order_at' => date('Y-m-d H:i:s', $now - 10 * 86400),
+                ],
+                [
+                    'customer_id' => '3',
+                    'frequency' => '5',
+                    'monetary' => '500',
+                    'last_order_at' => date('Y-m-d H:i:s', $now - 5 * 86400),
+                ],
+                // Customer 4 has no orders at all, so no aggregate row.
+            ]
+        );
 
         $calculator = $this->makeCalculator($connection, $now);
 
@@ -241,7 +248,7 @@ class RfmCalculatorTest extends TestCase
         $connection = $this->createStub(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
         $connection->method('fetchCol')->willReturn(array_map('strval', range(1, 10)));
-        $connection->method('fetchAll')->willReturn($orderRows);
+        $connection->method('fetchAll')->willReturnOnConsecutiveCalls([], $orderRows);
 
         $calculator = $this->makeCalculator($connection, $now);
         $ranks = $calculator->getPercentileRanks();
@@ -265,6 +272,7 @@ class RfmCalculatorTest extends TestCase
     {
         $connection = $this->createStub(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([]);
         $connection->method('fetchCol')->willReturn([]);
 
         $calculator = $this->makeCalculator($connection);
@@ -277,7 +285,9 @@ class RfmCalculatorTest extends TestCase
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
         $connection->expects(self::once())->method('fetchCol')->willReturn(['1']);
-        $connection->expects(self::once())->method('fetchAll')->willReturn([]);
+        // Twice per getPercentileRanks() call: once to check the (empty) precomputed table,
+        // once inside the live-fallback aggregate query it forces.
+        $connection->expects(self::exactly(2))->method('fetchAll')->willReturn([]);
 
         $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -301,7 +311,9 @@ class RfmCalculatorTest extends TestCase
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
         $connection->expects(self::exactly(2))->method('fetchCol')->willReturn(['1']);
-        $connection->expects(self::exactly(2))->method('fetchAll')->willReturn([]);
+        // Two getPercentileRanks() calls, each hitting fetchAll() twice (stored-table check +
+        // live-fallback aggregate) since the TTL forces a fresh computation both times.
+        $connection->expects(self::exactly(4))->method('fetchAll')->willReturn([]);
 
         $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -315,5 +327,111 @@ class RfmCalculatorTest extends TestCase
 
         $calculator->getPercentileRanks();
         $calculator->getPercentileRanks();
+    }
+
+    public function testGetPercentileRanksReadsThePrecomputedTableWhenPopulated(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        // Only the stored-table read should ever run here — a populated table means
+        // computePercentileRanks()'s aggregate query/getAllCustomerIds() must never fire.
+        $connection->expects(self::once())->method('fetchAll')->willReturn([
+            [
+                'customer_id' => '1',
+                'recency_percentile' => '80.5',
+                'frequency_percentile' => '60.0',
+                'monetary_percentile' => '40.25',
+            ],
+        ]);
+        $connection->expects(self::never())->method('fetchCol');
+
+        $calculator = $this->makeCalculator($connection);
+
+        self::assertSame(
+            [1 => ['recency_percentile' => 80.5, 'frequency_percentile' => 60.0, 'monetary_percentile' => 40.25]],
+            $calculator->getPercentileRanks()
+        );
+    }
+
+    public function testRecomputeAndStoreScoresReplacesTheTableWithFreshQuintilesAndPercentiles(): void
+    {
+        $now = 1700000000;
+        $lastOrderAt = date('Y-m-d H:i:s', $now - 5 * 86400);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchCol')->willReturn(['1', '2', '3', '4']);
+        $connection->method('fetchAll')->willReturn([
+            ['customer_id' => '1', 'frequency' => '1', 'monetary' => '100', 'last_order_at' => $lastOrderAt],
+            ['customer_id' => '2', 'frequency' => '3', 'monetary' => '300', 'last_order_at' => $lastOrderAt],
+            ['customer_id' => '3', 'frequency' => '5', 'monetary' => '500', 'last_order_at' => $lastOrderAt],
+        ]);
+
+        $connection->expects(self::once())->method('delete')->with('ordo_customer_rfm_score');
+        // 4 rows in one chunk (well under the 500-row batch size) — one insertMultiple() call.
+        $connection->expects(self::once())->method('insertMultiple')->with(
+            'ordo_customer_rfm_score',
+            self::callback(function (array $rows): bool {
+                self::assertCount(4, $rows);
+                $byCustomer = [];
+                foreach ($rows as $row) {
+                    $byCustomer[$row['customer_id']] = $row;
+                }
+                // Same percentiles as testGetPercentileRanksComputesRankAcrossWholeCustomerBase
+                // (25/50/75/100), so the quintile buckets are 2/3/4/5.
+                self::assertSame(2, $byCustomer[4]['recency_quintile']);
+                self::assertSame(3, $byCustomer[1]['frequency_quintile']);
+                self::assertSame(5, $byCustomer[3]['monetary_quintile']);
+                self::assertSame(75.0, $byCustomer[2]['monetary_percentile']);
+
+                return true;
+            })
+        );
+
+        $calculator = $this->makeCalculator($connection, $now);
+        $calculator->recomputeAndStoreScores();
+    }
+
+    public function testRecomputeAndStoreScoresClearsTheTableWithoutInsertingWhenStoreHasNoCustomers(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchCol')->willReturn([]);
+
+        $connection->expects(self::once())->method('delete')->with('ordo_customer_rfm_score');
+        $connection->expects(self::never())->method('insertMultiple');
+
+        $calculator = $this->makeCalculator($connection);
+        $calculator->recomputeAndStoreScores();
+    }
+
+    public function testGetRfmScoreLabelReturnsRfmDigitsInRecencyFrequencyMonetaryOrder(): void
+    {
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            [
+                'customer_id' => '1',
+                'recency_percentile' => '100.0',
+                'frequency_percentile' => '60.0',
+                'monetary_percentile' => '20.0',
+            ],
+        ]);
+
+        $calculator = $this->makeCalculator($connection);
+
+        self::assertSame('531', $calculator->getRfmScoreLabel(1));
+    }
+
+    public function testGetRfmScoreLabelReturnsNullForACustomerWithNoRank(): void
+    {
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([]);
+        $connection->method('fetchCol')->willReturn([]);
+
+        $calculator = $this->makeCalculator($connection);
+
+        self::assertNull($calculator->getRfmScoreLabel(999));
     }
 }

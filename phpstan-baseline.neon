@@ -1389,13 +1389,13 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to float\.$#'
 			identifier: cast.double
-			count: 1
+			count: 4
 			path: Model/Rfm/RfmCalculator.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 2
+			count: 3
 			path: Model/Rfm/RfmCalculator.php
 
 		-

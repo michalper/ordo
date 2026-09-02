@@ -183,12 +183,124 @@ class RfmCalculator
             return $this->percentileRanksCache;
         }
 
-        $ranks = $this->computePercentileRanks();
+        $ranks = $this->readStoredPercentileRanks() ?? $this->computePercentileRanks();
 
         $this->percentileRanksCache = $ranks;
         $this->percentileRanksCachedAt = $now;
 
         return $ranks;
+    }
+
+    /**
+     * Reads Cron\RecomputeRfmScores's precomputed table instead of scanning/sorting the whole
+     * customer base — this is what "scheduled recomputation" actually buys: a campaign dispatch
+     * or segment resolve becomes one indexed-ish SELECT instead of an O(N log N) sort, at the
+     * cost of percentiles being as fresh as the last cron run rather than the current instant.
+     * Returns null (not []) when the table has never been populated yet, so getPercentileRanks()
+     * can fall back to computing live instead of treating "no cron has run yet" as "no
+     * customers exist".
+     *
+     * @return array<int, array{recency_percentile: float, frequency_percentile: float, monetary_percentile: float}>|null
+     */
+    private function readStoredPercentileRanks(): ?array
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('ordo_customer_rfm_score');
+
+        $rows = $connection->fetchAll(
+            $connection->select()->from($table, [
+                'customer_id',
+                'recency_percentile',
+                'frequency_percentile',
+                'monetary_percentile',
+            ])
+        );
+
+        if ($rows === []) {
+            return null;
+        }
+
+        $ranks = [];
+        /** @var array<string, mixed> $row */
+        foreach ($rows as $row) {
+            $ranks[(int) $row['customer_id']] = [
+                'recency_percentile' => (float) $row['recency_percentile'],
+                'frequency_percentile' => (float) $row['frequency_percentile'],
+                'monetary_percentile' => (float) $row['monetary_percentile'],
+            ];
+        }
+
+        return $ranks;
+    }
+
+    /**
+     * Computes fresh percentile ranks and 1-5 quintile buckets for every customer and replaces
+     * ordo_customer_rfm_score wholesale — called by Cron\RecomputeRfmScores, never on the
+     * campaign-dispatch/segment-resolve hot path. A full replace (not an upsert-per-row diff)
+     * because quintile boundaries shift as the customer base changes, so last run's row for a
+     * customer who didn't change can still need a new quintile if enough OTHER customers did.
+     */
+    public function recomputeAndStoreScores(): void
+    {
+        $ranks = $this->computePercentileRanks();
+
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('ordo_customer_rfm_score');
+
+        $connection->delete($table);
+
+        if ($ranks === []) {
+            return;
+        }
+
+        $rows = [];
+        foreach ($ranks as $customerId => $rank) {
+            $rows[] = [
+                'customer_id' => $customerId,
+                'recency_percentile' => $rank['recency_percentile'],
+                'frequency_percentile' => $rank['frequency_percentile'],
+                'monetary_percentile' => $rank['monetary_percentile'],
+                'recency_quintile' => $this->quintileFromPercentile($rank['recency_percentile']),
+                'frequency_quintile' => $this->quintileFromPercentile($rank['frequency_percentile']),
+                'monetary_quintile' => $this->quintileFromPercentile($rank['monetary_percentile']),
+            ];
+        }
+
+        foreach (array_chunk($rows, 500) as $chunk) {
+            $connection->insertMultiple($table, $chunk);
+        }
+    }
+
+    /**
+     * "555" (best on all three) down to "111" (worst) — the standard RFM-notation score, read
+     * from the same precomputed table getPercentileRanks() falls back to live computation for.
+     * Returns null for a customer with no stored (or, if the table's empty, no computable) row —
+     * e.g. Cron\RecomputeRfmScores hasn't run yet, or the store has zero customers.
+     */
+    public function getRfmScoreLabel(int $customerId): ?string
+    {
+        $ranks = $this->getPercentileRanks();
+        if (!isset($ranks[$customerId])) {
+            return null;
+        }
+
+        $rank = $ranks[$customerId];
+
+        return sprintf(
+            '%d%d%d',
+            $this->quintileFromPercentile($rank['recency_percentile']),
+            $this->quintileFromPercentile($rank['frequency_percentile']),
+            $this->quintileFromPercentile($rank['monetary_percentile'])
+        );
+    }
+
+    /**
+     * Percentile 0-100 (100 = best) -> quintile 1-5 (5 = best): (0, 20] -> 1, ..., (80, 100] -> 5,
+     * with 0 itself clamped up to quintile 1 rather than 0 (there's no "quintile 0").
+     */
+    private function quintileFromPercentile(float $percentile): int
+    {
+        return max(1, min(5, (int) ceil($percentile / 20)));
     }
 
     /**

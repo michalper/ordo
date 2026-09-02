@@ -97,6 +97,7 @@ class CollectionTest extends TestCase
                 'monetary_quintile',
                 'frequency_quintile',
                 'recency_quintile',
+                'rfm_score',
             ],
             array_keys($columns)
         );
@@ -106,5 +107,10 @@ class CollectionTest extends TestCase
         self::assertStringContainsString('NTILE(5) OVER (ORDER BY COALESCE(rfm_agg.frequency, 0) ASC)', $columns['frequency_quintile']);
         self::assertStringContainsString('DESC)', $columns['recency_quintile']);
         self::assertStringContainsString('999999', $columns['recency_quintile']);
+        // rfm_score repeats the same three NTILE specs inline (recency DESC, frequency/monetary
+        // ASC) inside a CONCAT, in R-F-M order, since it can't reference the aliases above.
+        self::assertStringStartsWith('CONCAT(', $columns['rfm_score']);
+        self::assertStringContainsString('NTILE(5) OVER (ORDER BY COALESCE(rfm_agg.monetary, 0) ASC)', $columns['rfm_score']);
+        self::assertStringContainsString('NTILE(5) OVER (ORDER BY COALESCE(rfm_agg.frequency, 0) ASC)', $columns['rfm_score']);
     }
 }

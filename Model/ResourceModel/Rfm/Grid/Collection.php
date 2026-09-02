@@ -119,6 +119,19 @@ class Collection extends SearchResult
                 'recency_quintile' => new \Zend_Db_Expr(
                     sprintf('NTILE(5) OVER (ORDER BY %s DESC)', $recencyForRanking)
                 ),
+                // The standard "555" RFM-notation score (best on all three down to "111"). Can't
+                // reference the recency_quintile/frequency_quintile/monetary_quintile aliases
+                // above — MySQL doesn't allow one select-list expression to reference another
+                // window-function alias in the same SELECT — so this repeats the same three
+                // NTILE() window specs inline instead; same result, same query plan MySQL already
+                // built for the aliased columns, just evaluated a second time.
+                'rfm_score' => new \Zend_Db_Expr(sprintf(
+                    'CONCAT(NTILE(5) OVER (ORDER BY %s DESC), NTILE(5) OVER (ORDER BY %s ASC), '
+                    . 'NTILE(5) OVER (ORDER BY %s ASC))',
+                    $recencyForRanking,
+                    $frequency,
+                    $monetary
+                )),
             ]
         );
     }

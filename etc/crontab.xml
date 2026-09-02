@@ -40,5 +40,8 @@
         <job name="ordo_automation_prune_pending_popups" instance="Ordo\Automation\Cron\PrunePendingPopups" method="execute">
             <schedule>30 4 * * *</schedule>
         </job>
+        <job name="ordo_automation_recompute_rfm_scores" instance="Ordo\Automation\Cron\RecomputeRfmScores" method="execute">
+            <schedule>0 1 * * *</schedule>
+        </job>
     </group>
 </config>

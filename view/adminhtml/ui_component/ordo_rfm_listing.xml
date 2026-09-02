@@ -98,5 +98,11 @@
                 <label translate="true">M Quintile</label>
             </settings>
         </column>
+        <column name="rfm_score">
+            <settings>
+                <label translate="true">RFM Score</label>
+                <sortable>false</sortable>
+            </settings>
+        </column>
     </columns>
 </listing>
