@@ -159,35 +159,72 @@ jobs:
         # CLI-bridge symlink or .env).
         run: vendor/bin/mftf build:project
 
-      - name: Write the PHP built-in server's router script
-        working-directory: magento
-        # PHP's built-in server needs an explicit router when serving Magento's pub/ docroot,
-        # since Magento's real .htaccess/nginx rewrite rules (everything that isn't a real static
-        # file goes to index.php) have no equivalent here. This script is NOT something MFTF or
-        # Magento ships anywhere — it doesn't exist in either repo — so it's authored directly
-        # here rather than assumed to come from mftf build:project (an earlier version of this
-        # workflow wrongly assumed dev/tests/acceptance/utils/router.php would be scaffolded by
-        # that command; it never was, causing "Failed opening required '.../router.php'").
+      - name: Install nginx and PHP-FPM
+        # PHP's built-in development server (`php -S`) is explicitly not designed for concurrent
+        # traffic — runs 1 through 7 of this workflow all failed identically with
+        # net::ERR_CONNECTION_REFUSED partway into a real browser session (confirmed via
+        # php-server.log: the server process itself stayed alive and kept accepting connections
+        # throughout, so this wasn't a crash), even after bumping PHP_CLI_SERVER_WORKERS from 8 to
+        # 32. Selenium/Chrome's real concurrent asset-fetching load needs a real web server —
+        # nginx + php-fpm, the same stack Magento's own docs and official CI actually use, is the
+        # correct fix rather than continuing to tune the dev server's worker count. ubuntu-24.04's
+        # default apt PHP is already 8.3, matching the CLI version installed above.
         run: |
-          cat > /tmp/router.php <<'PHP'
-          <?php
-          $root = $_SERVER['DOCUMENT_ROOT'];
-          $path = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
-          $file = $root . $path;
-          if ($path !== '/' && is_file($file)) {
-              return false;
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq nginx php8.3-fpm php8.3-bcmath php8.3-curl php8.3-gd \
+            php8.3-intl php8.3-mbstring php8.3-mysql php8.3-soap php8.3-sodium php8.3-xsl \
+            php8.3-zip php8.3-opcache
+
+      - name: Configure and start nginx + PHP-FPM for Magento
+        working-directory: magento
+        # Magento ships its own reference nginx vhost (nginx.conf.sample, $MAGE_ROOT-parameterized)
+        # instead of a hand-rolled router — reusing it means Magento's actual, maintained rewrite
+        # rules (setup app, static/media handling, GraphQL, etc.), not a partial reimplementation.
+        run: |
+          sudo tee /etc/nginx/sites-available/magento.conf > /dev/null <<NGINX
+          server {
+              listen 8080;
+              server_name 127.0.0.1;
+              set \$MAGE_ROOT $(pwd);
+              set \$MAGE_MODE developer;
+
+              # Must come BEFORE the include below — nginx tries regex locations in file order
+              # and stops at the first match, and nginx.conf.sample's own catch-all
+              # (location ~* (\.php\$|...) { deny all }) would otherwise shadow this one, since
+              # cli-bridge/a/b/command.php isn't in that file's PHP entry-point whitelist
+              # (index|get|static|errors/*|health_check).
+              location ~ ^/cli-bridge/.*\.php\$ {
+                  root $(pwd)/pub;
+                  fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+                  fastcgi_index index.php;
+                  fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+                  include fastcgi_params;
+              }
+
+              include $(pwd)/nginx.conf.sample;
           }
-          chdir($root);
-          require $root . '/index.php';
-          PHP
+          NGINX
+          sudo sed -i "s#fastcgi_pass   fastcgi_backend;#fastcgi_pass unix:/run/php/php8.3-fpm.sock;#" nginx.conf.sample
+          sudo ln -sf /etc/nginx/sites-available/magento.conf /etc/nginx/sites-enabled/magento.conf
+          sudo rm -f /etc/nginx/sites-enabled/default
+          sudo nginx -t
+          sudo systemctl restart php8.3-fpm
+          sudo systemctl restart nginx
+          for i in $(seq 1 15); do
+            curl -sf http://127.0.0.1:8080/ -o /dev/null && break
+            sleep 2
+          done
+          curl -sf http://127.0.0.1:8080/ -o /dev/null || (sudo journalctl -u nginx -u php8.3-fpm --no-pager | tail -100 && exit 1)
 
       - name: Wire the MFTF CLI bridge and .env
         working-directory: magento
         run: |
-          # <magentoCLI> MFTF actions POST to this path; it must resolve to exactly 3 directory
-          # levels under pub/ because command.php locates bin/magento via 4x "../" relative to
-          # the PHP built-in server's CWD (docroot + request path), not the symlink's real
-          # location. See AGENTS.md for how this was worked out.
+          # <magentoCLI> MFTF actions POST to this path. command.php locates bin/magento via 4x
+          # "../" from its own directory — this symlink sits exactly 3 levels under pub/ so that
+          # resolves back to the Magento root. See AGENTS.md for how this depth requirement was
+          # originally worked out (against PHP's built-in dev server, since replaced by nginx +
+          # PHP-FPM above — kept the same depth here since it's still correct and nothing forces
+          # a change).
           mkdir -p pub/cli-bridge/a/b
           ln -sf "$(pwd)/dev/tests/acceptance/utils/command.php" pub/cli-bridge/a/b/command.php
 
