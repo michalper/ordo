@@ -90,4 +90,60 @@ class RfmCalculatorTest extends TestCase
 
         self::assertSame(0.0, $calculator->getMonetaryTotal(42));
     }
+
+    public function testGetAggregatesForAllCustomersComputesRecencyFromLastOrderAt(): void
+    {
+        $now = 1700000000;
+        $tenDaysAgo = date('Y-m-d H:i:s', $now - 10 * 86400);
+
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            [
+                'customer_id' => '42',
+                'frequency' => '3',
+                'monetary' => '249.90',
+                'last_order_at' => $tenDaysAgo,
+            ],
+        ]);
+
+        $calculator = $this->makeCalculator($connection, $now);
+
+        self::assertSame(
+            [42 => ['frequency' => 3, 'monetary' => 249.90, 'recency_days' => 10]],
+            $calculator->getAggregatesForAllCustomers()
+        );
+    }
+
+    public function testGetAggregatesForAllCustomersReturnsNullRecencyWhenNoLastOrderAt(): void
+    {
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            [
+                'customer_id' => '42',
+                'frequency' => '0',
+                'monetary' => '0',
+                'last_order_at' => null,
+            ],
+        ]);
+
+        $calculator = $this->makeCalculator($connection);
+
+        self::assertSame(
+            [42 => ['frequency' => 0, 'monetary' => 0.0, 'recency_days' => null]],
+            $calculator->getAggregatesForAllCustomers()
+        );
+    }
+
+    public function testGetAggregatesForAllCustomersReturnsEmptyArrayWhenNoOrders(): void
+    {
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([]);
+
+        $calculator = $this->makeCalculator($connection);
+
+        self::assertSame([], $calculator->getAggregatesForAllCustomers());
+    }
 }

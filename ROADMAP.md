@@ -48,7 +48,7 @@ Not a code review — a capability comparison against the category. Each is a re
 - **Popup targeting** — frequency capping exists. Missing: event-driven triggers finer than a tag threshold (e.g. "this
   element was clicked").
 - **Dynamic content blocks** — reusable snippets, RSS newsletters, product feeds inside a campaign email. Not built.
-- **Segments** — bulk actions on a segment's current members (today a segment is only ever read one customer at a
-  time), a standalone RFM report across the whole customer base, and percentile/quintile-based RFM scoring (today's
-  conditions are absolute thresholds only).
+- **Segments** — bulk actions on a segment's current members now ship (add tag / add points, resolved via
+  `SegmentMemberResolver` and applied async). Still open: a standalone RFM report across the whole customer base, and
+  percentile/quintile-based RFM scoring (today's conditions are absolute thresholds only).
 - **Multichannel recovery** — SMS/WhatsApp/push. `cart_abandoned`/win-back only ever send email.

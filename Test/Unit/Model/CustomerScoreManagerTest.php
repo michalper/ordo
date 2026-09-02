@@ -65,4 +65,24 @@ class CustomerScoreManagerTest extends TestCase
 
         self::assertSame(0, $manager->getScore(42));
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetCustomerIdsWithScoreAtLeastReturnsIntArray(): void
+    {
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchCol')->willReturn(['1', '2']);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $manager = new CustomerScoreManager($resourceConnection);
+
+        self::assertSame([1, 2], $manager->getCustomerIdsWithScoreAtLeast(50));
+    }
 }

@@ -49,4 +49,24 @@ class CustomerScoreManager
 
         return $score !== false ? (int) $score : 0;
     }
+
+    /**
+     * All customers currently at or above a given score — the set-level counterpart to
+     * getScore(), used by SegmentMemberResolver to resolve a "score_at_least" condition.
+     *
+     * @return int[]
+     */
+    public function getCustomerIdsWithScoreAtLeast(int $threshold): array
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('ordo_customer_score');
+
+        $ids = $connection->fetchCol(
+            $connection->select()
+                ->from($table, 'customer_id')
+                ->where('score >= ?', $threshold)
+        );
+
+        return array_map('intval', $ids);
+    }
 }

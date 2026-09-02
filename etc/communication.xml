@@ -9,4 +9,8 @@
         <handler name="ordoAutomationVisitorAggregate"
                  type="Ordo\Automation\Model\Queue\VisitorAggregationConsumer" method="execute"/>
     </topic>
+    <topic name="ordo.automation.segment.bulk_action" is_synchronous="false" request="string">
+        <handler name="ordoAutomationSegmentBulkAction"
+                 type="Ordo\Automation\Model\Queue\SegmentBulkActionConsumer" method="execute"/>
+    </topic>
 </config>

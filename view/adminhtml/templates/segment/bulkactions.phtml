@@ -1,0 +1,52 @@
+<?php
+/** @var \Ordo\Automation\Block\Adminhtml\Segment\BulkActions $block */
+if (!$block->isSegmentSaved()) {
+    return;
+}
+?>
+<div class="admin__fieldset-wrapper" style="margin-top: 20px;">
+    <div class="admin__fieldset-wrapper-title">
+        <strong><?= $block->escapeHtml(__('Bulk actions on current members')) ?></strong>
+    </div>
+    <div class="admin__fieldset-wrapper-content">
+        <p><?= $block->escapeHtml(
+            __('Runs against everyone currently matching this segment\'s conditions. The action is queued and applied asynchronously.')
+        ) ?></p>
+        <form action="<?= $block->escapeUrl($block->getFormAction()) ?>" method="post">
+            <?= $block->getBlockHtml('formkey') ?>
+            <input type="hidden" name="segment_id" value="<?= (int) $block->getSegmentId() ?>"/>
+            <div class="admin__field">
+                <label class="admin__field-label" for="ordo-segment-bulk-action-type">
+                    <span><?= $block->escapeHtml(__('Action')) ?></span>
+                </label>
+                <div class="admin__field-control">
+                    <select id="ordo-segment-bulk-action-type" name="action_type" class="admin__control-select">
+                        <option value="add_tag"><?= $block->escapeHtml(__('Add Tag')) ?></option>
+                        <option value="add_points"><?= $block->escapeHtml(__('Add Points')) ?></option>
+                    </select>
+                </div>
+            </div>
+            <div class="admin__field">
+                <label class="admin__field-label" for="ordo-segment-bulk-tag">
+                    <span><?= $block->escapeHtml(__('Tag (used by "Add Tag")')) ?></span>
+                </label>
+                <div class="admin__field-control">
+                    <input type="text" id="ordo-segment-bulk-tag" name="tag" class="admin__control-text"/>
+                </div>
+            </div>
+            <div class="admin__field">
+                <label class="admin__field-label" for="ordo-segment-bulk-points">
+                    <span><?= $block->escapeHtml(__('Points (used by "Add Points")')) ?></span>
+                </label>
+                <div class="admin__field-control">
+                    <input type="number" id="ordo-segment-bulk-points" name="points" class="admin__control-text"/>
+                </div>
+            </div>
+            <div class="admin__field">
+                <button type="submit" class="action-primary">
+                    <span><?= $block->escapeHtml(__('Run Bulk Action')) ?></span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1781,3 +1781,57 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Plugin/Quote/BlockOverLimitCheckout.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Adminhtml/Segment/BulkAction.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Controller/Adminhtml/Segment/BulkAction.php
+
+		-
+			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''intval'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/CustomerScoreManager.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Model/Queue/SegmentBulkActionConsumer.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 3
+			path: Model/Queue/SegmentBulkActionConsumer.php
+
+		-
+			message: '#^Parameter \#3 \$params of method Ordo\\Automation\\Model\\Queue\\SegmentBulkActionConsumer\:\:applyAction\(\) expects array\<string, mixed\>, array given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Queue/SegmentBulkActionConsumer.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Model/Rfm/RfmCalculator.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/Rfm/RfmCalculator.php
+
+		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 1
+			path: Model/Rfm/RfmCalculator.php

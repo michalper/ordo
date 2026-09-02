@@ -3,4 +3,5 @@
         xsi:noNamespaceSchemaLocation="urn:magento:framework-message-queue:etc/publisher.xsd">
     <publisher topic="ordo.automation.campaign.dispatch"/>
     <publisher topic="ordo.automation.visitor.aggregate"/>
+    <publisher topic="ordo.automation.segment.bulk_action"/>
 </config>

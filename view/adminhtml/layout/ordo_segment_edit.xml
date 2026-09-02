@@ -3,6 +3,8 @@
     <body>
         <referenceContainer name="content">
             <uiComponent name="ordo_segment_form"/>
+            <block class="Ordo\Automation\Block\Adminhtml\Segment\BulkActions" name="ordo_segment_bulk_actions"
+                   template="Ordo_Automation::segment/bulkactions.phtml"/>
         </referenceContainer>
     </body>
 </page>

@@ -5,4 +5,6 @@
               handler="Ordo\Automation\Model\Queue\CampaignDispatchConsumer::execute"/>
     <consumer name="ordo.automation.visitor.aggregate" queue="ordo.automation.visitor.aggregate"
               handler="Ordo\Automation\Model\Queue\VisitorAggregationConsumer::execute"/>
+    <consumer name="ordo.automation.segment.bulk_action" queue="ordo.automation.segment.bulk_action"
+              handler="Ordo\Automation\Model\Queue\SegmentBulkActionConsumer::execute"/>
 </config>

@@ -79,4 +79,53 @@ class RfmCalculator
 
         return (float) $total;
     }
+
+    /**
+     * Frequency/monetary/recency for every customer with at least one non-canceled order, in a
+     * single grouped query — the aggregate that SegmentMemberResolver's RFM conditions filter in
+     * PHP against, instead of running getRecencyDays()/getFrequency()/getMonetaryTotal() once per
+     * customer. Recency math is identical to getRecencyDays() so results never drift between the
+     * single-customer and set-level paths.
+     *
+     * @return array<int, array{frequency: int, monetary: float, recency_days: int|null}>
+     */
+    public function getAggregatesForAllCustomers(): array
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $orderTable = $this->resourceConnection->getTableName('sales_order');
+
+        $rows = $connection->fetchAll(
+            $connection->select()
+                ->from($orderTable, [
+                    'customer_id' => 'customer_id',
+                    'frequency' => 'COUNT(*)',
+                    'monetary' => 'SUM(grand_total)',
+                    'last_order_at' => 'MAX(created_at)',
+                ])
+                ->where('state != ?', 'canceled')
+                ->where('customer_id IS NOT NULL')
+                ->group('customer_id')
+        );
+
+        $aggregates = [];
+        /** @var array<string, mixed> $row */
+        foreach ($rows as $row) {
+            $customerId = (int) $row['customer_id'];
+            $lastOrderAt = $row['last_order_at'] ?? null;
+            $recencyDays = null;
+
+            if ($lastOrderAt) {
+                $days = ($this->dateTime->gmtTimestamp() - strtotime((string) $lastOrderAt)) / 86400;
+                $recencyDays = max(0, (int) floor($days));
+            }
+
+            $aggregates[$customerId] = [
+                'frequency' => (int) $row['frequency'],
+                'monetary' => (float) $row['monetary'],
+                'recency_days' => $recencyDays,
+            ];
+        }
+
+        return $aggregates;
+    }
 }

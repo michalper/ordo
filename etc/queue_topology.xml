@@ -6,5 +6,7 @@
                  destination="ordo.automation.campaign.dispatch"/>
         <binding id="OrdoAutomationVisitorAggregate" topic="ordo.automation.visitor.aggregate"
                  destination="ordo.automation.visitor.aggregate"/>
+        <binding id="OrdoAutomationSegmentBulkAction" topic="ordo.automation.segment.bulk_action"
+                 destination="ordo.automation.segment.bulk_action"/>
     </exchange>
 </config>
