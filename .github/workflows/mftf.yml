@@ -82,6 +82,16 @@ jobs:
           extensions: bcmath, ctype, curl, dom, ftp, gd, intl, mbstring, mysqli, pdo_mysql, simplexml, soap, sodium, xsl, zip, opcache, sockets
           coverage: none
 
+      - name: Remove shivammathur/setup-php's ambient GitHub auth
+        # setup-php configures Composer's global github-oauth.github.com with GITHUB_TOKEN by
+        # default, purely to avoid GitHub API rate-limit errors during `composer install`. Fifth
+        # real run failed at generate:tests with "Suite Data Parser Error: Your github oauth
+        # token for github.com contains invalid characters" — MFTF's suite parser reads that same
+        # global token for its own (unrelated to us) purposes and chokes on it. Nothing in this
+        # workflow needs GitHub API auth (only repo.magento.com and a local path repo), so just
+        # remove it.
+        run: composer config --global --unset github-oauth.github.com || true
+
       - name: Checkout Magento 2.4.9
         run: git clone --branch 2.4.9 --depth 1 https://github.com/magento/magento2.git magento
 
