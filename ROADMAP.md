@@ -56,9 +56,12 @@ scoped from real hands-on marketing automation experience.
 Not a code review — a capability comparison against the category. Each is a real, separate stream of work:
 
 - **Product recommendations** — no "recommended for you" blocks anywhere; every email is static content.
-- **Lead scoring** — the points model (accumulate/read/gate-on-threshold) exists. Missing: demographic-attribute
-  scoring rules, an admin UI for managing scoring rules declaratively, and a trigger that fires the instant a
-  threshold is crossed rather than opportunistically on whatever trigger already ran.
+- **Lead scoring** — demographic-attribute scoring rules now ship (`ordo_score_rule`, admin CRUD, `ScoreRuleEvaluator`
+  matching against core or EAV customer attributes), applied on `customer_save_after` as a delta against the
+  customer's tracked demographic contribution. A `score_threshold_crossed` campaign trigger fires the instant a
+  crossing happens, instead of only being read opportunistically by whatever other trigger already ran. Rule
+  authoring is a plain attribute-code text field, not a dynamic EAV-attribute picker — a deliberate scope cut, not a
+  gap in the trigger/evaluation mechanics themselves.
 - **Popup targeting** — frequency capping exists. Missing: event-driven triggers finer than a tag threshold (e.g. "this
   element was clicked").
 - **Dynamic content blocks** — reusable snippets, RSS newsletters, product feeds inside a campaign email. Not built.
