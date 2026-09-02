@@ -29,4 +29,34 @@ class CampaignDispatchPublisherTest extends TestCase
 
         (new CampaignDispatchPublisher($publisher, $serializer))->publish('order_placed', ['customer_id' => 42]);
     }
+
+    /**
+     * A campaign action (e.g. add_tag) can itself trigger a new publish() to this exact same
+     * topic/queue while CampaignDispatchConsumer is still consuming the message that ran it —
+     * confirmed via a real CI run to self-deadlock the DB queue driver otherwise (see the class
+     * doc). setConsuming(true) is what CampaignDispatchConsumer flags around its dispatch()
+     * call; publish() must not call the underlying publisher synchronously in that window —
+     * only register_shutdown_function() defers it, which isn't itself practically assertable
+     * from a unit test, so "the immediate call never happens" is the behavior this test can
+     * actually pin down.
+     */
+    public function testPublishDefersInsteadOfPublishingImmediatelyWhileConsuming(): void
+    {
+        $publisher = $this->createMock(PublisherInterface::class);
+        $serializer = $this->createMock(SerializerInterface::class);
+
+        $serializer->expects(self::once())->method('serialize')
+            ->willReturn('{"trigger_event":"tag_added","context":{"customer_id":1,"tag":"vip"}}');
+
+        $publisher->expects(self::never())->method('publish');
+
+        CampaignDispatchPublisher::setConsuming(true);
+        try {
+            (new CampaignDispatchPublisher($publisher, $serializer))
+                ->publish('tag_added', ['customer_id' => 1, 'tag' => 'vip']);
+        } finally {
+            // Never leave the static flag set for later tests in the same process.
+            CampaignDispatchPublisher::setConsuming(false);
+        }
+    }
 }
