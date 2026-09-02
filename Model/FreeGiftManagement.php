@@ -13,12 +13,12 @@ use Magento\Quote\Model\Quote;
 use Ordo\Automation\Api\Data\FreeGiftEligibilityInterface;
 use Ordo\Automation\Api\Data\FreeGiftSelectionInterface;
 use Ordo\Automation\Api\FreeGiftManagementInterface;
+use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\CollectionFactory as FreeGiftOfferCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOfferProduct\CollectionFactory as FreeGiftOfferProductCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOfferTier\CollectionFactory as FreeGiftOfferTierCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\QuoteGiftItem as QuoteGiftItemResource;
 use Ordo\Automation\Model\ResourceModel\QuoteGiftItem\CollectionFactory as QuoteGiftItemCollectionFactory;
-use Ordo\Automation\Helper\Config;
 
 class FreeGiftManagement implements FreeGiftManagementInterface
 {

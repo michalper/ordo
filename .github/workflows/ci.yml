@@ -135,3 +135,10 @@ jobs:
 
       - name: Run PHPCS (Magento2 coding standard)
         run: vendor/bin/phpcs
+
+      - name: Run PHP-CS-Fixer (formatting)
+        # Different role than PHPCS above: PHPCS only detects violations, this actually rewrites
+        # files — so it needs --dry-run --diff to just check without silently "fixing" (and thus
+        # masking) an unformatted commit in CI. `composer cs-fix` (no dry-run) is what a
+        # contributor runs locally to actually apply it.
+        run: composer cs-check

@@ -424,11 +424,15 @@ Still flagged for follow-up, not yet wired in:
   Dashboard/ReorderCycle, Tracking) using MFTF's own `<group>` tags, so tests run in parallel and
   it's clearer where to add new ones. Deliberately deferred until the single, unified pipeline has
   had at least one successful real run — no point parallelizing something not yet proven to work.
-- **PHP-CS-Fixer** — named explicitly alongside CodeQL/Dependabot/PHPCS in the original
-  "let's add tooling" pass; CodeQL turned out not to support PHP (removed), Dependabot and PHPCS
-  (Magento2 standard) landed, PHP-CS-Fixer never did. Different role than PHPCS: automatic
-  formatting rather than violation detection — would need a decision on whether it runs as a CI
-  check (fail on unformatted code) or a pre-commit-only convenience.
+**PHP-CS-Fixer — done.** `.php-cs-fixer.dist.php` layers `@PSR12` plus a handful of safe rules
+(unused-import removal, alphabetical import ordering, single quotes, short array syntax) on top of
+— not instead of — the Magento2 standard PHPCS already enforces; the one PSR12 rule that actively
+conflicted with this codebase's (and Magento2's own) `<?php` immediately followed by
+`declare(strict_types=1);` convention (`blank_line_after_opening_tag`) is explicitly disabled.
+Wired into `ci.yml`'s `coding-standard` job as `composer cs-check` (`--dry-run --diff`, so CI only
+*detects* unformatted code rather than silently rewriting it) right after PHPCS; `composer cs-fix`
+is what a contributor runs locally to actually apply it. First real run found only import-ordering
+drift across 6 files — fixed as part of landing this.
 - **Psalm and/or Infection (mutation testing)** — suggested as options alongside PHPStan early on,
   never decided either way. Psalm would be a second, differently-opinionated static analyzer
   overlapping heavily with PHPStan; Infection would test the tests themselves (does the suite

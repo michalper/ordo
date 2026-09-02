@@ -6,3 +6,5 @@ node_modules/
 .phpunit.result.cache
 clover.xml
 junit.xml
+.php-cs-fixer.cache
+composer.lock

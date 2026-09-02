@@ -6,11 +6,11 @@ namespace Ordo\Automation\Observer;
 use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Quote\Model\Quote;
+use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\CollectionFactory as FreeGiftOfferCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOfferTier\CollectionFactory as FreeGiftOfferTierCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\QuoteGiftItem as QuoteGiftItemResource;
 use Ordo\Automation\Model\ResourceModel\QuoteGiftItem\CollectionFactory as QuoteGiftItemCollectionFactory;
-use Ordo\Automation\Helper\Config;
 
 /**
  * Fires after every quote totals recalculation. If the cart subtotal has dropped below the
