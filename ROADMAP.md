@@ -36,6 +36,12 @@ scoped from real hands-on marketing automation experience.
   and drop `continue-on-error` once that number exists.
 - **SonarQube Cloud's Hunter/Remediation agents** — not yet investigated whether they need a paid tier or additional
   GitHub App permissions beyond what's configured.
+- **PHPUnit 13** (currently on `^12.0`) — blocked, not just a version bump: PHPUnit 13 requires PHP 8.4+, but every
+  workflow (`ci.yml`, `coverage.yml`, `mftf.yml`) runs PHP 8.3, and composer.json's own supported range starts at
+  `~8.2.0`. Needs a deliberate decision to move the whole CI matrix (and the module's minimum supported PHP version)
+  to 8.4 first — not something to fold into an unrelated change. PHPUnit 13 also requires the suite to already run
+  clean with zero deprecation warnings under PHPUnit 12.5 first, which `ci.yml`'s `--fail-on-*-deprecation` flags
+  already enforce today, so that half of the prerequisite is already satisfied.
 
 ## Gaps vs. a full-market MA platform
 
