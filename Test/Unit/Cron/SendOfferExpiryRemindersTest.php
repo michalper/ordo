@@ -22,6 +22,7 @@ use Ordo\Automation\Model\Offer;
 use Ordo\Automation\Model\ResourceModel\Offer\Collection;
 use Ordo\Automation\Model\ResourceModel\Offer\CollectionFactory;
 use Ordo\Automation\Model\SalesRepEmailContext;
+use Ordo\Automation\Model\TriggerOutcomeLogger;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -182,6 +183,7 @@ class SendOfferExpiryRemindersTest extends TestCase
             $this->createStub(StoreManagerInterface::class),
             $this->createStub(StateInterface::class),
             $this->createStub(SalesRepEmailContext::class),
+            $this->createStub(TriggerOutcomeLogger::class),
             $logger
         ))->execute();
     }
@@ -229,6 +231,7 @@ class SendOfferExpiryRemindersTest extends TestCase
             $this->createStub(StoreManagerInterface::class),
             $this->createStub(StateInterface::class),
             $this->createStub(SalesRepEmailContext::class),
+            $this->createStub(TriggerOutcomeLogger::class),
             $logger
         ))->execute();
     }
@@ -272,6 +275,7 @@ class SendOfferExpiryRemindersTest extends TestCase
             $storeManager,
             $this->createStub(StateInterface::class),
             $salesRepEmailContext,
+            $this->createStub(TriggerOutcomeLogger::class),
             $logger ?? $this->createStub(LoggerInterface::class)
         );
     }

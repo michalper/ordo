@@ -22,6 +22,7 @@ use Ordo\Automation\Model\ReorderCycle;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\Collection;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory;
 use Ordo\Automation\Model\SalesRepEmailContext;
+use Ordo\Automation\Model\TriggerOutcomeLogger;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -178,6 +179,7 @@ class SendReorderRemindersTest extends TestCase
             $this->createStub(StoreManagerInterface::class),
             $this->createStub(StateInterface::class),
             $this->createStub(SalesRepEmailContext::class),
+            $this->createStub(TriggerOutcomeLogger::class),
             $logger
         ))->execute();
     }
@@ -225,6 +227,7 @@ class SendReorderRemindersTest extends TestCase
             $this->createStub(StoreManagerInterface::class),
             $this->createStub(StateInterface::class),
             $this->createStub(SalesRepEmailContext::class),
+            $this->createStub(TriggerOutcomeLogger::class),
             $logger
         ))->execute();
     }
@@ -268,6 +271,7 @@ class SendReorderRemindersTest extends TestCase
             $storeManager,
             $this->createStub(StateInterface::class),
             $salesRepEmailContext,
+            $this->createStub(TriggerOutcomeLogger::class),
             $logger ?? $this->createStub(LoggerInterface::class)
         );
     }

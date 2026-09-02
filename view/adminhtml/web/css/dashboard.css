@@ -87,6 +87,34 @@
 .ordo-trigger-stat-label { color: #1b1f2a; }
 .ordo-trigger-stat-value { font-weight: 700; color: var(--ordo-primary); }
 
+.ordo-trigger-outcome-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid var(--ordo-border);
+  border-radius: var(--ordo-radius);
+  overflow: hidden;
+  font-size: 13px;
+}
+
+.ordo-trigger-outcome-table th,
+.ordo-trigger-outcome-table td {
+  padding: 12px 20px;
+  text-align: left;
+}
+
+.ordo-trigger-outcome-table th {
+  color: var(--ordo-text-muted);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--ordo-border);
+}
+
+.ordo-trigger-outcome-table tbody tr + tr { border-top: 1px solid var(--ordo-border); }
+
+.ordo-trigger-outcome-table td:nth-child(4) { font-weight: 700; color: var(--ordo-primary); }
+
 .ordo-btn {
   display: inline-block;
   border-radius: 8px;

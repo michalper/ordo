@@ -15,6 +15,7 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Offer;
 use Ordo\Automation\Model\ResourceModel\Offer\CollectionFactory as OfferCollectionFactory;
 use Ordo\Automation\Model\SalesRepEmailContext;
+use Ordo\Automation\Model\TriggerOutcomeLogger;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -39,6 +40,7 @@ class SendOfferExpiryReminders
         private readonly StoreManagerInterface $storeManager,
         private readonly StateInterface $inlineTranslation,
         private readonly SalesRepEmailContext $salesRepEmailContext,
+        private readonly TriggerOutcomeLogger $triggerOutcomeLogger,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -80,6 +82,7 @@ class SendOfferExpiryReminders
             try {
                 $this->sendReminder($offer, $customerMap[$customerId]);
                 $this->logReminder((int) $offer->getEntityId(), self::REMINDER_TYPE_EXPIRING_SOON);
+                $this->triggerOutcomeLogger->logSent(TriggerOutcomeLogger::TRIGGER_OFFER_EXPIRY, $customerId);
                 $sent++;
             } catch (\Throwable $e) {
                 $this->logger->error(sprintf(

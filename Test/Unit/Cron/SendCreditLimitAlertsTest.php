@@ -20,6 +20,7 @@ use Ordo\Automation\Cron\SendCreditLimitAlerts;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CreditLimitCalculator;
 use Ordo\Automation\Model\SalesRepEmailContext;
+use Ordo\Automation\Model\TriggerOutcomeLogger;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -179,6 +180,7 @@ class SendCreditLimitAlertsTest extends TestCase
             $storeManager,
             $this->createStub(StateInterface::class),
             $salesRepEmailContext,
+            $this->createStub(TriggerOutcomeLogger::class),
             $logger
         ))->execute();
     }
@@ -220,6 +222,7 @@ class SendCreditLimitAlertsTest extends TestCase
             $this->createStub(StoreManagerInterface::class),
             $this->createStub(StateInterface::class),
             $this->createStub(SalesRepEmailContext::class),
+            $this->createStub(TriggerOutcomeLogger::class),
             $logger
         ))->execute();
     }
@@ -263,6 +266,7 @@ class SendCreditLimitAlertsTest extends TestCase
             $storeManager,
             $this->createStub(StateInterface::class),
             $salesRepEmailContext,
+            $this->createStub(TriggerOutcomeLogger::class),
             $logger ?? $this->createStub(LoggerInterface::class)
         );
     }

@@ -12,6 +12,7 @@ use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCo
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as CampaignTriggerCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\CollectionFactory as FreeGiftOfferCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory as ReorderCycleCollectionFactory;
+use Ordo\Automation\Model\TriggerOutcomeLogger;
 
 /**
  * Reads directly from the collections (server-rendered), not the REST API — this page lives
@@ -43,6 +44,19 @@ class DashboardViewModel implements ArgumentInterface
     ];
 
     /**
+     * Labels for the 5 cron-driven triggers tracked by TriggerOutcomeLogger — a separate set
+     * from TRIGGER_LABELS/FIXED_TRIGGER_EVENTS above, which are campaign trigger *events*
+     * (order_placed, tag_added, ...), not these standalone scheduled sends.
+     */
+    private const TRIGGER_OUTCOME_LABELS = [
+        TriggerOutcomeLogger::TRIGGER_REORDER_REMINDER => 'Reorder Reminder',
+        TriggerOutcomeLogger::TRIGGER_OFFER_EXPIRY => 'Offer Expiry',
+        TriggerOutcomeLogger::TRIGGER_CREDIT_LIMIT_ALERT => 'Credit Limit Alert',
+        TriggerOutcomeLogger::TRIGGER_ORDER_APPROVAL => 'Order Approval',
+        TriggerOutcomeLogger::TRIGGER_WIN_BACK => 'Win-Back',
+    ];
+
+    /**
      * @var array<int, string>|null Trigger labels per campaign_id, keyed like
      * getTriggerLabelsForCampaign()'s return value — built in one query by getCampaigns()
      * so the per-campaign lookup below doesn't have to hit the database again.
@@ -53,7 +67,8 @@ class DashboardViewModel implements ArgumentInterface
         private readonly CampaignCollectionFactory $campaignCollectionFactory,
         private readonly CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory,
         private readonly ReorderCycleCollectionFactory $reorderCycleCollectionFactory,
-        private readonly FreeGiftOfferCollectionFactory $freeGiftOfferCollectionFactory
+        private readonly FreeGiftOfferCollectionFactory $freeGiftOfferCollectionFactory,
+        private readonly TriggerOutcomeLogger $triggerOutcomeLogger
     ) {
     }
 
@@ -173,5 +188,36 @@ class DashboardViewModel implements ArgumentInterface
             static fn (array $labels): string => implode(', ', $labels),
             $labelsByCampaignId
         );
+    }
+
+    public function getTriggerOutcomeLabel(string $triggerType): string
+    {
+        return self::TRIGGER_OUTCOME_LABELS[$triggerType] ?? $triggerType;
+    }
+
+    /**
+     * Sent count, responded count, response rate percent for each of the 5 cron-driven
+     * triggers — a fixed row per trigger, same "always show all, even zero" pattern as
+     * getFixedTriggerEvents(), so a trigger that hasn't sent anything yet still gets a row.
+     * One aggregate query via TriggerOutcomeLogger::getStats(), not one per trigger.
+     *
+     * @return array<string, array{label: string, sent: int, responded: int, response_rate: float}>
+     */
+    public function getTriggerStats(): array
+    {
+        $stats = $this->triggerOutcomeLogger->getStats();
+
+        $result = [];
+        foreach (TriggerOutcomeLogger::TRIGGER_TYPES as $triggerType) {
+            $triggerStats = $stats[$triggerType] ?? ['sent' => 0, 'responded' => 0, 'response_rate' => 0.0];
+            $result[$triggerType] = [
+                'label' => $this->getTriggerOutcomeLabel($triggerType),
+                'sent' => $triggerStats['sent'],
+                'responded' => $triggerStats['responded'],
+                'response_rate' => $triggerStats['response_rate'],
+            ];
+        }
+
+        return $result;
     }
 }

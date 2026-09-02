@@ -1,0 +1,61 @@
+<?php
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \Magento\Framework\Escaper $escaper */
+/** @var \Ordo\Automation\Block\Frontend\OfferViewModel $viewModel */
+$viewModel = $block->getData('view_model');
+$offers = $viewModel->getOffers();
+?>
+<div class="block block-ordo-offers">
+    <div class="block-title">
+        <strong><?= $escaper->escapeHtml(__('My Offers')) ?></strong>
+    </div>
+    <div class="block-content">
+        <?php if (empty($offers)): ?>
+            <p><?= $escaper->escapeHtml(__('You have no offers yet.')) ?></p>
+        <?php else: ?>
+            <table class="data table table-order-items" id="ordo-offers-table">
+                <caption class="table-caption"><?= $escaper->escapeHtml(__('My Offers')) ?></caption>
+                <thead>
+                    <tr>
+                        <th scope="col" class="col reference"><?= $escaper->escapeHtml(__('Reference')) ?></th>
+                        <th scope="col" class="col status"><?= $escaper->escapeHtml(__('Status')) ?></th>
+                        <th scope="col" class="col total"><?= $escaper->escapeHtml(__('Total')) ?></th>
+                        <th scope="col" class="col expires"><?= $escaper->escapeHtml(__('Expires')) ?></th>
+                        <th scope="col" class="col actions"><?= $escaper->escapeHtml(__('Actions')) ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($offers as $offer): ?>
+                    <tr>
+                        <td data-th="<?= $escaper->escapeHtmlAttr(__('Reference')) ?>">
+                            <?= $escaper->escapeHtml($offer->getReference()) ?>
+                        </td>
+                        <td data-th="<?= $escaper->escapeHtmlAttr(__('Status')) ?>">
+                            <?= $escaper->escapeHtml($offer->getStatus()) ?>
+                        </td>
+                        <td data-th="<?= $escaper->escapeHtmlAttr(__('Total')) ?>">
+                            <?= $escaper->escapeHtml($offer->getCurrencyCode() . ' ' . number_format($offer->getTotal(), 2)) ?>
+                        </td>
+                        <td data-th="<?= $escaper->escapeHtmlAttr(__('Expires')) ?>">
+                            <?= $escaper->escapeHtml($offer->getExpiresAt()) ?>
+                        </td>
+                        <td data-th="<?= $escaper->escapeHtmlAttr(__('Actions')) ?>">
+                            <?php if ($viewModel->canSelfExtend($offer)): ?>
+                                <form method="post" action="<?= $escaper->escapeUrl($block->getUrl('ordo/offer/extend')) ?>">
+                                    <?= $block->getBlockHtml('formkey') ?>
+                                    <input type="hidden" name="offer_id" value="<?= (int) $offer->getEntityId() ?>"/>
+                                    <button type="submit" class="action extend primary">
+                                        <span><?= $escaper->escapeHtml(__('Extend by %1 day(s)', $viewModel->getSelfExtensionDays())) ?></span>
+                                    </button>
+                                </form>
+                            <?php else: ?>
+                                <span class="no-extend"><?= $escaper->escapeHtml(__('Not eligible for extension')) ?></span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+    </div>
+</div>

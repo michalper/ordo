@@ -17,15 +17,8 @@ scoped from real hands-on marketing automation experience.
 
 ## B2B triggers
 
-- **Stats for the five cron-driven triggers** (reorder reminder / offer expiry / credit limit alert / order approval /
-  win-back) — sent / response rate / estimated recovered revenue per trigger. Needs outcome tracking (did the customer
-  act after the email) that nothing currently logs. Not the same as the dashboard's existing campaign-count-by-trigger
-  breakdown.
-- **Offer self-extension has no frontend surface.** Only the domain method `Offer::canSelfExtend()` exists; there's no
-  controller/route/template letting a customer actually click "extend" anywhere. The REST endpoint and unit coverage
-  exist — the UI doesn't.
-- **Credit limit doesn't block checkout.** `SendCreditLimitAlerts` only ever sends a cron email; nothing warns or blocks
-  at checkout time based on credit limit today.
+- **Estimated recovered revenue per trigger** — sent count and response rate now ship (dashboard "Trigger performance"
+  table, backed by `ordo_trigger_outcome_log`); attributing a $ figure to each response is still open.
 
 ## Admin UI
 

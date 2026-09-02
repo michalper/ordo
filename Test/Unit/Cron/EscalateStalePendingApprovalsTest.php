@@ -17,6 +17,7 @@ use Ordo\Automation\Model\OrderApproval;
 use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
 use Ordo\Automation\Model\ResourceModel\OrderApproval\Collection as ApprovalCollection;
 use Ordo\Automation\Model\ResourceModel\OrderApproval\CollectionFactory as ApprovalCollectionFactory;
+use Ordo\Automation\Model\TriggerOutcomeLogger;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -30,6 +31,7 @@ class EscalateStalePendingApprovalsTest extends TestCase
     private TransportBuilder $transportBuilder;
     private StoreManagerInterface $storeManager;
     private StateInterface $inlineTranslation;
+    private TriggerOutcomeLogger $triggerOutcomeLogger;
     private LoggerInterface $logger;
 
     protected function setUp(): void
@@ -43,6 +45,7 @@ class EscalateStalePendingApprovalsTest extends TestCase
         $this->transportBuilder = $this->createStub(TransportBuilder::class);
         $this->storeManager = $this->createStub(StoreManagerInterface::class);
         $this->inlineTranslation = $this->createStub(StateInterface::class);
+        $this->triggerOutcomeLogger = $this->createStub(TriggerOutcomeLogger::class);
         $this->logger = $this->createMock(LoggerInterface::class);
     }
 
@@ -56,6 +59,7 @@ class EscalateStalePendingApprovalsTest extends TestCase
             $this->transportBuilder,
             $this->storeManager,
             $this->inlineTranslation,
+            $this->triggerOutcomeLogger,
             $this->logger
         );
     }
@@ -109,6 +113,7 @@ class EscalateStalePendingApprovalsTest extends TestCase
         $order->method('getEntityId')->willReturn(7);
         $order->method('getIncrementId')->willReturn('000000007');
         $order->method('getGrandTotal')->willReturn(150.0);
+        $order->method('getCustomerId')->willReturn(42);
 
         $orderCollection = $this->createStub(OrderCollection::class);
         $orderCollection->method('addFieldToFilter')->willReturnSelf();
@@ -132,6 +137,11 @@ class EscalateStalePendingApprovalsTest extends TestCase
 
         $this->orderApprovalResource->expects(self::once())->method('save')->with($approval);
         $this->logger->expects(self::once())->method('info')->with(self::stringContains('1 order approval escalations'));
+
+        $triggerOutcomeLogger = $this->createMock(TriggerOutcomeLogger::class);
+        $triggerOutcomeLogger->expects(self::once())->method('logSent')
+            ->with(TriggerOutcomeLogger::TRIGGER_ORDER_APPROVAL, 42);
+        $this->triggerOutcomeLogger = $triggerOutcomeLogger;
 
         $this->makeCron()->execute();
     }

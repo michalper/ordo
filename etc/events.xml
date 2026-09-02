@@ -7,6 +7,7 @@
     <event name="sales_order_place_after">
         <observer name="ordo_automation_hold_order_for_approval" instance="Ordo\Automation\Observer\HoldOrderForApproval"/>
         <observer name="ordo_automation_dispatch_order_placed_campaigns" instance="Ordo\Automation\Observer\DispatchOrderPlacedCampaigns"/>
+        <observer name="ordo_automation_record_trigger_outcome" instance="Ordo\Automation\Observer\RecordTriggerOutcome"/>
     </event>
     <event name="ordo_customer_tag_added">
         <observer name="ordo_automation_dispatch_tag_added_campaigns" instance="Ordo\Automation\Observer\DispatchTagAddedCampaigns"/>

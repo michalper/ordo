@@ -14,6 +14,7 @@ use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\Collection as FreeGiftOffe
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\CollectionFactory as FreeGiftOfferCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\Collection as ReorderCycleCollection;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory as ReorderCycleCollectionFactory;
+use Ordo\Automation\Model\TriggerOutcomeLogger;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
@@ -23,13 +24,15 @@ class DashboardViewModelTest extends TestCase
         ?CampaignCollectionFactory $campaignCollectionFactory = null,
         ?ReorderCycleCollectionFactory $reorderCycleCollectionFactory = null,
         ?FreeGiftOfferCollectionFactory $freeGiftOfferCollectionFactory = null,
-        ?CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory = null
+        ?CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory = null,
+        ?TriggerOutcomeLogger $triggerOutcomeLogger = null
     ): DashboardViewModel {
         return new DashboardViewModel(
             $campaignCollectionFactory ?? $this->createStub(CampaignCollectionFactory::class),
             $campaignTriggerCollectionFactory ?? $this->createStub(CampaignTriggerCollectionFactory::class),
             $reorderCycleCollectionFactory ?? $this->createStub(ReorderCycleCollectionFactory::class),
-            $freeGiftOfferCollectionFactory ?? $this->createStub(FreeGiftOfferCollectionFactory::class)
+            $freeGiftOfferCollectionFactory ?? $this->createStub(FreeGiftOfferCollectionFactory::class),
+            $triggerOutcomeLogger ?? $this->createStub(TriggerOutcomeLogger::class)
         );
     }
 
@@ -238,6 +241,45 @@ class DashboardViewModelTest extends TestCase
                 CampaignTriggerInterface::TRIGGER_VISITOR_TAG_ADDED,
             ],
             $viewModel->getFixedTriggerEvents()
+        );
+    }
+
+    public function testGetTriggerOutcomeLabelReturnsKnownLabel(): void
+    {
+        $viewModel = $this->makeViewModel();
+
+        self::assertSame(
+            'Win-Back',
+            $viewModel->getTriggerOutcomeLabel(TriggerOutcomeLogger::TRIGGER_WIN_BACK)
+        );
+    }
+
+    public function testGetTriggerOutcomeLabelFallsBackToRawValue(): void
+    {
+        $viewModel = $this->makeViewModel();
+
+        self::assertSame('unknown_trigger', $viewModel->getTriggerOutcomeLabel('unknown_trigger'));
+    }
+
+    public function testGetTriggerStatsReturnsRowForEveryFixedTrigger(): void
+    {
+        $triggerOutcomeLogger = $this->createStub(TriggerOutcomeLogger::class);
+        $triggerOutcomeLogger->method('getStats')->willReturn([
+            TriggerOutcomeLogger::TRIGGER_WIN_BACK => ['sent' => 4, 'responded' => 1, 'response_rate' => 25.0],
+        ]);
+
+        $viewModel = $this->makeViewModel(null, null, null, null, $triggerOutcomeLogger);
+
+        $stats = $viewModel->getTriggerStats();
+
+        self::assertCount(5, $stats);
+        self::assertSame(
+            ['label' => 'Win-Back', 'sent' => 4, 'responded' => 1, 'response_rate' => 25.0],
+            $stats[TriggerOutcomeLogger::TRIGGER_WIN_BACK]
+        );
+        self::assertSame(
+            ['label' => 'Reorder Reminder', 'sent' => 0, 'responded' => 0, 'response_rate' => 0.0],
+            $stats[TriggerOutcomeLogger::TRIGGER_REORDER_REMINDER]
         );
     }
 }

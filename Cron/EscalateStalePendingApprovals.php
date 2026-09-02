@@ -13,6 +13,7 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\OrderApproval;
 use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
 use Ordo\Automation\Model\ResourceModel\OrderApproval\CollectionFactory as OrderApprovalCollectionFactory;
+use Ordo\Automation\Model\TriggerOutcomeLogger;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -34,6 +35,7 @@ class EscalateStalePendingApprovals
         private readonly TransportBuilder $transportBuilder,
         private readonly StoreManagerInterface $storeManager,
         private readonly StateInterface $inlineTranslation,
+        private readonly TriggerOutcomeLogger $triggerOutcomeLogger,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -70,6 +72,12 @@ class EscalateStalePendingApprovals
                 $this->sendEscalationEmail($approval, $order);
                 $approval->setData('reminders_sent', $approval->getRemindersSent() + 1);
                 $this->orderApprovalResource->save($approval);
+                if ($order->getCustomerId()) {
+                    $this->triggerOutcomeLogger->logSent(
+                        TriggerOutcomeLogger::TRIGGER_ORDER_APPROVAL,
+                        (int) $order->getCustomerId()
+                    );
+                }
                 $sent++;
             } catch (\Throwable $e) {
                 $this->logger->error(

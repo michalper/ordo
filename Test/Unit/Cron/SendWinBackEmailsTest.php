@@ -17,6 +17,7 @@ use Ordo\Automation\Cron\SendWinBackEmails;
 use Ordo\Automation\Cron\TagInactiveCustomers;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CustomerTagManager;
+use Ordo\Automation\Model\TriggerOutcomeLogger;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -109,6 +110,7 @@ class SendWinBackEmailsTest extends TestCase
             $transportBuilder,
             $this->createStub(StoreManagerInterface::class),
             $this->createStub(StateInterface::class),
+            $this->createStub(TriggerOutcomeLogger::class),
             $logger
         ))->execute();
     }
@@ -137,6 +139,7 @@ class SendWinBackEmailsTest extends TestCase
             $this->createStub(TransportBuilder::class),
             $this->createStub(StoreManagerInterface::class),
             $this->createStub(StateInterface::class),
+            $this->createStub(TriggerOutcomeLogger::class),
             $logger
         ))->execute();
     }
@@ -171,6 +174,7 @@ class SendWinBackEmailsTest extends TestCase
             $transportBuilder,
             $storeManager,
             $this->createStub(StateInterface::class),
+            $this->createStub(TriggerOutcomeLogger::class),
             $this->createStub(LoggerInterface::class)
         );
     }

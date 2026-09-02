@@ -372,6 +372,26 @@
         </constraint>
     </table>
 
+    <table name="ordo_trigger_outcome_log" resource="default" engine="innodb" comment="Sent/response stats for the 5 cron-driven triggers (reorder reminder, offer expiry, credit limit alert, order approval, win-back) — additive to each trigger's own narrow dedup log table, purely for dashboard observability">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="trigger_type" nullable="false" length="32" comment="reorder_reminder|offer_expiry|credit_limit_alert|order_approval|win_back"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
+        <column xsi:type="datetime" name="sent_at" nullable="false" comment="When the trigger email was sent"/>
+        <column xsi:type="datetime" name="acted_at" nullable="true" comment="Set once the customer places an order after being sent this trigger — null until/unless they respond"/>
+        <column xsi:type="int" name="order_id" padding="10" unsigned="true" nullable="true" comment="sales_order.entity_id — the order that constitutes the response, set together with acted_at"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="ORDO_TRIGGER_OUTCOME_LOG_TRIGGER_TYPE_CUSTOMER_ID" indexType="btree">
+            <column name="trigger_type"/>
+            <column name="customer_id"/>
+        </index>
+        <index referenceId="ORDO_TRIGGER_OUTCOME_LOG_CUSTOMER_ID_ACTED_AT" indexType="btree">
+            <column name="customer_id"/>
+            <column name="acted_at"/>
+        </index>
+    </table>
+
     <table name="ordo_quote_gift_item" resource="default" engine="innodb" comment="Marks a quote_item as a customer-selected free gift, so it can be identified/removed without guessing from price alone">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="quote_id" padding="10" unsigned="true" nullable="false" comment="quote.entity_id"/>

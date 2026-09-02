@@ -14,6 +14,7 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ReorderCycle;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory as ReorderCycleCollectionFactory;
 use Ordo\Automation\Model\SalesRepEmailContext;
+use Ordo\Automation\Model\TriggerOutcomeLogger;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -36,6 +37,7 @@ class SendReorderReminders
         private readonly StoreManagerInterface $storeManager,
         private readonly StateInterface $inlineTranslation,
         private readonly SalesRepEmailContext $salesRepEmailContext,
+        private readonly TriggerOutcomeLogger $triggerOutcomeLogger,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -77,6 +79,7 @@ class SendReorderReminders
             try {
                 $this->sendReminder($cycle, $customerMap[$customerId]);
                 $this->logReminderSent((int) $cycle->getEntityId());
+                $this->triggerOutcomeLogger->logSent(TriggerOutcomeLogger::TRIGGER_REORDER_REMINDER, $customerId);
                 $sent++;
             } catch (\Throwable $e) {
                 $this->logger->error(

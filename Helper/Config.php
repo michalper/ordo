@@ -25,6 +25,7 @@ class Config
     private const XML_PATH_CREDIT_ENABLED = 'ordo_automation/credit_limit/enabled';
     private const XML_PATH_CREDIT_WARNING_THRESHOLD = 'ordo_automation/credit_limit/warning_threshold_percent';
     private const XML_PATH_CREDIT_COOLDOWN_DAYS = 'ordo_automation/credit_limit/cooldown_days';
+    private const XML_PATH_CREDIT_BLOCK_CHECKOUT_ENABLED = 'ordo_automation/credit_limit/block_checkout_enabled';
 
     private const XML_PATH_LIFECYCLE_ENABLED = 'ordo_automation/lifecycle/enabled';
     private const XML_PATH_LIFECYCLE_WIN_BACK_INACTIVE_DAYS = 'ordo_automation/lifecycle/win_back_inactive_days';
@@ -153,6 +154,15 @@ class Config
     public function getCreditLimitAlertCooldownDays(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_CREDIT_COOLDOWN_DAYS, 7, $storeId);
+    }
+
+    public function isCreditLimitCheckoutBlockEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_CREDIT_BLOCK_CHECKOUT_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
     }
 
     public function isLifecycleEmailsEnabled(?int $storeId = null): bool

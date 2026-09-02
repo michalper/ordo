@@ -12,6 +12,7 @@ use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CustomerTagManager;
+use Ordo\Automation\Model\TriggerOutcomeLogger;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -33,6 +34,7 @@ class SendWinBackEmails
         private readonly TransportBuilder $transportBuilder,
         private readonly StoreManagerInterface $storeManager,
         private readonly StateInterface $inlineTranslation,
+        private readonly TriggerOutcomeLogger $triggerOutcomeLogger,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -59,6 +61,7 @@ class SendWinBackEmails
             try {
                 $this->sendEmail($customerMap[$customerId]);
                 $this->customerTagManager->addTag($customerId, self::TAG_WIN_BACK_SENT);
+                $this->triggerOutcomeLogger->logSent(TriggerOutcomeLogger::TRIGGER_WIN_BACK, $customerId);
                 $sent++;
             } catch (\Throwable $e) {
                 $this->logger->error(sprintf(

@@ -33,6 +33,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isTrackingEnabled());
         self::assertTrue($this->config->isPopupEnabled());
         self::assertTrue($this->config->isFreeGiftEnabled());
+        self::assertTrue($this->config->isCreditLimitCheckoutBlockEnabled());
     }
 
     public function testIntGettersUseDefaultWhenUnset(): void

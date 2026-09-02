@@ -49,6 +49,32 @@ $segmentNavDesc = __(
         </div>
     </div>
 
+    <div class="ordo-dashboard-triggers">
+        <div class="ordo-section-head">
+            <h2><?= $escaper->escapeHtml(__('Trigger performance')) ?></h2>
+        </div>
+        <table class="ordo-trigger-outcome-table">
+            <thead>
+                <tr>
+                    <th><?= $escaper->escapeHtml(__('Trigger')) ?></th>
+                    <th><?= $escaper->escapeHtml(__('Sent')) ?></th>
+                    <th><?= $escaper->escapeHtml(__('Responded')) ?></th>
+                    <th><?= $escaper->escapeHtml(__('Response rate')) ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($viewModel->getTriggerStats() as $triggerStat): ?>
+                    <tr>
+                        <td><?= $escaper->escapeHtml($triggerStat['label']) ?></td>
+                        <td><?= $escaper->escapeHtml((string) $triggerStat['sent']) ?></td>
+                        <td><?= $escaper->escapeHtml((string) $triggerStat['responded']) ?></td>
+                        <td><?= $escaper->escapeHtml(sprintf('%.1f%%', $triggerStat['response_rate'])) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+
     <div class="ordo-dashboard-nav">
         <a class="ordo-nav-card" href="<?= $escaper->escapeUrl($block->getUrl('ordo/campaign/index')) ?>">
             <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('Campaigns')) ?></span>

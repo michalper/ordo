@@ -90,6 +90,11 @@
                     <validate>validate-digits validate-greater-than-zero</validate>
                     <depends><field id="enabled">1</field></depends>
                 </field>
+                <field id="block_checkout_enabled" translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Block Checkout When Over Credit Limit</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Hard-blocks order placement for a logged-in customer whose credit limit utilization has reached 100%. Disabled by default — separate opt-in from the warning email above.</comment>
+                </field>
             </group>
 
             <group id="lifecycle" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">

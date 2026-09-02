@@ -151,6 +151,16 @@
         whatever other calculators are already registered.
         See Model\Rule\Action\Discount\CheapestItemFree for the known admin-UI limitation.
     -->
+    <!--
+        Hard-blocks checkout at the actual submit path (CartManagementInterface::placeOrder,
+        the interface QuoteManagement implements) rather than reacting after the order is
+        already persisted — see Plugin\Quote\BlockOverLimitCheckout for why this needed to be
+        a before-plugin on the interface instead of an observer like HoldOrderForApproval.
+    -->
+    <type name="Magento\Quote\Api\CartManagementInterface">
+        <plugin name="ordo_automation_block_over_limit_checkout" type="Ordo\Automation\Plugin\Quote\BlockOverLimitCheckout" sortOrder="10"/>
+    </type>
+
     <type name="Magento\SalesRule\Model\Rule\Action\Discount\CalculatorFactory">
         <arguments>
             <argument name="discountRules" xsi:type="array">

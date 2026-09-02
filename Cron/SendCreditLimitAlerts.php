@@ -14,6 +14,7 @@ use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CreditLimitCalculator;
 use Ordo\Automation\Model\SalesRepEmailContext;
+use Ordo\Automation\Model\TriggerOutcomeLogger;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -38,6 +39,7 @@ class SendCreditLimitAlerts
         private readonly StoreManagerInterface $storeManager,
         private readonly StateInterface $inlineTranslation,
         private readonly SalesRepEmailContext $salesRepEmailContext,
+        private readonly TriggerOutcomeLogger $triggerOutcomeLogger,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -73,6 +75,7 @@ class SendCreditLimitAlerts
             try {
                 $this->sendAlert($customerMap[$customerId], $customerId, $utilization, $band);
                 $this->logAlert($customerId, $band, $utilization);
+                $this->triggerOutcomeLogger->logSent(TriggerOutcomeLogger::TRIGGER_CREDIT_LIMIT_ALERT, $customerId);
                 $sent++;
             } catch (\Throwable $e) {
                 $this->logger->error(sprintf(
