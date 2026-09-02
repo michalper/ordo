@@ -105,6 +105,27 @@ class SendReorderRemindersTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteLogsZeroSentWhenNoCyclesAreDueToday(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isReorderReminderEnabled')->willReturn(true);
+        $config->method('getReorderLeadDays')->willReturn(2);
+
+        $collection = $this->createStub(Collection::class);
+        $collection->method('addDueTodayFilter');
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
+
+        $collectionFactory = $this->createMock(CollectionFactory::class);
+        $collectionFactory->method('create')->willReturn($collection);
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('info')->with(self::stringContains('0 reorder reminders'));
+
+        $this->makeCron($config, $collectionFactory, $this->createStub(ResourceConnection::class), $logger)
+            ->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsCycleAlreadyRemindedToday(): void
     {
         $config = $this->createStub(Config::class);

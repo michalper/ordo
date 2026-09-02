@@ -67,6 +67,21 @@ class SendCreditLimitAlertsTest extends TestCase
         $this->makeCron($config, $calculator, $this->createStub(ResourceConnection::class))->execute();
     }
 
+    public function testExecuteLogsZeroSentWhenNoCustomersHaveACreditLimit(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isCreditLimitAlertEnabled')->willReturn(true);
+        $config->method('getCreditLimitWarningThreshold')->willReturn(80);
+
+        $calculator = $this->createStub(CreditLimitCalculator::class);
+        $calculator->method('getCustomerIdsWithCreditLimit')->willReturn([]);
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('info')->with(self::stringContains('0 credit limit alerts'));
+
+        $this->makeCron($config, $calculator, $this->createStub(ResourceConnection::class), $logger)->execute();
+    }
+
     public function testExecuteSkipsCustomerBelowThreshold(): void
     {
         $config = $this->createStub(Config::class);

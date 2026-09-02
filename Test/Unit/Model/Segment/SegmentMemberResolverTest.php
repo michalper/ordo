@@ -281,4 +281,78 @@ class SegmentMemberResolverTest extends TestCase
 
         self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testShortCircuitsWhenIntersectionBecomesEmptyMidLoop(): void
+    {
+        // Unlike testShortCircuitsOnFirstEmptyConditionWithoutResolvingTheRest, both conditions
+        // here resolve to non-empty sets individually — it's their intersection (no overlap)
+        // that's empty, a distinct code path from a single condition resolving to [] outright.
+        $this->stubSegment(1, [
+            ['type' => 'tag', 'params' => ['tag' => 'vip']],
+            ['type' => 'score_at_least', 'params' => ['threshold' => '50']],
+            ['type' => 'this_type_does_not_exist', 'params' => []],
+        ]);
+        $this->primeFactory();
+
+        $this->customerTagManager->method('getCustomerIdsWithTag')->willReturn([1, 2]);
+        $this->customerScoreManager->method('getCustomerIdsWithScoreAtLeast')->willReturn([3, 4]);
+        $this->logger->expects(self::never())->method('error');
+
+        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testTagConditionFailsClosedOnMissingOrEmptyTag(): void
+    {
+        $this->stubSegment(1, [['type' => 'tag', 'params' => []]]);
+        $this->primeFactory();
+
+        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testScoreAtLeastFailsClosedOnNonNumericThreshold(): void
+    {
+        $this->stubSegment(1, [['type' => 'score_at_least', 'params' => ['threshold' => 'not-a-number']]]);
+        $this->primeFactory();
+
+        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRecencyDaysAtMostFailsClosedOnNonNumericDays(): void
+    {
+        $this->stubSegment(1, [['type' => 'recency_days_at_most', 'params' => ['days' => 'not-a-number']]]);
+        $this->primeFactory();
+
+        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testOrderFrequencyAtLeastFailsClosedOnNonNumericCount(): void
+    {
+        $this->stubSegment(1, [['type' => 'order_frequency_at_least', 'params' => ['count' => 'not-a-number']]]);
+        $this->primeFactory();
+
+        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testMonetaryTotalAtLeastFailsClosedOnNonNumericAmount(): void
+    {
+        $this->stubSegment(1, [['type' => 'monetary_total_at_least', 'params' => ['amount' => 'not-a-number']]]);
+        $this->primeFactory();
+
+        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testInSegmentFailsClosedOnNonNumericSegmentId(): void
+    {
+        $this->stubSegment(1, [['type' => 'in_segment', 'params' => ['segment_id' => 'not-a-number']]]);
+        $this->primeFactory();
+
+        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
+    }
 }

@@ -97,6 +97,28 @@ class SegmentBulkActionConsumerTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteLogsPerCustomerFailureForAnUnrecognizedActionType(): void
+    {
+        $this->serializer->method('unserialize')->willReturn([
+            'action_type' => 'delete_everything',
+            'params' => [],
+            'customer_ids' => [1],
+        ]);
+
+        $this->customerTagManager->expects(self::never())->method('addTag');
+        $this->customerScoreManager->expects(self::never())->method('addPoints');
+
+        $this->logger->expects(self::once())->method('error')->with(
+            self::stringContains('failed to apply bulk action "delete_everything" to customer #1')
+        );
+        $this->logger->expects(self::once())->method('info')->with(
+            'Ordo_Automation: applied bulk action "delete_everything" to 0/1 segment members.'
+        );
+
+        $this->makeConsumer()->execute('raw-message');
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsAndSkipsWhenActionTypeMissing(): void
     {
         $this->serializer->method('unserialize')->willReturn(['customer_ids' => [1]]);

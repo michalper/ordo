@@ -18,7 +18,8 @@ class CampaignDispatchConsumer
     public function __construct(
         private readonly CampaignDispatcher $campaignDispatcher,
         private readonly SerializerInterface $serializer,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly CampaignDispatchGuard $dispatchGuard
     ) {
     }
 
@@ -36,11 +37,11 @@ class CampaignDispatchConsumer
         // dispatch() call (e.g. add_tag) can itself trigger a new publish() back onto this same
         // topic/queue — flagging that window is what makes CampaignDispatchPublisher defer such
         // a publish instead of self-deadlocking on this message's own still-open queue lock.
-        CampaignDispatchPublisher::setConsuming(true);
+        $this->dispatchGuard->setConsuming(true);
         try {
             $this->campaignDispatcher->dispatch($triggerEvent, (array) ($decoded['context'] ?? []));
         } finally {
-            CampaignDispatchPublisher::setConsuming(false);
+            $this->dispatchGuard->setConsuming(false);
         }
     }
 }

@@ -68,6 +68,22 @@ class DashboardViewModelTest extends TestCase
         self::assertSame([$campaign], $viewModel->getCampaigns());
     }
 
+    public function testGetCampaignsReturnsEmptyArrayWithoutQueryingTriggerLabels(): void
+    {
+        $collection = $this->createStub(CampaignCollection::class);
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
+
+        $campaignCollectionFactory = $this->createStub(CampaignCollectionFactory::class);
+        $campaignCollectionFactory->method('create')->willReturn($collection);
+
+        $campaignTriggerCollectionFactory = $this->createMock(CampaignTriggerCollectionFactory::class);
+        $campaignTriggerCollectionFactory->expects(self::never())->method('create');
+
+        $viewModel = $this->makeViewModel($campaignCollectionFactory, null, null, $campaignTriggerCollectionFactory);
+
+        self::assertSame([], $viewModel->getCampaigns());
+    }
+
     public function testGetCampaignsLoadsTriggerLabelsForAllCampaignsInOneQuery(): void
     {
         $campaignOne = $this->createStub(Campaign::class);

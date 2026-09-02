@@ -21,8 +21,8 @@ use Magento\Framework\Serialize\SerializerInterface;
  * with no matching exception anywhere — consistent with the DB-queue driver self-deadlocking on
  * its own `queue`/`queue_message` locks when a second message is inserted onto the same queue a
  * still-open consumer transaction already holds a lock on. CampaignDispatchConsumer flags
- * $isConsuming around its dispatch() call; a publish() that happens while that flag is set
- * defers the actual insert to register_shutdown_function, i.e. after the consumer's own
+ * CampaignDispatchGuard around its dispatch() call; a publish() that happens while that flag is
+ * set defers the actual insert to register_shutdown_function, i.e. after the consumer's own
  * transaction has already committed and released its lock — a normal (non-reentrant) publish
  * from an HTTP request observer is completely unaffected and stays immediate.
  */
@@ -30,11 +30,10 @@ class CampaignDispatchPublisher
 {
     public const TOPIC = 'ordo.automation.campaign.dispatch';
 
-    private static bool $isConsuming = false;
-
     public function __construct(
         private readonly PublisherInterface $publisher,
-        private readonly SerializerInterface $serializer
+        private readonly SerializerInterface $serializer,
+        private readonly CampaignDispatchGuard $dispatchGuard
     ) {
     }
 
@@ -48,7 +47,8 @@ class CampaignDispatchPublisher
             'context' => $context,
         ]);
 
-        if (self::$isConsuming) {
+        if ($this->dispatchGuard->isConsuming()) {
+            // phpcs:ignore Magento2.Functions.DiscouragedFunction
             register_shutdown_function(function () use ($payload): void {
                 $this->publisher->publish(self::TOPIC, $payload);
             });
@@ -56,13 +56,5 @@ class CampaignDispatchPublisher
         }
 
         $this->publisher->publish(self::TOPIC, $payload);
-    }
-
-    /**
-     * CampaignDispatchConsumer wraps its dispatch() call with this — see the class docblock.
-     */
-    public static function setConsuming(bool $isConsuming): void
-    {
-        self::$isConsuming = $isConsuming;
     }
 }

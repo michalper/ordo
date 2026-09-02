@@ -55,6 +55,33 @@ class SendWinBackEmailsTest extends TestCase
         $this->makeCron($config, $tagManager)->execute();
     }
 
+    public function testExecuteLogsZeroSentWhenNoInactiveCustomers(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isLifecycleEmailsEnabled')->willReturn(true);
+
+        $tagManager = $this->createStub(CustomerTagManager::class);
+        $tagManager->method('getCustomerIdsWithTag')->willReturn([]);
+
+        [$customerRepository, $searchCriteriaBuilder] = $this->makeCustomerRepository([]);
+        $storeManager = $this->createStub(StoreManagerInterface::class);
+        $transportBuilder = $this->createStub(TransportBuilder::class);
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('info')->with(self::stringContains('0 win-back emails'));
+
+        (new SendWinBackEmails(
+            $config,
+            $tagManager,
+            $customerRepository,
+            $searchCriteriaBuilder,
+            $transportBuilder,
+            $storeManager,
+            $this->createStub(StateInterface::class),
+            $this->createStub(TriggerOutcomeLogger::class),
+            $logger
+        ))->execute();
+    }
+
     public function testExecuteSkipsCustomerAlreadySent(): void
     {
         $config = $this->createStub(Config::class);

@@ -71,6 +71,33 @@ class SendSalesRepDigestTest extends TestCase
         ))->execute();
     }
 
+    public function testExecuteLogsZeroSentWhenNoInactiveCustomers(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isSalesRepDigestEnabled')->willReturn(true);
+
+        $tagManager = $this->createStub(CustomerTagManager::class);
+        $tagManager->method('getCustomerIdsWithTag')->willReturn([]);
+
+        $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
+        $searchCriteriaBuilder = $this->createStub(SearchCriteriaBuilder::class);
+        $storeManager = $this->createStub(StoreManagerInterface::class);
+        $transportBuilder = $this->createStub(TransportBuilder::class);
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('info')->with(self::stringContains('0 sales rep digests'));
+
+        (new SendSalesRepDigest(
+            $config,
+            $tagManager,
+            $customerRepository,
+            $searchCriteriaBuilder,
+            $transportBuilder,
+            $storeManager,
+            $this->createStub(StateInterface::class),
+            $logger
+        ))->execute();
+    }
+
     public function testExecuteGroupsByRepAndSendsOneDigest(): void
     {
         $config = $this->createStub(Config::class);

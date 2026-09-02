@@ -109,6 +109,27 @@ class SendOfferExpiryRemindersTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteLogsZeroSentWhenNoOffersAreExpiring(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isOfferReminderEnabled')->willReturn(true);
+        $config->method('getOfferLeadDays')->willReturn(2);
+
+        $collection = $this->createStub(Collection::class);
+        $collection->method('addExpiringOnFilter');
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
+
+        $collectionFactory = $this->createMock(CollectionFactory::class);
+        $collectionFactory->method('create')->willReturn($collection);
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('info')->with(self::stringContains('0 offer expiry reminders'));
+
+        $this->makeCron($config, $collectionFactory, $this->createStub(ResourceConnection::class), $logger)
+            ->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsAlreadyRemindedOffer(): void
     {
         $config = $this->createStub(Config::class);
