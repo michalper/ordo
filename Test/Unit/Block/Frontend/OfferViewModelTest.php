@@ -68,6 +68,7 @@ class OfferViewModelTest extends TestCase
         self::assertSame([$offer], $this->makeViewModel()->getOffers());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testCanSelfExtendReturnsFalseWhenOfferNotSent(): void
     {
         $offer = $this->createStub(OfferInterface::class);
@@ -76,6 +77,7 @@ class OfferViewModelTest extends TestCase
         self::assertFalse($this->makeViewModel()->canSelfExtend($offer));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testCanSelfExtendDelegatesToOfferWhenSent(): void
     {
         $this->config->method('getOfferMaxSelfExtensions')->willReturn(3);
@@ -87,12 +89,14 @@ class OfferViewModelTest extends TestCase
         self::assertTrue($this->makeViewModel()->canSelfExtend($offer));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetMaxSelfExtensionsReturnsConfigValue(): void
     {
         $this->config->method('getOfferMaxSelfExtensions')->willReturn(3);
         self::assertSame(3, $this->makeViewModel()->getMaxSelfExtensions());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetSelfExtensionDaysReturnsConfigValue(): void
     {
         $this->config->method('getOfferSelfExtensionDays')->willReturn(7);

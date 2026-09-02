@@ -11,6 +11,7 @@ use Magento\Framework\View\Page\Config as PageConfig;
 use Magento\Framework\View\Page\Title;
 use Ordo\Automation\Controller\Offer\Index;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class IndexTest extends AbstractFrontendActionTestCase
 {
@@ -48,6 +49,7 @@ class IndexTest extends AbstractFrontendActionTestCase
         return new Index($context, $this->customerSession, $this->customerUrl);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteReturnsResultPageWithTitle(): void
     {
         $controller = $this->makeController();

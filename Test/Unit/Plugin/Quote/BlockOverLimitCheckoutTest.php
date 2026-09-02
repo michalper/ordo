@@ -10,6 +10,7 @@ use Magento\Quote\Model\Quote;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CreditLimitCalculator;
 use Ordo\Automation\Plugin\Quote\BlockOverLimitCheckout;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 class BlockOverLimitCheckoutTest extends TestCase
@@ -34,6 +35,7 @@ class BlockOverLimitCheckoutTest extends TestCase
         );
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDoesNotBlockWhenConfigDisabled(): void
     {
         $this->config->method('isCreditLimitCheckoutBlockEnabled')->willReturn(false);
