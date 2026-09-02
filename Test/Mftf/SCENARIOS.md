@@ -130,12 +130,18 @@ cases separately from the type-by-type ones.
 
 `Controller/Adminhtml/FreeGiftOffer/`, `Controller/Offer/`)
 
+`FreeGiftManagementInterface` (get eligibility / select gifts) has no storefront UI in this repo
+at all — it's a pure REST surface, presumably meant for a headless/PWA storefront to call — so
+the first four rows below are a `Test/Integration` suite (real DI, real DB, real quote) instead
+of MFTF: there is nothing for MFTF's browser to click through. `Controller/Offer/*` (self-extend,
+"My Offers") *is* a real storefront page and stays a genuine MFTF candidate.
+
 | Scenario                                                                                                                                                                            | Status                                                                                                                                                 |
 |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Create a free gift offer (tiers, product pool) via admin CRUD                                                                                                                       | ⬜                                                                                                                                                     |
-| Real cart crosses a tier's `min_subtotal` — gift slot becomes available on the storefront                                                                                           | ⬜                                                                                                                                                     |
-| Customer selects a free gift, it's added to cart at zero cost                                                                                                                       | ⬜                                                                                                                                                     |
-| Cart drops below the tier threshold — previously-added gift is removed                                                                                                              | ⬜                                                                                                                                                     |
+| Create a free gift offer (tiers, product pool) via admin CRUD                                                                                                                       | ✅ `FreeGiftManagementScenarioTest` (Test/Integration — no admin UI exercised, offer/tier/pool built via the repositories directly, see below)         |
+| Real cart crosses a tier's `min_subtotal` — gift slot becomes available on the storefront                                                                                           | ✅ `FreeGiftManagementScenarioTest`                                                                                                                     |
+| Customer selects a free gift, it's added to cart at zero cost                                                                                                                       | ✅ `FreeGiftManagementScenarioTest`                                                                                                                     |
+| Cart drops below the tier threshold — previously-added gift is removed                                                                                                              | ✅ `FreeGiftManagementScenarioTest` — caught and fixed a real bug: `Observer/TrimExcessFreeGifts.php` read `$quote->getSubtotal()`, which is stale at the moment `sales_quote_collect_totals_after` fires (dispatched from inside `Quote\TotalsCollector::collect()`, *before* `Quote::collectTotals()` applies the freshly computed totals back onto the quote) — the gift was never actually trimmed. Fixed to sum `getAllAddresses()`' own (fresh) subtotals instead, same as `TotalsCollector` itself does. |
 | Offer self-extension (`Controller/Offer/Extend.php`, `Offer::canSelfExtend()`)                                                                                                      | ⬜                                                                                                                                                     |
 | "My Offers" storefront customer-account page (`Controller/Offer/Index.php`) lists the logged-in customer's offers, self-extend action visible only when `canSelfExtend()` allows it | ⬜ — missed entirely in the first pass of this document; caught auditing `Controller/Offer/*.php` directly against the doc rather than trusting memory |
 | `Cron\SendOfferExpiryReminders` — reminder email before expiry                                                                                                                      | ⬜                                                                                                                                                     |
@@ -202,8 +208,10 @@ cases separately from the type-by-type ones.
 2. ~~`send_email` action + MailHog~~ (§1c) — done: `AdminCampaignSendEmailActionTest.xml` (`campaign` group).
    Reused the exact MailHog wiring `AdminApproveOrderViaEmailTest`/`MailHogHelper` already established (added a new
    `seeTextInLatestEmail` helper method); closes the last uncovered action type.
-3. **Free gift storefront flow** (§5) — the only *storefront cart* interaction pattern (adding a zero-cost item
-   conditionally) nothing else in this suite exercises yet.
+3. ~~Free gift eligibility/select/trim flow~~ (§5) — done: `FreeGiftManagementScenarioTest.php` (`Test/Integration`,
+   not MFTF — see §5's own note on why). Caught and fixed a real bug along the way:
+   `Observer/TrimExcessFreeGifts.php` read a stale `$quote->getSubtotal()`, so a dropped-below-threshold gift was
+   never actually being trimmed from the cart.
 4. **In-segment condition chained with a real campaign dispatch** (§1b + §2) — the one condition type that depends on
    another whole feature (segments) rather than a single DB column, so it's the best test of the two features'
    integration, not just each in isolation.

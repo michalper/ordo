@@ -46,7 +46,7 @@ class TrimExcessFreeGifts implements ObserverInterface
         }
 
         $earned = $this->config->isFreeGiftEnabled((int) $quote->getStoreId())
-            ? $this->earnedSlots((float) $quote->getSubtotal())
+            ? $this->earnedSlots($this->currentSubtotal($quote))
             : 0;
         $excess = $giftRows->getSize() - $earned;
         if ($excess <= 0) {
@@ -63,6 +63,26 @@ class TrimExcessFreeGifts implements ObserverInterface
             }
             $this->giftItemResource->delete($row);
         }
+    }
+
+    /**
+     * $quote->getSubtotal() is stale here: this observer fires from inside
+     * Quote\TotalsCollector::collect(), BEFORE Quote::collectTotals() applies the just-computed
+     * totals back onto the quote's own data (Quote::collectTotals() calls
+     * $this->addData($total->getData()) only after totalsCollector->collect($this) — which is
+     * what dispatches this very event — returns). Confirmed via a real integration-test run:
+     * reading $quote->getSubtotal() here still returned the PREVIOUS collectTotals() result, one
+     * cart mutation behind. Address\Total\Subtotal::collect() does set the fresh value on each
+     * address right away, though (Quote\TotalsCollector::collect() sums exactly this to build
+     * its own $total), so summing that instead is accurate at the moment this observer runs.
+     */
+    private function currentSubtotal(Quote $quote): float
+    {
+        $subtotal = 0.0;
+        foreach ($quote->getAllAddresses() as $address) {
+            $subtotal += (float) $address->getSubtotal();
+        }
+        return $subtotal;
     }
 
     private function earnedSlots(float $subtotal): int

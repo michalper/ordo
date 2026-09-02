@@ -73,10 +73,40 @@ class TrimExcessFreeGiftsTest extends TestCase
         // getSubtotal() is magic (__call via AbstractModel) on the real Quote class — PHPUnit 12
         // removed addMethods(), the only way to stub a magic method, with no replacement.
         // QuoteTestDouble gives it a real, declared, therefore-mockable-via-onlyMethods()
-        // implementation instead.
+        // implementation instead. getAllAddresses() is a real declared method already, no
+        // double needed for it.
         return $this->getMockBuilder(QuoteTestDouble::class)
-            ->onlyMethods(['getId', 'removeItem', 'getStoreId', 'getSubtotal'])
+            ->onlyMethods(['getId', 'removeItem', 'getStoreId', 'getSubtotal', 'getAllAddresses'])
             ->getMock();
+    }
+
+    /**
+     * getSubtotal() on Quote\Address is magic too, same reasoning as QuoteTestDouble — the
+     * observer under test sums getAllAddresses()'s own getSubtotal() (see its class doc for
+     * why, confirmed via a real integration-test run against Quote::collectTotals()'s actual
+     * dispatch order), not $quote->getSubtotal() directly.
+     */
+    private function addressWithSubtotal(float $subtotal): \Magento\Quote\Model\Quote\Address
+    {
+        $address = new class extends \Magento\Quote\Model\Quote\Address {
+            private float $testSubtotal = 0.0;
+
+            public function __construct()
+            {
+            }
+
+            public function setTestSubtotal(float $subtotal): void
+            {
+                $this->testSubtotal = $subtotal;
+            }
+
+            public function getSubtotal(): float
+            {
+                return $this->testSubtotal;
+            }
+        };
+        $address->setTestSubtotal($subtotal);
+        return $address;
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -110,7 +140,7 @@ class TrimExcessFreeGiftsTest extends TestCase
 
         $quote = $this->mockQuote();
         $quote->method('getId')->willReturn(42);
-        $quote->method('getSubtotal')->willReturn(100.0);
+        $quote->method('getAllAddresses')->willReturn([$this->addressWithSubtotal(100.0)]);
         $quote->expects(self::once())->method('removeItem')->with(11);
 
         $this->giftItemResource->expects(self::once())->method('delete')->with($row2);
@@ -170,7 +200,7 @@ class TrimExcessFreeGiftsTest extends TestCase
 
         $quote = $this->mockQuote();
         $quote->method('getId')->willReturn(42);
-        $quote->method('getSubtotal')->willReturn(1000.0);
+        $quote->method('getAllAddresses')->willReturn([$this->addressWithSubtotal(1000.0)]);
         $quote->expects(self::once())->method('removeItem')->with(10);
 
         $this->observer->execute($this->eventObserver($quote));
@@ -202,7 +232,7 @@ class TrimExcessFreeGiftsTest extends TestCase
 
         $quote = $this->mockQuote();
         $quote->method('getId')->willReturn(42);
-        $quote->method('getSubtotal')->willReturn(100.0);
+        $quote->method('getAllAddresses')->willReturn([$this->addressWithSubtotal(100.0)]);
         $quote->expects(self::never())->method('removeItem');
 
         $this->observer->execute($this->eventObserver($quote));
@@ -237,7 +267,7 @@ class TrimExcessFreeGiftsTest extends TestCase
 
         $quote = $this->mockQuote();
         $quote->method('getId')->willReturn(42);
-        $quote->method('getSubtotal')->willReturn(100.0);
+        $quote->method('getAllAddresses')->willReturn([$this->addressWithSubtotal(100.0)]);
         $quote->method('removeItem')->willThrowException(new \Exception('item already gone'));
 
         $this->giftItemResource->expects(self::once())->method('delete')->with($row);
@@ -265,7 +295,7 @@ class TrimExcessFreeGiftsTest extends TestCase
 
         $quote = $this->mockQuote();
         $quote->method('getId')->willReturn(42);
-        $quote->method('getSubtotal')->willReturn(100.0);
+        $quote->method('getAllAddresses')->willReturn([$this->addressWithSubtotal(100.0)]);
         $quote->expects(self::once())->method('removeItem')->with(10);
 
         $this->observer->execute($this->eventObserver($quote));
