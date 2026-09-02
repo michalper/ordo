@@ -9,11 +9,16 @@ scoped from real hands-on marketing automation experience.
 
 ## In progress
 
-- **MFTF CI pipeline (`.github/workflows/mftf.yml`)** — being debugged against a real, fresh GitHub Actions runner.
-  Real infra fixes landed this session (nginx + PHP-FPM replacing `php -S`, selenium-container-to-host reachability,
-  ACL/PHP-FPM worker/cache-warming dead ends ruled out with real evidence) but the root cause of the
-  redirect-to-dashboard failure across all 8 existing tests is still unconfirmed. `AdminApproveOrderViaEmailTest.xml`
-  (order-approval round trip via a real MailHog-caught email) is written and wired in, not yet confirmed green.
+- **MFTF CI pipeline (`.github/workflows/mftf.yml`)** — 8 of 9 tests confirmed green against a real, fresh GitHub
+  Actions runner. The redirect-to-dashboard root cause from earlier sessions is resolved (three real, previously
+  undocumented bugs — see AGENTS.md's "MFTF w prawdziwym CI" section: `admin/security/use_form_key` on by default,
+  two `ui_component` XSD violations 500ing instead of failing visibly, and PHP's ini parser truncating
+  `sendmail_path` at an embedded `=`). `AdminApproveOrderViaEmailTest.xml` is now confirmed green. Only
+  `AdminCampaignScenarioEndToEndTest.xml` still fails — not a form/save bug (a direct `ordo_campaign*` table dump
+  confirmed the campaign, trigger, condition, and action all persist exactly as configured) but the
+  `ordo.automation.campaign.dispatch` queue message never reaches status 3 (complete) in `queue_message_status`,
+  with no matching exception anywhere — actively being diagnosed with `-vvv` on the consumer command to surface
+  whatever's being swallowed.
 
 ## Test coverage
 
