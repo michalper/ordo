@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Model\Recommendation;
 
 use Magento\Framework\App\ResourceConnection;
+use Magento\Framework\Stdlib\DateTime\DateTime;
 
 /**
  * "Customers who bought X also bought Y" — classic co-purchase affinity, computed live via raw
@@ -31,8 +32,20 @@ class ProductRecommender
 {
     private const MAX_OTHER_CUSTOMERS = 500;
 
+    /** Best-sellers are store-wide (not customer-specific), so one cache serves every dispatch. */
+    private const BEST_SELLERS_CACHE_TTL_SECONDS = 60;
+
+    /** Cache enough ranked best-sellers that per-customer exclusions rarely exhaust the list. */
+    private const BEST_SELLERS_CACHE_SIZE = 200;
+
+    /** @var string[]|null */
+    private ?array $bestSellerCache = null;
+
+    private ?int $bestSellerCachedAt = null;
+
     public function __construct(
-        private readonly ResourceConnection $resourceConnection
+        private readonly ResourceConnection $resourceConnection,
+        private readonly DateTime $dateTime
     ) {
     }
 
@@ -107,6 +120,7 @@ class ProductRecommender
             ->where('oi.sku IN (?)', $ownSkus)
             ->distinct(true)
             ->columns('o.customer_id')
+            ->order('o.customer_id ASC')
             ->limit(self::MAX_OTHER_CUSTOMERS);
 
         $otherCustomerIds = array_map('intval', $connection->fetchCol($otherCustomersSelect));
@@ -143,6 +157,34 @@ class ProductRecommender
             return [];
         }
 
+        $excludeSet = array_flip($exclude);
+        $ranked = array_filter(
+            $this->rankedBestSellerSkus(),
+            static fn (string $sku): bool => !isset($excludeSet[$sku])
+        );
+
+        return array_slice(array_values($ranked), 0, $limit);
+    }
+
+    /**
+     * Store-wide best-sellers, independent of any single customer — cached in-instance for
+     * self::BEST_SELLERS_CACHE_TTL_SECONDS since the underlying query is an uncached, full
+     * `GROUP BY oi.sku`/`SUM(oi.qty_ordered)` scan over sales_order_item, and this is the common
+     * fallback path hit whenever co-purchase affinity alone doesn't fill $limit (mirrors
+     * RfmCalculator::percentileRanksCache).
+     *
+     * @return string[]
+     */
+    private function rankedBestSellerSkus(): array
+    {
+        $now = $this->dateTime->gmtTimestamp();
+        if ($this->bestSellerCache !== null
+            && $this->bestSellerCachedAt !== null
+            && $now - $this->bestSellerCachedAt < self::BEST_SELLERS_CACHE_TTL_SECONDS
+        ) {
+            return $this->bestSellerCache;
+        }
+
         $connection = $this->resourceConnection->getConnection();
         $orderTable = $this->resourceConnection->getTableName('sales_order');
         $orderItemTable = $this->resourceConnection->getTableName('sales_order_item');
@@ -157,12 +199,11 @@ class ProductRecommender
             ->where('o.state != ?', 'canceled')
             ->group('oi.sku')
             ->order('total_qty DESC')
-            ->limit($limit);
+            ->limit(self::BEST_SELLERS_CACHE_SIZE);
 
-        if ($exclude !== []) {
-            $select->where('oi.sku NOT IN (?)', $exclude);
-        }
+        $this->bestSellerCache = array_map('strval', $connection->fetchCol($select));
+        $this->bestSellerCachedAt = $now;
 
-        return array_map('strval', $connection->fetchCol($select));
+        return $this->bestSellerCache;
     }
 }
