@@ -14,10 +14,8 @@ set -e
 
 # Both phpcs.xml.dist and .php-cs-fixer.dist.php exclude Test/ entirely (same reasoning as
 # phpstan.neon's excludePaths — mocked/fixture-heavy test code isn't held to the same coding
-# standard as the code it tests). Passing Test/ paths to php-cs-fixer explicitly also errors
-# outright ("For multiple paths config parameter is required") once combined with a non-Test
-# path in the same invocation, on top of being pointless — filter them out up front instead of
-# discovering that mid-commit.
+# standard as the code it tests) — filter it out up front, it's pointless to run either tool
+# against it.
 staged_php=$(git diff --cached --name-only --diff-filter=ACM -- '*.php' | grep -Ev '(^|/)Test/' || true)
 
 if [ -z "$staged_php" ]; then
@@ -29,7 +27,10 @@ if [ -x vendor/bin/phpcbf ]; then
 fi
 
 if [ -x vendor/bin/php-cs-fixer ]; then
-    vendor/bin/php-cs-fixer fix --quiet $staged_php || true
+    # --config is required whenever MORE THAN ONE explicit path is passed (php-cs-fixer refuses
+    # to guess which config applies otherwise) — irrelevant with exactly one staged file, but a
+    # commit touching 2+ non-Test PHP files hits it every time without this flag.
+    vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --quiet $staged_php || true
 fi
 
 # Re-add only the files that were already staged — never sweep in unrelated working-tree changes.
