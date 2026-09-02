@@ -94,9 +94,6 @@
                         <item name="is_collection" xsi:type="boolean">true</item>
                     </item>
                 </argument>
-                <settings>
-                    <componentType>container</componentType>
-                </settings>
                 <field name="type" formElement="select" sortOrder="10">
                     <settings>
                         <dataType>text</dataType>

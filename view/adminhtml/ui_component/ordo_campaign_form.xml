@@ -61,10 +61,6 @@
             <settings>
                 <dataType>boolean</dataType>
                 <label translate="true">Enabled</label>
-                <valueMap>
-                    <map name="false" xsi:type="number">0</map>
-                    <map name="true" xsi:type="number">1</map>
-                </valueMap>
             </settings>
             <formElements>
                 <checkbox>
@@ -104,9 +100,6 @@
                         <item name="is_collection" xsi:type="boolean">true</item>
                     </item>
                 </argument>
-                <settings>
-                    <componentType>container</componentType>
-                </settings>
                 <field name="trigger_event" formElement="select" sortOrder="10">
                     <settings>
                         <dataType>text</dataType>
@@ -152,9 +145,6 @@
                         <item name="is_collection" xsi:type="boolean">true</item>
                     </item>
                 </argument>
-                <settings>
-                    <componentType>container</componentType>
-                </settings>
                 <field name="type" formElement="select" sortOrder="10">
                     <settings>
                         <dataType>text</dataType>
@@ -337,9 +327,6 @@
                         <item name="is_collection" xsi:type="boolean">true</item>
                     </item>
                 </argument>
-                <settings>
-                    <componentType>container</componentType>
-                </settings>
                 <field name="type" formElement="select" sortOrder="10">
                     <settings>
                         <dataType>text</dataType>
