@@ -32,9 +32,11 @@ scoped from real hands-on marketing automation experience.
 
 ## Tooling ideas, not yet actioned
 
-- **Split the MFTF pipeline into a matrix by functional area** (Campaign, Segment, Dashboard/ReorderCycle, Tracking)
-  using MFTF's own `<group>` tags. Was deliberately deferred until the single pipeline had one confirmed green
-  run — that's now happened, so this is unblocked and ready to pick up.
+- ~~Split the MFTF pipeline into a matrix by functional area~~ — done. `mftf.yml` runs
+  `strategy.matrix.group: [campaign, segment, dashboard, tracking]` (run 33660552045, all four green), each a full
+  Magento install + Selenium session, `fail-fast: false`. Every test carries a second, area-specific `<group>`
+  annotation alongside `ordo_automation` — a new MFTF scenario just needs the right one added to land in the
+  correct shard.
 - ~~Psalm and/or Infection (mutation testing)~~ — decided: skip Psalm (overlaps heavily with PHPStan `level: max` +
   `bitexpert/phpstan-magento`, not worth a second baseline to maintain for marginal extra signal). Infection added
   (`infection.json5`, `mutation-testing` job in `coverage.yml`) — non-blocking (`continue-on-error`, `minMsi`/
