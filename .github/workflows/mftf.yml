@@ -281,7 +281,11 @@ jobs:
           # switch Symfony into its own interactive SMTP-stream mode, which mhsendmail doesn't
           # speak — mhsendmail only supports being invoked as a plain sendmail command over stdin, so
           # "-t" (accepted by mhsendmail as a no-op flag) is the one that actually works.
-          echo "sendmail_path = /usr/local/bin/mhsendmail --smtp-addr=127.0.0.1:1025 -t" | \
+          # The value MUST be quoted — confirmed via a real CI run that PHP's ini parser
+          # truncates an unquoted value at the embedded "=" inside --smtp-addr=..., silently
+          # dropping everything from "=127.0.0.1:1025" onward (including the "-t" above),
+          # which is exactly what left the very first fix still failing the same way.
+          echo 'sendmail_path = "/usr/local/bin/mhsendmail --smtp-addr=127.0.0.1:1025 -t"' | \
             sudo tee /etc/php/8.3/fpm/conf.d/99-mhsendmail.ini > /dev/null
 
           sudo nginx -t
