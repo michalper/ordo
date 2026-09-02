@@ -139,6 +139,17 @@ jobs:
           bin/magento setup:static-content:deploy -f en_US -a frontend
           bin/magento cache:flush
 
+      - name: Build the MFTF project
+        working-directory: magento
+        # `mftf build:project` is what actually scaffolds dev/tests/acceptance/ (utils/router.php,
+        # utils/command.php, .env, etc.) from magento/magento2-functional-testing-framework's
+        # templates — none of those files exist in the magento/magento2 checkout itself. Must run
+        # before anything below that references them (the CLI-bridge symlink, the PHP built-in
+        # server's router script, or .env) — an earlier version of this workflow ran build:project
+        # only right before generate:tests, which is too late and failed with "Failed opening
+        # required '.../router.php'" the first time this workflow was actually run.
+        run: vendor/bin/mftf build:project
+
       - name: Wire the MFTF CLI bridge and .env
         working-directory: magento
         run: |
@@ -182,9 +193,7 @@ jobs:
         working-directory: magento
         env:
           MFTF_TESTS: ${{ inputs.tests }}
-        run: |
-          vendor/bin/mftf build:project
-          vendor/bin/mftf generate:tests $MFTF_TESTS
+        run: vendor/bin/mftf generate:tests $MFTF_TESTS
 
       - name: Run MFTF tests
         working-directory: magento
