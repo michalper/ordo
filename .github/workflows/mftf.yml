@@ -166,6 +166,14 @@ jobs:
           # AdminApproveOrderViaEmailTest needs order-hold-for-approval actually active.
           bin/magento config:set ordo_automation/order_approval/enabled 1
 
+          # Every admin test that navigates straight to a URL (amOnPage) rather than
+          # clicking a rendered link was silently redirected to the Dashboard — confirmed
+          # via curl repro: the Location header carried a /key/<hash>/ segment, proof that
+          # "Add Secret Key to URLs" (on by default, see module-store's config.xml) was
+          # rejecting the keyless direct navigation and bouncing to getStartupPageUrl()
+          # with no error message. ACL was already proven fine (see the dump below).
+          bin/magento config:set admin/security/use_form_key 0
+
           # Newly-created MFTF test fixtures (products, etc.) aren't salable/addable to cart
           # until stock/price indexes recompute — set once globally instead of forcing a
           # reindex in every test. Deliberately excludes catalogsearch_fulltext: no test here
