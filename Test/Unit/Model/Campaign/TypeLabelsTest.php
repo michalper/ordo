@@ -52,4 +52,9 @@ class TypeLabelsTest extends TestCase
     {
         self::assertSame('In Segment', (new TypeLabels())->conditionLabel('in_segment'));
     }
+
+    public function testActionLabelUsesAddProductRecommendationsMapping(): void
+    {
+        self::assertSame('Add Product Recommendations', (new TypeLabels())->actionLabel('add_product_recommendations'));
+    }
 }

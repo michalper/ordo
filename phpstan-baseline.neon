@@ -381,6 +381,12 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
+			count: 2
+			path: Model/Campaign/Action/AddProductRecommendations.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
 			count: 1
 			path: Model/Campaign/Action/AddTag.php
 
@@ -407,6 +413,18 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Model/Campaign/Action/SendEmail.php
+
+		-
+			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''strval'' given\.$#'
+			identifier: argument.type
+			count: 3
+			path: Model/Recommendation/ProductRecommender.php
+
+		-
+			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''intval'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Recommendation/ProductRecommender.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'

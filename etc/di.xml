@@ -159,6 +159,7 @@
                 <item name="generate_coupon" xsi:type="object">Ordo\Automation\Model\Campaign\Action\GenerateCoupon</item>
                 <item name="popup" xsi:type="object">Ordo\Automation\Model\Campaign\Action\ShowPopup</item>
                 <item name="add_points" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddPoints</item>
+                <item name="add_product_recommendations" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddProductRecommendations</item>
             </argument>
         </arguments>
     </type>

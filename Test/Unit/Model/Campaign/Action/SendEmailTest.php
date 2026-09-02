@@ -75,6 +75,41 @@ class SendEmailTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testRecommendedProductsHtmlSurvivesIntoTemplateVars(): void
+    {
+        // recommended_products_html is a rendered HTML *string*, which is_scalar() considers
+        // scalar — so it must pass through SendEmail's array_filter(..., is_scalar(...)) call
+        // untouched, without any code change to SendEmail itself. This is a regression test for
+        // that integration point.
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getFirstname')->willReturn('Jan');
+        $customer->method('getEmail')->willReturn('jan@example.com');
+        $this->customerRepository->method('getById')->willReturn($customer);
+
+        $this->transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
+        $this->transportBuilder->method('setTemplateOptions')->willReturnSelf();
+        $this->transportBuilder->method('setFromByScope')->willReturnSelf();
+        $this->transportBuilder->method('addTo')->willReturnSelf();
+
+        $capturedVars = null;
+        $this->transportBuilder->method('setTemplateVars')->willReturnCallback(
+            function (array $vars) use (&$capturedVars) {
+                $capturedVars = $vars;
+                return $this->transportBuilder;
+            }
+        );
+
+        $transport = $this->createStub(TransportInterface::class);
+        $this->transportBuilder->method('getTransport')->willReturn($transport);
+
+        $context = ['customer_id' => 42, 'recommended_products_html' => '<table>...</table>'];
+        $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
+
+        self::assertIsArray($capturedVars);
+        self::assertSame('<table>...</table>', $capturedVars['recommended_products_html']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsErrorWhenCustomerIdMissing(): void
     {
         $this->customerRepository->expects(self::never())->method('getById');

@@ -34,6 +34,7 @@ class TypeLabels
         'generate_coupon' => 'Generate Coupon',
         'popup' => 'Show Popup',
         'add_points' => 'Add Points',
+        'add_product_recommendations' => 'Add Product Recommendations',
     ];
 
     public function conditionLabel(string $type): string
