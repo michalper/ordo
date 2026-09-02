@@ -76,6 +76,18 @@ class CampaignDispatcher
     {
         $campaignIds = $this->campaignIdsForTrigger($triggerEvent);
 
+        // TEMPORARY diagnostic logging — AdminCampaignScenarioEndToEndTest's coupon never
+        // appears and the message ends at queue_message_status 4 with zero matching entries in
+        // exception.log/system.log/debug.log, even from the per-campaign/shared-load catch
+        // blocks below that DO normally log via $this->logger->error(). This traces how far
+        // dispatch() actually gets so the next real CI run's logs answer that directly instead
+        // of guessing further. Remove once the actual failure point is confirmed.
+        $this->logger->info(sprintf(
+            'ORDO_DEBUG dispatch start: trigger="%s" matchedCampaignIds=%s',
+            $triggerEvent,
+            implode(',', $campaignIds)
+        ));
+
         if (!$campaignIds) {
             return;
         }
@@ -103,11 +115,22 @@ class CampaignDispatcher
 
         foreach ($campaignIds as $campaignId) {
             try {
-                if (!$this->allConditionsSatisfied($conditionsByCampaign[$campaignId] ?? [], $context)) {
+                $satisfied = $this->allConditionsSatisfied($conditionsByCampaign[$campaignId] ?? [], $context);
+                // TEMPORARY diagnostic logging — see the one at the top of dispatch().
+                $this->logger->info(sprintf(
+                    'ORDO_DEBUG campaign #%d: conditionsSatisfied=%s actionCount=%d',
+                    $campaignId,
+                    $satisfied ? 'yes' : 'no',
+                    count($actionsByCampaign[$campaignId] ?? [])
+                ));
+
+                if (!$satisfied) {
                     continue;
                 }
 
                 $this->runActionsFrom($campaignId, $actionsByCampaign[$campaignId] ?? [], 0, $context);
+                // TEMPORARY diagnostic logging — see the one at the top of dispatch().
+                $this->logger->info(sprintf('ORDO_DEBUG campaign #%d: runActionsFrom returned normally', $campaignId));
             } catch (\Throwable $e) {
                 $this->logger->error(sprintf(
                     'Ordo_Automation: campaign #%d failed for trigger "%s": %s',
@@ -117,6 +140,8 @@ class CampaignDispatcher
                 ));
             }
         }
+        // TEMPORARY diagnostic logging — see the one at the top of dispatch().
+        $this->logger->info(sprintf('ORDO_DEBUG dispatch end: trigger="%s"', $triggerEvent));
     }
 
     /**
@@ -272,7 +297,17 @@ class CampaignDispatcher
             return;
         }
 
+        // TEMPORARY diagnostic logging — see the one at the top of dispatch().
+        $this->logger->info(sprintf(
+            'ORDO_DEBUG running action type="%s" campaignId=%d actionId=%s',
+            (string) $actionRow->getData('type'),
+            $actionRow->getCampaignId(),
+            (string) $actionRow->getEntityId()
+        ));
         $action->execute($context, $actionRow->getParams());
+        $this->logger->info(
+            sprintf('ORDO_DEBUG action type="%s" returned normally', (string) $actionRow->getData('type'))
+        );
     }
 
     /**

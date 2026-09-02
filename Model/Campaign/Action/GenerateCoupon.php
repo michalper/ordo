@@ -31,6 +31,13 @@ class GenerateCoupon implements ActionInterface
 
         try {
             $context['coupon_code'] = $this->couponGenerator->generate($ruleId, $prefix);
+            // TEMPORARY diagnostic logging — see CampaignDispatcher::dispatch()'s ORDO_DEBUG
+            // lines for why.
+            $this->logger->info(sprintf(
+                'ORDO_DEBUG generate_coupon succeeded: ruleId=%d code=%s',
+                $ruleId,
+                $context['coupon_code']
+            ));
         } catch (\Throwable $e) {
             $this->logger->error(sprintf(
                 'Ordo_Automation: failed to generate coupon for rule #%d: %s',

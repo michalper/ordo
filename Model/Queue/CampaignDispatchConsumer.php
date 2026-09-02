@@ -37,11 +37,15 @@ class CampaignDispatchConsumer
         // dispatch() call (e.g. add_tag) can itself trigger a new publish() back onto this same
         // topic/queue — flagging that window is what makes CampaignDispatchPublisher defer such
         // a publish instead of self-deadlocking on this message's own still-open queue lock.
+        // TEMPORARY diagnostic logging (see CampaignDispatcher::dispatch()'s ORDO_DEBUG lines) —
+        // confirms the consumer callback itself is entered/exited normally by MySQL MQ.
+        $this->logger->info(sprintf('ORDO_DEBUG consumer execute() entered, trigger="%s"', $triggerEvent));
         $this->dispatchGuard->setConsuming(true);
         try {
             $this->campaignDispatcher->dispatch($triggerEvent, (array) ($decoded['context'] ?? []));
         } finally {
             $this->dispatchGuard->setConsuming(false);
         }
+        $this->logger->info('ORDO_DEBUG consumer execute() returning normally');
     }
 }
