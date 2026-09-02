@@ -375,7 +375,9 @@ selection flow. See `Test/Mftf/README.md`.
 **API functional tests — full suite written and run for real** against a live instance: Campaigns (full CRUD), Campaign
 conditions/actions (full CRUD), Offers (full CRUD + customer self-extend), ReorderCycle (read), CustomerTagManagement
 (full round trip), OrderApproval (admin read + anonymous approve/reject-by-token), Free gift (full CRUD +
-eligibility/selection, live-verified), Credit limit (admin by-id lookup, 404 for a nonexistent customer, 401 for both
+eligibility/selection — was manually live-verified only, now also an automated `FreeGiftApiTest.php`, closing the one
+real gap this suite had; see `Test/Api/README.md` for a documented, still-open local-sandbox-only flakiness), Credit
+limit (admin by-id lookup, 404 for a nonexistent customer, 401 for both
 routes unauthenticated and for a customer token on the admin-only route, and the customer-scoped `mine` endpoint
 matching the admin lookup figure-for-figure). See `API.md` for the endpoint reference and `Test/Api/README.md` for what
 running them found — four real, pre-existing WebAPI defects (missing docblocks, wrong SearchResults typing) plus one

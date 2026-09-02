@@ -36,6 +36,25 @@ response, no mocks) using a portable, self-contained HTTP client instead, so the
   nonexistent customer, 403 for a customer token hitting the admin-only by-id route, 401 for
   both routes unauthenticated, and the customer-scoped `mine` endpoint returning the exact same
   figures as the admin lookup for the same customer.
+- **`FreeGiftApiTest.php`** — the one gap this directory had despite README/ROADMAP claiming the
+  free-gift feature was "live-verified" (it was, manually, never as an automated test): offer/
+  tier/product CRUD with cascade-delete confirmed at the DB level, and the customer-facing
+  eligibility/selection round trip on a real cart (`getEligibility`/`selectGifts`) — earned
+  slots crossing a tier threshold, selecting a gift consuming a slot, and a nonexistent/not-owned
+  cart returning a non-leaking 404. Requires `ORDO_API_TEST_PRODUCT_SKU` (a real, existing SKU —
+  `selectGifts()` calls `Quote::addProduct()` for real, no fixture loader available to this
+  portable client). Both test methods wrap their offer-creation in `try`/`finally` — an earlier
+  version without that guard left a failed run's offer permanently active, inflating
+  `earned_slots` for every later run against the same persistent `ORDO_API_CUSTOMER_EMAIL`
+  customer, found by actually running this against a real instance more than once, not assumed.
+  **A known, still-open flakiness, documented rather than hidden:** in this project's own local
+  `php -S`-based sandbox, `earned_slots` occasionally still reads back as 0 immediately after
+  adding a cart item, even after a retry loop — proven, via careful step-by-step manual `curl`
+  testing, to *not* be a defect in `FreeGiftManagement` itself (every manual sequence succeeds
+  reliably); it reproduces only under PHPUnit's rapid back-to-back requests. This is the same
+  category of `php -S`-under-concurrent-load fragility this project's MFTF pipeline hit
+  repeatedly before moving to nginx + PHP-FPM in CI (see `.github/workflows/mftf.yml`) — a real,
+  live-instance API test (not run against `php -S`) would not be expected to see this.
 
 **All of the above were actually run against a live Magento 2.4.7 instance while writing this
 pass** (Docker Compose stack: `ordo_test_php` + `ordo_test_db`, PHP built-in server on
@@ -81,6 +100,7 @@ ORDO_API_ADMIN_USERNAME=admin
 ORDO_API_ADMIN_PASSWORD=...
 ORDO_API_CUSTOMER_EMAIL=...
 ORDO_API_CUSTOMER_PASSWORD=...
+ORDO_API_TEST_PRODUCT_SKU=...          # FreeGiftApiTest only — a real, existing, purchasable SKU
 ```
 
 ```
