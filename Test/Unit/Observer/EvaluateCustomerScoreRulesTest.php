@@ -13,6 +13,7 @@ use Ordo\Automation\Model\ScoreRule\ScoreRuleEvaluator;
 use Ordo\Automation\Observer\EvaluateCustomerScoreRules;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class EvaluateCustomerScoreRulesTest extends TestCase
 {
@@ -20,6 +21,7 @@ class EvaluateCustomerScoreRulesTest extends TestCase
     private ScoreRuleEvaluator $scoreRuleEvaluator;
     private CustomerScoreManager $customerScoreManager;
     private EventManagerInterface $eventManager;
+    private LoggerInterface $logger;
 
     protected function setUp(): void
     {
@@ -27,6 +29,7 @@ class EvaluateCustomerScoreRulesTest extends TestCase
         $this->scoreRuleEvaluator = $this->createStub(ScoreRuleEvaluator::class);
         $this->customerScoreManager = $this->createMock(CustomerScoreManager::class);
         $this->eventManager = $this->createMock(EventManagerInterface::class);
+        $this->logger = $this->createStub(LoggerInterface::class);
     }
 
     private function makeObserver(?CustomerInterface $customer): EventObserver
@@ -47,6 +50,17 @@ class EvaluateCustomerScoreRulesTest extends TestCase
         return $customer;
     }
 
+    private function makeObserverInstance(): EvaluateCustomerScoreRules
+    {
+        return new EvaluateCustomerScoreRules(
+            $this->config,
+            $this->scoreRuleEvaluator,
+            $this->customerScoreManager,
+            $this->eventManager,
+            $this->logger
+        );
+    }
+
     public function testExecuteDoesNothingWhenLeadScoringDisabled(): void
     {
         $this->config->method('isLeadScoringEnabled')->willReturn(false);
@@ -56,12 +70,7 @@ class EvaluateCustomerScoreRulesTest extends TestCase
 
         $observer = $this->makeObserver($this->makeCustomer(42));
 
-        (new EvaluateCustomerScoreRules(
-            $this->config,
-            $this->scoreRuleEvaluator,
-            $this->customerScoreManager,
-            $this->eventManager
-        ))->execute($observer);
+        $this->makeObserverInstance()->execute($observer);
     }
 
     public function testExecuteDoesNothingWhenDeltaIsZero(): void
@@ -75,12 +84,7 @@ class EvaluateCustomerScoreRulesTest extends TestCase
         $this->customerScoreManager->expects(self::never())->method('setDemographicScore');
         $this->eventManager->expects(self::never())->method('dispatch');
 
-        (new EvaluateCustomerScoreRules(
-            $this->config,
-            $this->scoreRuleEvaluator,
-            $this->customerScoreManager,
-            $this->eventManager
-        ))->execute($this->makeObserver($customer));
+        $this->makeObserverInstance()->execute($this->makeObserver($customer));
     }
 
     public function testExecuteAppliesNegativeDeltaWithoutCrossingThreshold(): void
@@ -96,12 +100,7 @@ class EvaluateCustomerScoreRulesTest extends TestCase
         $this->customerScoreManager->expects(self::once())->method('setDemographicScore')->with(42, 5);
         $this->eventManager->expects(self::never())->method('dispatch');
 
-        (new EvaluateCustomerScoreRules(
-            $this->config,
-            $this->scoreRuleEvaluator,
-            $this->customerScoreManager,
-            $this->eventManager
-        ))->execute($this->makeObserver($customer));
+        $this->makeObserverInstance()->execute($this->makeObserver($customer));
     }
 
     public function testExecuteDispatchesEventWhenThresholdGenuinelyCrossed(): void
@@ -120,12 +119,7 @@ class EvaluateCustomerScoreRulesTest extends TestCase
             ['customer_id' => 42]
         );
 
-        (new EvaluateCustomerScoreRules(
-            $this->config,
-            $this->scoreRuleEvaluator,
-            $this->customerScoreManager,
-            $this->eventManager
-        ))->execute($this->makeObserver($customer));
+        $this->makeObserverInstance()->execute($this->makeObserver($customer));
     }
 
     public function testExecuteDoesNotDispatchWhenAlreadyOverThreshold(): void
@@ -139,12 +133,7 @@ class EvaluateCustomerScoreRulesTest extends TestCase
 
         $this->eventManager->expects(self::never())->method('dispatch');
 
-        (new EvaluateCustomerScoreRules(
-            $this->config,
-            $this->scoreRuleEvaluator,
-            $this->customerScoreManager,
-            $this->eventManager
-        ))->execute($this->makeObserver($customer));
+        $this->makeObserverInstance()->execute($this->makeObserver($customer));
     }
 
     public function testExecuteDoesNotDispatchWhenStillUnderThreshold(): void
@@ -158,12 +147,7 @@ class EvaluateCustomerScoreRulesTest extends TestCase
 
         $this->eventManager->expects(self::never())->method('dispatch');
 
-        (new EvaluateCustomerScoreRules(
-            $this->config,
-            $this->scoreRuleEvaluator,
-            $this->customerScoreManager,
-            $this->eventManager
-        ))->execute($this->makeObserver($customer));
+        $this->makeObserverInstance()->execute($this->makeObserver($customer));
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -173,11 +157,31 @@ class EvaluateCustomerScoreRulesTest extends TestCase
 
         $this->customerScoreManager->expects(self::never())->method('addPoints');
 
-        (new EvaluateCustomerScoreRules(
-            $this->config,
-            $this->scoreRuleEvaluator,
-            $this->customerScoreManager,
-            $this->eventManager
-        ))->execute($this->makeObserver(null));
+        $this->makeObserverInstance()->execute($this->makeObserver(null));
+    }
+
+    /**
+     * The whole reason for the try/catch — this observer fires on every single customer save
+     * across the entire application (checkout, registration, admin edit, REST API), so a bug
+     * here (e.g. the event's "customer" not actually being a full CustomerInterface — see the
+     * class doc) must never be able to break customer save itself. Confirmed necessary via a
+     * real CI regression: enabling lead scoring made POST /V1/customers start returning 400 for
+     * every customer, with nothing logged anywhere, before this try/catch existed.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteCatchesAndLogsInsteadOfLettingCustomerSaveBreak(): void
+    {
+        $this->config->method('isLeadScoringEnabled')->willReturn(true);
+        $customer = $this->makeCustomer(42);
+        $this->scoreRuleEvaluator->method('getMatchingRulePoints')
+            ->willThrowException(new \Error('Call to undefined method on customer'));
+        $this->logger = $this->createMock(LoggerInterface::class);
+
+        $this->logger->expects(self::once())->method('error')->with(
+            self::stringContains('lead-scoring evaluation failed for customer #42')
+        );
+
+        // The real assertion: execute() itself must not throw.
+        $this->makeObserverInstance()->execute($this->makeObserver($customer));
     }
 }

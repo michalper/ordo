@@ -115,16 +115,16 @@ cases separately from the type-by-type ones.
 
 ## 4. Lead scoring (`Model/ScoreRule.php`, `Controller/Adminhtml/ScoreRule/`)
 
-| Scenario                                                                                                 | Status |
-|----------------------------------------------------------------------------------------------------------|--------|
+| Scenario                                                                                                 | Status                               |
+|----------------------------------------------------------------------------------------------------------|--------------------------------------|
 | Create a score rule (attribute code, operator, value, points) via admin CRUD                             | ✅ `AdminScoreThresholdCampaignTest` |
 | Operator: `equals`                                                                                       | ✅ `AdminScoreThresholdCampaignTest` |
-| Operator: `not_equals`                                                                                   | ⬜     |
-| Operator: `contains`                                                                                     | ⬜     |
+| Operator: `not_equals`                                                                                   | ⬜                                   |
+| Operator: `contains`                                                                                     | ⬜                                   |
 | Customer save triggers `Observer/EvaluateCustomerScoreRules.php`, delta applied to `ordo_customer_score` | ✅ `AdminScoreThresholdCampaignTest` |
 | Crossing the configured threshold fires `score_threshold_crossed` (chains §1a)                           | ✅ `AdminScoreThresholdCampaignTest` |
-| Score rule edited/disabled — no longer contributes on next customer save                                 | ⬜     |
-| Score rule deleted                                                                                       | ⬜     |
+| Score rule edited/disabled — no longer contributes on next customer save                                 | ⬜                                   |
+| Score rule deleted                                                                                       | ⬜                                   |
 
 ## 5. Free gift offers (`Model/FreeGiftOffer.php`, `Model/FreeGiftManagement.php`,
 

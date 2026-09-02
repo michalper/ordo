@@ -104,10 +104,14 @@
             </settings>
         </field>
         <field name="enabled" formElement="checkbox" sortOrder="60">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="default" xsi:type="number">1</item>
+                </item>
+            </argument>
             <settings>
                 <dataType>boolean</dataType>
                 <label translate="true">Enabled</label>
-                <default>1</default>
             </settings>
             <formElements>
                 <checkbox>
