@@ -31,6 +31,18 @@ class GenerateCoupon implements ActionInterface
 
         try {
             $context['coupon_code'] = $this->couponGenerator->generate($ruleId, $prefix);
+            // TEMPORARY diagnostic logging — AdminCampaignScenarioEndToEndTest's coupon still
+            // never appears in the grid even after switching the assertion to <waitForText> (a
+            // full 60s poll, not a one-shot check), and the workflow's own post-test DB dump is
+            // unreliable here: the test's own <after> block deletes the sales rule, which likely
+            // cascades its coupons before that dump ever runs, so an empty dump doesn't actually
+            // prove generation failed. A log line survives that cleanup untouched. Remove once
+            // confirmed either way.
+            $this->logger->info(sprintf(
+                'ORDO_DEBUG generate_coupon succeeded: ruleId=%d code=%s',
+                $ruleId,
+                $context['coupon_code']
+            ));
         } catch (\Throwable $e) {
             $this->logger->error(sprintf(
                 'Ordo_Automation: failed to generate coupon for rule #%d: %s',
