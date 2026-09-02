@@ -273,7 +273,15 @@ jobs:
           sudo curl -sfL -o /usr/local/bin/mhsendmail \
             https://github.com/mailhog/mhsendmail/releases/download/v0.2.0/mhsendmail_linux_amd64
           sudo chmod +x /usr/local/bin/mhsendmail
-          echo "sendmail_path = /usr/local/bin/mhsendmail --smtp-addr=127.0.0.1:1025" | \
+          # Symfony's SendmailTransport (Magento's Sendmail\Model\Transport::createSendmailTransport())
+          # rejects any sendmail_path whose flags don't contain a literal " -bs" or " -t" — confirmed
+          # via a real CI failure: "Unsupported sendmail command flags ... must be one of -bs or -t"
+          # on every single outgoing email (order-approval, coupon-generation notices, etc.), which in
+          # turn made AdminApproveOrderViaEmailTest fail with "MailHog has no messages". "-bs" would
+          # switch Symfony into its own interactive SMTP-stream mode, which mhsendmail doesn't
+          # speak — mhsendmail only supports being invoked as a plain sendmail command over stdin, so
+          # "-t" (accepted by mhsendmail as a no-op flag) is the one that actually works.
+          echo "sendmail_path = /usr/local/bin/mhsendmail --smtp-addr=127.0.0.1:1025 -t" | \
             sudo tee /etc/php/8.3/fpm/conf.d/99-mhsendmail.ini > /dev/null
 
           sudo nginx -t
