@@ -82,9 +82,9 @@ class OfferViewModelTest extends TestCase
     {
         $this->config->method('getOfferMaxSelfExtensions')->willReturn(3);
 
-        $offer = $this->createStub(OfferInterface::class);
+        $offer = $this->createMock(OfferInterface::class);
         $offer->method('getStatus')->willReturn(OfferInterface::STATUS_SENT);
-        $offer->method('canSelfExtend')->with(3)->willReturn(true);
+        $offer->expects(self::once())->method('canSelfExtend')->with(3)->willReturn(true);
 
         self::assertTrue($this->makeViewModel()->canSelfExtend($offer));
     }

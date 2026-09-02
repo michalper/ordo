@@ -38,8 +38,10 @@ class IndexTest extends AbstractFrontendActionTestCase
         $this->resultPage = $this->createStub(Page::class);
         $this->resultPage->method('getConfig')->willReturn($pageConfig);
 
-        $this->resultFactory = $this->createStub(ResultFactory::class);
-        $this->resultFactory->method('create')->with(ResultFactory::TYPE_PAGE)->willReturn($this->resultPage);
+        $this->resultFactory = $this->createMock(ResultFactory::class);
+        $this->resultFactory->expects(self::once())->method('create')
+            ->with(ResultFactory::TYPE_PAGE)
+            ->willReturn($this->resultPage);
 
         $context = $this->createStub(\Magento\Framework\App\Action\Context::class);
         $context->method('getRequest')->willReturn($this->request);
