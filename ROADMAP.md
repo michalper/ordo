@@ -39,8 +39,11 @@ scoped from real hands-on marketing automation experience.
   (`infection.json5`, `mutation-testing` job in `coverage.yml`) — non-blocking (`continue-on-error`, `minMsi`/
   `minCoveredMsi` at 0) until a real first Mutation Score Indicator has actually been reported; raise the thresholds
   and drop `continue-on-error` once that number exists.
-- **SonarQube Cloud's Hunter/Remediation agents** — not yet investigated whether they need a paid tier or additional
-  GitHub App permissions beyond what's configured.
+- ~~SonarQube Cloud's Hunter/Remediation agents~~ — decided: skip. Both require a paid tier (Hunter needs Enterprise;
+  Remediation needs the "Sonar Agent Essentials" add-on on Team or Enterprise) — this org is on SonarCloud's Free
+  plan, and Remediation additionally appears to run on top of GitHub Copilot's coding agent infrastructure
+  (`COPILOT_MCP_SONARQUBE_ORG`/`COPILOT_MCP_SONARQUBE_PROJECT_KEY` variables), a second dependency beyond SonarCloud
+  itself. Revisit only if the org upgrades off Free.
 - **PHPUnit 13** (currently on `^12.0`) — blocked, not just a version bump: PHPUnit 13 requires PHP 8.4+, but every
   workflow (`ci.yml`, `coverage.yml`, `mftf.yml`) runs PHP 8.3, and composer.json's own supported range starts at
   `~8.2.0`. Needs a deliberate decision to move the whole CI matrix (and the module's minimum supported PHP version)
