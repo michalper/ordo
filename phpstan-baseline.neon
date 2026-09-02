@@ -85,45 +85,9 @@ parameters:
 			path: Controller/Adminhtml/Campaign/Save.php
 
 		-
-			message: '#^Cannot access offset ''actions'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Controller/Adminhtml/Campaign/Save.php
-
-		-
-			message: '#^Cannot access offset ''conditions'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Controller/Adminhtml/Campaign/Save.php
-
-		-
-			message: '#^Cannot access offset ''triggers'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Controller/Adminhtml/Campaign/Save.php
-
-		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 2
-			path: Controller/Adminhtml/Campaign/Save.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 6
-			path: Controller/Adminhtml/Campaign/Save.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Controller\\Adminhtml\\Campaign\\Save\:\:parseJson\(\) should return array\<string, mixed\> but returns array\<mixed\>\.$#'
-			identifier: return.type
 			count: 1
-			path: Controller/Adminhtml/Campaign/Save.php
-
-		-
-			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:delete\(\) expects Magento\\Framework\\Model\\AbstractModel, mixed given\.$#'
-			identifier: argument.type
-			count: 3
 			path: Controller/Adminhtml/Campaign/Save.php
 
 		-
@@ -193,39 +157,9 @@ parameters:
 			path: Controller/Adminhtml/FreeGiftOffer/Save.php
 
 		-
-			message: '#^Cannot access offset ''products'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Controller/Adminhtml/FreeGiftOffer/Save.php
-
-		-
-			message: '#^Cannot access offset ''tiers'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Controller/Adminhtml/FreeGiftOffer/Save.php
-
-		-
-			message: '#^Cannot cast mixed to float\.$#'
-			identifier: cast.double
-			count: 1
-			path: Controller/Adminhtml/FreeGiftOffer/Save.php
-
-		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 2
-			path: Controller/Adminhtml/FreeGiftOffer/Save.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 2
-			path: Controller/Adminhtml/FreeGiftOffer/Save.php
-
-		-
-			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:delete\(\) expects Magento\\Framework\\Model\\AbstractModel, mixed given\.$#'
-			identifier: argument.type
-			count: 2
+			count: 1
 			path: Controller/Adminhtml/FreeGiftOffer/Save.php
 
 		-
@@ -295,26 +229,8 @@ parameters:
 			path: Controller/Adminhtml/Segment/Save.php
 
 		-
-			message: '#^Cannot access offset ''conditions'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Controller/Adminhtml/Segment/Save.php
-
-		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 1
-			path: Controller/Adminhtml/Segment/Save.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 3
-			path: Controller/Adminhtml/Segment/Save.php
-
-		-
-			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:delete\(\) expects Magento\\Framework\\Model\\AbstractModel, mixed given\.$#'
-			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/Segment/Save.php
 
@@ -467,6 +383,48 @@ parameters:
 			identifier: cast.string
 			count: 3
 			path: Model/Campaign/Action/ShowPopup.php
+
+		-
+			message: '#^Cannot access offset ''actions'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/Campaign/CampaignSaveProcessor.php
+
+		-
+			message: '#^Cannot access offset ''conditions'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/Campaign/CampaignSaveProcessor.php
+
+		-
+			message: '#^Cannot access offset ''triggers'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/Campaign/CampaignSaveProcessor.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Model/Campaign/CampaignSaveProcessor.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 6
+			path: Model/Campaign/CampaignSaveProcessor.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\Campaign\\CampaignSaveProcessor\:\:parseJson\(\) should return array\<string, mixed\> but returns array\<mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/Campaign/CampaignSaveProcessor.php
+
+		-
+			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:delete\(\) expects Magento\\Framework\\Model\\AbstractModel, mixed given\.$#'
+			identifier: argument.type
+			count: 3
+			path: Model/Campaign/CampaignSaveProcessor.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -991,6 +949,42 @@ parameters:
 			path: Model/FreeGiftOffer/DataProvider.php
 
 		-
+			message: '#^Cannot access offset ''products'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/FreeGiftOffer/FreeGiftOfferSaveProcessor.php
+
+		-
+			message: '#^Cannot access offset ''tiers'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/FreeGiftOffer/FreeGiftOfferSaveProcessor.php
+
+		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 1
+			path: Model/FreeGiftOffer/FreeGiftOfferSaveProcessor.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Model/FreeGiftOffer/FreeGiftOfferSaveProcessor.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Model/FreeGiftOffer/FreeGiftOfferSaveProcessor.php
+
+		-
+			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:delete\(\) expects Magento\\Framework\\Model\\AbstractModel, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Model/FreeGiftOffer/FreeGiftOfferSaveProcessor.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 2
@@ -1427,6 +1421,30 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Model/Segment/SegmentMatcher.php
+
+		-
+			message: '#^Cannot access offset ''conditions'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/Segment/SegmentSaveProcessor.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Segment/SegmentSaveProcessor.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
+			path: Model/Segment/SegmentSaveProcessor.php
+
+		-
+			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:delete\(\) expects Magento\\Framework\\Model\\AbstractModel, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Segment/SegmentSaveProcessor.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
