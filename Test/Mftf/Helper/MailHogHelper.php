@@ -62,4 +62,40 @@ class MailHogHelper extends Helper
 
         return html_entity_decode($matches[1]);
     }
+
+    /**
+     * Asserts $expectedText appears in the decoded body of the most recent message sent to
+     * $toAddress — same MailHog lookup/decoding as grabLinkFromLatestEmail(), for campaigns'
+     * send_email action, which (unlike the order-approval email) has no link to click through,
+     * just template-rendered text ({{var customer_name}}, {{var message}}, ...) to verify.
+     */
+    public function seeTextInLatestEmail(string $expectedText, string $toAddress, string $mailhogUrl = 'http://127.0.0.1:8025'): void
+    {
+        $endpoint = $mailhogUrl . '/api/v2/search?kind=to&query=' . rawurlencode($toAddress) . '&limit=1';
+
+        $response = @file_get_contents($endpoint);
+        if ($response === false) {
+            throw new \RuntimeException("Could not reach MailHog at {$mailhogUrl}");
+        }
+
+        $data = json_decode($response, true);
+        $item = $data['items'][0] ?? null;
+        if ($item === null) {
+            throw new \RuntimeException("MailHog has no messages sent to \"{$toAddress}\".");
+        }
+
+        $body = (string) ($item['Content']['Body'] ?? '');
+        $encoding = $item['Content']['Headers']['Content-Transfer-Encoding'][0] ?? '';
+        if ($encoding === 'quoted-printable') {
+            $body = quoted_printable_decode($body);
+        } elseif ($encoding === 'base64') {
+            $body = (string) base64_decode($body, true);
+        }
+
+        if (!str_contains($body, $expectedText)) {
+            throw new \RuntimeException(
+                "Text \"{$expectedText}\" not found in the latest MailHog message sent to \"{$toAddress}\"."
+            );
+        }
+    }
 }

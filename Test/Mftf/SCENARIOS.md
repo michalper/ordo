@@ -70,7 +70,7 @@ cases separately from the type-by-type ones.
 | Action            | Params                                 | Status                                                                                              |
 |-------------------|----------------------------------------|-----------------------------------------------------------------------------------------------------|
 | `add_tag`         | `{tag}`                                | ⬜ (only ever a side effect inside `AdminCampaignScenarioEndToEndTest`, never the thing under test) |
-| `send_email`      | `{template, message}`                  | ⬜ (needs MailHog assertion, same pattern as `AdminApproveOrderViaEmailTest`)                       |
+| `send_email`      | `{template, message}`                  | ✅ `AdminCampaignSendEmailActionTest`                                                                |
 | `generate_coupon` | `{rule_id, prefix}`                    | ✅ `AdminCampaignScenarioEndToEndTest`                                                              |
 | `popup`           | `{headline, body, cta_label, cta_url}` | ⬜ (writes `ordo_pending_popup`; needs a storefront poll — see §6)                                  |
 | `add_points`      | `{points}`                             | ⬜ (writes `ordo_customer_score`; feeds `score_at_least`/`score_threshold_crossed`)                 |
@@ -199,8 +199,9 @@ cases separately from the type-by-type ones.
 1. ~~`score_threshold_crossed` end to end~~ (§4 + §1a) — done: `AdminScoreThresholdCampaignTest.xml` (`campaign`
    group). Deliberately no condition on the campaign (an empty conditions list is vacuously satisfied), so the coupon
    appearing is entirely down to the score-rule → threshold → dispatch chain actually working.
-2. **`send_email` action + MailHog** (§1c) — reuses the exact MailHog wiring
-   `AdminApproveOrderViaEmailTest`/`MailHogHelper` already established; closes the last uncovered action type.
+2. ~~`send_email` action + MailHog~~ (§1c) — done: `AdminCampaignSendEmailActionTest.xml` (`campaign` group).
+   Reused the exact MailHog wiring `AdminApproveOrderViaEmailTest`/`MailHogHelper` already established (added a new
+   `seeTextInLatestEmail` helper method); closes the last uncovered action type.
 3. **Free gift storefront flow** (§5) — the only *storefront cart* interaction pattern (adding a zero-cost item
    conditionally) nothing else in this suite exercises yet.
 4. **In-segment condition chained with a real campaign dispatch** (§1b + §2) — the one condition type that depends on

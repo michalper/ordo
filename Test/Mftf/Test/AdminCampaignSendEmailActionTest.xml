@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCampaignSendEmailActionTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Campaign engine"/>
+            <title value="A real order triggers a campaign's send_email action, and the customer really receives it"/>
+            <description value="Closes the last uncovered campaign action type (see SCENARIOS.md's 'Suggested next batch'): trigger=order_placed, no condition, action=send_email with a static message. Same real order_placed -> queue consumer chain as AdminCampaignScenarioEndToEndTest, but asserts via MailHog (reused MailHogHelper) that Model/Campaign/Action/SendEmail.php actually rendered and sent the ordo_campaign_generic template to the real customer, not just that no exception was thrown."/>
+            <severity value="CRITICAL"/>
+            <group value="ordo_automation"/>
+            <group value="campaign"/>
+        </annotations>
+        <before>
+            <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: the campaign — trigger only, deliberately no condition, same reasoning as
+             AdminScoreThresholdCampaignTest: an empty conditions list is vacuously satisfied, so
+             the email arriving is entirely down to the order_placed -> send_email chain working. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait — a cold, freshly
+             deployed developer-mode instance's first admin page load can lag behind
+             waitForPageLoad's document.readyState check. -->
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Order Placed Send Email Campaign" stepKey="fillName"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButton"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRow"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRow"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEvent"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRow"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRow"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="send_email" stepKey="selectActionType"/>
+        <waitForElementVisible selector="[name='actions[actions][0][template]']" stepKey="waitForTemplateField"/>
+        <fillField selector="[name='actions[actions][0][template]']" userInput="ordo_campaign_generic" stepKey="fillTemplate"/>
+        <fillField selector="[name='actions[actions][0][message]']" userInput="Thanks for your order, loyal customer!" stepKey="fillMessage"/>
+        <fillField selector="[name='actions[actions][0][delay_minutes]']" userInput="0" stepKey="fillDelayMinutes"/>
+
+        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+
+        <!-- Step 2: a REAL order, through REAL storefront checkout, as the REAL customer created
+             above — not a synthetic dispatch() call. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <!-- Step 3: this install has no RabbitMQ (DB queue driver only — see AGENTS.md), so
+             nothing consumes the message DispatchOrderPlacedCampaigns just published until a
+             consumer actually runs. max-messages is 5, not 1, same reasoning as
+             AdminScoreThresholdCampaignTest: another test in this same CI job can leave a
+             message of its own sitting unconsumed ahead of ours; safe to over-ask since
+             mftf.yml sets consumers-wait-for-messages=0, so the consumer returns as soon as the
+             queue is actually empty instead of blocking. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=5" stepKey="runCampaignDispatchConsumer"/>
+
+        <!-- Step 4: the real, merchant-visible side effect only Model/Campaign/Action/SendEmail.php's
+             ordo_campaign_generic template render could have produced — the customer's own name
+             (from CustomerRepositoryInterface::getById(), not the event payload) and the
+             campaign's static "message" param, both interpolated into the actual email body. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seeGreetingInEmail">
+            <argument name="expectedText">Hi $createCustomer.firstname$,</argument>
+            <argument name="toAddress">$createCustomer.email$</argument>
+        </helper>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seeMessageInEmail">
+            <argument name="expectedText">Thanks for your order, loyal customer!</argument>
+            <argument name="toAddress">$createCustomer.email$</argument>
+        </helper>
+    </test>
+</tests>
