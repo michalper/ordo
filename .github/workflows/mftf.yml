@@ -31,7 +31,7 @@ on:
           AdminCreateCampaignTest AdminCreateSegmentTest AdminCreateMultiTriggerCampaignTest
           AdminCreateCampaignWithConditionsAndActionsTest AdminViewDashboardTest
           AdminViewReorderCyclesGridTest StorefrontTrackerSetsVisitorCookieTest
-          AdminCampaignScenarioEndToEndTest
+          AdminCampaignScenarioEndToEndTest AdminApproveOrderViaEmailTest
 
 jobs:
   mftf:
@@ -68,6 +68,16 @@ jobs:
         ports:
           - 4444:4444
         options: --shm-size=2g
+
+      mailhog:
+        # Lets AdminApproveOrderViaEmailTest actually read the approve/reject email a real admin
+        # would receive — Observer/HoldOrderForApproval.php only ever delivers that token by
+        # email (see Test/Mftf/Helper/MailHogHelper.php's docblock), no admin grid or other UI
+        # surface exposes it.
+        image: mailhog/mailhog:latest
+        ports:
+          - 1025:1025 # SMTP — Magento's Sendmail transport is pointed at this via mhsendmail
+          - 8025:8025 # HTTP API MailHogHelper reads from
 
     steps:
       - name: Checkout module
@@ -147,12 +157,29 @@ jobs:
 
           bin/magento module:enable Ordo_Automation
           bin/magento setup:upgrade
+
+          # Found the real root cause of every "[name='name'] not found" / redirect-to-dashboard
+          # failure (runs 14-19) by comparing this fresh CI install against this repo's own
+          # local magento-ordo-test/ sandbox directly: Magento_TwoFactorAuth (core, mandatory
+          # since Magento 2.4.x) simply doesn't exist in that older, long-lived sandbox
+          # (`module:status Magento_TwoFactorAuth` -> "Module does not exist"), but IS present in
+          # a fresh `git clone --branch 2.4.9`. It intercepts every admin controller dispatch to
+          # enforce 2FA setup/verification, redirecting anywhere it isn't satisfied — exactly
+          # matching every symptom seen (a valid, authenticated session; correct ACL; correct
+          # Host; every GET landing back on the dashboard). Disabling it for this disposable,
+          # single-job CI instance is the standard, widely-documented approach for Magento 2.4
+          # test automation, not a workaround specific to this repo.
+          bin/magento module:disable Magento_TwoFactorAuth
+          bin/magento setup:upgrade
+
           bin/magento deploy:mode:set developer
 
           # StorefrontTrackerSetsVisitorCookieTest explicitly documents (see its own test XML)
           # that it assumes this is already on — true of the long-lived local sandbox this suite
           # was originally written/verified against, not of a from-scratch install like this one.
           bin/magento config:set ordo_automation/tracking/enabled 1
+          # AdminApproveOrderViaEmailTest needs order-hold-for-approval actually active.
+          bin/magento config:set ordo_automation/order_approval/enabled 1
 
           # Newly-created MFTF test fixtures (products, etc.) aren't salable/addable to cart
           # until stock/price indexes recompute — set once globally instead of forcing a
@@ -246,6 +273,15 @@ jobs:
           # costing the first page load extra latency.
           sudo sed -i "s/^pm = .*/pm = static/; s/^pm.max_children = .*/pm.max_children = 32/" \
             /etc/php/8.3/fpm/pool.d/www.conf
+
+          # Routes PHP's mail() (Magento's default Sendmail transport — this module sets no SMTP
+          # config of its own) into MailHog instead of trying (and failing) to actually send.
+          # mhsendmail is a tiny sendmail-compatible binary purpose-built for exactly this.
+          sudo curl -sfL -o /usr/local/bin/mhsendmail \
+            https://github.com/mailhog/mhsendmail/releases/download/v0.2.0/mhsendmail_linux_amd64
+          sudo chmod +x /usr/local/bin/mhsendmail
+          echo "sendmail_path = /usr/local/bin/mhsendmail --smtp-addr=127.0.0.1:1025" | \
+            sudo tee /etc/php/8.3/fpm/conf.d/99-mhsendmail.ini > /dev/null
 
           sudo nginx -t
           sudo systemctl restart php8.3-fpm

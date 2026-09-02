@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="urn:magento:mftf:DataGenerator/etc/dataProfileSchema.xsd">
+    <!-- Same shape as Magento_Customer's own Simple_US_Customer, plus the two custom attributes
+         Observer/HoldOrderForApproval.php reads (Setup/Patch/Data/AddCustomerSpendLimitAttributes.php)
+         — a low spend limit so a single real order clears it, and an admin email real enough for
+         MailHog to actually deliver the approval request to. -->
+    <entity name="OrdoApprovalCustomer" type="customer">
+        <data key="group_id">1</data>
+        <data key="default_billing">true</data>
+        <data key="default_shipping">true</data>
+        <data key="email" unique="prefix">approval.customer@example.com</data>
+        <data key="firstname">Approval</data>
+        <data key="lastname">Customer</data>
+        <data key="fullname">Approval Customer</data>
+        <data key="password">pwdTest123!</data>
+        <data key="store_id">0</data>
+        <data key="website_id">0</data>
+        <data key="group">General</data>
+        <requiredEntity type="address">US_Address_TX</requiredEntity>
+        <requiredEntity type="custom_attribute">OrdoSpendLimitAttribute</requiredEntity>
+        <requiredEntity type="custom_attribute">OrdoApprovalAdminEmailAttribute</requiredEntity>
+    </entity>
+    <entity name="OrdoSpendLimitAttribute" type="custom_attribute">
+        <data key="attribute_code">ordo_order_spend_limit</data>
+        <data key="value">10</data>
+    </entity>
+    <entity name="OrdoApprovalAdminEmailAttribute" type="custom_attribute">
+        <data key="attribute_code">ordo_approval_admin_email</data>
+        <data key="value">approver@example.com</data>
+    </entity>
+</entities>
