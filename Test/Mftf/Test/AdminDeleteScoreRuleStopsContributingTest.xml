@@ -25,8 +25,19 @@
              entity_id for the delete URL below. -->
         <amOnPage url="admin/ordo/scorerule/new" stepKey="goToNewScoreRulePage"/>
         <waitForPageLoad stepKey="waitForNewScoreRulePage"/>
-        <waitForElementVisible selector="[name='attribute_code']" stepKey="waitForAttributeCodeField"/>
-        <fillField selector="[name='attribute_code']" userInput="group_id" stepKey="fillAttributeCode"/>
+        <!-- attribute_code is now a Magento_Ui/js/form/element/ui-select searchable picker
+             (ordo_scorerule_form.xml), not a plain input — same real interaction sequence
+             Magento_Catalog's own FillNewProductCategoryActionGroup.xml uses for its equivalent
+             parent-category ui-select: click the field's own selected-option trigger to open
+             the dropdown, type into the filter's search input (matches the option's LABEL, not
+             its value — "Group" is group_id's real frontend label, set in
+             CustomerSetup::installCustomerSampleData()), click the one matching result. -->
+        <waitForElementVisible selector="[data-index='attribute_code'] [data-role='selected-option']" stepKey="waitForAttributeCodeField"/>
+        <click selector="[data-index='attribute_code'] [data-role='selected-option']" stepKey="clickAttributeCodeDropdown"/>
+        <waitForElementVisible selector="input[data-role='advanced-select-text']" stepKey="waitForAttributeSearchInput"/>
+        <fillField selector="input[data-role='advanced-select-text']" userInput="Group" stepKey="searchAttributeCode"/>
+        <waitForElementVisible selector="//li[contains(@class, 'admin__action-multiselect-menu-inner-item')][contains(., 'Group')]" stepKey="waitForAttributeSearchResult"/>
+        <click selector="//li[contains(@class, 'admin__action-multiselect-menu-inner-item')][contains(., 'Group')]" stepKey="fillAttributeCode"/>
         <selectOption selector="[name='operator']" userInput="equals" stepKey="selectOperator"/>
         <fillField selector="[name='value']" userInput="1" stepKey="fillValue"/>
         <fillField selector="[name='points']" userInput="80" stepKey="fillPoints"/>
