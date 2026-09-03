@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminDeleteSegmentTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Saved segments"/>
+            <title value="Admin can delete a saved segment"/>
+            <description value="Covers Controller/Adminhtml/Segment/Delete.php: create a segment via the same form flow as AdminCreateSegmentTest, then delete it. Confirms the grid no longer lists it afterwards — the SCENARIOS.md row this closes. Deletes via a direct GET to the same entity_id-bearing URL the grid's Delete link itself points at (see Ui/Component/Listing/Column/AbstractEntityActionsColumn.php), rather than clicking the link and its JS confirm() dialog — this suite has no existing grid-row-action MFTF pattern to reuse, and a raw GET is a faithful, non-flaky equivalent to confirming the dialog since Delete.php itself is a plain HttpGetActionInterface with no CSRF/form-key check on this GET route."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="segment"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <amOnPage url="admin/ordo/segment/new" stepKey="goToNewSegmentPage"/>
+        <waitForPageLoad stepKey="waitForNewSegmentPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Test Segment To Delete" stepKey="fillName"/>
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableSegment"/>
+
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRow"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRow"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="selectConditionType"/>
+        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;amount&quot;: &quot;500&quot;}" stepKey="fillConditionParams"/>
+
+        <click selector="#save" stepKey="clickSave"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The segment has been saved." stepKey="seeSuccessMessage"/>
+
+        <amOnPage url="admin/ordo/segment/index" stepKey="goToSegmentGrid"/>
+        <waitForPageLoad stepKey="waitForGrid"/>
+        <see selector="table.data-grid" userInput="Test Segment To Delete" stepKey="seeSegmentInGridBeforeDelete"/>
+
+        <!-- The grid's own Edit link href already carries the entity_id (see
+             AbstractEntityActionsColumn::prepareDataSource) — grab it from the row identified by
+             the segment's own name, instead of assuming entity_id=1 (other tests/fixtures in this
+             suite create segments too, so id is never a safe assumption). -->
+        <grabAttributeFrom selector="//tr[contains(., 'Test Segment To Delete')]//a[contains(@href, 'segment/edit')]" userInput="href" stepKey="grabEditHref"/>
+        <executeJS function="return new URL('{$grabEditHref$}').searchParams.get('entity_id');" stepKey="grabEntityId"/>
+
+        <amOnPage url="admin/ordo/segment/delete/entity_id/{$grabEntityId$}" stepKey="deleteSegment"/>
+
+        <waitForPageLoad stepKey="waitForDeleteRedirect"/>
+        <see selector=".message-success" userInput="The segment has been deleted." stepKey="seeDeleteSuccessMessage"/>
+
+        <amOnPage url="admin/ordo/segment/index" stepKey="goToSegmentGridAfterDelete"/>
+        <waitForPageLoad stepKey="waitForGridAfterDelete"/>
+        <dontSee selector="table.data-grid" userInput="Test Segment To Delete" stepKey="dontSeeSegmentInGrid"/>
+    </test>
+</tests>
