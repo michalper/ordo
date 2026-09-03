@@ -27,7 +27,8 @@
         "infection/infection": "^0.35",
         "magento/magento2-functional-testing-framework": "^5.0 || ^6.0",
         "magento/magento-coding-standard": "^41",
-        "friendsofphp/php-cs-fixer": "^3.95"
+        "friendsofphp/php-cs-fixer": "^3.95",
+        "rector/rector": "^2.6"
     },
     "scripts": {
         "cs-fix": [
@@ -35,7 +36,8 @@
             "php-cs-fixer fix"
         ],
         "cs-check": "php-cs-fixer fix --dry-run --diff",
-        "phpcs-check": "phpcs"
+        "phpcs-check": "phpcs",
+        "rector-check": "rector process --dry-run"
     },
     "autoload": {
         "files": ["registration.php"],
