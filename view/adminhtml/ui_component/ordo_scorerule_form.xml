@@ -52,6 +52,11 @@
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
                     <item name="filterOptions" xsi:type="boolean">true</item>
+                    <!-- Magento_Ui/js/form/element/ui-select.js defaults to multiple:true —
+                         attribute_code is a single scalar value, so this must be forced off,
+                         same as new_category_form.xml's "parent" field does for the same
+                         component. -->
+                    <item name="multiple" xsi:type="boolean">false</item>
                 </item>
             </argument>
             <settings>
