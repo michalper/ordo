@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminRfmReportGridReflectsRealDataTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="RFM report"/>
+            <title value="The standalone RFM report grid reflects a real customer's real order"/>
+            <description value="Covers Controller/Adminhtml/Rfm/Index.php and Model/ResourceModel/Rfm/Grid/Collection.php — unlike the campaign condition's own percentile lookups (which read the precomputed ordo_customer_rfm_score table Cron\RecomputeRfmScores populates), this grid's own docblock says it's built entirely live: customer_entity LEFT JOINed to a grouped sales_order aggregate, computed at request time with no cron dependency at all. A real customer places one real order through storefront checkout; the grid, filtered to that customer's email, must show frequency=1 (COUNT(*) over their one non-canceled order), a non-zero monetary total, and a well-formed 3-digit rfm_score (CONCAT of three NTILE(5) window functions) — proof the live JOIN/aggregate actually ran against this order, not a cached or precomputed snapshot."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="dashboard"/>
+        </annotations>
+        <before>
+            <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <!-- Requires cataloginventory_stock/catalog_product_price/catalog_product_attribute/
+                 catalog_category_product/catalog_product_category set to "Update on Save" mode
+                 in this environment — see AdminCampaignScenarioEndToEndTest.xml's identical
+                 comment for why. -->
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: a real order, through real storefront checkout, as a real customer —
+             SimpleProduct2 is priced at 123.00, so monetary must be non-zero afterwards. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <!-- Step 2: the RFM report grid, filtered to this customer's own email so the assertions
+             below read this specific row, not just "some row somewhere". -->
+        <amOnPage url="admin/ordo/rfm/index" stepKey="goToRfmReportGrid"/>
+        <waitForPageLoad stepKey="waitForRfmReportGrid"/>
+        <!-- Standard Magento_Ui listing toolbar fulltext search (module-ui's own
+             templates/grid/search/search.html) — ordo_rfm_listing.xml doesn't disable it, so the
+             same search box every stock admin grid renders applies here too. Class-based
+             selectors, not an id (the input's id binds to the component's own configured
+             index, not a fixed string). Filtering to this customer's own email avoids assuming
+             row 1 is ours in a shared CI job where other tests in this same group create
+             customers too. -->
+        <fillField selector=".data-grid-search-control" userInput="$createCustomer.email$" stepKey="fillGridSearch"/>
+        <click selector=".data-grid-search-control-wrap .action-submit" stepKey="clickSearchDone"/>
+        <waitForPageLoad stepKey="waitForGridSearchResults"/>
+
+        <!-- Step 3: the real, database-observable proof — this customer's row shows a real
+             frequency (1 non-canceled order), a real non-zero monetary total, and a well-formed
+             three-digit rfm_score, all computed live from the order just placed. -->
+        <see selector="{{AdminDataGridTableSection.firstRow}}" userInput="$createCustomer.email$" stepKey="seeCustomerEmailInGrid"/>
+        <grabTextFrom selector="{{AdminDataGridTableSection.gridCell('1', 'Orders')}}" stepKey="grabFrequency"/>
+        <assertEquals stepKey="assertFrequencyOfOne">
+            <expectedResult type="string">1</expectedResult>
+            <actualResult type="string">{$grabFrequency}</actualResult>
+        </assertEquals>
+        <dontSee selector="{{AdminDataGridTableSection.firstRow}}" userInput="0.00" stepKey="dontSeeZeroMonetaryInGrid"/>
+        <grabTextFrom selector="{{AdminDataGridTableSection.gridCell('1', 'RFM Score')}}" stepKey="grabRfmScore"/>
+        <assertRegExp stepKey="assertWellFormedRfmScore">
+            <expectedResult type="string">/^[1-5]{3}$/</expectedResult>
+            <actualResult type="string">{$grabRfmScore}</actualResult>
+        </assertRegExp>
+    </test>
+</tests>

@@ -108,9 +108,9 @@ cases separately from the type-by-type ones.
 
 | Scenario                                                                                     | Status |
 |----------------------------------------------------------------------------------------------|--------|
-| Admin RFM report grid (`Controller/Adminhtml/Rfm/Index.php`) renders with real customer data | ⬜     |
+| Admin RFM report grid (`Controller/Adminhtml/Rfm/Index.php`) renders with real customer data | ✅ `AdminRfmReportGridReflectsRealDataTest` |
 | `Cron\RecomputeRfmScores` populates `ordo_customer_rfm_score`, report reflects it            | ⬜     |
-| RFM Score column shows correct quintile digits (e.g. "555" for best-on-all-three)            | ⬜     |
+| RFM Score column shows correct quintile digits (e.g. "555" for best-on-all-three)            | ✅ `AdminRfmReportGridReflectsRealDataTest` |
 | Percentile-based campaign condition (§1b) reads the precomputed table, not a live scan       | ⬜     |
 
 ## 4. Lead scoring (`Model/ScoreRule.php`, `Controller/Adminhtml/ScoreRule/`)
