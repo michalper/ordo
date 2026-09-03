@@ -258,6 +258,13 @@
     margin: 0 0 3px;
 }
 
+.ordo-flow-field-notice {
+    display: block;
+    font-size: var(--ordo-font-2xs);
+    opacity: .7;
+    margin: 3px 0 0;
+}
+
 .ordo-flow-field-input {
     display: block;
     width: 100%;

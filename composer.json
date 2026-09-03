@@ -18,7 +18,8 @@
         "magento/module-email": "^101.1.8",
         "magento/module-quote": "^101.2.8",
         "magento/module-sales": "^103.0.8",
-        "magento/module-store": "^101.1.8"
+        "magento/module-store": "^101.1.8",
+        "twilio/sdk": "^8.0"
     },
     "require-dev": {
         "bitexpert/phpstan-magento": "^0.43",
@@ -49,6 +50,13 @@
         "psr-4": {
             "Ordo\\Automation\\Test\\Unit\\": "Test/Unit/",
             "Ordo\\Automation\\Test\\Integration\\": "Test/Integration/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "magento/composer-dependency-version-audit-plugin": false,
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "infection/extension-installer": true
         }
     }
 }

@@ -421,6 +421,30 @@ parameters:
 			path: Controller/Offer/Extend.php
 
 		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getHeader\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Sms/StatusCallback.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getPostValue\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Sms/StatusCallback.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 4
+			path: Controller/Sms/StatusCallback.php
+
+		-
+			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:save\(\) expects Magento\\Framework\\Model\\AbstractModel, Magento\\Framework\\DataObject given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Sms/StatusCallback.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
@@ -496,6 +520,12 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
+			path: Helper/Config.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
 			path: Helper/Config.php
 
 		-
@@ -587,6 +617,18 @@ parameters:
 			identifier: cast.string
 			count: 2
 			path: Model/Campaign/Action/SendEmail.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Campaign/Action/SendSms.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Model/Campaign/Action/SendSms.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -1453,6 +1495,18 @@ parameters:
 			path: Model/FreeGiftSelection.php
 
 		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/MessageLog.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 5
+			path: Model/MessageLog.php
+
+		-
 			message: '#^Cannot cast mixed to float\.$#'
 			identifier: cast.double
 			count: 1
@@ -2141,6 +2195,12 @@ parameters:
 			identifier: bitExpertMagento.abstractModelUseServiceContract
 			count: 1
 			path: Setup/Patch/Data/AddCustomerCreditLimitAttribute.php
+
+		-
+			message: '#^Use service contracts to persist entities in favour of Magento\\Eav\\Model\\Entity\\Attribute\\AbstractAttribute\:\:save\(\) method$#'
+			identifier: bitExpertMagento.abstractModelUseServiceContract
+			count: 1
+			path: Setup/Patch/Data/AddCustomerSmsPhoneAttribute.php
 
 		-
 			message: '#^Use service contracts to persist entities in favour of Magento\\Eav\\Model\\Entity\\Attribute\\AbstractAttribute\:\:save\(\) method$#'

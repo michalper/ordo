@@ -49,6 +49,11 @@ class Config
     private const XML_PATH_LEAD_SCORING_ENABLED = 'ordo_automation/lead_scoring/enabled';
     private const XML_PATH_LEAD_SCORING_THRESHOLD = 'ordo_automation/lead_scoring/score_threshold';
 
+    private const XML_PATH_SMS_ENABLED = 'ordo_automation/sms/enabled';
+    private const XML_PATH_SMS_TWILIO_ACCOUNT_SID = 'ordo_automation/sms/twilio_account_sid';
+    private const XML_PATH_SMS_TWILIO_AUTH_TOKEN = 'ordo_automation/sms/twilio_auth_token';
+    private const XML_PATH_SMS_TWILIO_FROM_NUMBER = 'ordo_automation/sms/twilio_from_number';
+
     public function __construct(private readonly ScopeConfigInterface $scopeConfig)
     {
     }
@@ -276,5 +281,46 @@ class Config
     public function getScoreThreshold(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_LEAD_SCORING_THRESHOLD, 100, $storeId);
+    }
+
+    public function isSmsEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_SMS_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getTwilioAccountSid(?int $storeId = null): string
+    {
+        return (string) $this->scopeConfig->getValue(
+            self::XML_PATH_SMS_TWILIO_ACCOUNT_SID,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Decrypted automatically by ScopeConfigInterface::getValue() — the field's backend_model
+     * (Magento\Config\Model\Config\Backend\Encrypted, see etc/adminhtml/system.xml) handles
+     * decryption on read, no extra code needed here.
+     */
+    public function getTwilioAuthToken(?int $storeId = null): string
+    {
+        return (string) $this->scopeConfig->getValue(
+            self::XML_PATH_SMS_TWILIO_AUTH_TOKEN,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getTwilioFromNumber(?int $storeId = null): string
+    {
+        return (string) $this->scopeConfig->getValue(
+            self::XML_PATH_SMS_TWILIO_FROM_NUMBER,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
     }
 }

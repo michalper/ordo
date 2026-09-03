@@ -609,6 +609,61 @@
                                         </action>
                                     </actions>
                                 </rule>
+                                <rule name="5">
+                                    <value>send_sms</value>
+                                    <actions>
+                                        <action name="0">
+                                            <target>${ $.parentName }.tag</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="1">
+                                            <target>${ $.parentName }.rule_id</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="2">
+                                            <target>${ $.parentName }.prefix</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="3">
+                                            <target>${ $.parentName }.template</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="4">
+                                            <target>${ $.parentName }.message</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">true</param></params>
+                                        </action>
+                                        <action name="5">
+                                            <target>${ $.parentName }.headline</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="6">
+                                            <target>${ $.parentName }.body</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="7">
+                                            <target>${ $.parentName }.cta_label</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.cta_url</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.points</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                    </actions>
+                                </rule>
                             </rules>
                         </switcherConfig>
                     </settings>

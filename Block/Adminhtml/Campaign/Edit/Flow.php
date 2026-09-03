@@ -198,6 +198,17 @@ class Flow extends Template
                     ['name' => 'content_block_id', 'label' => (string) __('Content block'), 'options' => $this->getContentBlockOptions()],
                     ['name' => 'output_key', 'label' => (string) __('Output variable name (optional)')],
                 ],
+                'send_sms' => [
+                    [
+                        'name' => 'message',
+                        'label' => (string) __('SMS message'),
+                        'notice' => (string) __(
+                            'Include an opt-out instruction (e.g. "Reply STOP to unsubscribe") in the'
+                            . ' first message to any recipient — required by Twilio\'s messaging policy'
+                            . ' and, in the US, the TCPA.'
+                        ),
+                    ],
+                ],
             ],
         ];
     }

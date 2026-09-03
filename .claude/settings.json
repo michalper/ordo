@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(vendor/bin/phpunit *)",
+      "Bash(docker compose ps*)",
+      "Bash(vendor/bin/phpstan analyse*)",
+      "Bash(vendor/bin/phpcs*)",
+      "Bash(docker compose logs*)"
+    ]
+  }
+}

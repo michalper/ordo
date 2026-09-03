@@ -470,4 +470,18 @@
                     referenceTable="ordo_content_block" referenceColumn="entity_id" onDelete="CASCADE"/>
     </table>
 
+    <table name="ordo_message_log" resource="default" engine="innodb" comment="One row per individual outbound message a campaign action dispatched — deliberately channel-generic (not sms-specific) so a future SendGrid-backed send_email delivery-tracking slice can reuse the same table/webhook shape instead of a second one-off design">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="channel" nullable="false" length="16" comment="Delivery channel: sms today, email reserved for a future SendGrid-backed slice"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="true" comment="Recipient customer_id, if known"/>
+        <column xsi:type="varchar" name="to_address" nullable="false" length="255" comment="Phone number or email address the message was sent to"/>
+        <column xsi:type="varchar" name="provider_message_id" nullable="true" length="64" comment="The provider's own message ID (Twilio's Sid) — what a delivery-status webhook looks this row up by"/>
+        <column xsi:type="varchar" name="status" nullable="false" length="32" default="sent" comment="sent, delivered, failed, undelivered, or opted_out — opted_out is distinct from failed, see Model/Sms/OptedOutException"/>
+        <column xsi:type="varchar" name="error_code" nullable="true" length="16" comment="Provider error code, if the status is failed/undelivered/opted_out"/>
+        <column xsi:type="timestamp" name="sent_at" nullable="false" default="CURRENT_TIMESTAMP" comment="When this module attempted the send"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Last time a delivery-status callback updated this row"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY"><column name="entity_id"/></constraint>
+        <constraint xsi:type="unique" referenceId="ORDO_MESSAGE_LOG_PROVIDER_MESSAGE_ID"><column name="provider_message_id"/></constraint>
+    </table>
+
 </schema>

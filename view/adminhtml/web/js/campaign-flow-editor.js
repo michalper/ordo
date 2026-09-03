@@ -114,6 +114,14 @@ define([
                             html += '<input type="text" class="ordo-flow-field-input" data-field="' + field.name + '" value="' +
                                 $('<div>').text(value).html() + '">';
                         }
+
+                        // A field descriptor carrying a "notice" string (e.g. send_sms's TCPA/
+                        // opt-out reminder) renders as a small hint under the input — every other
+                        // action type's field descriptors have no "notice" key today, so this is
+                        // purely additive, not a behavior change for them.
+                        if (field.notice) {
+                            html += '<span class="ordo-flow-field-notice">' + $('<div>').text(field.notice).html() + '</span>';
+                        }
                     });
                 } else {
                     html += '<label class="ordo-flow-field-label">Params (JSON) — advanced, no dedicated fields for this type</label>' +

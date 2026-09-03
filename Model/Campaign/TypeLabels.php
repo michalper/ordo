@@ -36,6 +36,7 @@ class TypeLabels
         'add_points' => 'Add Points',
         'add_product_recommendations' => 'Add Product Recommendations',
         'add_dynamic_content' => 'Add Dynamic Content',
+        'send_sms' => 'Send SMS',
     ];
 
     public function conditionLabel(string $type): string

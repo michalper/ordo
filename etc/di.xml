@@ -29,6 +29,7 @@
     <preference for="Ordo\Automation\Api\FreeGiftManagementInterface" type="Ordo\Automation\Model\FreeGiftManagement"/>
     <preference for="Ordo\Automation\Api\Data\CreditLimitStatusInterface" type="Ordo\Automation\Model\CreditLimitStatus"/>
     <preference for="Ordo\Automation\Api\CreditLimitManagementInterface" type="Ordo\Automation\Model\CreditLimitManagement"/>
+    <preference for="Ordo\Automation\Model\Sms\SmsSenderInterface" type="Ordo\Automation\Model\Sms\TwilioSmsSender"/>
 
     <!-- Dedicated SearchResults types so the WebAPI output processor knows what's inside each
          list endpoint's "items" array (the generic SearchResultsInterface can't express this —
@@ -169,6 +170,7 @@
                 <item name="add_points" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddPoints</item>
                 <item name="add_product_recommendations" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddProductRecommendations</item>
                 <item name="add_dynamic_content" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddDynamicContent</item>
+                <item name="send_sms" xsi:type="object">Ordo\Automation\Model\Campaign\Action\SendSms</item>
             </argument>
         </arguments>
     </type>
