@@ -29,7 +29,7 @@ class SalesRepEmailContext
     {
         try {
             $customer = $this->customerRepository->getById($customerId);
-        } catch (NoSuchEntityException $e) {
+        } catch (NoSuchEntityException) {
             return $this->getFallback();
         }
 
@@ -62,7 +62,7 @@ class SalesRepEmailContext
     {
         try {
             $storeName = (string) $this->storeManager->getStore()->getName();
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             $storeName = '';
         }
 

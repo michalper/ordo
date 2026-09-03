@@ -24,7 +24,6 @@ interface FreeGiftSelectionInterface
 
     /**
      * @param string[] $skus
-     * @return $this
      */
     public function setSkus(array $skus): self;
 }

@@ -133,7 +133,7 @@ class FreeGiftManagement implements FreeGiftManagementInterface
         foreach ($rows as $row) {
             try {
                 $quote->removeItem((int) $row->getQuoteItemId());
-            } catch (\Exception $e) {
+            } catch (\Exception) {
                 // Item already gone from the quote (e.g. removed by the customer directly) —
                 // the marker row is still stale and must be cleaned up below regardless.
             }
@@ -199,9 +199,7 @@ class FreeGiftManagement implements FreeGiftManagementInterface
         $map = [];
         foreach ($this->productCollectionFactory->create()->addOffersFilter($activeOfferIds) as $product) {
             $sku = $product->getSku();
-            if (!isset($map[$sku])) {
-                $map[$sku] = $product->getOfferId();
-            }
+            $map[$sku] ??= $product->getOfferId();
         }
 
         return $map;

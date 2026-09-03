@@ -16,8 +16,6 @@ interface FreeGiftManagementInterface
      * across every active offer), how many are used, and which SKUs are eligible to fill the
      * rest.
      *
-     * @param int $cartId
-     * @return FreeGiftEligibilityInterface
      * @throws NoSuchEntityException
      */
     public function getEligibility(int $cartId): FreeGiftEligibilityInterface;
@@ -27,9 +25,6 @@ interface FreeGiftManagementInterface
      * as many gifts as their earned slots allow (configurable per offer via cascading tiers),
      * not a fixed count of 1.
      *
-     * @param int $cartId
-     * @param FreeGiftSelectionInterface $selection
-     * @return FreeGiftEligibilityInterface
      * @throws NoSuchEntityException
      * @throws InputException
      * @throws LocalizedException

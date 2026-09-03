@@ -50,7 +50,7 @@ class SendEmail implements ActionInterface
 
         $store = $this->storeManager->getStore();
         $templateVars = array_merge(
-            array_filter($context, static fn ($value) => is_scalar($value)),
+            array_filter($context, is_scalar(...)),
             [
                 'customer_name' => $customer->getFirstname(),
                 'message' => (string) ($params['message'] ?? ''),

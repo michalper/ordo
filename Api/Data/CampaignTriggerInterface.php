@@ -22,36 +22,15 @@ interface CampaignTriggerInterface
     public const TRIGGER_VISITOR_TAG_ADDED = 'visitor_tag_added';
     public const TRIGGER_SCORE_THRESHOLD_CROSSED = 'score_threshold_crossed';
 
-    /**
-     * @return int|null
-     */
     public function getEntityId(): ?int;
 
-    /**
-     * @param int $entityId
-     * @return $this
-     */
     public function setEntityId(int $entityId): self;
 
-    /**
-     * @return int
-     */
     public function getCampaignId(): int;
 
-    /**
-     * @param int $campaignId
-     * @return $this
-     */
     public function setCampaignId(int $campaignId): self;
 
-    /**
-     * @return string
-     */
     public function getTriggerEvent(): string;
 
-    /**
-     * @param string $triggerEvent
-     * @return $this
-     */
     public function setTriggerEvent(string $triggerEvent): self;
 }

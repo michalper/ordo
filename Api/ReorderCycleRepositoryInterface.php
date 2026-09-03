@@ -14,13 +14,9 @@ use Ordo\Automation\Api\Data\ReorderCycleSearchResultsInterface;
 interface ReorderCycleRepositoryInterface
 {
     /**
-     * @return ReorderCycleInterface
      * @throws NoSuchEntityException
      */
     public function getById(int $entityId): ReorderCycleInterface;
 
-    /**
-     * @return ReorderCycleSearchResultsInterface
-     */
     public function getList(SearchCriteriaInterface $searchCriteria): ReorderCycleSearchResultsInterface;
 }

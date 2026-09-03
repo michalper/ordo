@@ -190,6 +190,72 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
+			path: Controller/Adminhtml/ScoreRule/Delete.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/ScoreRule/Edit.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Adminhtml/ScoreRule/Edit.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/ScoreRule/Edit.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/ScoreRule/Index.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/ScoreRule/Index.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Controller\\Adminhtml\\ScoreRule\\NewAction\:\:execute\(\) should return Magento\\Framework\\App\\ResponseInterface\|Magento\\Framework\\Controller\\ResultInterface but returns null\.$#'
+			identifier: return.type
+			count: 1
+			path: Controller/Adminhtml/ScoreRule/NewAction.php
+
+		-
+			message: '#^Result of method Magento\\Backend\\App\\AbstractAction\:\:_forward\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: Controller/Adminhtml/ScoreRule/NewAction.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getPostValue\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/ScoreRule/Save.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 3
+			path: Controller/Adminhtml/ScoreRule/Save.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
+			path: Controller/Adminhtml/ScoreRule/Save.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
 			path: Controller/Adminhtml/Segment/BulkAction.php
 
 		-
@@ -413,18 +479,6 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Model/Campaign/Action/SendEmail.php
-
-		-
-			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''strval'' given\.$#'
-			identifier: argument.type
-			count: 3
-			path: Model/Recommendation/ProductRecommender.php
-
-		-
-			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''intval'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model/Recommendation/ProductRecommender.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
@@ -1005,7 +1059,7 @@ parameters:
 		-
 			message: '#^Possibly invalid array key type mixed\.$#'
 			identifier: offsetAccess.invalidOffset
-			count: 3
+			count: 2
 			path: Model/FreeGiftManagement.php
 
 		-
@@ -1315,6 +1369,18 @@ parameters:
 			path: Model/Queue/VisitorAggregationConsumer.php
 
 		-
+			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''intval'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Recommendation/ProductRecommender.php
+
+		-
+			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''strval'' given\.$#'
+			identifier: argument.type
+			count: 3
+			path: Model/Recommendation/ProductRecommender.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 4
@@ -1491,6 +1557,54 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
+			count: 3
+			path: Model/ScoreRule.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
+			path: Model/ScoreRule.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Model/ScoreRule/DataProvider.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\ScoreRule\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/ScoreRule/DataProvider.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\ScoreRule\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\<int, mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/ScoreRule/DataProvider.php
+
+		-
+			message: '#^Property Ordo\\Automation\\Model\\ScoreRule\\DataProvider\:\:\$loadedData type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Model/ScoreRule/DataProvider.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/ScoreRule/ScoreRuleEvaluator.php
+
+		-
+			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/ScoreRule/ScoreRuleEvaluator.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
 			count: 1
 			path: Model/Segment.php
 
@@ -1613,6 +1727,12 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Observer/DispatchCustomerRegisteredCampaigns.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Observer/DispatchScoreThresholdCampaigns.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -1865,123 +1985,3 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: Ui/Component/Listing/Column/AbstractEntityActionsColumn.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getPostValue\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/ScoreRule/Save.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 3
-			path: Controller/Adminhtml/ScoreRule/Save.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 3
-			path: Controller/Adminhtml/ScoreRule/Save.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 3
-			path: Model/ScoreRule.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 3
-			path: Model/ScoreRule.php
-
-		-
-			message: '#^Property Ordo\\Automation\\Model\\ScoreRule\\DataProvider\:\:\$loadedData type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Model/ScoreRule/DataProvider.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\ScoreRule\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\.$#'
-			identifier: return.type
-			count: 1
-			path: Model/ScoreRule/DataProvider.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 2
-			path: Model/ScoreRule/DataProvider.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\ScoreRule\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\<int, mixed\>\.$#'
-			identifier: return.type
-			count: 1
-			path: Model/ScoreRule/DataProvider.php
-
-		-
-			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, int given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model/ScoreRule/ScoreRuleEvaluator.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 1
-			path: Model/ScoreRule/ScoreRuleEvaluator.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Observer/DispatchScoreThresholdCampaigns.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Controller/Adminhtml/ScoreRule/Delete.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/ScoreRule/Edit.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Controller/Adminhtml/ScoreRule/Edit.php
-
-		-
-			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Adminhtml/ScoreRule/Edit.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/ScoreRule/Index.php
-
-		-
-			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Adminhtml/ScoreRule/Index.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Controller\\Adminhtml\\ScoreRule\\NewAction\:\:execute\(\) should return Magento\\Framework\\App\\ResponseInterface\|Magento\\Framework\\Controller\\ResultInterface but returns null\.$#'
-			identifier: return.type
-			count: 1
-			path: Controller/Adminhtml/ScoreRule/NewAction.php
-
-		-
-			message: '#^Result of method Magento\\Backend\\App\\AbstractAction\:\:_forward\(\) \(void\) is used\.$#'
-			identifier: method.void
-			count: 1
-			path: Controller/Adminhtml/ScoreRule/NewAction.php

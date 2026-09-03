@@ -58,7 +58,7 @@ class TrimExcessFreeGifts implements ObserverInterface
             $row = $rows[count($rows) - 1 - $i];
             try {
                 $quote->removeItem((int) $row->getQuoteItemId());
-            } catch (\Exception $e) {
+            } catch (\Exception) {
                 // Already gone from the quote — still clean up the stale marker row below.
             }
             $this->giftItemResource->delete($row);

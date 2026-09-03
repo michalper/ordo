@@ -12,26 +12,21 @@ use Ordo\Automation\Api\Data\CampaignTriggerSearchResultsInterface;
 interface CampaignTriggerRepositoryInterface
 {
     /**
-     * @return CampaignTriggerInterface
      * @throws CouldNotSaveException
      */
     public function save(CampaignTriggerInterface $trigger): CampaignTriggerInterface;
 
     /**
-     * @return CampaignTriggerInterface
      * @throws NoSuchEntityException
      */
     public function getById(int $entityId): CampaignTriggerInterface;
 
     /**
      * Filter by campaign_id via searchCriteria to get every trigger on one campaign.
-     *
-     * @return CampaignTriggerSearchResultsInterface
      */
     public function getList(SearchCriteriaInterface $searchCriteria): CampaignTriggerSearchResultsInterface;
 
     /**
-     * @return bool
      * @throws NoSuchEntityException
      * @throws CouldNotSaveException
      */

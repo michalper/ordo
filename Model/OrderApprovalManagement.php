@@ -39,7 +39,7 @@ class OrderApprovalManagement implements OrderApprovalManagementInterface
     public function approveByToken(string $token): OrderApprovalInterface
     {
         $approval = $this->loadPendingApprovalByToken($token);
-        $order = $this->loadOrder((int) $approval->getOrderId());
+        $order = $this->loadOrder($approval->getOrderId());
 
         // Release the order into whatever status is normally the default for the "new" state —
         // i.e. exactly where it would have landed if it had never been held.
@@ -52,7 +52,7 @@ class OrderApprovalManagement implements OrderApprovalManagementInterface
     public function rejectByToken(string $token): OrderApprovalInterface
     {
         $approval = $this->loadPendingApprovalByToken($token);
-        $order = $this->loadOrder((int) $approval->getOrderId());
+        $order = $this->loadOrder($approval->getOrderId());
 
         // cancel() also releases any reserved inventory back to stock.
         $order->cancel();

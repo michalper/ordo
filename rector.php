@@ -35,4 +35,11 @@ return RectorConfig::configure()
         // "unused parameter" rules don't know a plugin method's signature is dictated by the
         // class/method it intercepts, not by what the method body actually uses.
         \Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPromotedPropertyRector::class,
+        // array_map('intval', ...)/array_map('strval', ...) -> array_map(intval(...), ...):
+        // confirmed via a real PHPStan run that this rewrite breaks strictly at level max —
+        // intval(...)/strval(...) as a first-class callable captures a signature (int|string,
+        // int $base = 10) that's narrower than array_map's own (callable(mixed): mixed)
+        // parameter type, so PHPStan correctly flags it as a real type mismatch, not a false
+        // positive. The string-literal callable form has no such issue.
+        \Rector\CodingStyle\Rector\FuncCall\FunctionFirstClassCallableRector::class,
     ]);

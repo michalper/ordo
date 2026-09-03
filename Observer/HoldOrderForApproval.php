@@ -124,7 +124,7 @@ class HoldOrderForApproval implements ObserverInterface
                 'order_increment_id' => $order->getIncrementId(),
                 'order_total' => $order->getGrandTotal(),
                 'customer_name' => trim(
-                    (string) $order->getCustomerFirstname() . ' ' . (string) $order->getCustomerLastname()
+                    $order->getCustomerFirstname() . ' ' . $order->getCustomerLastname()
                 ),
                 'approve_url' => $baseUrl . '/ordo/approval/approve/token/' . $token,
                 'reject_url' => $baseUrl . '/ordo/approval/reject/token/' . $token,

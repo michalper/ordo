@@ -181,7 +181,7 @@ class CampaignDispatcher
         foreach ($conditions as $conditionRow) {
             $condition = $this->conditionPool->get((string) $conditionRow->getData('type'));
 
-            if ($condition === null) {
+            if (!$condition instanceof \Ordo\Automation\Api\Campaign\ConditionInterface) {
                 $this->logger->error(sprintf(
                     'Ordo_Automation: unknown campaign condition type "%s".',
                     $conditionRow->getData('type')
@@ -264,7 +264,7 @@ class CampaignDispatcher
     {
         $action = $this->actionPool->get((string) $actionRow->getData('type'));
 
-        if ($action === null) {
+        if (!$action instanceof \Ordo\Automation\Api\Campaign\ActionInterface) {
             $this->logger->error(sprintf(
                 'Ordo_Automation: unknown campaign action type "%s".',
                 $actionRow->getData('type')

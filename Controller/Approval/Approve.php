@@ -26,7 +26,7 @@ class Approve extends AbstractApprovalAction
 
         try {
             $approval = $this->orderApprovalManagement->approveByToken($token);
-        } catch (NoSuchEntityException $e) {
+        } catch (NoSuchEntityException) {
             return $this->redirectHome('This approval link has already been used or is invalid.', false);
         } catch (LocalizedException $e) {
             return $this->redirectHome($e->getMessage(), false);

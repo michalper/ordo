@@ -49,7 +49,7 @@ class ScoreRuleEvaluator
             return false;
         }
 
-        $actual = (string) $attributeValue;
+        $actual = $attributeValue;
         $expected = $rule->getValue();
 
         return match ($rule->getOperator()) {

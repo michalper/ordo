@@ -116,14 +116,12 @@ class TriggerOutcomeLogger
         }
 
         foreach (self::TRIGGER_TYPES as $triggerType) {
-            if (!isset($statsByTrigger[$triggerType])) {
-                $statsByTrigger[$triggerType] = [
-                    'sent' => 0,
-                    'responded' => 0,
-                    'response_rate' => 0.0,
-                    'recovered_revenue' => 0.0,
-                ];
-            }
+            $statsByTrigger[$triggerType] ??= [
+                'sent' => 0,
+                'responded' => 0,
+                'response_rate' => 0.0,
+                'recovered_revenue' => 0.0,
+            ];
         }
 
         return $statsByTrigger;

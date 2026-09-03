@@ -42,7 +42,7 @@ class Extend extends AbstractOfferAction implements HttpPostActionInterface
             $this->messageManager->addSuccessMessage(
                 __('Offer "%1" has been extended to %2.', $offer->getReference(), $offer->getExpiresAt())
             );
-        } catch (NoSuchEntityException $e) {
+        } catch (NoSuchEntityException) {
             $this->messageManager->addErrorMessage(__('This offer could not be found.'));
         } catch (LocalizedException $e) {
             $this->messageManager->addErrorMessage($e->getMessage());

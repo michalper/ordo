@@ -63,7 +63,7 @@ class Flow extends Template
 
     public function hasCampaign(): bool
     {
-        return $this->getCampaign() !== null && $this->getCampaign()->getEntityId();
+        return $this->getCampaign() instanceof \Ordo\Automation\Model\Campaign && $this->getCampaign()->getEntityId();
     }
 
     /**
@@ -202,7 +202,7 @@ class Flow extends Template
      * editableNodeHtml()/condition/action nodes below: just a label, a delete button, and the
      * select.
      */
-    private function triggerNodeHtml(string $selectedTrigger, string $optionsHtml): string
+    private function triggerNodeHtml(string $optionsHtml): string
     {
         return '<div class="ordo-flow-node" data-kind="trigger">'
             . '<div class="ordo-flow-node-head">'
@@ -324,7 +324,6 @@ class Flow extends Template
                 $id,
                 'ordo-flow-trigger',
                 $this->triggerNodeHtml(
-                    $triggerEvent,
                     $this->typeOptionsHtml($this->getTriggerEventTypes(), $triggerEvent, $this->getTriggerEventLabels())
                 ),
                 $x,

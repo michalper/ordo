@@ -12,13 +12,7 @@ namespace Ordo\Automation\Api\Data;
  */
 interface OrderApprovalDecisionLinksInterface
 {
-    /**
-     * @return string
-     */
     public function getApproveUrl(): string;
 
-    /**
-     * @return string
-     */
     public function getRejectUrl(): string;
 }

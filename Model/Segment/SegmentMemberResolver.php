@@ -305,9 +305,7 @@ class SegmentMemberResolver
      */
     private function getAggregates(): array
     {
-        if ($this->aggregatesCache === null) {
-            $this->aggregatesCache = $this->rfmCalculator->getAggregatesForAllCustomers();
-        }
+        $this->aggregatesCache ??= $this->rfmCalculator->getAggregatesForAllCustomers();
 
         return $this->aggregatesCache;
     }
@@ -317,9 +315,7 @@ class SegmentMemberResolver
      */
     private function getPercentileRanks(): array
     {
-        if ($this->percentileRanksCache === null) {
-            $this->percentileRanksCache = $this->rfmCalculator->getPercentileRanks();
-        }
+        $this->percentileRanksCache ??= $this->rfmCalculator->getPercentileRanks();
 
         return $this->percentileRanksCache;
     }

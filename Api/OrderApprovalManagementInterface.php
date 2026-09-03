@@ -19,7 +19,6 @@ interface OrderApprovalManagementInterface
     /**
      * Releases the order into whatever status is normally the default for the "new" state.
      *
-     * @return OrderApprovalInterface
      * @throws NoSuchEntityException if the token doesn't match a still-pending approval
      * @throws LocalizedException if the held order itself can no longer be found
      */
@@ -28,7 +27,6 @@ interface OrderApprovalManagementInterface
     /**
      * Cancels the order (releasing reserved inventory).
      *
-     * @return OrderApprovalInterface
      * @throws NoSuchEntityException if the token doesn't match a still-pending approval
      * @throws LocalizedException if the held order itself can no longer be found
      */
@@ -40,7 +38,6 @@ interface OrderApprovalManagementInterface
      * Closes the gap documented in API.md: a headless client (e.g. a sales-rep mobile app)
      * previously had no way to act on a pending approval except through the email link.
      *
-     * @return OrderApprovalDecisionLinksInterface
      * @throws NoSuchEntityException if the approval doesn't exist or is no longer pending
      */
     public function getDecisionLinksById(int $entityId): OrderApprovalDecisionLinksInterface;

@@ -49,11 +49,8 @@ class Config
     private const XML_PATH_LEAD_SCORING_ENABLED = 'ordo_automation/lead_scoring/enabled';
     private const XML_PATH_LEAD_SCORING_THRESHOLD = 'ordo_automation/lead_scoring/score_threshold';
 
-    private ScopeConfigInterface $scopeConfig;
-
-    public function __construct(ScopeConfigInterface $scopeConfig)
+    public function __construct(private readonly ScopeConfigInterface $scopeConfig)
     {
-        $this->scopeConfig = $scopeConfig;
     }
 
     /**

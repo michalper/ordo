@@ -13,7 +13,6 @@ interface CreditLimitManagementInterface
      * show "how much credit do I have left" without needing an admin token or the customer's
      * own entity id.
      *
-     * @return CreditLimitStatusInterface
      * @throws NoSuchEntityException if the caller isn't an authenticated customer
      */
     public function getMyStatus(): CreditLimitStatusInterface;
@@ -21,8 +20,6 @@ interface CreditLimitManagementInterface
     /**
      * Admin/sales-rep lookup for an arbitrary customer.
      *
-     * @param int $customerId
-     * @return CreditLimitStatusInterface
      * @throws NoSuchEntityException
      */
     public function getStatusForCustomer(int $customerId): CreditLimitStatusInterface;

@@ -36,7 +36,7 @@ class BulkActions extends Template
     public function getSegmentId(): int
     {
         $segment = $this->getSegment();
-        return $segment !== null ? (int) $segment->getEntityId() : 0;
+        return $segment instanceof \Ordo\Automation\Model\Segment ? (int) $segment->getEntityId() : 0;
     }
 
     public function isSegmentSaved(): bool

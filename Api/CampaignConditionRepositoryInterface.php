@@ -12,13 +12,11 @@ use Ordo\Automation\Api\Data\CampaignConditionSearchResultsInterface;
 interface CampaignConditionRepositoryInterface
 {
     /**
-     * @return CampaignConditionInterface
      * @throws CouldNotSaveException
      */
     public function save(CampaignConditionInterface $condition): CampaignConditionInterface;
 
     /**
-     * @return CampaignConditionInterface
      * @throws NoSuchEntityException
      */
     public function getById(int $entityId): CampaignConditionInterface;
@@ -26,13 +24,10 @@ interface CampaignConditionRepositoryInterface
     /**
      * Filter by campaign_id via searchCriteria to get every condition on one campaign, e.g.
      * searchCriteria[filterGroups][0][filters][0][field]=campaign_id&...[value]=5.
-     *
-     * @return CampaignConditionSearchResultsInterface
      */
     public function getList(SearchCriteriaInterface $searchCriteria): CampaignConditionSearchResultsInterface;
 
     /**
-     * @return bool
      * @throws NoSuchEntityException
      * @throws CouldNotSaveException
      */

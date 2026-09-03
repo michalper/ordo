@@ -55,7 +55,7 @@ class SegmentMatcher
             $type = (string) $conditionRow->getData('type');
             $condition = $this->conditionPool->get($type);
 
-            if ($condition === null) {
+            if (!$condition instanceof \Ordo\Automation\Api\Campaign\ConditionInterface) {
                 $this->logger->error(sprintf('Ordo_Automation: unknown segment condition type "%s".', $type));
                 return false;
             }

@@ -14,43 +14,19 @@ interface ReorderCycleInterface
     public const ORDERS_CONSIDERED = 'orders_considered';
     public const UPDATED_AT = 'updated_at';
 
-    /**
-     * @return int|null
-     */
     public function getEntityId(): ?int;
 
-    /**
-     * @return int
-     */
     public function getCustomerId(): int;
 
-    /**
-     * @return string
-     */
     public function getSku(): string;
 
-    /**
-     * @return int
-     */
     public function getAvgIntervalDays(): int;
 
-    /**
-     * @return string
-     */
     public function getLastOrderDate(): string;
 
-    /**
-     * @return string
-     */
     public function getNextExpectedDate(): string;
 
-    /**
-     * @return int
-     */
     public function getOrdersConsidered(): int;
 
-    /**
-     * @return string|null
-     */
     public function getUpdatedAt(): ?string;
 }

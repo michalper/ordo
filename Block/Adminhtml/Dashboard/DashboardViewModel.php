@@ -158,11 +158,7 @@ class DashboardViewModel implements ArgumentInterface
      */
     public function getTriggerLabelsForCampaign(int $campaignId): string
     {
-        if ($this->triggerLabelsByCampaignId === null) {
-            // Defensive fallback in case a caller asks before getCampaigns() has run — still a
-            // single query, just scoped to the one campaign instead of the batch.
-            $this->triggerLabelsByCampaignId = $this->loadTriggerLabelsByCampaignId([$campaignId]);
-        }
+        $this->triggerLabelsByCampaignId ??= $this->loadTriggerLabelsByCampaignId([$campaignId]);
 
         return $this->triggerLabelsByCampaignId[$campaignId] ?? (string) __('No trigger configured');
     }

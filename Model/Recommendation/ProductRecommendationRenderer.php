@@ -44,7 +44,7 @@ class ProductRecommendationRenderer
                 /** @var Product $product ProductRepositoryInterface::get() always returns the
                  *  concrete Product model in practice — only its interface is declared. */
                 $product = $this->productRepository->get($sku);
-            } catch (NoSuchEntityException $e) {
+            } catch (NoSuchEntityException) {
                 continue;
             }
 

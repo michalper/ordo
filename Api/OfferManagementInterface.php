@@ -20,7 +20,6 @@ interface OfferManagementInterface
      * Pushes an offer's expiry back by Helper\Config::getOfferSelfExtensionDays(), capped at
      * Helper\Config::getOfferMaxSelfExtensions() total extensions.
      *
-     * @return OfferInterface
      * @throws NoSuchEntityException if the offer doesn't exist or doesn't belong to the caller
      * @throws LocalizedException if the offer has already used up its self-extensions
      * @throws CouldNotSaveException
