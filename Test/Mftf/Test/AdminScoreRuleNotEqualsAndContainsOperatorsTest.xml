@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminScoreRuleNotEqualsAndContainsOperatorsTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Lead scoring"/>
+            <title value="Score rules with not_equals and contains operators both match a real customer"/>
+            <description value="Every other score-rule MFTF test only ever exercises operator=equals — this covers ScoreRuleEvaluator.php's other two match branches directly: OPERATOR_NOT_EQUALS (actual !== expected) and OPERATOR_CONTAINS (str_contains). Two rules, one real customer: a not_equals rule on group_id against a value no real customer group ever has (99), so it matches unconditionally; a contains rule on email against &quot;example.com&quot; — Simple_US_Customer's own fixture email domain, and unique=&quot;prefix&quot; only ever prepends to the local part, never touching the domain (confirmed against CustomerData.xml), so the substring survives MFTF's own uniqueness suffixing. Asserting the combined score (both rules' points) is the only way to prove BOTH operators independently matched, not just one masking the other."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="dashboard"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: the not_equals rule — group_id != 99 (no real customer group has this id,
+             confirmed against Magento's own stock install groups: 0=NOT LOGGED IN, 1=General,
+             2=Wholesale, 3=Retailer), so it matches any real customer unconditionally. -->
+        <amOnPage url="admin/ordo/scorerule/new" stepKey="goToNewScoreRulePageNotEquals"/>
+        <waitForPageLoad stepKey="waitForNewScoreRulePageNotEquals"/>
+        <!-- attribute_code is a Magento_Ui/js/form/element/ui-select searchable picker
+             (ordo_scorerule_form.xml) — its DOM interaction proved unreliable across real CI
+             runs (a click-search-select sequence that intermittently never found the
+             dropdown trigger). Set the value directly via uiRegistry instead, the same
+             robust technique already proven for hidden dynamicRows fieldsets elsewhere in
+             this suite — multiple:false (ordo_scorerule_form.xml) means the component's own
+             value() is a plain scalar, not an array (confirmed via ui-select.js's own
+             `this.multiple ? _.contains(this.value(), value) : this.value() === value`). -->
+        <executeJS function="require(['uiRegistry'], function (uiRegistry) { uiRegistry.get('ordo_scorerule_form.ordo_scorerule_form.general.attribute_code', function (field) { field.value('group_id'); }); });" stepKey="fillAttributeCodeNotEquals"/>
+        <selectOption selector="[name='operator']" userInput="not_equals" stepKey="selectOperatorNotEquals"/>
+        <fillField selector="[name='value']" userInput="99" stepKey="fillValueNotEquals"/>
+        <fillField selector="[name='points']" userInput="30" stepKey="fillPointsNotEquals"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveScoreRuleNotEquals"/>
+        <waitForPageLoad stepKey="waitForScoreRuleSaveNotEquals"/>
+        <see selector=".message-success" userInput="The score rule has been saved." stepKey="seeScoreRuleSuccessMessageNotEquals"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabScoreRuleIdNotEquals"/>
+
+        <!-- Step 2: the contains rule — email contains "example.com". -->
+        <amOnPage url="admin/ordo/scorerule/new" stepKey="goToNewScoreRulePageContains"/>
+        <waitForPageLoad stepKey="waitForNewScoreRulePageContains"/>
+        <executeJS function="require(['uiRegistry'], function (uiRegistry) { uiRegistry.get('ordo_scorerule_form.ordo_scorerule_form.general.attribute_code', function (field) { field.value('email'); }); });" stepKey="fillAttributeCodeContains"/>
+        <selectOption selector="[name='operator']" userInput="contains" stepKey="selectOperatorContains"/>
+        <fillField selector="[name='value']" userInput="example.com" stepKey="fillValueContains"/>
+        <fillField selector="[name='points']" userInput="50" stepKey="fillPointsContains"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveScoreRuleContains"/>
+        <waitForPageLoad stepKey="waitForScoreRuleSaveContains"/>
+        <see selector=".message-success" userInput="The score rule has been saved." stepKey="seeScoreRuleSuccessMessageContains"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabScoreRuleIdContains"/>
+
+        <!-- Step 3: the real customer — customer_save_after (Observer/EvaluateCustomerScoreRules.php)
+             evaluates BOTH active rules against them in the same pass. -->
+        <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+
+        <!-- Step 4: the real, database-observable proof — 80 total (30 + 50) only happens if
+             BOTH operators independently matched, not just one. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertCustomerScoreAtLeastByEmail" stepKey="assertCombinedScoreApplied">
+            <argument name="email">$createCustomer.email$</argument>
+            <argument name="minScore">80</argument>
+        </helper>
+
+        <!-- Cleanup: same reasoning as AdminSegmentBulkActionAddPointsTest.xml's identical
+             closing step — unscoped demographic rules would otherwise stack on every customer
+             created for the rest of this same CI job. Both rules match essentially any real
+             customer (not_equals 99, contains a fixture-standard email domain), making this
+             cleanup even more important than the group_id=1-only rules elsewhere in this suite. -->
+        <amOnPage url="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleIdNotEquals}" stepKey="deleteScoreRuleNotEquals"/>
+        <waitForPageLoad stepKey="waitForScoreRuleDeleteNotEquals"/>
+        <see selector=".message-success" userInput="The score rule has been deleted." stepKey="seeScoreRuleDeleteSuccessMessageNotEquals"/>
+        <amOnPage url="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleIdContains}" stepKey="deleteScoreRuleContains"/>
+        <waitForPageLoad stepKey="waitForScoreRuleDeleteContains"/>
+        <see selector=".message-success" userInput="The score rule has been deleted." stepKey="seeScoreRuleDeleteSuccessMessageContains"/>
+    </test>
+</tests>

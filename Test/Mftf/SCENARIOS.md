@@ -119,8 +119,8 @@ cases separately from the type-by-type ones.
 |----------------------------------------------------------------------------------------------------------|--------------------------------------|
 | Create a score rule (attribute code, operator, value, points) via admin CRUD                             | ✅ `AdminScoreThresholdCampaignTest` |
 | Operator: `equals`                                                                                       | ✅ `AdminScoreThresholdCampaignTest` |
-| Operator: `not_equals`                                                                                   | ⬜                                   |
-| Operator: `contains`                                                                                     | ⬜                                   |
+| Operator: `not_equals`                                                                                   | ✅ `AdminScoreRuleNotEqualsAndContainsOperatorsTest` |
+| Operator: `contains`                                                                                     | ✅ `AdminScoreRuleNotEqualsAndContainsOperatorsTest` |
 | Customer save triggers `Observer/EvaluateCustomerScoreRules.php`, delta applied to `ordo_customer_score` | ✅ `AdminScoreThresholdCampaignTest` |
 | Crossing the configured threshold fires `score_threshold_crossed` (chains §1a)                           | ✅ `AdminScoreThresholdCampaignTest` |
 | Score rule edited/disabled — no longer contributes on next customer save                                 | ✅ `AdminDisableScoreRuleStopsContributingTest` |
