@@ -25,7 +25,27 @@ scoped from real hands-on marketing automation experience.
 
 Not a code review — a capability comparison against the category. Each is a real, separate stream of work:
 
-- **Multichannel recovery** — SMS/WhatsApp/push. `cart_abandoned`/win-back only ever send email.
+- ~~Multichannel recovery: SMS~~ — done. `send_sms` campaign action (`Model/Campaign/Action/SendSms` +
+  `Model/Sms/TwilioSmsSender`, official `twilio/sdk`) — any campaign (`cart_abandoned`/win-back included) can add
+  it alongside or instead of `send_email` from the Flow canvas. Phone resolves via a dedicated `ordo_sms_phone`
+  customer attribute (not the unreliable core address telephone). Delivery is tracked in a new, deliberately
+  channel-generic `ordo_message_log` table via `Controller/Sms/StatusCallback.php`, a signature-verified webhook
+  (`Twilio\Security\RequestValidator`) Twilio POSTs status updates to. Opted-out recipients (Twilio error 21610)
+  are recorded as `status=opted_out`, distinct from a generic failure, and the Flow canvas's SMS message field
+  carries a TCPA/opt-out-instruction reminder notice.
+  - **WhatsApp** — still open, and confirmed via Twilio's own docs to be materially more work than "same API,
+    `whatsapp:` prefix": outside a 24-hour customer-service session window (started only when the *customer*
+    messages first), only pre-approved message templates can be sent (Marketing/Utility/Authentication
+    categories, each with separate Meta fees, ~minutes-to-48h approval turnaround). A cold-start marketing
+    cart-recovery message is necessarily template-based, so this needs a template-authoring/approval-tracking
+    admin UI, not just a new `SmsSenderInterface`-style action — scope this properly before starting, don't
+    underestimate it as a copy of the SMS slice.
+  - **Push notifications** — still open, not investigated yet.
+  - **SendGrid-backed email delivery tracking** — not multichannel-recovery scope exactly, but a natural
+    follow-up now that `ordo_message_log`/the webhook pattern exist: Twilio's SendGrid (Mail Send API + Event
+    Webhook for opens/clicks/bounces) could replace `send_email`'s current fire-and-forget `TransportBuilder`
+    call the same way `send_sms` now tracks delivery. A real, separate architectural decision (email sending is
+    threaded through `TransportBuilder` in more places than just `SendEmail`), not a small addition.
 - **On-site product recommendation blocks** — a new content-block type (or campaign action) rendering personalized
   product suggestions using data the module already has (customer/visitor tags, RFM scores, segment membership),
   not a new AI/recommendation engine. Extends the existing content-block and campaign-action surface rather than

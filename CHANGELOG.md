@@ -74,6 +74,17 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   grids/messages) via `bin/magento i18n:collect-phrases`, and 10 new locale dictionaries added
   (`de_DE`/`fr_FR`/`es_ES`/`it_IT`/`pt_BR`/`zh_Hans_CN`/`ja_JP`/`ru_RU`/`uk_UA`/`nl_NL`). Machine-translated first
   pass, not yet human-reviewed per locale.
+- **Multichannel recovery: SMS campaign action (Twilio).** New `send_sms` campaign action
+  (`Model/Campaign/Action/SendSms` + `Model/Sms/TwilioSmsSender`, built on the official `twilio/sdk` package) —
+  usable on any campaign, including `cart_abandoned`/win-back, alongside or instead of `send_email`. Phone number
+  resolves via a dedicated `ordo_sms_phone` customer attribute rather than the unreliable core address `telephone`
+  field. Delivery is tracked end to end in a new, deliberately channel-generic `ordo_message_log` table, updated by
+  a signature-verified webhook (`Controller/Sms/StatusCallback.php`, `Twilio\Security\RequestValidator`) that
+  Twilio POSTs status updates to — an invalid/forged `X-Twilio-Signature` is rejected before the request ever
+  touches the database. Recipients who've opted out (Twilio error 21610) are recorded as `status=opted_out`,
+  distinct from a generic delivery failure, and the Flow canvas's SMS message field carries a TCPA/opt-out-notice
+  reminder. `SmsSenderInterface` is the only contract the campaign action depends on, so a non-Twilio provider can
+  be swapped in later without touching `SendSms`.
 
 ### Fixed
 

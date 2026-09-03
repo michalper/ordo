@@ -43,6 +43,8 @@ tools structurally can't see.
 - **Welcome email** — on customer registration.
 - **Win-back / re-engagement email** — one-time email after N days of inactivity, self-clearing once the customer orders
   again.
+- **SMS recovery (Twilio)** — a `send_sms` campaign action usable on any campaign (including abandoned cart/win-back)
+  alongside or instead of email, with delivery-status tracking and opt-out handling. See ROADMAP.md for WhatsApp/push.
 
 **Shared foundation**
 
@@ -111,8 +113,11 @@ Controller/Track/Event.php       — public, CSRF-exempt tracking endpoint
 Model/VisitorEventLogger.php     — writes ordo_visitor_event, triggers aggregation when identity is known
 Model/VisitorAggregator.php      — raw events → ordo_customer_tag threshold-crossing tags
 view/frontend/web/js/tracker.js  — dependency-free visitor cookie + event snippet
+Model/Sms/                       — SmsSenderInterface, TwilioSmsSender, CallbackUrlBuilder, MessageLogWriter
+Controller/Sms/StatusCallback.php — signature-verified Twilio delivery-status webhook (public, CSRF-exempt)
+Model/MessageLog.php             — ordo_message_log — channel-generic delivery tracking (sms today, email later)
 Test/Unit/                       — PHPUnit tests (see ROADMAP.md Phase 6 for current coverage state)
-i18n/                            — translation CSVs (en_US, pl_PL)
+i18n/                            — translation CSVs (en_US, pl_PL, + 10 machine-translated locales)
 ```
 
 ## Install
@@ -147,9 +152,9 @@ should meet them, and existing code is being brought up to the same bar incremen
 ## Localization
 
 Admin-facing labels (`system.xml`, customer attribute labels) are translatable via standard Magento i18n CSV files in
-`i18n/`, keyed off `en_US.csv` as the source. Currently shipped: `en_US`, `pl_PL`. Contributions/requests for additional
-locales are tracked in `ROADMAP.md` Phase 6 — the goal is to cover every language relevant to the store's actual
-customer base, not just a token second locale.
+`i18n/`, keyed off `en_US.csv` as the source. Currently shipped: `en_US`, `pl_PL` (both human-reviewed), plus 10
+machine-translated locales (`de_DE`, `fr_FR`, `es_ES`, `it_IT`, `pt_BR`, `zh_Hans_CN`, `ja_JP`, `ru_RU`, `uk_UA`,
+`nl_NL`) awaiting native-speaker review — see `ROADMAP.md`.
 
 ## Roadmap
 
