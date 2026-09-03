@@ -2,8 +2,14 @@
     "name": "ordo/module-automation",
     "description": "B2B + B2C marketing automation for Magento Open Source — reorder, offer expiry, credit limit, and order approval triggers alongside abandoned cart and lifecycle emails, no Adobe Commerce B2B or external MA subscription required.",
     "type": "magento2-module",
-    "license": "OSL-3.0",
+    "license": "MIT",
     "version": "1.0.0",
+    "authors": [
+        {
+            "name": "Michał Per",
+            "email": "michal.per@outlook.com"
+        }
+    ],
     "require": {
         "php": "~8.2.0||~8.3.0||~8.4.0||~8.5.0",
         "magento/framework": "^103.0.8",

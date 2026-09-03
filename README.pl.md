@@ -7,7 +7,7 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=michalper_ordo&metric=alert_status)](https://sonarcloud.io/project/overview?id=michalper_ordo)
 [![PHP](https://img.shields.io/badge/php-8.2%2B-777bb4)](composer.json)
 [![Magento](https://img.shields.io/badge/magento-2.4.8%20%7C%202.4.9-orange)](composer.json)
-[![License: OSL-3.0](https://img.shields.io/badge/license-OSL--3.0-blue)](https://opensource.org/licenses/OSL-3.0)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Dependabot](https://img.shields.io/badge/dependabot-enabled-025E8C?logo=dependabot&logoColor=white)](.github/dependabot.yml)
 [![Code Style](https://img.shields.io/badge/code%20style-Magento2%20Coding%20Standard-orange)](phpcs.xml.dist)
 [![Open Issues](https://img.shields.io/github/issues/michalper/ordo)](https://github.com/michalper/ordo/issues)
@@ -185,4 +185,6 @@ Zobacz [CHANGELOG.md](CHANGELOG.md).
 
 ## Licencja
 
-OSL-3.0 (tak jak core Magento).
+MIT — zobacz [LICENSE](LICENSE). Kontrybucje mile widziane; zobacz [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Copyright (c) 2026 Michał Per.
