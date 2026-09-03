@@ -6,13 +6,12 @@
             <features value="Ordo Automation"/>
             <stories value="Saved segments"/>
             <title value="Editing a segment's condition changes live membership on the next dispatch"/>
-            <description value="Sibling to AdminCampaignInSegmentConditionTest.xml, which proves a segment is a live query rather than a cached snapshot by changing the CUSTOMER's data between two dispatches. This proves the same liveness the other direction: changing the SEGMENT's own condition (via Segment/Save.php's edit path, not creation) changes who matches on the very next dispatch, with the customer's own data held constant throughout. One campaign, one customer: the segment starts with a condition (tag=vip) the customer never satisfies, so Campaign C's in_segment condition fails on order 1's dispatch and no coupon is generated; the segment is then edited to a condition (order_total_gte, an amount the customer's order total already clears) the customer DOES satisfy, and order 2's dispatch — same customer, same in_segment campaign, same order amount — now succeeds. Only SegmentMatcher re-running the segment's freshly-saved condition rows at dispatch time, not a cached membership result from segment creation, can explain the coupon appearing after the edit and not before."/>
+            <description value="Sibling to AdminCampaignInSegmentConditionTest.xml, which proves a segment is a live query rather than a cached snapshot by changing the CUSTOMER's data between two dispatches. This proves the same liveness the other direction: changing the SEGMENT's own condition (via Segment/Save.php's edit path, not creation) changes who matches on the very next dispatch, with the customer's own data held constant throughout. score_at_least is the only condition type usable here — order_total_gte reads context['order_total'], which SegmentMatcher's own context (customer_id plus cycle-guard state only, see its own isCustomerInSegment()) never sets, so it can never be satisfied as a segment condition; score_at_least only needs customer_id, which SegmentMatcher does provide. A demographic score rule (group_id=1, 80pts) gives the customer a real, persistent score at creation time, held constant for the rest of the test. One campaign, one customer: the segment starts with a threshold (999) the customer's 80 points never clears, so Campaign C's in_segment condition fails on order 1's dispatch and no coupon is generated; the segment is then edited to a threshold (10) the same 80 points already clears, and order 2's dispatch — same customer, same in_segment campaign, same score — now succeeds. Only SegmentMatcher re-running the segment's freshly-saved condition rows at dispatch time, not a cached membership result from segment creation, can explain the coupon appearing after the edit and not before."/>
             <severity value="MAJOR"/>
             <group value="ordo_automation"/>
             <group value="segment"/>
         </annotations>
         <before>
-            <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
             <createData entity="SimpleProduct2" stepKey="createProduct"/>
             <createData entity="ApiSalesRule" stepKey="createRule"/>
             <!-- Requires cataloginventory_stock/catalog_product_price/catalog_product_attribute/
@@ -28,10 +27,36 @@
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
-        <!-- Step 1: the Segment — starts with a condition the customer never satisfies (no
-             order/registration flow in this test ever tags them "vip"). "Save & Continue Edit"
-             so the redirect URL carries entity_id, same grabFromCurrentUrl convention
-             AdminCampaignInSegmentConditionTest.xml uses. -->
+        <!-- Step 1: a demographic score rule (same mechanism AdminSegmentBulkActionAddTagTest.xml
+             already relies on) — 80 points to any General (group_id=1) customer on save. Created
+             BEFORE the customer below so it's already active at customer_save_after time, giving
+             the customer a real, persistent score held constant for the rest of this test. -->
+        <amOnPage url="admin/ordo/scorerule/new" stepKey="goToNewScoreRulePage"/>
+        <waitForPageLoad stepKey="waitForNewScoreRulePage"/>
+        <!-- attribute_code is a Magento_Ui/js/form/element/ui-select searchable picker
+             (ordo_scorerule_form.xml) — same real interaction sequence
+             AdminSegmentBulkActionAddTagTest.xml's own identical step uses. -->
+        <waitForElementVisible selector="[data-index='attribute_code'] [data-role='selected-option']" stepKey="waitForAttributeCodeField"/>
+        <click selector="[data-index='attribute_code'] [data-role='selected-option']" stepKey="clickAttributeCodeDropdown"/>
+        <waitForElementVisible selector="input[data-role='advanced-select-text']" stepKey="waitForAttributeSearchInput"/>
+        <fillField selector="input[data-role='advanced-select-text']" userInput="Group" stepKey="searchAttributeCode"/>
+        <waitForElementVisible selector="//li[contains(@class, 'admin__action-multiselect-menu-inner-item')][contains(., 'Group')]" stepKey="waitForAttributeSearchResult"/>
+        <click selector="//li[contains(@class, 'admin__action-multiselect-menu-inner-item')][contains(., 'Group')]" stepKey="fillAttributeCode"/>
+        <selectOption selector="[name='operator']" userInput="equals" stepKey="selectOperator"/>
+        <fillField selector="[name='value']" userInput="1" stepKey="fillValue"/>
+        <fillField selector="[name='points']" userInput="80" stepKey="fillPoints"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveScoreRule"/>
+        <waitForPageLoad stepKey="waitForScoreRuleSave"/>
+        <see selector=".message-success" userInput="The score rule has been saved." stepKey="seeScoreRuleSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabScoreRuleId"/>
+
+        <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+
+        <!-- Step 2: the Segment — score_at_least is the only condition type SegmentMatcher can
+             actually evaluate (see this test's own description for why order_total_gte cannot).
+             Threshold 999 starts higher than the customer's 80 points can ever clear. "Save &amp;
+             Continue Edit" so the redirect URL carries entity_id, same grabFromCurrentUrl
+             convention AdminCampaignInSegmentConditionTest.xml uses. -->
         <amOnPage url="admin/ordo/segment/new" stepKey="goToNewSegmentPage"/>
         <waitForPageLoad stepKey="waitForNewSegmentPage"/>
         <waitForElementVisible selector="[name='name']" stepKey="waitForSegmentNameField"/>
@@ -40,15 +65,15 @@
 
         <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addSegmentConditionRow"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForSegmentConditionRow"/>
-        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="tag" stepKey="selectSegmentConditionType"/>
-        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;tag&quot;: &quot;vip&quot;}" stepKey="fillSegmentConditionParams"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="score_at_least" stepKey="selectSegmentConditionType"/>
+        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;threshold&quot;: &quot;999&quot;}" stepKey="fillSegmentConditionParams"/>
 
         <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueSegment"/>
         <waitForPageLoad stepKey="waitForSegmentSave"/>
         <see selector=".message-success" userInput="The segment has been saved." stepKey="seeSegmentSuccessMessage"/>
         <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabSegmentId"/>
 
-        <!-- Step 2: Campaign C — order_placed, condition=in_segment against the segment above,
+        <!-- Step 3: Campaign C — order_placed, condition=in_segment against the segment above,
              action=generate_coupon. Same field shape as AdminCampaignInSegmentConditionTest.xml's
              Campaign B. -->
         <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
@@ -86,8 +111,8 @@
         <waitForPageLoad stepKey="waitForSave"/>
         <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
 
-        <!-- Step 3: order 1 — the segment's condition (tag=vip) is never satisfied by this
-             customer, so in_segment must fail and generate_coupon must NOT run. -->
+        <!-- Step 4: order 1 — the segment's condition (score_at_least 999) is never satisfied by
+             this customer's 80 points, so in_segment must fail and generate_coupon must NOT run. -->
         <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
             <argument name="Customer" value="$$createCustomer$$"/>
         </actionGroup>
@@ -113,11 +138,9 @@
         <waitForElementNotVisible selector="#couponCodesGrid .admin__data-grid-loading-mask" stepKey="waitForGridLoadingMaskGoneAfterOrder1"/>
         <dontSee selector="#couponCodesGrid_table" userInput="SEGEDIT-" stepKey="dontSeeCouponAfterOrder1"/>
 
-        <!-- Step 4: edit the segment's condition to one this customer's just-placed order already
-             satisfies — order_total_gte at a low amount, well under the order total (same
-             reasoning as AdminCampaignScenarioEndToEndTest.xml's own order_total_gte amount:
-             leaves headroom for tax/shipping rounding). No new order data for the customer, no
-             re-registration — only the segment's own row changes. -->
+        <!-- Step 5: edit the segment's condition threshold down to one the customer's existing
+             80 points already clears. No new customer data, no re-registration — only the
+             segment's own row changes. -->
         <amOnPage url="admin/ordo/segment/edit/entity_id/{$grabSegmentId}" stepKey="goToEditSegmentPage"/>
         <waitForPageLoad stepKey="waitForEditSegmentPage"/>
         <!-- conditions_fieldset has <visible>false</visible> in ordo_segment_form.xml — force it
@@ -132,18 +155,14 @@
              separate <visible>false</visible> concern. -->
         <executeJS function="require(['uiRegistry'], function (uiRegistry) { uiRegistry.get('ordo_segment_form.ordo_segment_form.conditions_fieldset', function (fieldset) { fieldset.opened(true); fieldset.visible(true); }); });" stepKey="expandConditionsFieldset"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForExistingConditionRow"/>
-        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="changeSegmentConditionType"/>
-        <!-- Unlike the campaign form, the segment form has no dedicated "amount" field/switcherConfig
-             for order_total_gte — every segment condition type goes through the generic
-             params_json fallback (see AdminCreateSegmentTest.xml/AdminSegmentBulkActionAddTagTest.xml's
-             identical convention). Confirmed via a real CI run: [name='conditions[conditions][0][amount]']
-             simply doesn't exist in this form's DOM. -->
-        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;amount&quot;: &quot;10&quot;}" stepKey="fillSegmentConditionAmount"/>
+        <!-- Same type (score_at_least), just a threshold (10) the customer's existing 80 points
+             now clears — no new customer data, only the segment's own row changes. -->
+        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;threshold&quot;: &quot;10&quot;}" stepKey="fillSegmentConditionAmount"/>
         <click selector="#save" stepKey="clickSaveSegmentEdit"/>
         <waitForPageLoad stepKey="waitForSegmentEditSave"/>
         <see selector=".message-success" userInput="The segment has been saved." stepKey="seeSegmentEditSuccessMessage"/>
 
-        <!-- Step 5: order 2 — same customer, same product/amount as order 1, but the segment's
+        <!-- Step 6: order 2 — same customer, same product/amount as order 1, but the segment's
              condition is now one they satisfy, so in_segment evaluates true this time and
              generate_coupon fires. -->
         <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPageOrder2"/>
@@ -157,7 +176,7 @@
 
         <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumerAfterOrder2"/>
 
-        <!-- Step 6: the positive half — waitForText, not <see>, for the same AJAX-race reason
+        <!-- Step 7: the positive half — waitForText, not <see>, for the same AJAX-race reason
              documented above and in AdminCampaignScenarioEndToEndTest.xml. -->
         <amOnPage url="admin/sales_rule/promo_quote/edit/id/$createRule.rule_id$/" stepKey="goToRuleEditPageAfterOrder2"/>
         <waitForPageLoad stepKey="waitForRuleEditPageAfterOrder2"/>
@@ -165,5 +184,15 @@
                            dependentSelector="#couponCodesGrid_table" visible="false" stepKey="openCouponCodesTabAfterOrder2"/>
         <waitForElementVisible selector="#couponCodesGrid_table" stepKey="waitForCouponCodesGridAfterOrder2"/>
         <waitForText selector="#couponCodesGrid_table" userInput="SEGEDIT-" stepKey="seeGeneratedCouponInGridAfterOrder2"/>
+
+        <!-- Cleanup: same reasoning as AdminSegmentBulkActionAddPointsTest.xml's identical closing
+             step — this test's own score rule is an unscoped group_id=1 demographic rule that
+             would otherwise stack on every General customer created for the rest of this same
+             CI job (this test and AdminSegmentBulkActionAddTagTest.xml/AdminSegmentBulkActionAddPointsTest.xml
+             all share the "segment" group and the same DB), silently inflating those tests' own
+             "matching customer" counts. -->
+        <amOnPage url="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleId}" stepKey="deleteScoreRule"/>
+        <waitForPageLoad stepKey="waitForScoreRuleDelete"/>
+        <see selector=".message-success" userInput="The score rule has been deleted." stepKey="seeScoreRuleDeleteSuccessMessage"/>
     </test>
 </tests>
