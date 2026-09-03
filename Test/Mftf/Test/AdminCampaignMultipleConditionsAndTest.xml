@@ -98,6 +98,10 @@
         <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueB"/>
         <waitForPageLoad stepKey="waitForSaveB"/>
         <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessageB"/>
+        <!-- Diagnostic: grab B's own entity_id so it can be compared against A's below — this
+             test's whole design depends on B < A (see the comment on that step), but nothing
+             has ever actually asserted it holds on every real run. -->
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignIdB"/>
 
         <!-- Step 2: Campaign A — order_placed, no condition, add_tag {"tag": "vip"}. Built exactly
              like AdminCampaignInSegmentConditionTest.xml's Campaign A: it fires on every order and
@@ -125,6 +129,17 @@
         <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueA"/>
         <waitForPageLoad stepKey="waitForSaveA"/>
         <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessageA"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignIdA"/>
+        <!-- Diagnostic assertion — deliberately printing both real ids to the CI log via a
+             guaranteed-mismatch comparison, rather than trusting the design assumption that B's
+             id is always lower. If B's own id ever isn't lower than A's here, that alone would
+             fully explain this test's own repeated, unexplained "coupon fires on order 1"
+             flake: CampaignDispatcher::dispatch()'s ascending-id evaluation order would then
+             run A (writing the tag) before B (checking for it) in the SAME order_placed pass. -->
+        <assertEquals stepKey="printCampaignIdOrdering">
+            <expectedResult type="string">__DIAGNOSTIC__ B={$grabCampaignIdB}</expectedResult>
+            <actualResult type="string">A={$grabCampaignIdA}</actualResult>
+        </assertEquals>
 
         <!-- Step 3: the real customer, logged in once, places TWO real orders through real
              storefront checkout — same shape as AdminCampaignInSegmentConditionTest.xml's Step 4. -->
