@@ -28,6 +28,7 @@ github_checks:
 
 ignore:
   - "registration.php"
+  - "rector.php"
   - ".php-cs-fixer.dist.php"
   - "Test/**/*"
   - "vendor/**/*"
