@@ -12,21 +12,26 @@ use Ordo\Automation\Api\Data\CampaignActionSearchResultsInterface;
 interface CampaignActionRepositoryInterface
 {
     /**
+     * @return CampaignActionInterface
      * @throws CouldNotSaveException
      */
     public function save(CampaignActionInterface $action): CampaignActionInterface;
 
     /**
+     * @return CampaignActionInterface
      * @throws NoSuchEntityException
      */
     public function getById(int $entityId): CampaignActionInterface;
 
     /**
      * Filter by campaign_id via searchCriteria to get every action on one campaign.
+     *
+     * @return CampaignActionSearchResultsInterface
      */
     public function getList(SearchCriteriaInterface $searchCriteria): CampaignActionSearchResultsInterface;
 
     /**
+     * @return bool
      * @throws NoSuchEntityException
      * @throws CouldNotSaveException
      */

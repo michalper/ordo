@@ -11,18 +11,35 @@ namespace Ordo\Automation\Api;
  */
 interface CustomerTagManagementInterface
 {
+    /**
+     * @param int $customerId
+     * @param string $tag
+     * @return void
+     */
     public function addTag(int $customerId, string $tag): void;
 
+    /**
+     * @param int $customerId
+     * @param string $tag
+     * @return void
+     */
     public function removeTag(int $customerId, string $tag): void;
 
+    /**
+     * @param int $customerId
+     * @param string $tag
+     * @return bool
+     */
     public function hasTag(int $customerId, string $tag): bool;
 
     /**
+     * @param int $customerId
      * @return string[]
      */
     public function getTags(int $customerId): array;
 
     /**
+     * @param string $tag
      * @return int[]
      */
     public function getCustomerIdsWithTag(string $tag): array;

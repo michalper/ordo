@@ -12,10 +12,20 @@ use Rector\Set\ValueObject\SetList;
  * that add/narrow property or parameter types can conflict with Magento's own magic getters
  * (AbstractModel::__call), DI-generated interceptors, and plugin method signatures that must
  * match the intercepted class exactly — those are false positives here, not real improvements.
+ *
+ * Api/ is deliberately NOT in withPaths() below: every service-contract interface exposed via
+ * etc/webapi.xml lives there, and Magento's WebAPI reflection
+ * (Magento\Framework\Reflection\TypeProcessor) requires explicit @return/@param PHPDoc tags on
+ * those methods — even when the native type is already declared — to generate that endpoint's
+ * schema at all. Confirmed via a real "setup:install" failure after Rector's "redundant
+ * docblock" dead-code rules (RemoveUselessReturnTagRector and friends — there were several,
+ * each one only surfacing once the previous was skipped, which is what made "skip the whole
+ * directory" the actual fix rather than chasing one rule at a time) stripped several of these:
+ * "Method's return type must be specified using @return annotation", failing the whole install.
+ * A "redundant" docblock here is a real requirement, not dead documentation.
  */
 return RectorConfig::configure()
     ->withPaths([
-        __DIR__ . '/Api',
         __DIR__ . '/Block',
         __DIR__ . '/Controller',
         __DIR__ . '/Cron',

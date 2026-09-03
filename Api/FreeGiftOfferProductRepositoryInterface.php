@@ -12,20 +12,29 @@ use Ordo\Automation\Api\Data\FreeGiftOfferProductSearchResultsInterface;
 interface FreeGiftOfferProductRepositoryInterface
 {
     /**
+     * @return FreeGiftOfferProductInterface
      * @throws CouldNotSaveException
      */
     public function save(FreeGiftOfferProductInterface $product): FreeGiftOfferProductInterface;
 
     /**
+     * @return FreeGiftOfferProductInterface
      * @throws NoSuchEntityException
      */
     public function getById(int $entityId): FreeGiftOfferProductInterface;
 
+    /**
+     * @return FreeGiftOfferProductSearchResultsInterface
+     */
     public function getList(SearchCriteriaInterface $searchCriteria): FreeGiftOfferProductSearchResultsInterface;
 
+    /**
+     * @return bool
+     */
     public function delete(FreeGiftOfferProductInterface $product): bool;
 
     /**
+     * @return bool
      * @throws NoSuchEntityException
      * @throws CouldNotSaveException
      */

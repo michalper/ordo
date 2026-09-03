@@ -16,9 +16,13 @@ use Ordo\Automation\Api\Data\OrderApprovalSearchResultsInterface;
 interface OrderApprovalRepositoryInterface
 {
     /**
+     * @return OrderApprovalInterface
      * @throws NoSuchEntityException
      */
     public function getById(int $entityId): OrderApprovalInterface;
 
+    /**
+     * @return OrderApprovalSearchResultsInterface
+     */
     public function getList(SearchCriteriaInterface $searchCriteria): OrderApprovalSearchResultsInterface;
 }
