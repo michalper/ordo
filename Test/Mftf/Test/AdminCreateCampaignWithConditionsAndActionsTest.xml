@@ -9,7 +9,7 @@
             <description value="Sibling to AdminCreateMultiTriggerCampaignTest, which only covers trigger rows — this covers the other two dynamicRows (conditions, actions) the Flow canvas renders, since a scenario is only real once all three kinds of row round-trip through the database."/>
             <severity value="MAJOR"/>
             <group value="ordo_automation"/>
-            <group value="campaign"/>
+            <group value="campaign2"/>
         </annotations>
         <before>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>

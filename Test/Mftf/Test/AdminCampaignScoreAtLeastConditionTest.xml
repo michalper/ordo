@@ -9,7 +9,7 @@
             <description value="Unlike AdminScoreThresholdCampaignTest.xml (which proves the score_threshold_crossed TRIGGER), this proves the score_at_least CONDITION on a different trigger entirely: order_placed. A demographic score rule (group_id=1, 150 points) gives a real Simple_US_Customer a real ordo_customer_score row via Observer/EvaluateCustomerScoreRules.php on customer_save_after, same mechanism as the reference test. That score is set BEFORE any order is placed, so when the campaign (trigger=order_placed, condition=score_at_least threshold=80 — comfortably below the customer's 150) dispatches off a real storefront order, ScoreAtLeast::isSatisfied() reads the already-elevated score from CustomerScoreManager::getScore() at real dispatch time. threshold=80 is far enough below 150 that dispatch-time rounding/ordering cannot make this test flaky, and far enough above 0 that a customer whose score rule silently failed to apply would not satisfy it either — a true negative control baked into the same run."/>
             <severity value="CRITICAL"/>
             <group value="ordo_automation"/>
-            <group value="campaign"/>
+            <group value="campaign2"/>
         </annotations>
         <before>
             <createData entity="ApiSalesRule" stepKey="createRule"/>

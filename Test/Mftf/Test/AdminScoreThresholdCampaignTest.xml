@@ -9,7 +9,7 @@
             <description value="Test/Mftf/SCENARIOS.md #4 + #1a's score_threshold_crossed row — zero MFTF coverage until now, the newest trigger type, same end-to-end shape as AdminCampaignScenarioEndToEndTest. Builds a demographic score rule (customer group General/group_id=1, worth 150 points — comfortably over the default 100-point threshold) and a campaign gated on score_threshold_crossed with no condition (an empty conditions list is vacuously satisfied — see CampaignDispatcher::allConditionsSatisfied()), so the only thing that could make the coupon NOT appear is the trigger chain itself not firing. Creating the customer (Observer/EvaluateCustomerScoreRules.php on customer_save_after) is what actually crosses the threshold in one step: scoreBefore=0 &lt; 100, scoreAfter=150 &gt;= 100."/>
             <severity value="CRITICAL"/>
             <group value="ordo_automation"/>
-            <group value="campaign"/>
+            <group value="campaign2"/>
         </annotations>
         <before>
             <createData entity="ApiSalesRule" stepKey="createRule"/>

@@ -9,7 +9,7 @@
             <description value="Covers Model/Campaign/CampaignSaveProcessor.php's saveChildRows(): child rows are always deleted-then-reinserted on every save, never diffed, so re-saving an edited campaign must leave exactly one condition row behind with the NEW type, not two. Once a campaign has an entity_id, the Flow canvas (Block/Adminhtml/Campaign/Edit/Flow.php) is the normal editor and hides the raw conditions_fieldset/actions_fieldset dynamicRows sections (see ordo_campaign_form.xml) — this test forces them visible via the same uiRegistry call flow.phtml itself uses for a brand-new campaign (see its own comment on why), bypassing the drag-and-drop canvas entirely so the existing dynamicRows fields (already populated from the saved DB rows by the standard Magento UI form data source) are directly editable and assertable, the same way AdminCreateMultiTriggerCampaignTest.xml's reload proves a round trip but without needing the canvas's own DOM shape."/>
             <severity value="MAJOR"/>
             <group value="ordo_automation"/>
-            <group value="campaign"/>
+            <group value="campaign2"/>
         </annotations>
         <before>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>

@@ -9,7 +9,7 @@
             <description value="Closes the last uncovered campaign action type (see SCENARIOS.md's 'Suggested next batch'): trigger=order_placed, no condition, action=send_email with a static message. Same real order_placed -> queue consumer chain as AdminCampaignScenarioEndToEndTest, but asserts via MailHog (reused MailHogHelper) that Model/Campaign/Action/SendEmail.php actually rendered and sent the ordo_campaign_generic template to the real customer, not just that no exception was thrown."/>
             <severity value="CRITICAL"/>
             <group value="ordo_automation"/>
-            <group value="campaign"/>
+            <group value="campaign2"/>
         </annotations>
         <before>
             <createData entity="Simple_US_Customer" stepKey="createCustomer"/>

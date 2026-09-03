@@ -9,7 +9,7 @@
             <description value="The order-rejection round trip end to end, mirroring AdminApproveOrderViaEmailTest: a real customer with a real spend limit places a real order that exceeds it through storefront checkout, Observer/HoldOrderForApproval.php sends a real email (via MailHog, wired into mftf.yml as a service container + mhsendmail), MailHogHelper.php reads the Reject link's real href straight out of that email exactly as an admin's mail client would show it, and the browser follows it with no login (by design — see AbstractApprovalAction) to confirm the order is genuinely canceled (Model/OrderApprovalManagement::rejectByToken calls $order->cancel()), not just that a token was generated."/>
             <severity value="CRITICAL"/>
             <group value="ordo_automation"/>
-            <group value="campaign"/>
+            <group value="campaign2"/>
         </annotations>
         <before>
             <createData entity="OrdoApprovalCustomer" stepKey="createCustomer"/>

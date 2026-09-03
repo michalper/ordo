@@ -16,7 +16,7 @@
             nothing was held, no MailHog round trip needed for this side of the behaviour."/>
             <severity value="CRITICAL"/>
             <group value="ordo_automation"/>
-            <group value="campaign"/>
+            <group value="campaign2"/>
         </annotations>
         <before>
             <createData entity="OrdoApprovalCustomer" stepKey="createCustomer"/>

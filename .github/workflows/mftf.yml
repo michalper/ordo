@@ -35,11 +35,16 @@ jobs:
     # ui_component XSD violations, sendmail_path quoting, CouponGenerator's is_primary/type)
     # only ever needed diagnosing in one place, not four in parallel. fail-fast: false so one
     # group's failure doesn't cancel the others mid-run — the whole point of splitting is
-    # independent, individually-readable results per area.
+    # independent, individually-readable results per area. "campaign" itself grew to 16-20+ min
+    # while every other group stayed at 5-7 — campaign2 is a second, independently-installed
+    # matrix leg carrying roughly half of the same <group value="campaign"/> tests (still just a
+    # plain group annotation, nothing campaign-specific about the split itself) purely to bring
+    # wall-clock back in line with the others; each matrix job gets its own fresh Magento
+    # install/DB regardless; group membership doesn't matter for correctness.
     strategy:
       fail-fast: false
       matrix:
-        group: [campaign, segment, dashboard, tracking]
+        group: [campaign, campaign2, segment, dashboard, tracking]
 
     services:
       mysql:

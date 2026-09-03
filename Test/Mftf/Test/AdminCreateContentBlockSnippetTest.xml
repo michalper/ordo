@@ -9,7 +9,7 @@
             <description value="Covers the new ordo_content_block admin CRUD (Model/ContentBlock + Controller/Adminhtml/ContentBlock/*): create a snippet block, save it, and confirm it appears in the grid. The html field renders as a real WYSIWYG editor (Magento_Ui/js/form/element/wysiwyg, see ordo_contentblock_form.xml) — WYSIWYG is disabled globally first via the same standard MFTF approach Magento_Cms's own tests use (config:set cms/wysiwyg/enabled disabled), so the field falls back to a plain textarea fillField can target directly, same technique as every other admin form fill in this suite."/>
             <severity value="MAJOR"/>
             <group value="ordo_automation"/>
-            <group value="campaign"/>
+            <group value="campaign2"/>
         </annotations>
         <before>
             <magentoCLI command="config:set cms/wysiwyg/enabled disabled" stepKey="disableWysiwyg"/>
