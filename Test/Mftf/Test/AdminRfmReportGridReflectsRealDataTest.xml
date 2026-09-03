@@ -40,6 +40,15 @@
         <waitForPageLoad stepKey="waitForCartPage"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
 
+        <!-- This test's real order publishes an order_placed dispatch message like any other
+             but never needed to drain it for its own assertions (this test only reads
+             sales_order/customer_entity directly, no campaign involved) — left unconsumed, it
+             would sit in the shared DB-driver queue until some LATER test's own drain call
+             picks it up and replays it against whatever campaigns exist by then. Same stale-
+             message-leak class of bug AdminOrderUnderSpendLimitNotHeldTest.xml's own identical
+             comment documents fixing. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainCampaignDispatchQueue"/>
+
         <!-- Step 2: the RFM report grid, filtered to this customer's own email so the assertions
              below read this specific row, not just "some row somewhere". -->
         <amOnPage url="admin/ordo/rfm/index" stepKey="goToRfmReportGrid"/>
