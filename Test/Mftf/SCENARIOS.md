@@ -165,8 +165,8 @@ through. `Controller/Offer/*` (self-extend,
 | `ordo_visitor_id` cookie issued on first visit, stable across reload                                                                  | ✅ `StorefrontTrackerSetsVisitorCookieTest`         |
 | `page_view` event posted and persisted                                                                                                | ✅ `StorefrontTrackerPostsEventsTest`               |
 | `product_view` event posted and persisted (scripted stand-in for a theme PDP hook)                                                    | ✅ `StorefrontTrackerPostsEventsTest`               |
-| `category_view` event posted and persisted                                                                                            | ⬜                                                  |
-| `element_clicked` event posted and persisted (popup-targeting click threshold)                                                        | ⬜                                                  |
+| `category_view` event posted and persisted                                                                                            | ✅ `StorefrontTrackerCategoryViewEventTest`         |
+| `element_clicked` event posted and persisted (popup-targeting click threshold)                                                        | ✅ `StorefrontTrackerClickThresholdTagsVisitorTest` |
 | View-threshold crossing (default 3) tags the visitor, chains into `visitor_tag_added` (§1a)                                           | ⬜                                                  |
 | Click-threshold crossing (default 1) tags the visitor via `element_clicked`                                                           | ✅ `StorefrontTrackerClickThresholdTagsVisitorTest` |
 | A campaign's `popup` action writes a pending popup, storefront poll (`Controller/Track/Popup.php`) picks it up and renders the banner | ✅ `AdminCampaignPopupActionTest`                   |
