@@ -48,7 +48,10 @@
         <selectOption selector="[name='conditions[conditions][1][type]']" userInput="tag" stepKey="selectConditionTypeTwo"/>
         <fillField selector="[name='conditions[conditions][1][params_json]']" userInput="{&quot;tag&quot;: &quot;vip&quot;}" stepKey="fillConditionParamsTwo"/>
 
-        <click selector="#save" stepKey="clickSave"/>
+        <!-- "Save & Continue Edit", not the plain Save button — the plain button redirects to
+             the segment grid (no entity_id in the URL to grab), confirmed via a real CI run.
+             Same convention as AdminCreateCampaignWithConditionsAndActionsTest's reload step. -->
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
         <waitForPageLoad stepKey="waitForSave"/>
         <see selector=".message-success" userInput="The segment has been saved." stepKey="seeSuccessMessage"/>
 

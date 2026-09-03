@@ -36,12 +36,18 @@
 
         <!-- Step 3: aggregation is async — VisitorEventLogger::log() only published a message
              onto ordo.automation.visitor.aggregate (Model/Queue/VisitorAggregationPublisher.php);
-             nothing has consumed it yet. Run the real consumer directly, exactly once, the same
-             way AdminCampaignScenarioEndToEndTest runs ordo.automation.campaign.dispatch — in
+             nothing has consumed it yet. Run the real consumer directly, the same way
+             AdminCampaignScenarioEndToEndTest runs ordo.automation.campaign.dispatch — in
              production this is cron_consumers_runner, here it's driven explicitly so the test
-             doesn't depend on a background process. mftf.yml sets
-             consumers-wait-for-messages=0, so this returns as soon as the queue is empty. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.visitor.aggregate --max-messages=1" stepKey="runVisitorAggregationConsumer"/>
+             doesn't depend on a background process. max-messages is 5, not 1: earlier tests in
+             this same tracking group (StorefrontTrackerPostsEventsTest's page_view/product_view)
+             publish their own aggregation messages too but never consume them, so a
+             max-messages=1 call here can pick up one of THOSE stale messages instead of this
+             test's own — confirmed via a real CI run (StorefrontTrackerClickThresholdTagsVisitorTest
+             failing with no ordo_visitor_tag row despite the event itself being logged correctly).
+             Safe to over-ask: mftf.yml sets consumers-wait-for-messages=0, so the consumer
+             returns as soon as the queue is actually empty instead of blocking. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.visitor.aggregate --max-messages=5" stepKey="runVisitorAggregationConsumer"/>
 
         <!-- Step 4: the real, DB-observable effect — VisitorAggregator::buildTag() names an
              element_clicked tag 'clicked_<event_key>' (CLICK_EVENT_TYPES branch), and
