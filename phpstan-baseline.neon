@@ -985,6 +985,24 @@ parameters:
 			path: Model/Config/Source/ConditionType.php
 
 		-
+			message: '#^Cannot call method getAttributeCode\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/Config/Source/CustomerAttribute.php
+
+		-
+			message: '#^Cannot call method getFrontendLabel\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/Config/Source/CustomerAttribute.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Model/Config/Source/CustomerAttribute.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
