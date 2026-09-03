@@ -280,7 +280,7 @@
             </validation>
         </settings>
     </field>
-    <field name="rss_item_count" formElement="input" sortOrder="52" dataScope="item_count">
+    <field name="rss_item_count" formElement="input" sortOrder="52">
         <argument name="data" xsi:type="array">
             <item name="config" xsi:type="array">
                 <item name="default" xsi:type="number">5</item>
@@ -290,6 +290,7 @@
             <dataType>number</dataType>
             <label translate="true">Item Count</label>
             <notice translate="true">How many feed items to include</notice>
+            <dataScope>item_count</dataScope>
             <visible>false</visible>
             <validation>
                 <rule name="validate-digits" xsi:type="boolean">true</rule>
@@ -359,7 +360,7 @@
             <visible>false</visible>
         </settings>
     </field>
-    <field name="product_feed_item_count" formElement="input" sortOrder="56" dataScope="item_count">
+    <field name="product_feed_item_count" formElement="input" sortOrder="56">
         <argument name="data" xsi:type="array">
             <item name="config" xsi:type="array">
                 <item name="default" xsi:type="number">4</item>
@@ -369,6 +370,7 @@
             <dataType>number</dataType>
             <label translate="true">Item Count</label>
             <notice translate="true">How many products to include</notice>
+            <dataScope>item_count</dataScope>
             <visible>false</visible>
             <validation>
                 <rule name="validate-digits" xsi:type="boolean">true</rule>
