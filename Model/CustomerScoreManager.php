@@ -60,11 +60,18 @@ class CustomerScoreManager
     {
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName('ordo_customer_score');
+        $customerTable = $this->resourceConnection->getTableName('customer_entity');
 
+        // ordo_customer_score has no FK to customer_entity (a deliberate, small-table
+        // design — see this class's own docblock), so a deleted customer's row is never
+        // cascade-cleaned and would otherwise still count as a match here. Confirmed via a
+        // real CI run: two MFTF tests each created-then-deleted their own scored customer,
+        // and a THIRD test's own segment still saw both as "matching" without this join.
         $ids = $connection->fetchCol(
             $connection->select()
-                ->from($table, 'customer_id')
-                ->where('score >= ?', $threshold)
+                ->from(['s' => $table], 'customer_id')
+                ->join(['c' => $customerTable], 's.customer_id = c.entity_id', [])
+                ->where('s.score >= ?', $threshold)
         );
 
         return array_map('intval', $ids);

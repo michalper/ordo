@@ -406,10 +406,16 @@ jobs:
         # no separate generate step needed. When test_filter is set (see the workflow_dispatch
         # input's own comment for why), run:test that single named test instead — same
         # generate-then-execute behavior, just scoped to one Cest instead of the whole group.
+        # test_filter is workflow_dispatch input text (attacker-controlled by anyone who can
+        # trigger this workflow) — passed in via env, never interpolated directly into the run:
+        # block, so it can't break out of the shell command (GitHub's own script-injection
+        # guidance for untrusted ${{ }} expressions).
         working-directory: magento
+        env:
+          TEST_FILTER: ${{ inputs.test_filter }}
         run: |
-          if [ -n "${{ inputs.test_filter }}" ]; then
-            vendor/bin/mftf run:test ${{ inputs.test_filter }}
+          if [ -n "$TEST_FILTER" ]; then
+            vendor/bin/mftf run:test $TEST_FILTER
           else
             vendor/bin/mftf run:group ${{ matrix.group }}
           fi

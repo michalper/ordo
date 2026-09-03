@@ -71,6 +71,7 @@ class CustomerScoreManagerTest extends TestCase
     {
         $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
+        $select->method('join')->willReturnSelf();
         $select->method('where')->willReturnSelf();
 
         $connection = $this->createMock(AdapterInterface::class);

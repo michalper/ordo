@@ -17,6 +17,7 @@ class CustomerTagManagerTest extends TestCase
     {
         $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
+        $select->method('join')->willReturnSelf();
         $select->method('where')->willReturnSelf();
 
         return $select;

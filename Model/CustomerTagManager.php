@@ -92,11 +92,17 @@ class CustomerTagManager implements CustomerTagManagementInterface
     {
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName('ordo_customer_tag');
+        $customerTable = $this->resourceConnection->getTableName('customer_entity');
 
+        // ordo_customer_tag has no FK to customer_entity (same small-table design as
+        // ordo_customer_score — see CustomerScoreManager::getCustomerIdsWithScoreAtLeast()'s
+        // identical fix), so a deleted customer's tag row would otherwise still count as a
+        // match here.
         $ids = $connection->fetchCol(
             $connection->select()
-                ->from($table, 'customer_id')
-                ->where('tag = ?', $tag)
+                ->from(['t' => $table], 'customer_id')
+                ->join(['c' => $customerTable], 't.customer_id = c.entity_id', [])
+                ->where('t.tag = ?', $tag)
         );
 
         return array_map('intval', $ids);
