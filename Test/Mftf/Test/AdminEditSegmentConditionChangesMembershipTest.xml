@@ -34,14 +34,14 @@
         <amOnPage url="admin/ordo/scorerule/new" stepKey="goToNewScoreRulePage"/>
         <waitForPageLoad stepKey="waitForNewScoreRulePage"/>
         <!-- attribute_code is a Magento_Ui/js/form/element/ui-select searchable picker
-             (ordo_scorerule_form.xml) — same real interaction sequence
-             AdminSegmentBulkActionAddTagTest.xml's own identical step uses. -->
-        <waitForElementVisible selector="[data-index='attribute_code'] [data-role='selected-option']" stepKey="waitForAttributeCodeField"/>
-        <click selector="[data-index='attribute_code'] [data-role='selected-option']" stepKey="clickAttributeCodeDropdown"/>
-        <waitForElementVisible selector="input[data-role='advanced-select-text']" stepKey="waitForAttributeSearchInput"/>
-        <fillField selector="input[data-role='advanced-select-text']" userInput="Group" stepKey="searchAttributeCode"/>
-        <waitForElementVisible selector="//li[contains(@class, 'admin__action-multiselect-menu-inner-item')][contains(., 'Group')]" stepKey="waitForAttributeSearchResult"/>
-        <click selector="//li[contains(@class, 'admin__action-multiselect-menu-inner-item')][contains(., 'Group')]" stepKey="fillAttributeCode"/>
+             (ordo_scorerule_form.xml) — its DOM interaction proved unreliable across real CI
+             runs (a click-search-select sequence that intermittently never found the
+             dropdown trigger). Set the value directly via uiRegistry instead, the same
+             robust technique already proven for hidden dynamicRows fieldsets elsewhere in
+             this suite — multiple:false (ordo_scorerule_form.xml) means the component's own
+             value() is a plain scalar, not an array (confirmed via ui-select.js's own
+             `this.multiple ? _.contains(this.value(), value) : this.value() === value`). -->
+        <executeJS function="require(['uiRegistry'], function (uiRegistry) { uiRegistry.get('ordo_scorerule_form.ordo_scorerule_form.general.attribute_code', function (field) { field.value('group_id'); }); });" stepKey="fillAttributeCode"/>
         <selectOption selector="[name='operator']" userInput="equals" stepKey="selectOperator"/>
         <fillField selector="[name='value']" userInput="1" stepKey="fillValue"/>
         <fillField selector="[name='points']" userInput="80" stepKey="fillPoints"/>
