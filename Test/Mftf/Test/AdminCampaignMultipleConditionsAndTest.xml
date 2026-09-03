@@ -69,11 +69,15 @@
         <fillField selector="[name='conditions[conditions][0][amount]']" userInput="50" stepKey="fillConditionAmountB0"/>
 
         <!-- A real CI run showed row 0's amount field ending up as "500" in the database and
-             row 1 missing entirely — confirmed via a direct DB dump, not assumed — consistent
-             with clicking "Add Condition" again before the dynamicRows JS had fully settled
-             after row 0's own fill/blur. A short settle wait here is the same defensive pattern
-             already used elsewhere in this suite for JS-heavy dynamicRows/scroll interactions
-             (see e.g. AddToCartFromStorefrontProductPageActionGroup's own scroll-settle wait). -->
+             row 1 missing entirely — confirmed via a direct DB dump, not assumed. A plain settle
+             <wait> alone did NOT fix this (confirmed by a second CI run with byte-identical
+             corruption) — the amount input's knockout observable was never actually committed
+             before the DOM-mutating "Add Condition" click fired, since MFTF's fillField sets the
+             value without dispatching the blur/change event a real user's next click naturally
+             causes. Forcing that commit explicitly with Tab before clicking "Add Condition" is
+             the missing piece; the settle wait is kept alongside it as defense-in-depth for the
+             dynamicRows JS work the click itself triggers. -->
+        <pressKey selector="[name='conditions[conditions][0][amount]']" parameterArray="[\Facebook\WebDriver\WebDriverKeys::TAB]" stepKey="blurAmountFieldB0"/>
         <wait time="1" stepKey="waitForRow0ToSettle"/>
         <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRowB1"/>
         <waitForElementVisible selector="[name='conditions[conditions][1][type]']" stepKey="waitForConditionRowB1"/>
