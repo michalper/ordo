@@ -130,15 +130,9 @@
         <waitForPageLoad stepKey="waitForSaveA"/>
         <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessageA"/>
         <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignIdA"/>
-        <!-- Ordering already confirmed correct on a real run (B < A) — ruled out as the cause.
-             Next diagnostic: dump B's own saved condition rows right after creation, before any
-             order exists, to confirm both rows (order_total_gte, tag) actually persisted intact
-             — the exact thing the earlier DataProvider double-nesting bug this session found
-             would have silently corrupted, if some other still-undiscovered save-path issue is
-             doing the same thing here. -->
-        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="dumpCampaignConditions" stepKey="dumpCampaignBConditions">
-            <argument name="campaignId">{$grabCampaignIdB}</argument>
-        </helper>
+        <!-- Ordering already confirmed correct on a real run (B < A) — ruled out. Condition rows
+             already confirmed correct too (both order_total_gte/amount=50 and tag/vip persisted
+             intact, entity_ids 1/2, sort_order 0/1) — also ruled out. -->
 
         <!-- Step 3: the real customer, logged in once, places TWO real orders through real
              storefront checkout — same shape as AdminCampaignInSegmentConditionTest.xml's Step 4. -->
