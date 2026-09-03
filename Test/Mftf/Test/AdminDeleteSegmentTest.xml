@@ -42,9 +42,9 @@
              the segment's own name, instead of assuming entity_id=1 (other tests/fixtures in this
              suite create segments too, so id is never a safe assumption). -->
         <grabAttributeFrom selector="//tr[contains(., 'Test Segment To Delete')]//a[contains(@href, 'segment/edit')]" userInput="href" stepKey="grabEditHref"/>
-        <executeJS function="return new URL('{$grabEditHref$}').searchParams.get('entity_id');" stepKey="grabEntityId"/>
+        <executeJS function="return new URL('{$grabEditHref}').searchParams.get('entity_id');" stepKey="grabEntityId"/>
 
-        <amOnPage url="admin/ordo/segment/delete/entity_id/{$grabEntityId$}" stepKey="deleteSegment"/>
+        <amOnPage url="admin/ordo/segment/delete/entity_id/{$grabEntityId}" stepKey="deleteSegment"/>
 
         <waitForPageLoad stepKey="waitForDeleteRedirect"/>
         <see selector=".message-success" userInput="The segment has been deleted." stepKey="seeDeleteSuccessMessage"/>

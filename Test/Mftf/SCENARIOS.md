@@ -101,7 +101,7 @@ cases separately from the type-by-type ones.
 | Segment referenced by a campaign's `in_segment` condition (real membership match at dispatch time)                                  | ✅ `AdminCampaignInSegmentConditionTest`          |
 | Bulk action on a segment's current members — add tag (`SegmentBulkActionConsumer`, async via `ordo.automation.segment.bulk_action`) | ✅ `AdminSegmentBulkActionAddTagTest`             |
 | Bulk action on a segment's current members — add points                                                                             | ⬜                                                |
-| Segment edited, condition changed, membership re-evaluates differently                                                              | ⬜                                                |
+| Segment edited, condition changed, membership re-evaluates differently                                                              | ✅ `AdminEditSegmentConditionChangesMembershipTest` |
 | Segment deleted                                                                                                                     | ✅ `AdminDeleteSegmentTest`                       |
 
 ## 3. RFM (`Model/Rfm/`, `Cron/RecomputeRfmScores.php`, `ordo/rfm/index`)
