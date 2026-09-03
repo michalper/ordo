@@ -34,22 +34,31 @@ $offers = $viewModel->getOffers();
                             <?= $escaper->escapeHtml($offer->getStatus()) ?>
                         </td>
                         <td data-th="<?= $escaper->escapeHtmlAttr(__('Total')) ?>">
-                            <?= $escaper->escapeHtml($offer->getCurrencyCode() . ' ' . number_format($offer->getTotal(), 2)) ?>
+                            <?= $escaper->escapeHtml(
+                                $offer->getCurrencyCode() . ' ' . number_format($offer->getTotal(), 2)
+                            ) ?>
                         </td>
                         <td data-th="<?= $escaper->escapeHtmlAttr(__('Expires')) ?>">
                             <?= $escaper->escapeHtml($offer->getExpiresAt()) ?>
                         </td>
                         <td data-th="<?= $escaper->escapeHtmlAttr(__('Actions')) ?>">
                             <?php if ($viewModel->canSelfExtend($offer)): ?>
-                                <form method="post" action="<?= $escaper->escapeUrl($block->getUrl('ordo/offer/extend')) ?>">
+                                <form
+                                    method="post"
+                                    action="<?= $escaper->escapeUrl($block->getUrl('ordo/offer/extend')) ?>"
+                                >
                                     <?= $block->getBlockHtml('formkey') ?>
                                     <input type="hidden" name="offer_id" value="<?= (int) $offer->getEntityId() ?>"/>
                                     <button type="submit" class="action extend primary">
-                                        <span><?= $escaper->escapeHtml(__('Extend by %1 day(s)', $viewModel->getSelfExtensionDays())) ?></span>
+                                        <span><?= $escaper->escapeHtml(
+                                            __('Extend by %1 day(s)', $viewModel->getSelfExtensionDays())
+                                        ) ?></span>
                                     </button>
                                 </form>
                             <?php else: ?>
-                                <span class="no-extend"><?= $escaper->escapeHtml(__('Not eligible for extension')) ?></span>
+                                <span class="no-extend">
+                                    <?= $escaper->escapeHtml(__('Not eligible for extension')) ?>
+                                </span>
                             <?php endif; ?>
                         </td>
                     </tr>

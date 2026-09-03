@@ -48,8 +48,11 @@ class StatusCallback extends Action implements HttpPostActionInterface, CsrfAwar
         $params = is_array($params) ? $params : [];
 
         $validator = new RequestValidator($this->config->getTwilioAuthToken());
-        if ($signature === '' || !$validator->validate($signature, $this->callbackUrlBuilder->getSmsStatusCallbackUrl(), $params)) {
-            $this->logger->error('Ordo_Automation: rejected an SMS status callback with an invalid X-Twilio-Signature.');
+        $callbackUrl = $this->callbackUrlBuilder->getSmsStatusCallbackUrl();
+        if ($signature === '' || !$validator->validate($signature, $callbackUrl, $params)) {
+            $this->logger->error(
+                'Ordo_Automation: rejected an SMS status callback with an invalid X-Twilio-Signature.'
+            );
 
             return $result->setHttpResponseCode(403)->setData(['ok' => false]);
         }

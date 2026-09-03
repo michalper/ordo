@@ -11,7 +11,10 @@ if (!$block->isSegmentSaved()) {
     </div>
     <div class="admin__fieldset-wrapper-content">
         <p><?= $escaper->escapeHtml(
-            __('Runs against everyone currently matching this segment\'s conditions. The action is queued and applied asynchronously.')
+            __(
+                'Runs against everyone currently matching this segment\'s conditions. '
+                . 'The action is queued and applied asynchronously.'
+            )
         ) ?></p>
         <form action="<?= $escaper->escapeUrl($block->getFormAction()) ?>" method="post">
             <?= $block->getBlockHtml('formkey') ?>

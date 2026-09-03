@@ -71,6 +71,28 @@ define([
             }
 
             /**
+             * Builds the <option> markup for a select-type field descriptor — split out of
+             * renderFields() purely to keep that function's own callback nesting within the
+             * linter's max-nesting-depth limit.
+             *
+             * @param {Object} field
+             * @param {String} value
+             * @return {String}
+             */
+            function buildSelectOptionsHtml(field, value) {
+                var html = '';
+
+                Object.keys(field.options).forEach(function (optionValue) {
+                    var selectedAttr = String(value) === String(optionValue) ? ' selected="selected"' : '';
+
+                    html += '<option value="' + $('<div>').text(optionValue).html() + '"' + selectedAttr + '>' +
+                        $('<div>').text(field.options[optionValue]).html() + '</option>';
+                });
+
+                return html;
+            }
+
+            /**
              * Renders labeled inputs for the node's current type into its `.ordo-flow-fields`
              * container, pre-filled from `params` where a value exists. A type with no mapped
              * fields (a custom condition/action a store added, not one of the six this module
@@ -102,14 +124,9 @@ define([
                         // all, so this branch never fires for them and their existing <input>
                         // behavior is unchanged.
                         if (field.options && Object.keys(field.options).length) {
-                            html += '<select class="ordo-flow-field-input" data-field="' + field.name + '">';
-                            Object.keys(field.options).forEach(function (optionValue) {
-                                var selectedAttr = String(value) === String(optionValue) ? ' selected="selected"' : '';
-
-                                html += '<option value="' + $('<div>').text(optionValue).html() + '"' + selectedAttr + '>' +
-                                    $('<div>').text(field.options[optionValue]).html() + '</option>';
-                            });
-                            html += '</select>';
+                            html += '<select class="ordo-flow-field-input" data-field="' + field.name + '">' +
+                                buildSelectOptionsHtml(field, value) +
+                                '</select>';
                         } else {
                             html += '<input type="text" class="ordo-flow-field-input" data-field="' + field.name + '" value="' +
                                 $('<div>').text(value).html() + '">';

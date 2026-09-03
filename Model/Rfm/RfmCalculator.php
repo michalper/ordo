@@ -200,7 +200,11 @@ class RfmCalculator
      * can fall back to computing live instead of treating "no cron has run yet" as "no
      * customers exist".
      *
-     * @return array<int, array{recency_percentile: float, frequency_percentile: float, monetary_percentile: float}>|null
+     * @return array<int, array{
+     *     recency_percentile: float,
+     *     frequency_percentile: float,
+     *     monetary_percentile: float
+     * }>|null
      */
     private function readStoredPercentileRanks(): ?array
     {

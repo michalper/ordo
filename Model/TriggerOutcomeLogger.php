@@ -89,7 +89,14 @@ class TriggerOutcomeLogger
         $outcomeTable = $this->resourceConnection->getTableName('ordo_trigger_outcome_log');
         $orderTable = $this->resourceConnection->getTableName('sales_order');
 
-        /** @var array<int, array{trigger_type: string, sent: string|int, responded: string|int, recovered_revenue: string|null}> $rows */
+        /**
+         * @var array<int, array{
+         *     trigger_type: string,
+         *     sent: string|int,
+         *     responded: string|int,
+         *     recovered_revenue: string|null
+         * }> $rows
+         */
         $rows = $connection->fetchAll(
             $connection->select()
                 ->from(['o' => $outcomeTable], [

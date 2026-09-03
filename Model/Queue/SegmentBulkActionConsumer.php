@@ -72,7 +72,10 @@ class SegmentBulkActionConsumer
     {
         match ($actionType) {
             self::ACTION_ADD_TAG => $this->customerTagManager->addTag($customerId, (string) ($params['tag'] ?? '')),
-            self::ACTION_ADD_POINTS => $this->customerScoreManager->addPoints($customerId, (int) ($params['points'] ?? 0)),
+            self::ACTION_ADD_POINTS => $this->customerScoreManager->addPoints(
+                $customerId,
+                (int) ($params['points'] ?? 0)
+            ),
             default => throw new \InvalidArgumentException(sprintf('Unknown bulk action type "%s".', $actionType)),
         };
     }

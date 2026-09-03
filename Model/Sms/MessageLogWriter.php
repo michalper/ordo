@@ -71,7 +71,9 @@ class MessageLogWriter
         try {
             $this->messageLogResource->save($log);
         } catch (\Throwable $e) {
-            $this->logger->error(sprintf('Ordo_Automation: failed to write ordo_message_log row: %s', $e->getMessage()));
+            $this->logger->error(
+                sprintf('Ordo_Automation: failed to write ordo_message_log row: %s', $e->getMessage())
+            );
         }
     }
 }

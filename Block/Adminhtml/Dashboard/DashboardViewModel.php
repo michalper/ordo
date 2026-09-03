@@ -206,7 +206,13 @@ class DashboardViewModel implements ArgumentInterface
      * getFixedTriggerEvents(), so a trigger that hasn't sent anything yet still gets a row.
      * One aggregate query via TriggerOutcomeLogger::getStats(), not one per trigger.
      *
-     * @return array<string, array{label: string, sent: int, responded: int, response_rate: float, recovered_revenue: float}>
+     * @return array<string, array{
+     *     label: string,
+     *     sent: int,
+     *     responded: int,
+     *     response_rate: float,
+     *     recovered_revenue: float
+     * }>
      */
     public function getTriggerStats(): array
     {

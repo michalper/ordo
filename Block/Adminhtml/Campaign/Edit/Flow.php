@@ -195,7 +195,11 @@ class Flow extends Template
                     ['name' => 'cta_url', 'label' => (string) __('CTA button URL')],
                 ],
                 'add_dynamic_content' => [
-                    ['name' => 'content_block_id', 'label' => (string) __('Content block'), 'options' => $this->getContentBlockOptions()],
+                    [
+                        'name' => 'content_block_id',
+                        'label' => (string) __('Content block'),
+                        'options' => $this->getContentBlockOptions(),
+                    ],
                     ['name' => 'output_key', 'label' => (string) __('Output variable name (optional)')],
                 ],
                 'send_sms' => [

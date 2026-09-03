@@ -73,7 +73,9 @@ class ProductRecommendationRenderer
     {
         $name = $this->escaper->escapeHtml($product->getName());
         $url = $this->escaper->escapeHtml((string) $product->getProductUrl());
-        $price = $this->escaper->escapeHtml((string) $this->pricingHelper->currency($product->getFinalPrice(), true, false));
+        $price = $this->escaper->escapeHtml(
+            (string) $this->pricingHelper->currency($product->getFinalPrice(), true, false)
+        );
 
         return '<td style="padding:10px;text-align:center;">'
             . '<a href="' . $url . '" style="text-decoration:none;color:#333333;">'
