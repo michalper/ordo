@@ -137,4 +137,54 @@ class VisitorEventHelper extends Helper
             ));
         }
     }
+
+    /**
+     * Confirms CustomerScoreManager::addPoints() actually wrote/updated a real ordo_customer_score
+     * row for a customer identified by email, at or above a minimum total — used by tests where
+     * points might already exist from another source in the same run (e.g. a demographic score
+     * rule writes to a separate table, but a prior add_points action in the same test could have
+     * already accumulated some), so an exact-match assertion would be brittle. Same out-of-band
+     * PDO pattern as assertCustomerTagAddedByEmail() above.
+     *
+     * @throws \RuntimeException if no matching customer row exists or its score is below $minScore
+     */
+    public function assertCustomerScoreAtLeastByEmail(
+        string $email,
+        string $minScore,
+        string $dbHost = '127.0.0.1',
+        string $dbName = 'magento',
+        string $dbUser = 'root',
+        string $dbPassword = ''
+    ): void {
+        $pdo = new \PDO(
+            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
+            $dbUser,
+            $dbPassword,
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+        );
+
+        $statement = $pdo->prepare(
+            'SELECT ocs.score FROM ordo_customer_score ocs '
+            . 'INNER JOIN customer_entity ce ON ce.entity_id = ocs.customer_id '
+            . 'WHERE ce.email = :email'
+        );
+        $statement->execute(['email' => $email]);
+        $score = $statement->fetchColumn();
+
+        if ($score === false) {
+            throw new \RuntimeException(sprintf(
+                'No ordo_customer_score row found for customer email="%s".',
+                $email
+            ));
+        }
+
+        if ((int) $score < (int) $minScore) {
+            throw new \RuntimeException(sprintf(
+                'ordo_customer_score for customer email="%s" is %d, expected at least %d.',
+                $email,
+                (int) $score,
+                (int) $minScore
+            ));
+        }
+    }
 }

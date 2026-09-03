@@ -100,7 +100,7 @@ cases separately from the type-by-type ones.
 | Segment with multiple AND'd conditions                                                                                              | ✅ `AdminCreateSegmentWithMultipleConditionsTest` |
 | Segment referenced by a campaign's `in_segment` condition (real membership match at dispatch time)                                  | ✅ `AdminCampaignInSegmentConditionTest`          |
 | Bulk action on a segment's current members — add tag (`SegmentBulkActionConsumer`, async via `ordo.automation.segment.bulk_action`) | ✅ `AdminSegmentBulkActionAddTagTest`             |
-| Bulk action on a segment's current members — add points                                                                             | ⬜                                                |
+| Bulk action on a segment's current members — add points                                                                             | ✅ `AdminSegmentBulkActionAddPointsTest`          |
 | Segment edited, condition changed, membership re-evaluates differently                                                              | ✅ `AdminEditSegmentConditionChangesMembershipTest` |
 | Segment deleted                                                                                                                     | ✅ `AdminDeleteSegmentTest`                       |
 

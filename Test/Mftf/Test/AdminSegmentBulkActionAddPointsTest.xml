@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminSegmentBulkActionAddPointsTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Saved segments"/>
+            <title value="Segment edit page's bulk action queues and applies real points to a real member"/>
+            <description value="Sibling to AdminSegmentBulkActionAddTagTest.xml, covering the bulk-actions form's other branch: SegmentBulkActionConsumer::ACTION_ADD_POINTS, which calls CustomerScoreManager::addPoints() instead of the tag manager. Same setup (a demographic score rule makes a real customer a genuine, SQL-resolved segment member with no order placement needed), same admin-click -> publish -> consume chain, different real DB-observable side effect asserted at the end — an ordo_customer_score row this time instead of ordo_customer_tag."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="segment"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: same demographic score rule setup as AdminSegmentBulkActionAddTagTest.xml —
+             80 points is comfortably above the score_at_least threshold used below. -->
+        <amOnPage url="admin/ordo/scorerule/new" stepKey="goToNewScoreRulePage"/>
+        <waitForPageLoad stepKey="waitForNewScoreRulePage"/>
+        <waitForElementVisible selector="[name='attribute_code']" stepKey="waitForAttributeCodeField"/>
+        <fillField selector="[name='attribute_code']" userInput="group_id" stepKey="fillAttributeCode"/>
+        <selectOption selector="[name='operator']" userInput="equals" stepKey="selectOperator"/>
+        <fillField selector="[name='value']" userInput="1" stepKey="fillValue"/>
+        <fillField selector="[name='points']" userInput="80" stepKey="fillPoints"/>
+        <click selector="#save" stepKey="clickSaveScoreRule"/>
+        <waitForPageLoad stepKey="waitForScoreRuleSave"/>
+        <see selector=".message-success" userInput="The score rule has been saved." stepKey="seeScoreRuleSuccessMessage"/>
+
+        <!-- Step 2: the segment — same score_at_least condition and Save & Continue Edit
+             convention as AdminSegmentBulkActionAddTagTest.xml, for the same reasons (stay on
+             the edit page where BulkActions.php's form renders, and get the entity_id from the
+             URL). -->
+        <amOnPage url="admin/ordo/segment/new" stepKey="goToNewSegmentPage"/>
+        <waitForPageLoad stepKey="waitForNewSegmentPage"/>
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait — a cold, freshly
+             deployed developer-mode instance's first admin page load can lag behind
+             waitForPageLoad's document.readyState check. -->
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Test Bulk Points Score Members" stepKey="fillName"/>
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableSegment"/>
+
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRow"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRow"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="score_at_least" stepKey="selectConditionType"/>
+        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;threshold&quot;: &quot;40&quot;}" stepKey="fillConditionParams"/>
+
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
+        <waitForPageLoad stepKey="waitForSegmentSave"/>
+        <see selector=".message-success" userInput="The segment has been saved." stepKey="seeSegmentSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabSegmentId"/>
+
+        <!-- Step 3: the real customer — same group_id=1 match as AdminSegmentBulkActionAddTagTest.xml. -->
+        <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+
+        <!-- Step 4: back to the segment edit page for a fresh load of the plain-HTML bulk-actions
+             form — same reasoning as AdminSegmentBulkActionAddTagTest.xml's identical step. This
+             time "Add Points" / 25 instead of "Add Tag" / a tag string. -->
+        <amOnPage url="admin/ordo/segment/edit/entity_id/{$grabSegmentId}" stepKey="goToSegmentEditPage"/>
+        <waitForPageLoad stepKey="waitForSegmentEditPage"/>
+        <waitForElementVisible selector="#ordo-segment-bulk-action-type" stepKey="waitForBulkActionForm"/>
+        <selectOption selector="#ordo-segment-bulk-action-type" userInput="add_points" stepKey="selectAddPointsAction"/>
+        <fillField selector="#ordo-segment-bulk-points" userInput="25" stepKey="fillBulkPoints"/>
+        <click selector="//button[contains(., 'Run Bulk Action')]" stepKey="clickRunBulkAction"/>
+        <waitForPageLoad stepKey="waitForBulkActionRedirect"/>
+
+        <see selector=".message-success" userInput="Queued &quot;Add Points&quot; for 1 matching customer(s)." stepKey="seeQueuedMessage"/>
+
+        <!-- Step 5: same DB-queue-driver drain as AdminSegmentBulkActionAddTagTest.xml's identical
+             step, over-asking max-messages for the same reason. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.segment.bulk_action --max-messages=50" stepKey="runSegmentBulkActionConsumer"/>
+
+        <!-- Step 6: the real, database-observable side effect — an ordo_customer_score row that
+             only SegmentBulkActionConsumer's add_points branch, run via the full
+             admin-click -> publish -> consume chain, could have produced. At-least (not exact)
+             because addPoints() upserts additively (see CustomerScoreManager's own docblock) —
+             25 is the only source in this test, but an at-least check is the same robust shape
+             assertCustomerScoreAtLeastByEmail() itself documents choosing. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertCustomerScoreAtLeastByEmail" stepKey="assertRealPointsAdded">
+            <argument name="email">$createCustomer.email$</argument>
+            <argument name="minScore">25</argument>
+        </helper>
+    </test>
+</tests>
