@@ -36,9 +36,9 @@
         <waitForElementVisible selector="[name='html']" stepKey="waitForHtmlField"/>
         <fillField selector="[name='html']" userInput="&lt;p&gt;ORDO-DYNAMIC-CONTENT-MARKER&lt;/p&gt;" stepKey="fillHtml"/>
 
-        <!-- Same toggle-switch checkbox as the campaign/segment forms' "enabled" field — the
-             real &lt;input&gt; is visually covered by its own wrapper, click the label instead. -->
-        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableContentBlock"/>
+        <!-- Unlike the campaign/segment forms' "enabled" field, ordo_contentblock_form.xml's own
+             <default>1</default> means a new content block is already enabled/pre-checked — no
+             click needed here (clicking would toggle it OFF instead). -->
 
         <click selector="#save" stepKey="clickSave"/>
         <waitForPageLoad stepKey="waitForSave"/>

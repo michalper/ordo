@@ -36,7 +36,13 @@
         <selectOption selector="[name='type']" userInput="snippet" stepKey="selectSnippetType"/>
         <waitForElementVisible selector="[name='html']" stepKey="waitForHtmlField"/>
         <fillField selector="[name='html']" userInput="&lt;p&gt;ORDO-DYNAMIC-CONTENT-MARKER&lt;/p&gt;" stepKey="fillHtml"/>
-        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableContentBlock"/>
+        <!-- Unlike the campaign form's "enabled" field, ordo_contentblock_form.xml's own
+             <default>1</default> means a new content block is already enabled/pre-checked — no
+             click needed. Clicking here (as this test used to) actually TOGGLES it OFF, saving
+             the block with enabled=0, which made getContentBlockOptions() (filtered by
+             enabled=1) return nothing — confirmed via a real CI screenshot showing the flow
+             canvas's "Content Block" field fall back to a plain text input instead of a select,
+             since campaign-flow-editor.js only renders a <select> for a non-empty options map. -->
         <click selector="#save" stepKey="clickSaveContentBlock"/>
         <waitForPageLoad stepKey="waitForContentBlockSave"/>
         <see selector=".message-success" userInput="The content block has been saved." stepKey="seeContentBlockSuccessMessage"/>
