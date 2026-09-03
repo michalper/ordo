@@ -166,6 +166,15 @@
              per AGENTS.md's "MFTF w prawdziwym CI" section. -->
         <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumerAfterOrder1"/>
 
+        <!-- Diagnostic: confirm the 'vip' tag genuinely exists at this exact point (proving
+             Campaign A's add_tag really did already run within order 1's own dispatch, as
+             intended) or doesn't (which would mean the coupon seen in this test's repeated
+             flake comes from somewhere else entirely, not a same-dispatch-pass ordering issue). -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertCustomerTagAddedByEmail" stepKey="dumpTagStateAfterOrder1">
+            <argument name="email">$createCustomer.email$</argument>
+            <argument name="tag">vip</argument>
+        </helper>
+
         <!-- Step 4: assert NO coupon exists yet — the negative half of the AND proof. The coupon
              codes grid's rows load via a separate AJAX call after the table element is already in
              the DOM (see AdminCampaignScenarioEndToEndTest.xml's comment on this exact race for the
