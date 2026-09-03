@@ -105,18 +105,21 @@ Not a code review — a capability comparison against the category. Each is a re
 
 ## Localization
 
-- **i18n coverage beyond PL/EN.** Currently `i18n/pl_PL.csv` and `i18n/en_US.csv` are the only translated
-  dictionaries — every other locale falls back to the untranslated `__()` source strings. Extend to the
-  world's most-spoken/most-common e-commerce-admin locales: `de_DE`, `fr_FR`, `es_ES`, `it_IT`, `pt_BR`,
-  `zh_Hans_CN`, `ja_JP`, `ru_RU`, `uk_UA`, `nl_NL`. Scope: one `i18n/<locale>.csv` per language (Magento's
-  standard `"Source string","Translated string"` CSV dictionary format, same as the existing two files —
-  no code changes needed, this is a pure content/translation task), covering both admin-facing strings
-  (campaign builder, content blocks, score rules, RFM report, etc.) and any customer-facing strings emitted
-  into frontend templates/emails. Needs a decision on translation source: machine-translate as a first pass
-  and flag for native-speaker review, vs. only ship a locale once a human reviewer signs off — given this is
-  an admin marketing tool (correctness matters more than for casual UI copy), lean toward the latter for
-  launch-blocking strings (error messages, data-loss confirmations) and allow machine-translated first drafts
-  for descriptive/help text.
+- ~~i18n coverage beyond PL/EN~~ — done. All 10 target locales added (`de_DE`, `fr_FR`, `es_ES`, `it_IT`,
+  `pt_BR`, `zh_Hans_CN`, `ja_JP`, `ru_RU`, `uk_UA`, `nl_NL`), each a full `i18n/<locale>.csv`. Scope turned
+  out bigger than the two existing dictionaries suggested: `pl_PL.csv`/`en_US.csv` covered only 29
+  `system.xml` config strings — the rest of the module (campaign builder, content blocks, score rules, RFM
+  report, admin grids/messages, etc.) had never been through `bin/magento i18n:collect-phrases` at all, not
+  even into Polish. Ran that tool for real (per-source-directory, since a full-module scan choked on the
+  local dev `vendor/` the composer path-repo mirror also copies) and merged in 6 further phrases the
+  static scanner can't see (customer-attribute labels set as plain PHP array values, not `__()` calls),
+  landing on 323 unique source phrases — `en_US.csv`/`pl_PL.csv` were rebuilt to that full set, and all 10
+  new locales were translated against it, each verified line-for-line (323 rows, same source-phrase order)
+  against `en_US.csv`. This is a machine-translated first pass, not human-reviewed per-locale — matches the
+  "machine-translate first, flag for native-speaker review" half of the decision this entry used to pose;
+  the stricter "human sign-off before shipping a locale" bar was not applied. A native speaker should spot-
+  check each locale before treating it as launch-quality, particularly the launch-blocking strings (error
+  messages, delete confirmations) called out as the higher bar in the original scope note.
 
 ## Documentation
 
