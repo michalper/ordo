@@ -43,7 +43,7 @@ cases separately from the type-by-type ones.
 | Trigger                   | Fired from                                                                 | Status                                                                                                                  |
 |---------------------------|----------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
 | `order_placed`            | `Observer/DispatchOrderPlacedCampaigns.php` (`sales_order_place_after`)    | ✅ `AdminCampaignScenarioEndToEndTest`                                                                                  |
-| `customer_registered`     | `Observer/DispatchCustomerRegisteredCampaigns.php`                         | ✅ `AdminCampaignCustomerRegisteredTriggerTest`                                                                        |
+| `customer_registered`     | `Observer/DispatchCustomerRegisteredCampaigns.php`                         | ✅ `AdminCampaignCustomerRegisteredTriggerTest`                                                                         |
 | `tag_added`               | `Observer/DispatchTagAddedCampaigns.php` (`ordo_customer_tag_added`)       | ⬜ (only reached indirectly, as a side effect, inside `AdminCampaignScenarioEndToEndTest` — never asserted on directly) |
 | `cart_abandoned`          | `Cron/SendAbandonedCartReminders.php`'s own dispatch, not a live observer  | ⬜                                                                                                                      |
 | `visitor_tag_added`       | `Observer/DispatchVisitorTagAddedCampaigns.php` (`ordo_visitor_tag_added`) | ✅ `AdminCampaignVisitorTagConditionTest`                                                                               |
@@ -67,12 +67,12 @@ cases separately from the type-by-type ones.
 
 ### 1c. Actions (`Model\Campaign\ActionPool`)
 
-| Action            | Params                                 | Status                                                                                              |
-|-------------------|----------------------------------------|-----------------------------------------------------------------------------------------------------|
-| `add_tag`         | `{tag}`                                | ⬜ (only ever a side effect inside `AdminCampaignScenarioEndToEndTest`, never the thing under test) |
-| `send_email`      | `{template, message}`                  | ✅ `AdminCampaignSendEmailActionTest`                                                               |
-| `generate_coupon` | `{rule_id, prefix}`                    | ✅ `AdminCampaignScenarioEndToEndTest`                                                              |
-| `popup`           | `{headline, body, cta_label, cta_url}` | ✅ `AdminCampaignPopupActionTest` (writes `ordo_pending_popup`; storefront poll — see §7)            |
+| Action            | Params                                 | Status                                                                                                                                                                                                                       |
+|-------------------|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `add_tag`         | `{tag}`                                | ⬜ (only ever a side effect inside `AdminCampaignScenarioEndToEndTest`, never the thing under test)                                                                                                                          |
+| `send_email`      | `{template, message}`                  | ✅ `AdminCampaignSendEmailActionTest`                                                                                                                                                                                        |
+| `generate_coupon` | `{rule_id, prefix}`                    | ✅ `AdminCampaignScenarioEndToEndTest`                                                                                                                                                                                       |
+| `popup`           | `{headline, body, cta_label, cta_url}` | ✅ `AdminCampaignPopupActionTest` (writes `ordo_pending_popup`; storefront poll — see §7)                                                                                                                                    |
 | `add_points`      | `{points}`                             | ✅ `AdminCampaignAddPointsActionTest` (feeds `score_at_least`; does NOT itself dispatch `score_threshold_crossed` — confirmed from source, only `EvaluateCustomerScoreRules`'s own `customer_save_after` handling does that) |
 
 ### 1d. Structural cases (not type-specific)
@@ -94,15 +94,15 @@ cases separately from the type-by-type ones.
 
 ## 2. Segments (`Model/Segment.php`, `Controller/Adminhtml/Segment/`)
 
-| Scenario                                                                                                                            | Status                                            |
-|-------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------|
-| Create a segment (name, enabled, one condition), appears in grid                                                                    | ✅ `AdminCreateSegmentTest`                       |
-| Segment with multiple AND'd conditions                                                                                              | ✅ `AdminCreateSegmentWithMultipleConditionsTest` |
-| Segment referenced by a campaign's `in_segment` condition (real membership match at dispatch time)                                  | ✅ `AdminCampaignInSegmentConditionTest`          |
-| Bulk action on a segment's current members — add tag (`SegmentBulkActionConsumer`, async via `ordo.automation.segment.bulk_action`) | ✅ `AdminSegmentBulkActionAddTagTest`             |
-| Bulk action on a segment's current members — add points                                                                             | ✅ `AdminSegmentBulkActionAddPointsTest`          |
+| Scenario                                                                                                                            | Status                                              |
+|-------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|
+| Create a segment (name, enabled, one condition), appears in grid                                                                    | ✅ `AdminCreateSegmentTest`                         |
+| Segment with multiple AND'd conditions                                                                                              | ✅ `AdminCreateSegmentWithMultipleConditionsTest`   |
+| Segment referenced by a campaign's `in_segment` condition (real membership match at dispatch time)                                  | ✅ `AdminCampaignInSegmentConditionTest`            |
+| Bulk action on a segment's current members — add tag (`SegmentBulkActionConsumer`, async via `ordo.automation.segment.bulk_action`) | ✅ `AdminSegmentBulkActionAddTagTest`               |
+| Bulk action on a segment's current members — add points                                                                             | ✅ `AdminSegmentBulkActionAddPointsTest`            |
 | Segment edited, condition changed, membership re-evaluates differently                                                              | ✅ `AdminEditSegmentConditionChangesMembershipTest` |
-| Segment deleted                                                                                                                     | ✅ `AdminDeleteSegmentTest`                       |
+| Segment deleted                                                                                                                     | ✅ `AdminDeleteSegmentTest`                         |
 
 ## 3. RFM (`Model/Rfm/`, `Cron/RecomputeRfmScores.php`, `ordo/rfm/index`)
 
@@ -124,7 +124,7 @@ cases separately from the type-by-type ones.
 | Customer save triggers `Observer/EvaluateCustomerScoreRules.php`, delta applied to `ordo_customer_score` | ✅ `AdminScoreThresholdCampaignTest` |
 | Crossing the configured threshold fires `score_threshold_crossed` (chains §1a)                           | ✅ `AdminScoreThresholdCampaignTest` |
 | Score rule edited/disabled — no longer contributes on next customer save                                 | ⬜                                   |
-| Score rule deleted                                                                                       | ⬜                                   |
+| Score rule deleted                                                                                       | ✅ `AdminDeleteScoreRuleStopsContributingTest` |
 
 ## 5. Free gift offers (`Model/FreeGiftOffer.php`, `Model/FreeGiftManagement.php`,
 
@@ -149,14 +149,14 @@ through. `Controller/Offer/*` (self-extend,
 
 ## 6. Order approval (`Model/OrderApproval.php`, `Controller/Approval/`)
 
-| Scenario                                                                                                                             | Status                             |
-|--------------------------------------------------------------------------------------------------------------------------------------|------------------------------------|
-| Real order over spend limit → held, approve email sent, approve link releases it                                                     | ✅ `AdminApproveOrderViaEmailTest` |
-| Reject link (`Controller/Approval/Reject.php`) — order canceled, not released                                                        | ✅ `AdminRejectOrderViaEmailTest`  |
-| Token re-use after approve/reject (already covered as the *second* half of `AdminApproveOrderViaEmailTest` — single-use enforcement) | ✅                                 |
-| `Cron\EscalateStalePendingApprovals` — a pending approval past its SLA gets escalated                                                | ⬜                                 |
+| Scenario                                                                                                                             | Status                                    |
+|--------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------|
+| Real order over spend limit → held, approve email sent, approve link releases it                                                     | ✅ `AdminApproveOrderViaEmailTest`        |
+| Reject link (`Controller/Approval/Reject.php`) — order canceled, not released                                                        | ✅ `AdminRejectOrderViaEmailTest`         |
+| Token re-use after approve/reject (already covered as the *second* half of `AdminApproveOrderViaEmailTest` — single-use enforcement) | ✅                                        |
+| `Cron\EscalateStalePendingApprovals` — a pending approval past its SLA gets escalated                                                | ⬜                                        |
 | Order under spend limit — never held at all (negative case)                                                                          | ✅ `AdminOrderUnderSpendLimitNotHeldTest` |
-| Customer with no spend limit / no approval admin email configured — never held                                                       | ⬜ (unit-tested only)              |
+| Customer with no spend limit / no approval admin email configured — never held                                                       | ⬜ (unit-tested only)                     |
 
 ## 7. Tracking & popups (`view/frontend/web/js/tracker.js`, `Controller/Track/`)
 
@@ -208,11 +208,12 @@ through. `Controller/Offer/*` (self-extend,
 2. ~~`send_email` action + MailHog~~ (§1c) — done: `AdminCampaignSendEmailActionTest.xml` (`campaign` group). Reused the
    exact MailHog wiring `AdminApproveOrderViaEmailTest`/`MailHogHelper` already established (added a new
    `seeTextInLatestEmail` helper method); closes the last uncovered action type.
-3. ~~Free gift eligibility/select/trim flow~~ (§5) — done: `FreeGiftManagementScenarioTest.php` (`Test/Integration`,
-   not MFTF — see §5's own note on why). Caught and fixed a real bug along the way:
-   `Observer/TrimExcessFreeGifts.php` read a stale `$quote->getSubtotal()`, so a dropped-below-threshold gift was
-   never actually being trimmed from the cart.
-4. ~~In-segment condition chained with a real campaign dispatch~~ (§1b + §2) — done: `AdminCampaignInSegmentConditionTest.xml`
+3. ~~Free gift eligibility/select/trim flow~~ (§5) — done: `FreeGiftManagementScenarioTest.php` (`Test/Integration`, not
+   MFTF — see §5's own note on why). Caught and fixed a real bug along the way:
+   `Observer/TrimExcessFreeGifts.php` read a stale `$quote->getSubtotal()`, so a dropped-below-threshold gift was never
+   actually being trimmed from the cart.
+4. ~~In-segment condition chained with a real campaign dispatch~~ (§1b + §2) — done:
+   `AdminCampaignInSegmentConditionTest.xml`
    (`campaign` group). Two real orders: the first fires a tag-only campaign (`add_tag`), the second's `in_segment`
    condition live-queries `SegmentMatcher` against a segment whose own condition is that same tag.
 5. ~~Reject link~~ (§6) — done: `AdminRejectOrderViaEmailTest.xml` (`campaign` group).
@@ -237,16 +238,16 @@ through. `Controller/Offer/*` (self-extend,
 14. ~~`score_at_least` condition~~ (§1b) — done: `AdminCampaignScoreAtLeastConditionTest.xml` (`campaign` group).
 15. ~~`add_points` action~~ (§1c) — done: `AdminCampaignAddPointsActionTest.xml` (`campaign` group). Found along the
     way: `add_points` does NOT itself chain into `score_threshold_crossed` — only `EvaluateCustomerScoreRules`'s own
-    `customer_save_after` handling dispatches that event, so this test instead proves two campaigns on the same
-    trigger chain within one `dispatch()` pass (Campaign A's `add_points` → Campaign B's `score_at_least` gate).
+    `customer_save_after` handling dispatches that event, so this test instead proves two campaigns on the same trigger
+    chain within one `dispatch()` pass (Campaign A's `add_points` → Campaign B's `score_at_least` gate).
 16. ~~Multiple conditions AND'd together, both halves~~ (§1d) — done: `AdminCampaignMultipleConditionsAndTest.xml`
-    (`campaign` group). One campaign, two condition rows; two real orders from the same customer, one before and
-    one after a tag makes the second condition pass — proves genuine AND, not just UI persistence.
+    (`campaign` group). One campaign, two condition rows; two real orders from the same customer, one before and one
+    after a tag makes the second condition pass — proves genuine AND, not just UI persistence.
 17. ~~Delayed action, `Cron\RunScheduledCampaignActions` resumes it~~ (§1d) — done:
-    `AdminCampaignDelayedActionTest.xml` (`campaign` group). Genuinely waits out a real 1-minute delay (no way to
-    fake elapsed time — the due-check is wall-clock `run_at <= NOW()`) rather than asserting something fake.
+    `AdminCampaignDelayedActionTest.xml` (`campaign` group). Genuinely waits out a real 1-minute delay (no way to fake
+    elapsed time — the due-check is wall-clock `run_at <= NOW()`) rather than asserting something fake.
 18. ~~Disabled campaign — trigger fires, nothing happens~~ (§1d) — done: `AdminCampaignDisabledNoDispatchTest.xml`
     (`campaign` group).
-19. ~~Segment bulk action — add tag~~ (§2) — done: `AdminSegmentBulkActionAddTagTest.xml` (`segment` group). The
-    admin trigger turned out to be a plain HTML form on the segment edit page (`BulkActions.php`/`bulkactions.phtml`),
-    not a UI-component grid mass-action.
+19. ~~Segment bulk action — add tag~~ (§2) — done: `AdminSegmentBulkActionAddTagTest.xml` (`segment` group). The admin
+    trigger turned out to be a plain HTML form on the segment edit page (`BulkActions.php`/`bulkactions.phtml`), not a
+    UI-component grid mass-action.

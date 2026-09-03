@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminDeleteScoreRuleStopsContributingTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Lead scoring"/>
+            <title value="A deleted score rule no longer contributes points on the next customer save"/>
+            <description value="Covers Controller/Adminhtml/ScoreRule/Delete.php and the negative half of Observer/EvaluateCustomerScoreRules.php's own contract: ScoreRuleEvaluator::getMatchingRulePoints() only sums currently-persisted rules, so a customer saved AFTER a rule is deleted must get none of its points — and per that observer's own docblock, a zero demographic-score delta means it returns before ever writing an ordo_customer_score row at all, not a zero-value one. Two customers, same group_id=1 (General) match: the first, created while the rule exists, gets its points (the positive control, same mechanism AdminSegmentBulkActionAddTagTest.xml already relies on); the rule is then deleted via the same direct-GET approach AdminDeleteCampaignStopsDispatchTest.xml uses; the second customer, created after, must have no score row at all."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="dashboard"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomerBeforeDelete" stepKey="deleteCustomerBeforeDelete"/>
+            <deleteData createDataKey="createCustomerAfterDelete" stepKey="deleteCustomerAfterDelete"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: same demographic score rule shape as AdminSegmentBulkActionAddTagTest.xml —
+             group_id=1 (General) equals, 80 points. "Save &amp; Continue Edit" to grab the
+             entity_id for the delete URL below. -->
+        <amOnPage url="admin/ordo/scorerule/new" stepKey="goToNewScoreRulePage"/>
+        <waitForPageLoad stepKey="waitForNewScoreRulePage"/>
+        <waitForElementVisible selector="[name='attribute_code']" stepKey="waitForAttributeCodeField"/>
+        <fillField selector="[name='attribute_code']" userInput="group_id" stepKey="fillAttributeCode"/>
+        <selectOption selector="[name='operator']" userInput="equals" stepKey="selectOperator"/>
+        <fillField selector="[name='value']" userInput="1" stepKey="fillValue"/>
+        <fillField selector="[name='points']" userInput="80" stepKey="fillPoints"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveScoreRule"/>
+        <waitForPageLoad stepKey="waitForScoreRuleSave"/>
+        <see selector=".message-success" userInput="The score rule has been saved." stepKey="seeScoreRuleSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabScoreRuleId"/>
+
+        <!-- Step 2: positive control — a General customer created while the rule still exists
+             gets its points via customer_save_after (Observer/EvaluateCustomerScoreRules.php). -->
+        <createData entity="Simple_US_Customer" stepKey="createCustomerBeforeDelete"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertCustomerScoreAtLeastByEmail" stepKey="assertPointsAppliedBeforeDelete">
+            <argument name="email">$createCustomerBeforeDelete.email$</argument>
+            <argument name="minScore">80</argument>
+        </helper>
+
+        <!-- Step 3: delete the rule — same direct-GET approach as AdminDeleteCampaignStopsDispatchTest.xml
+             (a faithful, non-flaky equivalent to confirming the grid's own JS confirm() dialog). -->
+        <amOnPage url="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleId}" stepKey="deleteScoreRule"/>
+        <waitForPageLoad stepKey="waitForScoreRuleDelete"/>
+        <see selector=".message-success" userInput="The score rule has been deleted." stepKey="seeScoreRuleDeleteSuccessMessage"/>
+
+        <amOnPage url="admin/ordo/scorerule/index" stepKey="goToScoreRuleGrid"/>
+        <waitForPageLoad stepKey="waitForScoreRuleGrid"/>
+        <dontSee selector="table.data-grid" userInput="group_id" stepKey="dontSeeRuleInGrid"/>
+
+        <!-- Step 4: the real, negative proof — a second General customer, created after the
+             rule no longer exists, must get no ordo_customer_score row at all. -->
+        <createData entity="Simple_US_Customer" stepKey="createCustomerAfterDelete"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertCustomerHasNoScoreByEmail" stepKey="assertNoPointsAppliedAfterDelete">
+            <argument name="email">$createCustomerAfterDelete.email$</argument>
+        </helper>
+    </test>
+</tests>

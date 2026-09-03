@@ -227,4 +227,49 @@ class VisitorEventHelper extends Helper
             ));
         }
     }
+
+    /**
+     * Negative counterpart to assertCustomerScoreAtLeastByEmail() above — confirms no
+     * ordo_customer_score row exists at all for a customer, for tests proving a deleted score
+     * rule no longer contributes on the next customer_save_after. EvaluateCustomerScoreRules
+     * only ever writes a row when the demographic-score delta is non-zero (see its own
+     * docblock), so "no matching rule at save time" means no row, not a zero-value one.
+     *
+     * @throws \RuntimeException if a matching customer_entity row doesn't exist, or a
+     *  ordo_customer_score row for them does
+     */
+    public function assertCustomerHasNoScoreByEmail(
+        string $email,
+        string $dbHost = '127.0.0.1',
+        string $dbName = 'magento',
+        string $dbUser = 'root',
+        string $dbPassword = ''
+    ): void {
+        $pdo = new \PDO(
+            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
+            $dbUser,
+            $dbPassword,
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+        );
+
+        $statement = $pdo->prepare('SELECT entity_id FROM customer_entity WHERE email = :email');
+        $statement->execute(['email' => $email]);
+        $customerId = $statement->fetchColumn();
+
+        if ($customerId === false) {
+            throw new \RuntimeException(sprintf('No customer_entity row found for email="%s".', $email));
+        }
+
+        $statement = $pdo->prepare('SELECT score FROM ordo_customer_score WHERE customer_id = :customer_id');
+        $statement->execute(['customer_id' => $customerId]);
+        $score = $statement->fetchColumn();
+
+        if ($score !== false) {
+            throw new \RuntimeException(sprintf(
+                'Unexpected ordo_customer_score row (score=%d) found for customer email="%s".',
+                (int) $score,
+                $email
+            ));
+        }
+    }
 }
