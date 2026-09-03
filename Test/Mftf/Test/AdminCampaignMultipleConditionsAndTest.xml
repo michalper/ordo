@@ -153,6 +153,13 @@
         <waitForPageLoad stepKey="waitForCartPageOrder1"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeFirstOrder"/>
 
+        <!-- A brief settle wait before draining — defensive against a message-visibility race
+             under CI load: sales_order_place_after's own publish() commits asynchronously
+             relative to the checkout redirect this action group waits for, so a consumer that
+             starts draining before that INSERT is visible would find an empty queue and exit
+             having processed nothing, unlike this test's own established isolated-run behavior. -->
+        <wait time="2" stepKey="waitForOrder1DispatchMessageVisible"/>
+
         <!-- Consume order 1's dispatch message now, before order 2 is even placed, same reasoning
              as AdminCampaignInSegmentConditionTest.xml's identical step: add_tag has to have
              actually run (not just be queued) for order 2's tag condition to see it. max-messages
@@ -160,11 +167,12 @@
              per AGENTS.md's "MFTF w prawdziwym CI" section. -->
         <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumerAfterOrder1"/>
 
-        <!-- Diagnostic: confirm the 'vip' tag genuinely exists at this exact point (proving
-             Campaign A's add_tag really did already run within order 1's own dispatch, as
-             intended) or doesn't (which would mean the coupon seen in this test's repeated
-             flake comes from somewhere else entirely, not a same-dispatch-pass ordering issue). -->
-        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertCustomerTagAddedByEmail" stepKey="dumpTagStateAfterOrder1">
+        <!-- Confirmed via a real CI run to genuinely exist here — Campaign A's condition-less
+             add_tag really does run within order 1's own dispatch, exactly as intended (B, the
+             lower id, evaluates first with the tag not yet set; A runs second and sets it).
+             Kept as a real assertion, not just a debug step: it's the one direct proof that
+             Campaign A's own half of this test's setup actually did its job. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertCustomerTagAddedByEmail" stepKey="assertTagAppliedAfterOrder1">
             <argument name="email">$createCustomer.email$</argument>
             <argument name="tag">vip</argument>
         </helper>
