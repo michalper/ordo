@@ -92,8 +92,12 @@
         <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRowB"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRowB"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="in_segment" stepKey="selectConditionTypeB"/>
-        <waitForElementVisible selector="[name='conditions[conditions][0][segment_id]']" stepKey="waitForSegmentIdField"/>
-        <fillField selector="[name='conditions[conditions][0][segment_id]']" userInput="{$grabSegmentId}" stepKey="fillSegmentIdB"/>
+        <!-- in_segment has no dedicated field in ordo_campaign_form.xml (only tag/order_total_gte/
+             score_at_least do) — it goes through the generic params_json fallback field, same as
+             every other condition type without one. Confirmed via a real CI run: the literal
+             "segment_id" field name this test originally used simply doesn't exist in the DOM. -->
+        <waitForElementVisible selector="[name='conditions[conditions][0][params_json]']" stepKey="waitForSegmentIdField"/>
+        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;segment_id&quot;: &quot;{$grabSegmentId}&quot;}" stepKey="fillSegmentIdB"/>
 
         <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRowB"/>
         <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRowB"/>

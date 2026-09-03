@@ -49,7 +49,12 @@
              completing to that page at all is itself part of the proof: a held order still lets
              checkout finish (HoldOrderForApproval runs on sales_order_place_after, after the order
              row already exists), so the real distinguishing signal is the status the admin grid
-             shows next, not whether this page was reached. -->
+             shows next, not whether this page was reached. waitForElementVisible before
+             grabTextFrom, not straight to grabTextFrom (which doesn't poll) — confirmed via a
+             real CI run: this order's own checkout finishes fast enough that the order-number
+             span (a separate, knockout.js-bound element from the "Thank you" title PlaceOrder
+             WithLoggedUserActionGroup already waited for) can still be mid-render. -->
+        <waitForElementVisible selector="{{CheckoutSuccessMainSection.orderNumber}}" stepKey="waitForOrderNumber"/>
         <grabTextFrom selector="{{CheckoutSuccessMainSection.orderNumber}}" stepKey="grabOrderNumber"/>
 
         <!-- FilterOrderGridByIdActionGroup navigates to AdminOrdersPage and filters by

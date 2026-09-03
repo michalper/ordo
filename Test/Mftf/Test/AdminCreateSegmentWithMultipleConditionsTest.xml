@@ -55,6 +55,11 @@
         <waitForPageLoad stepKey="waitForSave"/>
         <see selector=".message-success" userInput="The segment has been saved." stepKey="seeSuccessMessage"/>
 
+        <!-- Grab the id here, right after save, while still on the edit page — a second real CI
+             run showed the earlier version of this test grabbing it AFTER navigating to the grid
+             below instead, so the regex had nothing to match (the grid URL has no entity_id). -->
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabSegmentId"/>
+
         <amOnPage url="admin/ordo/segment/index" stepKey="goToSegmentGrid"/>
         <waitForPageLoad stepKey="waitForGrid"/>
         <see selector="table.data-grid" userInput="Test High Value Tagged Customers" stepKey="seeSegmentInGrid"/>
@@ -62,7 +67,6 @@
         <!-- Reload the edit form so this proves the DB round trip, not just in-place form state
              — same reasoning as AdminCreateCampaignWithConditionsAndActionsTest's reload,
              applied here to confirm both condition rows (not just the first) actually persisted. -->
-        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabSegmentId"/>
         <amOnPage url="admin/ordo/segment/edit/entity_id/{$grabSegmentId}/" stepKey="goToEditPage"/>
         <waitForPageLoad stepKey="waitForEditPage"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRowOnePersisted"/>
