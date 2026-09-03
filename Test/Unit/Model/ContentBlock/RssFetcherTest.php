@@ -115,6 +115,50 @@ XML;
         $this->fetcher->fetch($this->makeBlock(['feed_url' => 'https://example.com/feed.xml']));
     }
 
+    public function testOversizedResponseBodyWritesErrorAndDoesNotTouchRenderedHtml(): void
+    {
+        $this->curl->expects(self::once())->method('get')->with('https://example.com/feed.xml');
+        $this->curl->method('getStatus')->willReturn(200);
+        $this->curl->method('getBody')->willReturn(str_repeat('a', 2 * 1024 * 1024 + 1));
+
+        $this->rssItemRenderer->expects(self::never())->method('render');
+        $this->logger->expects(self::once())->method('error');
+
+        $this->connection->expects(self::once())->method('query')->with(
+            self::logicalAnd(
+                self::stringContains('fetch_error = VALUES(fetch_error)'),
+                self::logicalNot(self::stringContains('rendered_html = VALUES'))
+            ),
+            [3, 'Response body exceeds the maximum allowed size.']
+        );
+
+        $this->fetcher->fetch($this->makeBlock(['feed_url' => 'https://example.com/feed.xml']));
+    }
+
+    public function testCapsParsedItemsAtMaxItemsRegardlessOfFeedSize(): void
+    {
+        $items = '';
+        for ($i = 1; $i <= 60; $i++) {
+            $items .= "<item><title>Item {$i}</title><link>https://example.com/{$i}</link>"
+                . "<description>Desc {$i}</description></item>";
+        }
+        $feed = '<?xml version="1.0"?><rss version="2.0"><channel>' . $items . '</channel></rss>';
+
+        $this->curl->expects(self::once())->method('get')->with('https://example.com/feed.xml');
+        $this->curl->method('getStatus')->willReturn(200);
+        $this->curl->method('getBody')->willReturn($feed);
+
+        $this->rssItemRenderer->expects(self::once())
+            ->method('render')
+            ->with(self::callback(static fn (array $parsed) => count($parsed) === 50), 5)
+            ->willReturn('<table>rendered</table>');
+
+        $this->connection->expects(self::once())->method('query');
+        $this->logger->expects(self::never())->method('error');
+
+        $this->fetcher->fetch($this->makeBlock(['feed_url' => 'https://example.com/feed.xml']));
+    }
+
     public function testMalformedXmlWritesErrorAndDoesNotTouchRenderedHtml(): void
     {
         $this->curl->expects(self::once())->method('get')->with('https://example.com/feed.xml');

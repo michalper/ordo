@@ -34,13 +34,12 @@ class RssItemRenderer
             $itemCount = self::DEFAULT_ITEM_COUNT;
         }
 
+        // $items is already known non-empty and $itemCount already known positive above, so
+        // array_slice() here is always non-empty and $rows always ends up non-empty too —
+        // no "still nothing to render" case survives to check for below.
         $rows = [];
         foreach (array_slice($items, 0, $itemCount) as $item) {
             $rows[] = $this->renderItemRow($item);
-        }
-
-        if ($rows === []) {
-            return '';
         }
 
         return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">'

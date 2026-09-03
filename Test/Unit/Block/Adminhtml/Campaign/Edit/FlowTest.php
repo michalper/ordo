@@ -16,6 +16,7 @@ use Ordo\Automation\Model\CampaignAction;
 use Ordo\Automation\Model\CampaignCondition;
 use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
+use Ordo\Automation\Model\ContentBlock;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\Collection as ActionCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\Collection as ConditionCollection;
@@ -327,5 +328,25 @@ class FlowTest extends TestCase
         $block = $this->makeBlock();
 
         self::assertSame(json_encode($block->getFieldsConfig()), $block->getFieldsConfigJson());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetContentBlockOptionsMapsEntityIdToNameAndType(): void
+    {
+        $contentBlock = $this->createStub(ContentBlock::class);
+        $contentBlock->method('getEntityId')->willReturn(7);
+        $contentBlock->method('getName')->willReturn('Welcome Snippet');
+        $contentBlock->method('getType')->willReturn('snippet');
+
+        $contentBlockCollection = $this->createStub(ContentBlockCollection::class);
+        $contentBlockCollection->method('addFieldToFilter')->willReturnSelf();
+        $contentBlockCollection->method('getIterator')->willReturn(new \ArrayIterator([$contentBlock]));
+        $this->contentBlockCollectionFactory = $this->createStub(ContentBlockCollectionFactory::class);
+        $this->contentBlockCollectionFactory->method('create')->willReturn($contentBlockCollection);
+
+        self::assertSame(
+            [7 => 'Welcome Snippet (snippet)'],
+            $this->makeBlock()->getContentBlockOptions()
+        );
     }
 }

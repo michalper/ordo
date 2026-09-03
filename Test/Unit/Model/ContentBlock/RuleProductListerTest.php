@@ -133,6 +133,82 @@ class RuleProductListerTest extends TestCase
         self::assertSame(['SKU-1', 'SKU-2'], $this->lister->getSkus(3, 2));
     }
 
+    public function testReturnsEmptyArrayWhenFirstPageHasNoItems(): void
+    {
+        $combine = $this->createMock(Combine::class);
+        $combine->expects(self::never())->method('validate');
+
+        $rule = $this->makeRuleMock(3, $combine);
+        $this->ruleFactory->expects(self::once())->method('create')->willReturn($rule);
+
+        $collection = $this->createMock(ProductCollection::class);
+        $collection->expects(self::once())->method('getItems')->willReturn([]);
+
+        $this->productCollectionFactory->expects(self::once())->method('create')->willReturn($collection);
+
+        self::assertSame([], $this->lister->getSkus(3, 4));
+    }
+
+    /**
+     * A full first page (PAGE_SIZE items) with nothing matching forces a second
+     * addFieldToFilter/setCurPage(2) fetch — proves the pagination loop actually advances
+     * instead of only ever reading page 1.
+     */
+    public function testAdvancesToSecondPageWhenFirstPageIsFull(): void
+    {
+        $combine = $this->createMock(Combine::class);
+        $combine->expects(self::exactly(201))->method('validate')->willReturnCallback(
+            static fn (Product $product) => $product->getSku() === 'SKU-PAGE2'
+        );
+
+        $rule = $this->makeRuleMock(3, $combine);
+        $this->ruleFactory->expects(self::once())->method('create')->willReturn($rule);
+
+        $nonMatching = $this->createStub(Product::class);
+        $nonMatching->method('getSku')->willReturn('SKU-PAGE1');
+        $page1Items = array_fill(0, 200, $nonMatching);
+
+        $page2Product = $this->makeProductMock('SKU-PAGE2');
+        $page2Product->expects(self::once())->method('setData')->with('product', $page2Product);
+
+        $page1 = $this->createMock(ProductCollection::class);
+        $page1->expects(self::once())->method('setCurPage')->with(1);
+        $page1->expects(self::once())->method('getItems')->willReturn($page1Items);
+
+        $page2 = $this->createMock(ProductCollection::class);
+        $page2->expects(self::once())->method('setCurPage')->with(2);
+        $page2->expects(self::once())->method('getItems')->willReturn([$page2Product]);
+
+        $this->productCollectionFactory->expects(self::exactly(2))->method('create')
+            ->willReturnOnConsecutiveCalls($page1, $page2);
+
+        self::assertSame(['SKU-PAGE2'], $this->lister->getSkus(3, 4));
+    }
+
+    /**
+     * MAX_SCANNED (2000) caps the scan regardless of how many more items a page could still
+     * offer — a single oversized "page" of 2005 non-matching items must stop being scanned
+     * exactly at item #2000, not fall through to the end of the array.
+     */
+    public function testStopsScanningOnceMaxScannedIsReached(): void
+    {
+        $combine = $this->createMock(Combine::class);
+        $combine->expects(self::exactly(2000))->method('validate')->willReturn(false);
+
+        $rule = $this->makeRuleMock(3, $combine);
+        $this->ruleFactory->expects(self::once())->method('create')->willReturn($rule);
+
+        $product = $this->createMock(Product::class);
+        $product->expects(self::exactly(2000))->method('setData')->with('product', $product);
+
+        $collection = $this->createMock(ProductCollection::class);
+        $collection->expects(self::once())->method('getItems')->willReturn(array_fill(0, 2005, $product));
+
+        $this->productCollectionFactory->expects(self::once())->method('create')->willReturn($collection);
+
+        self::assertSame([], $this->lister->getSkus(3, 999));
+    }
+
     public function testReturnsEmptyArrayWhenNothingMatches(): void
     {
         $combine = $this->createMock(Combine::class);
