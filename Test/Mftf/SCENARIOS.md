@@ -123,7 +123,7 @@ cases separately from the type-by-type ones.
 | Operator: `contains`                                                                                     | ⬜                                   |
 | Customer save triggers `Observer/EvaluateCustomerScoreRules.php`, delta applied to `ordo_customer_score` | ✅ `AdminScoreThresholdCampaignTest` |
 | Crossing the configured threshold fires `score_threshold_crossed` (chains §1a)                           | ✅ `AdminScoreThresholdCampaignTest` |
-| Score rule edited/disabled — no longer contributes on next customer save                                 | ⬜                                   |
+| Score rule edited/disabled — no longer contributes on next customer save                                 | ✅ `AdminDisableScoreRuleStopsContributingTest` |
 | Score rule deleted                                                                                       | ✅ `AdminDeleteScoreRuleStopsContributingTest` |
 
 ## 5. Free gift offers (`Model/FreeGiftOffer.php`, `Model/FreeGiftManagement.php`,

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminDisableScoreRuleStopsContributingTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Lead scoring"/>
+            <title value="A disabled score rule no longer contributes points on the next customer save"/>
+            <description value="Sibling to AdminDeleteScoreRuleStopsContributingTest.xml, covering the softer edit path instead of delete: Model/ScoreRule/ScoreRuleEvaluator.php filters its own rule collection on enabled=1 (see its own addFieldToFilter call), so unchecking a rule's enabled toggle and re-saving must have the same real effect as deleting it — a customer saved afterwards gets none of its points, and per Observer/EvaluateCustomerScoreRules.php's own zero-delta-means-no-write contract, no ordo_customer_score row at all."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="dashboard"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomerBeforeDisable" stepKey="deleteCustomerBeforeDisable"/>
+            <deleteData createDataKey="createCustomerAfterDisable" stepKey="deleteCustomerAfterDisable"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: same demographic score rule shape as AdminDeleteScoreRuleStopsContributingTest.xml —
+             group_id=1 (General) equals, 80 points, enabled by default. -->
+        <amOnPage url="admin/ordo/scorerule/new" stepKey="goToNewScoreRulePage"/>
+        <waitForPageLoad stepKey="waitForNewScoreRulePage"/>
+        <waitForElementVisible selector="[name='attribute_code']" stepKey="waitForAttributeCodeField"/>
+        <fillField selector="[name='attribute_code']" userInput="group_id" stepKey="fillAttributeCode"/>
+        <selectOption selector="[name='operator']" userInput="equals" stepKey="selectOperator"/>
+        <fillField selector="[name='value']" userInput="1" stepKey="fillValue"/>
+        <fillField selector="[name='points']" userInput="80" stepKey="fillPoints"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveScoreRule"/>
+        <waitForPageLoad stepKey="waitForScoreRuleSave"/>
+        <see selector=".message-success" userInput="The score rule has been saved." stepKey="seeScoreRuleSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabScoreRuleId"/>
+
+        <!-- Step 2: positive control — a General customer created while the rule is still
+             enabled gets its points. -->
+        <createData entity="Simple_US_Customer" stepKey="createCustomerBeforeDisable"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertCustomerScoreAtLeastByEmail" stepKey="assertPointsAppliedBeforeDisable">
+            <argument name="email">$createCustomerBeforeDisable.email$</argument>
+            <argument name="minScore">80</argument>
+        </helper>
+
+        <!-- Step 3: uncheck "enabled" and re-save — same toggle-checkbox click-the-label pattern
+             used by the campaign/segment forms' own "enabled" field. -->
+        <amOnPage url="admin/ordo/scorerule/edit/entity_id/{$grabScoreRuleId}" stepKey="goToEditScoreRulePage"/>
+        <waitForPageLoad stepKey="waitForEditScoreRulePage"/>
+        <waitForElementVisible selector="[name='enabled']" stepKey="waitForEnabledField"/>
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="disableScoreRule"/>
+        <click selector="#save" stepKey="clickSaveDisabledScoreRule"/>
+        <waitForPageLoad stepKey="waitForScoreRuleDisableSave"/>
+        <see selector=".message-success" userInput="The score rule has been saved." stepKey="seeDisableSaveSuccessMessage"/>
+
+        <!-- Step 4: the real, negative proof — a second General customer, created after the
+             rule was disabled, must get no ordo_customer_score row at all. -->
+        <createData entity="Simple_US_Customer" stepKey="createCustomerAfterDisable"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertCustomerHasNoScoreByEmail" stepKey="assertNoPointsAppliedAfterDisable">
+            <argument name="email">$createCustomerAfterDisable.email$</argument>
+        </helper>
+    </test>
+</tests>
