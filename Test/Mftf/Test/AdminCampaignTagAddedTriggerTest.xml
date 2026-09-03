@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCampaignTagAddedTriggerTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Campaign engine"/>
+            <title value="The tag_added trigger fires a campaign the moment a real tag is applied"/>
+            <description value="Covers Observer/DispatchTagAddedCampaigns.php directly — every other test that reaches this trigger only does so as an incidental side effect of some other campaign's add_tag action, never asserting on tag_added itself (see SCENARIOS.md). CustomerTagManager::addTag() is the only thing that fires &quot;ordo_customer_tag_added&quot; (see its own class doc on why this is an event, not a direct CampaignDispatcher call, to avoid a DI cycle with HasTag), and the only ADMIN-UI path to it outside a campaign action is the segment edit page's bulk action (AdminSegmentBulkActionAddTagTest.xml's own proven mechanism) — so this test reuses that exact setup (score rule -&gt; segment -&gt; real customer) purely as the vehicle to apply a real tag from the admin UI, then proves a SEPARATE campaign, triggered on tag_added alone, actually dispatches off that real event through its own queue (ordo.automation.campaign.dispatch, distinct from the bulk action's own ordo.automation.segment.bulk_action queue that has to drain first)."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="dashboard"/>
+        </annotations>
+        <before>
+            <createData entity="ApiSalesRule" stepKey="createRule"/>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createRule" stepKey="deleteRule"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: a demographic score rule + segment, same mechanism AdminSegmentBulkActionAddTagTest.xml
+             already proves reliable — the only purpose here is to get a real customer resolvable
+             by the segment's bulk-action form, not to test scoring itself. -->
+        <amOnPage url="admin/ordo/scorerule/new" stepKey="goToNewScoreRulePage"/>
+        <waitForPageLoad stepKey="waitForNewScoreRulePage"/>
+        <!-- attribute_code is a Magento_Ui/js/form/element/ui-select searchable picker
+             (ordo_scorerule_form.xml) — its DOM interaction proved unreliable across real CI
+             runs (a click-search-select sequence that intermittently never found the
+             dropdown trigger). Set the value directly via uiRegistry instead, the same
+             robust technique already proven for hidden dynamicRows fieldsets elsewhere in
+             this suite — multiple:false (ordo_scorerule_form.xml) means the component's own
+             value() is a plain scalar, not an array (confirmed via ui-select.js's own
+             `this.multiple ? _.contains(this.value(), value) : this.value() === value`). -->
+        <executeJS function="require(['uiRegistry'], function (uiRegistry) { uiRegistry.get('ordo_scorerule_form.ordo_scorerule_form.general.attribute_code', function (field) { field.value('group_id'); }); });" stepKey="fillAttributeCode"/>
+        <selectOption selector="[name='operator']" userInput="equals" stepKey="selectOperator"/>
+        <fillField selector="[name='value']" userInput="1" stepKey="fillValue"/>
+        <fillField selector="[name='points']" userInput="80" stepKey="fillPoints"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveScoreRule"/>
+        <waitForPageLoad stepKey="waitForScoreRuleSave"/>
+        <see selector=".message-success" userInput="The score rule has been saved." stepKey="seeScoreRuleSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabScoreRuleId"/>
+
+        <amOnPage url="admin/ordo/segment/new" stepKey="goToNewSegmentPage"/>
+        <waitForPageLoad stepKey="waitForNewSegmentPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForSegmentNameField"/>
+        <fillField selector="[name='name']" userInput="Test Tag Added Trigger Segment" stepKey="fillSegmentName"/>
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableSegment"/>
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRow"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRow"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="score_at_least" stepKey="selectConditionType"/>
+        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;threshold&quot;: &quot;40&quot;}" stepKey="fillConditionParams"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueSegment"/>
+        <waitForPageLoad stepKey="waitForSegmentSave"/>
+        <see selector=".message-success" userInput="The segment has been saved." stepKey="seeSegmentSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabSegmentId"/>
+
+        <!-- Step 2: the campaign under test — trigger=tag_added ONLY, no condition, so the coupon
+             existing at the end can only be explained by the trigger itself having fired. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait — a cold, freshly
+             deployed developer-mode instance's first admin page load can lag behind
+             waitForPageLoad's document.readyState check. -->
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Tag Added Trigger Coupon Campaign" stepKey="fillName"/>
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButton"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRow"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRow"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="tag_added" stepKey="selectTriggerEvent"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRow"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRow"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="generate_coupon" stepKey="selectActionType"/>
+        <waitForElementVisible selector="[name='actions[actions][0][rule_id]']" stepKey="waitForRuleIdField"/>
+        <fillField selector="[name='actions[actions][0][rule_id]']" userInput="$createRule.rule_id$" stepKey="fillRuleId"/>
+        <fillField selector="[name='actions[actions][0][prefix]']" userInput="TAGTRIGGER" stepKey="fillPrefix"/>
+        <fillField selector="[name='actions[actions][0][delay_minutes]']" userInput="0" stepKey="fillDelayMinutes"/>
+
+        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+
+        <!-- Step 3: the real customer, matching the segment via score. -->
+        <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+
+        <!-- Step 4: apply a real tag from the admin UI via the segment's bulk-actions form — the
+             only admin-UI path to CustomerTagManager::addTag() outside a campaign action itself. -->
+        <amOnPage url="admin/ordo/segment/edit/entity_id/{$grabSegmentId}" stepKey="goToSegmentEditPage"/>
+        <waitForPageLoad stepKey="waitForSegmentEditPage"/>
+        <waitForElementVisible selector="#ordo-segment-bulk-action-type" stepKey="waitForBulkActionForm"/>
+        <selectOption selector="#ordo-segment-bulk-action-type" userInput="add_tag" stepKey="selectAddTagAction"/>
+        <fillField selector="#ordo-segment-bulk-tag" userInput="triggered-tag" stepKey="fillBulkTag"/>
+        <click selector="//button[contains(., 'Run Bulk Action')]" stepKey="clickRunBulkAction"/>
+        <waitForPageLoad stepKey="waitForBulkActionRedirect"/>
+        <see selector=".message-success" userInput="Queued &quot;Add Tag&quot; for 1 matching customer(s)." stepKey="seeQueuedMessage"/>
+
+        <!-- Step 5: two SEPARATE queues to drain, in order — the bulk action's own queue first
+             (this is what actually calls CustomerTagManager::addTag() and fires the
+             "ordo_customer_tag_added" event that publishes to the campaign-dispatch queue),
+             then the campaign-dispatch queue the tag_added trigger just landed on. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.segment.bulk_action --max-messages=50" stepKey="runSegmentBulkActionConsumer"/>
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+
+        <!-- Step 6: the real, database-observable proof — a coupon only this campaign's
+             tag_added-triggered generate_coupon action could have produced. -->
+        <amOnPage url="admin/sales_rule/promo_quote/edit/id/$createRule.rule_id$/" stepKey="goToRuleEditPage"/>
+        <waitForPageLoad stepKey="waitForRuleEditPage"/>
+        <conditionalClick selector="{{AdminCartPriceRulesFormSection.manageCouponCodesHeader}}"
+                           dependentSelector="#couponCodesGrid_table" visible="false" stepKey="openCouponCodesTab"/>
+        <waitForElementVisible selector="#couponCodesGrid_table" stepKey="waitForCouponCodesGrid"/>
+        <!-- waitForText, not <see> — the grid's rows load via a separate AJAX call after the
+             table element is already in the DOM, same reasoning as AdminCampaignScenarioEndToEndTest.xml. -->
+        <waitForText selector="#couponCodesGrid_table" userInput="TAGTRIGGER-" stepKey="seeGeneratedCouponInGrid"/>
+
+        <!-- Cleanup: same reasoning as AdminSegmentBulkActionAddPointsTest.xml's identical closing
+             step — an unscoped group_id=1 demographic score rule would otherwise stack on every
+             General customer created for the rest of this same CI job. -->
+        <amOnPage url="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleId}" stepKey="deleteScoreRule"/>
+        <waitForPageLoad stepKey="waitForScoreRuleDelete"/>
+        <see selector=".message-success" userInput="The score rule has been deleted." stepKey="seeScoreRuleDeleteSuccessMessage"/>
+    </test>
+</tests>

@@ -44,7 +44,7 @@ cases separately from the type-by-type ones.
 |---------------------------|----------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
 | `order_placed`            | `Observer/DispatchOrderPlacedCampaigns.php` (`sales_order_place_after`)    | ✅ `AdminCampaignScenarioEndToEndTest`                                                                                  |
 | `customer_registered`     | `Observer/DispatchCustomerRegisteredCampaigns.php`                         | ✅ `AdminCampaignCustomerRegisteredTriggerTest`                                                                         |
-| `tag_added`               | `Observer/DispatchTagAddedCampaigns.php` (`ordo_customer_tag_added`)       | ⬜ (only reached indirectly, as a side effect, inside `AdminCampaignScenarioEndToEndTest` — never asserted on directly) |
+| `tag_added`               | `Observer/DispatchTagAddedCampaigns.php` (`ordo_customer_tag_added`)       | ✅ `AdminCampaignTagAddedTriggerTest`                                                                                   |
 | `cart_abandoned`          | `Cron/SendAbandonedCartReminders.php`'s own dispatch, not a live observer  | ⬜                                                                                                                      |
 | `visitor_tag_added`       | `Observer/DispatchVisitorTagAddedCampaigns.php` (`ordo_visitor_tag_added`) | ✅ `AdminCampaignVisitorTagConditionTest`                                                                               |
 | `score_threshold_crossed` | `Observer/DispatchScoreThresholdCampaigns.php` (lead scoring, see §4)      | ✅ `AdminScoreThresholdCampaignTest`                                                                                    |
@@ -170,7 +170,7 @@ through. `Controller/Offer/*` (self-extend,
 | View-threshold crossing (default 3) tags the visitor, chains into `visitor_tag_added` (§1a)                                           | ⬜                                                  |
 | Click-threshold crossing (default 1) tags the visitor via `element_clicked`                                                           | ✅ `StorefrontTrackerClickThresholdTagsVisitorTest` |
 | A campaign's `popup` action writes a pending popup, storefront poll (`Controller/Track/Popup.php`) picks it up and renders the banner | ✅ `AdminCampaignPopupActionTest`                   |
-| Popup dismissed / closed client-side, doesn't reappear on next poll                                                                   | ⬜                                                  |
+| Popup dismissed / closed client-side, doesn't reappear on next poll                                                                   | ✅ `AdminCampaignPopupClaimedOnceTest`             |
 | `Cron\PrunePendingPopups` — delivered/expired popups cleaned up                                                                       | ⬜                                                  |
 | `Cron\PruneVisitorEvents` — events past retention window removed                                                                      | ⬜                                                  |
 | Tracking disabled via config — `window.ordoTrack` calls become no-ops server-side (`reason: tracking_disabled`)                       | ⬜                                                  |

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCampaignPopupClaimedOnceTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="On-site behavior tracking"/>
+            <title value="A popup is only ever handed out once — a later poll never sees it again"/>
+            <description value="Sibling to AdminCampaignPopupActionTest.xml, covering the other half of Controller/Track/Popup.php's own docblock: 'Claims (sets delivered_at) the moment a row is handed out, not before... so two near-simultaneous polls can never both receive the same popup.' The other test only ever polls once (via the checkout success page's own tracker.js loop); this one proves the claim actually sticks by hitting the SAME endpoint a second time, directly, once the banner has already rendered once. Same setup as AdminCampaignPopupActionTest.xml (order_placed trigger, order_total_gte condition, popup action) purely as the vehicle to get one real, customer_id-targeted ordo_pending_popup row delivered — the interesting assertion is the second poll's response, not the first render."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="tracking"/>
+        </annotations>
+        <before>
+            <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <!-- Same realtime-indexer assumption AdminCampaignScenarioEndToEndTest documents. -->
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: same campaign shape as AdminCampaignPopupActionTest.xml — order_placed,
+             order_total_gte, popup. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait — a cold, freshly
+             deployed developer-mode instance's first admin page load can lag behind
+             waitForPageLoad's document.readyState check. -->
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Popup Claimed Once Campaign" stepKey="fillName"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButton"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRow"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRow"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEvent"/>
+
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRow"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRow"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="selectConditionType"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][amount]']" stepKey="waitForAmountField"/>
+        <!-- SimpleProduct2 (Magento_Catalog fixture) is priced at 123.00 — 50 leaves headroom
+             for tax/shipping rounding while still safely below the order total. -->
+        <fillField selector="[name='conditions[conditions][0][amount]']" userInput="50" stepKey="fillConditionAmount"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRow"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRow"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="popup" stepKey="selectActionType"/>
+        <waitForElementVisible selector="[name='actions[actions][0][headline]']" stepKey="waitForHeadlineField"/>
+        <fillField selector="[name='actions[actions][0][headline]']" userInput="Claimed Once Headline" stepKey="fillHeadline"/>
+        <fillField selector="[name='actions[actions][0][delay_minutes]']" userInput="0" stepKey="fillDelayMinutes"/>
+
+        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+
+        <!-- Step 2: a REAL order, through REAL storefront checkout, as the REAL customer —
+             same shape as AdminCampaignPopupActionTest.xml. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+
+        <!-- Step 3: same wait/reasoning as AdminCampaignPopupActionTest.xml's identical step —
+             deliberately staying on the checkout success page, letting its own tracker.js poll
+             loop claim the row for real, not navigating anywhere first. -->
+        <waitForElementVisible selector="#ordo-popup-banner" time="90" stepKey="waitForPopupBanner"/>
+        <see selector="#ordo-popup-banner" userInput="Claimed Once Headline" stepKey="seePopupHeadline"/>
+
+        <!-- Step 4: the real proof — hit the exact same endpoint the poll loop itself calls, a
+             second time, directly. Still the same logged-in customer session Popup::execute()
+             resolves customer_id from (customerSession->isLoggedIn()), same as the first poll
+             that just claimed the row — no visitor_id needed for this order_placed/customer_id
+             targeting path. The claim's conditional UPDATE (delivered_at IS NULL) means this
+             second request can only ever see an empty result now, not a database snapshot from
+             before the first poll ran. -->
+        <amOnPage url="ordo/track/popup" stepKey="pollPopupEndpointAgain"/>
+        <see selector="body" userInput="&quot;popup&quot;:null" stepKey="seeNullPopupOnSecondPoll"/>
+    </test>
+</tests>
