@@ -23,6 +23,11 @@
         <amOnPage url="admin/ordo/contentblock/new" stepKey="goToNewContentBlockPage"/>
         <waitForPageLoad stepKey="waitForNewContentBlockPage"/>
 
+        <!-- Temporary diagnostic: surfaces the real client-side JS error (if any) blocking this
+             form's identifier field, instead of guessing further — server logs show no PHP
+             error and the page itself returns 200, so whatever's wrong is client-side. -->
+        <dontSeeJsError stepKey="diagnosticCheckForJsError"/>
+
         <!-- Same cold-first-load lag other admin forms in this suite wait out (see
              AdminCreateCampaignTest.xml's comment on the same pattern). -->
         <waitForElementVisible selector="[name='identifier']" stepKey="waitForIdentifierField"/>
