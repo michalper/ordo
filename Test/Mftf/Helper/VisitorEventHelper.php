@@ -272,4 +272,38 @@ class VisitorEventHelper extends Helper
             ));
         }
     }
+
+    /**
+     * Temporary diagnostic: dumps every ordo_campaign_condition row for a campaign, unconditionally
+     * throwing so the dump lands in the CI log — deliberately used to break a real, unexplained
+     * flake open (does the condition data itself land correctly, right after save, before any
+     * order is placed) rather than guess further. To be removed once the real cause is found.
+     */
+    public function dumpCampaignConditions(
+        string $campaignId,
+        string $dbHost = '127.0.0.1',
+        string $dbName = 'magento',
+        string $dbUser = 'root',
+        string $dbPassword = ''
+    ): void {
+        $pdo = new \PDO(
+            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
+            $dbUser,
+            $dbPassword,
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+        );
+
+        $statement = $pdo->prepare(
+            'SELECT entity_id, campaign_id, type, params, sort_order FROM ordo_campaign_condition '
+            . 'WHERE campaign_id = :campaign_id ORDER BY sort_order ASC'
+        );
+        $statement->execute(['campaign_id' => $campaignId]);
+        $rows = $statement->fetchAll(\PDO::FETCH_ASSOC);
+
+        throw new \RuntimeException(sprintf(
+            '__DIAGNOSTIC__ ordo_campaign_condition for campaign_id=%s: %s',
+            $campaignId,
+            json_encode($rows)
+        ));
+    }
 }
