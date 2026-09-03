@@ -61,9 +61,13 @@
 
         <!-- Confirm the pre-edit state actually round-tripped from the DB (one row, the
              original type) before changing anything — otherwise a false pass could just mean
-             the fieldset never really loaded the saved data at all. -->
+             the fieldset never really loaded the saved data at all. seeOptionIsSelected checks
+             the selected <option>'s visible LABEL text, not its value attribute — confirmed via
+             a real CI run failure ("+ <option> Order Total ≥ ... contains text
+             'order_total_gte'") — so this must match Model/Campaign/TypeLabels.php's
+             human-readable label, not the raw condition type key. -->
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForExistingConditionRow"/>
-        <seeOptionIsSelected selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="seeOriginalConditionType"/>
+        <seeOptionIsSelected selector="[name='conditions[conditions][0][type]']" userInput="Order Total ≥" stepKey="seeOriginalConditionType"/>
         <dontSeeElement selector="[name='conditions[conditions][1][type]']" stepKey="dontSeeSecondConditionRowBeforeEdit"/>
 
         <!-- Step 3: change the condition's type — same row (index 0), no "Add Condition" click,
@@ -85,7 +89,7 @@
         <waitForPageLoad stepKey="waitForEditPageAfterEdit"/>
         <executeJS function="require(['uiRegistry'], function (uiRegistry) { ['conditions_fieldset', 'actions_fieldset'].forEach(function (fieldsetName) { uiRegistry.get('ordo_campaign_form.ordo_campaign_form.' + fieldsetName, function (fieldset) { fieldset.visible(true); fieldset.opened(true); var dynamicRowsName = fieldsetName.replace('_fieldset', ''); uiRegistry.get('ordo_campaign_form.ordo_campaign_form.' + fieldsetName + '.' + dynamicRowsName, function (dynamicRows) { dynamicRows.visible(true); }); }); }); });" stepKey="forceFieldsetsVisibleAfterEdit"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRowAfterEdit"/>
-        <seeOptionIsSelected selector="[name='conditions[conditions][0][type]']" userInput="score_at_least" stepKey="seeNewConditionTypePersisted"/>
+        <seeOptionIsSelected selector="[name='conditions[conditions][0][type]']" userInput="Score At Least" stepKey="seeNewConditionTypePersisted"/>
         <dontSeeElement selector="[name='conditions[conditions][1][type]']" stepKey="dontSeeSecondConditionRowAfterEdit"/>
     </test>
 </tests>

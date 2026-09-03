@@ -133,8 +133,12 @@
         <executeJS function="require(['uiRegistry'], function (uiRegistry) { uiRegistry.get('ordo_segment_form.ordo_segment_form.conditions_fieldset', function (fieldset) { fieldset.opened(true); fieldset.visible(true); }); });" stepKey="expandConditionsFieldset"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForExistingConditionRow"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="changeSegmentConditionType"/>
-        <waitForElementVisible selector="[name='conditions[conditions][0][amount]']" stepKey="waitForAmountField"/>
-        <fillField selector="[name='conditions[conditions][0][amount]']" userInput="10" stepKey="fillSegmentConditionAmount"/>
+        <!-- Unlike the campaign form, the segment form has no dedicated "amount" field/switcherConfig
+             for order_total_gte — every segment condition type goes through the generic
+             params_json fallback (see AdminCreateSegmentTest.xml/AdminSegmentBulkActionAddTagTest.xml's
+             identical convention). Confirmed via a real CI run: [name='conditions[conditions][0][amount]']
+             simply doesn't exist in this form's DOM. -->
+        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;amount&quot;: &quot;10&quot;}" stepKey="fillSegmentConditionAmount"/>
         <click selector="#save" stepKey="clickSaveSegmentEdit"/>
         <waitForPageLoad stepKey="waitForSegmentEditSave"/>
         <see selector=".message-success" userInput="The segment has been saved." stepKey="seeSegmentEditSuccessMessage"/>
