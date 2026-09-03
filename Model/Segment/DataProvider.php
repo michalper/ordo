@@ -50,7 +50,13 @@ class DataProvider extends AbstractDataProvider
             $segmentData = $segment->getData();
             $segmentId = (int) $segment->getEntityId();
 
-            $segmentData['conditions'] = $this->loadConditionRows($segmentId);
+            // The conditions dynamicRows component's own name AND its own <dataScope> are both
+            // "conditions" (see ordo_segment_form.xml) — Magento_Ui/js/dynamic-rows/dynamic-rows.js
+            // reads/writes each row at `${dataScope}.${index}.${rowIndex}...`, so the loaded data
+            // needs that same double nesting, not a flat array, or the component's own elems
+            // stay empty on an existing segment's edit reload (confirmed via a real CI run: the
+            // dynamicRows component itself reported visible=true, elems.length=0).
+            $segmentData['conditions'] = ['conditions' => $this->loadConditionRows($segmentId)];
 
             $this->loadedData[$segmentId] = $segmentData;
         }

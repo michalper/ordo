@@ -93,9 +93,13 @@ class DataProviderTest extends TestCase
         $provider = $this->makeProvider($collection);
         $data = $provider->getData();
 
-        self::assertSame('vip', $data[1]['conditions'][0]['tag']);
-        self::assertSame('reordered', $data[1]['actions'][0]['tag']);
-        self::assertSame(60, $data[1]['actions'][0]['delay_minutes']);
+        // Double-nested: each dynamicRows component's own name AND its own <dataScope> are
+        // both the same string (see ordo_campaign_form.xml), and dynamic-rows.js reads/writes
+        // each row at that combined path — a flat array here left the component's own elems
+        // empty on an existing campaign's edit reload (confirmed via a real CI run).
+        self::assertSame('vip', $data[1]['conditions']['conditions'][0]['tag']);
+        self::assertSame('reordered', $data[1]['actions']['actions'][0]['tag']);
+        self::assertSame(60, $data[1]['actions']['actions'][0]['delay_minutes']);
 
         // Second call must hit the cached $loadedData branch, not reload from the collection.
         self::assertSame($data, $provider->getData());
@@ -125,8 +129,8 @@ class DataProviderTest extends TestCase
         $provider = $this->makeProvider($collection);
         $data = $provider->getData();
 
-        self::assertSame('not-json', $data[2]['conditions'][0]['params_json']);
-        self::assertArrayNotHasKey('tag', $data[2]['conditions'][0]);
+        self::assertSame('not-json', $data[2]['conditions']['conditions'][0]['params_json']);
+        self::assertArrayNotHasKey('tag', $data[2]['conditions']['conditions'][0]);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -154,7 +158,7 @@ class DataProviderTest extends TestCase
         $provider = $this->makeProvider($collection);
         $data = $provider->getData();
 
-        self::assertSame(['trigger_event' => 'order_placed'], $data[1]['triggers'][0]);
+        self::assertSame(['trigger_event' => 'order_placed'], $data[1]['triggers']['triggers'][0]);
     }
 
     public function testGetDataAppliesPersistedDataAndClearsIt(): void

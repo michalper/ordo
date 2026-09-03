@@ -120,21 +120,17 @@
              re-registration — only the segment's own row changes. -->
         <amOnPage url="admin/ordo/segment/edit/entity_id/{$grabSegmentId}" stepKey="goToEditSegmentPage"/>
         <waitForPageLoad stepKey="waitForEditSegmentPage"/>
-        <!-- ordo_segment_form.xml's own form-level template ("templates/form/collapsible")
-             renders conditions_fieldset collapsed (Magento_Ui's fieldset component defaults
-             collapsible fieldsets to opened=false) on a fresh page load — the exact pitfall
-             AdminCreateSegmentWithMultipleConditionsTest.xml and AdminSegmentBulkActionAddTagTest.xml
-             both already document and deliberately avoid by never reading the fields back after
-             a reload. This test needs to, so force it open the same way
-             AdminEditCampaignConditionReplacesNotDuplicatesTest.xml forces the campaign form's
-             own hidden fieldsets visible: directly via uiRegistry, not a fragile header click. -->
-        <executeJS function="require(['uiRegistry'], function (uiRegistry) { uiRegistry.get('ordo_segment_form.ordo_segment_form.conditions_fieldset', function (fieldset) { fieldset.opened(true); fieldset.visible(true); uiRegistry.get('ordo_segment_form.ordo_segment_form.conditions_fieldset.conditions', function (dynamicRows) { dynamicRows.visible(true); }); }); });" stepKey="expandConditionsFieldset"/>
-        <wait time="2" stepKey="waitForDiagnosticSettle"/>
-        <executeJS function="var out = {found: false}; try { var r = require('uiRegistry'); var fs = r.get('ordo_segment_form.ordo_segment_form.conditions_fieldset'); var dr = r.get('ordo_segment_form.ordo_segment_form.conditions_fieldset.conditions'); out.fieldsetFound = !!fs; out.dynamicRowsFound = !!dr; if (fs) { out.fsVisible = fs.visible(); out.fsOpened = fs.opened(); } if (dr) { out.drVisible = dr.visible(); out.drElems = dr.elems ? dr.elems().length : 'N/A'; } } catch (e) { out.error = e.message; } return JSON.stringify(out);" stepKey="grabDiagnosticState"/>
-        <assertEquals stepKey="printDiagnosticState">
-            <expectedResult type="string">__DIAGNOSTIC__</expectedResult>
-            <actualResult type="string">{$grabDiagnosticState}</actualResult>
-        </assertEquals>
+        <!-- conditions_fieldset has <visible>false</visible> in ordo_segment_form.xml — force it
+             (and its own conditions dynamicRows child, same uiRegistry path convention
+             AdminEditCampaignConditionReplacesNotDuplicatesTest.xml uses for the campaign
+             form's equivalent hidden fieldsets) visible so the raw dynamicRows fields are
+             directly editable. Root-caused via a real CI run: Model/Segment/DataProvider.php
+             was feeding the dynamicRows component a flat conditions array instead of the
+             double-nested `conditions.conditions` shape dynamic-rows.js's own dataScope+index
+             path requires, leaving the component's elems permanently empty regardless of
+             visibility — fixed there, not here; this visible/opened toggle is the pre-existing,
+             separate <visible>false</visible> concern. -->
+        <executeJS function="require(['uiRegistry'], function (uiRegistry) { uiRegistry.get('ordo_segment_form.ordo_segment_form.conditions_fieldset', function (fieldset) { fieldset.opened(true); fieldset.visible(true); }); });" stepKey="expandConditionsFieldset"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForExistingConditionRow"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="changeSegmentConditionType"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][amount]']" stepKey="waitForAmountField"/>

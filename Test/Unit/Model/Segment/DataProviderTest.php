@@ -72,8 +72,13 @@ class DataProviderTest extends TestCase
         $provider = $this->makeProvider($collection);
         $data = $provider->getData();
 
-        self::assertSame('lifetime_spend', $data[1]['conditions'][0]['type']);
-        self::assertSame(json_encode(['min' => '500']), $data[1]['conditions'][0]['params_json']);
+        // Double-nested under 'conditions' twice: the dynamicRows component's own name AND its
+        // own <dataScope> are both "conditions" (see ordo_segment_form.xml), and
+        // Magento_Ui/js/dynamic-rows/dynamic-rows.js reads/writes each row at that combined
+        // path — a flat array here left the component's own elems empty on an existing
+        // segment's edit reload (confirmed via a real CI run).
+        self::assertSame('lifetime_spend', $data[1]['conditions']['conditions'][0]['type']);
+        self::assertSame(json_encode(['min' => '500']), $data[1]['conditions']['conditions'][0]['params_json']);
 
         // Second call must hit the cached $loadedData branch, not reload from the collection.
         self::assertSame($data, $provider->getData());

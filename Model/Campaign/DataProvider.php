@@ -57,12 +57,20 @@ class DataProvider extends AbstractDataProvider
             $campaignData = $campaign->getData();
             $campaignId = (int) $campaign->getEntityId();
 
-            $campaignData['triggers'] = $this->loadTriggerRows($campaignId);
-            $campaignData['conditions'] = $this->loadChildRows(
+            // Each dynamicRows component's own name AND its own <dataScope> are both the same
+            // string (triggers/conditions/actions — see ordo_campaign_form.xml) —
+            // Magento_Ui/js/dynamic-rows/dynamic-rows.js reads/writes each row at
+            // `${dataScope}.${index}.${rowIndex}...`, so the loaded data needs that same double
+            // nesting, not a flat array, or the component's own elems stay empty on an existing
+            // campaign's edit reload (confirmed via a real CI run against the sibling Segment
+            // form's identical bug: the dynamicRows component itself reported visible=true,
+            // elems.length=0).
+            $campaignData['triggers'] = ['triggers' => $this->loadTriggerRows($campaignId)];
+            $campaignData['conditions'] = ['conditions' => $this->loadChildRows(
                 $this->campaignConditionCollectionFactory->create(),
                 $campaignId
-            );
-            $campaignData['actions'] = $this->loadActionRows($campaignId);
+            )];
+            $campaignData['actions'] = ['actions' => $this->loadActionRows($campaignId)];
 
             $this->loadedData[$campaignId] = $campaignData;
         }
