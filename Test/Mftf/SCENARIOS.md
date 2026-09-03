@@ -173,7 +173,7 @@ through. `Controller/Offer/*` (self-extend,
 | Popup dismissed / closed client-side, doesn't reappear on next poll                                                                   | ✅ `AdminCampaignPopupClaimedOnceTest`             |
 | `Cron\PrunePendingPopups` — delivered/expired popups cleaned up                                                                       | ⬜                                                  |
 | `Cron\PruneVisitorEvents` — events past retention window removed                                                                      | ⬜                                                  |
-| Tracking disabled via config — `window.ordoTrack` calls become no-ops server-side (`reason: tracking_disabled`)                       | ⬜                                                  |
+| Tracking disabled via config — `window.ordoTrack` calls become no-ops server-side (`reason: tracking_disabled`)                       | ✅ `StorefrontTrackingDisabledConfigTest`          |
 
 ## 8. Reorder cycles (`Model/ReorderCycle.php`, `Cron/CalculateReorderCycle.php`, `Cron/SendReorderReminders.php`)
 

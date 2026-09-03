@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="StorefrontTrackingDisabledConfigTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="On-site behavior tracking"/>
+            <title value="Tracking events become a real server-side no-op when tracking is disabled via config"/>
+            <description value="Covers Controller/Track/Event.php's own early-return: 'if (!$this->config->isTrackingEnabled()) { return $result->setData(['ok' => false, 'reason' => 'tracking_disabled']); }' — every other tracking test in this suite assumes the config is already on (see StorefrontTrackerSetsVisitorCookieTest's own identical assumption note), this is the only one that flips it off and proves the endpoint itself refuses the event, not just that some downstream campaign never fires. Hits /ordo/track/event directly via a real fetch() from a real browser (not a magentoCLI call or a REST call) since this is exactly the endpoint window.ordoTrack() in view/frontend/web/js/tracker.js itself calls — the real client-side code path, not a simulated equivalent. Restores the config in the after-hook unconditionally: every other test in this same CI job/group assumes tracking is on, so leaving it off would be a real regression risk for whichever test happens to run next."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="tracking"/>
+        </annotations>
+        <before>
+            <magentoCLI command="config:set ordo_automation/tracking/enabled 0" stepKey="disableTracking"/>
+        </before>
+        <after>
+            <!-- Every other tracking test in this suite assumes this config is on — restore it
+                 unconditionally regardless of how this test itself finished. -->
+            <magentoCLI command="config:set ordo_automation/tracking/enabled 1" stepKey="reenableTracking"/>
+        </after>
+
+        <!-- Step 1: any real storefront page, just to have a real browser context fetch() can
+             run from — the endpoint itself doesn't care which page the request originates from. -->
+        <amOnPage url="/" stepKey="goToStorefrontHome"/>
+        <waitForPageLoad stepKey="waitForHomePage"/>
+
+        <!-- Step 2: the exact real request window.ordoTrack() itself makes (see tracker.js's own
+             track() function — URLSearchParams body, visitor_id + event_type), fired directly
+             via fetch() rather than waiting on the tracker script's own page_view auto-fire, so
+             the response can be captured and asserted on deterministically. executeJS can't
+             return a pending Promise's eventual value directly, so the fetch's result is stashed
+             on window and polled for by a second, later executeJS call. -->
+        <executeJS function="window.__trackResult = undefined; fetch('/ordo/track/event', {method: 'POST', body: new URLSearchParams({visitor_id: 'disabled-tracking-test', event_type: 'page_view'})}).then(function (r) { return r.text(); }).then(function (text) { window.__trackResult = text; });" stepKey="fireTrackEvent"/>
+        <waitForJS function="return window.__trackResult !== undefined;" time="30" stepKey="waitForTrackResult"/>
+        <executeJS function="return window.__trackResult;" stepKey="grabTrackResult"/>
+
+        <!-- Step 3: the real, server-side proof — the endpoint's own early-return reason string,
+             not just an absence of a database row (which a slow/failed request could also
+             produce for the wrong reason). -->
+        <assertStringContainsString stepKey="assertTrackingDisabledReason">
+            <expectedResult type="string">"reason":"tracking_disabled"</expectedResult>
+            <actualResult type="string">{$grabTrackResult}</actualResult>
+        </assertStringContainsString>
+    </test>
+</tests>
