@@ -128,9 +128,9 @@
              a reload. This test needs to, so force it open the same way
              AdminEditCampaignConditionReplacesNotDuplicatesTest.xml forces the campaign form's
              own hidden fieldsets visible: directly via uiRegistry, not a fragile header click. -->
-        <executeJS function="require(['uiRegistry'], function (uiRegistry) { uiRegistry.get('ordo_segment_form.ordo_segment_form.conditions_fieldset', function (fieldset) { fieldset.opened(true); }); });" stepKey="expandConditionsFieldset"/>
+        <executeJS function="require(['uiRegistry'], function (uiRegistry) { uiRegistry.get('ordo_segment_form.ordo_segment_form.conditions_fieldset', function (fieldset) { fieldset.opened(true); fieldset.visible(true); uiRegistry.get('ordo_segment_form.ordo_segment_form.conditions_fieldset.conditions', function (dynamicRows) { dynamicRows.visible(true); }); }); });" stepKey="expandConditionsFieldset"/>
         <wait time="2" stepKey="waitForDiagnosticSettle"/>
-        <executeJS function="var out = {requireDefined: typeof require !== 'undefined', registryDefined: false, found: false}; try { var r = require('uiRegistry'); out.registryDefined = !!r; if (r) { var fs = r.get('ordo_segment_form.ordo_segment_form.conditions_fieldset'); out.found = !!fs; if (fs) { out.visible = fs.visible(); out.opened = fs.opened ? fs.opened() : 'N/A'; out.collapsible = fs.collapsible; } } } catch (e) { out.error = e.message; } return JSON.stringify(out);" stepKey="grabDiagnosticState"/>
+        <executeJS function="var out = {found: false}; try { var r = require('uiRegistry'); var fs = r.get('ordo_segment_form.ordo_segment_form.conditions_fieldset'); var dr = r.get('ordo_segment_form.ordo_segment_form.conditions_fieldset.conditions'); out.fieldsetFound = !!fs; out.dynamicRowsFound = !!dr; if (fs) { out.fsVisible = fs.visible(); out.fsOpened = fs.opened(); } if (dr) { out.drVisible = dr.visible(); out.drElems = dr.elems ? dr.elems().length : 'N/A'; } } catch (e) { out.error = e.message; } return JSON.stringify(out);" stepKey="grabDiagnosticState"/>
         <assertEquals stepKey="printDiagnosticState">
             <expectedResult type="string">__DIAGNOSTIC__</expectedResult>
             <actualResult type="string">{$grabDiagnosticState}</actualResult>
