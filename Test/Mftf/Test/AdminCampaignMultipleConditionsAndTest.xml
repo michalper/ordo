@@ -216,5 +216,19 @@
                            dependentSelector="#couponCodesGrid_table" visible="false" stepKey="openCouponCodesTabAfterOrder2"/>
         <waitForElementVisible selector="#couponCodesGrid_table" stepKey="waitForCouponCodesGridAfterOrder2"/>
         <waitForText selector="#couponCodesGrid_table" userInput="ANDTEST-" stepKey="seeGeneratedCouponInGridAfterOrder2"/>
+
+        <!-- Cleanup: same reasoning as AdminCampaignInSegmentConditionTest.xml's identical
+             closing step — Campaign A here is order_placed with NO condition, unconditionally
+             tagging every future order's customer 'vip' for the rest of this same CI job unless
+             deleted. That leftover-campaign class of bug is exactly what made THIS test itself
+             fail deterministically in every full-group run (confirmed via a real CI run — see
+             AdminCampaignInSegmentConditionTest.xml's own campaign A, which was the actual
+             source); closing it here too so no test alphabetically after this one inherits it. -->
+        <amOnPage url="admin/ordo/campaign/delete/entity_id/{$grabCampaignIdA}" stepKey="deleteCampaignA"/>
+        <waitForPageLoad stepKey="waitForDeleteCampaignA"/>
+        <see selector=".message-success" userInput="The campaign has been deleted." stepKey="seeDeleteCampaignASuccessMessage"/>
+        <amOnPage url="admin/ordo/campaign/delete/entity_id/{$grabCampaignIdB}" stepKey="deleteCampaignB"/>
+        <waitForPageLoad stepKey="waitForDeleteCampaignB"/>
+        <see selector=".message-success" userInput="The campaign has been deleted." stepKey="seeDeleteCampaignBSuccessMessage"/>
     </test>
 </tests>

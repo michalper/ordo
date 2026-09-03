@@ -56,6 +56,7 @@
         <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueA"/>
         <waitForPageLoad stepKey="waitForSaveA"/>
         <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessageA"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignIdA"/>
 
         <!-- Step 2: the Segment — one condition, type=tag, params_json={"tag": "vip"}, same shape
              as AdminCreateSegmentTest.xml. "Save & Continue Edit" (not plain #save) so the redirect
@@ -112,6 +113,7 @@
         <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueB"/>
         <waitForPageLoad stepKey="waitForSaveB"/>
         <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessageB"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignIdB"/>
 
         <!-- Step 4: the real customer, logged in once, places TWO real orders through real
              storefront checkout — same product bought twice is fine, the point is two separate
@@ -165,5 +167,22 @@
              exact same step for the AJAX-race reason (the grid's rows load via a separate AJAX
              call after the table element is already in the DOM). -->
         <waitForText selector="#couponCodesGrid_table" userInput="INSEGTEST-" stepKey="seeGeneratedCouponInGrid"/>
+
+        <!-- Cleanup: root-caused via a real CI run — no test in this suite ever deleted the
+             campaigns it created, so Campaign A here (order_placed, NO condition, unconditionally
+             tags EVERY future order's customer 'vip' for the rest of this same CI job) kept
+             accumulating across the whole "campaign" group's run. A later test — confirmed to be
+             AdminCampaignMultipleConditionsAndTest.xml, alphabetically after this one — placed an
+             order expecting no pre-existing 'vip' tag, but this leftover campaign (a lower
+             entity_id, evaluated before that test's own campaigns) tagged the customer first,
+             producing a real, deterministic, always-reproducible-in-full-group premature-coupon
+             failure that never reproduced in isolation. Deleting both campaigns here closes the
+             leak at its source instead of leaving every future test in this group exposed to it. -->
+        <amOnPage url="admin/ordo/campaign/delete/entity_id/{$grabCampaignIdA}" stepKey="deleteCampaignA"/>
+        <waitForPageLoad stepKey="waitForDeleteCampaignA"/>
+        <see selector=".message-success" userInput="The campaign has been deleted." stepKey="seeDeleteCampaignASuccessMessage"/>
+        <amOnPage url="admin/ordo/campaign/delete/entity_id/{$grabCampaignIdB}" stepKey="deleteCampaignB"/>
+        <waitForPageLoad stepKey="waitForDeleteCampaignB"/>
+        <see selector=".message-success" userInput="The campaign has been deleted." stepKey="seeDeleteCampaignBSuccessMessage"/>
     </test>
 </tests>
