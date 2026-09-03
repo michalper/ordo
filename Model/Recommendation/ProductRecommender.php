@@ -153,10 +153,9 @@ class ProductRecommender
      */
     private function bestSellerSkus(array $exclude, int $limit): array
     {
-        if ($limit <= 0) {
-            return [];
-        }
-
+        // No guard for $limit<=0 here — the only caller (getRecommendedSkus()) computes
+        // $limit as `$limit - count($recommended)` inside an `if (count($recommended) < $limit)`
+        // block, so it's always positive by the time it gets here.
         $excludeSet = array_flip($exclude);
         $ranked = array_filter(
             $this->rankedBestSellerSkus(),

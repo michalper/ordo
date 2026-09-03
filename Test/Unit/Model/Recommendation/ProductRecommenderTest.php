@@ -120,6 +120,23 @@ class ProductRecommenderTest extends TestCase
         self::assertSame([], $recommender->getRecommendedSkus(42, 0));
     }
 
+    /**
+     * customerId<=0 skips the "own purchases" lookup entirely (no such customer to look up) and
+     * falls straight through to the store-wide best-seller fallback — the only DB call made
+     * here is for that fallback.
+     */
+    public function testFallsBackToBestSellersWhenCustomerIdIsZeroOrLess(): void
+    {
+        $this->limitCalls = [];
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchCol')->willReturn(['SKU-X', 'SKU-Y']);
+
+        $recommender = $this->makeRecommender($connection);
+
+        self::assertSame(['SKU-X', 'SKU-Y'], $recommender->getRecommendedSkus(0, 4));
+    }
+
     public function testBestSellerFallbackIsCachedWithinTheTtlWindow(): void
     {
         $connection = $this->createMock(AdapterInterface::class);

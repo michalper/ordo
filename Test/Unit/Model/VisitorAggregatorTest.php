@@ -177,4 +177,33 @@ class VisitorAggregatorTest extends TestCase
         $aggregator = $this->makeAggregator($config, $resourceConnection, null, $visitorTagManager);
         $aggregator->aggregateForVisitor('v1');
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAggregateForVisitorSkipsRowBelowViewThreshold(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isTrackingEnabled')->willReturn(true);
+        $config->method('getTrackingViewThreshold')->willReturn(3);
+
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchAll')->willReturn([
+            ['event_type' => 'view_category', 'event_key' => '15', 'occurrences' => 2],
+        ]);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $visitorTagManager = $this->createMock(VisitorTagManager::class);
+        $visitorTagManager->expects(self::never())->method('addTag');
+
+        $aggregator = $this->makeAggregator($config, $resourceConnection, null, $visitorTagManager);
+        $aggregator->aggregateForVisitor('v1');
+    }
 }

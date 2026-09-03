@@ -91,6 +91,17 @@ class ScoreRuleEvaluatorTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testCoreGetterUsedForStoreIdAttribute(): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getStoreId')->willReturn(2);
+
+        $evaluator = $this->makeEvaluator([$this->makeRule('store_id', 'equals', '2', 4)]);
+
+        self::assertSame(4, $evaluator->getMatchingRulePoints($customer));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testEavCustomAttributeFallbackUsedForUnknownAttribute(): void
     {
         $customAttribute = $this->createStub(AttributeInterface::class);
