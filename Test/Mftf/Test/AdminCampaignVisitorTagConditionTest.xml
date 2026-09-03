@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCampaignVisitorTagConditionTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="On-site behavior tracking"/>
+            <title value="A campaign's visitor_tag condition gates a real dispatch for a never-logged-in visitor"/>
+            <description value="Proves Model/Campaign/Condition/VisitorHasTag.php for real, end to end, for a visitor who never logs in at all — HasTag/in_segment style conditions all key off customer_id, but visitor_tag is the one condition type that keys off context[visitor_id] instead, per its own class doc. The real anonymous visitor_id and its ordo_visitor_tag row come from the exact same async chain StorefrontTrackerClickThresholdTagsVisitorTest already proved: window.ordoTrack('element_clicked', 'hero-cta-button') -&gt; VisitorEventLogger -&gt; ordo.automation.visitor.aggregate queue -&gt; VisitorAggregationConsumer -&gt; VisitorAggregator::aggregateForVisitor() -&gt; VisitorTagManager::addTag(), which both writes the ordo_visitor_tag row and fires ordo_visitor_tag_added. Observer/DispatchVisitorTagAddedCampaigns.php listens for that event and publishes {visitor_id, tag} (no customer_id at all — the only trigger context in this module without one, per that observer's own class doc) onto ordo.automation.campaign.dispatch as trigger visitor_tag_added. That publish happens from inside VisitorAggregationConsumer, not CampaignDispatchConsumer, so CampaignDispatchGuard's deferred-publish branch (see CampaignDispatchPublisher's class doc) never engages here — it's a normal, immediate publish, so the campaign dispatch message is fully queued as soon as the visitor.aggregate consumer run finishes, no extra wait needed before draining it. Model/Campaign/Action/ShowPopup.php's own docblock is what rules out generate_coupon for this scenario: 'Targets whichever identifier the triggering context actually has: context[customer_id] for customer-only triggers ..., context[visitor_id] for the anonymous visitor_tag_added trigger' — ShowPopup is the one action in this module actually written to accept a visitor-only context, whereas GenerateCoupon needs a real customer_id a never-logged-in visitor doesn't have. tracker.js's own pollForPopup() always sends '?visitor_id=' + the cookie regardless of login state, so the same anonymous browser that fired the click can poll for and render the resulting #ordo-popup-banner, proving the whole chain with a real, merchant-visible side effect rather than a DB-only assertion."/>
+            <severity value="CRITICAL"/>
+            <group value="ordo_automation"/>
+            <group value="tracking"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: Campaign — trigger=visitor_tag_added, condition=visitor_tag against the exact
+             tag StorefrontTrackerClickThresholdTagsVisitorTest already proved a single
+             element_clicked('hero-cta-button') call produces ('clicked_hero-cta-button', built by
+             VisitorAggregator::buildTag() for the CLICK_EVENT_TYPES branch), action=show_popup
+             (di.xml's "popup" key -> Model/Campaign/Action/ShowPopup) — the one action documented
+             to target context[visitor_id] for this exact trigger. Built before the click below, so
+             the campaign already exists by the time the campaign-dispatch consumer processes the
+             visitor_tag_added message. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait — a cold, freshly
+             deployed developer-mode instance's first admin page load can lag behind
+             waitForPageLoad's document.readyState check. -->
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Visitor Tag Popup Campaign" stepKey="fillName"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButton"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRow"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRow"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="visitor_tag_added" stepKey="selectTriggerEvent"/>
+
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRow"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRow"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="visitor_tag" stepKey="selectConditionType"/>
+        <!-- visitor_tag reuses the exact same dedicated "tag" field as the customer-side "tag"
+             condition (see ordo_campaign_form.xml switcherConfig rule name="2" — same single
+             param shape, just checked against ordo_visitor_tag at dispatch time), not the generic
+             params_json fallback. -->
+        <waitForElementVisible selector="[name='conditions[conditions][0][tag]']" stepKey="waitForTagField"/>
+        <fillField selector="[name='conditions[conditions][0][tag]']" userInput="clicked_hero-cta-button" stepKey="fillTag"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRow"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRow"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="popup" stepKey="selectActionType"/>
+        <waitForElementVisible selector="[name='actions[actions][0][headline]']" stepKey="waitForHeadlineField"/>
+        <fillField selector="[name='actions[actions][0][headline]']" userInput="Visitor Tag Popup Headline" stepKey="fillHeadline"/>
+        <fillField selector="[name='actions[actions][0][body]']" userInput="Visitor tag popup body text" stepKey="fillBody"/>
+        <fillField selector="[name='actions[actions][0][cta_label]']" userInput="See the offer" stepKey="fillCtaLabel"/>
+        <fillField selector="[name='actions[actions][0][cta_url]']" userInput="https://example.test/visitor-tag-popup" stepKey="fillCtaUrl"/>
+        <fillField selector="[name='actions[actions][0][delay_minutes]']" userInput="0" stepKey="fillDelayMinutes"/>
+
+        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+
+        <!-- Step 2: establish a real anonymous visitor_id cookie and fire the click, same as
+             StorefrontTrackerClickThresholdTagsVisitorTest — tracker.js issues ordo_visitor_id on
+             load synchronously; there is no theme wiring that calls window.ordoTrack on its own. -->
+        <amOnPage url="/" stepKey="goToStorefrontHome"/>
+        <waitForPageLoad stepKey="waitForHomePage"/>
+        <wait time="1" stepKey="waitForCookieToBeSet"/>
+        <grabCookie userInput="ordo_visitor_id" stepKey="grabVisitorId"/>
+
+        <executeJS function="window.ordoTrack('element_clicked', 'hero-cta-button')" stepKey="callOrdoTrackForElementClick"/>
+        <wait time="2" stepKey="waitForClickEventToLand"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertEventLogged" stepKey="assertClickEventLogged">
+            <argument name="visitorId">{$grabVisitorId}</argument>
+            <argument name="eventType">element_clicked</argument>
+            <argument name="eventKey">hero-cta-button</argument>
+        </helper>
+
+        <!-- Step 3: run the real visitor-aggregation consumer. This is what actually writes the
+             ordo_visitor_tag row (VisitorTagManager::addTag()) AND, from inside that same call,
+             dispatches ordo_visitor_tag_added -> Observer/DispatchVisitorTagAddedCampaigns.php ->
+             CampaignDispatchPublisher::publish('visitor_tag_added', ['visitor_id' => ..., 'tag' =>
+             'clicked_hero-cta-button']) onto ordo.automation.campaign.dispatch. max-messages=50,
+             not a small number, for the exact reason StorefrontTrackerClickThresholdTagsVisitorTest
+             documents in full: tracker.js fires an automatic page_view on every storefront page
+             load in every test in this same tracking-group CI job, and nothing else in the suite
+             reliably drains this queue first. Safe to over-ask — mftf.yml sets
+             consumers-wait-for-messages=0. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.visitor.aggregate --max-messages=50" stepKey="runVisitorAggregationConsumer"/>
+
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertVisitorTagAdded" stepKey="assertClickTagAdded">
+            <argument name="visitorId">{$grabVisitorId}</argument>
+            <argument name="tag">clicked_hero-cta-button</argument>
+        </helper>
+
+        <!-- Step 4: the campaign-dispatch message published from inside the consumer above (a
+             normal, immediate publish — see this test's own annotation on why
+             CampaignDispatchGuard's deferred-publish branch does not apply here) is now sitting on
+             ordo.automation.campaign.dispatch. Drain it the same way every other test in this
+             suite does for that queue — max-messages=50, same over-asking reasoning, since other
+             tests in this same CI job can also leave order_placed/tag_added dispatch messages of
+             their own unconsumed on this shared queue. This is where VisitorHasTag::isSatisfied()
+             actually runs against the real ordo_visitor_tag row and ShowPopup::execute() actually
+             queues the real ordo_pending_popup row targeted at visitor_id (no customer_id at all
+             in this context). -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+
+        <!-- Step 5: the same anonymous browser (same ordo_visitor_id cookie), a fresh page load so
+             tracker.js starts a poll loop that begins AFTER the pending popup row above exists.
+             pollForPopup() always sends '?visitor_id=' + the cookie regardless of login state
+             (view/frontend/web/js/tracker.js), and Controller/Track/Popup.php happily resolves a
+             pure visitor_id target when there is no logged-in customerSession — exactly this
+             browser's situation throughout the whole test. Fires 2s after tracker.js's own load,
+             then renders into #ordo-popup-banner appended to <body>, same real selector
+             AdminCampaignPopupActionTest already proved is JS-authored, not an MFTF-invented one. -->
+        <amOnPage url="/" stepKey="goToStorefrontHomeToPoll"/>
+        <waitForPageLoad stepKey="waitForHomePageToPoll"/>
+
+        <!-- Step 6: the one assertion proving VisitorHasTag actually gated a real dispatch for a
+             never-logged-in visitor — a popup rendered in this exact anonymous browser, which only
+             the visitor_tag condition matching the real ordo_visitor_tag row (written by a
+             completely separate async chain) could have allowed through. -->
+        <waitForElementVisible selector="#ordo-popup-banner" stepKey="waitForPopupBanner"/>
+        <see selector="#ordo-popup-banner" userInput="Visitor Tag Popup Headline" stepKey="seePopupHeadline"/>
+        <see selector="#ordo-popup-banner" userInput="Visitor tag popup body text" stepKey="seePopupBody"/>
+        <seeElement selector="#ordo-popup-banner a[href='https://example.test/visitor-tag-popup']" stepKey="seePopupCtaLink"/>
+        <see selector="#ordo-popup-banner a[href='https://example.test/visitor-tag-popup']" userInput="See the offer" stepKey="seePopupCtaLabel"/>
+    </test>
+</tests>

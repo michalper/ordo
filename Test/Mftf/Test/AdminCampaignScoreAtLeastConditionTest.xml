@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCampaignScoreAtLeastConditionTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Lead scoring"/>
+            <title value="A campaign's score_at_least condition gates dispatch on a customer's real lead score"/>
+            <description value="Unlike AdminScoreThresholdCampaignTest.xml (which proves the score_threshold_crossed TRIGGER), this proves the score_at_least CONDITION on a different trigger entirely: order_placed. A demographic score rule (group_id=1, 150 points) gives a real Simple_US_Customer a real ordo_customer_score row via Observer/EvaluateCustomerScoreRules.php on customer_save_after, same mechanism as the reference test. That score is set BEFORE any order is placed, so when the campaign (trigger=order_placed, condition=score_at_least threshold=80 — comfortably below the customer's 150) dispatches off a real storefront order, ScoreAtLeast::isSatisfied() reads the already-elevated score from CustomerScoreManager::getScore() at real dispatch time. threshold=80 is far enough below 150 that dispatch-time rounding/ordering cannot make this test flaky, and far enough above 0 that a customer whose score rule silently failed to apply would not satisfy it either — a true negative control baked into the same run."/>
+            <severity value="CRITICAL"/>
+            <group value="ordo_automation"/>
+            <group value="campaign"/>
+        </annotations>
+        <before>
+            <createData entity="ApiSalesRule" stepKey="createRule"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <deleteData createDataKey="createRule" stepKey="deleteRule"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: the demographic scoring rule — same mechanics as AdminScoreThresholdCampaignTest.xml.
+             "enabled" needs no click: ordo_scorerule_form.xml declares <default>1</default> on it. -->
+        <amOnPage url="admin/ordo/scorerule/new" stepKey="goToNewScoreRulePage"/>
+        <waitForPageLoad stepKey="waitForNewScoreRulePage"/>
+        <waitForElementVisible selector="[name='attribute_code']" stepKey="waitForAttributeCodeField"/>
+        <fillField selector="[name='attribute_code']" userInput="group_id" stepKey="fillAttributeCode"/>
+        <selectOption selector="[name='operator']" userInput="equals" stepKey="selectOperator"/>
+        <fillField selector="[name='value']" userInput="1" stepKey="fillValue"/>
+        <fillField selector="[name='points']" userInput="150" stepKey="fillPoints"/>
+        <click selector="#save" stepKey="clickSaveScoreRule"/>
+        <waitForPageLoad stepKey="waitForScoreRuleSave"/>
+        <see selector=".message-success" userInput="The score rule has been saved." stepKey="seeScoreRuleSuccessMessage"/>
+
+        <!-- Step 2: the campaign — trigger=order_placed (deliberately NOT score_threshold_crossed,
+             already covered elsewhere), condition=score_at_least with a dedicated "threshold"
+             field (confirmed in ordo_campaign_form.xml's switcherConfig rule for score_at_least,
+             which toggles ${ $.parentName }.threshold visible — not the generic params_json
+             fallback used by conditions without their own field). -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait — a cold, freshly
+             deployed developer-mode instance's first admin page load can lag behind
+             waitForPageLoad's document.readyState check. -->
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Score At Least Coupon Campaign" stepKey="fillName"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButton"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRow"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRow"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEvent"/>
+
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRow"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRow"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="score_at_least" stepKey="selectConditionType"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][threshold]']" stepKey="waitForThresholdField"/>
+        <fillField selector="[name='conditions[conditions][0][threshold]']" userInput="80" stepKey="fillConditionThreshold"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRow"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRow"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="generate_coupon" stepKey="selectActionType"/>
+        <waitForElementVisible selector="[name='actions[actions][0][rule_id]']" stepKey="waitForRuleIdField"/>
+        <fillField selector="[name='actions[actions][0][rule_id]']" userInput="$createRule.rule_id$" stepKey="fillRuleId"/>
+        <fillField selector="[name='actions[actions][0][prefix]']" userInput="SCOREATLEAST" stepKey="fillPrefix"/>
+        <fillField selector="[name='actions[actions][0][delay_minutes]']" userInput="0" stepKey="fillDelayMinutes"/>
+
+        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+
+        <!-- Step 3: the real customer. group_id=1 (General) matches the score rule above; this
+             single customer_save_after is what actually gives them a real 150-point
+             ordo_customer_score row — BEFORE any order exists, so the condition below reads an
+             already-elevated score at real dispatch time rather than racing the order. -->
+        <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+
+        <!-- Step 4: a REAL order, through REAL storefront checkout, as the customer whose score
+             was already set in Step 3 — placed only now so score_at_least's DB read at dispatch
+             time is guaranteed to see the elevated score, never a stale pre-scoring value. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <!-- Step 5: this install has no RabbitMQ (DB queue driver only — see AGENTS.md), so
+             nothing consumes the message DispatchOrderPlacedCampaigns just published until a
+             consumer actually runs. max-messages over-asked (50, not 1): other tests in this
+             same CI job (same DB, no background consumer running between them) can leave their
+             own already order-placed/registered dispatch message sitting unconsumed in the
+             queue ahead of ours; draining generously keeps this test from picking up a stale
+             message referencing a rule another test's own after-hook already deleted, and
+             leaving ours unprocessed. Safe to over-ask: mftf.yml sets
+             consumers-wait-for-messages=0, so the consumer returns as soon as the queue is
+             empty instead of blocking. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+
+        <!-- Step 6: the only assertion that checks a real, merchant-visible side effect — a
+             coupon code that only CampaignDispatcher's generate_coupon action, run via the full
+             order_placed -> score_at_least -> generate_coupon chain, could have produced. -->
+        <amOnPage url="admin/sales_rule/promo_quote/edit/id/$createRule.rule_id$/" stepKey="goToRuleEditPage"/>
+        <waitForPageLoad stepKey="waitForRuleEditPage"/>
+        <conditionalClick selector="{{AdminCartPriceRulesFormSection.manageCouponCodesHeader}}"
+                           dependentSelector="#couponCodesGrid_table" visible="false" stepKey="openCouponCodesTab"/>
+        <waitForElementVisible selector="#couponCodesGrid_table" stepKey="waitForCouponCodesGrid"/>
+        <!-- waitForText, not <see> — see AdminCampaignScenarioEndToEndTest.xml's comment on why:
+             this grid's rows load via a separate AJAX call after the table element itself is
+             already in the DOM, so a one-shot check could fire before the row data arrived. -->
+        <waitForText selector="#couponCodesGrid_table" userInput="SCOREATLEAST-" stepKey="seeGeneratedCouponInGrid"/>
+    </test>
+</tests>

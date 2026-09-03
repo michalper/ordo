@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCampaignAddPointsActionTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Lead scoring"/>
+            <title value="A campaign's add_points action writes a real score that gates a downstream campaign"/>
+            <description value="Proves Model/Campaign/Action/AddPoints.php end to end: params are {&quot;points&quot;: &quot;N&quot;} (a dedicated 'points' field in ordo_campaign_form.xml's switcherConfig, not the generic params_json fallback), and execute() writes through CustomerScoreManager::addPoints() as a real INSERT ... ON DUPLICATE KEY UPDATE against ordo_customer_score, not an in-memory context mutation. IMPORTANT deviation from the score_threshold_crossed TRIGGER pattern used by AdminScoreThresholdCampaignTest.xml: reading AddPoints.php, CustomerScoreManager.php and Observer/EvaluateCustomerScoreRules.php together shows the ordo_customer_score_threshold_crossed event is ONLY ever dispatched from EvaluateCustomerScoreRules on customer_save_after (comparing a demographic-rule score delta against Helper/Config::getScoreThreshold()) — AddPoints::execute() and CustomerScoreManager::addPoints() never check or dispatch a threshold themselves, so an add_points action crossing the threshold on its own does NOT chain into score_threshold_crossed; there is no customer_save_after in between to detect the crossing. What genuinely does chain, confirmed from CampaignDispatcher::dispatch() (a plain foreach over every campaign matched to one trigger event, run synchronously in campaign_id order within a single call) and CustomerScoreManager::addPoints() (a direct, immediately-committed connection->query(), not deferred): two campaigns on the SAME order_placed trigger, where the first campaign's add_points action runs and commits before the second campaign's score_at_least condition is evaluated in that very same dispatch() call. That is the real, provable chain this test exercises instead."/>
+            <severity value="CRITICAL"/>
+            <group value="ordo_automation"/>
+            <group value="campaign"/>
+        </annotations>
+        <before>
+            <createData entity="ApiSalesRule" stepKey="createRule"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <deleteData createDataKey="createRule" stepKey="deleteRule"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: Campaign A — trigger=order_placed, no condition, action=add_points. Created
+             FIRST so its campaign_id is the lower of the two, which is what makes
+             CampaignDispatcher::dispatch() process it before Campaign B below within the same
+             order_placed dispatch() call (campaignIdsForTrigger() loads matched campaigns via a
+             plain addIdsFilter() collection, iterated in ascending id order). 150 points is a
+             deliberately large, arbitrary value — this campaign's only job is to prove the write
+             happens, not to test a specific threshold. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignAPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignAPage"/>
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait — a cold, freshly
+             deployed developer-mode instance's first admin page load can lag behind
+             waitForPageLoad's document.readyState check. -->
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameFieldA"/>
+        <fillField selector="[name='name']" userInput="Add Points On Order Campaign" stepKey="fillNameA"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButtonA"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRowA"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRowA"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEventA"/>
+
+        <!-- Dedicated "points" field — verified against ordo_campaign_form.xml's switcherConfig
+             rule for add_points, which toggles ${ $.parentName }.points visible and every other
+             action field (tag/rule_id/prefix/template/message/headline/body/cta_label/cta_url)
+             hidden. Not params_json. -->
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRowA"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRowA"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="add_points" stepKey="selectActionTypeA"/>
+        <waitForElementVisible selector="[name='actions[actions][0][points]']" stepKey="waitForPointsField"/>
+        <fillField selector="[name='actions[actions][0][points]']" userInput="150" stepKey="fillPoints"/>
+        <fillField selector="[name='actions[actions][0][delay_minutes]']" userInput="0" stepKey="fillDelayMinutesA"/>
+
+        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaignA"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueA"/>
+        <waitForPageLoad stepKey="waitForSaveA"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessageA"/>
+
+        <!-- Step 2: Campaign B — trigger=order_placed (the SAME trigger event as Campaign A, so
+             both are matched and processed in one CampaignDispatcher::dispatch() call),
+             condition=score_at_least with threshold=100 (comfortably below the 150 points
+             Campaign A's action writes, and comfortably above 0 for a customer who never had
+             any add_points action reach them — the same true-negative-control shape as
+             AdminCampaignScoreAtLeastConditionTest.xml), action=generate_coupon. Its
+             score_at_least condition is only satisfiable because Campaign A's add_points action
+             already committed a real ordo_customer_score row for this exact customer earlier in
+             the very same dispatch() call. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignBPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignBPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameFieldB"/>
+        <fillField selector="[name='name']" userInput="Score At Least After Add Points Campaign" stepKey="fillNameB"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButtonB"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRowB"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRowB"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEventB"/>
+
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRowB"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRowB"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="score_at_least" stepKey="selectConditionTypeB"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][threshold]']" stepKey="waitForThresholdFieldB"/>
+        <fillField selector="[name='conditions[conditions][0][threshold]']" userInput="100" stepKey="fillConditionThresholdB"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRowB"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRowB"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="generate_coupon" stepKey="selectActionTypeB"/>
+        <waitForElementVisible selector="[name='actions[actions][0][rule_id]']" stepKey="waitForRuleIdFieldB"/>
+        <fillField selector="[name='actions[actions][0][rule_id]']" userInput="$createRule.rule_id$" stepKey="fillRuleIdB"/>
+        <fillField selector="[name='actions[actions][0][prefix]']" userInput="ADDPOINTS" stepKey="fillPrefixB"/>
+        <fillField selector="[name='actions[actions][0][delay_minutes]']" userInput="0" stepKey="fillDelayMinutesB"/>
+
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaignB"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueB"/>
+        <waitForPageLoad stepKey="waitForSaveB"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessageB"/>
+
+        <!-- Step 3: a REAL order, through REAL storefront checkout, as a REAL customer — the
+             only thing that publishes an order_placed dispatch message for both campaigns
+             above to be matched against. -->
+        <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <!-- Step 4: this install has no RabbitMQ (DB queue driver only — see AGENTS.md), so
+             nothing consumes the message DispatchOrderPlacedCampaigns just published until a
+             consumer actually runs. A single run is enough here — unlike the tag/score-rule
+             reentrant-dispatch case documented on CampaignDispatchPublisher, add_points never
+             calls publish() itself (AddPoints::execute() only calls
+             CustomerScoreManager::addPoints(), no event/queue interaction at all), so there is no
+             second, deferred message to wait for; both campaigns are matched to the same
+             order_placed trigger_event and run inside this one dispatch() call.
+             max-messages is over-asked (50, not 1 or 2): other tests in this same CI job (same
+             DB, no background consumer running between them) can leave their own
+             already-published dispatch message sitting unconsumed in the queue ahead of ours;
+             draining generously keeps this test from picking up a stale message referencing a
+             rule another test's own after-hook already deleted, and leaving ours unprocessed.
+             Safe to over-ask: mftf.yml sets consumers-wait-for-messages=0, so the consumer
+             returns as soon as the queue is empty instead of blocking. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+
+        <!-- Step 5: the only assertion that checks a real, merchant-visible side effect — a
+             coupon code that only Campaign B's generate_coupon action, gated by score_at_least
+             reading the real ordo_customer_score row Campaign A's add_points action just wrote,
+             could have produced. Points never landing in the table (a broken AddPoints/
+             CustomerScoreManager write) or landing but not being readable by another campaign in
+             the same dispatch pass (a broken chain) would both leave this coupon prefix absent. -->
+        <amOnPage url="admin/sales_rule/promo_quote/edit/id/$createRule.rule_id$/" stepKey="goToRuleEditPage"/>
+        <waitForPageLoad stepKey="waitForRuleEditPage"/>
+        <conditionalClick selector="{{AdminCartPriceRulesFormSection.manageCouponCodesHeader}}"
+                           dependentSelector="#couponCodesGrid_table" visible="false" stepKey="openCouponCodesTab"/>
+        <waitForElementVisible selector="#couponCodesGrid_table" stepKey="waitForCouponCodesGrid"/>
+        <!-- waitForText, not <see> — see AdminCampaignScenarioEndToEndTest.xml's comment on why:
+             this grid's rows load via a separate AJAX call after the table element itself is
+             already in the DOM, so a one-shot check could fire before the row data arrived. -->
+        <waitForText selector="#couponCodesGrid_table" userInput="ADDPOINTS-" stepKey="seeGeneratedCouponInGrid"/>
+    </test>
+</tests>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCampaignDisabledNoDispatchTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Campaign engine"/>
+            <title value="A real order does not dispatch a disabled campaign"/>
+            <description value="The negative counterpart to AdminCampaignScenarioEndToEndTest: build the exact same trigger/condition/action scenario (order placed, order total, generate coupon), but leave the campaign's enabled toggle untouched instead of clicking it — the ordo_campaign_form.xml enabled field has no default config, so an unclicked checkbox saves as disabled. CampaignDispatcher::campaignIdsForTrigger() runs addEnabledFilter() before a disabled campaign's conditions/actions are even loaded, so this proves a real order placed by a real customer produces zero side effects for a campaign that is configured but not enabled, not merely that its condition happened to fail."/>
+            <severity value="CRITICAL"/>
+            <group value="ordo_automation"/>
+            <group value="campaign"/>
+        </annotations>
+        <before>
+            <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <createData entity="ApiSalesRule" stepKey="createRule"/>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <deleteData createDataKey="createRule" stepKey="deleteRule"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: build the exact same scenario as AdminCampaignScenarioEndToEndTest, but
+             deliberately skip the "enabled" toggle click — see this test's description above
+             for why an untouched checkbox saves the campaign disabled. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Disabled Order Coupon Campaign" stepKey="fillName"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButton"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRow"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRow"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEvent"/>
+
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRow"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRow"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="selectConditionType"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][amount]']" stepKey="waitForAmountField"/>
+        <!-- SimpleProduct2 (Magento_Catalog fixture) is priced at 123.00 — 50 leaves headroom
+             for tax/shipping rounding while still safely below the order total. -->
+        <fillField selector="[name='conditions[conditions][0][amount]']" userInput="50" stepKey="fillConditionAmount"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRow"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRow"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="generate_coupon" stepKey="selectActionType"/>
+        <waitForElementVisible selector="[name='actions[actions][0][rule_id]']" stepKey="waitForRuleIdField"/>
+        <fillField selector="[name='actions[actions][0][rule_id]']" userInput="$createRule.rule_id$" stepKey="fillRuleId"/>
+        <fillField selector="[name='actions[actions][0][prefix]']" userInput="DISABLEDTEST" stepKey="fillPrefix"/>
+        <fillField selector="[name='actions[actions][0][delay_minutes]']" userInput="0" stepKey="fillDelayMinutes"/>
+
+        <!-- No click on the "enabled" toggle here — that's the whole point of this test. -->
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+
+        <!-- Step 2: a REAL order, through REAL storefront checkout, as the REAL customer created
+             above — same as the end-to-end test, so the only variable between the two tests is
+             the campaign's enabled state. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <!-- Step 3: run the same consumer as the end-to-end test, generously over-asking for
+             messages (safe: consumers-wait-for-messages=0, see AGENTS.md) — there should be
+             exactly one order_placed dispatch message from this order, and the consumer should
+             return once the queue is drained rather than blocking for more. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+
+        <!-- Step 4: assert the coupon that a disabled campaign's generate_coupon action would
+             have produced does NOT exist. Same grid as the end-to-end test, same coupon-code
+             text-based check, but for absence — waitForPageLoad plus waitForElementVisible on
+             the grid table first establishes the grid actually finished its own AJAX row load
+             (not a fixed-length <wait>, which would be racy either way), then dontSee on the
+             grid container is the robust absence check: it holds whether the grid ends up
+             genuinely empty or simply lacks a DISABLEDTEST- row among other coupons. -->
+        <amOnPage url="admin/sales_rule/promo_quote/edit/id/$createRule.rule_id$/" stepKey="goToRuleEditPage"/>
+        <waitForPageLoad stepKey="waitForRuleEditPage"/>
+        <conditionalClick selector="{{AdminCartPriceRulesFormSection.manageCouponCodesHeader}}"
+                           dependentSelector="#couponCodesGrid_table" visible="false" stepKey="openCouponCodesTab"/>
+        <waitForElementVisible selector="#couponCodesGrid_table" stepKey="waitForCouponCodesGrid"/>
+        <dontSee selector="#couponCodesGrid_table" userInput="DISABLEDTEST-" stepKey="dontSeeGeneratedCouponInGrid"/>
+    </test>
+</tests>

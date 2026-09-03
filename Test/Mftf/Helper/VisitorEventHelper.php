@@ -95,4 +95,46 @@ class VisitorEventHelper extends Helper
             ));
         }
     }
+
+    /**
+     * Confirms CustomerTagManager::addTag() actually wrote a real ordo_customer_tag row for a
+     * customer identified by email — used by tests that register a real customer through the
+     * storefront form rather than <createData> (which never yields an entity_id/customer_id to
+     * reference), so the only handle available afterwards is the email address the form was
+     * filled with. Joins through customer_entity the same way the storefront/admin already
+     * identify a customer by email. Same out-of-band PDO pattern as assertVisitorTagAdded() above.
+     *
+     * @throws \RuntimeException if no matching customer or no matching tag row exists
+     */
+    public function assertCustomerTagAddedByEmail(
+        string $email,
+        string $tag,
+        string $dbHost = '127.0.0.1',
+        string $dbName = 'magento',
+        string $dbUser = 'root',
+        string $dbPassword = ''
+    ): void {
+        $pdo = new \PDO(
+            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
+            $dbUser,
+            $dbPassword,
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+        );
+
+        $statement = $pdo->prepare(
+            'SELECT COUNT(*) FROM ordo_customer_tag oct '
+            . 'INNER JOIN customer_entity ce ON ce.entity_id = oct.customer_id '
+            . 'WHERE ce.email = :email AND oct.tag = :tag'
+        );
+        $statement->execute(['email' => $email, 'tag' => $tag]);
+        $count = (int) $statement->fetchColumn();
+
+        if ($count < 1) {
+            throw new \RuntimeException(sprintf(
+                'No ordo_customer_tag row found for customer email="%s" tag="%s".',
+                $email,
+                $tag
+            ));
+        }
+    }
 }

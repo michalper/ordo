@@ -43,10 +43,10 @@ cases separately from the type-by-type ones.
 | Trigger                   | Fired from                                                                 | Status                                                                                                                  |
 |---------------------------|----------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
 | `order_placed`            | `Observer/DispatchOrderPlacedCampaigns.php` (`sales_order_place_after`)    | ✅ `AdminCampaignScenarioEndToEndTest`                                                                                  |
-| `customer_registered`     | `Observer/DispatchCustomerRegisteredCampaigns.php`                         | ⬜                                                                                                                      |
+| `customer_registered`     | `Observer/DispatchCustomerRegisteredCampaigns.php`                         | ✅ `AdminCampaignCustomerRegisteredTriggerTest`                                                                        |
 | `tag_added`               | `Observer/DispatchTagAddedCampaigns.php` (`ordo_customer_tag_added`)       | ⬜ (only reached indirectly, as a side effect, inside `AdminCampaignScenarioEndToEndTest` — never asserted on directly) |
 | `cart_abandoned`          | `Cron/SendAbandonedCartReminders.php`'s own dispatch, not a live observer  | ⬜                                                                                                                      |
-| `visitor_tag_added`       | `Observer/DispatchVisitorTagAddedCampaigns.php` (`ordo_visitor_tag_added`) | ⬜                                                                                                                      |
+| `visitor_tag_added`       | `Observer/DispatchVisitorTagAddedCampaigns.php` (`ordo_visitor_tag_added`) | ✅ `AdminCampaignVisitorTagConditionTest`                                                                               |
 | `score_threshold_crossed` | `Observer/DispatchScoreThresholdCampaigns.php` (lead scoring, see §4)      | ✅ `AdminScoreThresholdCampaignTest`                                                                                    |
 
 ### 1b. Conditions (`Model\Campaign\ConditionPool`)
@@ -55,8 +55,8 @@ cases separately from the type-by-type ones.
 |---------------------------------------|-------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
 | `tag`                                 | `{tag}`                                                           | ✅ (`AdminCampaignInSegmentConditionTest`, exercised as the segment's own condition)                   |
 | `order_total_gte`                     | `{amount}`                                                        | ✅ (`AdminCampaignScenarioEndToEndTest`, `AdminCreateCampaignWithConditionsAndActionsTest` as UI-only) |
-| `visitor_tag`                         | `{tag}`                                                           | ⬜ (anonymous-visitor variant of `tag`)                                                                |
-| `score_at_least`                      | `{threshold}`                                                     | ⬜                                                                                                     |
+| `visitor_tag`                         | `{tag}`                                                           | ✅ `AdminCampaignVisitorTagConditionTest`                                                              |
+| `score_at_least`                      | `{threshold}`                                                     | ✅ `AdminCampaignScoreAtLeastConditionTest`                                                            |
 | `recency_days_at_most`                | `{days}` (RFM)                                                    | ⬜                                                                                                     |
 | `order_frequency_at_least`            | `{count}` (RFM)                                                   | ⬜                                                                                                     |
 | `monetary_total_at_least`             | `{amount}` (RFM)                                                  | ⬜                                                                                                     |
@@ -73,7 +73,7 @@ cases separately from the type-by-type ones.
 | `send_email`      | `{template, message}`                  | ✅ `AdminCampaignSendEmailActionTest`                                                               |
 | `generate_coupon` | `{rule_id, prefix}`                    | ✅ `AdminCampaignScenarioEndToEndTest`                                                              |
 | `popup`           | `{headline, body, cta_label, cta_url}` | ✅ `AdminCampaignPopupActionTest` (writes `ordo_pending_popup`; storefront poll — see §7)            |
-| `add_points`      | `{points}`                             | ⬜ (writes `ordo_customer_score`; feeds `score_at_least`/`score_threshold_crossed`)                 |
+| `add_points`      | `{points}`                             | ✅ `AdminCampaignAddPointsActionTest` (feeds `score_at_least`; does NOT itself dispatch `score_threshold_crossed` — confirmed from source, only `EvaluateCustomerScoreRules`'s own `customer_save_after` handling does that) |
 
 ### 1d. Structural cases (not type-specific)
 
@@ -82,12 +82,12 @@ cases separately from the type-by-type ones.
 | Single trigger/condition/action, save + grid appearance                                                       | ✅ `AdminCreateCampaignTest`                                                                                    |
 | Multiple triggers on one campaign (fan-out to the same chain)                                                 | ✅ `AdminCreateMultiTriggerCampaignTest`                                                                        |
 | Condition + action together via the dynamicRows form (UI only, no live dispatch)                              | ✅ `AdminCreateCampaignWithConditionsAndActionsTest`                                                            |
-| Multiple conditions AND'd together — all pass                                                                 | ⬜                                                                                                              |
-| Multiple conditions AND'd together — one fails, action must NOT run                                           | ⬜                                                                                                              |
+| Multiple conditions AND'd together — all pass                                                                 | ✅ `AdminCampaignMultipleConditionsAndTest`                                                                     |
+| Multiple conditions AND'd together — one fails, action must NOT run                                           | ✅ `AdminCampaignMultipleConditionsAndTest`                                                                     |
 | Multiple campaigns matching the same trigger, only some satisfy their conditions                              | ⬜ (partially exercised as a side effect in `AdminCampaignScenarioEndToEndTest`'s fixture data, never asserted) |
-| Delayed action (`delay_minutes > 0`) — chain pauses, `Cron\RunScheduledCampaignActions` resumes it later      | ⬜                                                                                                              |
+| Delayed action (`delay_minutes > 0`) — chain pauses, `Cron\RunScheduledCampaignActions` resumes it later      | ✅ `AdminCampaignDelayedActionTest`                                                                             |
 | Chained delays (action pauses, resumes, pauses again)                                                         | ⬜                                                                                                              |
-| Disabled campaign — trigger fires, nothing happens                                                            | ⬜                                                                                                              |
+| Disabled campaign — trigger fires, nothing happens                                                            | ✅ `AdminCampaignDisabledNoDispatchTest`                                                                        |
 | Campaign edited after creation (trigger/condition/action changed, re-saved, old rows replaced not duplicated) | ⬜                                                                                                              |
 | Campaign deleted — grid no longer lists it, dispatch no longer matches its old triggers                       | ⬜                                                                                                              |
 | Unknown/removed condition or action type on a campaign (fails closed, logs, doesn't crash the whole dispatch) | ⬜ (unit-tested; no MFTF equivalent, arguably not worth one)                                                    |
@@ -99,7 +99,7 @@ cases separately from the type-by-type ones.
 | Create a segment (name, enabled, one condition), appears in grid                                                                    | ✅ `AdminCreateSegmentTest`                       |
 | Segment with multiple AND'd conditions                                                                                              | ✅ `AdminCreateSegmentWithMultipleConditionsTest` |
 | Segment referenced by a campaign's `in_segment` condition (real membership match at dispatch time)                                  | ✅ `AdminCampaignInSegmentConditionTest`          |
-| Bulk action on a segment's current members — add tag (`SegmentBulkActionConsumer`, async via `ordo.automation.segment.bulk_action`) | ⬜                                                |
+| Bulk action on a segment's current members — add tag (`SegmentBulkActionConsumer`, async via `ordo.automation.segment.bulk_action`) | ✅ `AdminSegmentBulkActionAddTagTest`             |
 | Bulk action on a segment's current members — add points                                                                             | ⬜                                                |
 | Segment edited, condition changed, membership re-evaluates differently                                                              | ⬜                                                |
 | Segment deleted                                                                                                                     | ⬜                                                |
@@ -227,3 +227,26 @@ through. `Controller/Offer/*` (self-extend,
 10. ~~Order under spend limit never held~~ (§6) — done: `AdminOrderUnderSpendLimitNotHeldTest.xml` (`campaign` group).
 11. ~~Popup action + storefront poll renders the banner~~ (§7) — done: `AdminCampaignPopupActionTest.xml`
     (`tracking` group). Needed a new config flag (`ordo_automation/tracking/popup_enabled`) turned on in `mftf.yml`.
+12. ~~`customer_registered` trigger~~ (§1a) — done: `AdminCampaignCustomerRegisteredTriggerTest.xml` (`campaign`
+    group). Real storefront registration form (`SignUpNewUserFromStorefrontActionGroup`), not `<createData>` — the
+    latter hits `POST /V1/customers` directly, which never fires `customer_register_success`.
+13. ~~`visitor_tag` condition + `visitor_tag_added` trigger~~ (§1a + §1b) — done:
+    `AdminCampaignVisitorTagConditionTest.xml` (`tracking` group). Chains two async queues
+    (`ordo.automation.visitor.aggregate` → `ordo.automation.campaign.dispatch`); action is `popup` since
+    `generate_coupon`/most actions need a `customer_id` a never-logged-in visitor doesn't have.
+14. ~~`score_at_least` condition~~ (§1b) — done: `AdminCampaignScoreAtLeastConditionTest.xml` (`campaign` group).
+15. ~~`add_points` action~~ (§1c) — done: `AdminCampaignAddPointsActionTest.xml` (`campaign` group). Found along the
+    way: `add_points` does NOT itself chain into `score_threshold_crossed` — only `EvaluateCustomerScoreRules`'s own
+    `customer_save_after` handling dispatches that event, so this test instead proves two campaigns on the same
+    trigger chain within one `dispatch()` pass (Campaign A's `add_points` → Campaign B's `score_at_least` gate).
+16. ~~Multiple conditions AND'd together, both halves~~ (§1d) — done: `AdminCampaignMultipleConditionsAndTest.xml`
+    (`campaign` group). One campaign, two condition rows; two real orders from the same customer, one before and
+    one after a tag makes the second condition pass — proves genuine AND, not just UI persistence.
+17. ~~Delayed action, `Cron\RunScheduledCampaignActions` resumes it~~ (§1d) — done:
+    `AdminCampaignDelayedActionTest.xml` (`campaign` group). Genuinely waits out a real 1-minute delay (no way to
+    fake elapsed time — the due-check is wall-clock `run_at <= NOW()`) rather than asserting something fake.
+18. ~~Disabled campaign — trigger fires, nothing happens~~ (§1d) — done: `AdminCampaignDisabledNoDispatchTest.xml`
+    (`campaign` group).
+19. ~~Segment bulk action — add tag~~ (§2) — done: `AdminSegmentBulkActionAddTagTest.xml` (`segment` group). The
+    admin trigger turned out to be a plain HTML form on the segment edit page (`BulkActions.php`/`bulkactions.phtml`),
+    not a UI-component grid mass-action.

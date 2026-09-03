@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCampaignMultipleConditionsAndTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Campaign engine"/>
+            <title value="A campaign's multiple conditions are AND'd, not OR'd"/>
+            <description value="Proves Model/CampaignDispatcher.php's allConditionsSatisfied() is a genuine AND: it loops the campaign's condition rows and returns false the moment any single one is not satisfied, never running the action on a partial match. Campaign B has TWO conditions on the same order_placed trigger - order_total_gte (dedicated amount field) AND tag (generic params_json field, tag=vip) - action=generate_coupon. A separate, simpler Campaign A (same order_placed trigger, no condition, action=add_tag vip) supplies the tag, matching the two-campaign chaining pattern AdminCampaignInSegmentConditionTest.xml already establishes - there is no direct admin UI to add a tag to a customer outside a campaign action. The same real customer places two real orders through storefront checkout: order 1 clears order_total_gte but the customer isn't tagged yet, so Campaign B's AND must evaluate false and no coupon may exist afterwards, even though Campaign A's condition-less add_tag does fire and tags them; order 2 clears the identical order_total_gte amount and the tag condition now also holds, so Campaign B's AND evaluates true and the coupon appears. Same customer, same order-total condition satisfied both times - only the tag condition differs between the two dispatches - so a coupon existing after order 2 but not after order 1 can only be explained by a real AND, not an OR (which would have fired on order 1's order-total condition alone) and not a short-circuit bug that skips the second condition entirely (which would also have fired on order 1)."/>
+            <severity value="CRITICAL"/>
+            <group value="ordo_automation"/>
+            <group value="campaign"/>
+        </annotations>
+        <before>
+            <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <createData entity="ApiSalesRule" stepKey="createRule"/>
+            <!-- Requires cataloginventory_stock/catalog_product_price/catalog_product_attribute/
+                 catalog_category_product/catalog_product_category set to "Update on Save" mode
+                 (bin/magento indexer:set-mode realtime ...) in this environment — see
+                 AdminCampaignScenarioEndToEndTest.xml's identical comment for why. -->
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <deleteData createDataKey="createRule" stepKey="deleteRule"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: Campaign A — order_placed, no condition, add_tag {"tag": "vip"}. Built exactly
+             like AdminCampaignInSegmentConditionTest.xml's Campaign A: it fires on every order and
+             its only job is to be the thing that puts the "vip" tag on the customer, so order 2's
+             evaluation of Campaign B's tag condition has something real to find. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignAPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignAPage"/>
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait — a cold, freshly
+             deployed developer-mode instance's first admin page load can lag behind
+             waitForPageLoad's document.readyState check. -->
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameFieldA"/>
+        <fillField selector="[name='name']" userInput="AND Test Tag Campaign A" stepKey="fillNameA"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButtonA"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRowA"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRowA"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEventA"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRowA"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRowA"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="add_tag" stepKey="selectActionTypeA"/>
+        <waitForElementVisible selector="[name='actions[actions][0][tag]']" stepKey="waitForTagFieldA"/>
+        <fillField selector="[name='actions[actions][0][tag]']" userInput="vip" stepKey="fillTagA"/>
+
+        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaignA"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueA"/>
+        <waitForPageLoad stepKey="waitForSaveA"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessageA"/>
+
+        <!-- Step 2: Campaign B — order_placed, TWO conditions AND'd (order_total_gte then tag),
+             action=generate_coupon. Both rows live on this one campaign, indices 0 and 1 under the
+             same conditions[conditions] dynamicRows, per AdminCreateSegmentWithMultipleConditionsTest.xml's
+             established convention for a second condition row. order_total_gte has its own dedicated
+             "amount" field (see AdminCampaignScenarioEndToEndTest.xml); tag has no dedicated field
+             and goes through the generic params_json fallback (see
+             AdminCampaignInSegmentConditionTest.xml's identical comment on in_segment for why). -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignBPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignBPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameFieldB"/>
+        <fillField selector="[name='name']" userInput="AND Test Coupon Campaign B" stepKey="fillNameB"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButtonB"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRowB"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRowB"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEventB"/>
+
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRowB0"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRowB0"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="selectConditionTypeB0"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][amount]']" stepKey="waitForAmountFieldB0"/>
+        <!-- SimpleProduct2 (Magento_Catalog fixture) is priced at 123.00 — 50 leaves headroom
+             for tax/shipping rounding while still safely below the order total, same reasoning as
+             AdminCampaignScenarioEndToEndTest.xml's identical amount. -->
+        <fillField selector="[name='conditions[conditions][0][amount]']" userInput="50" stepKey="fillConditionAmountB0"/>
+
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRowB1"/>
+        <waitForElementVisible selector="[name='conditions[conditions][1][type]']" stepKey="waitForConditionRowB1"/>
+        <selectOption selector="[name='conditions[conditions][1][type]']" userInput="tag" stepKey="selectConditionTypeB1"/>
+        <waitForElementVisible selector="[name='conditions[conditions][1][params_json]']" stepKey="waitForParamsJsonFieldB1"/>
+        <fillField selector="[name='conditions[conditions][1][params_json]']" userInput="{&quot;tag&quot;: &quot;vip&quot;}" stepKey="fillParamsJsonB1"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRowB"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRowB"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="generate_coupon" stepKey="selectActionTypeB"/>
+        <waitForElementVisible selector="[name='actions[actions][0][rule_id]']" stepKey="waitForRuleIdFieldB"/>
+        <fillField selector="[name='actions[actions][0][rule_id]']" userInput="$createRule.rule_id$" stepKey="fillRuleIdB"/>
+        <fillField selector="[name='actions[actions][0][prefix]']" userInput="ANDTEST" stepKey="fillPrefixB"/>
+        <fillField selector="[name='actions[actions][0][delay_minutes]']" userInput="0" stepKey="fillDelayMinutesB"/>
+
+        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaignB"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueB"/>
+        <waitForPageLoad stepKey="waitForSaveB"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessageB"/>
+
+        <!-- Step 3: the real customer, logged in once, places TWO real orders through real
+             storefront checkout — same shape as AdminCampaignInSegmentConditionTest.xml's Step 4. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+
+        <!-- Order 1 (condition fails): order_total_gte is satisfied, but the customer isn't
+             tagged 'vip' yet — Campaign B's AND must evaluate to false and generate_coupon must
+             NOT run, even though Campaign A's condition-less add_tag DOES fire on this same
+             dispatch (tagging the customer for order 2). -->
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPageOrder1"/>
+        <waitForPageLoad stepKey="waitForProductPageOrder1"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCartOrder1">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCartOrder1"/>
+        <waitForPageLoad stepKey="waitForCartPageOrder1"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeFirstOrder"/>
+
+        <!-- Consume order 1's dispatch message now, before order 2 is even placed, same reasoning
+             as AdminCampaignInSegmentConditionTest.xml's identical step: add_tag has to have
+             actually run (not just be queued) for order 2's tag condition to see it. max-messages
+             over-asked (50, not 1 or 5) — mftf.yml sets consumers-wait-for-messages=0 so it's safe,
+             per AGENTS.md's "MFTF w prawdziwym CI" section. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumerAfterOrder1"/>
+
+        <!-- Step 4: assert NO coupon exists yet — the negative half of the AND proof. The coupon
+             codes grid's rows load via a separate AJAX call after the table element is already in
+             the DOM (see AdminCampaignScenarioEndToEndTest.xml's comment on this exact race for the
+             positive case, which is why that test uses waitForText instead of a one-shot <see>).
+             For a negative assertion that same race runs the other way: checking too early would
+             find an empty, still-loading grid and pass for the wrong reason. Waiting for the
+             grid's own loading mask to clear first proves the AJAX call has actually finished
+             before dontSee checks the now-settled DOM. -->
+        <amOnPage url="admin/sales_rule/promo_quote/edit/id/$createRule.rule_id$/" stepKey="goToRuleEditPageAfterOrder1"/>
+        <waitForPageLoad stepKey="waitForRuleEditPageAfterOrder1"/>
+        <conditionalClick selector="{{AdminCartPriceRulesFormSection.manageCouponCodesHeader}}"
+                           dependentSelector="#couponCodesGrid_table" visible="false" stepKey="openCouponCodesTabAfterOrder1"/>
+        <waitForElementVisible selector="#couponCodesGrid_table" stepKey="waitForCouponCodesGridAfterOrder1"/>
+        <waitForElementNotVisible selector="#couponCodesGrid .admin__data-grid-loading-mask" stepKey="waitForGridLoadingMaskGoneAfterOrder1"/>
+        <dontSee selector="#couponCodesGrid_table" userInput="ANDTEST-" stepKey="dontSeeCouponAfterOrder1"/>
+
+        <!-- Order 2 (all conditions pass): order_total_gte is satisfied again (identical amount),
+             and the tag condition is satisfied for the first time now that order 1's add_tag has
+             actually run — Campaign B's AND evaluates true this time and generate_coupon fires. -->
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPageOrder2"/>
+        <waitForPageLoad stepKey="waitForProductPageOrder2"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCartOrder2">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCartOrder2"/>
+        <waitForPageLoad stepKey="waitForCartPageOrder2"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeSecondOrder"/>
+
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumerAfterOrder2"/>
+
+        <!-- Step 5: the positive half — the coupon that only Campaign B's AND (order_total_gte
+             AND tag, both satisfied this time) could have produced. waitForText, not <see>, for
+             the same AJAX-race reason documented above and in AdminCampaignScenarioEndToEndTest.xml. -->
+        <amOnPage url="admin/sales_rule/promo_quote/edit/id/$createRule.rule_id$/" stepKey="goToRuleEditPageAfterOrder2"/>
+        <waitForPageLoad stepKey="waitForRuleEditPageAfterOrder2"/>
+        <conditionalClick selector="{{AdminCartPriceRulesFormSection.manageCouponCodesHeader}}"
+                           dependentSelector="#couponCodesGrid_table" visible="false" stepKey="openCouponCodesTabAfterOrder2"/>
+        <waitForElementVisible selector="#couponCodesGrid_table" stepKey="waitForCouponCodesGridAfterOrder2"/>
+        <waitForText selector="#couponCodesGrid_table" userInput="ANDTEST-" stepKey="seeGeneratedCouponInGridAfterOrder2"/>
+    </test>
+</tests>

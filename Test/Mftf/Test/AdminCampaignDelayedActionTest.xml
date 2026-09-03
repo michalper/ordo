@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCampaignDelayedActionTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Campaign engine"/>
+            <title value="A campaign action with delay_minutes doesn't fire immediately, only once Cron\RunScheduledCampaignActions resumes it"/>
+            <description value="CampaignDispatcher::runActionsFrom() stops the action chain at the first action with delay_minutes greater than 0 and writes one ordo_campaign_scheduled_action row (run_at = now + delay_minutes, executed_at NULL) instead of running that action inline — see the class doc comment on CampaignDispatcher. Cron\RunScheduledCampaignActions (etc/crontab.xml job ordo_automation_run_scheduled_campaign_actions, group default) only resumes rows whose run_at has actually passed (Collection::addDueFilter compares run_at to date('Y-m-d H:i:s') at cron-tick time, a real wall-clock check, not a fake/advanceable one) - so this test places a real order with a real generate_coupon action delayed by 1 minute, confirms the coupon grid stays empty right after the dispatch consumer runs (proving the action chain genuinely paused instead of running the delayed action inline), really waits past the 1-minute delay, then runs the cron job for real and confirms the coupon now exists."/>
+            <severity value="CRITICAL"/>
+            <group value="ordo_automation"/>
+            <group value="campaign"/>
+        </annotations>
+        <before>
+            <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <createData entity="ApiSalesRule" stepKey="createRule"/>
+            <!-- Same indexer-mode requirement as AdminCampaignScenarioEndToEndTest.xml: this
+                 environment must have cataloginventory_stock/catalog_product_price/
+                 catalog_product_attribute/catalog_category_product/catalog_product_category set
+                 to "Update on Save" (bin/magento indexer:set-mode realtime ...), otherwise a
+                 product created via the API isn't salable on the storefront yet. -->
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <deleteData createDataKey="createRule" stepKey="deleteRule"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: build the scenario exactly like AdminCampaignScenarioEndToEndTest.xml
+             (trigger=order_placed, no condition, action=generate_coupon) but with
+             delay_minutes=1 on the action instead of 0 - the only thing this test is actually
+             about. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="E2E Delayed Coupon Campaign" stepKey="fillName"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButton"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRow"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRow"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEvent"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRow"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRow"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="generate_coupon" stepKey="selectActionType"/>
+        <waitForElementVisible selector="[name='actions[actions][0][rule_id]']" stepKey="waitForRuleIdField"/>
+        <fillField selector="[name='actions[actions][0][rule_id]']" userInput="$createRule.rule_id$" stepKey="fillRuleId"/>
+        <fillField selector="[name='actions[actions][0][prefix]']" userInput="DELAYTEST" stepKey="fillPrefix"/>
+        <!-- The one field this whole test exists to exercise: CampaignDispatcher::runActionsFrom()
+             treats any delay_minutes > 0 as "pause the chain here, write a scheduled-action row,
+             let Cron\RunScheduledCampaignActions resume it later" instead of running the action
+             inline. 1 minute is the smallest delay this test can honestly verify without faking
+             elapsed time - see the <wait> below. -->
+        <fillField selector="[name='actions[actions][0][delay_minutes]']" userInput="1" stepKey="fillDelayMinutes"/>
+
+        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+
+        <!-- Step 2: a REAL order, through REAL storefront checkout, as the REAL customer created
+             above - same pattern as AdminCampaignScenarioEndToEndTest.xml. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <!-- Step 3: run the campaign-dispatch queue consumer for real (no RabbitMQ in this
+             environment - DB queue driver only, see AGENTS.md). This is the step that runs
+             CampaignDispatcher::dispatch(), which - because delay_minutes=1 on the only action -
+             stops immediately and writes the ordo_campaign_scheduled_action row instead of
+             generating the coupon. The max-messages flag below is intentionally over-asked
+             (50, not 1) per AGENTS.md's "MFTF w prawdziwym CI" note #4: mftf.yml sets
+             consumers-wait-for-messages=0, so the consumer returns as soon as the queue is
+             drained instead of blocking for more messages that will never arrive. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+
+        <!-- Step 4: prove the chain genuinely paused - the coupon must NOT exist yet, right
+             after dispatch, before any delay has elapsed. If this assertion is wrong (i.e. the
+             coupon already exists here) then delay_minutes isn't actually delaying anything. -->
+        <amOnPage url="admin/sales_rule/promo_quote/edit/id/$createRule.rule_id$/" stepKey="goToRuleEditPageBeforeDelay"/>
+        <waitForPageLoad stepKey="waitForRuleEditPageBeforeDelay"/>
+        <conditionalClick selector="{{AdminCartPriceRulesFormSection.manageCouponCodesHeader}}"
+                           dependentSelector="#couponCodesGrid_table" visible="false" stepKey="openCouponCodesTabBeforeDelay"/>
+        <waitForElementVisible selector="#couponCodesGrid_table" stepKey="waitForCouponCodesGridBeforeDelay"/>
+        <dontSee selector="#couponCodesGrid_table" userInput="DELAYTEST-" stepKey="dontSeeCouponBeforeDelay"/>
+
+        <!-- Step 5: really wait past the 1-minute delay. Cron\RunScheduledCampaignActions'
+             Collection::addDueFilter() compares the scheduled row's run_at against
+             date('Y-m-d H:i:s') at the moment the cron tick runs - genuine wall-clock time, not
+             something a test can fast-forward - so this has to be a real <wait>, not a shortcut.
+             65 real seconds for a 1-minute delay leaves a small margin over the minute boundary. -->
+        <wait time="65" stepKey="waitForDelayToElapse"/>
+
+        <!-- Step 6: run the actual cron job, not the queue consumer - resuming a delayed action
+             is Cron\RunScheduledCampaignActions' job (etc/crontab.xml: job
+             ordo_automation_run_scheduled_campaign_actions in the "default" group), which finds
+             the now-due scheduled row and calls CampaignDispatcher::resumeScheduledAction(),
+             which runs the delayed generate_coupon action unconditionally and continues the
+             chain from there. -->
+        <magentoCLI command="cron:run --group=default" stepKey="runScheduledCampaignActionsCron"/>
+
+        <!-- Step 7: the coupon that only the resumed action chain could have produced now
+             exists. waitForText, not <see>, for the same reason as
+             AdminCampaignScenarioEndToEndTest.xml: this grid's rows load via a separate AJAX
+             call after the table element is already in the DOM. -->
+        <amOnPage url="admin/sales_rule/promo_quote/edit/id/$createRule.rule_id$/" stepKey="goToRuleEditPageAfterDelay"/>
+        <waitForPageLoad stepKey="waitForRuleEditPageAfterDelay"/>
+        <conditionalClick selector="{{AdminCartPriceRulesFormSection.manageCouponCodesHeader}}"
+                           dependentSelector="#couponCodesGrid_table" visible="false" stepKey="openCouponCodesTabAfterDelay"/>
+        <waitForElementVisible selector="#couponCodesGrid_table" stepKey="waitForCouponCodesGridAfterDelay"/>
+        <waitForText selector="#couponCodesGrid_table" userInput="DELAYTEST-" stepKey="seeGeneratedCouponInGridAfterDelay"/>
+    </test>
+</tests>

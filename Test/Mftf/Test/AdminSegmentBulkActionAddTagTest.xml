@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminSegmentBulkActionAddTagTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Saved segments"/>
+            <title value="Segment edit page's bulk action queues and applies a real tag to a real member"/>
+            <description value="Controller/Adminhtml/Segment/BulkAction.php resolves a segment's current members synchronously (SegmentMemberResolver) then publishes ordo.automation.segment.bulk_action per-customer-id chunks (Model/Queue/SegmentBulkActionPublisher.php); SegmentBulkActionConsumer applies the action off-thread. Test/Integration/SegmentBulkActionQueueWiringTest.php already proves that queue wiring end to end with a fake ObjectManager-built segment/customer and no browser. What that test cannot cover, and this one does, is the actual admin-UI trigger: the Bulk actions form rendered on the segment EDIT page (view/adminhtml/templates/segment/bulkactions.phtml, gated on isSegmentSaved()) actually posting to *segment/bulkAction with a real segment_id and tag, from a real browser click. Segment membership is made real via a demographic score rule (same mechanism AdminScoreThresholdCampaignTest already proves reliable: group_id=1 equals, worth points) awarding real ordo_customer_score points to a real customer on customer_save_after, then a score_at_least condition on the segment picks that customer up as a genuine member — no order placement or pre-existing tag needed to set up membership."/>
+            <severity value="CRITICAL"/>
+            <group value="ordo_automation"/>
+            <group value="segment"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: a demographic score rule that awards real points to any General
+             (group_id=1) customer on save — same mechanism AdminScoreThresholdCampaignTest
+             already relies on to get a real, non-zero ordo_customer_score row without placing
+             an order. 80 points is comfortably above the score_at_least threshold used below. -->
+        <amOnPage url="admin/ordo/scorerule/new" stepKey="goToNewScoreRulePage"/>
+        <waitForPageLoad stepKey="waitForNewScoreRulePage"/>
+        <waitForElementVisible selector="[name='attribute_code']" stepKey="waitForAttributeCodeField"/>
+        <fillField selector="[name='attribute_code']" userInput="group_id" stepKey="fillAttributeCode"/>
+        <selectOption selector="[name='operator']" userInput="equals" stepKey="selectOperator"/>
+        <fillField selector="[name='value']" userInput="1" stepKey="fillValue"/>
+        <fillField selector="[name='points']" userInput="80" stepKey="fillPoints"/>
+        <click selector="#save" stepKey="clickSaveScoreRule"/>
+        <waitForPageLoad stepKey="waitForScoreRuleSave"/>
+        <see selector=".message-success" userInput="The score rule has been saved." stepKey="seeScoreRuleSuccessMessage"/>
+
+        <!-- Step 2: the segment — one condition, score_at_least with a threshold the rule
+             above clears (80 >= 40). "tag" has no dedicated UI field either (see
+             ordo_segment_form.xml's params_json notice), so both this and the bulk action's
+             own tag both go through their respective plain-text inputs, not a select. -->
+        <amOnPage url="admin/ordo/segment/new" stepKey="goToNewSegmentPage"/>
+        <waitForPageLoad stepKey="waitForNewSegmentPage"/>
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait — a cold, freshly
+             deployed developer-mode instance's first admin page load can lag behind
+             waitForPageLoad's document.readyState check. -->
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Test Bulk Tag Score Members" stepKey="fillName"/>
+        <!-- Same toggle-switch checkbox as the campaign form's "enabled" field — the real
+             <input> is visually covered by its own wrapper, so click the adjacent <label>
+             instead of the input itself. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableSegment"/>
+
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRow"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRow"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="score_at_least" stepKey="selectConditionType"/>
+        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;threshold&quot;: &quot;40&quot;}" stepKey="fillConditionParams"/>
+
+        <!-- Save & Continue Edit (not the plain "save" button AdminCreateSegmentTest uses),
+             specifically to stay on the segment EDIT page — that's where BulkActions.php
+             renders the bulk-actions form (isSegmentSaved() gate), and it's what makes the
+             just-created segment's entity_id available in the URL for the assertions below. -->
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
+        <waitForPageLoad stepKey="waitForSegmentSave"/>
+        <see selector=".message-success" userInput="The segment has been saved." stepKey="seeSegmentSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabSegmentId"/>
+
+        <!-- Step 3: the real customer. group_id=1 (General) matches the score rule above; this
+             single customer_save_after is what actually writes the real ordo_customer_score
+             row (Observer/EvaluateCustomerScoreRules.php), which is what makes this customer a
+             genuine, SQL-resolved member of the segment created above — not a fixture stand-in. -->
+        <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+
+        <!-- Step 4: back to the segment edit page (a fresh page load, not a reuse of the
+             just-saved form state) to drive the Bulk actions form BulkActions.php renders
+             below the ui_component. Deliberately not reloading/re-querying the conditions
+             dynamicRows fields themselves here — same known pitfall documented in
+             AdminCreateSegmentWithMultipleConditionsTest.xml, irrelevant to this test since it
+             never needs to read the conditions back, only to reach the plain-HTML bulk-actions
+             form beneath them. -->
+        <amOnPage url="admin/ordo/segment/edit/entity_id/{$grabSegmentId}" stepKey="goToSegmentEditPage"/>
+        <waitForPageLoad stepKey="waitForSegmentEditPage"/>
+        <waitForElementVisible selector="#ordo-segment-bulk-action-type" stepKey="waitForBulkActionForm"/>
+        <selectOption selector="#ordo-segment-bulk-action-type" userInput="add_tag" stepKey="selectAddTagAction"/>
+        <fillField selector="#ordo-segment-bulk-tag" userInput="bulk-tagged" stepKey="fillBulkTag"/>
+        <click selector="//button[contains(., 'Run Bulk Action')]" stepKey="clickRunBulkAction"/>
+        <waitForPageLoad stepKey="waitForBulkActionRedirect"/>
+
+        <!-- BulkAction.php resolves membership and reports the queued count synchronously, on
+             the same request — this message only appears if SegmentMemberResolver actually
+             found our real customer as a match (an empty result shows the "No customers
+             currently match" warning instead, see BulkAction::execute()). -->
+        <see selector=".message-success" userInput="Queued &quot;Add Tag&quot; for 1 matching customer(s)." stepKey="seeQueuedMessage"/>
+
+        <!-- Step 5: this install has no RabbitMQ (DB queue driver only — see AGENTS.md), so
+             nothing consumes the message SegmentBulkActionPublisher just published until a
+             consumer actually runs. max-messages is 50, not 1: other tests in this same CI job
+             (same DB, no background consumer running between them) can leave their own
+             already-queued bulk-action messages sitting unconsumed ahead of ours; draining
+             generously keeps this test from stalling on a stale message. Safe to over-ask: the
+             workflow sets consumers-wait-for-messages=0, so the consumer returns as soon as the
+             queue is empty instead of blocking — see mftf.yml's install step for why that's
+             needed here. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.segment.bulk_action --max-messages=50" stepKey="runSegmentBulkActionConsumer"/>
+
+        <!-- Step 6: the only assertion that checks a real, database-observable side effect —
+             a real ordo_customer_tag row that only SegmentBulkActionConsumer's add_tag branch,
+             run via the full admin-click -> publish -> consume chain, could have produced. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertCustomerTagAddedByEmail" stepKey="assertRealTagAdded">
+            <argument name="email">$createCustomer.email$</argument>
+            <argument name="tag">bulk-tagged</argument>
+        </helper>
+    </test>
+</tests>

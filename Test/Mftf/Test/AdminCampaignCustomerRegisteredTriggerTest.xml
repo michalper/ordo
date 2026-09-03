@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCampaignCustomerRegisteredTriggerTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Campaign engine"/>
+            <title value="A real storefront customer registration fires the customer_registered campaign trigger"/>
+            <description value="Proves Observer/DispatchCustomerRegisteredCampaigns.php for real. etc/events.xml wires it to the customer_register_success event, which only Magento's AccountManagementInterface::createAccount() dispatches - the code path a real storefront registration form goes through. CustomerRepositoryInterface::save() (what MFTF's own createData entity=customer hits, via POST /V1/customers) never dispatches customer_register_success, so a createData-built customer would never exercise this trigger at all; that gap is exactly why this test drives Magento's own SignUpNewUserFromStorefrontActionGroup against the real customer/account/create form instead. Campaign is trigger-only (customer_registered, no condition, same vacuously-satisfied-conditions shape as AdminScoreThresholdCampaignTest), action=add_tag {tag: new-registrant} - the smallest side effect with a directly DB-observable row, and no dependency on a coupon rule or mail transport. Since the customer is created by the storefront form rather than createData, there is no entity_id to reference afterwards, so the new VisitorEventHelper::assertCustomerTagAddedByEmail() looks the customer up by the email the form was filled with, joining ordo_customer_tag to customer_entity."/>
+            <severity value="CRITICAL"/>
+            <group value="ordo_automation"/>
+            <group value="campaign"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: the campaign - customer_registered, no condition, add_tag {"tag": "new-registrant"}.
+             Built exactly like AdminScoreThresholdCampaignTest.xml's trigger-only campaign, with
+             add_tag as the action (same field shape as AdminCampaignInSegmentConditionTest.xml's
+             Campaign A). -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait - a cold, freshly
+             deployed developer-mode instance's first admin page load can lag behind
+             waitForPageLoad's document.readyState check. -->
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Customer Registered Tag Campaign" stepKey="fillName"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButton"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRow"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRow"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="customer_registered" stepKey="selectTriggerEvent"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRow"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRow"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="add_tag" stepKey="selectActionType"/>
+        <waitForElementVisible selector="[name='actions[actions][0][tag]']" stepKey="waitForTagField"/>
+        <fillField selector="[name='actions[actions][0][tag]']" userInput="new-registrant" stepKey="fillActionTag"/>
+
+        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+
+        <!-- Step 2: a real anonymous storefront visitor fills out and submits Magento's real
+             registration form (customer/account/create) via core's own
+             SignUpNewUserFromStorefrontActionGroup - the actual AccountManagementInterface::
+             createAccount() path, the only one that dispatches customer_register_success.
+             CustomerEntityOne's email is unique="prefix" (CustomerData.xml), so each run gets a
+             fresh address; the same {{CustomerEntityOne.email}} reference resolves to the same
+             generated value everywhere it's used below. -->
+        <actionGroup ref="SignUpNewUserFromStorefrontActionGroup" stepKey="registerCustomerFromStorefront">
+            <argument name="Customer" value="CustomerEntityOne"/>
+        </actionGroup>
+
+        <!-- Step 3: this install has no RabbitMQ (DB queue driver only - see AGENTS.md), so
+             nothing consumes the message DispatchCustomerRegisteredCampaigns just published until
+             a consumer actually runs. max-messages=50, not a small number: other tests in this
+             same CI job (same DB, no background consumer running between them) can leave their
+             own already order-placed/registered/score-threshold dispatch messages sitting
+             unconsumed on this same 'ordo.automation.campaign.dispatch' queue ahead of ours.
+             Safe to over-ask: the workflow sets consumers-wait-for-messages=0, so the consumer
+             returns as soon as the queue is empty instead of blocking - see mftf.yml's install
+             step and AGENTS.md's "MFTF w prawdziwym CI" section for why. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+
+        <!-- Step 4: the only assertion that checks a real, DB-observable side effect - an
+             ordo_customer_tag row that only the real customer_register_success ->
+             DispatchCustomerRegisteredCampaigns -> CampaignDispatcher -> add_tag chain, run
+             against the customer the storefront form itself created, could have produced. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertCustomerTagAddedByEmail" stepKey="assertCustomerTagAdded">
+            <argument name="email">{{CustomerEntityOne.email}}</argument>
+            <argument name="tag">new-registrant</argument>
+        </helper>
+    </test>
+</tests>
