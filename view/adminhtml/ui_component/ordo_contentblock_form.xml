@@ -241,6 +241,20 @@
         admin-authored trusted HTML snippet needs, without pulling in Magento_Cms.
     -->
     <field name="html" formElement="wysiwyg" sortOrder="50">
+        <!-- Magento_Ui/js/form/element/wysiwyg.js's own initConfig() calls
+             config.content.replace(...) unconditionally — a brand-new content block has no
+             "html" key at all in the DataProvider's loaded row, so without an explicit default
+             here the linked value resolves to null/undefined instead of the component's own
+             JS-level content:'' default, and that .replace() throws synchronously during this
+             field's construction. Confirmed via a real CI run: the whole form's component tree
+             never finished initializing when this happened — even the "identifier" field
+             (defined earlier in this same file) never became interactable, since Magento_Ui
+             constructs a form's full component tree before any of it renders. -->
+        <argument name="data" xsi:type="array">
+            <item name="config" xsi:type="array">
+                <item name="default" xsi:type="string"></item>
+            </item>
+        </argument>
         <settings>
             <dataType>text</dataType>
             <label translate="true">HTML</label>
