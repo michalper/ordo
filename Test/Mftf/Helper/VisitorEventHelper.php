@@ -139,6 +139,46 @@ class VisitorEventHelper extends Helper
     }
 
     /**
+     * Negative counterpart to assertCustomerTagAddedByEmail() above — confirms a tag was NOT
+     * applied, for tests proving a deleted/disabled campaign's action never ran. Same
+     * out-of-band PDO pattern; a missing customer row is not itself a failure here (unlike the
+     * positive assertion) since the point is only that no tag row exists.
+     *
+     * @throws \RuntimeException if a matching tag row exists
+     */
+    public function assertCustomerTagNotAddedByEmail(
+        string $email,
+        string $tag,
+        string $dbHost = '127.0.0.1',
+        string $dbName = 'magento',
+        string $dbUser = 'root',
+        string $dbPassword = ''
+    ): void {
+        $pdo = new \PDO(
+            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
+            $dbUser,
+            $dbPassword,
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+        );
+
+        $statement = $pdo->prepare(
+            'SELECT COUNT(*) FROM ordo_customer_tag oct '
+            . 'INNER JOIN customer_entity ce ON ce.entity_id = oct.customer_id '
+            . 'WHERE ce.email = :email AND oct.tag = :tag'
+        );
+        $statement->execute(['email' => $email, 'tag' => $tag]);
+        $count = (int) $statement->fetchColumn();
+
+        if ($count > 0) {
+            throw new \RuntimeException(sprintf(
+                'Unexpected ordo_customer_tag row found for customer email="%s" tag="%s".',
+                $email,
+                $tag
+            ));
+        }
+    }
+
+    /**
      * Confirms CustomerScoreManager::addPoints() actually wrote/updated a real ordo_customer_score
      * row for a customer identified by email, at or above a minimum total — used by tests where
      * points might already exist from another source in the same run (e.g. a demographic score

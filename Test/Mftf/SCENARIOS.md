@@ -89,7 +89,7 @@ cases separately from the type-by-type ones.
 | Chained delays (action pauses, resumes, pauses again)                                                         | ⬜                                                                                                              |
 | Disabled campaign — trigger fires, nothing happens                                                            | ✅ `AdminCampaignDisabledNoDispatchTest`                                                                        |
 | Campaign edited after creation (trigger/condition/action changed, re-saved, old rows replaced not duplicated) | ✅ `AdminEditCampaignConditionReplacesNotDuplicatesTest`                                                        |
-| Campaign deleted — grid no longer lists it, dispatch no longer matches its old triggers                       | ⬜                                                                                                              |
+| Campaign deleted — grid no longer lists it, dispatch no longer matches its old triggers                       | ✅ `AdminDeleteCampaignStopsDispatchTest`                                                                       |
 | Unknown/removed condition or action type on a campaign (fails closed, logs, doesn't crash the whole dispatch) | ⬜ (unit-tested; no MFTF equivalent, arguably not worth one)                                                    |
 
 ## 2. Segments (`Model/Segment.php`, `Controller/Adminhtml/Segment/`)

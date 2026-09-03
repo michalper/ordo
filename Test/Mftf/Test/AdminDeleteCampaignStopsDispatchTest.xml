@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminDeleteCampaignStopsDispatchTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Campaign engine"/>
+            <title value="A deleted campaign no longer lists in the grid or matches its old trigger"/>
+            <description value="Covers Controller/Adminhtml/Campaign/Delete.php: the grid check alone (AdminDeleteSegmentTest.xml's own sibling proof for segments) wouldn't catch a real bug this module has already been bitten by once — CampaignSaveProcessor::process() invalidates CampaignDispatcher's cached campaignIdsForTrigger() result on every SAVE, but a plain campaignResource-&gt;delete() has no reason to go through that same code path unless Delete.php calls $this->cache->clean() itself too (which it does — see its own execute()). A real customer places a real order after the campaign is deleted; if that cache clean were ever missing or wrong, the campaign's cached, now-stale id list would make CampaignDispatcher still try to load and act on child rows a cascade delete already removed, either silently doing nothing (the FK cascade already took the rows) or logging an error — either way the campaign's own add_tag action must NOT run, since deletion is expected to behave exactly like the campaign never existing for any order placed afterwards."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="campaign2"/>
+        </annotations>
+        <before>
+            <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: a simple, condition-less campaign — order_placed -> add_tag. No coupon/rule
+             needed; a real customer_tag row is a simpler, equally real DB-observable side
+             effect to prove absence of (same helper AdminSegmentBulkActionAddTagTest.xml
+             already uses for the positive case). "Save &amp; Continue Edit" to grab the
+             entity_id for the delete URL below, same convention as AdminDeleteSegmentTest.xml. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait — a cold, freshly
+             deployed developer-mode instance's first admin page load can lag behind
+             waitForPageLoad's document.readyState check. -->
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Test Campaign To Delete" stepKey="fillName"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButton"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRow"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRow"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEvent"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRow"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRow"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="add_tag" stepKey="selectActionType"/>
+        <waitForElementVisible selector="[name='actions[actions][0][tag]']" stepKey="waitForTagField"/>
+        <fillField selector="[name='actions[actions][0][tag]']" userInput="should-never-apply" stepKey="fillTag"/>
+
+        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
+
+        <amOnPage url="admin/ordo/campaign/index" stepKey="goToCampaignGridBeforeDelete"/>
+        <waitForPageLoad stepKey="waitForGridBeforeDelete"/>
+        <see selector="table.data-grid" userInput="Test Campaign To Delete" stepKey="seeCampaignInGridBeforeDelete"/>
+
+        <!-- Step 2: delete it — same direct-GET approach as AdminDeleteSegmentTest.xml (a
+             faithful, non-flaky equivalent to confirming the grid's own JS confirm() dialog). -->
+        <amOnPage url="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}" stepKey="deleteCampaign"/>
+        <waitForPageLoad stepKey="waitForDeleteRedirect"/>
+        <see selector=".message-success" userInput="The campaign has been deleted." stepKey="seeDeleteSuccessMessage"/>
+
+        <amOnPage url="admin/ordo/campaign/index" stepKey="goToCampaignGridAfterDelete"/>
+        <waitForPageLoad stepKey="waitForGridAfterDelete"/>
+        <dontSee selector="table.data-grid" userInput="Test Campaign To Delete" stepKey="dontSeeCampaignInGrid"/>
+
+        <!-- Step 3: a real order, placed after the campaign no longer exists — the real proof.
+             If CampaignDispatcher's cache clean on delete ever regressed, this order_placed
+             dispatch could still try to act on the deleted campaign's cached id. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainCampaignDispatchQueue"/>
+
+        <!-- The real, database-observable negative: no ordo_customer_tag row for a tag only
+             this deleted campaign's action would ever have applied. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertCustomerTagNotAddedByEmail" stepKey="assertTagWasNeverApplied">
+            <argument name="email">$createCustomer.email$</argument>
+            <argument name="tag">should-never-apply</argument>
+        </helper>
+    </test>
+</tests>
