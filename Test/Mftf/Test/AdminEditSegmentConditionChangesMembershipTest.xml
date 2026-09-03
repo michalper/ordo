@@ -129,6 +129,12 @@
              AdminEditCampaignConditionReplacesNotDuplicatesTest.xml forces the campaign form's
              own hidden fieldsets visible: directly via uiRegistry, not a fragile header click. -->
         <executeJS function="require(['uiRegistry'], function (uiRegistry) { uiRegistry.get('ordo_segment_form.ordo_segment_form.conditions_fieldset', function (fieldset) { fieldset.opened(true); }); });" stepKey="expandConditionsFieldset"/>
+        <wait time="2" stepKey="waitForDiagnosticSettle"/>
+        <executeJS function="var out = {requireDefined: typeof require !== 'undefined', registryDefined: false, found: false}; try { var r = require('uiRegistry'); out.registryDefined = !!r; if (r) { var fs = r.get('ordo_segment_form.ordo_segment_form.conditions_fieldset'); out.found = !!fs; if (fs) { out.visible = fs.visible(); out.opened = fs.opened ? fs.opened() : 'N/A'; out.collapsible = fs.collapsible; } } } catch (e) { out.error = e.message; } return JSON.stringify(out);" stepKey="grabDiagnosticState"/>
+        <assertEquals stepKey="printDiagnosticState">
+            <expectedResult type="string">__DIAGNOSTIC__</expectedResult>
+            <actualResult type="string">{$grabDiagnosticState}</actualResult>
+        </assertEquals>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForExistingConditionRow"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="changeSegmentConditionType"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][amount]']" stepKey="waitForAmountField"/>
