@@ -221,7 +221,6 @@
                 </checkbox>
             </formElements>
         </field>
-    </fieldset>
 
     <!--
         Type-specific fields, all in the same "general" flow but toggled by the "type" field's
@@ -229,6 +228,14 @@
         content block has exactly one type at a time, not a list of condition rows, so a plain
         set of conditionally-visible fields (same technique ordo_campaign_form.xml uses for its
         condition/action "value"-typed fields) is the right shape here, not dynamicRows.
+
+        These MUST live inside this same "general" fieldset, not as siblings of it: the "type"
+        field's switcherConfig above targets them via ${ $.parentName }, which resolves relative
+        to the switcher field's OWN parent (this fieldset) — a target field outside this fieldset
+        is simply a dead path the switcher can never reach, so its visible(true/false) callback
+        silently no-ops instead of erroring. This was the real cause of the html field never
+        appearing after selecting type="snippet" in real CI: it was previously a sibling of this
+        fieldset instead of a child.
     -->
     <!--
         Magento_Ui/js/form/element/wysiwyg + Magento\Ui\Component\Form\Element\Wysiwyg — the
@@ -240,141 +247,143 @@
         instance with no CMS-specific directive/widget-insert buttons — exactly what an
         admin-authored trusted HTML snippet needs, without pulling in Magento_Cms.
     -->
-    <field name="html" formElement="wysiwyg" sortOrder="50">
-        <!-- Magento_Ui/js/form/element/wysiwyg.js's own initConfig() calls
-             config.content.replace(...) unconditionally — a brand-new content block has no
-             "html" key at all in the DataProvider's loaded row, so without an explicit default
-             here the linked value resolves to null/undefined instead of the component's own
-             JS-level content:'' default, and that .replace() throws synchronously during this
-             field's construction. Confirmed via a real CI run: the whole form's component tree
-             never finished initializing when this happened — even the "identifier" field
-             (defined earlier in this same file) never became interactable, since Magento_Ui
-             constructs a form's full component tree before any of it renders. -->
-        <argument name="data" xsi:type="array">
-            <item name="config" xsi:type="array">
-                <item name="default" xsi:type="string"></item>
-            </item>
-        </argument>
-        <settings>
-            <dataType>text</dataType>
-            <label translate="true">HTML</label>
-            <notice translate="true">Raw HTML to embed for a "snippet" block.</notice>
-            <visible>false</visible>
-        </settings>
-        <formElements>
-            <wysiwyg>
-                <settings>
-                    <wysiwyg>true</wysiwyg>
-                </settings>
-            </wysiwyg>
-        </formElements>
-    </field>
-    <field name="feed_url" formElement="input" sortOrder="51">
-        <settings>
-            <dataType>text</dataType>
-            <label translate="true">Feed URL</label>
-            <notice translate="true">RSS 2.0 feed URL, refetched every 30 minutes by cron (or on demand via "Refresh Feed Now")</notice>
-            <visible>false</visible>
-            <validation>
-                <rule name="validate-url" xsi:type="boolean">true</rule>
-            </validation>
-        </settings>
-    </field>
-    <field name="rss_item_count" formElement="input" sortOrder="52">
-        <argument name="data" xsi:type="array">
-            <item name="config" xsi:type="array">
-                <item name="default" xsi:type="number">5</item>
-            </item>
-        </argument>
-        <settings>
-            <dataType>number</dataType>
-            <label translate="true">Item Count</label>
-            <notice translate="true">How many feed items to include</notice>
-            <dataScope>item_count</dataScope>
-            <visible>false</visible>
-            <validation>
-                <rule name="validate-digits" xsi:type="boolean">true</rule>
-            </validation>
-        </settings>
-    </field>
-    <field name="source" formElement="select" sortOrder="53">
-        <settings>
-            <dataType>text</dataType>
-            <label translate="true">Source</label>
-            <visible>false</visible>
-            <switcherConfig>
-                <enabled>true</enabled>
-                <rules>
-                    <rule name="0">
-                        <value>category</value>
-                        <actions>
-                            <action name="0">
-                                <target>${ $.parentName }.category_id</target>
-                                <callback>visible</callback>
-                                <params><param name="0" xsi:type="boolean">true</param></params>
-                            </action>
-                            <action name="1">
-                                <target>${ $.parentName }.rule_id</target>
-                                <callback>visible</callback>
-                                <params><param name="0" xsi:type="boolean">false</param></params>
-                            </action>
-                        </actions>
-                    </rule>
-                    <rule name="1">
-                        <value>rule</value>
-                        <actions>
-                            <action name="0">
-                                <target>${ $.parentName }.category_id</target>
-                                <callback>visible</callback>
-                                <params><param name="0" xsi:type="boolean">false</param></params>
-                            </action>
-                            <action name="1">
-                                <target>${ $.parentName }.rule_id</target>
-                                <callback>visible</callback>
-                                <params><param name="0" xsi:type="boolean">true</param></params>
-                            </action>
-                        </actions>
-                    </rule>
-                </rules>
-            </switcherConfig>
-        </settings>
-        <formElements>
-            <select>
-                <settings>
-                    <options class="Ordo\Automation\Model\Config\Source\ProductFeedSourceType"/>
-                </settings>
-            </select>
-        </formElements>
-    </field>
-    <field name="category_id" formElement="input" sortOrder="54">
-        <settings>
-            <dataType>text</dataType>
-            <label translate="true">Category ID</label>
-            <visible>false</visible>
-        </settings>
-    </field>
-    <field name="rule_id" formElement="input" sortOrder="55">
-        <settings>
-            <dataType>text</dataType>
-            <label translate="true">Cart Price Rule ID</label>
-            <visible>false</visible>
-        </settings>
-    </field>
-    <field name="product_feed_item_count" formElement="input" sortOrder="56">
-        <argument name="data" xsi:type="array">
-            <item name="config" xsi:type="array">
-                <item name="default" xsi:type="number">4</item>
-            </item>
-        </argument>
-        <settings>
-            <dataType>number</dataType>
-            <label translate="true">Item Count</label>
-            <notice translate="true">How many products to include</notice>
-            <dataScope>item_count</dataScope>
-            <visible>false</visible>
-            <validation>
-                <rule name="validate-digits" xsi:type="boolean">true</rule>
-            </validation>
-        </settings>
-    </field>
+        <field name="html" formElement="wysiwyg" sortOrder="50">
+            <!-- Magento_Ui/js/form/element/wysiwyg.js's own initConfig() calls
+                 config.content.replace(...) unconditionally — a brand-new content block has no
+                 "html" key at all in the DataProvider's loaded row, so without an explicit default
+                 here the linked value resolves to null/undefined instead of the component's own
+                 JS-level content:'' default, and that .replace() throws synchronously during this
+                 field's construction. Confirmed via a real CI run: the whole form's component tree
+                 never finished initializing when this happened — even the "identifier" field
+                 (defined earlier in this same file) never became interactable, since Magento_Ui
+                 constructs a form's full component tree before any of it renders. -->
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="default" xsi:type="string"></item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">HTML</label>
+                <notice translate="true">Raw HTML to embed for a "snippet" block.</notice>
+                <visible>false</visible>
+            </settings>
+            <formElements>
+                <wysiwyg>
+                    <settings>
+                        <wysiwyg>true</wysiwyg>
+                    </settings>
+                </wysiwyg>
+            </formElements>
+        </field>
+        <field name="feed_url" formElement="input" sortOrder="51">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Feed URL</label>
+                <notice translate="true">RSS 2.0 feed URL, refetched every 30 minutes by cron (or on demand via "Refresh Feed Now")</notice>
+                <visible>false</visible>
+                <validation>
+                    <rule name="validate-url" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+        </field>
+        <field name="rss_item_count" formElement="input" sortOrder="52">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="default" xsi:type="number">5</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>number</dataType>
+                <label translate="true">Item Count</label>
+                <notice translate="true">How many feed items to include</notice>
+                <dataScope>item_count</dataScope>
+                <visible>false</visible>
+                <validation>
+                    <rule name="validate-digits" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+        </field>
+        <field name="source" formElement="select" sortOrder="53">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Source</label>
+                <visible>false</visible>
+                <switcherConfig>
+                    <enabled>true</enabled>
+                    <rules>
+                        <rule name="0">
+                            <value>category</value>
+                            <actions>
+                                <action name="0">
+                                    <target>${ $.parentName }.category_id</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">true</param></params>
+                                </action>
+                                <action name="1">
+                                    <target>${ $.parentName }.rule_id</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">false</param></params>
+                                </action>
+                            </actions>
+                        </rule>
+                        <rule name="1">
+                            <value>rule</value>
+                            <actions>
+                                <action name="0">
+                                    <target>${ $.parentName }.category_id</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">false</param></params>
+                                </action>
+                                <action name="1">
+                                    <target>${ $.parentName }.rule_id</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">true</param></params>
+                                </action>
+                            </actions>
+                        </rule>
+                    </rules>
+                </switcherConfig>
+            </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options class="Ordo\Automation\Model\Config\Source\ProductFeedSourceType"/>
+                    </settings>
+                </select>
+            </formElements>
+        </field>
+        <field name="category_id" formElement="input" sortOrder="54">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Category ID</label>
+                <visible>false</visible>
+            </settings>
+        </field>
+        <field name="rule_id" formElement="input" sortOrder="55">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Cart Price Rule ID</label>
+                <visible>false</visible>
+            </settings>
+        </field>
+        <field name="product_feed_item_count" formElement="input" sortOrder="56">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="default" xsi:type="number">4</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>number</dataType>
+                <label translate="true">Item Count</label>
+                <notice translate="true">How many products to include</notice>
+                <dataScope>item_count</dataScope>
+                <visible>false</visible>
+                <validation>
+                    <rule name="validate-digits" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+        </field>
+</fieldset>
+
 </form>
