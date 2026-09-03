@@ -49,13 +49,19 @@
              completing to that page at all is itself part of the proof: a held order still lets
              checkout finish (HoldOrderForApproval runs on sales_order_place_after, after the order
              row already exists), so the real distinguishing signal is the status the admin grid
-             shows next, not whether this page was reached. waitForElementVisible before
-             grabTextFrom, not straight to grabTextFrom (which doesn't poll) — confirmed via a
-             real CI run: this order's own checkout finishes fast enough that the order-number
-             span (a separate, knockout.js-bound element from the "Thank you" title PlaceOrder
-             WithLoggedUserActionGroup already waited for) can still be mid-render. -->
-        <waitForElementVisible selector="{{CheckoutSuccessMainSection.orderNumber}}" stepKey="waitForOrderNumber"/>
-        <grabTextFrom selector="{{CheckoutSuccessMainSection.orderNumber}}" stepKey="grabOrderNumber"/>
+             shows next, not whether this page was reached.
+
+             CheckoutSuccessMainSection.orderNumber (the <span> variant) does NOT apply here —
+             confirmed via two real CI runs and reading Magento\Checkout\Block\Onepage\Success's
+             own template: that <span> only renders when canViewOrder() is false, i.e. the
+             order's status is in the store's "invisible on frontend" list (which is exactly
+             where a HELD order's status lives — see AdminRejectOrderViaEmailTest, which reuses
+             that same selector successfully for exactly that reason). THIS order is deliberately
+             never held, so canViewOrder() is true and the template renders a plain
+             <a class="order-number"><strong>ID</strong></a> link instead — orderNumber22 is the
+             correct section element for that variant. -->
+        <waitForElementVisible selector="{{CheckoutSuccessMainSection.orderNumber22}}" stepKey="waitForOrderNumber"/>
+        <grabTextFrom selector="{{CheckoutSuccessMainSection.orderNumber22}}" stepKey="grabOrderNumber"/>
 
         <!-- FilterOrderGridByIdActionGroup navigates to AdminOrdersPage and filters by
              increment ID on its own, no separate navigation/clear-filters steps needed. -->
