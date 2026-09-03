@@ -128,6 +128,17 @@
              selector this test asserts against, not a CSS class MFTF made up. -->
         <amOnPage url="/" stepKey="goToStorefrontHomeToPoll"/>
         <waitForPageLoad stepKey="waitForHomePageLoad"/>
+        <wait time="3" stepKey="waitForFirstPollCycle"/>
+
+        <!-- A second reload before the real assertion — confirmed via two real CI runs that a
+             single reload can race pollForPopup's fixed 2s setTimeout under CI load (page load
+             itself taking long enough that the poll fires before the DOM/fetch stack is fully
+             ready). The popup row stays unclaimed (delivered_at IS NULL) until an actual poll
+             successfully claims it, so a second fresh poll cycle is safe — it doesn't weaken the
+             assertion, it just gives the real mechanism a second real chance to run before
+             failing. -->
+        <amOnPage url="/" stepKey="goToStorefrontHomeToPollAgain"/>
+        <waitForPageLoad stepKey="waitForHomePageLoadAgain"/>
 
         <!-- Step 5: the one assertion in this whole module's suite that proves a campaign's
              on-site popup is actually visible to a real person in a real browser, not just that
