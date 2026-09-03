@@ -34,6 +34,46 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   (`toCanvasPosition()` accounts for Drawflow's own zoom/pan so the node actually lands under the cursor, not wherever
   the canvas happens to be scrolled to), pre-selected in its type dropdown rather than defaulting to whichever option
   sorts first.
+- **Product recommendations.** `add_product_recommendations` campaign action (`Model/Recommendation/ProductRecommender`
+  + `ProductRecommendationRenderer`) computes "customers who bought X also bought Y" co-purchase affinity via raw SQL
+  against `sales_order`/`sales_order_item`, falling back to store-wide best-sellers when the signal is thin, and
+  renders an inline-styled HTML block a `send_email` action later in the same campaign can embed via
+  `{{var recommended_products_html|raw}}` — wired into the shipped `ordo_campaign_generic` template.
+- **Lead scoring.** Demographic-attribute scoring rules (`ordo_score_rule`, admin CRUD, `ScoreRuleEvaluator` matching
+  against core or EAV customer attributes), applied on `customer_save_after` as a delta against the customer's tracked
+  demographic contribution. A `score_threshold_crossed` campaign trigger fires the instant a crossing happens, instead
+  of only being read opportunistically by whatever other trigger already ran. The `attribute_code` field is a
+  searchable dropdown (`Magento_Ui/js/form/element/ui-select`, `filterOptions: true`) sourced from
+  `Model/Config/Source/CustomerAttribute` (every visible `customer`-entity EAV attribute, core columns included, since
+  Magento's customer entity is itself fully EAV-backed) — not a free-text field an admin has to already know the exact
+  attribute code for.
+- **Popup targeting.** Frequency capping and finer-grained triggers: `element_clicked` is a tracked event type (theme
+  calls `window.ordoTrack('element_clicked', 'key')` from its own click handler, same integration pattern as
+  `product_view`/`category_view`), aggregated with its own 1-click-by-default threshold
+  (`Config::getTrackingClickThreshold()`) instead of the 3-view default, flowing through the same visitor-tag →
+  campaign-trigger pipeline every other tracked signal already uses.
+- **Dynamic content blocks.** `ordo_content_block` admin CRUD (`Model/ContentBlock` + `ContentBlockRepository`)
+  authors reusable snippet/RSS/product-feed blocks, resolved by a new `add_dynamic_content` campaign action
+  (`Model/Campaign/Action/AddDynamicContent`) via `Model/ContentBlock/ProducerPool` (`snippet` → raw admin HTML via a
+  WYSIWYG editor — `Magento_Ui`'s own `Wysiwyg` form element, no `Magento_Cms` dependency needed; `rss` → cache-only
+  read of `ordo_content_block_rss_cache`; `product_feed` → `CategoryProductLister`/`RuleProductLister` feeding the
+  existing `ProductRecommendationRenderer`), embedded into `ordo_campaign_generic` via
+  `{{var dynamic_content_html|raw}}` alongside `send_email`. RSS feeds are never fetched at dispatch time — a
+  30-minute `Cron\RefreshRssContentBlocks` job (plus an admin "Refresh now" AJAX action) pulls feeds through
+  `RssFetcher` (bounded HTTP GET, SSRF-hardened against private/reserved addresses, capped response size, capped item
+  count, per-block failure isolation) and only the cache table is read on the request path.
+- **Segments.** Bulk actions on a segment's current members (add tag / add points, resolved via
+  `SegmentMemberResolver` and applied async), a standalone RFM report across the whole customer base
+  (`ordo/rfm/index`, a SQL-paged grid with per-metric quintiles and an "RFM Score" column, e.g. "555" = best on all
+  three), percentile-based RFM conditions (`recency_percentile_at_least` / `order_frequency_percentile_at_least` /
+  `monetary_percentile_at_least`, alongside the original absolute thresholds), and `Cron\RecomputeRfmScores`
+  precomputing percentiles/quintiles nightly into `ordo_customer_rfm_score` so campaign dispatch reads one table
+  instead of ranking the whole customer base live.
+- **Full i18n coverage.** `i18n/en_US.csv`/`pl_PL.csv` previously covered only 29 `system.xml` config strings; rebuilt
+  to the module's full 323-phrase surface (campaign builder, content blocks, score rules, RFM report, admin
+  grids/messages) via `bin/magento i18n:collect-phrases`, and 10 new locale dictionaries added
+  (`de_DE`/`fr_FR`/`es_ES`/`it_IT`/`pt_BR`/`zh_Hans_CN`/`ja_JP`/`ru_RU`/`uk_UA`/`nl_NL`). Machine-translated first
+  pass, not yet human-reviewed per locale.
 
 ### Fixed
 
