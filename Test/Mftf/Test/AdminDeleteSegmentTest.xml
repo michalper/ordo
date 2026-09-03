@@ -42,7 +42,13 @@
              the segment's own name, instead of assuming entity_id=1 (other tests/fixtures in this
              suite create segments too, so id is never a safe assumption). -->
         <grabAttributeFrom selector="//tr[contains(., 'Test Segment To Delete')]//a[contains(@href, 'segment/edit')]" userInput="href" stepKey="grabEditHref"/>
-        <executeJS function="return new URL('{$grabEditHref}').searchParams.get('entity_id');" stepKey="grabEntityId"/>
+        <!-- Magento admin URLs encode params as path segments ("/entity_id/3/"), not a query
+             string — confirmed via a real CI run (33744013815) that new URL(...).searchParams
+             returned nothing and produced a trailing-slash-only delete URL with no id at all.
+             Same regex-on-path approach grabFromCurrentUrl already uses elsewhere in this suite
+             (see e.g. AdminCreateMultiTriggerCampaignTest.xml), just applied to the grabbed href
+             string instead of the current page's own URL. -->
+        <executeJS function="return '{$grabEditHref}'.match(/entity_id\/(\d+)/)[1];" stepKey="grabEntityId"/>
 
         <amOnPage url="admin/ordo/segment/delete/entity_id/{$grabEntityId}" stepKey="deleteSegment"/>
 

@@ -74,5 +74,15 @@
              applies to a held order, proof this normal-total order was never held. -->
         <see selector="{{AdminOrdersGridSection.gridCell('1', 'Status')}}" userInput="Pending" stepKey="seeOrdinaryPendingStatus"/>
         <dontSee selector="{{AdminOrdersGridSection.gridCell('1', 'Status')}}" userInput="Pending Approval" stepKey="dontSeePendingApprovalStatus"/>
+
+        <!-- This test's real order publishes an order_placed dispatch message like any other,
+             but this test never needed to drain it for its own assertions. Left unconsumed, it
+             would sit in the shared DB-driver queue (no RabbitMQ in this CI environment — see
+             AGENTS.md) until some LATER test's own drain call picks it up and replays it against
+             whatever campaigns exist AT THAT LATER TIME — a stale-message leak across tests, the
+             same class of bug AdminCampaignMultipleConditionsAndTest.xml's own over-ask comments
+             already defend against from the receiving end. Draining here closes it at the
+             source instead. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainCampaignDispatchQueue"/>
     </test>
 </tests>

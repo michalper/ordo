@@ -20,7 +20,10 @@
         </after>
 
         <!-- Step 1: same demographic score rule setup as AdminSegmentBulkActionAddTagTest.xml —
-             80 points is comfortably above the score_at_least threshold used below. -->
+             80 points is comfortably above the score_at_least threshold used below. "Save &amp;
+             Continue Edit" (not the plain "save" button AdminSegmentBulkActionAddTagTest.xml
+             uses), specifically to grab this rule's own entity_id for cleanup in <after> above —
+             see that step's own comment for why this test cleans up where the sibling doesn't. -->
         <amOnPage url="admin/ordo/scorerule/new" stepKey="goToNewScoreRulePage"/>
         <waitForPageLoad stepKey="waitForNewScoreRulePage"/>
         <waitForElementVisible selector="[name='attribute_code']" stepKey="waitForAttributeCodeField"/>
@@ -28,9 +31,10 @@
         <selectOption selector="[name='operator']" userInput="equals" stepKey="selectOperator"/>
         <fillField selector="[name='value']" userInput="1" stepKey="fillValue"/>
         <fillField selector="[name='points']" userInput="80" stepKey="fillPoints"/>
-        <click selector="#save" stepKey="clickSaveScoreRule"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveScoreRule"/>
         <waitForPageLoad stepKey="waitForScoreRuleSave"/>
         <see selector=".message-success" userInput="The score rule has been saved." stepKey="seeScoreRuleSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabScoreRuleId"/>
 
         <!-- Step 2: the segment — same score_at_least condition and Save & Continue Edit
              convention as AdminSegmentBulkActionAddTagTest.xml, for the same reasons (stay on
@@ -85,5 +89,18 @@
             <argument name="email">$createCustomer.email$</argument>
             <argument name="minScore">25</argument>
         </helper>
+
+        <!-- Cleanup: the demographic score rule above applies to every group_id=1 (General)
+             customer created for the REST of this same CI job, not just this test's own —
+             confirmed via a real CI run (33744013815): AdminSegmentBulkActionAddTagTest.xml's
+             own, independently-created score rule started reporting 2 matching customers
+             instead of 1 once this test's rule existed alongside it, both being unscoped
+             group_id=1 demographic rules stacking on every General customer in the job. Deleted
+             here (not in <after>, which runs as a separate hook method with no guaranteed
+             access to a step grabbed in the test body) so it can't collide with whatever
+             similar test runs next. -->
+        <amOnPage url="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleId}" stepKey="deleteScoreRule"/>
+        <waitForPageLoad stepKey="waitForScoreRuleDelete"/>
+        <see selector=".message-success" userInput="The score rule has been deleted." stepKey="seeScoreRuleDeleteSuccessMessage"/>
     </test>
 </tests>

@@ -72,5 +72,11 @@
         <amOnUrl url="{$grabRejectUrl}" stepKey="followRejectLinkAgain"/>
         <waitForPageLoad stepKey="waitForSecondRedirect"/>
         <see selector=".message-error" userInput="already been used or is invalid" stepKey="seeAlreadyUsedMessage"/>
+
+        <!-- Same reasoning as AdminOrderUnderSpendLimitNotHeldTest.xml's identical closing
+             step: this test's real order publishes an order_placed dispatch message it never
+             needed to drain for its own assertions, which would otherwise leak into a LATER
+             test's queue drain and replay against whatever campaigns exist by then. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainCampaignDispatchQueue"/>
     </test>
 </tests>

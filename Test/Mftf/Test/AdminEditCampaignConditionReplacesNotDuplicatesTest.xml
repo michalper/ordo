@@ -57,7 +57,7 @@
              by hasCampaign() being false. -->
         <amOnPage url="admin/ordo/campaign/edit/entity_id/{$grabCampaignId}/" stepKey="goToEditPage"/>
         <waitForPageLoad stepKey="waitForEditPage"/>
-        <executeJS function="require(['uiRegistry'], function (uiRegistry) { ['conditions_fieldset', 'actions_fieldset'].forEach(function (fieldsetName) { uiRegistry.get('ordo_campaign_form.ordo_campaign_form.' + fieldsetName, function (fieldset) { fieldset.visible(true); }); }); });" stepKey="forceFieldsetsVisible"/>
+        <executeJS function="require(['uiRegistry'], function (uiRegistry) { ['conditions_fieldset', 'actions_fieldset'].forEach(function (fieldsetName) { uiRegistry.get('ordo_campaign_form.ordo_campaign_form.' + fieldsetName, function (fieldset) { fieldset.visible(true); fieldset.opened(true); }); }); });" stepKey="forceFieldsetsVisible"/>
 
         <!-- Confirm the pre-edit state actually round-tripped from the DB (one row, the
              original type) before changing anything — otherwise a false pass could just mean
@@ -83,7 +83,7 @@
              stale order_total_gte type still in it. -->
         <amOnPage url="admin/ordo/campaign/edit/entity_id/{$grabCampaignId}/" stepKey="goToEditPageAfterEdit"/>
         <waitForPageLoad stepKey="waitForEditPageAfterEdit"/>
-        <executeJS function="require(['uiRegistry'], function (uiRegistry) { ['conditions_fieldset', 'actions_fieldset'].forEach(function (fieldsetName) { uiRegistry.get('ordo_campaign_form.ordo_campaign_form.' + fieldsetName, function (fieldset) { fieldset.visible(true); }); }); });" stepKey="forceFieldsetsVisibleAfterEdit"/>
+        <executeJS function="require(['uiRegistry'], function (uiRegistry) { ['conditions_fieldset', 'actions_fieldset'].forEach(function (fieldsetName) { uiRegistry.get('ordo_campaign_form.ordo_campaign_form.' + fieldsetName, function (fieldset) { fieldset.visible(true); fieldset.opened(true); }); }); });" stepKey="forceFieldsetsVisibleAfterEdit"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRowAfterEdit"/>
         <seeOptionIsSelected selector="[name='conditions[conditions][0][type]']" userInput="score_at_least" stepKey="seeNewConditionTypePersisted"/>
         <dontSeeElement selector="[name='conditions[conditions][1][type]']" stepKey="dontSeeSecondConditionRowAfterEdit"/>

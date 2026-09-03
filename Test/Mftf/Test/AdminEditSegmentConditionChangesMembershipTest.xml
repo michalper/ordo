@@ -9,7 +9,6 @@
             <description value="Sibling to AdminCampaignInSegmentConditionTest.xml, which proves a segment is a live query rather than a cached snapshot by changing the CUSTOMER's data between two dispatches. This proves the same liveness the other direction: changing the SEGMENT's own condition (via Segment/Save.php's edit path, not creation) changes who matches on the very next dispatch, with the customer's own data held constant throughout. One campaign, one customer: the segment starts with a condition (tag=vip) the customer never satisfies, so Campaign C's in_segment condition fails on order 1's dispatch and no coupon is generated; the segment is then edited to a condition (order_total_gte, an amount the customer's order total already clears) the customer DOES satisfy, and order 2's dispatch — same customer, same in_segment campaign, same order amount — now succeeds. Only SegmentMatcher re-running the segment's freshly-saved condition rows at dispatch time, not a cached membership result from segment creation, can explain the coupon appearing after the edit and not before."/>
             <severity value="MAJOR"/>
             <group value="ordo_automation"/>
-            <group value="campaign"/>
             <group value="segment"/>
         </annotations>
         <before>
@@ -121,6 +120,15 @@
              re-registration — only the segment's own row changes. -->
         <amOnPage url="admin/ordo/segment/edit/entity_id/{$grabSegmentId}" stepKey="goToEditSegmentPage"/>
         <waitForPageLoad stepKey="waitForEditSegmentPage"/>
+        <!-- ordo_segment_form.xml's own form-level template ("templates/form/collapsible")
+             renders conditions_fieldset collapsed (Magento_Ui's fieldset component defaults
+             collapsible fieldsets to opened=false) on a fresh page load — the exact pitfall
+             AdminCreateSegmentWithMultipleConditionsTest.xml and AdminSegmentBulkActionAddTagTest.xml
+             both already document and deliberately avoid by never reading the fields back after
+             a reload. This test needs to, so force it open the same way
+             AdminEditCampaignConditionReplacesNotDuplicatesTest.xml forces the campaign form's
+             own hidden fieldsets visible: directly via uiRegistry, not a fragile header click. -->
+        <executeJS function="require(['uiRegistry'], function (uiRegistry) { uiRegistry.get('ordo_segment_form.ordo_segment_form.conditions_fieldset', function (fieldset) { fieldset.opened(true); }); });" stepKey="expandConditionsFieldset"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForExistingConditionRow"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="changeSegmentConditionType"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][amount]']" stepKey="waitForAmountField"/>
