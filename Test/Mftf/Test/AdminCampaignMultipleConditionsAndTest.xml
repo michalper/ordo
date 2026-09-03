@@ -68,6 +68,13 @@
              AdminCampaignScenarioEndToEndTest.xml's identical amount. -->
         <fillField selector="[name='conditions[conditions][0][amount]']" userInput="50" stepKey="fillConditionAmountB0"/>
 
+        <!-- A real CI run showed row 0's amount field ending up as "500" in the database and
+             row 1 missing entirely — confirmed via a direct DB dump, not assumed — consistent
+             with clicking "Add Condition" again before the dynamicRows JS had fully settled
+             after row 0's own fill/blur. A short settle wait here is the same defensive pattern
+             already used elsewhere in this suite for JS-heavy dynamicRows/scroll interactions
+             (see e.g. AddToCartFromStorefrontProductPageActionGroup's own scroll-settle wait). -->
+        <wait time="1" stepKey="waitForRow0ToSettle"/>
         <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRowB1"/>
         <waitForElementVisible selector="[name='conditions[conditions][1][type]']" stepKey="waitForConditionRowB1"/>
         <selectOption selector="[name='conditions[conditions][1][type]']" userInput="tag" stepKey="selectConditionTypeB1"/>
