@@ -10,6 +10,7 @@ use Ordo\Automation\Model\Sms\TwilioSmsSender;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Twilio\AuthStrategy\AuthStrategy;
+use Twilio\Exceptions\TwilioException;
 use Twilio\Http\Client as TwilioHttpClient;
 use Twilio\Http\Response as TwilioHttpResponse;
 
@@ -138,6 +139,52 @@ class TwilioSmsSenderTest extends TestCase
         $this->expectException(OptedOutException::class);
 
         $this->makeSenderWithFakeHttpClient($httpClient)->send('+15551234567', 'hello there');
+    }
+
+    private function makeThrowingHttpClient(TwilioException $exception): TwilioHttpClient
+    {
+        return new class ($exception) implements TwilioHttpClient {
+            public function __construct(private readonly TwilioException $exception)
+            {
+            }
+
+            public function request(
+                string $method,
+                string $url,
+                array $params = [],
+                array $data = [],
+                array $headers = [],
+                ?string $user = null,
+                ?string $password = null,
+                ?int $timeout = null,
+                ?AuthStrategy $authStrategy = null
+            ): TwilioHttpResponse {
+                throw $this->exception;
+            }
+        };
+    }
+
+    public function testNonRestTwilioExceptionLogsAndThrowsRuntimeException(): void
+    {
+        $httpClient = $this->makeThrowingHttpClient(new TwilioException('Could not connect to Twilio'));
+        $this->logger->expects(self::once())->method('error')
+            ->with(self::stringContains('Could not connect to Twilio'));
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Failed to reach the Twilio API.');
+
+        $this->makeSenderWithFakeHttpClient($httpClient)->send('+15551234567', 'hello there');
+    }
+
+    public function testMakeHttpClientDefaultsToNullLettingSdkUseItsOwnClient(): void
+    {
+        $this->logger->expects(self::never())->method('error');
+
+        $sender = new TwilioSmsSender($this->config, $this->callbackUrlBuilder, $this->logger);
+
+        $method = new \ReflectionMethod($sender, 'makeHttpClient');
+
+        self::assertNull($method->invoke($sender));
     }
 
     public function testOtherRestErrorLogsAndThrowsRuntimeException(): void

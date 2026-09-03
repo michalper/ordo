@@ -35,6 +35,29 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isFreeGiftEnabled());
         self::assertTrue($this->config->isCreditLimitCheckoutBlockEnabled());
         self::assertTrue($this->config->isLeadScoringEnabled());
+        self::assertTrue($this->config->isSmsEnabled());
+    }
+
+    public function testTwilioGettersDelegateToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_automation/sms/twilio_account_sid', 'store', null, 'AC123'],
+            ['ordo_automation/sms/twilio_auth_token', 'store', null, 'secret-token'],
+            ['ordo_automation/sms/twilio_from_number', 'store', null, '+15550001111'],
+        ]);
+
+        self::assertSame('AC123', $this->config->getTwilioAccountSid());
+        self::assertSame('secret-token', $this->config->getTwilioAuthToken());
+        self::assertSame('+15550001111', $this->config->getTwilioFromNumber());
+    }
+
+    public function testTwilioGettersReturnEmptyStringWhenUnset(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn(null);
+
+        self::assertSame('', $this->config->getTwilioAccountSid());
+        self::assertSame('', $this->config->getTwilioAuthToken());
+        self::assertSame('', $this->config->getTwilioFromNumber());
     }
 
     public function testIntGettersUseDefaultWhenUnset(): void
