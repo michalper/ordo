@@ -49,6 +49,7 @@ class DataProvider extends AbstractDataProvider
         foreach ($this->collection->getItems() as $contentBlock) {
             /** @var \Ordo\Automation\Model\ContentBlock $contentBlock */
             $blockId = (int) $contentBlock->getEntityId();
+            // phpcs:ignore Magento2.Performance.ForeachArrayMerge.ForeachArrayMerge
             $this->loadedData[$blockId] = array_merge($contentBlock->getData(), $contentBlock->getConfigArray());
         }
 

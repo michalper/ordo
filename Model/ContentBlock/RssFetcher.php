@@ -117,6 +117,8 @@ class RssFetcher
      */
     private function assertSafeUrl(string $feedUrl): void
     {
+        // No Magento core alternative extracts scheme/host from an arbitrary string without a network call.
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         $parts = parse_url($feedUrl);
         $scheme = strtolower((string) ($parts['scheme'] ?? ''));
         $host = strtolower((string) ($parts['host'] ?? ''));

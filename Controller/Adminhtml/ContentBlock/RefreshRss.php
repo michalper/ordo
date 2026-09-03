@@ -8,6 +8,7 @@ use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\Controller\Result\Json;
 use Magento\Framework\Controller\Result\JsonFactory;
+use Ordo\Automation\Model\ContentBlock;
 use Ordo\Automation\Model\ContentBlock\RssFetcher;
 use Ordo\Automation\Model\ContentBlockRepository;
 
@@ -39,7 +40,7 @@ class RefreshRss extends Action implements HttpPostActionInterface
         $blockId = (int) $this->getRequest()->getParam('content_block_id');
 
         $block = $blockId > 0 ? $this->contentBlockRepository->getById($blockId) : null;
-        if ($block === null) {
+        if (!$block instanceof ContentBlock) {
             return $result->setData([
                 'success' => false,
                 'message' => (string) __('Content block not found.'),

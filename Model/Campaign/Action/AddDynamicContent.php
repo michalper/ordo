@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Ordo\Automation\Model\Campaign\Action;
 
 use Ordo\Automation\Api\Campaign\ActionInterface;
+use Ordo\Automation\Model\ContentBlock;
+use Ordo\Automation\Model\ContentBlock\Producer\ProducerInterface;
 use Ordo\Automation\Model\ContentBlock\ProducerPool;
 use Ordo\Automation\Model\ContentBlockRepository;
 
@@ -35,12 +37,12 @@ class AddDynamicContent implements ActionInterface
         }
 
         $block = $this->contentBlockRepository->getById($blockId);
-        if ($block === null || !$block->isEnabled()) {
+        if (!$block instanceof ContentBlock || !$block->isEnabled()) {
             $context[$outputKey] = '';
             return;
         }
 
         $producer = $this->producerPool->get($block->getType());
-        $context[$outputKey] = $producer !== null ? $producer->render($block) : '';
+        $context[$outputKey] = $producer instanceof ProducerInterface ? $producer->render($block) : '';
     }
 }

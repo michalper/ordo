@@ -25,6 +25,12 @@ parameters:
 			path: Block/Adminhtml/Campaign/Edit/Flow.php
 
 		-
+			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Block/Adminhtml/Campaign/Edit/Flow.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
@@ -89,6 +95,78 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Controller/Adminhtml/Campaign/Save.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Adminhtml/ContentBlock/Delete.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/ContentBlock/Edit.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Adminhtml/ContentBlock/Edit.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/ContentBlock/Edit.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/ContentBlock/Index.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/ContentBlock/Index.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Controller\\Adminhtml\\ContentBlock\\NewAction\:\:execute\(\) should return Magento\\Framework\\App\\ResponseInterface\|Magento\\Framework\\Controller\\ResultInterface but returns null\.$#'
+			identifier: return.type
+			count: 1
+			path: Controller/Adminhtml/ContentBlock/NewAction.php
+
+		-
+			message: '#^Result of method Magento\\Backend\\App\\AbstractAction\:\:_forward\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: Controller/Adminhtml/ContentBlock/NewAction.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Adminhtml/ContentBlock/RefreshRss.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getPostValue\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/ContentBlock/Save.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 3
+			path: Controller/Adminhtml/ContentBlock/Save.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
+			path: Controller/Adminhtml/ContentBlock/Save.php
 
 		-
 			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
@@ -367,6 +445,18 @@ parameters:
 			path: Cron/EscalateStalePendingApprovals.php
 
 		-
+			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Cron/RefreshRssContentBlocks.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and false will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: Cron/RefreshRssContentBlocks.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
@@ -437,6 +527,18 @@ parameters:
 			identifier: cast.string
 			count: 3
 			path: Model/AbstractNamedToggleableEntityModel.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Campaign/Action/AddDynamicContent.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/Campaign/Action/AddDynamicContent.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -881,6 +983,126 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: Model/Config/Source/ConditionType.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/ContentBlock.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 4
+			path: Model/ContentBlock.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\ContentBlock\:\:getConfigArray\(\) should return array\<string, mixed\> but returns array\<mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/ContentBlock.php
+
+		-
+			message: '#^Cannot call method getSku\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/ContentBlock/CategoryProductLister.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/ContentBlock/CategoryProductLister.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/ContentBlock/DataProvider.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\ContentBlock\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/ContentBlock/DataProvider.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\ContentBlock\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\<int, array\<mixed\>\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/ContentBlock/DataProvider.php
+
+		-
+			message: '#^Parameter \#1 \.\.\.\$arrays of function array_merge expects array, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/ContentBlock/DataProvider.php
+
+		-
+			message: '#^Property Ordo\\Automation\\Model\\ContentBlock\\DataProvider\:\:\$loadedData type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Model/ContentBlock/DataProvider.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 3
+			path: Model/ContentBlock/Producer/ProductFeedProducer.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/ContentBlock/Producer/ProductFeedProducer.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and false will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: Model/ContentBlock/Producer/RssProducer.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/ContentBlock/Producer/SnippetProducer.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/ContentBlock/RssFetcher.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/ContentBlock/RssFetcher.php
+
+		-
+			message: '#^Parameter \#1 \$name of method Magento\\Framework\\HTTP\\Client\\Curl\:\:setOption\(\) expects string, int given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Model/ContentBlock/RssFetcher.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Rule\\Model\\Action\\Collection\:\:validate\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Model/ContentBlock/RuleProductLister.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/ContentBlock/RuleProductLister.php
+
+		-
+			message: '#^Use service contracts to persist entities in favour of Magento\\SalesRule\\Model\\Rule\:\:load\(\) method$#'
+			identifier: bitExpertMagento.abstractModelUseServiceContract
+			count: 1
+			path: Model/ContentBlock/RuleProductLister.php
 
 		-
 			message: '#^Cannot cast mixed to float\.$#'
