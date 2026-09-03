@@ -43,6 +43,7 @@ $offers = $viewModel->getOffers();
                         </td>
                         <td data-th="<?= $escaper->escapeHtmlAttr(__('Actions')) ?>">
                             <?php if ($viewModel->canSelfExtend($offer)): ?>
+                                <?php $extendLabel = __('Extend by %1 day(s)', $viewModel->getSelfExtensionDays()); ?>
                                 <form
                                     method="post"
                                     action="<?= $escaper->escapeUrl($block->getUrl('ordo/offer/extend')) ?>"
@@ -50,9 +51,7 @@ $offers = $viewModel->getOffers();
                                     <?= $block->getBlockHtml('formkey') ?>
                                     <input type="hidden" name="offer_id" value="<?= (int) $offer->getEntityId() ?>"/>
                                     <button type="submit" class="action extend primary">
-                                        <span><?= $escaper->escapeHtml(
-                                            __('Extend by %1 day(s)', $viewModel->getSelfExtensionDays())
-                                        ) ?></span>
+                                        <span><?= $escaper->escapeHtml($extendLabel) ?></span>
                                     </button>
                                 </form>
                             <?php else: ?>
