@@ -57,6 +57,19 @@
         <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRow"/>
         <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="score_threshold_crossed" stepKey="selectTriggerEvent"/>
 
+        <!-- Unlike every other campaign test in this suite, this one has no Condition step
+             between selecting the trigger and clicking "Add Action" (deliberately — see this
+             test's own description on the empty conditions list). Every other test's Add
+             Condition step naturally absorbs the trigger select's own change-event re-render
+             before Add Action is ever clicked; here there's nothing in between, so the click can
+             land while the dynamicRows table is still reflowing from the trigger row having just
+             been added, missing the real "Add Action" button. Confirmed via a real CI screenshot
+             showing the Actions table still empty right after this click. A short settle wait
+             closes that race — waitForPageLoad wouldn't help here since document.readyState is
+             already "complete" (no navigation happens on a dynamicRows mutation), so this needs
+             a real timed settle, not a readyState check. -->
+        <wait time="1" stepKey="waitForTriggerRowSettle"/>
+
         <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRow"/>
         <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRow"/>
         <selectOption selector="[name='actions[actions][0][type]']" userInput="generate_coupon" stepKey="selectActionType"/>
