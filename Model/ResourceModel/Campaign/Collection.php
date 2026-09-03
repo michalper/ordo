@@ -26,6 +26,14 @@ class Collection extends AbstractCollection
     public function addIdsFilter(array $campaignIds): self
     {
         $this->addFieldToFilter('entity_id', ['in' => $campaignIds]);
+        // A "WHERE entity_id IN (...)" query has no guaranteed row order on its own — MySQL
+        // usually returns clustered-index (entity_id ascending) order in practice, but nothing
+        // enforces it. Model/CampaignDispatcher.php's dispatch() evaluates every campaign
+        // matched to one trigger in a single foreach, and its own docblock documents ascending
+        // entity_id as the evaluation order (older campaigns' actions - e.g. a tag - can be
+        // seen by a younger campaign's conditions in that same pass, not the reverse). Make
+        // that order explicit instead of relying on undocumented MySQL/InnoDB behavior.
+        $this->setOrder('entity_id', self::SORT_ORDER_ASC);
         return $this;
     }
 }
