@@ -446,5 +446,28 @@
             <column name="customer_id"/>
         </constraint>
     </table>
+    <table name="ordo_content_block" resource="default" engine="innodb" comment="A reusable, admin-authored piece of email content — static HTML snippet, RSS-newsletter feed, or product listing feed — resolvable by a campaign's add_dynamic_content action so the same block can be reused across many campaigns">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="identifier" nullable="false" length="64" comment="Unique machine identifier"/>
+        <column xsi:type="varchar" name="name" nullable="false" length="255" comment="Admin-facing display name"/>
+        <column xsi:type="varchar" name="type" nullable="false" length="32" comment="Content producer type: snippet, rss, product_feed — matches Model\ContentBlock\ProducerPool registration"/>
+        <column xsi:type="text" name="config" nullable="true" comment="JSON-encoded type-specific config: snippet {html}; rss {feed_url, item_count}; product_feed {source: category|rule, category_id, rule_id, item_count}"/>
+        <column xsi:type="boolean" name="enabled" nullable="false" default="1" comment="Whether this block can currently be resolved by a campaign action"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY"><column name="entity_id"/></constraint>
+        <constraint xsi:type="unique" referenceId="ORDO_CONTENT_BLOCK_IDENTIFIER"><column name="identifier"/></constraint>
+    </table>
+
+    <table name="ordo_content_block_rss_cache" resource="default" engine="innodb" comment="Last successfully fetched+rendered HTML for an RSS-type content block, refreshed every 30 min by Cron\RefreshRssContentBlocks — dispatch-time reads never hit the network">
+        <column xsi:type="int" name="content_block_id" padding="10" unsigned="true" nullable="false" comment="ordo_content_block.entity_id"/>
+        <column xsi:type="text" name="rendered_html" nullable="false" comment="Cached inline-styled HTML fragment ready to embed in an email"/>
+        <column xsi:type="timestamp" name="fetched_at" nullable="false" default="CURRENT_TIMESTAMP" comment="When this feed was last successfully fetched and rendered"/>
+        <column xsi:type="varchar" name="fetch_error" nullable="true" length="255" comment="Last fetch error message, kept for admin diagnostics even though stale rendered_html is still served"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY"><column name="content_block_id"/></constraint>
+        <constraint xsi:type="foreign" referenceId="ORDO_CONTENT_BLOCK_RSS_CACHE_CONTENT_BLOCK_ID_CONTENT_BLOCK_ENTITY_ID"
+                    table="ordo_content_block_rss_cache" column="content_block_id"
+                    referenceTable="ordo_content_block" referenceColumn="entity_id" onDelete="CASCADE"/>
+    </table>
 
 </schema>

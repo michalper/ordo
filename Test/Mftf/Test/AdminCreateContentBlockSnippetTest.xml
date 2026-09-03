@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCreateContentBlockSnippetTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Dynamic content blocks"/>
+            <title value="Admin can create a snippet-type content block via the WYSIWYG-enabled form"/>
+            <description value="Covers the new ordo_content_block admin CRUD (Model/ContentBlock + Controller/Adminhtml/ContentBlock/*): create a snippet block, save it, and confirm it appears in the grid. The html field renders as a real WYSIWYG editor (Magento_Ui/js/form/element/wysiwyg, see ordo_contentblock_form.xml) — WYSIWYG is disabled globally first via the same standard MFTF approach Magento_Cms's own tests use (config:set cms/wysiwyg/enabled disabled), so the field falls back to a plain textarea fillField can target directly, same technique as every other admin form fill in this suite."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="campaign"/>
+        </annotations>
+        <before>
+            <magentoCLI command="config:set cms/wysiwyg/enabled disabled" stepKey="disableWysiwyg"/>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <magentoCLI command="config:set cms/wysiwyg/enabled enabled" stepKey="reenableWysiwyg"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <amOnPage url="admin/ordo/contentblock/new" stepKey="goToNewContentBlockPage"/>
+        <waitForPageLoad stepKey="waitForNewContentBlockPage"/>
+
+        <!-- Same cold-first-load lag other admin forms in this suite wait out (see
+             AdminCreateCampaignTest.xml's comment on the same pattern). -->
+        <waitForElementVisible selector="[name='identifier']" stepKey="waitForIdentifierField"/>
+        <fillField selector="[name='identifier']" userInput="test_snippet_block" stepKey="fillIdentifier"/>
+        <fillField selector="[name='name']" userInput="Test Snippet Block" stepKey="fillName"/>
+
+        <!-- Selecting "snippet" fires the type field's switcherConfig, revealing the html field
+             (see ordo_contentblock_form.xml) — everything else (feed_url, source, etc.) stays
+             hidden, same conditionally-visible-field technique the campaign/segment forms use. -->
+        <selectOption selector="[name='type']" userInput="snippet" stepKey="selectSnippetType"/>
+        <waitForElementVisible selector="[name='html']" stepKey="waitForHtmlField"/>
+        <fillField selector="[name='html']" userInput="&lt;p&gt;ORDO-DYNAMIC-CONTENT-MARKER&lt;/p&gt;" stepKey="fillHtml"/>
+
+        <!-- Same toggle-switch checkbox as the campaign/segment forms' "enabled" field — the
+             real &lt;input&gt; is visually covered by its own wrapper, click the label instead. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableContentBlock"/>
+
+        <click selector="#save" stepKey="clickSave"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The content block has been saved." stepKey="seeSuccessMessage"/>
+
+        <amOnPage url="admin/ordo/contentblock/index" stepKey="goToContentBlockGrid"/>
+        <waitForPageLoad stepKey="waitForGrid"/>
+        <see selector="table.data-grid" userInput="Test Snippet Block" stepKey="seeContentBlockInGrid"/>
+        <see selector="table.data-grid" userInput="test_snippet_block" stepKey="seeIdentifierInGrid"/>
+    </test>
+</tests>

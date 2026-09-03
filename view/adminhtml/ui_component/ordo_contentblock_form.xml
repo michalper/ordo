@@ -1,0 +1,364 @@
+<?xml version="1.0"?>
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">ordo_contentblock_form.ordo_contentblock_form_data_source</item>
+        </item>
+        <item name="label" xsi:type="string" translate="true">Content Block Information</item>
+        <item name="template" xsi:type="string">templates/form/collapsible</item>
+    </argument>
+    <settings>
+        <buttons>
+            <button name="back" class="Ordo\Automation\Block\Adminhtml\ContentBlock\Edit\BackButton"/>
+            <button name="delete" class="Ordo\Automation\Block\Adminhtml\ContentBlock\Edit\DeleteButton"/>
+            <button name="refresh_rss" class="Ordo\Automation\Block\Adminhtml\ContentBlock\Edit\RefreshRssButton"/>
+            <button name="save" class="Ordo\Automation\Block\Adminhtml\ContentBlock\Edit\SaveButton"/>
+            <button name="save_and_continue" class="Ordo\Automation\Block\Adminhtml\ContentBlock\Edit\SaveAndContinueButton"/>
+        </buttons>
+        <namespace>ordo_contentblock_form</namespace>
+        <dataScope>data</dataScope>
+        <deps>
+            <dep>ordo_contentblock_form.ordo_contentblock_form_data_source</dep>
+        </deps>
+    </settings>
+
+    <dataSource name="ordo_contentblock_form_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Ordo\Automation\Model\ContentBlock\DataProvider</argument>
+            <argument name="name" xsi:type="string">ordo_contentblock_form_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">entity_id</argument>
+            <argument name="requestFieldName" xsi:type="string">entity_id</argument>
+        </argument>
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/form/provider</item>
+            </item>
+        </argument>
+        <settings>
+            <submitUrl path="ordo/contentblock/save"/>
+        </settings>
+    </dataSource>
+
+    <fieldset name="general">
+        <settings>
+            <label translate="true">General</label>
+        </settings>
+        <field name="entity_id" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <visible>false</visible>
+            </settings>
+        </field>
+        <field name="identifier" formElement="input" sortOrder="10">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Identifier</label>
+                <notice translate="true">Unique machine identifier, referenced by a campaign's "Add Dynamic Content" action</notice>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+        </field>
+        <field name="name" formElement="input" sortOrder="20">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Name</label>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+        </field>
+        <field name="type" formElement="select" sortOrder="30">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Type</label>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+                <switcherConfig>
+                    <enabled>true</enabled>
+                    <rules>
+                        <rule name="0">
+                            <value>snippet</value>
+                            <actions>
+                                <action name="0">
+                                    <target>${ $.parentName }.html</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">true</param></params>
+                                </action>
+                                <action name="1">
+                                    <target>${ $.parentName }.feed_url</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">false</param></params>
+                                </action>
+                                <action name="2">
+                                    <target>${ $.parentName }.rss_item_count</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">false</param></params>
+                                </action>
+                                <action name="3">
+                                    <target>${ $.parentName }.source</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">false</param></params>
+                                </action>
+                                <action name="4">
+                                    <target>${ $.parentName }.category_id</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">false</param></params>
+                                </action>
+                                <action name="5">
+                                    <target>${ $.parentName }.rule_id</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">false</param></params>
+                                </action>
+                                <action name="6">
+                                    <target>${ $.parentName }.product_feed_item_count</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">false</param></params>
+                                </action>
+                            </actions>
+                        </rule>
+                        <rule name="1">
+                            <value>rss</value>
+                            <actions>
+                                <action name="0">
+                                    <target>${ $.parentName }.html</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">false</param></params>
+                                </action>
+                                <action name="1">
+                                    <target>${ $.parentName }.feed_url</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">true</param></params>
+                                </action>
+                                <action name="2">
+                                    <target>${ $.parentName }.rss_item_count</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">true</param></params>
+                                </action>
+                                <action name="3">
+                                    <target>${ $.parentName }.source</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">false</param></params>
+                                </action>
+                                <action name="4">
+                                    <target>${ $.parentName }.category_id</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">false</param></params>
+                                </action>
+                                <action name="5">
+                                    <target>${ $.parentName }.rule_id</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">false</param></params>
+                                </action>
+                                <action name="6">
+                                    <target>${ $.parentName }.product_feed_item_count</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">false</param></params>
+                                </action>
+                            </actions>
+                        </rule>
+                        <rule name="2">
+                            <value>product_feed</value>
+                            <actions>
+                                <action name="0">
+                                    <target>${ $.parentName }.html</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">false</param></params>
+                                </action>
+                                <action name="1">
+                                    <target>${ $.parentName }.feed_url</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">false</param></params>
+                                </action>
+                                <action name="2">
+                                    <target>${ $.parentName }.rss_item_count</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">false</param></params>
+                                </action>
+                                <action name="3">
+                                    <target>${ $.parentName }.source</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">true</param></params>
+                                </action>
+                                <action name="4">
+                                    <target>${ $.parentName }.product_feed_item_count</target>
+                                    <callback>visible</callback>
+                                    <params><param name="0" xsi:type="boolean">true</param></params>
+                                </action>
+                            </actions>
+                        </rule>
+                    </rules>
+                </switcherConfig>
+            </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options class="Ordo\Automation\Model\Config\Source\ContentBlockType"/>
+                    </settings>
+                </select>
+            </formElements>
+        </field>
+        <field name="enabled" formElement="checkbox" sortOrder="40">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="default" xsi:type="number">1</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>boolean</dataType>
+                <label translate="true">Enabled</label>
+            </settings>
+            <formElements>
+                <checkbox>
+                    <settings>
+                        <valueMap>
+                            <map name="false" xsi:type="number">0</map>
+                            <map name="true" xsi:type="number">1</map>
+                        </valueMap>
+                        <prefer>toggle</prefer>
+                    </settings>
+                </checkbox>
+            </formElements>
+        </field>
+    </fieldset>
+
+    <!--
+        Type-specific fields, all in the same "general" flow but toggled by the "type" field's
+        switcherConfig above rather than split into a Segment-style dynamicRows repeater — a
+        content block has exactly one type at a time, not a list of condition rows, so a plain
+        set of conditionally-visible fields (same technique ordo_campaign_form.xml uses for its
+        condition/action "value"-typed fields) is the right shape here, not dynamicRows.
+    -->
+    <!--
+        Magento_Ui/js/form/element/wysiwyg + Magento\Ui\Component\Form\Element\Wysiwyg — the
+        WYSIWYG form element is part of Magento_Ui itself (see
+        vendor/magento/module-ui/view/base/ui_component/etc/definition.xml's <wysiwyg> entry),
+        not Magento_Cms, so no new module dependency is needed here. Magento_Ui ships its own
+        default Magento\Ui\Component\Wysiwyg\Config implementation of the ConfigInterface this
+        element requires (module-ui/etc/di.xml), so the editor renders as a plain TinyMCE
+        instance with no CMS-specific directive/widget-insert buttons — exactly what an
+        admin-authored trusted HTML snippet needs, without pulling in Magento_Cms.
+    -->
+    <field name="html" formElement="wysiwyg" sortOrder="50">
+        <settings>
+            <dataType>text</dataType>
+            <label translate="true">HTML</label>
+            <notice translate="true">Raw HTML to embed for a "snippet" block.</notice>
+            <visible>false</visible>
+        </settings>
+        <formElements>
+            <wysiwyg>
+                <settings>
+                    <wysiwyg>true</wysiwyg>
+                </settings>
+            </wysiwyg>
+        </formElements>
+    </field>
+    <field name="feed_url" formElement="input" sortOrder="51">
+        <settings>
+            <dataType>text</dataType>
+            <label translate="true">Feed URL</label>
+            <notice translate="true">RSS 2.0 feed URL, refetched every 30 minutes by cron (or on demand via "Refresh Feed Now")</notice>
+            <visible>false</visible>
+            <validation>
+                <rule name="validate-url" xsi:type="boolean">true</rule>
+            </validation>
+        </settings>
+    </field>
+    <field name="rss_item_count" formElement="input" sortOrder="52" dataScope="item_count">
+        <argument name="data" xsi:type="array">
+            <item name="config" xsi:type="array">
+                <item name="default" xsi:type="number">5</item>
+            </item>
+        </argument>
+        <settings>
+            <dataType>number</dataType>
+            <label translate="true">Item Count</label>
+            <notice translate="true">How many feed items to include</notice>
+            <visible>false</visible>
+            <validation>
+                <rule name="validate-digits" xsi:type="boolean">true</rule>
+            </validation>
+        </settings>
+    </field>
+    <field name="source" formElement="select" sortOrder="53">
+        <settings>
+            <dataType>text</dataType>
+            <label translate="true">Source</label>
+            <visible>false</visible>
+            <switcherConfig>
+                <enabled>true</enabled>
+                <rules>
+                    <rule name="0">
+                        <value>category</value>
+                        <actions>
+                            <action name="0">
+                                <target>${ $.parentName }.category_id</target>
+                                <callback>visible</callback>
+                                <params><param name="0" xsi:type="boolean">true</param></params>
+                            </action>
+                            <action name="1">
+                                <target>${ $.parentName }.rule_id</target>
+                                <callback>visible</callback>
+                                <params><param name="0" xsi:type="boolean">false</param></params>
+                            </action>
+                        </actions>
+                    </rule>
+                    <rule name="1">
+                        <value>rule</value>
+                        <actions>
+                            <action name="0">
+                                <target>${ $.parentName }.category_id</target>
+                                <callback>visible</callback>
+                                <params><param name="0" xsi:type="boolean">false</param></params>
+                            </action>
+                            <action name="1">
+                                <target>${ $.parentName }.rule_id</target>
+                                <callback>visible</callback>
+                                <params><param name="0" xsi:type="boolean">true</param></params>
+                            </action>
+                        </actions>
+                    </rule>
+                </rules>
+            </switcherConfig>
+        </settings>
+        <formElements>
+            <select>
+                <settings>
+                    <options class="Ordo\Automation\Model\Config\Source\ProductFeedSourceType"/>
+                </settings>
+            </select>
+        </formElements>
+    </field>
+    <field name="category_id" formElement="input" sortOrder="54">
+        <settings>
+            <dataType>text</dataType>
+            <label translate="true">Category ID</label>
+            <visible>false</visible>
+        </settings>
+    </field>
+    <field name="rule_id" formElement="input" sortOrder="55">
+        <settings>
+            <dataType>text</dataType>
+            <label translate="true">Cart Price Rule ID</label>
+            <visible>false</visible>
+        </settings>
+    </field>
+    <field name="product_feed_item_count" formElement="input" sortOrder="56" dataScope="item_count">
+        <argument name="data" xsi:type="array">
+            <item name="config" xsi:type="array">
+                <item name="default" xsi:type="number">4</item>
+            </item>
+        </argument>
+        <settings>
+            <dataType>number</dataType>
+            <label translate="true">Item Count</label>
+            <notice translate="true">How many products to include</notice>
+            <visible>false</visible>
+            <validation>
+                <rule name="validate-digits" xsi:type="boolean">true</rule>
+            </validation>
+        </settings>
+    </field>
+</form>

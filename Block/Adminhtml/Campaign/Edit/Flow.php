@@ -16,9 +16,11 @@ use Ordo\Automation\Model\CampaignAction;
 use Ordo\Automation\Model\CampaignCondition;
 use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
+use Ordo\Automation\Model\ContentBlock;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as ConditionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\ContentBlock\CollectionFactory as ContentBlockCollectionFactory;
 
 /**
  * Editable Drawflow (https://github.com/jerosoler/Drawflow) view of a campaign's trigger(s) →
@@ -48,6 +50,7 @@ class Flow extends Template
         private readonly ConditionPool $conditionPool,
         private readonly ActionPool $actionPool,
         private readonly TypeLabels $typeLabels,
+        private readonly ContentBlockCollectionFactory $contentBlockCollectionFactory,
         array $data = [],
         ?JsonHelper $jsonHelper = null,
         ?DirectoryHelper $directoryHelper = null
@@ -134,6 +137,28 @@ class Flow extends Template
     }
 
     /**
+     * entity_id => "name (type)" for every enabled content block — options for the
+     * add_dynamic_content action's content_block_id field, same select-rendering path
+     * campaign-flow-editor.js's renderFields() uses for any field descriptor that carries an
+     * "options" map.
+     *
+     * @return array<int, string>
+     */
+    public function getContentBlockOptions(): array
+    {
+        $collection = $this->contentBlockCollectionFactory->create();
+        $collection->addFieldToFilter('enabled', 1);
+
+        $options = [];
+        foreach ($collection as $block) {
+            /** @var ContentBlock $block */
+            $options[(int) $block->getEntityId()] = $block->getName() . ' (' . $block->getType() . ')';
+        }
+
+        return $options;
+    }
+
+    /**
      * Which of Save.php's DEDICATED_PARAM_FIELDS applies to each known condition/action type —
      * the same mapping ordo_campaign_form.xml's switcherConfig encodes for the native dynamicRows
      * form, duplicated here (not read from the XML) so the flow canvas can render the same
@@ -168,6 +193,10 @@ class Flow extends Template
                     ['name' => 'body', 'label' => (string) __('Popup body')],
                     ['name' => 'cta_label', 'label' => (string) __('CTA button label')],
                     ['name' => 'cta_url', 'label' => (string) __('CTA button URL')],
+                ],
+                'add_dynamic_content' => [
+                    ['name' => 'content_block_id', 'label' => (string) __('Content block'), 'options' => $this->getContentBlockOptions()],
+                    ['name' => 'output_key', 'label' => (string) __('Output variable name (optional)')],
                 ],
             ],
         ];

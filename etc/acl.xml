@@ -14,6 +14,7 @@
                 <resource id="Ordo_Automation::free_gifts" title="Ordo Automation Free Gifts" translate="title" sortOrder="520"/>
                 <resource id="Ordo_Automation::segments" title="Ordo Automation Segments" translate="title" sortOrder="530"/>
                 <resource id="Ordo_Automation::score_rules" title="Ordo Automation Score Rules" translate="title" sortOrder="540"/>
+                <resource id="Ordo_Automation::content_blocks" title="Ordo Automation Content Blocks" translate="title" sortOrder="550"/>
             </resource>
         </resources>
     </acl>

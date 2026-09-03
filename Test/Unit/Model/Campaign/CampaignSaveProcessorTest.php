@@ -247,6 +247,48 @@ class CampaignSaveProcessorTest extends TestCase
         ]);
     }
 
+    /**
+     * Regression test: the Flow canvas renders content_block_id/output_key as dedicated fields
+     * (Block\Adminhtml\Campaign\Edit\Flow::getFieldsConfig()'s add_dynamic_content entry), not
+     * via the params_json fallback, so they must be in DEDICATED_PARAM_FIELDS or they're posted
+     * but silently dropped — exactly the bug this test was written to catch after finding it by
+     * tracing the save path (content_block_id was missing from that list, so every
+     * add_dynamic_content action saved through the admin UI persisted params = '{}').
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessPersistsDynamicContentActionFields(): void
+    {
+        $processor = $this->makeProcessor();
+
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(1);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
+        $this->conditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+        $this->actionCollectionFactory->method('create')->willReturn($this->emptyActionCollection());
+
+        $action = $this->createMock(CampaignAction::class);
+        $action->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => json_decode($data['params'], true) === [
+                'content_block_id' => '7',
+                'output_key' => 'custom_html_key',
+            ]
+        ));
+        $this->campaignActionFactory->method('create')->willReturn($action);
+        $this->campaignActionResource->expects(self::once())->method('save')->with($action);
+
+        $processor->process([
+            'conditions' => ['conditions' => []],
+            'actions' => ['actions' => [[
+                'type' => 'add_dynamic_content',
+                'content_block_id' => '7',
+                'output_key' => 'custom_html_key',
+                'params_json' => '',
+            ]]],
+        ]);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testProcessDefaultsDelayMinutesToZeroWhenAbsent(): void
     {

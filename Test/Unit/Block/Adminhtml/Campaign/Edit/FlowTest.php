@@ -22,6 +22,8 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Condition\Collection as Conditi
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as ConditionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as TriggerCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\ContentBlock\Collection as ContentBlockCollection;
+use Ordo\Automation\Model\ResourceModel\ContentBlock\CollectionFactory as ContentBlockCollectionFactory;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
@@ -34,6 +36,7 @@ class FlowTest extends TestCase
     private TriggerEvent $triggerEventSource;
     private ConditionPool $conditionPool;
     private ActionPool $actionPool;
+    private ContentBlockCollectionFactory $contentBlockCollectionFactory;
 
     protected function setUp(): void
     {
@@ -41,6 +44,11 @@ class FlowTest extends TestCase
         $this->triggerCollectionFactory = $this->createStub(TriggerCollectionFactory::class);
         $this->conditionCollectionFactory = $this->createStub(ConditionCollectionFactory::class);
         $this->actionCollectionFactory = $this->createStub(ActionCollectionFactory::class);
+        $this->contentBlockCollectionFactory = $this->createStub(ContentBlockCollectionFactory::class);
+        $contentBlockCollection = $this->createStub(ContentBlockCollection::class);
+        $contentBlockCollection->method('addFieldToFilter')->willReturnSelf();
+        $contentBlockCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
+        $this->contentBlockCollectionFactory->method('create')->willReturn($contentBlockCollection);
         $this->triggerEventSource = $this->createStub(TriggerEvent::class);
         $this->triggerEventSource->method('toOptionArray')->willReturn([
             ['value' => 'order_placed', 'label' => __('Order Placed')],
@@ -70,6 +78,7 @@ class FlowTest extends TestCase
             $this->conditionPool,
             $this->actionPool,
             new TypeLabels(),
+            $this->contentBlockCollectionFactory,
             [],
             $this->createStub(JsonHelper::class),
             $this->createStub(DirectoryHelper::class)

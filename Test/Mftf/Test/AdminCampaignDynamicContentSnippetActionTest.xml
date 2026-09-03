@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCampaignDynamicContentSnippetActionTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Dynamic content blocks"/>
+            <title value="A real order triggers add_dynamic_content, and the snippet's HTML really reaches the customer's email"/>
+            <description value="End-to-end proof for the whole 'Dynamic content blocks' feature, not just the CRUD screen AdminCreateContentBlockSnippetTest already covers: (1) a snippet-type ordo_content_block is created via the admin form, (2) a campaign is wired with two actions in order — add_dynamic_content then send_email — where add_dynamic_content's content_block_id can only be set through the Flow canvas's 'Content block' dropdown (Block/Adminhtml/Campaign/Edit/Flow::getContentBlockOptions()) since the native dynamicRows form has no field for it on a brand-new campaign, (3) 'Apply flow to form &amp; Save' persists that selection through Model/Campaign/CampaignSaveProcessor — this specifically exercises the DEDICATED_PARAM_FIELDS fix (content_block_id/output_key were being silently dropped on save before that fix, so every add_dynamic_content action persisted empty params regardless of what the canvas showed), and (4) a real order_placed event, through real storefront checkout and the real queue consumer, ends with the snippet's actual HTML content present in the customer's real received email (via MailHog), proving Model/Campaign/Action/AddDynamicContent -&gt; Model/ContentBlock/Producer/SnippetProducer -&gt; SendEmail's context-to-templateVars forwarding all actually work together, not just in isolation per-unit-test."/>
+            <severity value="CRITICAL"/>
+            <group value="ordo_automation"/>
+            <group value="campaign"/>
+        </annotations>
+        <before>
+            <magentoCLI command="config:set cms/wysiwyg/enabled disabled" stepKey="disableWysiwyg"/>
+            <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <magentoCLI command="config:set cms/wysiwyg/enabled enabled" stepKey="reenableWysiwyg"/>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: the reusable content block — a distinctive marker string that could only
+             have reached the email through the dynamic-content pipeline, not through send_email's
+             own static "message" param (AdminCampaignSendEmailActionTest already proves that
+             path separately). -->
+        <amOnPage url="admin/ordo/contentblock/new" stepKey="goToNewContentBlockPage"/>
+        <waitForPageLoad stepKey="waitForNewContentBlockPage"/>
+        <waitForElementVisible selector="[name='identifier']" stepKey="waitForIdentifierField"/>
+        <fillField selector="[name='identifier']" userInput="e2e_snippet_block" stepKey="fillIdentifier"/>
+        <fillField selector="[name='name']" userInput="E2E Snippet Block" stepKey="fillName"/>
+        <selectOption selector="[name='type']" userInput="snippet" stepKey="selectSnippetType"/>
+        <waitForElementVisible selector="[name='html']" stepKey="waitForHtmlField"/>
+        <fillField selector="[name='html']" userInput="&lt;p&gt;ORDO-DYNAMIC-CONTENT-MARKER&lt;/p&gt;" stepKey="fillHtml"/>
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableContentBlock"/>
+        <click selector="#save" stepKey="clickSaveContentBlock"/>
+        <waitForPageLoad stepKey="waitForContentBlockSave"/>
+        <see selector=".message-success" userInput="The content block has been saved." stepKey="seeContentBlockSuccessMessage"/>
+
+        <!-- Step 2: the campaign — trigger=order_placed, no condition (vacuously satisfied, same
+             reasoning as AdminScoreThresholdCampaignTest/AdminCampaignSendEmailActionTest), two
+             actions in order: add_dynamic_content first (so it populates $context before
+             send_email reads it — see Model/Campaign/Action/SendEmail.php's context-to-
+             templateVars forwarding), then send_email using the shipped ordo_campaign_generic
+             template, which embeds {{var dynamic_content_html|raw}}. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="E2E Dynamic Content Campaign" stepKey="fillCampaignName"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButton"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRow"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRow"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEvent"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addFirstActionRow"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForFirstActionRow"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="add_dynamic_content" stepKey="selectFirstActionType"/>
+        <fillField selector="[name='actions[actions][0][delay_minutes]']" userInput="0" stepKey="fillFirstActionDelay"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addSecondActionRow"/>
+        <waitForElementVisible selector="[name='actions[actions][1][type]']" stepKey="waitForSecondActionRow"/>
+        <selectOption selector="[name='actions[actions][1][type]']" userInput="send_email" stepKey="selectSecondActionType"/>
+        <waitForElementVisible selector="[name='actions[actions][1][template]']" stepKey="waitForTemplateField"/>
+        <fillField selector="[name='actions[actions][1][template]']" userInput="ordo_campaign_generic" stepKey="fillTemplate"/>
+        <fillField selector="[name='actions[actions][1][message]']" userInput="See the content below:" stepKey="fillMessage"/>
+        <fillField selector="[name='actions[actions][1][delay_minutes]']" userInput="0" stepKey="fillSecondActionDelay"/>
+
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
+        <waitForPageLoad stepKey="waitForCampaignSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeCampaignSuccessMessage"/>
+
+        <!-- Step 3: the native dynamicRows form has no field for add_dynamic_content's
+             content_block_id on a brand-new campaign — the switcherConfig entry for it only
+             exists on the Flow canvas (Block/Adminhtml/Campaign/Edit/Flow::getFieldsConfig()),
+             which itself only renders once the campaign has an entity_id (hasCampaign() ===
+             true) — exactly the state we're now in, post-save. This is the one and only UI path
+             to configure it, and it's the path this test exists to prove actually persists. -->
+        <waitForElementVisible selector=".ordo-flow-canvas" stepKey="waitForFlowCanvas"/>
+        <waitForElementVisible selector=".ordo-flow-node[data-kind='action'] select[data-field='content_block_id']" stepKey="waitForContentBlockDropdown"/>
+        <selectOption selector=".ordo-flow-node[data-kind='action'] select[data-field='content_block_id']" userInput="E2E Snippet Block (snippet)" stepKey="selectContentBlockOnCanvas"/>
+
+        <click selector="[data-flow-action='apply']" stepKey="clickApplyFlowAndSave"/>
+        <waitForPageLoad stepKey="waitForFlowApplySave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeFlowApplySuccessMessage"/>
+
+        <!-- Reload once more so the assertion below proves the DB round trip (the actual bug
+             this test was written to catch: content_block_id posted by the canvas but silently
+             dropped by CampaignSaveProcessor::normalizeRowParams() before DEDICATED_PARAM_FIELDS
+             was fixed to include it), not just in-memory canvas state. -->
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
+        <amOnPage url="admin/ordo/campaign/edit/entity_id/{$grabCampaignId}/" stepKey="goToEditPage"/>
+        <waitForPageLoad stepKey="waitForEditPage"/>
+        <waitForElementVisible selector=".ordo-flow-node[data-kind='action'] select[data-field='content_block_id']" stepKey="waitForContentBlockDropdownAfterReload"/>
+        <seeElementInDOM selector=".ordo-flow-node[data-kind='action'] select[data-field='content_block_id'] option[selected]" stepKey="seeContentBlockSelectionPersisted"/>
+        <grabValueFrom selector=".ordo-flow-node[data-kind='action'] select[data-field='content_block_id']" stepKey="grabPersistedContentBlockId"/>
+        <assertNotEquals stepKey="assertContentBlockIdPersisted">
+            <expectedResult type="string">0</expectedResult>
+            <actualResult type="variable">grabPersistedContentBlockId</actualResult>
+        </assertNotEquals>
+
+        <!-- Step 4: a REAL order, through REAL storefront checkout, as the REAL customer created
+             above — same pattern as AdminCampaignSendEmailActionTest, not a synthetic dispatch(). -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <!-- Step 5: no RabbitMQ in this environment (DB queue driver only — see AGENTS.md);
+             max-messages=50 for the same reason AdminCampaignSendEmailActionTest uses it — a
+             sibling test in the same CI job can leave an unrelated message ahead of ours in the
+             queue, safe to over-ask since mftf.yml's consumers-wait-for-messages=0 returns as
+             soon as the queue is actually empty. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+
+        <!-- Step 6: the actual proof — the snippet's own HTML content, which only
+             AddDynamicContent -&gt; SnippetProducer -&gt; SendEmail's context forwarding ->
+             {{var dynamic_content_html|raw}} could have put in this email. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seeSnippetMarkerInEmail">
+            <argument name="expectedText">ORDO-DYNAMIC-CONTENT-MARKER</argument>
+            <argument name="toAddress">$createCustomer.email$</argument>
+        </helper>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seeStaticMessageInEmail">
+            <argument name="expectedText">See the content below:</argument>
+            <argument name="toAddress">$createCustomer.email$</argument>
+        </helper>
+    </test>
+</tests>

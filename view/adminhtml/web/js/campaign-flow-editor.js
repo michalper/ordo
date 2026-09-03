@@ -93,9 +93,27 @@ define([
                     descriptors.forEach(function (field) {
                         var value = params?.[field.name] || '';
 
-                        html += '<label class="ordo-flow-field-label">' + field.label + '</label>' +
-                            '<input type="text" class="ordo-flow-field-input" data-field="' + field.name + '" value="' +
-                            $('<div>').text(value).html() + '">';
+                        html += '<label class="ordo-flow-field-label">' + field.label + '</label>';
+
+                        // A field descriptor carrying a non-empty "options" map (e.g. the
+                        // add_dynamic_content action's content_block_id, built server-side in
+                        // Flow::getContentBlockOptions()) renders as a <select> instead of a
+                        // free-text <input> — every other action type has no "options" key at
+                        // all, so this branch never fires for them and their existing <input>
+                        // behavior is unchanged.
+                        if (field.options && Object.keys(field.options).length) {
+                            html += '<select class="ordo-flow-field-input" data-field="' + field.name + '">';
+                            Object.keys(field.options).forEach(function (optionValue) {
+                                var selectedAttr = String(value) === String(optionValue) ? ' selected="selected"' : '';
+
+                                html += '<option value="' + $('<div>').text(optionValue).html() + '"' + selectedAttr + '>' +
+                                    $('<div>').text(field.options[optionValue]).html() + '</option>';
+                            });
+                            html += '</select>';
+                        } else {
+                            html += '<input type="text" class="ordo-flow-field-input" data-field="' + field.name + '" value="' +
+                                $('<div>').text(value).html() + '">';
+                        }
                     });
                 } else {
                     html += '<label class="ordo-flow-field-label">Params (JSON) — advanced, no dedicated fields for this type</label>' +

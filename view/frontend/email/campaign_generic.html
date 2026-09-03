@@ -18,6 +18,11 @@
         <td>{{var recommended_products_html|raw}}</td>
     </tr>
     {{/depend}}
+    {{depend dynamic_content_html}}
+    <tr>
+        <td>{{var dynamic_content_html|raw}}</td>
+    </tr>
+    {{/depend}}
 </table>
 
 {{template config_path="design/email/footer_template"}}

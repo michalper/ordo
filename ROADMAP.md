@@ -77,7 +77,24 @@ Not a code review — a capability comparison against the category. Each is a re
   pattern as `product_view`/`category_view`), aggregated with its own 1-click-by-default threshold
   (`Config::getTrackingClickThreshold()`) instead of the 3-view default, flowing through the same visitor-tag →
   campaign-trigger pipeline every other tracked signal already uses.
-- **Dynamic content blocks** — reusable snippets, RSS newsletters, product feeds inside a campaign email. Not built.
+- ~~Dynamic content blocks~~ — done. `ordo_content_block` admin CRUD (`Model/ContentBlock` + `ContentBlockRepository`)
+  authors reusable snippet/RSS/product-feed blocks, resolved by a new `add_dynamic_content` campaign action
+  (`Model/Campaign/Action/AddDynamicContent`) via `Model/ContentBlock/ProducerPool` (`snippet` → raw admin HTML,
+  `rss` → cache-only read of `ordo_content_block_rss_cache`, `product_feed` → `CategoryProductLister`/`RuleProductLister`
+  feeding the existing `ProductRecommendationRenderer`), and embedded into `ordo_campaign_generic` via
+  `{{var dynamic_content_html|raw}}` alongside `send_email`. RSS feeds are never fetched at dispatch time: a 30-minute
+  `Cron\RefreshRssContentBlocks` job (plus an admin "Refresh now" AJAX action) pulls feeds through `RssFetcher`
+  (bounded HTTP GET via `Magento\Framework\HTTP\Client\Curl`, capped response size, capped item count, per-block
+  failure isolation writing `fetch_error` without touching the last-good `rendered_html`) and only the cache table
+  is read on the request path. `RuleProductLister` reuses a cart price rule's product condition (`Rule::getActions()`
+  → `Condition\Product\Combine`) against a bounded, paged catalog scan rather than an unbounded query. The `html`
+  field for snippet blocks is a WYSIWYG editor (`formElement="wysiwyg"` in `ordo_contentblock_form.xml`) — this
+  turned out to need no new module dependency at all: the WYSIWYG element is part of `Magento_Ui` itself
+  (`Magento\Ui\Component\Form\Element\Wysiwyg`, `Magento\Ui\Component\Wysiwyg\Config` as the default
+  `ConfigInterface` implementation), not `Magento_Cms` — confirmed against `Magento_Cms\view\adminhtml\ui_component\
+  cms_block_form.xml`'s own `content` field as the working reference shape. The editor renders as a plain TinyMCE
+  instance without CMS directive/widget-insert buttons, which is the right level of tooling for a trusted
+  admin-authored snippet.
 - ~~Segments~~ — done. Bulk actions on a segment's current members (add tag / add points, resolved via
   `SegmentMemberResolver` and applied async), a standalone RFM report across the whole customer base (`ordo/rfm/index`,
   a SQL-paged grid with per-metric quintiles and an "RFM Score" column, e.g. "555" = best on all three), percentile-based
@@ -85,6 +102,21 @@ Not a code review — a capability comparison against the category. Each is a re
   alongside the original absolute thresholds), and `Cron\RecomputeRfmScores` precomputing percentiles/quintiles nightly
   into `ordo_customer_rfm_score` so campaign dispatch reads one table instead of ranking the whole customer base live.
 - **Multichannel recovery** — SMS/WhatsApp/push. `cart_abandoned`/win-back only ever send email.
+
+## Localization
+
+- **i18n coverage beyond PL/EN.** Currently `i18n/pl_PL.csv` and `i18n/en_US.csv` are the only translated
+  dictionaries — every other locale falls back to the untranslated `__()` source strings. Extend to the
+  world's most-spoken/most-common e-commerce-admin locales: `de_DE`, `fr_FR`, `es_ES`, `it_IT`, `pt_BR`,
+  `zh_Hans_CN`, `ja_JP`, `ru_RU`, `uk_UA`, `nl_NL`. Scope: one `i18n/<locale>.csv` per language (Magento's
+  standard `"Source string","Translated string"` CSV dictionary format, same as the existing two files —
+  no code changes needed, this is a pure content/translation task), covering both admin-facing strings
+  (campaign builder, content blocks, score rules, RFM report, etc.) and any customer-facing strings emitted
+  into frontend templates/emails. Needs a decision on translation source: machine-translate as a first pass
+  and flag for native-speaker review, vs. only ship a locale once a human reviewer signs off — given this is
+  an admin marketing tool (correctness matters more than for casual UI copy), lean toward the latter for
+  launch-blocking strings (error messages, data-loss confirmations) and allow machine-translated first drafts
+  for descriptive/help text.
 
 ## Documentation
 

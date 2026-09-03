@@ -58,6 +58,7 @@
                 <item name="ordo_segment_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Segment\Grid\Collection</item>
                 <item name="ordo_rfm_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Rfm\Grid\Collection</item>
                 <item name="ordo_scorerule_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\ScoreRule\Grid\Collection</item>
+                <item name="ordo_contentblock_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\ContentBlock\Grid\Collection</item>
             </argument>
         </arguments>
     </type>
@@ -66,6 +67,13 @@
         <arguments>
             <argument name="mainTable" xsi:type="string">ordo_score_rule</argument>
             <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\ScoreRule</argument>
+        </arguments>
+    </type>
+
+    <type name="Ordo\Automation\Model\ResourceModel\ContentBlock\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">ordo_content_block</argument>
+            <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\ContentBlock</argument>
         </arguments>
     </type>
 
@@ -160,6 +168,22 @@
                 <item name="popup" xsi:type="object">Ordo\Automation\Model\Campaign\Action\ShowPopup</item>
                 <item name="add_points" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddPoints</item>
                 <item name="add_product_recommendations" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddProductRecommendations</item>
+                <item name="add_dynamic_content" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddDynamicContent</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!--
+        Content block producer registry — same shape as ActionPool above. Adding a new content
+        block type never means touching AddDynamicContent — just a new class implementing
+        Model\ContentBlock\Producer\ProducerInterface, and one line here.
+    -->
+    <type name="Ordo\Automation\Model\ContentBlock\ProducerPool">
+        <arguments>
+            <argument name="producers" xsi:type="array">
+                <item name="snippet" xsi:type="object">Ordo\Automation\Model\ContentBlock\Producer\SnippetProducer</item>
+                <item name="rss" xsi:type="object">Ordo\Automation\Model\ContentBlock\Producer\RssProducer</item>
+                <item name="product_feed" xsi:type="object">Ordo\Automation\Model\ContentBlock\Producer\ProductFeedProducer</item>
             </argument>
         </arguments>
     </type>

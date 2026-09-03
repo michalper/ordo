@@ -31,8 +31,13 @@ class ProductRecommendationRenderer
 
     /**
      * @param string[] $skus
+     * @param string $heading Section heading text — the default is byte-identical to this
+     *   method's original hardcoded text, so Model\Campaign\Action\AddProductRecommendations
+     *   (which never passes this argument) renders exactly as before. Model\ContentBlock\
+     *   Producer\ProductFeedProducer passes a different heading (e.g. "New Arrivals") since a
+     *   product-feed content block isn't necessarily a personalized recommendation.
      */
-    public function renderHtml(array $skus): string
+    public function renderHtml(array $skus, string $heading = 'Recommended for you'): string
     {
         if ($skus === []) {
             return '';
@@ -57,7 +62,7 @@ class ProductRecommendationRenderer
 
         return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
             . '<tr class="recommended-products"><td>'
-            . '<p style="font-weight:bold;margin:0 0 10px;">Recommended for you</p>'
+            . '<p style="font-weight:bold;margin:0 0 10px;">' . $this->escaper->escapeHtml($heading) . '</p>'
             . '<table role="presentation" cellpadding="0" cellspacing="0"><tr>'
             . implode('', $cells)
             . '</tr></table>'

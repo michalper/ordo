@@ -75,4 +75,19 @@ class ProductRecommendationRendererTest extends TestCase
 
         self::assertSame('', $this->makeRenderer()->renderHtml(['SKU-1', 'SKU-2']));
     }
+
+    public function testUsesCustomHeadingWhenProvided(): void
+    {
+        $product = $this->createStub(Product::class);
+        $product->method('getName')->willReturn('Widget');
+        $product->method('getProductUrl')->willReturn('https://example.com/widget.html');
+        $product->method('getFinalPrice')->willReturn(19.99);
+
+        $this->productRepository->method('get')->willReturn($product);
+
+        $html = $this->makeRenderer()->renderHtml(['SKU-1'], 'New Arrivals');
+
+        self::assertStringContainsString('New Arrivals', $html);
+        self::assertStringNotContainsString('Recommended for you', $html);
+    }
 }
