@@ -138,7 +138,7 @@
              max-messages=5, not 1, and consumers-wait-for-messages=0 in mftf.yml means over-asking
              is safe — same reasoning AdminScoreThresholdCampaignTest.xml documents in full for why
              a shared-DB CI job can have other tests' stale messages sitting in the same queue. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=5" stepKey="runCampaignDispatchConsumerAfterOrder1"/>
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumerAfterOrder1"/>
 
         <!-- Order 2: the tag now exists, so SegmentMatcher's live query puts the customer in the
              segment, and Campaign B's in_segment condition is satisfied this time. -->
@@ -151,7 +151,7 @@
         <waitForPageLoad stepKey="waitForCartPageOrder2"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeSecondOrder"/>
 
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=5" stepKey="runCampaignDispatchConsumerAfterOrder2"/>
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumerAfterOrder2"/>
 
         <!-- Step 5: the only assertion that checks a real, merchant-visible side effect — a coupon
              code that only Campaign B's in_segment -> generate_coupon chain, gated on a live

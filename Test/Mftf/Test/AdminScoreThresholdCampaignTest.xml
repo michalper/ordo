@@ -78,7 +78,7 @@
              Safe to ask for more than are actually queued: the workflow sets
              consumers-wait-for-messages=0, so the consumer returns as soon as the queue is empty
              instead of blocking — see mftf.yml's install step for why that's needed here. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=5" stepKey="runCampaignDispatchConsumer"/>
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
 
         <!-- Step 5: the only assertion that checks a real, merchant-visible side effect — a
              coupon code that only CampaignDispatcher's generate_coupon action, run via the full

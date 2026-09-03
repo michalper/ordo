@@ -74,7 +74,7 @@
              message of its own sitting unconsumed ahead of ours; safe to over-ask since
              mftf.yml sets consumers-wait-for-messages=0, so the consumer returns as soon as the
              queue is actually empty instead of blocking. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=5" stepKey="runCampaignDispatchConsumer"/>
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
 
         <!-- Step 4: the real, merchant-visible side effect only Model/Campaign/Action/SendEmail.php's
              ordo_campaign_generic template render could have produced — the customer's own name

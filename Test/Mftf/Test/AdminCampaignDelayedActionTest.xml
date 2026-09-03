@@ -109,8 +109,44 @@
              ordo_automation_run_scheduled_campaign_actions in the "default" group), which finds
              the now-due scheduled row and calls CampaignDispatcher::resumeScheduledAction(),
              which runs the delayed generate_coupon action unconditionally and continues the
-             chain from there. -->
-        <magentoCLI command="cron:run --group=default" stepKey="runScheduledCampaignActionsCron"/>
+             chain from there.
+
+             This job's own <schedule> is "*/5 * * * *" (etc/crontab.xml) - every 5 real minutes,
+             not every minute. Confirmed via a real CI run: a single cron:run right after the
+             65s wait above found nothing to do, because Magento's cron dispatcher only executes
+             a job during the specific wall-clock window its own cron_expr actually matches -
+             calling cron:run doesn't force a job to run "now" regardless of its schedule, it
+             only runs whatever is actually due at that instant. delay_minutes=1 guarantees the
+             scheduled ROW is due well before that; it says nothing about when the CRON JOB that
+             resumes it next gets to run. Repeating cron:run every 30s below (11 times, 330s
+             total - just past a full 5-minute cycle) guarantees this test's own invocation spans
+             at least one due window for the job, regardless of what wall-clock minute the test
+             happened to start in - there's no way to compute or shorten that wait without either
+             faking elapsed time (ruled out above) or changing this job's real production
+             schedule just to suit a test, which would test something other than what actually
+             ships. Each cron:run is a no-op once the job has already resumed the action, so
+             the extra calls are harmless, not just tolerated. -->
+        <magentoCLI command="cron:run --group=default" stepKey="runScheduledCampaignActionsCron1"/>
+        <wait time="30" stepKey="waitBetweenCronRuns1"/>
+        <magentoCLI command="cron:run --group=default" stepKey="runScheduledCampaignActionsCron2"/>
+        <wait time="30" stepKey="waitBetweenCronRuns2"/>
+        <magentoCLI command="cron:run --group=default" stepKey="runScheduledCampaignActionsCron3"/>
+        <wait time="30" stepKey="waitBetweenCronRuns3"/>
+        <magentoCLI command="cron:run --group=default" stepKey="runScheduledCampaignActionsCron4"/>
+        <wait time="30" stepKey="waitBetweenCronRuns4"/>
+        <magentoCLI command="cron:run --group=default" stepKey="runScheduledCampaignActionsCron5"/>
+        <wait time="30" stepKey="waitBetweenCronRuns5"/>
+        <magentoCLI command="cron:run --group=default" stepKey="runScheduledCampaignActionsCron6"/>
+        <wait time="30" stepKey="waitBetweenCronRuns6"/>
+        <magentoCLI command="cron:run --group=default" stepKey="runScheduledCampaignActionsCron7"/>
+        <wait time="30" stepKey="waitBetweenCronRuns7"/>
+        <magentoCLI command="cron:run --group=default" stepKey="runScheduledCampaignActionsCron8"/>
+        <wait time="30" stepKey="waitBetweenCronRuns8"/>
+        <magentoCLI command="cron:run --group=default" stepKey="runScheduledCampaignActionsCron9"/>
+        <wait time="30" stepKey="waitBetweenCronRuns9"/>
+        <magentoCLI command="cron:run --group=default" stepKey="runScheduledCampaignActionsCron10"/>
+        <wait time="30" stepKey="waitBetweenCronRuns10"/>
+        <magentoCLI command="cron:run --group=default" stepKey="runScheduledCampaignActionsCron11"/>
 
         <!-- Step 7: the coupon that only the resumed action chain could have produced now
              exists. waitForText, not <see>, for the same reason as

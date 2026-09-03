@@ -113,39 +113,40 @@
              this test from stalling on a stale message. Safe to ask for more than are actually
              queued — mftf.yml sets consumers-wait-for-messages=0, so the consumer returns as
              soon as the queue is empty instead of blocking. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=5" stepKey="runCampaignDispatchConsumer"/>
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
 
         <!-- Step 4: at this point CampaignDispatcher has run Popup::execute(), which queued a
              real ordo_pending_popup row targeted at this customer's customer_id (frequency cap
              defaults to 24h but there is nothing else that could have delivered this customer a
-             popup before now, so it isn't capped). Nothing has claimed it yet, though — the
-             checkout success page that's currently loaded started its own tracker.js poll loop
-             (view/frontend/web/js/tracker.js's startPopupPolling) before the row above existed,
-             so a fresh page load is needed to start a poll loop that can actually find it.
-             pollForPopup fires 2s after tracker.js's own load (fixed delay, independent of the
-             configured poll interval), then renders via renderPopup() into a
-             #ordo-popup-banner element appended to <body> — that id is the real, JS-authored
-             selector this test asserts against, not a CSS class MFTF made up. -->
-        <amOnPage url="/" stepKey="goToStorefrontHomeToPoll"/>
-        <waitForPageLoad stepKey="waitForHomePageLoad"/>
-        <wait time="3" stepKey="waitForFirstPollCycle"/>
+             popup before now, so it isn't capped).
 
-        <!-- A second reload before the real assertion — confirmed via two real CI runs that a
-             single reload can race pollForPopup's fixed 2s setTimeout under CI load (page load
-             itself taking long enough that the poll fires before the DOM/fetch stack is fully
-             ready). The popup row stays unclaimed (delivered_at IS NULL) until an actual poll
-             successfully claims it, so a second fresh poll cycle is safe — it doesn't weaken the
-             assertion, it just gives the real mechanism a second real chance to run before
-             failing. -->
-        <amOnPage url="/" stepKey="goToStorefrontHomeToPollAgain"/>
-        <waitForPageLoad stepKey="waitForHomePageLoadAgain"/>
+             Deliberately staying on the checkout success page for the assertion below, NOT
+             navigating anywhere — confirmed via three real CI runs that navigating to a fresh
+             page here is actively wrong, not just unnecessary: the success page's own tracker.js
+             poll loop (view/frontend/web/js/tracker.js's startPopupPolling) has been running
+             since that page loaded, well before this step. Its own 2s-delayed poll (or, once a
+             CI run is slow enough, its very next setInterval tick) can fire and successfully
+             claim the row (delivered_at gets set, response is no longer null) at basically any
+             point after the consumer above finishes — nginx access logs from failed runs showed
+             exactly this: a real, correctly-sized popup response already served to THIS page,
+             followed by every later poll (including ones from a page this test navigated to
+             afterwards) correctly returning null, because there was nothing left to claim. This
+             test was navigating to "/" and asserting there — the wrong place; the banner render
+             already happened, on the page this test had already left. -->
 
         <!-- Step 5: the one assertion in this whole module's suite that proves a campaign's
              on-site popup is actually visible to a real person in a real browser, not just that
              a database row exists (Test/Integration/CampaignVisitorPopupScenarioTest.php already
              covers that half). waitForElementVisible polls, giving pollForPopup's fetch + JSON
              round-trip + renderPopup's DOM append time to complete after the fixed 2s delay. -->
-        <waitForElementVisible selector="#ordo-popup-banner" stepKey="waitForPopupBanner"/>
+        <!-- Explicit 90s, not the MFTF-default short timeout (this workflow sets no
+             WAIT_TIMEOUT env, so the framework default applies unless overridden per-step,
+             same reasoning every other explicit "...,60" wait in this suite already documents):
+             tracker.js's poll loop only fires every 2s on the FIRST tick, then falls back to a
+             15s setInterval — if the popup row doesn't exist yet at that first 2s tick (the
+             queue consumer above hasn't finished committing it), this has to wait out a full
+             15s interval cycle, not just the initial 2s delay. -->
+        <waitForElementVisible selector="#ordo-popup-banner" time="90" stepKey="waitForPopupBanner"/>
         <see selector="#ordo-popup-banner" userInput="E2E Popup Headline" stepKey="seePopupHeadline"/>
         <see selector="#ordo-popup-banner" userInput="E2E popup body text" stepKey="seePopupBody"/>
         <seeElement selector="#ordo-popup-banner a[href='https://example.test/e2e-popup-sale']" stepKey="seePopupCtaLink"/>

@@ -28,44 +28,29 @@
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
-        <!-- Step 1: Campaign A — order_placed, no condition, add_tag {"tag": "vip"}. Built exactly
-             like AdminCampaignInSegmentConditionTest.xml's Campaign A: it fires on every order and
-             its only job is to be the thing that puts the "vip" tag on the customer, so order 2's
-             evaluation of Campaign B's tag condition has something real to find. -->
-        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignAPage"/>
-        <waitForPageLoad stepKey="waitForNewCampaignAPage"/>
-        <!-- See AdminCreateCampaignTest.xml's comment on this same wait — a cold, freshly
-             deployed developer-mode instance's first admin page load can lag behind
-             waitForPageLoad's document.readyState check. -->
-        <waitForElementVisible selector="[name='name']" stepKey="waitForNameFieldA"/>
-        <fillField selector="[name='name']" userInput="AND Test Tag Campaign A" stepKey="fillNameA"/>
-
-        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButtonA"/>
-        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRowA"/>
-        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRowA"/>
-        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEventA"/>
-
-        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRowA"/>
-        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRowA"/>
-        <selectOption selector="[name='actions[actions][0][type]']" userInput="add_tag" stepKey="selectActionTypeA"/>
-        <waitForElementVisible selector="[name='actions[actions][0][tag]']" stepKey="waitForTagFieldA"/>
-        <fillField selector="[name='actions[actions][0][tag]']" userInput="vip" stepKey="fillTagA"/>
-
-        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
-        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaignA"/>
-        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueA"/>
-        <waitForPageLoad stepKey="waitForSaveA"/>
-        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessageA"/>
-
-        <!-- Step 2: Campaign B — order_placed, TWO conditions AND'd (order_total_gte then tag),
+        <!-- Step 1: Campaign B — order_placed, TWO conditions AND'd (order_total_gte then tag),
              action=generate_coupon. Both rows live on this one campaign, indices 0 and 1 under the
              same conditions[conditions] dynamicRows, per AdminCreateSegmentWithMultipleConditionsTest.xml's
              established convention for a second condition row. order_total_gte has its own dedicated
              "amount" field (see AdminCampaignScenarioEndToEndTest.xml); tag has no dedicated field
              and goes through the generic params_json fallback (see
-             AdminCampaignInSegmentConditionTest.xml's identical comment on in_segment for why). -->
+             AdminCampaignInSegmentConditionTest.xml's identical comment on in_segment for why).
+
+             Created BEFORE Campaign A below, deliberately — CampaignDispatcher::dispatch() runs
+             every campaign matched to one trigger in a single foreach, in ascending campaign id
+             order, all within the SAME dispatch() call for a single order. Confirmed via a real
+             CI run: with Campaign A (the tagger) created first, order 1's dispatch ran A's
+             add_tag BEFORE B's conditions were even evaluated in that same call, so the "vip" tag
+             already existed by the time B checked for it — producing a coupon after order 1,
+             defeating the whole point of this test. Creating B first means B's conditions are
+             evaluated before A has a chance to tag the customer in that same dispatch pass, so
+             order 1 genuinely sees no tag yet; order 2's dispatch is a brand new call, running
+             AFTER order 1's A already committed the tag, so B correctly finds it that time. -->
         <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignBPage"/>
         <waitForPageLoad stepKey="waitForNewCampaignBPage"/>
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait — a cold, freshly
+             deployed developer-mode instance's first admin page load can lag behind
+             waitForPageLoad's document.readyState check. -->
         <waitForElementVisible selector="[name='name']" stepKey="waitForNameFieldB"/>
         <fillField selector="[name='name']" userInput="AND Test Coupon Campaign B" stepKey="fillNameB"/>
 
@@ -102,6 +87,33 @@
         <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueB"/>
         <waitForPageLoad stepKey="waitForSaveB"/>
         <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessageB"/>
+
+        <!-- Step 2: Campaign A — order_placed, no condition, add_tag {"tag": "vip"}. Built exactly
+             like AdminCampaignInSegmentConditionTest.xml's Campaign A: it fires on every order and
+             its only job is to be the thing that puts the "vip" tag on the customer, so order 2's
+             evaluation of Campaign B's tag condition has something real to find. Created AFTER
+             Campaign B (see that step's own comment for why the order matters here). -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignAPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignAPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameFieldA"/>
+        <fillField selector="[name='name']" userInput="AND Test Tag Campaign A" stepKey="fillNameA"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButtonA"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRowA"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRowA"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEventA"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRowA"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRowA"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="add_tag" stepKey="selectActionTypeA"/>
+        <waitForElementVisible selector="[name='actions[actions][0][tag]']" stepKey="waitForTagFieldA"/>
+        <fillField selector="[name='actions[actions][0][tag]']" userInput="vip" stepKey="fillTagA"/>
+
+        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaignA"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueA"/>
+        <waitForPageLoad stepKey="waitForSaveA"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessageA"/>
 
         <!-- Step 3: the real customer, logged in once, places TWO real orders through real
              storefront checkout — same shape as AdminCampaignInSegmentConditionTest.xml's Step 4. -->
