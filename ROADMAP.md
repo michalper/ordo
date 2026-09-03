@@ -26,6 +26,22 @@ scoped from real hands-on marketing automation experience.
 Not a code review — a capability comparison against the category. Each is a real, separate stream of work:
 
 - **Multichannel recovery** — SMS/WhatsApp/push. `cart_abandoned`/win-back only ever send email.
+- **On-site product recommendation blocks** — a new content-block type (or campaign action) rendering personalized
+  product suggestions using data the module already has (customer/visitor tags, RFM scores, segment membership),
+  not a new AI/recommendation engine. Extends the existing content-block and campaign-action surface rather than
+  bolting on a separate subsystem.
+- **Campaign calendar view** — an admin grid/calendar overlay showing every campaign's trigger window and any
+  delayed actions (`delay_minutes`) in one place. Pure UI on top of data already modeled — no new entities.
+- **Loyalty tiers on top of lead scoring** — map `ordo_customer_score` ranges to named tiers (e.g. Bronze/Silver/Gold),
+  surfaced as a new segment condition type and a dashboard stat. Small and additive to the scoring system already
+  built for §4 (lead scoring), not a separate loyalty subsystem.
+- **Persistent in-site notification action** — a sibling to the existing `popup` campaign action, but non-modal and
+  persisting until read or expired, instead of one-shot. Extends the existing `ordo_pending_popup`-style delivery
+  mechanism rather than introducing a new one.
+- **Single-question satisfaction/NPS survey action** — a 0–10 post-purchase (or post-support) prompt, stored as a
+  new `ordo_customer_survey_response`-style entity, feeding into existing segment conditions the same way tags and
+  scores already do. Deliberately narrower than a full open-ended survey builder, which is a genuinely separate
+  subsystem and not scoped here.
 
 ## Localization
 
