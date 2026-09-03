@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminEditCampaignConditionReplacesNotDuplicatesTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Campaign engine"/>
+            <title value="Editing an existing campaign's condition replaces the old row instead of duplicating it"/>
+            <description value="Covers Model/Campaign/CampaignSaveProcessor.php's saveChildRows(): child rows are always deleted-then-reinserted on every save, never diffed, so re-saving an edited campaign must leave exactly one condition row behind with the NEW type, not two. Once a campaign has an entity_id, the Flow canvas (Block/Adminhtml/Campaign/Edit/Flow.php) is the normal editor and hides the raw conditions_fieldset/actions_fieldset dynamicRows sections (see ordo_campaign_form.xml) — this test forces them visible via the same uiRegistry call flow.phtml itself uses for a brand-new campaign (see its own comment on why), bypassing the drag-and-drop canvas entirely so the existing dynamicRows fields (already populated from the saved DB rows by the standard Magento UI form data source) are directly editable and assertable, the same way AdminCreateMultiTriggerCampaignTest.xml's reload proves a round trip but without needing the canvas's own DOM shape."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="campaign"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: create with condition type=order_total_gte, amount=30. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait — a cold, freshly
+             deployed developer-mode instance's first admin page load can lag behind
+             waitForPageLoad's document.readyState check. -->
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Test Editable Condition Campaign" stepKey="fillName"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButton"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRow"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRow"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEvent"/>
+
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRow"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRow"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="selectConditionType"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][amount]']" stepKey="waitForAmountField"/>
+        <fillField selector="[name='conditions[conditions][0][amount]']" userInput="30" stepKey="fillConditionAmount"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRow"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRow"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="add_tag" stepKey="selectActionType"/>
+        <waitForElementVisible selector="[name='actions[actions][0][tag]']" stepKey="waitForTagField"/>
+        <fillField selector="[name='actions[actions][0][tag]']" userInput="oldtag" stepKey="fillTag"/>
+
+        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
+
+        <!-- Step 2: force the raw dynamicRows fieldsets visible on this now-existing campaign's
+             edit page — the exact same uiRegistry call flow.phtml's own new-campaign branch uses
+             (see this test's own description for why), just triggered manually here instead of
+             by hasCampaign() being false. -->
+        <amOnPage url="admin/ordo/campaign/edit/entity_id/{$grabCampaignId}/" stepKey="goToEditPage"/>
+        <waitForPageLoad stepKey="waitForEditPage"/>
+        <executeJS function="require(['uiRegistry'], function (uiRegistry) { ['conditions_fieldset', 'actions_fieldset'].forEach(function (fieldsetName) { uiRegistry.get('ordo_campaign_form.ordo_campaign_form.' + fieldsetName, function (fieldset) { fieldset.visible(true); }); }); });" stepKey="forceFieldsetsVisible"/>
+
+        <!-- Confirm the pre-edit state actually round-tripped from the DB (one row, the
+             original type) before changing anything — otherwise a false pass could just mean
+             the fieldset never really loaded the saved data at all. -->
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForExistingConditionRow"/>
+        <seeOptionIsSelected selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="seeOriginalConditionType"/>
+        <dontSeeElement selector="[name='conditions[conditions][1][type]']" stepKey="dontSeeSecondConditionRowBeforeEdit"/>
+
+        <!-- Step 3: change the condition's type — same row (index 0), no "Add Condition" click,
+             this is an edit of the existing row, not a new one. -->
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="score_at_least" stepKey="changeConditionType"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][threshold]']" stepKey="waitForThresholdField"/>
+        <fillField selector="[name='conditions[conditions][0][threshold]']" userInput="10" stepKey="fillThreshold"/>
+
+        <click selector="#save" stepKey="clickSaveEdit"/>
+        <waitForPageLoad stepKey="waitForSaveEdit"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSaveEditSuccessMessage"/>
+
+        <!-- Step 4: reload once more and force the fieldsets visible again — the real proof.
+             saveChildRows() deletes all of this campaign's condition rows and reinserts what
+             was just submitted (see this test's own description), so if the delete half of
+             that ever regressed into an append-only insert, row 1 would exist here with the
+             stale order_total_gte type still in it. -->
+        <amOnPage url="admin/ordo/campaign/edit/entity_id/{$grabCampaignId}/" stepKey="goToEditPageAfterEdit"/>
+        <waitForPageLoad stepKey="waitForEditPageAfterEdit"/>
+        <executeJS function="require(['uiRegistry'], function (uiRegistry) { ['conditions_fieldset', 'actions_fieldset'].forEach(function (fieldsetName) { uiRegistry.get('ordo_campaign_form.ordo_campaign_form.' + fieldsetName, function (fieldset) { fieldset.visible(true); }); }); });" stepKey="forceFieldsetsVisibleAfterEdit"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRowAfterEdit"/>
+        <seeOptionIsSelected selector="[name='conditions[conditions][0][type]']" userInput="score_at_least" stepKey="seeNewConditionTypePersisted"/>
+        <dontSeeElement selector="[name='conditions[conditions][1][type]']" stepKey="dontSeeSecondConditionRowAfterEdit"/>
+    </test>
+</tests>

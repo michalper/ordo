@@ -88,7 +88,7 @@ cases separately from the type-by-type ones.
 | Delayed action (`delay_minutes > 0`) — chain pauses, `Cron\RunScheduledCampaignActions` resumes it later      | ✅ `AdminCampaignDelayedActionTest`                                                                             |
 | Chained delays (action pauses, resumes, pauses again)                                                         | ⬜                                                                                                              |
 | Disabled campaign — trigger fires, nothing happens                                                            | ✅ `AdminCampaignDisabledNoDispatchTest`                                                                        |
-| Campaign edited after creation (trigger/condition/action changed, re-saved, old rows replaced not duplicated) | ⬜                                                                                                              |
+| Campaign edited after creation (trigger/condition/action changed, re-saved, old rows replaced not duplicated) | ✅ `AdminEditCampaignConditionReplacesNotDuplicatesTest`                                                        |
 | Campaign deleted — grid no longer lists it, dispatch no longer matches its old triggers                       | ⬜                                                                                                              |
 | Unknown/removed condition or action type on a campaign (fails closed, logs, doesn't crash the whole dispatch) | ⬜ (unit-tested; no MFTF equivalent, arguably not worth one)                                                    |
 
