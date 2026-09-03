@@ -23,6 +23,21 @@ name: MFTF
 
 on:
   workflow_dispatch:
+    inputs:
+      test_filter:
+        description: >-
+          Optional: a single MFTF test name (e.g. AdminEditSegmentConditionChangesMembershipTest)
+          to run via "mftf run:test" instead of the full "mftf run:group" for every matrix leg.
+          Cuts a debug iteration from ~20-30 min down to ~10-12 (still one full Magento
+          install/Selenium session per leg, just a few seconds of actual test execution instead
+          of the whole group) — added specifically because iterating on a single broken test by
+          re-running its entire group every time was too slow to debug against real CI.
+          Every matrix leg runs the SAME named test regardless of which group it actually
+          belongs to; harmless (mftf run:test on a name that doesn't apply to a Magento instance
+          just errors that one leg, which fail-fast:false already tolerates) and simpler than
+          computing which single leg to run. Leave blank for a normal full run.
+        required: false
+        type: string
 
 jobs:
   mftf:
@@ -388,9 +403,16 @@ jobs:
 
       - name: Run MFTF tests
         # run:group both generates and executes every test carrying this <group> annotation —
-        # no separate generate step needed (unlike the old run:test invocation this replaced).
+        # no separate generate step needed. When test_filter is set (see the workflow_dispatch
+        # input's own comment for why), run:test that single named test instead — same
+        # generate-then-execute behavior, just scoped to one Cest instead of the whole group.
         working-directory: magento
-        run: vendor/bin/mftf run:group ${{ matrix.group }}
+        run: |
+          if [ -n "${{ inputs.test_filter }}" ]; then
+            vendor/bin/mftf run:test ${{ inputs.test_filter }}
+          else
+            vendor/bin/mftf run:group ${{ matrix.group }}
+          fi
 
       - name: Copy nginx/PHP-FPM logs for the failure artifact
         if: failure()
