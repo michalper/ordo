@@ -85,6 +85,7 @@
         <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
         <waitForPageLoad stepKey="waitForSave"/>
         <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
 
         <!-- Step 2: a REAL order, through REAL storefront checkout, as the REAL customer created
              above — same shape as AdminCampaignScenarioEndToEndTest. This same logged-in browser
@@ -151,5 +152,15 @@
         <see selector="#ordo-popup-banner" userInput="E2E popup body text" stepKey="seePopupBody"/>
         <seeElement selector="#ordo-popup-banner a[href='https://example.test/e2e-popup-sale']" stepKey="seePopupCtaLink"/>
         <see selector="#ordo-popup-banner a[href='https://example.test/e2e-popup-sale']" userInput="Shop the sale" stepKey="seePopupCtaLabel"/>
+
+        <!-- Cleanup: same root-caused reasoning as AdminCampaignInSegmentConditionTest.xml's
+             identical closing step — this campaign's order_total_gte condition (50) matches
+             essentially any real order in this same "tracking" group's CI job, so left alive it
+             would keep queuing an extra, unrelated popup for every future order-placing test's
+             own customer for the rest of the run (AdminCampaignPopupClaimedOnceTest.xml, which
+             runs right after this one alphabetically, places a real order too). -->
+        <amOnPage url="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}" stepKey="deleteCampaign"/>
+        <waitForPageLoad stepKey="waitForDeleteCampaign"/>
+        <see selector=".message-success" userInput="The campaign has been deleted." stepKey="seeDeleteCampaignSuccessMessage"/>
     </test>
 </tests>
