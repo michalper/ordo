@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCampaignInSegmentConditionTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Campaign engine"/>
+            <title value="A campaign's in_segment condition gates dispatch on live segment membership"/>
+            <description value="Proves Model/Campaign/Condition/InSegment.php for real: a saved Segment isn't just a UI record, it's a live, re-evaluated-on-every-dispatch query (Model/Segment/SegmentMatcher.php re-runs the segment's own conditions against the customer each time, no caching) that a campaign can gate on via {&quot;segment_id&quot;: ...}. Two campaigns, same order_placed trigger: Campaign A has no condition and its add_tag action tags the customer 'vip'; Campaign B is gated on in_segment against a segment whose sole condition is has_tag=vip. The same real customer places two real orders through storefront checkout — before order 1 the customer isn't in the segment (no tag yet), so Campaign B must not fire; order 1's add_tag makes them a live member, so order 2's in_segment check now passes and Campaign B's generate_coupon action fires. Only a real segment lookup running against real customer_tag rows, not a UI-only assertion, can explain the coupon existing afterwards."/>
+            <severity value="CRITICAL"/>
+            <group value="ordo_automation"/>
+            <group value="campaign"/>
+        </annotations>
+        <before>
+            <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <createData entity="ApiSalesRule" stepKey="createRule"/>
+            <!-- Requires cataloginventory_stock/catalog_product_price/catalog_product_attribute/
+                 catalog_category_product/catalog_product_category set to "Update on Save" mode
+                 (bin/magento indexer:set-mode realtime ...) in this environment — see
+                 AdminCampaignScenarioEndToEndTest.xml's identical comment for why. -->
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <deleteData createDataKey="createRule" stepKey="deleteRule"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: Campaign A — order_placed, no condition, add_tag {"tag": "vip"}. Built exactly
+             like AdminScoreThresholdCampaignTest.xml's trigger-only campaign, just with add_tag as
+             the action instead of generate_coupon (this one has no externally-visible admin grid
+             row of its own — Campaign B's coupon is what proves it ran). -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignAPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignAPage"/>
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait — a cold, freshly
+             deployed developer-mode instance's first admin page load can lag behind
+             waitForPageLoad's document.readyState check. -->
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameFieldA"/>
+        <fillField selector="[name='name']" userInput="In-Segment Tag Campaign A" stepKey="fillNameA"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButtonA"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRowA"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRowA"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEventA"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRowA"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRowA"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="add_tag" stepKey="selectActionTypeA"/>
+        <waitForElementVisible selector="[name='actions[actions][0][tag]']" stepKey="waitForTagFieldA"/>
+        <fillField selector="[name='actions[actions][0][tag]']" userInput="vip" stepKey="fillTagA"/>
+
+        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaignA"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueA"/>
+        <waitForPageLoad stepKey="waitForSaveA"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessageA"/>
+
+        <!-- Step 2: the Segment — one condition, type=tag, params_json={"tag": "vip"}, same shape
+             as AdminCreateSegmentTest.xml. "Save & Continue Edit" (not plain #save) so the redirect
+             carries entity_id in the URL — same grabFromCurrentUrl convention
+             AdminCreateCampaignWithConditionsAndActionsTest.xml uses for a campaign's own id. -->
+        <amOnPage url="admin/ordo/segment/new" stepKey="goToNewSegmentPage"/>
+        <waitForPageLoad stepKey="waitForNewSegmentPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForSegmentNameField"/>
+        <fillField selector="[name='name']" userInput="Test Tagged VIP Segment" stepKey="fillSegmentName"/>
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableSegment"/>
+
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addSegmentConditionRow"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForSegmentConditionRow"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="tag" stepKey="selectSegmentConditionType"/>
+        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;tag&quot;: &quot;vip&quot;}" stepKey="fillSegmentConditionParams"/>
+
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueSegment"/>
+        <waitForPageLoad stepKey="waitForSegmentSave"/>
+        <see selector=".message-success" userInput="The segment has been saved." stepKey="seeSegmentSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabSegmentId"/>
+
+        <!-- Step 3: Campaign B — order_placed, condition=in_segment {"segment_id": "<real id>"},
+             action=generate_coupon, same field shape as AdminCampaignScenarioEndToEndTest.xml. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignBPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignBPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameFieldB"/>
+        <fillField selector="[name='name']" userInput="In-Segment Coupon Campaign B" stepKey="fillNameB"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButtonB"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRowB"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRowB"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEventB"/>
+
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRowB"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRowB"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="in_segment" stepKey="selectConditionTypeB"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][segment_id]']" stepKey="waitForSegmentIdField"/>
+        <fillField selector="[name='conditions[conditions][0][segment_id]']" userInput="{$grabSegmentId}" stepKey="fillSegmentIdB"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRowB"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRowB"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="generate_coupon" stepKey="selectActionTypeB"/>
+        <waitForElementVisible selector="[name='actions[actions][0][rule_id]']" stepKey="waitForRuleIdFieldB"/>
+        <fillField selector="[name='actions[actions][0][rule_id]']" userInput="$createRule.rule_id$" stepKey="fillRuleIdB"/>
+        <fillField selector="[name='actions[actions][0][prefix]']" userInput="INSEGTEST" stepKey="fillPrefixB"/>
+        <fillField selector="[name='actions[actions][0][delay_minutes]']" userInput="0" stepKey="fillDelayMinutesB"/>
+
+        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaignB"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueB"/>
+        <waitForPageLoad stepKey="waitForSaveB"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessageB"/>
+
+        <!-- Step 4: the real customer, logged in once, places TWO real orders through real
+             storefront checkout — same product bought twice is fine, the point is two separate
+             order_placed dispatches, not two distinct products. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+
+        <!-- Order 1: customer isn't tagged 'vip' yet, so isn't a segment member yet — Campaign A's
+             condition-less add_tag fires (tagging them), but Campaign B's in_segment condition must
+             evaluate false at this point since the tag doesn't exist until this order's dispatch
+             actually runs. -->
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPageOrder1"/>
+        <waitForPageLoad stepKey="waitForProductPageOrder1"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCartOrder1">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCartOrder1"/>
+        <waitForPageLoad stepKey="waitForCartPageOrder1"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeFirstOrder"/>
+
+        <!-- Consume order 1's dispatch message now, before order 2 is even placed: add_tag has to
+             have actually run (not just be queued) for order 2's in_segment lookup to see the tag.
+             max-messages=5, not 1, and consumers-wait-for-messages=0 in mftf.yml means over-asking
+             is safe — same reasoning AdminScoreThresholdCampaignTest.xml documents in full for why
+             a shared-DB CI job can have other tests' stale messages sitting in the same queue. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=5" stepKey="runCampaignDispatchConsumerAfterOrder1"/>
+
+        <!-- Order 2: the tag now exists, so SegmentMatcher's live query puts the customer in the
+             segment, and Campaign B's in_segment condition is satisfied this time. -->
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPageOrder2"/>
+        <waitForPageLoad stepKey="waitForProductPageOrder2"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCartOrder2">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCartOrder2"/>
+        <waitForPageLoad stepKey="waitForCartPageOrder2"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeSecondOrder"/>
+
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=5" stepKey="runCampaignDispatchConsumerAfterOrder2"/>
+
+        <!-- Step 5: the only assertion that checks a real, merchant-visible side effect — a coupon
+             code that only Campaign B's in_segment -> generate_coupon chain, gated on a live
+             SegmentMatcher lookup against real customer_tag rows, could have produced. -->
+        <amOnPage url="admin/sales_rule/promo_quote/edit/id/$createRule.rule_id$/" stepKey="goToRuleEditPage"/>
+        <waitForPageLoad stepKey="waitForRuleEditPage"/>
+        <conditionalClick selector="{{AdminCartPriceRulesFormSection.manageCouponCodesHeader}}"
+                           dependentSelector="#couponCodesGrid_table" visible="false" stepKey="openCouponCodesTab"/>
+        <waitForElementVisible selector="#couponCodesGrid_table" stepKey="waitForCouponCodesGrid"/>
+        <!-- waitForText, not <see> — see AdminCampaignScenarioEndToEndTest.xml's comment on this
+             exact same step for the AJAX-race reason (the grid's rows load via a separate AJAX
+             call after the table element is already in the DOM). -->
+        <waitForText selector="#couponCodesGrid_table" userInput="INSEGTEST-" stepKey="seeGeneratedCouponInGrid"/>
+    </test>
+</tests>

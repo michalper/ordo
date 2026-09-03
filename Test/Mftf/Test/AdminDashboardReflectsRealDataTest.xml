@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminDashboardReflectsRealDataTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="In-admin dashboard"/>
+            <title value="Dashboard's Total campaigns stat card reflects a real, freshly-created campaign"/>
+            <description value="AdminViewDashboardTest.xml only proves the stat cards render; it never proves the NUMBER inside one is wired to real data rather than a hardcoded placeholder. This test reads the 'Total campaigns' stat before creating a campaign, creates one via the same admin-UI flow as AdminCreateCampaignTest.xml, then reloads the dashboard and asserts the count increased by exactly 1. An exact delta (before+1), not an exact absolute value, is used deliberately: DashboardViewModel::getTotalCampaignCount() is a plain collection count over the whole ordo_campaign table (Block/Adminhtml/Dashboard/DashboardViewModel.php), and other MFTF tests in this same suite/group (e.g. AdminCreateCampaignTest, AdminCreateMultiTriggerCampaignTest) also create campaigns against a shared CI database, so the absolute count is not stable across a full test run — only the delta this single test introduces is."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="dashboard"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: read the "before" count -->
+        <amOnPage url="admin/ordo/dashboard/index" stepKey="goToDashboardBefore"/>
+        <waitForPageLoad stepKey="waitForDashboardBefore"/>
+        <!-- Same cold-instance rendering lag noted in AdminViewDashboardTest.xml/AdminCreateCampaignTest.xml. -->
+        <waitForElementVisible selector="{{OrdoDashboardSection.statCardByLabel('Total campaigns')}}" stepKey="waitForTotalCampaignsStatBefore"/>
+        <grabTextFrom selector="{{OrdoDashboardSection.statCardByLabel('Total campaigns')}}" stepKey="grabCampaignCountBefore"/>
+
+        <!-- Step 2: create one real campaign via the admin UI, same flow as AdminCreateCampaignTest.xml -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Dashboard Stat Test Campaign" stepKey="fillName"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRow"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRow"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEvent"/>
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRow"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRow"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="selectConditionType"/>
+        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;amount&quot;: &quot;500&quot;}" stepKey="fillConditionParams"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Action')]" stepKey="waitForAddActionButton"/>
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRow"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRow"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="add_tag" stepKey="selectActionType"/>
+        <fillField selector="[name='actions[actions][0][params_json]']" userInput="{&quot;tag&quot;: &quot;dashboard_stat_test&quot;}" stepKey="fillActionParams"/>
+
+        <click selector="#save" stepKey="clickSave"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+
+        <!-- Step 3: read the "after" count and assert an exact +1 delta -->
+        <amOnPage url="admin/ordo/dashboard/index" stepKey="goToDashboardAfter"/>
+        <waitForPageLoad stepKey="waitForDashboardAfter"/>
+        <waitForElementVisible selector="{{OrdoDashboardSection.statCardByLabel('Total campaigns')}}" stepKey="waitForTotalCampaignsStatAfter"/>
+        <grabTextFrom selector="{{OrdoDashboardSection.statCardByLabel('Total campaigns')}}" stepKey="grabCampaignCountAfter"/>
+        <!-- assertEquals's expectedResult is a literal value, not an arithmetic expression, so
+             the "before + 1" delta is computed here via executeJS (whose return value MFTF
+             exposes the same way grabTextFrom's does, as {$stepKey}) rather than inline in the
+             assertion itself. -->
+        <executeJS function="return {$grabCampaignCountBefore} + 1;" stepKey="calcExpectedCampaignCount"/>
+        <assertEquals stepKey="assertCampaignCountIncreasedByOne">
+            <expectedResult type="int">{$calcExpectedCampaignCount}</expectedResult>
+            <actualResult type="int">{$grabCampaignCountAfter}</actualResult>
+        </assertEquals>
+    </test>
+</tests>

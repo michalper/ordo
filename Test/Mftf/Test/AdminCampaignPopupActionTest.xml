@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCampaignPopupActionTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="On-site behavior tracking"/>
+            <title value="A real campaign's popup action renders a real banner in the customer's own browser"/>
+            <description value="Model/Campaign/Action/Popup.php's own docblock explains why nothing else in this
+                module's suite covers this: unlike every other action, 'popup' doesn't send anything itself — it
+                queues a row in ordo_pending_popup that Controller/Track/Popup.php hands out the next time the
+                target's browser polls (view/frontend/web/js/tracker.js's startPopupPolling/pollForPopup/renderPopup),
+                because there is no synchronous way to push something onto a page from inside a campaign dispatch.
+                Test/Integration/CampaignVisitorPopupScenarioTest.php already proves the dispatch-to-pending-row and
+                claim-once-via-conditional-UPDATE mechanics against a real database, but with no browser at all — it
+                can't prove the JS actually renders anything a person would see. This test picks the customer_id
+                targeting path (order_placed trigger), not the visitor_id/visitor_tag_added path: Popup::execute()
+                targets 'context[customer_id] for customer-only triggers (order_placed, tag_added, ...), context
+                [visitor_id] for the anonymous visitor_tag_added trigger' (its own docblock) — order_placed, run
+                through a real logged-in storefront checkout exactly like AdminCampaignScenarioEndToEndTest, gives a
+                real customer_id in context for free, whereas the visitor_id path would additionally require driving
+                the async view/click threshold-aggregation queue (StorefrontTrackerClickThresholdTagsVisitorTest)
+                just to obtain a tag, none of which this scenario needs to prove popup rendering. Controller/Track/
+                Popup.php resolves the target itself from the logged-in customer session (customerSession-&gt;
+                isLoggedIn()), so the same browser that placed the order, still logged in, polling on its very next
+                page load, is exactly the identity the pending row was queued for. Assumes 'tracking &gt; enabled' and
+                'tracking &gt; popup_enabled' are already on in the target environment's config — the same assumption
+                StorefrontTrackerSetsVisitorCookieTest and StorefrontTrackerClickThresholdTagsVisitorTest already
+                make, since flipping that config via MFTF would need a config-data entity this module doesn't ship."/>
+            <severity value="CRITICAL"/>
+            <group value="ordo_automation"/>
+            <group value="tracking"/>
+        </annotations>
+        <before>
+            <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <!-- Same realtime-indexer assumption AdminCampaignScenarioEndToEndTest documents:
+                 cataloginventory_stock/catalog_product_price/catalog_product_attribute/
+                 catalog_category_product/catalog_product_category must be "Update on Save" in
+                 this environment for an API-created product to be addable to cart immediately. -->
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: build the scenario in the admin — trigger=order placed, condition=order total
+             (kept low, so any real order clears it), action=popup with real headline/body/cta
+             params matching Model/Campaign/Action/Popup.php's documented params shape. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait — a cold, freshly
+             deployed developer-mode instance's first admin page load can lag behind
+             waitForPageLoad's document.readyState check. -->
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="E2E Popup Campaign" stepKey="fillName"/>
+
+        <waitForElementVisible selector="//*[contains(text(), 'Add Trigger')]" stepKey="waitForAddTriggerButton"/>
+        <click selector="//*[contains(text(), 'Add Trigger')]" stepKey="addTriggerRow"/>
+        <waitForElementVisible selector="[name='triggers[triggers][0][trigger_event]']" stepKey="waitForTriggerRow"/>
+        <selectOption selector="[name='triggers[triggers][0][trigger_event]']" userInput="order_placed" stepKey="selectTriggerEvent"/>
+
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRow"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRow"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="selectConditionType"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][amount]']" stepKey="waitForAmountField"/>
+        <!-- SimpleProduct2 (Magento_Catalog fixture) is priced at 123.00 — 50 leaves headroom
+             for tax/shipping rounding while still safely below the order total. -->
+        <fillField selector="[name='conditions[conditions][0][amount]']" userInput="50" stepKey="fillConditionAmount"/>
+
+        <click selector="//*[contains(text(), 'Add Action')]" stepKey="addActionRow"/>
+        <waitForElementVisible selector="[name='actions[actions][0][type]']" stepKey="waitForActionRow"/>
+        <selectOption selector="[name='actions[actions][0][type]']" userInput="popup" stepKey="selectActionType"/>
+        <waitForElementVisible selector="[name='actions[actions][0][headline]']" stepKey="waitForHeadlineField"/>
+        <fillField selector="[name='actions[actions][0][headline]']" userInput="E2E Popup Headline" stepKey="fillHeadline"/>
+        <fillField selector="[name='actions[actions][0][body]']" userInput="E2E popup body text" stepKey="fillBody"/>
+        <fillField selector="[name='actions[actions][0][cta_label]']" userInput="Shop the sale" stepKey="fillCtaLabel"/>
+        <fillField selector="[name='actions[actions][0][cta_url]']" userInput="https://example.test/e2e-popup-sale" stepKey="fillCtaUrl"/>
+        <fillField selector="[name='actions[actions][0][delay_minutes]']" userInput="0" stepKey="fillDelayMinutes"/>
+
+        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+
+        <!-- Step 2: a REAL order, through REAL storefront checkout, as the REAL customer created
+             above — same shape as AdminCampaignScenarioEndToEndTest. This same logged-in browser
+             session is what Controller/Track/Popup.php will later resolve customer_id from via
+             customerSession-&gt;isLoggedIn(), so it must be the one that both places the order
+             and later polls for the popup. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <!-- Step 3: this install has no RabbitMQ (DB queue driver only — see AGENTS.md), so
+             nothing consumes the message DispatchOrderPlacedCampaigns just published until a
+             consumer actually runs. In production that's cron_consumers_runner; here, run it
+             directly. max-messages is 5, not 1, matching AdminScoreThresholdCampaignTest's own
+             reasoning: other tests in this same CI job can leave their own unrelated
+             order-placed dispatch message sitting unconsumed ahead of ours; draining a few keeps
+             this test from stalling on a stale message. Safe to ask for more than are actually
+             queued — mftf.yml sets consumers-wait-for-messages=0, so the consumer returns as
+             soon as the queue is empty instead of blocking. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=5" stepKey="runCampaignDispatchConsumer"/>
+
+        <!-- Step 4: at this point CampaignDispatcher has run Popup::execute(), which queued a
+             real ordo_pending_popup row targeted at this customer's customer_id (frequency cap
+             defaults to 24h but there is nothing else that could have delivered this customer a
+             popup before now, so it isn't capped). Nothing has claimed it yet, though — the
+             checkout success page that's currently loaded started its own tracker.js poll loop
+             (view/frontend/web/js/tracker.js's startPopupPolling) before the row above existed,
+             so a fresh page load is needed to start a poll loop that can actually find it.
+             pollForPopup fires 2s after tracker.js's own load (fixed delay, independent of the
+             configured poll interval), then renders via renderPopup() into a
+             #ordo-popup-banner element appended to <body> — that id is the real, JS-authored
+             selector this test asserts against, not a CSS class MFTF made up. -->
+        <amOnPage url="/" stepKey="goToStorefrontHomeToPoll"/>
+        <waitForPageLoad stepKey="waitForHomePageLoad"/>
+
+        <!-- Step 5: the one assertion in this whole module's suite that proves a campaign's
+             on-site popup is actually visible to a real person in a real browser, not just that
+             a database row exists (Test/Integration/CampaignVisitorPopupScenarioTest.php already
+             covers that half). waitForElementVisible polls, giving pollForPopup's fetch + JSON
+             round-trip + renderPopup's DOM append time to complete after the fixed 2s delay. -->
+        <waitForElementVisible selector="#ordo-popup-banner" stepKey="waitForPopupBanner"/>
+        <see selector="#ordo-popup-banner" userInput="E2E Popup Headline" stepKey="seePopupHeadline"/>
+        <see selector="#ordo-popup-banner" userInput="E2E popup body text" stepKey="seePopupBody"/>
+        <seeElement selector="#ordo-popup-banner a[href='https://example.test/e2e-popup-sale']" stepKey="seePopupCtaLink"/>
+        <see selector="#ordo-popup-banner a[href='https://example.test/e2e-popup-sale']" userInput="Shop the sale" stepKey="seePopupCtaLabel"/>
+    </test>
+</tests>

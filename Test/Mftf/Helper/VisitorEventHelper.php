@@ -56,4 +56,43 @@ class VisitorEventHelper extends Helper
             ));
         }
     }
+
+    /**
+     * Confirms VisitorAggregator actually wrote a real ordo_visitor_tag row for this visitor —
+     * the real, DB-observable effect of crossing Config::getTrackingClickThreshold(), and the
+     * exact signal Observer\DispatchVisitorTagAddedCampaigns.php's "visitor_tag_added" trigger
+     * fires from (see VisitorTagManager::addTag()). Same out-of-band PDO pattern as
+     * assertEventLogged() above, against the tag table instead of the event table.
+     *
+     * @throws \RuntimeException if no matching row exists
+     */
+    public function assertVisitorTagAdded(
+        string $visitorId,
+        string $tag,
+        string $dbHost = '127.0.0.1',
+        string $dbName = 'magento',
+        string $dbUser = 'root',
+        string $dbPassword = ''
+    ): void {
+        $pdo = new \PDO(
+            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
+            $dbUser,
+            $dbPassword,
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+        );
+
+        $statement = $pdo->prepare(
+            'SELECT COUNT(*) FROM ordo_visitor_tag WHERE visitor_id = :visitor_id AND tag = :tag'
+        );
+        $statement->execute(['visitor_id' => $visitorId, 'tag' => $tag]);
+        $count = (int) $statement->fetchColumn();
+
+        if ($count < 1) {
+            throw new \RuntimeException(sprintf(
+                'No ordo_visitor_tag row found for visitor_id="%s" tag="%s".',
+                $visitorId,
+                $tag
+            ));
+        }
+    }
 }

@@ -171,6 +171,10 @@ jobs:
           # AdminScoreThresholdCampaignTest needs Observer/EvaluateCustomerScoreRules.php to
           # actually run on customer_save_after — off by default, same as the two flags above.
           bin/magento config:set ordo_automation/lead_scoring/enabled 1
+          # AdminCampaignPopupActionTest needs tracker.js's startPopupPolling() to actually run
+          # (gated behind data-popup-enabled="1" on the tracker script tag) — off by default,
+          # same as the flags above.
+          bin/magento config:set ordo_automation/tracking/popup_enabled 1
 
           # Every admin test that navigates straight to a URL (amOnPage) rather than
           # clicking a rendered link was silently redirected to the Dashboard — confirmed

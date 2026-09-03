@@ -53,7 +53,7 @@ cases separately from the type-by-type ones.
 
 | Condition                             | Params                                                            | Status                                                                                                 |
 |---------------------------------------|-------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| `tag`                                 | `{tag}`                                                           | ⬜ (`HasTag`, customer must already have the tag)                                                      |
+| `tag`                                 | `{tag}`                                                           | ✅ (`AdminCampaignInSegmentConditionTest`, exercised as the segment's own condition)                   |
 | `order_total_gte`                     | `{amount}`                                                        | ✅ (`AdminCampaignScenarioEndToEndTest`, `AdminCreateCampaignWithConditionsAndActionsTest` as UI-only) |
 | `visitor_tag`                         | `{tag}`                                                           | ⬜ (anonymous-visitor variant of `tag`)                                                                |
 | `score_at_least`                      | `{threshold}`                                                     | ⬜                                                                                                     |
@@ -63,16 +63,16 @@ cases separately from the type-by-type ones.
 | `recency_percentile_at_least`         | `{percentile}` (RFM, needs `Cron\RecomputeRfmScores` to have run) | ⬜                                                                                                     |
 | `order_frequency_percentile_at_least` | `{percentile}` (RFM)                                              | ⬜                                                                                                     |
 | `monetary_percentile_at_least`        | `{percentile}` (RFM)                                              | ⬜                                                                                                     |
-| `in_segment`                          | `{segment_id}`                                                    | ⬜ (a campaign gated on membership in a saved segment — chains §2)                                     |
+| `in_segment`                          | `{segment_id}`                                                    | ✅ `AdminCampaignInSegmentConditionTest`                                                               |
 
 ### 1c. Actions (`Model\Campaign\ActionPool`)
 
 | Action            | Params                                 | Status                                                                                              |
 |-------------------|----------------------------------------|-----------------------------------------------------------------------------------------------------|
 | `add_tag`         | `{tag}`                                | ⬜ (only ever a side effect inside `AdminCampaignScenarioEndToEndTest`, never the thing under test) |
-| `send_email`      | `{template, message}`                  | ✅ `AdminCampaignSendEmailActionTest`                                                                |
+| `send_email`      | `{template, message}`                  | ✅ `AdminCampaignSendEmailActionTest`                                                               |
 | `generate_coupon` | `{rule_id, prefix}`                    | ✅ `AdminCampaignScenarioEndToEndTest`                                                              |
-| `popup`           | `{headline, body, cta_label, cta_url}` | ⬜ (writes `ordo_pending_popup`; needs a storefront poll — see §6)                                  |
+| `popup`           | `{headline, body, cta_label, cta_url}` | ✅ `AdminCampaignPopupActionTest` (writes `ordo_pending_popup`; storefront poll — see §7)            |
 | `add_points`      | `{points}`                             | ⬜ (writes `ordo_customer_score`; feeds `score_at_least`/`score_threshold_crossed`)                 |
 
 ### 1d. Structural cases (not type-specific)
@@ -94,15 +94,15 @@ cases separately from the type-by-type ones.
 
 ## 2. Segments (`Model/Segment.php`, `Controller/Adminhtml/Segment/`)
 
-| Scenario                                                                                                                            | Status                      |
-|-------------------------------------------------------------------------------------------------------------------------------------|-----------------------------|
-| Create a segment (name, enabled, one condition), appears in grid                                                                    | ✅ `AdminCreateSegmentTest` |
-| Segment with multiple AND'd conditions                                                                                              | ⬜                          |
-| Segment referenced by a campaign's `in_segment` condition (real membership match at dispatch time)                                  | ⬜                          |
-| Bulk action on a segment's current members — add tag (`SegmentBulkActionConsumer`, async via `ordo.automation.segment.bulk_action`) | ⬜                          |
-| Bulk action on a segment's current members — add points                                                                             | ⬜                          |
-| Segment edited, condition changed, membership re-evaluates differently                                                              | ⬜                          |
-| Segment deleted                                                                                                                     | ⬜                          |
+| Scenario                                                                                                                            | Status                                            |
+|-------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------|
+| Create a segment (name, enabled, one condition), appears in grid                                                                    | ✅ `AdminCreateSegmentTest`                       |
+| Segment with multiple AND'd conditions                                                                                              | ✅ `AdminCreateSegmentWithMultipleConditionsTest` |
+| Segment referenced by a campaign's `in_segment` condition (real membership match at dispatch time)                                  | ✅ `AdminCampaignInSegmentConditionTest`          |
+| Bulk action on a segment's current members — add tag (`SegmentBulkActionConsumer`, async via `ordo.automation.segment.bulk_action`) | ⬜                                                |
+| Bulk action on a segment's current members — add points                                                                             | ⬜                                                |
+| Segment edited, condition changed, membership re-evaluates differently                                                              | ⬜                                                |
+| Segment deleted                                                                                                                     | ⬜                                                |
 
 ## 3. RFM (`Model/Rfm/`, `Cron/RecomputeRfmScores.php`, `ordo/rfm/index`)
 
@@ -130,50 +130,50 @@ cases separately from the type-by-type ones.
 
 `Controller/Adminhtml/FreeGiftOffer/`, `Controller/Offer/`)
 
-`FreeGiftManagementInterface` (get eligibility / select gifts) has no storefront UI in this repo
-at all — it's a pure REST surface, presumably meant for a headless/PWA storefront to call — so
-the first four rows below are a `Test/Integration` suite (real DI, real DB, real quote) instead
-of MFTF: there is nothing for MFTF's browser to click through. `Controller/Offer/*` (self-extend,
+`FreeGiftManagementInterface` (get eligibility / select gifts) has no storefront UI in this repo at all — it's a pure
+REST surface, presumably meant for a headless/PWA storefront to call — so the first four rows below are a
+`Test/Integration` suite (real DI, real DB, real quote) instead of MFTF: there is nothing for MFTF's browser to click
+through. `Controller/Offer/*` (self-extend,
 "My Offers") *is* a real storefront page and stays a genuine MFTF candidate.
 
-| Scenario                                                                                                                                                                            | Status                                                                                                                                                 |
-|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Create a free gift offer (tiers, product pool) via admin CRUD                                                                                                                       | ✅ `FreeGiftManagementScenarioTest` (Test/Integration — no admin UI exercised, offer/tier/pool built via the repositories directly, see below)         |
-| Real cart crosses a tier's `min_subtotal` — gift slot becomes available on the storefront                                                                                           | ✅ `FreeGiftManagementScenarioTest`                                                                                                                     |
-| Customer selects a free gift, it's added to cart at zero cost                                                                                                                       | ✅ `FreeGiftManagementScenarioTest`                                                                                                                     |
+| Scenario                                                                                                                                                                            | Status                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Create a free gift offer (tiers, product pool) via admin CRUD                                                                                                                       | ✅ `FreeGiftManagementScenarioTest` (Test/Integration — no admin UI exercised, offer/tier/pool built via the repositories directly, see below)                                                                                                                                                                                                                                                                                                                                                                  |
+| Real cart crosses a tier's `min_subtotal` — gift slot becomes available on the storefront                                                                                           | ✅ `FreeGiftManagementScenarioTest`                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Customer selects a free gift, it's added to cart at zero cost                                                                                                                       | ✅ `FreeGiftManagementScenarioTest`                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Cart drops below the tier threshold — previously-added gift is removed                                                                                                              | ✅ `FreeGiftManagementScenarioTest` — caught and fixed a real bug: `Observer/TrimExcessFreeGifts.php` read `$quote->getSubtotal()`, which is stale at the moment `sales_quote_collect_totals_after` fires (dispatched from inside `Quote\TotalsCollector::collect()`, *before* `Quote::collectTotals()` applies the freshly computed totals back onto the quote) — the gift was never actually trimmed. Fixed to sum `getAllAddresses()`' own (fresh) subtotals instead, same as `TotalsCollector` itself does. |
-| Offer self-extension (`Controller/Offer/Extend.php`, `Offer::canSelfExtend()`)                                                                                                      | ⬜                                                                                                                                                     |
-| "My Offers" storefront customer-account page (`Controller/Offer/Index.php`) lists the logged-in customer's offers, self-extend action visible only when `canSelfExtend()` allows it | ⬜ — missed entirely in the first pass of this document; caught auditing `Controller/Offer/*.php` directly against the doc rather than trusting memory |
-| `Cron\SendOfferExpiryReminders` — reminder email before expiry                                                                                                                      | ⬜                                                                                                                                                     |
-| `Cron\ExpireOverdueOffers` — offer past expiry marked expired, no longer redeemable                                                                                                 | ⬜                                                                                                                                                     |
+| Offer self-extension (`Controller/Offer/Extend.php`, `Offer::canSelfExtend()`)                                                                                                      | ⬜                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| "My Offers" storefront customer-account page (`Controller/Offer/Index.php`) lists the logged-in customer's offers, self-extend action visible only when `canSelfExtend()` allows it | ⬜ — missed entirely in the first pass of this document; caught auditing `Controller/Offer/*.php` directly against the doc rather than trusting memory                                                                                                                                                                                                                                                                                                                                                          |
+| `Cron\SendOfferExpiryReminders` — reminder email before expiry                                                                                                                      | ⬜                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `Cron\ExpireOverdueOffers` — offer past expiry marked expired, no longer redeemable                                                                                                 | ⬜                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 ## 6. Order approval (`Model/OrderApproval.php`, `Controller/Approval/`)
 
 | Scenario                                                                                                                             | Status                             |
 |--------------------------------------------------------------------------------------------------------------------------------------|------------------------------------|
 | Real order over spend limit → held, approve email sent, approve link releases it                                                     | ✅ `AdminApproveOrderViaEmailTest` |
-| Reject link (`Controller/Approval/Reject.php`) — order canceled, not released                                                        | ⬜                                 |
+| Reject link (`Controller/Approval/Reject.php`) — order canceled, not released                                                        | ✅ `AdminRejectOrderViaEmailTest`  |
 | Token re-use after approve/reject (already covered as the *second* half of `AdminApproveOrderViaEmailTest` — single-use enforcement) | ✅                                 |
 | `Cron\EscalateStalePendingApprovals` — a pending approval past its SLA gets escalated                                                | ⬜                                 |
-| Order under spend limit — never held at all (negative case)                                                                          | ⬜                                 |
+| Order under spend limit — never held at all (negative case)                                                                          | ✅ `AdminOrderUnderSpendLimitNotHeldTest` |
 | Customer with no spend limit / no approval admin email configured — never held                                                       | ⬜ (unit-tested only)              |
 
 ## 7. Tracking & popups (`view/frontend/web/js/tracker.js`, `Controller/Track/`)
 
-| Scenario                                                                                                                              | Status                                      |
-|---------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------|
-| `ordo_visitor_id` cookie issued on first visit, stable across reload                                                                  | ✅ `StorefrontTrackerSetsVisitorCookieTest` |
-| `page_view` event posted and persisted                                                                                                | ✅ `StorefrontTrackerPostsEventsTest`       |
-| `product_view` event posted and persisted (scripted stand-in for a theme PDP hook)                                                    | ✅ `StorefrontTrackerPostsEventsTest`       |
-| `category_view` event posted and persisted                                                                                            | ⬜                                          |
-| `element_clicked` event posted and persisted (popup-targeting click threshold)                                                        | ⬜                                          |
-| View-threshold crossing (default 3) tags the visitor, chains into `visitor_tag_added` (§1a)                                           | ⬜                                          |
-| Click-threshold crossing (default 1) tags the visitor via `element_clicked`                                                           | ⬜                                          |
-| A campaign's `popup` action writes a pending popup, storefront poll (`Controller/Track/Popup.php`) picks it up and renders the banner | ⬜                                          |
-| Popup dismissed / closed client-side, doesn't reappear on next poll                                                                   | ⬜                                          |
-| `Cron\PrunePendingPopups` — delivered/expired popups cleaned up                                                                       | ⬜                                          |
-| `Cron\PruneVisitorEvents` — events past retention window removed                                                                      | ⬜                                          |
-| Tracking disabled via config — `window.ordoTrack` calls become no-ops server-side (`reason: tracking_disabled`)                       | ⬜                                          |
+| Scenario                                                                                                                              | Status                                              |
+|---------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|
+| `ordo_visitor_id` cookie issued on first visit, stable across reload                                                                  | ✅ `StorefrontTrackerSetsVisitorCookieTest`         |
+| `page_view` event posted and persisted                                                                                                | ✅ `StorefrontTrackerPostsEventsTest`               |
+| `product_view` event posted and persisted (scripted stand-in for a theme PDP hook)                                                    | ✅ `StorefrontTrackerPostsEventsTest`               |
+| `category_view` event posted and persisted                                                                                            | ⬜                                                  |
+| `element_clicked` event posted and persisted (popup-targeting click threshold)                                                        | ⬜                                                  |
+| View-threshold crossing (default 3) tags the visitor, chains into `visitor_tag_added` (§1a)                                           | ⬜                                                  |
+| Click-threshold crossing (default 1) tags the visitor via `element_clicked`                                                           | ✅ `StorefrontTrackerClickThresholdTagsVisitorTest` |
+| A campaign's `popup` action writes a pending popup, storefront poll (`Controller/Track/Popup.php`) picks it up and renders the banner | ✅ `AdminCampaignPopupActionTest`                   |
+| Popup dismissed / closed client-side, doesn't reappear on next poll                                                                   | ⬜                                                  |
+| `Cron\PrunePendingPopups` — delivered/expired popups cleaned up                                                                       | ⬜                                                  |
+| `Cron\PruneVisitorEvents` — events past retention window removed                                                                      | ⬜                                                  |
+| Tracking disabled via config — `window.ordoTrack` calls become no-ops server-side (`reason: tracking_disabled`)                       | ⬜                                                  |
 
 ## 8. Reorder cycles (`Model/ReorderCycle.php`, `Cron/CalculateReorderCycle.php`, `Cron/SendReorderReminders.php`)
 
@@ -205,13 +205,25 @@ of MFTF: there is nothing for MFTF's browser to click through. `Controller/Offer
 1. ~~`score_threshold_crossed` end to end~~ (§4 + §1a) — done: `AdminScoreThresholdCampaignTest.xml` (`campaign`
    group). Deliberately no condition on the campaign (an empty conditions list is vacuously satisfied), so the coupon
    appearing is entirely down to the score-rule → threshold → dispatch chain actually working.
-2. ~~`send_email` action + MailHog~~ (§1c) — done: `AdminCampaignSendEmailActionTest.xml` (`campaign` group).
-   Reused the exact MailHog wiring `AdminApproveOrderViaEmailTest`/`MailHogHelper` already established (added a new
+2. ~~`send_email` action + MailHog~~ (§1c) — done: `AdminCampaignSendEmailActionTest.xml` (`campaign` group). Reused the
+   exact MailHog wiring `AdminApproveOrderViaEmailTest`/`MailHogHelper` already established (added a new
    `seeTextInLatestEmail` helper method); closes the last uncovered action type.
 3. ~~Free gift eligibility/select/trim flow~~ (§5) — done: `FreeGiftManagementScenarioTest.php` (`Test/Integration`,
    not MFTF — see §5's own note on why). Caught and fixed a real bug along the way:
    `Observer/TrimExcessFreeGifts.php` read a stale `$quote->getSubtotal()`, so a dropped-below-threshold gift was
    never actually being trimmed from the cart.
-4. **In-segment condition chained with a real campaign dispatch** (§1b + §2) — the one condition type that depends on
-   another whole feature (segments) rather than a single DB column, so it's the best test of the two features'
-   integration, not just each in isolation.
+4. ~~In-segment condition chained with a real campaign dispatch~~ (§1b + §2) — done: `AdminCampaignInSegmentConditionTest.xml`
+   (`campaign` group). Two real orders: the first fires a tag-only campaign (`add_tag`), the second's `in_segment`
+   condition live-queries `SegmentMatcher` against a segment whose own condition is that same tag.
+5. ~~Reject link~~ (§6) — done: `AdminRejectOrderViaEmailTest.xml` (`campaign` group).
+6. ~~Segment with multiple AND'd conditions~~ (§2) — done: `AdminCreateSegmentWithMultipleConditionsTest.xml`
+   (`segment` group).
+7. ~~Click-threshold crossing tags the visitor~~ (§7) — done: `StorefrontTrackerClickThresholdTagsVisitorTest.xml`
+   (`tracking` group).
+8. ~~`category_view` event posted and persisted~~ (§7) — done: `StorefrontTrackerCategoryViewEventTest.xml`
+   (`tracking` group).
+9. ~~Dashboard stat cards reflect real data~~ (§9) — done: `AdminDashboardReflectsRealDataTest.xml` (`dashboard`
+   group).
+10. ~~Order under spend limit never held~~ (§6) — done: `AdminOrderUnderSpendLimitNotHeldTest.xml` (`campaign` group).
+11. ~~Popup action + storefront poll renders the banner~~ (§7) — done: `AdminCampaignPopupActionTest.xml`
+    (`tracking` group). Needed a new config flag (`ordo_automation/tracking/popup_enabled`) turned on in `mftf.yml`.

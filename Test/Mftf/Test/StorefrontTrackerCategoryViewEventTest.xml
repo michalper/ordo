@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="StorefrontTrackerCategoryViewEventTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="On-site behavior tracking"/>
+            <title value="tracker.js actually posts category_view events to the backend, mirroring product_view coverage"/>
+            <description value="StorefrontTrackerPostsEventsTest already proved page_view (automatic) and product_view (scripted stand-in) actually reach Controller/Track/Event.php and get persisted into ordo_visitor_event. category_view is the third entry in that controller's ALLOWED_EVENT_TYPES (Controller/Track/Event.php) and tracker.js's own docblock names it alongside product_view as needing a theme to call window.ordoTrack('category_view', categoryId) explicitly, since tracker.js does no automatic page-type detection. No theme in this environment makes that call on category/PLP pages, so — exactly like the product_view half of StorefrontTrackerPostsEventsTest — this calls it directly via executeJS on a real category page and confirms the backend persisted it, keyed by the category id."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="tracking"/>
+        </annotations>
+        <before>
+            <createData entity="_defaultCategory" stepKey="createCategory"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <createData entity="AssignProductToCategory" stepKey="assignProductToCategory">
+                <requiredEntity createDataKey="createCategory"/>
+                <requiredEntity createDataKey="createProduct"/>
+            </createData>
+        </before>
+        <after>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <deleteData createDataKey="createCategory" stepKey="deleteCategory"/>
+        </after>
+
+        <!-- Visiting the category page picks up page_view automatically (tracker.js's own last
+             line) and gives us a real ordo_visitor_id cookie to assert against. -->
+        <amOnPage url="$createCategory.custom_attributes[url_key]$.html" stepKey="goToCategoryPage"/>
+        <waitForPageLoad stepKey="waitForCategoryPage"/>
+        <wait time="1" stepKey="waitForCookieToBeSet"/>
+        <grabCookie userInput="ordo_visitor_id" stepKey="grabVisitorId"/>
+
+        <!-- category_view — same scripted stand-in as StorefrontTrackerPostsEventsTest's
+             product_view step, since tracker.js deliberately does no page-type detection of its
+             own on category/PLP pages either. -->
+        <executeJS function="window.ordoTrack('category_view', '$createCategory.id$')" stepKey="callOrdoTrackForCategoryView"/>
+        <wait time="2" stepKey="waitForCategoryViewEventToLand"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertEventLogged" stepKey="assertCategoryViewLogged">
+            <argument name="visitorId">{$grabVisitorId}</argument>
+            <argument name="eventType">category_view</argument>
+            <argument name="eventKey">$createCategory.id$</argument>
+        </helper>
+    </test>
+</tests>

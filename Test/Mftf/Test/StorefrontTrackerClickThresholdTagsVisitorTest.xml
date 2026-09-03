@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="StorefrontTrackerClickThresholdTagsVisitorTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="On-site behavior tracking"/>
+            <title value="Crossing the click threshold for element_clicked events actually tags the anonymous visitor"/>
+            <description value="SCENARIOS.md documents this as 'crossing the click threshold tags the visitor, feeding visitor_tag_added campaigns' but until now no test proved the real mechanism: Controller/Track/Event.php -&gt; VisitorEventLogger::log() -&gt; VisitorAggregationPublisher onto the 'ordo.automation.visitor.aggregate' queue (see Model/Queue/VisitorAggregationPublisher.php) -&gt; VisitorAggregationConsumer -&gt; VisitorAggregator::aggregateForVisitor(), which GROUP BY/HAVINGs ordo_visitor_event rows for this never-logged-in visitor_id and, once occurrences for an event_key reach Helper\Config::getTrackingClickThreshold() (XML path ordo_automation/tracking/click_threshold, default 1 per SCENARIOS.md), calls VisitorTagManager::addTag() — which both writes a real ordo_visitor_tag row and dispatches 'ordo_visitor_tag_added', the event Observer/DispatchVisitorTagAddedCampaigns.php listens for. Aggregation is no longer synchronous (VisitorEventLogger's own docblock), so — same pattern as AdminCampaignScenarioEndToEndTest/AdminScoreThresholdCampaignTest use for the campaign-dispatch queue — this test runs the real 'ordo.automation.visitor.aggregate' consumer via magentoCLI after firing the click(s), then asserts the resulting ordo_visitor_tag row directly, via a new VisitorEventHelper::assertVisitorTagAdded() method following the exact PDO pattern assertEventLogged() already uses. The tag itself is built by VisitorAggregator::buildTag() as 'clicked_&lt;event_key&gt;' for element_clicked (CLICK_EVENT_TYPES), unlike the 'viewed_TYPE_KEY' shape used for view events. This test assumes the default click_threshold of 1 (fires exactly one element_clicked call, matching SCENARIOS.md's documented default) and that tracking is enabled, the same environment assumption StorefrontTrackerSetsVisitorCookieTest already makes."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="tracking"/>
+        </annotations>
+
+        <!-- Step 1: establish a real anonymous visitor_id cookie, the same way every other
+             tracker.js-driven test does (tracker.js issues it synchronously on load; page_view
+             fires automatically too, but this scenario only cares about element_clicked). -->
+        <amOnPage url="/" stepKey="goToStorefrontHome"/>
+        <waitForPageLoad stepKey="waitForHomePage"/>
+        <wait time="1" stepKey="waitForCookieToBeSet"/>
+        <grabCookie userInput="ordo_visitor_id" stepKey="grabVisitorId"/>
+
+        <!-- Step 2: fire the click. There is no theme wiring that calls window.ordoTrack('element_clicked', ...)
+             on its own (same "no automatic page-type/interaction detection" gap tracker.js's docblock
+             documents for product_view/category_view) — this executeJS call is the scripted stand-in
+             a real theme's click handler would make, with an event_key format (an element identifier)
+             matching what Controller/Track/Event.php accepts as a free-form string. Config::getTrackingClickThreshold()
+             defaults to 1, so this single call must be enough to cross it. -->
+        <executeJS function="window.ordoTrack('element_clicked', 'hero-cta-button')" stepKey="callOrdoTrackForElementClick"/>
+        <wait time="2" stepKey="waitForClickEventToLand"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertEventLogged" stepKey="assertClickEventLogged">
+            <argument name="visitorId">{$grabVisitorId}</argument>
+            <argument name="eventType">element_clicked</argument>
+            <argument name="eventKey">hero-cta-button</argument>
+        </helper>
+
+        <!-- Step 3: aggregation is async — VisitorEventLogger::log() only published a message
+             onto ordo.automation.visitor.aggregate (Model/Queue/VisitorAggregationPublisher.php);
+             nothing has consumed it yet. Run the real consumer directly, exactly once, the same
+             way AdminCampaignScenarioEndToEndTest runs ordo.automation.campaign.dispatch — in
+             production this is cron_consumers_runner, here it's driven explicitly so the test
+             doesn't depend on a background process. mftf.yml sets
+             consumers-wait-for-messages=0, so this returns as soon as the queue is empty. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.visitor.aggregate --max-messages=1" stepKey="runVisitorAggregationConsumer"/>
+
+        <!-- Step 4: the real, DB-observable effect — VisitorAggregator::buildTag() names an
+             element_clicked tag 'clicked_<event_key>' (CLICK_EVENT_TYPES branch), and
+             VisitorTagManager::addTag() both writes this ordo_visitor_tag row and dispatches
+             'ordo_visitor_tag_added', which is what Observer/DispatchVisitorTagAddedCampaigns.php
+             chains into. This is the assertion that actually proves the threshold-crossing ->
+             tagging mechanism this scenario is about, not just that the click event was logged. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertVisitorTagAdded" stepKey="assertClickTagAdded">
+            <argument name="visitorId">{$grabVisitorId}</argument>
+            <argument name="tag">clicked_hero-cta-button</argument>
+        </helper>
+    </test>
+</tests>

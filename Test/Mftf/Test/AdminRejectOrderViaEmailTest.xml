@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminRejectOrderViaEmailTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Order approval"/>
+            <title value="A real order over a customer's spend limit is held, and the emailed reject link cancels it"/>
+            <description value="The order-rejection round trip end to end, mirroring AdminApproveOrderViaEmailTest: a real customer with a real spend limit places a real order that exceeds it through storefront checkout, Observer/HoldOrderForApproval.php sends a real email (via MailHog, wired into mftf.yml as a service container + mhsendmail), MailHogHelper.php reads the Reject link's real href straight out of that email exactly as an admin's mail client would show it, and the browser follows it with no login (by design — see AbstractApprovalAction) to confirm the order is genuinely canceled (Model/OrderApprovalManagement::rejectByToken calls $order->cancel()), not just that a token was generated."/>
+            <severity value="CRITICAL"/>
+            <group value="ordo_automation"/>
+            <group value="campaign"/>
+        </annotations>
+        <before>
+            <createData entity="OrdoApprovalCustomer" stepKey="createCustomer"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+        </after>
+
+        <!-- SimpleProduct2 (Magento_Catalog fixture, priced at 123.00) safely clears the
+             customer's 10.00 spend limit set in OrdoApprovalCustomerData.xml — no need to
+             configure a special price. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+        <grabTextFrom selector="{{CheckoutSuccessMainSection.orderNumber}}" stepKey="grabOrderNumber"/>
+
+        <!-- The real point of this test: read the Reject link's actual href out of a real
+             mailbox, the same way the admin this feature is built for would see it — not a
+             synthetic token grabbed from the database or the API. toAddress must be passed:
+             a real checkout also sends the customer their own order-confirmation email, and
+             that one is not reliably older than the admin's approval-request email in MailHog
+             — without filtering by recipient, "most recent message overall" can grab the
+             customer's email instead, which has no Reject link at all (confirmed via a real
+             CI run, see AdminApproveOrderViaEmailTest). approver@example.com is
+             OrdoApprovalCustomerData.xml's fixed (non-unique) ordo_approval_admin_email value. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="grabLinkFromLatestEmail" stepKey="grabRejectUrl">
+            <argument name="linkText">Reject</argument>
+            <argument name="toAddress">approver@example.com</argument>
+        </helper>
+
+        <!-- No login: the reject link is a bearer-token URL by design (AbstractApprovalAction /
+             OrderApprovalManagement) — a busy admin can act from their phone with no session. -->
+        <amOnUrl url="{$grabRejectUrl}" stepKey="followRejectLink"/>
+        <waitForPageLoad stepKey="waitForRedirect"/>
+        <see selector=".message-success" userInput="has been rejected and canceled" stepKey="seeRejectionSuccessMessage"/>
+
+        <!-- rejectByToken() calls $order->cancel() (Model/OrderApprovalManagement.php) —
+             confirm the real side effect on the order, not just the flash message, by
+             checking the order's status in the admin grid. -->
+        <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        <actionGroup ref="FilterOrderGridByIdActionGroup" stepKey="filterOrdersGridById">
+            <argument name="orderId" value="{$grabOrderNumber}"/>
+        </actionGroup>
+        <see selector="{{AdminOrdersGridSection.gridCell('1', 'Status')}}" userInput="Canceled" stepKey="seeOrderCanceled"/>
+
+        <!-- The token is single-use (OrderApprovalManagement::loadPendingApprovalByToken only
+             matches a still-pending row) — following the exact same link again must fail, not
+             silently re-reject/re-cancel. -->
+        <amOnUrl url="{$grabRejectUrl}" stepKey="followRejectLinkAgain"/>
+        <waitForPageLoad stepKey="waitForSecondRedirect"/>
+        <see selector=".message-error" userInput="already been used or is invalid" stepKey="seeAlreadyUsedMessage"/>
+    </test>
+</tests>

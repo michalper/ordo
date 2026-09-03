@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminOrderUnderSpendLimitNotHeldTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Order approval"/>
+            <title value="A real order under a customer's spend limit is not held for approval"/>
+            <description value="Negative counterpart to AdminApproveOrderViaEmailTest: a real customer with a real
+            spend limit places a real order through storefront checkout that stays under that limit.
+            Observer/HoldOrderForApproval.php's own guard (spendLimit &lt;= 0.0 || adminEmail === '' ||
+            grandTotal &lt;= spendLimit) means the order must complete normally and keep the ordinary
+            'Pending' status Magento assigns on placement, not the ordo_pending_approval status
+            (Setup/Patch/Data/AddPendingApprovalOrderStatus.php) the observer sets when it does hold an
+            order. Asserting the admin order grid shows 'Pending' is the direct, non-flaky proof that
+            nothing was held, no MailHog round trip needed for this side of the behaviour."/>
+            <severity value="CRITICAL"/>
+            <group value="ordo_automation"/>
+            <group value="campaign"/>
+        </annotations>
+        <before>
+            <createData entity="OrdoApprovalCustomer" stepKey="createCustomer"/>
+            <createData entity="SimpleProductWithQty1" stepKey="createProduct"/>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- SimpleProductWithQty1 (Magento_Catalog fixture, priced at 1.00) safely stays under the
+             customer's 10.00 spend limit set in OrdoApprovalCustomerData.xml, no need to configure
+             a special price. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <!-- Grab the increment ID straight from the storefront "Thank you" page, checkout
+             completing to that page at all is itself part of the proof: a held order still lets
+             checkout finish (HoldOrderForApproval runs on sales_order_place_after, after the order
+             row already exists), so the real distinguishing signal is the status the admin grid
+             shows next, not whether this page was reached. -->
+        <grabTextFrom selector="{{CheckoutSuccessMainSection.orderNumber}}" stepKey="grabOrderNumber"/>
+
+        <!-- FilterOrderGridByIdActionGroup navigates to AdminOrdersPage and filters by
+             increment ID on its own, no separate navigation/clear-filters steps needed. -->
+        <actionGroup ref="FilterOrderGridByIdActionGroup" stepKey="filterGridByOrderId">
+            <argument name="orderId" value="{$grabOrderNumber}"/>
+        </actionGroup>
+
+        <!-- The real point of this test: the order grid must show the ordinary post-purchase
+             status, never the ordo_pending_approval status Observer/HoldOrderForApproval.php
+             applies to a held order, proof this normal-total order was never held. -->
+        <see selector="{{AdminOrdersGridSection.gridCell('1', 'Status')}}" userInput="Pending" stepKey="seeOrdinaryPendingStatus"/>
+        <dontSee selector="{{AdminOrdersGridSection.gridCell('1', 'Status')}}" userInput="Pending Approval" stepKey="dontSeePendingApprovalStatus"/>
+    </test>
+</tests>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCreateSegmentWithMultipleConditionsTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Saved segments"/>
+            <title value="Admin can create a saved segment with two AND'd conditions"/>
+            <description value="Sibling to AdminCreateSegmentTest, which only covers a single condition row — this covers the segment form's conditions dynamicRows section with a second row added, since a segment is only realistically useful once it can AND multiple conditions together. UI-only: proves the admin save path persists two condition rows, not just one; live membership matching against two ANDed conditions is a separate, already-in-progress scenario."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="segment"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <amOnPage url="admin/ordo/segment/new" stepKey="goToNewSegmentPage"/>
+        <waitForPageLoad stepKey="waitForNewSegmentPage"/>
+
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait — a cold, freshly
+             deployed developer-mode instance's first admin page load can lag behind
+             waitForPageLoad's document.readyState check. -->
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Test High Value Tagged Customers" stepKey="fillName"/>
+        <!-- Same toggle-switch checkbox as the campaign form's "enabled" field — the real
+             <input> is visually covered by its own wrapper, so click the adjacent <label>
+             instead of the input itself. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableSegment"/>
+
+        <!-- dynamicRows posts fields double-nested under the section's own name
+             (conditions[conditions][0][...]), same shape as the campaign form's conditions
+             section — see Controller/Adminhtml/Segment/Save.php. First condition row, index 0. -->
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRowOne"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRowOne"/>
+        <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="selectConditionTypeOne"/>
+        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;amount&quot;: &quot;500&quot;}" stepKey="fillConditionParamsOne"/>
+
+        <!-- Second condition row, index 1 — dynamicRows adds a new incrementing index per row,
+             AND'd together with the first by SegmentMatcher. Different condition type from the
+             first (tag vs order_total_gte) so this genuinely proves two distinct rows persist,
+             not just the same one twice. -->
+        <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRowTwo"/>
+        <waitForElementVisible selector="[name='conditions[conditions][1][type]']" stepKey="waitForConditionRowTwo"/>
+        <selectOption selector="[name='conditions[conditions][1][type]']" userInput="tag" stepKey="selectConditionTypeTwo"/>
+        <fillField selector="[name='conditions[conditions][1][params_json]']" userInput="{&quot;tag&quot;: &quot;vip&quot;}" stepKey="fillConditionParamsTwo"/>
+
+        <click selector="#save" stepKey="clickSave"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The segment has been saved." stepKey="seeSuccessMessage"/>
+
+        <amOnPage url="admin/ordo/segment/index" stepKey="goToSegmentGrid"/>
+        <waitForPageLoad stepKey="waitForGrid"/>
+        <see selector="table.data-grid" userInput="Test High Value Tagged Customers" stepKey="seeSegmentInGrid"/>
+
+        <!-- Reload the edit form so this proves the DB round trip, not just in-place form state
+             — same reasoning as AdminCreateCampaignWithConditionsAndActionsTest's reload,
+             applied here to confirm both condition rows (not just the first) actually persisted. -->
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabSegmentId"/>
+        <amOnPage url="admin/ordo/segment/edit/entity_id/{$grabSegmentId}/" stepKey="goToEditPage"/>
+        <waitForPageLoad stepKey="waitForEditPage"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRowOnePersisted"/>
+        <seeElementInDOM selector="[name='conditions[conditions][0][type]'] option[value='order_total_gte'][selected]" stepKey="seeConditionTypeOnePersisted"/>
+        <seeElementInDOM selector="[name='conditions[conditions][1][type]'] option[value='tag'][selected]" stepKey="seeConditionTypeTwoPersisted"/>
+    </test>
+</tests>
