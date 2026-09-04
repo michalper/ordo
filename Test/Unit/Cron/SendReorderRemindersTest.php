@@ -18,6 +18,9 @@ use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Cron\SendReorderReminders;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\CustomerMapBuilder;
+use Ordo\Automation\Model\Cron\ReminderEmailSender;
+use Ordo\Automation\Model\Cron\ReminderLogStore;
 use Ordo\Automation\Model\ReorderCycle;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\Collection;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory;
@@ -40,9 +43,8 @@ class SendReorderRemindersTest extends TestCase
 
     /**
      * @param CustomerInterface[] $customers
-     * @return array{0: CustomerRepositoryInterface, 1: SearchCriteriaBuilder}
      */
-    private function makeCustomerRepository(array $customers): array
+    private function makeCustomerMapBuilder(array $customers): CustomerMapBuilder
     {
         $searchCriteria = $this->createStub(SearchCriteria::class);
         $searchCriteriaBuilder = $this->createStub(SearchCriteriaBuilder::class);
@@ -55,7 +57,7 @@ class SendReorderRemindersTest extends TestCase
         $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
         $customerRepository->method('getList')->willReturn($searchResults);
 
-        return [$customerRepository, $searchCriteriaBuilder];
+        return new CustomerMapBuilder($customerRepository, $searchCriteriaBuilder);
     }
 
     public function testExecuteSkipsWhenDisabled(): void
@@ -182,7 +184,7 @@ class SendReorderRemindersTest extends TestCase
 
         $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getId')->willReturn(5);
-        [$customerRepository, $searchCriteriaBuilder] = $this->makeCustomerRepository([$customer]);
+        $customerMapBuilder = $this->makeCustomerMapBuilder([$customer]);
 
         $transportBuilder = $this->createStub(TransportBuilder::class);
         $transportBuilder->method('setTemplateIdentifier')->willThrowException(new \RuntimeException('send failed'));
@@ -193,12 +195,13 @@ class SendReorderRemindersTest extends TestCase
         (new SendReorderReminders(
             $config,
             $collectionFactory,
-            $resourceConnection,
-            $customerRepository,
-            $searchCriteriaBuilder,
-            $transportBuilder,
-            $this->createStub(StoreManagerInterface::class),
-            $this->createStub(StateInterface::class),
+            $customerMapBuilder,
+            new ReminderEmailSender(
+                $transportBuilder,
+                $this->createStub(StoreManagerInterface::class),
+                $this->createStub(StateInterface::class)
+            ),
+            new ReminderLogStore($resourceConnection),
             $this->createStub(SalesRepEmailContext::class),
             $this->createStub(TriggerOutcomeLogger::class),
             $logger
@@ -232,7 +235,7 @@ class SendReorderRemindersTest extends TestCase
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        [$customerRepository, $searchCriteriaBuilder] = $this->makeCustomerRepository([]);
+        $customerMapBuilder = $this->makeCustomerMapBuilder([]);
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::never())->method('error');
@@ -241,12 +244,13 @@ class SendReorderRemindersTest extends TestCase
         (new SendReorderReminders(
             $config,
             $collectionFactory,
-            $resourceConnection,
-            $customerRepository,
-            $searchCriteriaBuilder,
-            $this->createStub(TransportBuilder::class),
-            $this->createStub(StoreManagerInterface::class),
-            $this->createStub(StateInterface::class),
+            $customerMapBuilder,
+            new ReminderEmailSender(
+                $this->createStub(TransportBuilder::class),
+                $this->createStub(StoreManagerInterface::class),
+                $this->createStub(StateInterface::class)
+            ),
+            new ReminderLogStore($resourceConnection),
             $this->createStub(SalesRepEmailContext::class),
             $this->createStub(TriggerOutcomeLogger::class),
             $logger
@@ -264,7 +268,7 @@ class SendReorderRemindersTest extends TestCase
         $customer->method('getFirstname')->willReturn('Jan');
         $customer->method('getEmail')->willReturn('jan@example.com');
 
-        [$customerRepository, $searchCriteriaBuilder] = $this->makeCustomerRepository([$customer]);
+        $customerMapBuilder = $this->makeCustomerMapBuilder([$customer]);
 
         $store = $this->createStub(Store::class);
         $store->method('getId')->willReturn(1);
@@ -285,12 +289,9 @@ class SendReorderRemindersTest extends TestCase
         return new SendReorderReminders(
             $config,
             $collectionFactory,
-            $resourceConnection,
-            $customerRepository,
-            $searchCriteriaBuilder,
-            $transportBuilder,
-            $storeManager,
-            $this->createStub(StateInterface::class),
+            $customerMapBuilder,
+            new ReminderEmailSender($transportBuilder, $storeManager, $this->createStub(StateInterface::class)),
+            new ReminderLogStore($resourceConnection),
             $salesRepEmailContext,
             $this->createStub(TriggerOutcomeLogger::class),
             $logger ?? $this->createStub(LoggerInterface::class)

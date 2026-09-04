@@ -19,6 +19,9 @@ use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Cron\SendCreditLimitAlerts;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CreditLimitCalculator;
+use Ordo\Automation\Model\CustomerMapBuilder;
+use Ordo\Automation\Model\Cron\ReminderEmailSender;
+use Ordo\Automation\Model\Cron\ReminderLogStore;
 use Ordo\Automation\Model\SalesRepEmailContext;
 use Ordo\Automation\Model\TriggerOutcomeLogger;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -38,9 +41,8 @@ class SendCreditLimitAlertsTest extends TestCase
 
     /**
      * @param CustomerInterface[] $customers
-     * @return array{0: CustomerRepositoryInterface, 1: SearchCriteriaBuilder}
      */
-    private function makeCustomerRepository(array $customers): array
+    private function makeCustomerMapBuilder(array $customers): CustomerMapBuilder
     {
         $searchCriteria = $this->createStub(SearchCriteria::class);
         $searchCriteriaBuilder = $this->createStub(SearchCriteriaBuilder::class);
@@ -53,7 +55,12 @@ class SendCreditLimitAlertsTest extends TestCase
         $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
         $customerRepository->method('getList')->willReturn($searchResults);
 
-        return [$customerRepository, $searchCriteriaBuilder];
+        return new CustomerMapBuilder($customerRepository, $searchCriteriaBuilder);
+    }
+
+    private function makeReminderLogStore(ResourceConnection $resourceConnection): ReminderLogStore
+    {
+        return new ReminderLogStore($resourceConnection);
     }
 
     public function testExecuteSkipsWhenDisabled(): void
@@ -176,7 +183,7 @@ class SendCreditLimitAlertsTest extends TestCase
         $customer->method('getId')->willReturn(5);
         $customer->method('getFirstname')->willReturn('Jan');
         $customer->method('getEmail')->willReturn('jan@example.com');
-        [$customerRepository, $searchCriteriaBuilder] = $this->makeCustomerRepository([$customer]);
+        $customerMapBuilder = $this->makeCustomerMapBuilder([$customer]);
 
         $storeManager = $this->createStub(StoreManagerInterface::class);
         $transportBuilder = $this->createStub(TransportBuilder::class);
@@ -189,12 +196,9 @@ class SendCreditLimitAlertsTest extends TestCase
         (new SendCreditLimitAlerts(
             $config,
             $calculator,
-            $resourceConnection,
-            $customerRepository,
-            $searchCriteriaBuilder,
-            $transportBuilder,
-            $storeManager,
-            $this->createStub(StateInterface::class),
+            $customerMapBuilder,
+            new ReminderEmailSender($transportBuilder, $storeManager, $this->createStub(StateInterface::class)),
+            $this->makeReminderLogStore($resourceConnection),
             $salesRepEmailContext,
             $this->createStub(TriggerOutcomeLogger::class),
             $logger
@@ -222,7 +226,7 @@ class SendCreditLimitAlertsTest extends TestCase
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        [$customerRepository, $searchCriteriaBuilder] = $this->makeCustomerRepository([]);
+        $customerMapBuilder = $this->makeCustomerMapBuilder([]);
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::never())->method('error');
@@ -231,12 +235,13 @@ class SendCreditLimitAlertsTest extends TestCase
         (new SendCreditLimitAlerts(
             $config,
             $calculator,
-            $resourceConnection,
-            $customerRepository,
-            $searchCriteriaBuilder,
-            $this->createStub(TransportBuilder::class),
-            $this->createStub(StoreManagerInterface::class),
-            $this->createStub(StateInterface::class),
+            $customerMapBuilder,
+            new ReminderEmailSender(
+                $this->createStub(TransportBuilder::class),
+                $this->createStub(StoreManagerInterface::class),
+                $this->createStub(StateInterface::class)
+            ),
+            $this->makeReminderLogStore($resourceConnection),
             $this->createStub(SalesRepEmailContext::class),
             $this->createStub(TriggerOutcomeLogger::class),
             $logger
@@ -254,7 +259,7 @@ class SendCreditLimitAlertsTest extends TestCase
         $customer->method('getFirstname')->willReturn('Jan');
         $customer->method('getEmail')->willReturn('jan@example.com');
 
-        [$customerRepository, $searchCriteriaBuilder] = $this->makeCustomerRepository([$customer]);
+        $customerMapBuilder = $this->makeCustomerMapBuilder([$customer]);
 
         $store = $this->createStub(Store::class);
         $store->method('getId')->willReturn(1);
@@ -275,12 +280,9 @@ class SendCreditLimitAlertsTest extends TestCase
         return new SendCreditLimitAlerts(
             $config,
             $calculator,
-            $resourceConnection,
-            $customerRepository,
-            $searchCriteriaBuilder,
-            $transportBuilder,
-            $storeManager,
-            $this->createStub(StateInterface::class),
+            $customerMapBuilder,
+            new ReminderEmailSender($transportBuilder, $storeManager, $this->createStub(StateInterface::class)),
+            $this->makeReminderLogStore($resourceConnection),
             $salesRepEmailContext,
             $this->createStub(TriggerOutcomeLogger::class),
             $logger ?? $this->createStub(LoggerInterface::class)

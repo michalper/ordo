@@ -17,6 +17,8 @@ use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Cron\SendSalesRepDigest;
 use Ordo\Automation\Cron\TagInactiveCustomers;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\CustomerMapBuilder;
+use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Setup\Patch\Data\AddSalesRepAttributes;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -27,9 +29,8 @@ class SendSalesRepDigestTest extends TestCase
 {
     /**
      * @param CustomerInterface[] $customers
-     * @return array{0: CustomerRepositoryInterface, 1: SearchCriteriaBuilder}
      */
-    private function makeCustomerRepository(array $customers): array
+    private function makeCustomerMapBuilder(array $customers): CustomerMapBuilder
     {
         $searchCriteria = $this->createStub(SearchCriteria::class);
         $searchCriteriaBuilder = $this->createStub(SearchCriteriaBuilder::class);
@@ -42,7 +43,12 @@ class SendSalesRepDigestTest extends TestCase
         $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
         $customerRepository->method('getList')->willReturn($searchResults);
 
-        return [$customerRepository, $searchCriteriaBuilder];
+        return new CustomerMapBuilder($customerRepository, $searchCriteriaBuilder);
+    }
+
+    private function makeEmailSender(TransportBuilder $transportBuilder, StoreManagerInterface $storeManager): ReminderEmailSender
+    {
+        return new ReminderEmailSender($transportBuilder, $storeManager, $this->createStub(StateInterface::class));
     }
 
     public function testExecuteSkipsWhenDigestDisabled(): void
@@ -53,21 +59,15 @@ class SendSalesRepDigestTest extends TestCase
         $tagManager = $this->createMock(CustomerTagManager::class);
         $tagManager->expects(self::never())->method('getCustomerIdsWithTag');
 
-        $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
-        $searchCriteriaBuilder = $this->createStub(SearchCriteriaBuilder::class);
-        $storeManager = $this->createStub(StoreManagerInterface::class);
-        $transportBuilder = $this->createStub(TransportBuilder::class);
-        $logger = $this->createStub(LoggerInterface::class);
-
         (new SendSalesRepDigest(
             $config,
             $tagManager,
-            $customerRepository,
-            $searchCriteriaBuilder,
-            $transportBuilder,
-            $storeManager,
-            $this->createStub(StateInterface::class),
-            $logger
+            $this->makeCustomerMapBuilder([]),
+            $this->makeEmailSender(
+                $this->createStub(TransportBuilder::class),
+                $this->createStub(StoreManagerInterface::class)
+            ),
+            $this->createStub(LoggerInterface::class)
         ))->execute();
     }
 
@@ -79,21 +79,17 @@ class SendSalesRepDigestTest extends TestCase
         $tagManager = $this->createStub(CustomerTagManager::class);
         $tagManager->method('getCustomerIdsWithTag')->willReturn([]);
 
-        $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
-        $searchCriteriaBuilder = $this->createStub(SearchCriteriaBuilder::class);
-        $storeManager = $this->createStub(StoreManagerInterface::class);
-        $transportBuilder = $this->createStub(TransportBuilder::class);
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('info')->with(self::stringContains('0 sales rep digests'));
 
         (new SendSalesRepDigest(
             $config,
             $tagManager,
-            $customerRepository,
-            $searchCriteriaBuilder,
-            $transportBuilder,
-            $storeManager,
-            $this->createStub(StateInterface::class),
+            $this->makeCustomerMapBuilder([]),
+            $this->makeEmailSender(
+                $this->createStub(TransportBuilder::class),
+                $this->createStub(StoreManagerInterface::class)
+            ),
             $logger
         ))->execute();
     }
@@ -124,7 +120,7 @@ class SendSalesRepDigestTest extends TestCase
 
         $customer5->method('getId')->willReturn(5);
 
-        [$customerRepository, $searchCriteriaBuilder] = $this->makeCustomerRepository([$customer5, $customer6]);
+        $customerMapBuilder = $this->makeCustomerMapBuilder([$customer5, $customer6]);
 
         $store = $this->createStub(Store::class);
         $store->method('getId')->willReturn(1);
@@ -136,7 +132,7 @@ class SendSalesRepDigestTest extends TestCase
         $transportBuilder->method('setTemplateOptions')->willReturnSelf();
         $transportBuilder->method('setTemplateVars')->willReturnSelf();
         $transportBuilder->method('setFromByScope')->willReturnSelf();
-        $transportBuilder->expects(self::once())->method('addTo')->with('rep@example.com')->willReturnSelf();
+        $transportBuilder->expects(self::once())->method('addTo')->with('rep@example.com', '')->willReturnSelf();
 
         $transport = $this->createMock(TransportInterface::class);
         $transport->expects(self::once())->method('sendMessage');
@@ -148,11 +144,8 @@ class SendSalesRepDigestTest extends TestCase
         (new SendSalesRepDigest(
             $config,
             $tagManager,
-            $customerRepository,
-            $searchCriteriaBuilder,
-            $transportBuilder,
-            $storeManager,
-            $this->createStub(StateInterface::class),
+            $customerMapBuilder,
+            $this->makeEmailSender($transportBuilder, $storeManager),
             $logger
         ))->execute();
     }
@@ -166,7 +159,7 @@ class SendSalesRepDigestTest extends TestCase
         $tagManager = $this->createMock(CustomerTagManager::class);
         $tagManager->method('getCustomerIdsWithTag')->willReturn([5]);
 
-        [$customerRepository, $searchCriteriaBuilder] = $this->makeCustomerRepository([]);
+        $customerMapBuilder = $this->makeCustomerMapBuilder([]);
 
         $transportBuilder = $this->createMock(TransportBuilder::class);
         $transportBuilder->expects(self::never())->method('getTransport');
@@ -177,11 +170,8 @@ class SendSalesRepDigestTest extends TestCase
         (new SendSalesRepDigest(
             $config,
             $tagManager,
-            $customerRepository,
-            $searchCriteriaBuilder,
-            $transportBuilder,
-            $this->createStub(StoreManagerInterface::class),
-            $this->createStub(StateInterface::class),
+            $customerMapBuilder,
+            $this->makeEmailSender($transportBuilder, $this->createStub(StoreManagerInterface::class)),
             $logger
         ))->execute();
     }
@@ -204,7 +194,7 @@ class SendSalesRepDigestTest extends TestCase
         $customer->method('getLastname')->willReturn('Kowalski');
         $customer->method('getId')->willReturn(5);
 
-        [$customerRepository, $searchCriteriaBuilder] = $this->makeCustomerRepository([$customer]);
+        $customerMapBuilder = $this->makeCustomerMapBuilder([$customer]);
 
         $storeManager = $this->createStub(StoreManagerInterface::class);
         $storeManager->method('getStore')->willThrowException(new \RuntimeException('no store'));
@@ -215,11 +205,8 @@ class SendSalesRepDigestTest extends TestCase
         (new SendSalesRepDigest(
             $config,
             $tagManager,
-            $customerRepository,
-            $searchCriteriaBuilder,
-            $this->createStub(TransportBuilder::class),
-            $storeManager,
-            $this->createStub(StateInterface::class),
+            $customerMapBuilder,
+            $this->makeEmailSender($this->createStub(TransportBuilder::class), $storeManager),
             $logger
         ))->execute();
     }

@@ -3,14 +3,9 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Cron;
 
-use Magento\Customer\Api\CustomerRepositoryInterface;
-use Magento\Customer\Api\Data\CustomerInterface;
-use Magento\Framework\Api\SearchCriteriaBuilder;
-use Magento\Framework\App\Area;
-use Magento\Framework\Mail\Template\TransportBuilder;
-use Magento\Framework\Translate\Inline\StateInterface;
-use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Cron\ReminderEmailSender;
+use Ordo\Automation\Model\CustomerMapBuilder;
 use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Model\TriggerOutcomeLogger;
 use Psr\Log\LoggerInterface;
@@ -23,17 +18,13 @@ use Psr\Log\LoggerInterface;
 class SendWinBackEmails
 {
     private const string XML_PATH_EMAIL_TEMPLATE = 'ordo_win_back_email';
-    private const string XML_PATH_EMAIL_SENDER = 'general';
     public const TAG_WIN_BACK_SENT = 'win_back_sent';
 
     public function __construct(
         private readonly Config $config,
         private readonly CustomerTagManager $customerTagManager,
-        private readonly CustomerRepositoryInterface $customerRepository,
-        private readonly SearchCriteriaBuilder $searchCriteriaBuilder,
-        private readonly TransportBuilder $transportBuilder,
-        private readonly StoreManagerInterface $storeManager,
-        private readonly StateInterface $inlineTranslation,
+        private readonly CustomerMapBuilder $customerMapBuilder,
+        private readonly ReminderEmailSender $emailSender,
         private readonly TriggerOutcomeLogger $triggerOutcomeLogger,
         private readonly LoggerInterface $logger
     ) {
@@ -46,7 +37,7 @@ class SendWinBackEmails
         }
 
         $customerIds = $this->customerTagManager->getCustomerIdsWithTag(TagInactiveCustomers::TAG_INACTIVE);
-        $customerMap = $this->buildCustomerMap($customerIds);
+        $customerMap = $this->customerMapBuilder->build($customerIds);
 
         $sent = 0;
         foreach ($customerIds as $customerId) {
@@ -59,7 +50,13 @@ class SendWinBackEmails
             }
 
             try {
-                $this->sendEmail($customerMap[$customerId]);
+                $customer = $customerMap[$customerId];
+                $this->emailSender->send(
+                    self::XML_PATH_EMAIL_TEMPLATE,
+                    ['customer_name' => $customer->getFirstname()],
+                    $customer->getEmail(),
+                    $customer->getFirstname()
+                );
                 $this->customerTagManager->addTag($customerId, self::TAG_WIN_BACK_SENT);
                 $this->triggerOutcomeLogger->logSent(TriggerOutcomeLogger::TRIGGER_WIN_BACK, $customerId);
                 $sent++;
@@ -73,49 +70,5 @@ class SendWinBackEmails
         }
 
         $this->logger->info(sprintf('Ordo_Automation: sent %d win-back emails.', $sent));
-    }
-
-    /**
-     * @param int[] $customerIds
-     * @return array<int, CustomerInterface>
-     */
-    private function buildCustomerMap(array $customerIds): array
-    {
-        if ($customerIds === []) {
-            return [];
-        }
-
-        $searchCriteria = $this->searchCriteriaBuilder
-            ->addFilter('entity_id', array_values(array_unique($customerIds)), 'in')
-            ->create();
-
-        $customerMap = [];
-        foreach ($this->customerRepository->getList($searchCriteria)->getItems() as $customer) {
-            $customerMap[(int) $customer->getId()] = $customer;
-        }
-
-        return $customerMap;
-    }
-
-    private function sendEmail(CustomerInterface $customer): void
-    {
-        $store = $this->storeManager->getStore();
-
-        $this->inlineTranslation->suspend();
-
-        $transport = $this->transportBuilder
-            ->setTemplateIdentifier(self::XML_PATH_EMAIL_TEMPLATE)
-            ->setTemplateOptions(['area' => Area::AREA_FRONTEND, 'store' => $store->getId()])
-            ->setTemplateVars([
-                'customer_name' => $customer->getFirstname(),
-                'store' => $store,
-            ])
-            ->setFromByScope(self::XML_PATH_EMAIL_SENDER, $store->getId())
-            ->addTo($customer->getEmail(), $customer->getFirstname())
-            ->getTransport();
-
-        $transport->sendMessage();
-
-        $this->inlineTranslation->resume();
     }
 }

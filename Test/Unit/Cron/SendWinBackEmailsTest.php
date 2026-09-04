@@ -16,6 +16,8 @@ use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Cron\SendWinBackEmails;
 use Ordo\Automation\Cron\TagInactiveCustomers;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\CustomerMapBuilder;
+use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Model\TriggerOutcomeLogger;
 use Psr\Log\LoggerInterface;
@@ -26,9 +28,8 @@ class SendWinBackEmailsTest extends TestCase
 {
     /**
      * @param CustomerInterface[] $customers
-     * @return array{0: CustomerRepositoryInterface, 1: SearchCriteriaBuilder}
      */
-    private function makeCustomerRepository(array $customers): array
+    private function makeCustomerMapBuilder(array $customers): CustomerMapBuilder
     {
         $searchCriteria = $this->createStub(SearchCriteria::class);
         $searchCriteriaBuilder = $this->createStub(SearchCriteriaBuilder::class);
@@ -41,7 +42,30 @@ class SendWinBackEmailsTest extends TestCase
         $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
         $customerRepository->method('getList')->willReturn($searchResults);
 
-        return [$customerRepository, $searchCriteriaBuilder];
+        return new CustomerMapBuilder($customerRepository, $searchCriteriaBuilder);
+    }
+
+    private function makeEmailSender(TransportBuilder $transportBuilder): ReminderEmailSender
+    {
+        $store = $this->createStub(Store::class);
+        $store->method('getId')->willReturn(1);
+        $storeManager = $this->createStub(StoreManagerInterface::class);
+        $storeManager->method('getStore')->willReturn($store);
+
+        return new ReminderEmailSender($transportBuilder, $storeManager, $this->createStub(StateInterface::class));
+    }
+
+    private function makeWorkingTransportBuilder(): TransportBuilder
+    {
+        $transportBuilder = $this->createStub(TransportBuilder::class);
+        $transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
+        $transportBuilder->method('setTemplateOptions')->willReturnSelf();
+        $transportBuilder->method('setTemplateVars')->willReturnSelf();
+        $transportBuilder->method('setFromByScope')->willReturnSelf();
+        $transportBuilder->method('addTo')->willReturnSelf();
+        $transportBuilder->method('getTransport')->willReturn($this->createStub(TransportInterface::class));
+
+        return $transportBuilder;
     }
 
     public function testExecuteSkipsWhenDisabled(): void
@@ -63,20 +87,16 @@ class SendWinBackEmailsTest extends TestCase
         $tagManager = $this->createStub(CustomerTagManager::class);
         $tagManager->method('getCustomerIdsWithTag')->willReturn([]);
 
-        [$customerRepository, $searchCriteriaBuilder] = $this->makeCustomerRepository([]);
-        $storeManager = $this->createStub(StoreManagerInterface::class);
-        $transportBuilder = $this->createStub(TransportBuilder::class);
+        $customerMapBuilder = $this->makeCustomerMapBuilder([]);
+        $emailSender = $this->makeEmailSender($this->createStub(TransportBuilder::class));
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('info')->with(self::stringContains('0 win-back emails'));
 
         (new SendWinBackEmails(
             $config,
             $tagManager,
-            $customerRepository,
-            $searchCriteriaBuilder,
-            $transportBuilder,
-            $storeManager,
-            $this->createStub(StateInterface::class),
+            $customerMapBuilder,
+            $emailSender,
             $this->createStub(TriggerOutcomeLogger::class),
             $logger
         ))->execute();
@@ -121,7 +141,7 @@ class SendWinBackEmailsTest extends TestCase
 
         $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getId')->willReturn(5);
-        [$customerRepository, $searchCriteriaBuilder] = $this->makeCustomerRepository([$customer]);
+        $customerMapBuilder = $this->makeCustomerMapBuilder([$customer]);
 
         $transportBuilder = $this->createStub(TransportBuilder::class);
         $transportBuilder->method('setTemplateIdentifier')->willThrowException(new \RuntimeException('send failed'));
@@ -132,11 +152,8 @@ class SendWinBackEmailsTest extends TestCase
         (new SendWinBackEmails(
             $config,
             $tagManager,
-            $customerRepository,
-            $searchCriteriaBuilder,
-            $transportBuilder,
-            $this->createStub(StoreManagerInterface::class),
-            $this->createStub(StateInterface::class),
+            $customerMapBuilder,
+            $this->makeEmailSender($transportBuilder),
             $this->createStub(TriggerOutcomeLogger::class),
             $logger
         ))->execute();
@@ -153,7 +170,7 @@ class SendWinBackEmailsTest extends TestCase
         $tagManager->method('hasTag')->willReturn(false);
         $tagManager->expects(self::never())->method('addTag');
 
-        [$customerRepository, $searchCriteriaBuilder] = $this->makeCustomerRepository([]);
+        $customerMapBuilder = $this->makeCustomerMapBuilder([]);
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::never())->method('error');
@@ -161,11 +178,8 @@ class SendWinBackEmailsTest extends TestCase
         (new SendWinBackEmails(
             $config,
             $tagManager,
-            $customerRepository,
-            $searchCriteriaBuilder,
-            $this->createStub(TransportBuilder::class),
-            $this->createStub(StoreManagerInterface::class),
-            $this->createStub(StateInterface::class),
+            $customerMapBuilder,
+            $this->makeEmailSender($this->createStub(TransportBuilder::class)),
             $this->createStub(TriggerOutcomeLogger::class),
             $logger
         ))->execute();
@@ -178,29 +192,14 @@ class SendWinBackEmailsTest extends TestCase
         $customer->method('getFirstname')->willReturn('Jan');
         $customer->method('getEmail')->willReturn('jan@example.com');
 
-        [$customerRepository, $searchCriteriaBuilder] = $this->makeCustomerRepository([$customer]);
-
-        $store = $this->createStub(Store::class);
-        $store->method('getId')->willReturn(1);
-        $storeManager = $this->createStub(StoreManagerInterface::class);
-        $storeManager->method('getStore')->willReturn($store);
-
-        $transportBuilder = $this->createStub(TransportBuilder::class);
-        $transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
-        $transportBuilder->method('setTemplateOptions')->willReturnSelf();
-        $transportBuilder->method('setTemplateVars')->willReturnSelf();
-        $transportBuilder->method('setFromByScope')->willReturnSelf();
-        $transportBuilder->method('addTo')->willReturnSelf();
-        $transportBuilder->method('getTransport')->willReturn($this->createStub(TransportInterface::class));
+        $customerMapBuilder = $this->makeCustomerMapBuilder([$customer]);
+        $emailSender = $this->makeEmailSender($this->makeWorkingTransportBuilder());
 
         return new SendWinBackEmails(
             $config,
             $tagManager,
-            $customerRepository,
-            $searchCriteriaBuilder,
-            $transportBuilder,
-            $storeManager,
-            $this->createStub(StateInterface::class),
+            $customerMapBuilder,
+            $emailSender,
             $this->createStub(TriggerOutcomeLogger::class),
             $this->createStub(LoggerInterface::class)
         );

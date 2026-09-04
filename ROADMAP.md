@@ -40,6 +40,23 @@ scoped from real hands-on marketing automation experience.
   `ci.yml` runs (`--fail-on-phpunit-notice --fail-on-notice --fail-on-warning
   --fail-on-deprecation`): exit 0, 992 tests, 6526 assertions, zero notices/deprecations.
 
+## Code quality
+
+- **Code duplication flagged by SonarCloud on the cron/reminder family** — `Cron/SendWinBackEmails.php`
+  (51.2%), `Cron/SendOfferExpiryReminders.php` (41.5%), `Cron/SendReorderReminders.php` (36.4%).
+  Confirmed real, not a false positive: all three (plus `SendCreditLimitAlerts.php` and
+  `SendSalesRepDigest.php`, not flagged by Sonar's "new code" filter but sharing the same shape)
+  have a byte-identical private `buildCustomerMap(array $customerIds): array` method, and a
+  near-identical `sendReminder()`/`sendEmail()` shape (suspend inline translation, build a
+  transport with template identifier/options/vars/from/to, send, resume). `SendOfferExpiryReminders`
+  and `SendReorderReminders` additionally duplicate a "has a reminder already been logged for this
+  entity" query + insert pair against their own per-feature `ordo_*_reminder_log` table — not
+  quite identical (one checks by type with no date bound, the other checks same-day only), so
+  that half needs a parameterized shared implementation, not a blind extract. Likely fix: a shared
+  `CustomerMapBuilder` collaborator for the map-building half, and a shared base/trait for the
+  suspend/build/send/resume email shape — scope this as one pass across all five files, not just
+  the three Sonar flagged, since they're the same duplication.
+
 ## Gaps vs. a full-market MA platform
 
 Not a code review — a capability comparison against the category. Each is a real, separate stream of work:
