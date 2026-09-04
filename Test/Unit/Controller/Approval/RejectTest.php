@@ -33,7 +33,7 @@ class RejectTest extends AbstractFrontendActionTestCase
     public function testExecuteRedirectsWithErrorWhenTokenInvalid(): void
     {
         $controller = $this->makeController();
-        $this->request->method('getParam')->with('token')->willReturn('');
+        $this->request->method('getParam')->willReturnMap([['token', '']]);
         $this->orderApprovalManagement->method('rejectByToken')
             ->willThrowException(new NoSuchEntityException(__('invalid')));
 
@@ -47,7 +47,7 @@ class RejectTest extends AbstractFrontendActionTestCase
     public function testExecuteRedirectsWithErrorWhenOrderCannotBeFound(): void
     {
         $controller = $this->makeController();
-        $this->request->method('getParam')->with('token')->willReturn('tok');
+        $this->request->method('getParam')->willReturnMap([['token', 'tok']]);
         $this->orderApprovalManagement->method('rejectByToken')
             ->willThrowException(new LocalizedException(__('The order for this approval could not be found.')));
 
@@ -56,18 +56,19 @@ class RejectTest extends AbstractFrontendActionTestCase
         self::assertSame($this->resultRedirect, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRejectsOrderAndRedirectsWithSuccess(): void
     {
         $controller = $this->makeController();
-        $this->request->method('getParam')->with('token')->willReturn('tok');
+        $this->request->method('getParam')->willReturnMap([['token', 'tok']]);
 
         $approval = $this->createStub(OrderApproval::class);
         $approval->method('getOrderId')->willReturn(7);
-        $this->orderApprovalManagement->method('rejectByToken')->with('tok')->willReturn($approval);
+        $this->orderApprovalManagement->method('rejectByToken')->willReturnMap([['tok', $approval]]);
 
         $order = $this->createStub(OrderInterface::class);
         $order->method('getIncrementId')->willReturn('000000007');
-        $this->orderRepository->method('get')->with(7)->willReturn($order);
+        $this->orderRepository->method('get')->willReturnMap([[7, $order]]);
 
         $this->messageManager->expects(self::once())->method('addSuccessMessage');
 

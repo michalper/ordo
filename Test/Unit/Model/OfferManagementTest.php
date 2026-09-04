@@ -34,7 +34,7 @@ class OfferManagementTest extends TestCase
     {
         $offer = $this->createMock(Offer::class);
         $offer->method('getCustomerId')->willReturn(5);
-        $this->offerRepository->method('getById')->with(10)->willReturn($offer);
+        $this->offerRepository->method('getById')->willReturnMap([[10, $offer]]);
 
         $this->userContext->method('getUserId')->willReturn(9);
 
@@ -60,7 +60,7 @@ class OfferManagementTest extends TestCase
     {
         $offer = $this->createMock(Offer::class);
         $offer->method('getCustomerId')->willReturn(5);
-        $offer->method('canSelfExtend')->with(1)->willReturn(false);
+        $offer->method('canSelfExtend')->willReturnMap([[1, false]]);
         $this->offerRepository->method('getById')->willReturn($offer);
 
         $this->userContext->method('getUserId')->willReturn(5);
@@ -74,12 +74,12 @@ class OfferManagementTest extends TestCase
     {
         $offer = $this->createMock(Offer::class);
         $offer->method('getCustomerId')->willReturn(5);
-        $offer->method('canSelfExtend')->with(2)->willReturn(true);
+        $offer->method('canSelfExtend')->willReturnMap([[2, true]]);
         $offer->method('getExpiresAt')->willReturn('2026-01-01 00:00:00');
         $offer->method('getExtensionCount')->willReturn(0);
         $offer->expects(self::once())->method('setExpiresAt')->with('2026-01-08 00:00:00');
         $offer->expects(self::once())->method('setExtensionCount')->with(1);
-        $this->offerRepository->method('getById')->with(10)->willReturn($offer);
+        $this->offerRepository->method('getById')->willReturnMap([[10, $offer]]);
         $this->offerRepository->expects(self::once())->method('save')->with($offer)->willReturn($offer);
 
         $this->userContext->method('getUserId')->willReturn(5);

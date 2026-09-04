@@ -173,7 +173,7 @@ class DataProviderTest extends TestCase
             $this->makeEmptyActionCollection()
         );
 
-        $this->dataPersistor->method('get')->with('ordo_campaign')->willReturn(['entity_id' => 5, 'name' => 'Draft']);
+        $this->dataPersistor->method('get')->willReturnMap([['ordo_campaign', ['entity_id' => 5, 'name' => 'Draft']]]);
         $this->dataPersistor->expects(self::once())->method('clear')->with('ordo_campaign');
 
         $provider = $this->makeProvider($collection);

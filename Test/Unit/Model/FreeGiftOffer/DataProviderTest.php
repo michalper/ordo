@@ -96,7 +96,7 @@ class DataProviderTest extends TestCase
         $emptyProductCollection->method('getItems')->willReturn([]);
         $this->productCollectionFactory->method('create')->willReturn($emptyProductCollection);
 
-        $this->dataPersistor->method('get')->with('ordo_free_gift_offer')->willReturn(['entity_id' => 5, 'name' => 'Draft']);
+        $this->dataPersistor->method('get')->willReturnMap([['ordo_free_gift_offer', ['entity_id' => 5, 'name' => 'Draft']]]);
         $this->dataPersistor->expects(self::once())->method('clear')->with('ordo_free_gift_offer');
 
         $provider = $this->makeProvider($collection);

@@ -13,6 +13,7 @@ use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class CampaignDispatchConsumerTest extends TestCase
 {
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteDecodesMessageAndDispatches(): void
     {
         $dispatcher = $this->createMock(CampaignDispatcher::class);
@@ -20,9 +21,11 @@ class CampaignDispatchConsumerTest extends TestCase
         $logger = $this->createMock(LoggerInterface::class);
         $dispatchGuard = new CampaignDispatchGuard();
 
-        $serializer->method('unserialize')->with('raw-message')->willReturn([
-            'trigger_event' => 'order_placed',
-            'context' => ['customer_id' => 42],
+        $serializer->method('unserialize')->willReturnMap([
+            ['raw-message', [
+                'trigger_event' => 'order_placed',
+                'context' => ['customer_id' => 42],
+            ]],
         ]);
 
         $dispatcher->expects(self::once())->method('dispatch')->with('order_placed', ['customer_id' => 42]);

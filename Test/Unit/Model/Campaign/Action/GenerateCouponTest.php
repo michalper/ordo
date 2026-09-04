@@ -11,10 +11,11 @@ use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class GenerateCouponTest extends TestCase
 {
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSetsCouponCodeInContext(): void
     {
         $generator = $this->createMock(CouponGenerator::class);
-        $generator->method('generate')->with(5, 'COMEBACK')->willReturn('COMEBACK-XYZ');
+        $generator->method('generate')->willReturnMap([[5, 'COMEBACK', 'COMEBACK-XYZ']]);
 
         $action = new GenerateCoupon($generator, $this->createStub(LoggerInterface::class));
 

@@ -14,7 +14,7 @@ use Psr\Log\LoggerInterface;
  */
 class PrunePendingPopups
 {
-    private const DELIVERED_GRACE_HOURS = 24;
+    private const int DELIVERED_GRACE_HOURS = 24;
 
     public function __construct(
         private readonly ResourceConnection $resourceConnection,

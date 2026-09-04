@@ -5,6 +5,7 @@ namespace Ordo\Automation\Test\Unit\Model\Campaign\Condition;
 
 use Ordo\Automation\Model\Campaign\Condition\OrderFrequencyAtLeast;
 use Ordo\Automation\Model\Rfm\RfmCalculator;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 class OrderFrequencyAtLeastTest extends TestCase
@@ -18,16 +19,18 @@ class OrderFrequencyAtLeastTest extends TestCase
         $this->condition = new OrderFrequencyAtLeast($this->rfmCalculator);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSatisfiedWhenFrequencyMeetsThreshold(): void
     {
-        $this->rfmCalculator->method('getFrequency')->with(42)->willReturn(3);
+        $this->rfmCalculator->method('getFrequency')->willReturnMap([[42, 3]]);
 
         self::assertTrue($this->condition->isSatisfied(['customer_id' => 42], ['count' => '3']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testNotSatisfiedWhenFrequencyIsBelowThreshold(): void
     {
-        $this->rfmCalculator->method('getFrequency')->with(42)->willReturn(2);
+        $this->rfmCalculator->method('getFrequency')->willReturnMap([[42, 2]]);
 
         self::assertFalse($this->condition->isSatisfied(['customer_id' => 42], ['count' => '3']));
     }

@@ -26,7 +26,7 @@ class CustomerAttribute implements OptionSourceInterface
     /**
      * Core evaluator-special-cased codes that addVisibleFilter() would otherwise hide.
      */
-    private const FORCE_INCLUDE_CODES = ['store_id'];
+    private const array FORCE_INCLUDE_CODES = ['store_id'];
 
     public function __construct(
         private readonly CustomerAttributeCollectionFactory $collectionFactory

@@ -7,7 +7,7 @@ use Rector\Set\ValueObject\SetList;
 
 /**
  * Check-only in CI (`composer rector-check`, `rector process --dry-run`) — flags dead code and
- * missed PHP 8.2+ modernizations without rewriting anything automatically. Deliberately NOT
+ * missed PHP 8.4+ modernizations without rewriting anything automatically. Deliberately NOT
  * running type-declaration/strict-typing set lists here: this is a Magento 2 module, and rules
  * that add/narrow property or parameter types can conflict with Magento's own magic getters
  * (AbstractModel::__call), DI-generated interceptors, and plugin method signatures that must
@@ -35,7 +35,7 @@ return RectorConfig::configure()
         __DIR__ . '/Setup',
         __DIR__ . '/Ui',
     ])
-    ->withPhpSets(php82: true)
+    ->withPhpSets(php84: true)
     ->withSets([
         SetList::DEAD_CODE,
         SetList::CODE_QUALITY,

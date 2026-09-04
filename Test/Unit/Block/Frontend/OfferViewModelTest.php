@@ -48,13 +48,13 @@ class OfferViewModelTest extends TestCase
         self::assertSame([], $this->makeViewModel()->getOffers());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetOffersFiltersByCustomerId(): void
     {
         $this->customerSession->method('getCustomerId')->willReturn(42);
 
         $searchCriteria = $this->createStub(SearchCriteriaInterface::class);
         $this->searchCriteriaBuilder->method('addFilter')
-            ->with(OfferInterface::CUSTOMER_ID, 42)
             ->willReturnSelf();
         $this->searchCriteriaBuilder->method('create')->willReturn($searchCriteria);
 

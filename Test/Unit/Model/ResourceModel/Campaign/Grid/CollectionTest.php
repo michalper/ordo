@@ -13,6 +13,7 @@ use Magento\Framework\Event\ManagerInterface;
 use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
 use Magento\Framework\ObjectManagerInterface;
 use Ordo\Automation\Model\ResourceModel\Campaign\Grid\Collection;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -33,6 +34,7 @@ class CollectionTest extends TestCase
         ObjectManager::setInstance($this->createStub(ObjectManagerInterface::class));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testInitSelectJoinsTriggerEventsAndGroupsByEntityId(): void
     {
         $select = $this->createMock(Select::class);
@@ -63,7 +65,7 @@ class CollectionTest extends TestCase
 
         $objectManager = $this->createMock(ObjectManagerInterface::class);
         $objectManager->method('create')->willReturn($resource);
-        $objectManager->method('get')->with(ResourceConnection::class)->willReturn($resourceConnection);
+        $objectManager->method('get')->willReturnMap([[ResourceConnection::class, $resourceConnection]]);
         ObjectManager::setInstance($objectManager);
 
         new Collection(

@@ -40,7 +40,7 @@ class ExtendTest extends AbstractFrontendActionTestCase
     public function testExecuteAddsErrorAndRedirectsWhenOfferIdInvalid(): void
     {
         $controller = $this->makeController();
-        $this->request->method('getParam')->with('offer_id')->willReturn('0');
+        $this->request->method('getParam')->willReturnMap([['offer_id', '0']]);
 
         $this->offerManagement->expects(self::never())->method('selfExtend');
         $this->messageManager->expects(self::once())->method('addErrorMessage');
@@ -52,8 +52,8 @@ class ExtendTest extends AbstractFrontendActionTestCase
     public function testExecuteAddsErrorWhenOfferNotFound(): void
     {
         $controller = $this->makeController();
-        $this->request->method('getParam')->with('offer_id')->willReturn('5');
-        $this->offerManagement->method('selfExtend')->with(5)
+        $this->request->method('getParam')->willReturnMap([['offer_id', '5']]);
+        $this->offerManagement->method('selfExtend')
             ->willThrowException(new NoSuchEntityException(__('not found')));
 
         $this->messageManager->expects(self::once())->method('addErrorMessage')
@@ -66,9 +66,9 @@ class ExtendTest extends AbstractFrontendActionTestCase
     public function testExecuteAddsErrorWhenExtensionNotAllowed(): void
     {
         $controller = $this->makeController();
-        $this->request->method('getParam')->with('offer_id')->willReturn('5');
+        $this->request->method('getParam')->willReturnMap([['offer_id', '5']]);
         $exception = new LocalizedException(__('This offer has already been extended the maximum of 2 time(s).'));
-        $this->offerManagement->method('selfExtend')->with(5)->willThrowException($exception);
+        $this->offerManagement->method('selfExtend')->willThrowException($exception);
 
         $this->messageManager->expects(self::once())->method('addErrorMessage')->with($exception->getMessage());
 
@@ -79,12 +79,12 @@ class ExtendTest extends AbstractFrontendActionTestCase
     public function testExecuteExtendsOfferAndRedirectsWithSuccess(): void
     {
         $controller = $this->makeController();
-        $this->request->method('getParam')->with('offer_id')->willReturn('5');
+        $this->request->method('getParam')->willReturnMap([['offer_id', '5']]);
 
         $offer = $this->createStub(OfferInterface::class);
         $offer->method('getReference')->willReturn('OFR-5');
         $offer->method('getExpiresAt')->willReturn('2026-10-01 00:00:00');
-        $this->offerManagement->method('selfExtend')->with(5)->willReturn($offer);
+        $this->offerManagement->method('selfExtend')->willReturn($offer);
 
         $this->messageManager->expects(self::once())->method('addSuccessMessage');
 

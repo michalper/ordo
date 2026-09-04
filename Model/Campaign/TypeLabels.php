@@ -14,7 +14,7 @@ namespace Ordo\Automation\Model\Campaign;
  */
 class TypeLabels
 {
-    private const CONDITION_LABELS = [
+    private const array CONDITION_LABELS = [
         'tag' => 'Has Tag',
         'order_total_gte' => 'Order Total ≥',
         'visitor_tag' => 'Visitor Has Tag (anonymous)',
@@ -28,7 +28,7 @@ class TypeLabels
         'in_segment' => 'In Segment',
     ];
 
-    private const ACTION_LABELS = [
+    private const array ACTION_LABELS = [
         'add_tag' => 'Add Tag',
         'send_email' => 'Send Email',
         'generate_coupon' => 'Generate Coupon',

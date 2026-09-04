@@ -31,7 +31,7 @@ class RfmCalculator
 
     private ?int $percentileRanksCachedAt = null;
 
-    private const PERCENTILE_CACHE_TTL_SECONDS = 60;
+    private const int PERCENTILE_CACHE_TTL_SECONDS = 60;
 
     public function __construct(
         private readonly ResourceConnection $resourceConnection,

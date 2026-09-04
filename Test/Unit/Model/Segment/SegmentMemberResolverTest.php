@@ -94,7 +94,7 @@ class SegmentMemberResolverTest extends TestCase
         $this->stubSegment(1, [['type' => 'tag', 'params' => ['tag' => 'vip']]]);
         $this->primeFactory();
 
-        $this->customerTagManager->method('getCustomerIdsWithTag')->with('vip')->willReturn([1, 2]);
+        $this->customerTagManager->method('getCustomerIdsWithTag')->willReturnMap([['vip', [1, 2]]]);
 
         self::assertSame([1, 2], $this->resolver->getMatchingCustomerIds(1));
     }
@@ -105,7 +105,7 @@ class SegmentMemberResolverTest extends TestCase
         $this->stubSegment(1, [['type' => 'score_at_least', 'params' => ['threshold' => '50']]]);
         $this->primeFactory();
 
-        $this->customerScoreManager->method('getCustomerIdsWithScoreAtLeast')->with(50)->willReturn([3]);
+        $this->customerScoreManager->method('getCustomerIdsWithScoreAtLeast')->willReturnMap([[50, [3]]]);
 
         self::assertSame([3], $this->resolver->getMatchingCustomerIds(1));
     }
@@ -296,7 +296,7 @@ class SegmentMemberResolverTest extends TestCase
         $this->stubSegment(2, [['type' => 'tag', 'params' => ['tag' => 'vip']]]);
         $this->primeFactory();
 
-        $this->customerTagManager->method('getCustomerIdsWithTag')->with('vip')->willReturn([9]);
+        $this->customerTagManager->method('getCustomerIdsWithTag')->willReturnMap([['vip', [9]]]);
 
         self::assertSame([9], $this->resolver->getMatchingCustomerIds(1));
     }

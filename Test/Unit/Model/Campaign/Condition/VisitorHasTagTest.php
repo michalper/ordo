@@ -5,6 +5,7 @@ namespace Ordo\Automation\Test\Unit\Model\Campaign\Condition;
 
 use Ordo\Automation\Model\Campaign\Condition\VisitorHasTag;
 use Ordo\Automation\Model\VisitorTagManager;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 class VisitorHasTagTest extends TestCase
@@ -18,16 +19,18 @@ class VisitorHasTagTest extends TestCase
         $this->condition = new VisitorHasTag($this->visitorTagManager);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSatisfiedWhenVisitorHasTheTag(): void
     {
-        $this->visitorTagManager->method('hasTag')->with('v1', 'vip')->willReturn(true);
+        $this->visitorTagManager->method('hasTag')->willReturnMap([['v1', 'vip', true]]);
 
         self::assertTrue($this->condition->isSatisfied(['visitor_id' => 'v1'], ['tag' => 'vip']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testNotSatisfiedWhenVisitorLacksTheTag(): void
     {
-        $this->visitorTagManager->method('hasTag')->with('v1', 'vip')->willReturn(false);
+        $this->visitorTagManager->method('hasTag')->willReturnMap([['v1', 'vip', false]]);
 
         self::assertFalse($this->condition->isSatisfied(['visitor_id' => 'v1'], ['tag' => 'vip']));
     }

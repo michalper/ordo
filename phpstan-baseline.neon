@@ -244,6 +244,18 @@ parameters:
 			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
 			identifier: method.notFound
 			count: 1
+			path: Controller/Adminhtml/MessageLog/Index.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/MessageLog/Index.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
 			path: Controller/Adminhtml/ReorderCycle/Index.php
 
 		-

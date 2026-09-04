@@ -60,8 +60,8 @@ class DataProviderTest extends TestCase
         $collection = $this->createStub(ScoreRuleCollection::class);
         $collection->method('getItems')->willReturn([]);
 
-        $this->dataPersistor->method('get')->with('ordo_score_rule')
-            ->willReturn(['entity_id' => 5, 'attribute_code' => 'country_id']);
+        $this->dataPersistor->method('get')
+            ->willReturnMap([['ordo_score_rule', ['entity_id' => 5, 'attribute_code' => 'country_id']]]);
         $this->dataPersistor->expects(self::once())->method('clear')->with('ordo_score_rule');
 
         $provider = $this->makeProvider($collection);

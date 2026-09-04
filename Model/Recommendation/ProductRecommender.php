@@ -30,13 +30,13 @@ use Magento\Framework\Stdlib\DateTime\DateTime;
  */
 class ProductRecommender
 {
-    private const MAX_OTHER_CUSTOMERS = 500;
+    private const int MAX_OTHER_CUSTOMERS = 500;
 
     /** Best-sellers are store-wide (not customer-specific), so one cache serves every dispatch. */
-    private const BEST_SELLERS_CACHE_TTL_SECONDS = 60;
+    private const int BEST_SELLERS_CACHE_TTL_SECONDS = 60;
 
     /** Cache enough ranked best-sellers that per-customer exclusions rarely exhaust the list. */
-    private const BEST_SELLERS_CACHE_SIZE = 200;
+    private const int BEST_SELLERS_CACHE_SIZE = 200;
 
     /** @var string[]|null */
     private ?array $bestSellerCache = null;

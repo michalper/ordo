@@ -21,8 +21,8 @@ use Psr\Log\LoggerInterface;
  */
 class SendSalesRepDigest
 {
-    private const XML_PATH_EMAIL_TEMPLATE = 'ordo_sales_rep_digest';
-    private const XML_PATH_EMAIL_SENDER = 'general';
+    private const string XML_PATH_EMAIL_TEMPLATE = 'ordo_sales_rep_digest';
+    private const string XML_PATH_EMAIL_SENDER = 'general';
 
     public function __construct(
         private readonly Config $config,

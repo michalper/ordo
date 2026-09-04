@@ -23,15 +23,15 @@ use Psr\Log\LoggerInterface;
  */
 class RssFetcher
 {
-    private const TIMEOUT_SECONDS = 5;
+    private const int TIMEOUT_SECONDS = 5;
 
     /** Hard cap on the response body, to protect against a malicious/misbehaving feed. */
     private const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 
     /** Parsed items are capped here regardless of the block's configured item_count. */
-    private const MAX_ITEMS = 50;
+    private const int MAX_ITEMS = 50;
 
-    private const DEFAULT_ITEM_COUNT = 5;
+    private const int DEFAULT_ITEM_COUNT = 5;
 
     public function __construct(
         private readonly Curl $curl,

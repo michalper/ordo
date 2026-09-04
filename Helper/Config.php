@@ -8,51 +8,51 @@ use Magento\Store\Model\ScopeInterface;
 
 class Config
 {
-    private const XML_PATH_REORDER_ENABLED = 'ordo_automation/reorder/enabled';
-    private const XML_PATH_REORDER_MIN_ORDERS = 'ordo_automation/reorder/min_orders';
-    private const XML_PATH_REORDER_LEAD_DAYS = 'ordo_automation/reorder/lead_days';
+    private const string XML_PATH_REORDER_ENABLED = 'ordo_automation/reorder/enabled';
+    private const string XML_PATH_REORDER_MIN_ORDERS = 'ordo_automation/reorder/min_orders';
+    private const string XML_PATH_REORDER_LEAD_DAYS = 'ordo_automation/reorder/lead_days';
 
-    private const XML_PATH_CART_ENABLED = 'ordo_automation/abandoned_cart/enabled';
-    private const XML_PATH_CART_DELAY_MINUTES = 'ordo_automation/abandoned_cart/delay_minutes';
-    private const XML_PATH_CART_MIN_SUBTOTAL = 'ordo_automation/abandoned_cart/min_subtotal';
-    private const XML_PATH_CART_MAX_REMINDERS = 'ordo_automation/abandoned_cart/max_reminders';
+    private const string XML_PATH_CART_ENABLED = 'ordo_automation/abandoned_cart/enabled';
+    private const string XML_PATH_CART_DELAY_MINUTES = 'ordo_automation/abandoned_cart/delay_minutes';
+    private const string XML_PATH_CART_MIN_SUBTOTAL = 'ordo_automation/abandoned_cart/min_subtotal';
+    private const string XML_PATH_CART_MAX_REMINDERS = 'ordo_automation/abandoned_cart/max_reminders';
 
-    private const XML_PATH_OFFER_ENABLED = 'ordo_automation/offer/enabled';
-    private const XML_PATH_OFFER_LEAD_DAYS = 'ordo_automation/offer/lead_days';
-    private const XML_PATH_OFFER_MAX_SELF_EXTENSIONS = 'ordo_automation/offer/max_self_extensions';
-    private const XML_PATH_OFFER_SELF_EXTENSION_DAYS = 'ordo_automation/offer/self_extension_days';
+    private const string XML_PATH_OFFER_ENABLED = 'ordo_automation/offer/enabled';
+    private const string XML_PATH_OFFER_LEAD_DAYS = 'ordo_automation/offer/lead_days';
+    private const string XML_PATH_OFFER_MAX_SELF_EXTENSIONS = 'ordo_automation/offer/max_self_extensions';
+    private const string XML_PATH_OFFER_SELF_EXTENSION_DAYS = 'ordo_automation/offer/self_extension_days';
 
-    private const XML_PATH_CREDIT_ENABLED = 'ordo_automation/credit_limit/enabled';
-    private const XML_PATH_CREDIT_WARNING_THRESHOLD = 'ordo_automation/credit_limit/warning_threshold_percent';
-    private const XML_PATH_CREDIT_COOLDOWN_DAYS = 'ordo_automation/credit_limit/cooldown_days';
-    private const XML_PATH_CREDIT_BLOCK_CHECKOUT_ENABLED = 'ordo_automation/credit_limit/block_checkout_enabled';
+    private const string XML_PATH_CREDIT_ENABLED = 'ordo_automation/credit_limit/enabled';
+    private const string XML_PATH_CREDIT_WARNING_THRESHOLD = 'ordo_automation/credit_limit/warning_threshold_percent';
+    private const string XML_PATH_CREDIT_COOLDOWN_DAYS = 'ordo_automation/credit_limit/cooldown_days';
+    private const string XML_PATH_CREDIT_BLOCK_CHECKOUT_ENABLED = 'ordo_automation/credit_limit/block_checkout_enabled';
 
-    private const XML_PATH_LIFECYCLE_ENABLED = 'ordo_automation/lifecycle/enabled';
-    private const XML_PATH_LIFECYCLE_WIN_BACK_INACTIVE_DAYS = 'ordo_automation/lifecycle/win_back_inactive_days';
+    private const string XML_PATH_LIFECYCLE_ENABLED = 'ordo_automation/lifecycle/enabled';
+    private const string XML_PATH_LIFECYCLE_WIN_BACK_INACTIVE_DAYS = 'ordo_automation/lifecycle/win_back_inactive_days';
 
-    private const XML_PATH_APPROVAL_ENABLED = 'ordo_automation/order_approval/enabled';
-    private const XML_PATH_APPROVAL_ESCALATION_DAYS = 'ordo_automation/order_approval/escalation_days';
+    private const string XML_PATH_APPROVAL_ENABLED = 'ordo_automation/order_approval/enabled';
+    private const string XML_PATH_APPROVAL_ESCALATION_DAYS = 'ordo_automation/order_approval/escalation_days';
 
-    private const XML_PATH_SALES_REP_DIGEST_ENABLED = 'ordo_automation/sales_rep/digest_enabled';
+    private const string XML_PATH_SALES_REP_DIGEST_ENABLED = 'ordo_automation/sales_rep/digest_enabled';
 
-    private const XML_PATH_TRACKING_ENABLED = 'ordo_automation/tracking/enabled';
-    private const XML_PATH_TRACKING_RETENTION_DAYS = 'ordo_automation/tracking/retention_days';
-    private const XML_PATH_TRACKING_VIEW_THRESHOLD = 'ordo_automation/tracking/view_threshold';
-    private const XML_PATH_TRACKING_CLICK_THRESHOLD = 'ordo_automation/tracking/click_threshold';
+    private const string XML_PATH_TRACKING_ENABLED = 'ordo_automation/tracking/enabled';
+    private const string XML_PATH_TRACKING_RETENTION_DAYS = 'ordo_automation/tracking/retention_days';
+    private const string XML_PATH_TRACKING_VIEW_THRESHOLD = 'ordo_automation/tracking/view_threshold';
+    private const string XML_PATH_TRACKING_CLICK_THRESHOLD = 'ordo_automation/tracking/click_threshold';
 
-    private const XML_PATH_POPUP_ENABLED = 'ordo_automation/tracking/popup_enabled';
-    private const XML_PATH_POPUP_POLL_INTERVAL_SECONDS = 'ordo_automation/tracking/popup_poll_interval_seconds';
-    private const XML_PATH_POPUP_FREQUENCY_CAP_HOURS = 'ordo_automation/tracking/popup_frequency_cap_hours';
+    private const string XML_PATH_POPUP_ENABLED = 'ordo_automation/tracking/popup_enabled';
+    private const string XML_PATH_POPUP_POLL_INTERVAL_SECONDS = 'ordo_automation/tracking/popup_poll_interval_seconds';
+    private const string XML_PATH_POPUP_FREQUENCY_CAP_HOURS = 'ordo_automation/tracking/popup_frequency_cap_hours';
 
-    private const XML_PATH_FREE_GIFT_ENABLED = 'ordo_automation/free_gift/enabled';
+    private const string XML_PATH_FREE_GIFT_ENABLED = 'ordo_automation/free_gift/enabled';
 
-    private const XML_PATH_LEAD_SCORING_ENABLED = 'ordo_automation/lead_scoring/enabled';
-    private const XML_PATH_LEAD_SCORING_THRESHOLD = 'ordo_automation/lead_scoring/score_threshold';
+    private const string XML_PATH_LEAD_SCORING_ENABLED = 'ordo_automation/lead_scoring/enabled';
+    private const string XML_PATH_LEAD_SCORING_THRESHOLD = 'ordo_automation/lead_scoring/score_threshold';
 
-    private const XML_PATH_SMS_ENABLED = 'ordo_automation/sms/enabled';
-    private const XML_PATH_SMS_TWILIO_ACCOUNT_SID = 'ordo_automation/sms/twilio_account_sid';
-    private const XML_PATH_SMS_TWILIO_AUTH_TOKEN = 'ordo_automation/sms/twilio_auth_token';
-    private const XML_PATH_SMS_TWILIO_FROM_NUMBER = 'ordo_automation/sms/twilio_from_number';
+    private const string XML_PATH_SMS_ENABLED = 'ordo_automation/sms/enabled';
+    private const string XML_PATH_SMS_TWILIO_ACCOUNT_SID = 'ordo_automation/sms/twilio_account_sid';
+    private const string XML_PATH_SMS_TWILIO_AUTH_TOKEN = 'ordo_automation/sms/twilio_auth_token';
+    private const string XML_PATH_SMS_TWILIO_FROM_NUMBER = 'ordo_automation/sms/twilio_from_number';
 
     public function __construct(private readonly ScopeConfigInterface $scopeConfig)
     {

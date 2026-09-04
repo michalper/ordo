@@ -17,9 +17,9 @@ use Ordo\Automation\Model\ScoreRule;
  */
 class ScoreRuleEvaluator
 {
-    private const OPERATOR_EQUALS = 'equals';
-    private const OPERATOR_NOT_EQUALS = 'not_equals';
-    private const OPERATOR_CONTAINS = 'contains';
+    private const string OPERATOR_EQUALS = 'equals';
+    private const string OPERATOR_NOT_EQUALS = 'not_equals';
+    private const string OPERATOR_CONTAINS = 'contains';
 
     public function __construct(
         private readonly ScoreRuleCollectionFactory $scoreRuleCollectionFactory

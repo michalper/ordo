@@ -11,6 +11,14 @@ scoped from real hands-on marketing automation experience.
 
 - **Load/soak test** for Phase 7's dispatch performance work — the architectural bottlenecks (N+1, sync blocking,
   unbounded cron) are fixed, but no test has put a concurrent-throughput number on it.
+- **`send_sms` has no test against a real Twilio account.** Unit tests (`TwilioSmsSenderTest`) drive the real SDK
+  request-building/error-parsing logic via a fake `Twilio\Http\Client`, and the integration test
+  (`CampaignSendSmsActionTest`) uses real DI/database but swaps out `SmsSenderInterface` for a
+  `RecordingTwilioSmsSender` — so the actual Twilio API call (auth, delivery, and the
+  `Controller\Sms\StatusCallback` webhook receiving a genuine signed callback) has never been exercised end to end
+  against a live/trial Twilio account. `StatusCallbackTest` is unit-level too: it uses a real
+  `Twilio\Security\RequestValidator` to compute a correct signature, but the collection/resource-model calls are
+  mocked, so a real DB round trip (write on send → status update on callback) is untested.
 
 ## Tooling ideas, not yet actioned
 
@@ -33,19 +41,30 @@ Not a code review — a capability comparison against the category. Each is a re
   (`Twilio\Security\RequestValidator`) Twilio POSTs status updates to. Opted-out recipients (Twilio error 21610)
   are recorded as `status=opted_out`, distinct from a generic failure, and the Flow canvas's SMS message field
   carries a TCPA/opt-out-instruction reminder notice.
-  - **WhatsApp** — still open, and confirmed via Twilio's own docs to be materially more work than "same API,
-    `whatsapp:` prefix": outside a 24-hour customer-service session window (started only when the *customer*
-    messages first), only pre-approved message templates can be sent (Marketing/Utility/Authentication
-    categories, each with separate Meta fees, ~minutes-to-48h approval turnaround). A cold-start marketing
-    cart-recovery message is necessarily template-based, so this needs a template-authoring/approval-tracking
-    admin UI, not just a new `SmsSenderInterface`-style action — scope this properly before starting, don't
-    underestimate it as a copy of the SMS slice.
-  - **Push notifications** — still open, not investigated yet.
-  - **SendGrid-backed email delivery tracking** — not multichannel-recovery scope exactly, but a natural
-    follow-up now that `ordo_message_log`/the webhook pattern exist: Twilio's SendGrid (Mail Send API + Event
-    Webhook for opens/clicks/bounces) could replace `send_email`'s current fire-and-forget `TransportBuilder`
-    call the same way `send_sms` now tracks delivery. A real, separate architectural decision (email sending is
-    threaded through `TransportBuilder` in more places than just `SendEmail`), not a small addition.
+    - **WhatsApp** — still open, and confirmed via Twilio's own docs to be materially more work than "same API,
+      `whatsapp:` prefix": outside a 24-hour customer-service session window (started only when the *customer*
+      messages first), only pre-approved message templates can be sent (Marketing/Utility/Authentication
+      categories, each with separate Meta fees, ~minutes-to-48h approval turnaround). A cold-start marketing
+      cart-recovery message is necessarily template-based, so this needs a template-authoring/approval-tracking
+      admin UI, not just a new `SmsSenderInterface`-style action — scope this properly before starting, don't
+      underestimate it as a copy of the SMS slice.
+    - **Push notifications** — still open, not investigated yet.
+    - **SendGrid-backed email delivery tracking** — not multichannel-recovery scope exactly, but a natural
+      follow-up now that `ordo_message_log`/the webhook pattern exist: Twilio's SendGrid (Mail Send API + Event
+      Webhook for opens/clicks/bounces) could replace `send_email`'s current fire-and-forget `TransportBuilder`
+      call the same way `send_sms` now tracks delivery. A real, separate architectural decision (email sending is
+      threaded through `TransportBuilder` in more places than just `SendEmail`), not a small addition.
+    - ~~No admin visibility into `ordo_message_log`~~ — done. A read-only grid at Marketing → Ordo Automation →
+      Message Log (`Controller/Adminhtml/MessageLog/Index.php`, `ordo_messagelog_listing.xml`) lists every
+      send/opt-out/failure `Model\Sms\MessageLogWriter` wrote, with the status Twilio's delivery webhook
+      (`Controller\Sms\StatusCallback`) later updated. Reuses the `Ordo_Automation::campaigns` ACL resource, same as
+      the RFM report, rather than adding a new permission for an operational view. Will cover email too once the
+      SendGrid tracking item above lands, since the table is already channel-generic.
+    - ~~`ordo_sms_phone` has no format validation~~ — done. `SendSms::execute()` now rejects anything that doesn't
+      match a basic E.164 shape (`+`, non-zero leading digit, 8-15 digits total) before spending a Twilio API call,
+      logging and recording it as `failed` in `ordo_message_log` the same way a real send failure would be — this is
+      a fail-fast sanity check, not a full numbering-plan validator, so country-specific length/prefix rules still
+      aren't enforced and a syntactically valid but non-existent number still only fails at Twilio.
 - **On-site product recommendation blocks** — a new content-block type (or campaign action) rendering personalized
   product suggestions using data the module already has (customer/visitor tags, RFM scores, segment membership),
   not a new AI/recommendation engine. Extends the existing content-block and campaign-action surface rather than
@@ -66,7 +85,8 @@ Not a code review — a capability comparison against the category. Each is a re
 ## Localization
 
 - **Native-speaker review of the 10 machine-translated locales** (`de_DE`, `fr_FR`, `es_ES`, `it_IT`, `pt_BR`,
-  `zh_Hans_CN`, `ja_JP`, `ru_RU`, `uk_UA`, `nl_NL`) — shipped as a machine-translated first pass (see docs/CHANGELOG.md),
+  `zh_Hans_CN`, `ja_JP`, `ru_RU`, `uk_UA`, `nl_NL`) — shipped as a machine-translated first pass (see
+  docs/CHANGELOG.md),
   not yet signed off by a human reviewer per locale. Highest priority: launch-blocking strings (error messages,
   delete confirmations) over descriptive/help text.
 

@@ -174,7 +174,7 @@ class FreeGiftManagementTest extends AbstractModelTestCase
 
         $quote = $this->quote(300.0);
         $quote->expects(self::atLeastOnce())->method('collectTotals');
-        $this->cartRepository->method('get')->with(7)->willReturn($quote);
+        $this->cartRepository->method('get')->willReturnMap([[7, $quote]]);
 
         $eligibility = $this->management->getEligibility(7);
 
@@ -274,6 +274,7 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         $this->management->selectGifts(7, $this->selection(['SKU-NOT-IN-POOL']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSelectGiftsAddsItemsWithZeroPriceAndPersistsMarkerRows(): void
     {
         $this->stubOffersAndTiers([1], [$this->tier(1, 100.0, 1)]);
@@ -285,7 +286,7 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         $this->cartRepository->expects(self::once())->method('save')->with($quote);
 
         $product = $this->createStub(Product::class);
-        $this->productRepository->method('get')->with('SKU-A')->willReturn($product);
+        $this->productRepository->method('get')->willReturnMap([['SKU-A', $product]]);
 
         // setOriginalCustomPrice()/setIsSuperMode() are magic (__call via AbstractModel), not
         // real declared methods — PHPUnit 12 removed addMethods(), the only way to stub those,
@@ -342,8 +343,8 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         $this->cartRepository->method('get')->willReturn($quote);
 
         $product = $this->createStub(Product::class);
-        $this->productRepository->method('get')->with('SKU-A')->willReturn($product);
-        $quote->method('addProduct')->with($product, 1)->willReturn('Not enough stock.');
+        $this->productRepository->method('get')->willReturnMap([['SKU-A', $product]]);
+        $quote->method('addProduct')->willReturnMap([[$product, 1, 'Not enough stock.']]);
 
         $this->expectException(LocalizedException::class);
         $this->management->selectGifts(7, $this->selection(['SKU-A']));
@@ -361,13 +362,13 @@ class FreeGiftManagementTest extends AbstractModelTestCase
 
         $quote = $this->quote(150.0);
         $this->cartRepository->method('get')->willReturn($quote);
-        $quote->method('removeItem')->with(999)->willThrowException(new \Exception('item already gone'));
+        $quote->method('removeItem')->willThrowException(new \Exception('item already gone'));
 
         // The stale marker row must still be deleted even though removeItem() failed.
         $this->giftItemResource->expects(self::once())->method('delete')->with($staleRow);
 
         $product = $this->createStub(Product::class);
-        $this->productRepository->method('get')->with('SKU-A')->willReturn($product);
+        $this->productRepository->method('get')->willReturnMap([['SKU-A', $product]]);
 
         $item = $this->getMockBuilder(QuoteItemTestDouble::class)
             ->onlyMethods(['setCustomPrice', 'getId', 'getProduct'])

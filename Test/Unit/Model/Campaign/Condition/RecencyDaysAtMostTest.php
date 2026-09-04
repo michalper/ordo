@@ -5,6 +5,7 @@ namespace Ordo\Automation\Test\Unit\Model\Campaign\Condition;
 
 use Ordo\Automation\Model\Campaign\Condition\RecencyDaysAtMost;
 use Ordo\Automation\Model\Rfm\RfmCalculator;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 class RecencyDaysAtMostTest extends TestCase
@@ -18,30 +19,34 @@ class RecencyDaysAtMostTest extends TestCase
         $this->condition = new RecencyDaysAtMost($this->rfmCalculator);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSatisfiedWhenRecencyIsWithinTheLimit(): void
     {
-        $this->rfmCalculator->method('getRecencyDays')->with(42)->willReturn(10);
+        $this->rfmCalculator->method('getRecencyDays')->willReturnMap([[42, 10]]);
 
         self::assertTrue($this->condition->isSatisfied(['customer_id' => 42], ['days' => '30']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSatisfiedWhenRecencyEqualsTheLimit(): void
     {
-        $this->rfmCalculator->method('getRecencyDays')->with(42)->willReturn(30);
+        $this->rfmCalculator->method('getRecencyDays')->willReturnMap([[42, 30]]);
 
         self::assertTrue($this->condition->isSatisfied(['customer_id' => 42], ['days' => '30']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testNotSatisfiedWhenRecencyExceedsTheLimit(): void
     {
-        $this->rfmCalculator->method('getRecencyDays')->with(42)->willReturn(31);
+        $this->rfmCalculator->method('getRecencyDays')->willReturnMap([[42, 31]]);
 
         self::assertFalse($this->condition->isSatisfied(['customer_id' => 42], ['days' => '30']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testNotSatisfiedWhenCustomerHasNoOrders(): void
     {
-        $this->rfmCalculator->method('getRecencyDays')->with(42)->willReturn(null);
+        $this->rfmCalculator->method('getRecencyDays')->willReturnMap([[42, null]]);
 
         self::assertFalse($this->condition->isSatisfied(['customer_id' => 42], ['days' => '30']));
     }

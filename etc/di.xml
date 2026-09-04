@@ -60,7 +60,15 @@
                 <item name="ordo_rfm_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Rfm\Grid\Collection</item>
                 <item name="ordo_scorerule_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\ScoreRule\Grid\Collection</item>
                 <item name="ordo_contentblock_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\ContentBlock\Grid\Collection</item>
+                <item name="ordo_messagelog_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\MessageLog\Grid\Collection</item>
             </argument>
+        </arguments>
+    </type>
+
+    <type name="Ordo\Automation\Model\ResourceModel\MessageLog\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">ordo_message_log</argument>
+            <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\MessageLog</argument>
         </arguments>
     </type>
 

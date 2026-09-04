@@ -35,7 +35,7 @@ class CampaignSaveProcessor
      * whichever of these are non-empty for a row get merged into its params, so the raw JSON
      * textarea is only needed for a condition/action type that doesn't have one yet.
      */
-    private const DEDICATED_PARAM_FIELDS = [
+    private const array DEDICATED_PARAM_FIELDS = [
         'tag', 'amount', 'rule_id', 'prefix', 'template', 'message',
         'headline', 'body', 'cta_label', 'cta_url', 'points', 'threshold',
         'content_block_id', 'output_key',

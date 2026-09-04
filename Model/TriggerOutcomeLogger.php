@@ -32,7 +32,7 @@ class TriggerOutcomeLogger
         self::TRIGGER_WIN_BACK,
     ];
 
-    private const DEFAULT_LOOKBACK_DAYS = 30;
+    private const int DEFAULT_LOOKBACK_DAYS = 30;
 
     public function __construct(
         private readonly ResourceConnection $resourceConnection

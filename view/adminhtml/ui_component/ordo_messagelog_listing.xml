@@ -1,0 +1,115 @@
+<?xml version="1.0"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">ordo_messagelog_listing.ordo_messagelog_listing_data_source</item>
+        </item>
+    </argument>
+    <settings>
+        <spinner>ordo_messagelog_columns</spinner>
+        <deps>
+            <dep>ordo_messagelog_listing.ordo_messagelog_listing_data_source</dep>
+        </deps>
+    </settings>
+
+    <dataSource name="ordo_messagelog_listing_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider</argument>
+            <argument name="name" xsi:type="string">ordo_messagelog_listing_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">entity_id</argument>
+            <argument name="requestFieldName" xsi:type="string">entity_id</argument>
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="update_url" xsi:type="url" path="mui/index/render"/>
+                </item>
+            </argument>
+        </argument>
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/grid/provider</item>
+            </item>
+        </argument>
+    </dataSource>
+
+    <columns name="ordo_messagelog_columns">
+        <column name="entity_id">
+            <settings>
+                <filter>text</filter>
+                <sorting>desc</sorting>
+                <label translate="true">ID</label>
+            </settings>
+        </column>
+        <column name="channel">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Channel</label>
+            </settings>
+        </column>
+        <column name="customer_id">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Customer ID</label>
+            </settings>
+        </column>
+        <column name="to_address">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">To</label>
+            </settings>
+        </column>
+        <column name="status">
+            <settings>
+                <filter>select</filter>
+                <label translate="true">Status</label>
+                <options>
+                    <option name="sent" xsi:type="array">
+                        <item name="value" xsi:type="string">sent</item>
+                        <item name="label" xsi:type="string" translate="true">Sent</item>
+                    </option>
+                    <option name="delivered" xsi:type="array">
+                        <item name="value" xsi:type="string">delivered</item>
+                        <item name="label" xsi:type="string" translate="true">Delivered</item>
+                    </option>
+                    <option name="failed" xsi:type="array">
+                        <item name="value" xsi:type="string">failed</item>
+                        <item name="label" xsi:type="string" translate="true">Failed</item>
+                    </option>
+                    <option name="undelivered" xsi:type="array">
+                        <item name="value" xsi:type="string">undelivered</item>
+                        <item name="label" xsi:type="string" translate="true">Undelivered</item>
+                    </option>
+                    <option name="opted_out" xsi:type="array">
+                        <item name="value" xsi:type="string">opted_out</item>
+                        <item name="label" xsi:type="string" translate="true">Opted Out</item>
+                    </option>
+                </options>
+            </settings>
+        </column>
+        <column name="error_code">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Error Code</label>
+            </settings>
+        </column>
+        <column name="provider_message_id">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Provider Message ID</label>
+            </settings>
+        </column>
+        <column name="sent_at" class="Magento\Ui\Component\Listing\Columns\Date">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Sent At</label>
+            </settings>
+        </column>
+        <column name="updated_at" class="Magento\Ui\Component\Listing\Columns\Date">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Updated At</label>
+            </settings>
+        </column>
+    </columns>
+</listing>

@@ -14,7 +14,7 @@ use Magento\Framework\Escaper;
  */
 class RssItemRenderer
 {
-    private const DEFAULT_ITEM_COUNT = 5;
+    private const int DEFAULT_ITEM_COUNT = 5;
 
     public function __construct(
         private readonly Escaper $escaper

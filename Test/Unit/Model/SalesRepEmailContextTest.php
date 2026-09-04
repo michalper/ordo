@@ -41,7 +41,7 @@ class SalesRepEmailContextTest extends TestCase
             [AddSalesRepAttributes::ATTRIBUTE_REP_EMAIL, $this->attribute('anna@example.com')],
             [AddSalesRepAttributes::ATTRIBUTE_REP_PHONE, $this->attribute('+1 555 0100')],
         ]);
-        $this->customerRepository->method('getById')->with(42)->willReturn($customer);
+        $this->customerRepository->method('getById')->willReturnMap([[42, $customer]]);
 
         $result = $this->context->getForCustomer(42);
 
@@ -56,7 +56,7 @@ class SalesRepEmailContextTest extends TestCase
     {
         $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getCustomAttribute')->willReturn(null);
-        $this->customerRepository->method('getById')->with(7)->willReturn($customer);
+        $this->customerRepository->method('getById')->willReturnMap([[7, $customer]]);
 
         $store = $this->createStub(StoreInterface::class);
         $store->method('getName')->willReturn('Acme Supplies');
@@ -74,7 +74,7 @@ class SalesRepEmailContextTest extends TestCase
     {
         $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getCustomAttribute')->willReturn(null);
-        $this->customerRepository->method('getById')->with(8)->willReturn($customer);
+        $this->customerRepository->method('getById')->willReturnMap([[8, $customer]]);
 
         $this->storeManager->method('getStore')->willThrowException(new \RuntimeException('no store'));
 
@@ -88,7 +88,6 @@ class SalesRepEmailContextTest extends TestCase
     public function testFallsBackWhenCustomerDoesNotExist(): void
     {
         $this->customerRepository->method('getById')
-            ->with(999)
             ->willThrowException(new NoSuchEntityException(__('not found')));
 
         $store = $this->createStub(StoreInterface::class);

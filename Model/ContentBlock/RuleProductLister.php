@@ -30,9 +30,9 @@ use Magento\SalesRule\Model\RuleFactory;
  */
 class RuleProductLister
 {
-    private const PAGE_SIZE = 200;
+    private const int PAGE_SIZE = 200;
 
-    private const MAX_SCANNED = 2000;
+    private const int MAX_SCANNED = 2000;
 
     public function __construct(
         private readonly RuleFactory $ruleFactory,

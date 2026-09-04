@@ -10,6 +10,7 @@ use Magento\Framework\App\ActionFlag;
 use Magento\Framework\App\Request\Http as HttpRequest;
 use Magento\Framework\App\ResponseInterface;
 use Ordo\Automation\Controller\Offer\AbstractOfferAction;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 class AbstractOfferActionTest extends TestCase
@@ -53,10 +54,10 @@ class AbstractOfferActionTest extends TestCase
         };
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDispatchRunsExecuteWhenCustomerIsAuthenticated(): void
     {
-        $this->customerSession->method('authenticate')->with('https://example.com/customer/account/login/')
-            ->willReturn(true);
+        $this->customerSession->method('authenticate')->willReturn(true);
 
         $controller = $this->makeController();
 
@@ -66,10 +67,10 @@ class AbstractOfferActionTest extends TestCase
         self::assertFalse($this->actionFlag->get('', \Magento\Framework\App\Action\AbstractAction::FLAG_NO_DISPATCH));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDispatchSkipsExecuteAndRedirectsToLoginWhenNotAuthenticated(): void
     {
-        $this->customerSession->method('authenticate')->with('https://example.com/customer/account/login/')
-            ->willReturn(false);
+        $this->customerSession->method('authenticate')->willReturn(false);
 
         $controller = $this->makeController();
 

@@ -16,9 +16,9 @@ use Ordo\Automation\Model\Recommendation\ProductRecommendationRenderer;
  */
 class ProductFeedProducer implements ProducerInterface
 {
-    private const DEFAULT_ITEM_COUNT = 4;
+    private const int DEFAULT_ITEM_COUNT = 4;
 
-    private const HEADING = 'New Arrivals';
+    private const string HEADING = 'New Arrivals';
 
     public function __construct(
         private readonly CategoryProductLister $categoryProductLister,

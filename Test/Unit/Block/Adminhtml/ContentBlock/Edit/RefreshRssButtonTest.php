@@ -9,14 +9,16 @@ use Magento\Framework\Registry;
 use Magento\Framework\UrlInterface;
 use Ordo\Automation\Block\Adminhtml\ContentBlock\Edit\RefreshRssButton;
 use Ordo\Automation\Model\ContentBlock;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 class RefreshRssButtonTest extends TestCase
 {
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetButtonDataReturnsEmptyWhenNoEntityId(): void
     {
         $request = $this->createMock(RequestInterface::class);
-        $request->method('getParam')->with('entity_id')->willReturn(null);
+        $request->method('getParam')->willReturnMap([['entity_id', null]]);
 
         $context = $this->createStub(Context::class);
         $context->method('getRequest')->willReturn($request);
@@ -27,10 +29,11 @@ class RefreshRssButtonTest extends TestCase
         self::assertSame([], (new RefreshRssButton($context, $registry))->getButtonData());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetButtonDataReturnsEmptyWhenNoBlockRegistered(): void
     {
         $request = $this->createMock(RequestInterface::class);
-        $request->method('getParam')->with('entity_id')->willReturn(5);
+        $request->method('getParam')->willReturnMap([['entity_id', 5]]);
 
         $context = $this->createStub(Context::class);
         $context->method('getRequest')->willReturn($request);
@@ -41,10 +44,11 @@ class RefreshRssButtonTest extends TestCase
         self::assertSame([], (new RefreshRssButton($context, $registry))->getButtonData());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetButtonDataReturnsEmptyWhenTypeIsNotRss(): void
     {
         $request = $this->createMock(RequestInterface::class);
-        $request->method('getParam')->with('entity_id')->willReturn(5);
+        $request->method('getParam')->willReturnMap([['entity_id', 5]]);
 
         $context = $this->createStub(Context::class);
         $context->method('getRequest')->willReturn($request);
@@ -53,19 +57,20 @@ class RefreshRssButtonTest extends TestCase
         $block->method('getType')->willReturn('snippet');
 
         $registry = $this->createMock(Registry::class);
-        $registry->method('registry')->with('ordo_content_block')->willReturn($block);
+        $registry->method('registry')->willReturnMap([['ordo_content_block', $block]]);
 
         self::assertSame([], (new RefreshRssButton($context, $registry))->getButtonData());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetButtonDataReturnsButtonWhenRssBlockRegistered(): void
     {
         $request = $this->createMock(RequestInterface::class);
-        $request->method('getParam')->with('entity_id')->willReturn(5);
+        $request->method('getParam')->willReturnMap([['entity_id', 5]]);
 
         $urlBuilder = $this->createMock(UrlInterface::class);
-        $urlBuilder->method('getUrl')->with('ordo/contentblock/refreshRss')
-            ->willReturn('https://example.com/admin/ordo/contentblock/refreshRss/');
+        $urlBuilder->method('getUrl')
+            ->willReturnMap([['ordo/contentblock/refreshRss', [], 'https://example.com/admin/ordo/contentblock/refreshRss/']]);
 
         $context = $this->createStub(Context::class);
         $context->method('getRequest')->willReturn($request);
@@ -75,7 +80,7 @@ class RefreshRssButtonTest extends TestCase
         $block->method('getType')->willReturn('rss');
 
         $registry = $this->createMock(Registry::class);
-        $registry->method('registry')->with('ordo_content_block')->willReturn($block);
+        $registry->method('registry')->willReturnMap([['ordo_content_block', $block]]);
 
         $data = (new RefreshRssButton($context, $registry))->getButtonData();
 

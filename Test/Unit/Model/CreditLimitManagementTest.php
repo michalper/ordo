@@ -28,12 +28,13 @@ class CreditLimitManagementTest extends TestCase
         $this->management = new CreditLimitManagement($this->calculator, $statusFactory, $this->userContext);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetMyStatusUsesAuthenticatedCustomerId(): void
     {
         $this->userContext->method('getUserId')->willReturn(7);
-        $this->calculator->method('getCreditLimit')->with(7)->willReturn(1000.0);
-        $this->calculator->method('getUsedCredit')->with(7)->willReturn(300.0);
-        $this->calculator->method('getUtilizationPercent')->with(7)->willReturn(30.0);
+        $this->calculator->method('getCreditLimit')->willReturnMap([[7, 1000.0]]);
+        $this->calculator->method('getUsedCredit')->willReturnMap([[7, 300.0]]);
+        $this->calculator->method('getUtilizationPercent')->willReturnMap([[7, 30.0]]);
 
         $status = $this->management->getMyStatus();
 
@@ -52,11 +53,12 @@ class CreditLimitManagementTest extends TestCase
         $this->management->getMyStatus();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetStatusForCustomerAvailableCreditCanBeNegative(): void
     {
-        $this->calculator->method('getCreditLimit')->with(9)->willReturn(500.0);
-        $this->calculator->method('getUsedCredit')->with(9)->willReturn(750.0);
-        $this->calculator->method('getUtilizationPercent')->with(9)->willReturn(150.0);
+        $this->calculator->method('getCreditLimit')->willReturnMap([[9, 500.0]]);
+        $this->calculator->method('getUsedCredit')->willReturnMap([[9, 750.0]]);
+        $this->calculator->method('getUtilizationPercent')->willReturnMap([[9, 150.0]]);
 
         $status = $this->management->getStatusForCustomer(9);
 

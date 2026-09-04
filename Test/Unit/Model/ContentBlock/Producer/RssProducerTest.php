@@ -11,6 +11,7 @@ use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
 use Magento\Framework\Registry;
 use Ordo\Automation\Model\ContentBlock;
 use Ordo\Automation\Model\ContentBlock\Producer\RssProducer;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -50,12 +51,13 @@ class RssProducerTest extends TestCase
     {
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
-        $resourceConnection->method('getTableName')->with('ordo_content_block_rss_cache')
-            ->willReturn('ordo_content_block_rss_cache');
+        $resourceConnection->method('getTableName')
+            ->willReturnMap([['ordo_content_block_rss_cache', 'ordo_content_block_rss_cache']]);
 
         return new RssProducer($resourceConnection);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testRendersCachedHtmlFromTable(): void
     {
         $select = $this->createStub(Select::class);
@@ -71,6 +73,7 @@ class RssProducerTest extends TestCase
         self::assertSame('<table>cached</table>', $producer->render($this->makeBlock()));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testReturnsEmptyStringWhenNoCacheRowExists(): void
     {
         $select = $this->createStub(Select::class);

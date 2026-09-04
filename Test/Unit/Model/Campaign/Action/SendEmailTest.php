@@ -55,7 +55,7 @@ class SendEmailTest extends TestCase
         $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getFirstname')->willReturn('Jan');
         $customer->method('getEmail')->willReturn('jan@example.com');
-        $this->customerRepository->method('getById')->with(42)->willReturn($customer);
+        $this->customerRepository->method('getById')->willReturnMap([[42, $customer]]);
 
         $this->transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
         $this->transportBuilder->method('setTemplateOptions')->willReturnSelf();

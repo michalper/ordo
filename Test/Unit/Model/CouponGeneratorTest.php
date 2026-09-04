@@ -14,12 +14,13 @@ use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class CouponGeneratorTest extends TestCase
 {
+    #[AllowMockObjectsWithoutExpectations]
     public function testGenerateBuildsAndSavesCoupon(): void
     {
         $couponFactory = $this->createStub(CouponFactory::class);
         $couponResource = $this->createMock(CouponResource::class);
         $random = $this->createMock(Random::class);
-        $random->method('getRandomString')->with(10)->willReturn('abcdef1234');
+        $random->method('getRandomString')->willReturnMap([[10, 'abcdef1234']]);
 
         $coupon = $this->createMock(Coupon::class);
         $coupon->expects(self::once())->method('setRuleId')->with(7);

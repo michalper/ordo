@@ -25,7 +25,7 @@ use Twilio\Rest\Client;
  */
 class TwilioSmsSender implements SmsSenderInterface
 {
-    private const OPTED_OUT_ERROR_CODE = 21610;
+    private const int OPTED_OUT_ERROR_CODE = 21610;
 
     public function __construct(
         private readonly Config $config,

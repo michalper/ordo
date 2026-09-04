@@ -39,7 +39,7 @@ class EditTest extends AbstractAdminActionTestCase
     public function testExecuteBuildsNewContentBlockPageWhenNoEntityId(): void
     {
         $context = $this->makeContext();
-        $this->request->method('getParam')->with('entity_id')->willReturn(0);
+        $this->request->method('getParam')->willReturnMap([['entity_id', 0]]);
 
         $contentBlock = $this->createStub(ContentBlock::class);
         $contentBlockFactory = $this->createStub(ContentBlockFactory::class);
@@ -63,7 +63,7 @@ class EditTest extends AbstractAdminActionTestCase
     public function testExecuteLoadsExistingContentBlock(): void
     {
         $context = $this->makeContext();
-        $this->request->method('getParam')->with('entity_id')->willReturn(5);
+        $this->request->method('getParam')->willReturnMap([['entity_id', 5]]);
 
         $contentBlock = $this->createStub(ContentBlock::class);
         $contentBlock->method('getEntityId')->willReturn(5);
@@ -85,10 +85,11 @@ class EditTest extends AbstractAdminActionTestCase
         self::assertSame($resultPage, $controller->execute());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsWhenContentBlockNotFound(): void
     {
         $context = $this->makeContext();
-        $this->request->method('getParam')->with('entity_id')->willReturn(99);
+        $this->request->method('getParam')->willReturnMap([['entity_id', 99]]);
 
         $contentBlock = $this->createStub(ContentBlock::class);
         $contentBlock->method('getEntityId')->willReturn(null);
@@ -104,7 +105,7 @@ class EditTest extends AbstractAdminActionTestCase
         $this->messageManager->expects(self::once())->method('addErrorMessage');
 
         $redirect = $this->createMock(Redirect::class);
-        $redirect->method('setPath')->with('*/*/')->willReturnSelf();
+        $redirect->method('setPath')->willReturnSelf();
         $this->resultRedirectFactory->method('create')->willReturn($redirect);
 
         $resultPageFactory = $this->createMock(PageFactory::class);

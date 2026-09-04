@@ -115,7 +115,7 @@ class OrderApprovalManagementTest extends TestCase
         $orderCollection->method('getFirstItem')->willReturn($order);
         $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
 
-        $this->orderConfig->method('getStateDefaultStatus')->with(Order::STATE_NEW)->willReturn('processing');
+        $this->orderConfig->method('getStateDefaultStatus')->willReturnMap([[Order::STATE_NEW, 'processing']]);
         $this->orderResource->expects(self::once())->method('save')->with($order);
         $this->orderApprovalResource->expects(self::once())->method('save')->with($approval);
 

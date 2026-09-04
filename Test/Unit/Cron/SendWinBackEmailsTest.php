@@ -88,8 +88,8 @@ class SendWinBackEmailsTest extends TestCase
         $config->method('isLifecycleEmailsEnabled')->willReturn(true);
 
         $tagManager = $this->createMock(CustomerTagManager::class);
-        $tagManager->method('getCustomerIdsWithTag')->with(TagInactiveCustomers::TAG_INACTIVE)->willReturn([5]);
-        $tagManager->method('hasTag')->with(5, SendWinBackEmails::TAG_WIN_BACK_SENT)->willReturn(true);
+        $tagManager->method('getCustomerIdsWithTag')->willReturnMap([[TagInactiveCustomers::TAG_INACTIVE, [5]]]);
+        $tagManager->method('hasTag')->willReturnMap([[5, SendWinBackEmails::TAG_WIN_BACK_SENT, true]]);
         $tagManager->expects(self::never())->method('addTag');
 
         $this->makeCron($config, $tagManager)->execute();

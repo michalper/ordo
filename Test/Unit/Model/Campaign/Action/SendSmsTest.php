@@ -63,7 +63,7 @@ class SendSmsTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSendsSms(): void
     {
-        $this->customerRepository->method('getById')->with(42)->willReturn($this->customerWithPhone('+15551234567'));
+        $this->customerRepository->method('getById')->willReturnMap([[42, $this->customerWithPhone('+15551234567')]]);
         $this->smsSender->expects(self::once())->method('send')->with('+15551234567', 'hello')->willReturn('SM123');
         $this->messageLogWriter->expects(self::once())->method('recordSent')
             ->with('sms', 42, '+15551234567', 'SM123');

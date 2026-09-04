@@ -14,10 +14,11 @@ use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class StitchVisitorIdentityTest extends TestCase
 {
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteAttributesVisitorWhenCookieAndCustomerPresent(): void
     {
         $cookieManager = $this->createMock(CookieManagerInterface::class);
-        $cookieManager->method('getCookie')->with(StitchVisitorIdentity::COOKIE_NAME)->willReturn('v1');
+        $cookieManager->method('getCookie')->willReturnMap([[StitchVisitorIdentity::COOKIE_NAME, 'v1']]);
 
         $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getId')->willReturn(42);

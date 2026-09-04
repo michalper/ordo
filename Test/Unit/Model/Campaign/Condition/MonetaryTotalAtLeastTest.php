@@ -5,6 +5,7 @@ namespace Ordo\Automation\Test\Unit\Model\Campaign\Condition;
 
 use Ordo\Automation\Model\Campaign\Condition\MonetaryTotalAtLeast;
 use Ordo\Automation\Model\Rfm\RfmCalculator;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 class MonetaryTotalAtLeastTest extends TestCase
@@ -18,16 +19,18 @@ class MonetaryTotalAtLeastTest extends TestCase
         $this->condition = new MonetaryTotalAtLeast($this->rfmCalculator);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSatisfiedWhenMonetaryTotalMeetsThreshold(): void
     {
-        $this->rfmCalculator->method('getMonetaryTotal')->with(42)->willReturn(500.0);
+        $this->rfmCalculator->method('getMonetaryTotal')->willReturnMap([[42, 500.0]]);
 
         self::assertTrue($this->condition->isSatisfied(['customer_id' => 42], ['amount' => '500']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testNotSatisfiedWhenMonetaryTotalIsBelowThreshold(): void
     {
-        $this->rfmCalculator->method('getMonetaryTotal')->with(42)->willReturn(499.99);
+        $this->rfmCalculator->method('getMonetaryTotal')->willReturnMap([[42, 499.99]]);
 
         self::assertFalse($this->condition->isSatisfied(['customer_id' => 42], ['amount' => '500']));
     }

@@ -81,7 +81,7 @@ class PopupTest extends AbstractFrontendActionTestCase
     {
         $controller = $this->makeController();
         $this->config->method('isPopupEnabled')->willReturn(true);
-        $this->request->method('getParam')->with('visitor_id')->willReturn('');
+        $this->request->method('getParam')->willReturnMap([['visitor_id', '']]);
         $this->customerSession->method('isLoggedIn')->willReturn(false);
 
         $this->pendingPopupCollectionFactory->expects(self::never())->method('create');
@@ -95,7 +95,7 @@ class PopupTest extends AbstractFrontendActionTestCase
     {
         $controller = $this->makeController();
         $this->config->method('isPopupEnabled')->willReturn(true);
-        $this->request->method('getParam')->with('visitor_id')->willReturn('v1');
+        $this->request->method('getParam')->willReturnMap([['visitor_id', 'v1']]);
         $this->customerSession->method('isLoggedIn')->willReturn(false);
 
         $this->pendingPopupCollectionFactory->method('create')->willReturn($this->makeCollection([]));
@@ -110,7 +110,7 @@ class PopupTest extends AbstractFrontendActionTestCase
     {
         $controller = $this->makeController();
         $this->config->method('isPopupEnabled')->willReturn(true);
-        $this->request->method('getParam')->with('visitor_id')->willReturn('v1');
+        $this->request->method('getParam')->willReturnMap([['visitor_id', 'v1']]);
         $this->customerSession->method('isLoggedIn')->willReturn(false);
 
         $popup = $this->createStub(PendingPopup::class);
@@ -144,7 +144,7 @@ class PopupTest extends AbstractFrontendActionTestCase
     {
         $controller = $this->makeController();
         $this->config->method('isPopupEnabled')->willReturn(true);
-        $this->request->method('getParam')->with('visitor_id')->willReturn('v1');
+        $this->request->method('getParam')->willReturnMap([['visitor_id', 'v1']]);
         $this->customerSession->method('isLoggedIn')->willReturn(false);
 
         $lost = $this->createStub(PendingPopup::class);

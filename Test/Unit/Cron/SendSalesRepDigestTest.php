@@ -98,24 +98,28 @@ class SendSalesRepDigestTest extends TestCase
         ))->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteGroupsByRepAndSendsOneDigest(): void
     {
         $config = $this->createStub(Config::class);
         $config->method('isSalesRepDigestEnabled')->willReturn(true);
 
         $tagManager = $this->createMock(CustomerTagManager::class);
-        $tagManager->method('getCustomerIdsWithTag')->with(TagInactiveCustomers::TAG_INACTIVE)->willReturn([5, 6]);
+        $tagManager->method('getCustomerIdsWithTag')
+            ->willReturnMap([[TagInactiveCustomers::TAG_INACTIVE, [5, 6]]]);
 
         $repAttr = $this->createStub(AttributeInterface::class);
         $repAttr->method('getValue')->willReturn('rep@example.com');
 
         $customer5 = $this->createMock(CustomerInterface::class);
-        $customer5->method('getCustomAttribute')->with(AddSalesRepAttributes::ATTRIBUTE_REP_EMAIL)->willReturn($repAttr);
+        $customer5->method('getCustomAttribute')
+            ->willReturnMap([[AddSalesRepAttributes::ATTRIBUTE_REP_EMAIL, $repAttr]]);
         $customer5->method('getFirstname')->willReturn('Jan');
         $customer5->method('getLastname')->willReturn('Kowalski');
 
         $customer6 = $this->createMock(CustomerInterface::class);
-        $customer6->method('getCustomAttribute')->with(AddSalesRepAttributes::ATTRIBUTE_REP_EMAIL)->willReturn(null);
+        $customer6->method('getCustomAttribute')
+            ->willReturnMap([[AddSalesRepAttributes::ATTRIBUTE_REP_EMAIL, null]]);
         $customer6->method('getId')->willReturn(6);
 
         $customer5->method('getId')->willReturn(5);

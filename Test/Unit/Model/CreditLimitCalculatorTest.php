@@ -33,6 +33,7 @@ class CreditLimitCalculatorTest extends TestCase
         return $connection;
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetCreditLimitReturnsAttributeValue(): void
     {
         $customer = $this->createStub(CustomerInterface::class);
@@ -41,7 +42,7 @@ class CreditLimitCalculatorTest extends TestCase
         $customer->method('getCustomAttribute')->willReturn($attribute);
 
         $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
-        $customerRepository->method('getById')->with(42)->willReturn($customer);
+        $customerRepository->method('getById')->willReturnMap([[42, $customer]]);
 
         $calculator = new CreditLimitCalculator($this->createStub(ResourceConnection::class), $customerRepository);
 

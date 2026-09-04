@@ -91,7 +91,8 @@ class DataProviderTest extends TestCase
 
         $this->conditionCollectionFactory->method('create')->willReturn($this->makeEmptyConditionCollection());
 
-        $this->dataPersistor->method('get')->with('ordo_segment')->willReturn(['entity_id' => 5, 'name' => 'Draft']);
+        $this->dataPersistor->method('get')
+            ->willReturnMap([['ordo_segment', ['entity_id' => 5, 'name' => 'Draft']]]);
         $this->dataPersistor->expects(self::once())->method('clear')->with('ordo_segment');
 
         $provider = $this->makeProvider($collection);

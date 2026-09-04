@@ -22,8 +22,8 @@ use Psr\Log\LoggerInterface;
  */
 class SendWinBackEmails
 {
-    private const XML_PATH_EMAIL_TEMPLATE = 'ordo_win_back_email';
-    private const XML_PATH_EMAIL_SENDER = 'general';
+    private const string XML_PATH_EMAIL_TEMPLATE = 'ordo_win_back_email';
+    private const string XML_PATH_EMAIL_SENDER = 'general';
     public const TAG_WIN_BACK_SENT = 'win_back_sent';
 
     public function __construct(

@@ -19,7 +19,7 @@ use Psr\Log\LoggerInterface;
  */
 class SendEmail implements ActionInterface
 {
-    private const XML_PATH_EMAIL_SENDER = 'general';
+    private const string XML_PATH_EMAIL_SENDER = 'general';
 
     public function __construct(
         private readonly CustomerRepositoryInterface $customerRepository,

@@ -30,7 +30,7 @@ class Collection extends SearchResult
      * A customer with no orders at all must still rank — in the worst bucket, not be excluded —
      * so the null last_order_at is folded to a day count far beyond any real one before ranking.
      */
-    private const NO_ORDER_RECENCY_DAYS = 999999;
+    private const int NO_ORDER_RECENCY_DAYS = 999999;
 
     /**
      * @param string $mainTable

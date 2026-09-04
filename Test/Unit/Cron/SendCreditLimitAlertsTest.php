@@ -82,6 +82,7 @@ class SendCreditLimitAlertsTest extends TestCase
         $this->makeCron($config, $calculator, $this->createStub(ResourceConnection::class), $logger)->execute();
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsCustomerBelowThreshold(): void
     {
         $config = $this->createStub(Config::class);
@@ -90,7 +91,7 @@ class SendCreditLimitAlertsTest extends TestCase
 
         $calculator = $this->createMock(CreditLimitCalculator::class);
         $calculator->method('getCustomerIdsWithCreditLimit')->willReturn([5]);
-        $calculator->method('getUtilizationPercent')->with(5)->willReturn(50.0);
+        $calculator->method('getUtilizationPercent')->willReturnMap([[5, 50.0]]);
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->expects(self::never())->method('getConnection');
@@ -108,7 +109,7 @@ class SendCreditLimitAlertsTest extends TestCase
 
         $calculator = $this->createMock(CreditLimitCalculator::class);
         $calculator->method('getCustomerIdsWithCreditLimit')->willReturn([5]);
-        $calculator->method('getUtilizationPercent')->with(5)->willReturn(85.0);
+        $calculator->method('getUtilizationPercent')->willReturnMap([[5, 85.0]]);
         $calculator->method('getCreditLimit')->willReturn(1000.0);
         $calculator->method('getUsedCredit')->willReturn(850.0);
 

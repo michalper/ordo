@@ -12,13 +12,14 @@ use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class VisitorAggregationConsumerTest extends TestCase
 {
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteAggregatesForCustomerWhenCustomerIdPresent(): void
     {
         $aggregator = $this->createMock(VisitorAggregator::class);
         $serializer = $this->createMock(SerializerInterface::class);
         $logger = $this->createMock(LoggerInterface::class);
 
-        $serializer->method('unserialize')->with('raw-message')->willReturn(['customer_id' => 42]);
+        $serializer->method('unserialize')->willReturnMap([['raw-message', ['customer_id' => 42]]]);
 
         $aggregator->expects(self::once())->method('aggregateForCustomer')->with(42);
         $aggregator->expects(self::never())->method('aggregateForVisitor');

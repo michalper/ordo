@@ -35,8 +35,8 @@ use Psr\Log\LoggerInterface;
  */
 class SendAbandonedCartReminders
 {
-    private const XML_PATH_EMAIL_TEMPLATE = 'ordo_abandoned_cart_reminder';
-    private const XML_PATH_EMAIL_SENDER = 'general';
+    private const string XML_PATH_EMAIL_TEMPLATE = 'ordo_abandoned_cart_reminder';
+    private const string XML_PATH_EMAIL_SENDER = 'general';
 
     public function __construct(
         private readonly Config $config,

@@ -17,7 +17,7 @@ use Ordo\Automation\Model\Recommendation\ProductRecommender;
  */
 class AddProductRecommendations implements ActionInterface
 {
-    private const DEFAULT_COUNT = 4;
+    private const int DEFAULT_COUNT = 4;
 
     public function __construct(
         private readonly ProductRecommender $productRecommender,

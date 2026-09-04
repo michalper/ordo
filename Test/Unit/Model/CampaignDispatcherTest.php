@@ -139,7 +139,7 @@ class CampaignDispatcherTest extends TestCase
 
         $actionRow = $this->createMock(CampaignAction::class);
         $actionRow->method('getCampaignId')->willReturn(1);
-        $actionRow->method('getData')->with('type')->willReturn('tag_customer');
+        $actionRow->method('getData')->willReturnMap([['type', 'tag_customer']]);
         $actionRow->method('getParams')->willReturn(['tag' => 'vip']);
         $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$actionRow]));
 
@@ -175,7 +175,7 @@ class CampaignDispatcherTest extends TestCase
 
         $actionRow = $this->createMock(CampaignAction::class);
         $actionRow->method('getCampaignId')->willReturn(1);
-        $actionRow->method('getData')->with('type')->willReturn('tag_customer');
+        $actionRow->method('getData')->willReturnMap([['type', 'tag_customer']]);
         $actionRow->method('getParams')->willReturn([]);
         $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$actionRow]));
 
@@ -211,7 +211,7 @@ class CampaignDispatcherTest extends TestCase
 
         $conditionRow = $this->createMock(CampaignCondition::class);
         $conditionRow->method('getCampaignId')->willReturn(1);
-        $conditionRow->method('getData')->with('type')->willReturn('has_tag');
+        $conditionRow->method('getData')->willReturnMap([['type', 'has_tag']]);
         $conditionRow->method('getParams')->willReturn([]);
         $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([$conditionRow]));
 
@@ -237,7 +237,7 @@ class CampaignDispatcherTest extends TestCase
 
         $conditionRow = $this->createMock(CampaignCondition::class);
         $conditionRow->method('getCampaignId')->willReturn(1);
-        $conditionRow->method('getData')->with('type')->willReturn('unknown_type');
+        $conditionRow->method('getData')->willReturnMap([['type', 'unknown_type']]);
         $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([$conditionRow]));
         $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([]));
 
@@ -255,7 +255,7 @@ class CampaignDispatcherTest extends TestCase
 
         $actionRow = $this->createMock(CampaignAction::class);
         $actionRow->method('getCampaignId')->willReturn(1);
-        $actionRow->method('getData')->with('type')->willReturn('unknown_action');
+        $actionRow->method('getData')->willReturnMap([['type', 'unknown_action']]);
         $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$actionRow]));
 
         $this->logger->expects(self::once())->method('error');
@@ -302,7 +302,7 @@ class CampaignDispatcherTest extends TestCase
         $immediateAction->method('getCampaignId')->willReturn(1);
         $immediateAction->method('getEntityId')->willReturn(10);
         $immediateAction->method('getDelayMinutes')->willReturn(0);
-        $immediateAction->method('getData')->with('type')->willReturn('tag_customer');
+        $immediateAction->method('getData')->willReturnMap([['type', 'tag_customer']]);
         $immediateAction->method('getParams')->willReturn(['tag' => 'vip']);
 
         $delayedAction = $this->createStub(CampaignAction::class);
@@ -341,12 +341,12 @@ class CampaignDispatcherTest extends TestCase
 
         $actionOfCampaign1 = $this->createMock(CampaignAction::class);
         $actionOfCampaign1->method('getCampaignId')->willReturn(1);
-        $actionOfCampaign1->method('getData')->with('type')->willReturn('tag_customer');
+        $actionOfCampaign1->method('getData')->willReturnMap([['type', 'tag_customer']]);
         $actionOfCampaign1->method('getParams')->willReturn(['tag' => 'one']);
 
         $actionOfCampaign2 = $this->createMock(CampaignAction::class);
         $actionOfCampaign2->method('getCampaignId')->willReturn(2);
-        $actionOfCampaign2->method('getData')->with('type')->willReturn('tag_customer');
+        $actionOfCampaign2->method('getData')->willReturnMap([['type', 'tag_customer']]);
         $actionOfCampaign2->method('getParams')->willReturn(['tag' => 'two']);
 
         $actionCollection = $this->createMock(ActionCollection::class);
@@ -368,12 +368,12 @@ class CampaignDispatcherTest extends TestCase
         $firstAction = $this->createMock(CampaignAction::class);
         $firstAction->method('getEntityId')->willReturn(10);
         $firstAction->method('getDelayMinutes')->willReturn(0);
-        $firstAction->method('getData')->with('type')->willReturn('unused_action');
+        $firstAction->method('getData')->willReturnMap([['type', 'unused_action']]);
 
         $resumeAction = $this->createMock(CampaignAction::class);
         $resumeAction->method('getEntityId')->willReturn(11);
         $resumeAction->method('getDelayMinutes')->willReturn(0);
-        $resumeAction->method('getData')->with('type')->willReturn('tag_customer');
+        $resumeAction->method('getData')->willReturnMap([['type', 'tag_customer']]);
         $resumeAction->method('getParams')->willReturn(['tag' => 'reactivated']);
 
         $actionCollection = $this->createMock(ActionCollection::class);
@@ -427,12 +427,12 @@ class CampaignDispatcherTest extends TestCase
 
         $actionOfCampaign1 = $this->createMock(CampaignAction::class);
         $actionOfCampaign1->method('getCampaignId')->willReturn(1);
-        $actionOfCampaign1->method('getData')->with('type')->willReturn('tag_customer');
+        $actionOfCampaign1->method('getData')->willReturnMap([['type', 'tag_customer']]);
         $actionOfCampaign1->method('getParams')->willReturn([]);
 
         $actionOfCampaign2 = $this->createMock(CampaignAction::class);
         $actionOfCampaign2->method('getCampaignId')->willReturn(2);
-        $actionOfCampaign2->method('getData')->with('type')->willReturn('tag_customer');
+        $actionOfCampaign2->method('getData')->willReturnMap([['type', 'tag_customer']]);
         $actionOfCampaign2->method('getParams')->willReturn([]);
 
         $this->actionCollectionFactory->method('create')->willReturn(

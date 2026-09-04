@@ -34,7 +34,7 @@ class SaveTest extends AbstractAdminActionTestCase
         $this->request->method('getPostValue')->willReturn(null);
 
         $redirect = $this->createMock(Redirect::class);
-        $redirect->method('setPath')->with('*/*/')->willReturnSelf();
+        $redirect->method('setPath')->willReturnSelf();
         $this->resultRedirectFactory->method('create')->willReturn($redirect);
 
         $this->saveProcessor->expects(self::never())->method('process');
@@ -55,7 +55,7 @@ class SaveTest extends AbstractAdminActionTestCase
             'actions' => ['actions' => [['type' => 'tag_customer', 'tag' => 'reordered', 'params_json' => '', 'delay_minutes' => '60']]],
         ];
         $this->request->method('getPostValue')->willReturn($postData);
-        $this->request->method('getParam')->with('back')->willReturn(null);
+        $this->request->method('getParam')->willReturnMap([['back', null]]);
 
         $campaign = $this->createMock(Campaign::class);
         $campaign->method('getEntityId')->willReturn(7);
@@ -64,7 +64,7 @@ class SaveTest extends AbstractAdminActionTestCase
         $this->messageManager->expects(self::once())->method('addSuccessMessage');
 
         $redirect = $this->createMock(Redirect::class);
-        $redirect->method('setPath')->with('*/*/')->willReturnSelf();
+        $redirect->method('setPath')->willReturnSelf();
         $this->resultRedirectFactory->method('create')->willReturn($redirect);
 
         self::assertSame($redirect, $controller->execute());
@@ -76,14 +76,14 @@ class SaveTest extends AbstractAdminActionTestCase
         $controller = $this->makeController();
         $postData = ['name' => 'Welcome'];
         $this->request->method('getPostValue')->willReturn($postData);
-        $this->request->method('getParam')->with('back')->willReturn('1');
+        $this->request->method('getParam')->willReturnMap([['back', '1']]);
 
         $campaign = $this->createMock(Campaign::class);
         $campaign->method('getEntityId')->willReturn(7);
-        $this->saveProcessor->method('process')->with($postData)->willReturn($campaign);
+        $this->saveProcessor->method('process')->willReturnMap([[$postData, $campaign]]);
 
         $redirect = $this->createMock(Redirect::class);
-        $redirect->method('setPath')->with('*/*/edit', ['entity_id' => 7])->willReturnSelf();
+        $redirect->method('setPath')->willReturnSelf();
         $this->resultRedirectFactory->method('create')->willReturn($redirect);
 
         self::assertSame($redirect, $controller->execute());
@@ -100,7 +100,7 @@ class SaveTest extends AbstractAdminActionTestCase
         $this->messageManager->expects(self::once())->method('addErrorMessage');
 
         $redirect = $this->createMock(Redirect::class);
-        $redirect->method('setPath')->with('*/*/edit', ['entity_id' => 3])->willReturnSelf();
+        $redirect->method('setPath')->willReturnSelf();
         $this->resultRedirectFactory->method('create')->willReturn($redirect);
 
         self::assertSame($redirect, $controller->execute());

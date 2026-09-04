@@ -12,6 +12,7 @@ use Magento\Framework\Registry;
 use Ordo\Automation\Model\ContentBlock;
 use Ordo\Automation\Model\ContentBlock\Renderer\RssItemRenderer;
 use Ordo\Automation\Model\ContentBlock\RssFetcher;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -30,8 +31,8 @@ class RssFetcherTest extends TestCase
         $this->resourceConnection = $this->createMock(ResourceConnection::class);
         $this->connection = $this->createMock(AdapterInterface::class);
         $this->resourceConnection->method('getConnection')->willReturn($this->connection);
-        $this->resourceConnection->method('getTableName')->with('ordo_content_block_rss_cache')
-            ->willReturn('ordo_content_block_rss_cache');
+        $this->resourceConnection->method('getTableName')
+            ->willReturnMap([['ordo_content_block_rss_cache', 'ordo_content_block_rss_cache']]);
         $this->rssItemRenderer = $this->createMock(RssItemRenderer::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
@@ -63,6 +64,7 @@ class RssFetcherTest extends TestCase
 </rss>
 XML;
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDoesNothingWhenBlockHasNoEntityId(): void
     {
         $resource = $this->createStub(AbstractDb::class);
@@ -77,6 +79,7 @@ XML;
         $this->fetcher->fetch($block);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testWritesErrorWhenFeedUrlIsMissing(): void
     {
         $this->curl->expects(self::never())->method('get');
@@ -90,6 +93,7 @@ XML;
         $this->fetcher->fetch($this->makeBlock([]));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSuccessfulFetchUpdatesRenderedHtmlAndClearsFetchError(): void
     {
         $this->curl->expects(self::once())->method('setTimeout')->with(5);
@@ -115,6 +119,7 @@ XML;
         $this->fetcher->fetch($this->makeBlock(['feed_url' => 'https://example.com/feed.xml']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testOversizedResponseBodyWritesErrorAndDoesNotTouchRenderedHtml(): void
     {
         $this->curl->expects(self::once())->method('get')->with('https://example.com/feed.xml');
@@ -135,6 +140,7 @@ XML;
         $this->fetcher->fetch($this->makeBlock(['feed_url' => 'https://example.com/feed.xml']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testCapsParsedItemsAtMaxItemsRegardlessOfFeedSize(): void
     {
         $items = '';
@@ -159,6 +165,7 @@ XML;
         $this->fetcher->fetch($this->makeBlock(['feed_url' => 'https://example.com/feed.xml']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testMalformedXmlWritesErrorAndDoesNotTouchRenderedHtml(): void
     {
         $this->curl->expects(self::once())->method('get')->with('https://example.com/feed.xml');
@@ -179,6 +186,7 @@ XML;
         $this->fetcher->fetch($this->makeBlock(['feed_url' => 'https://example.com/feed.xml']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testNon200StatusWritesErrorAndDoesNotTouchRenderedHtml(): void
     {
         $this->curl->expects(self::once())->method('get')->with('https://example.com/feed.xml');
@@ -199,6 +207,7 @@ XML;
         $this->fetcher->fetch($this->makeBlock(['feed_url' => 'https://example.com/feed.xml']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExceptionDuringFetchWritesErrorAndDoesNotTouchRenderedHtml(): void
     {
         $this->curl->expects(self::once())->method('get')->with('https://example.com/feed.xml')
@@ -218,6 +227,7 @@ XML;
         $this->fetcher->fetch($this->makeBlock(['feed_url' => 'https://example.com/feed.xml']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testUsesConfiguredItemCount(): void
     {
         $this->curl->expects(self::once())->method('get')->with('https://example.com/feed.xml');
@@ -232,6 +242,7 @@ XML;
         $this->fetcher->fetch($this->makeBlock(['feed_url' => 'https://example.com/feed.xml', 'item_count' => 10]));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testRejectsFeedUrlPointingAtPrivateAddressWithoutCallingCurl(): void
     {
         $this->curl->expects(self::never())->method('get');
@@ -245,6 +256,7 @@ XML;
         $this->fetcher->fetch($this->makeBlock(['feed_url' => 'http://169.254.169.254/latest/meta-data']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testRejectsLocalhostFeedUrlWithoutCallingCurl(): void
     {
         $this->curl->expects(self::never())->method('get');
@@ -258,6 +270,7 @@ XML;
         $this->fetcher->fetch($this->makeBlock(['feed_url' => 'http://localhost/feed.xml']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testRejectsNonHttpFeedUrlSchemeWithoutCallingCurl(): void
     {
         $this->curl->expects(self::never())->method('get');
@@ -271,6 +284,7 @@ XML;
         $this->fetcher->fetch($this->makeBlock(['feed_url' => 'file:///etc/passwd']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testNonPositiveItemCountFallsBackToDefault(): void
     {
         $this->curl->expects(self::once())->method('get')->with('https://example.com/feed.xml');

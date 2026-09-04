@@ -27,7 +27,7 @@ class VisitorAggregator
      * oddly. Also the event types that use getTrackingClickThreshold() instead of
      * getTrackingViewThreshold() below (see resolveThreshold()).
      */
-    private const CLICK_EVENT_TYPES = ['element_clicked'];
+    private const array CLICK_EVENT_TYPES = ['element_clicked'];
 
     public function __construct(
         private readonly Config $config,

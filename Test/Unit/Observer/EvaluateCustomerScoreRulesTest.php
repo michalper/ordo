@@ -88,7 +88,7 @@ class EvaluateCustomerScoreRulesTest extends TestCase
         $this->config->method('isLeadScoringEnabled')->willReturn(true);
         $customer = $this->makeCustomer(42);
         $this->scoreRuleEvaluator->method('getMatchingRulePoints')->willReturn(10);
-        $this->customerScoreManager->method('getDemographicScore')->with(42)->willReturn(10);
+        $this->customerScoreManager->method('getDemographicScore')->willReturnMap([[42, 10]]);
 
         $this->customerScoreManager->expects(self::never())->method('addPoints');
         $this->customerScoreManager->expects(self::never())->method('setDemographicScore');
@@ -103,8 +103,8 @@ class EvaluateCustomerScoreRulesTest extends TestCase
         $this->config->method('getScoreThreshold')->willReturn(100);
         $customer = $this->makeCustomer(42);
         $this->scoreRuleEvaluator->method('getMatchingRulePoints')->willReturn(5);
-        $this->customerScoreManager->method('getDemographicScore')->with(42)->willReturn(15);
-        $this->customerScoreManager->method('getScore')->with(42)->willReturn(50);
+        $this->customerScoreManager->method('getDemographicScore')->willReturnMap([[42, 15]]);
+        $this->customerScoreManager->method('getScore')->willReturnMap([[42, 50]]);
 
         $this->customerScoreManager->expects(self::once())->method('addPoints')->with(42, -10);
         $this->customerScoreManager->expects(self::once())->method('setDemographicScore')->with(42, 5);
@@ -119,8 +119,8 @@ class EvaluateCustomerScoreRulesTest extends TestCase
         $this->config->method('getScoreThreshold')->willReturn(100);
         $customer = $this->makeCustomer(42);
         $this->scoreRuleEvaluator->method('getMatchingRulePoints')->willReturn(30);
-        $this->customerScoreManager->method('getDemographicScore')->with(42)->willReturn(0);
-        $this->customerScoreManager->method('getScore')->with(42)->willReturn(90);
+        $this->customerScoreManager->method('getDemographicScore')->willReturnMap([[42, 0]]);
+        $this->customerScoreManager->method('getScore')->willReturnMap([[42, 90]]);
 
         $this->customerScoreManager->expects(self::once())->method('addPoints')->with(42, 30);
 
@@ -132,28 +132,30 @@ class EvaluateCustomerScoreRulesTest extends TestCase
         $this->makeObserverInstance()->execute($this->makeObserver($customer));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteDoesNotDispatchWhenAlreadyOverThreshold(): void
     {
         $this->config->method('isLeadScoringEnabled')->willReturn(true);
         $this->config->method('getScoreThreshold')->willReturn(100);
         $customer = $this->makeCustomer(42);
         $this->scoreRuleEvaluator->method('getMatchingRulePoints')->willReturn(30);
-        $this->customerScoreManager->method('getDemographicScore')->with(42)->willReturn(10);
-        $this->customerScoreManager->method('getScore')->with(42)->willReturn(150);
+        $this->customerScoreManager->method('getDemographicScore')->willReturnMap([[42, 10]]);
+        $this->customerScoreManager->method('getScore')->willReturnMap([[42, 150]]);
 
         $this->eventManager->expects(self::never())->method('dispatch');
 
         $this->makeObserverInstance()->execute($this->makeObserver($customer));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteDoesNotDispatchWhenStillUnderThreshold(): void
     {
         $this->config->method('isLeadScoringEnabled')->willReturn(true);
         $this->config->method('getScoreThreshold')->willReturn(100);
         $customer = $this->makeCustomer(42);
         $this->scoreRuleEvaluator->method('getMatchingRulePoints')->willReturn(15);
-        $this->customerScoreManager->method('getDemographicScore')->with(42)->willReturn(10);
-        $this->customerScoreManager->method('getScore')->with(42)->willReturn(20);
+        $this->customerScoreManager->method('getDemographicScore')->willReturnMap([[42, 10]]);
+        $this->customerScoreManager->method('getScore')->willReturnMap([[42, 20]]);
 
         $this->eventManager->expects(self::never())->method('dispatch');
 

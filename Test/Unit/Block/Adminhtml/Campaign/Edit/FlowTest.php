@@ -102,18 +102,20 @@ class FlowTest extends TestCase
         return $collection;
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testHasCampaignFalseWhenNoneRegistered(): void
     {
-        $this->registry->method('registry')->with('ordo_campaign')->willReturn(null);
+        $this->registry->method('registry')->willReturnMap([['ordo_campaign', null]]);
 
         self::assertFalse($this->makeBlock()->hasCampaign());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testHasCampaignFalseForUnsavedCampaign(): void
     {
         $campaign = $this->createStub(Campaign::class);
         $campaign->method('getEntityId')->willReturn(null);
-        $this->registry->method('registry')->with('ordo_campaign')->willReturn($campaign);
+        $this->registry->method('registry')->willReturnMap([['ordo_campaign', $campaign]]);
 
         self::assertFalse($this->makeBlock()->hasCampaign());
     }
@@ -150,11 +152,12 @@ class FlowTest extends TestCase
         self::assertSame('{}', $this->makeBlock()->getFlowDataJson());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetFlowDataJsonChainsTriggerConditionAndAction(): void
     {
         $campaign = $this->createStub(Campaign::class);
         $campaign->method('getEntityId')->willReturn(3);
-        $this->registry->method('registry')->with('ordo_campaign')->willReturn($campaign);
+        $this->registry->method('registry')->willReturnMap([['ordo_campaign', $campaign]]);
 
         $this->triggerCollectionFactory->method('create')->willReturn($this->triggerCollectionWith(['order_placed']));
 
@@ -198,11 +201,12 @@ class FlowTest extends TestCase
         self::assertSame([], $data[3]['outputs']['output_1']['connections']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetFlowDataJsonConnectsTriggerDirectlyToActionsWhenNoConditions(): void
     {
         $campaign = $this->createStub(Campaign::class);
         $campaign->method('getEntityId')->willReturn(4);
-        $this->registry->method('registry')->with('ordo_campaign')->willReturn($campaign);
+        $this->registry->method('registry')->willReturnMap([['ordo_campaign', $campaign]]);
 
         $this->triggerCollectionFactory->method('create')->willReturn($this->triggerCollectionWith(['order_placed']));
 
@@ -228,11 +232,12 @@ class FlowTest extends TestCase
         self::assertSame('2', $data[1]['outputs']['output_1']['connections'][0]['node']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetFlowDataJsonConnectsMultipleTriggersToSameCondition(): void
     {
         $campaign = $this->createStub(Campaign::class);
         $campaign->method('getEntityId')->willReturn(5);
-        $this->registry->method('registry')->with('ordo_campaign')->willReturn($campaign);
+        $this->registry->method('registry')->willReturnMap([['ordo_campaign', $campaign]]);
 
         $this->triggerCollectionFactory->method('create')->willReturn(
             $this->triggerCollectionWith(['order_placed', 'order_placed'])
@@ -265,11 +270,12 @@ class FlowTest extends TestCase
         self::assertSame('3', $data[2]['outputs']['output_1']['connections'][0]['node']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetFlowDataJsonChainsSecondActionToFirstNotToUpstream(): void
     {
         $campaign = $this->createStub(Campaign::class);
         $campaign->method('getEntityId')->willReturn(6);
-        $this->registry->method('registry')->with('ordo_campaign')->willReturn($campaign);
+        $this->registry->method('registry')->willReturnMap([['ordo_campaign', $campaign]]);
 
         $this->triggerCollectionFactory->method('create')->willReturn($this->triggerCollectionWith(['order_placed']));
 

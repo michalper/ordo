@@ -111,7 +111,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
-          php-version: "8.3"
+          php-version: "8.4"
           extensions: bcmath, ctype, curl, dom, ftp, gd, intl, mbstring, mysqli, pdo_mysql, simplexml, soap, sodium, xsl, zip, opcache, sockets
           coverage: none
 
@@ -243,13 +243,16 @@ jobs:
         # 32. Selenium/Chrome's real concurrent asset-fetching load needs a real web server —
         # nginx + php-fpm, the same stack Magento's own docs and official CI actually use, is the
         # correct fix rather than continuing to tune the dev server's worker count. ubuntu-24.04's
-        # default apt PHP is already 8.3, matching the CLI version installed above.
+        # default apt repo only ships PHP 8.3 — the ondrej/php PPA is added here to get 8.4
+        # native packages matching the CLI version installed above (unlike the 8.3-only default,
+        # this isn't optional).
         run: |
+          sudo add-apt-repository -y ppa:ondrej/php
           sudo apt-get update -qq
           # sodium isn't a separate apt package — it's bundled into PHP core since 7.2.
-          sudo apt-get install -y -qq nginx php8.3-fpm php8.3-bcmath php8.3-curl php8.3-gd \
-            php8.3-intl php8.3-mbstring php8.3-mysql php8.3-soap php8.3-xsl \
-            php8.3-zip php8.3-opcache
+          sudo apt-get install -y -qq nginx php8.4-fpm php8.4-bcmath php8.4-curl php8.4-gd \
+            php8.4-intl php8.4-mbstring php8.4-mysql php8.4-soap php8.4-xsl \
+            php8.4-zip php8.4-opcache
 
       - name: Configure and start nginx + PHP-FPM for Magento
         working-directory: magento
@@ -271,7 +274,7 @@ jobs:
               # (index|get|static|errors/*|health_check).
               location ~ ^/cli-bridge/.*\.php\$ {
                   root $(pwd)/pub;
-                  fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+                  fastcgi_pass unix:/run/php/php8.4-fpm.sock;
                   fastcgi_index index.php;
                   fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
                   include fastcgi_params;
@@ -280,7 +283,7 @@ jobs:
               include $(pwd)/nginx.conf.sample;
           }
           NGINX
-          sudo sed -i "s#fastcgi_pass   fastcgi_backend;#fastcgi_pass unix:/run/php/php8.3-fpm.sock;#" nginx.conf.sample
+          sudo sed -i "s#fastcgi_pass   fastcgi_backend;#fastcgi_pass unix:/run/php/php8.4-fpm.sock;#" nginx.conf.sample
           sudo ln -sf /etc/nginx/sites-available/magento.conf /etc/nginx/sites-enabled/magento.conf
           sudo rm -f /etc/nginx/sites-enabled/default
 
@@ -295,16 +298,16 @@ jobs:
           # calls).
           sudo sed -i "s/^user www-data;/user $(whoami);/" /etc/nginx/nginx.conf
           sudo sed -i "s/^user = .*/user = $(whoami)/; s/^group = .*/group = $(whoami)/" \
-            /etc/php/8.3/fpm/pool.d/www.conf
+            /etc/php/8.4/fpm/pool.d/www.conf
           sudo sed -i "s/^listen.owner = .*/listen.owner = $(whoami)/; s/^listen.group = .*/listen.group = $(whoami)/" \
-            /etc/php/8.3/fpm/pool.d/www.conf
+            /etc/php/8.4/fpm/pool.d/www.conf
           # Ubuntu's default pool caps at pm.max_children = 5 — nowhere near enough for the
           # burst of concurrent asset requests a real admin page triggers under Selenium/Chrome
           # (the same class of problem PHP_CLI_SERVER_WORKERS existed to solve for php -S).
           # static + a flat 32 avoids dynamic's slower ramp-up (start_servers/min_spare_servers)
           # costing the first page load extra latency.
           sudo sed -i "s/^pm = .*/pm = static/; s/^pm.max_children = .*/pm.max_children = 32/" \
-            /etc/php/8.3/fpm/pool.d/www.conf
+            /etc/php/8.4/fpm/pool.d/www.conf
 
           # Routes PHP's mail() (Magento's default Sendmail transport — this module sets no SMTP
           # config of its own) into MailHog instead of trying (and failing) to actually send.
@@ -335,10 +338,10 @@ jobs:
           # sent synchronously during a normal web request (checkout, order-approval) never hit
           # this, only one sent from inside a queue consumer run this way.
           echo 'sendmail_path = "/usr/local/bin/mhsendmail --smtp-addr=127.0.0.1:1025 -t"' | \
-            sudo tee /etc/php/8.3/fpm/conf.d/99-mhsendmail.ini /etc/php/8.3/cli/conf.d/99-mhsendmail.ini > /dev/null
+            sudo tee /etc/php/8.4/fpm/conf.d/99-mhsendmail.ini /etc/php/8.4/cli/conf.d/99-mhsendmail.ini > /dev/null
 
           sudo nginx -t
-          sudo systemctl restart php8.3-fpm
+          sudo systemctl restart php8.4-fpm
           sudo systemctl restart nginx
           for i in $(seq 1 15); do
             curl -sf http://127.0.0.1:8080/ -o /dev/null && break
@@ -347,7 +350,7 @@ jobs:
           curl -sf http://127.0.0.1:8080/ -o /dev/null || (
             echo "--- curl -v ---"; curl -v http://127.0.0.1:8080/ 2>&1
             echo "--- nginx error.log ---"; sudo tail -100 /var/log/nginx/error.log
-            echo "--- php8.3-fpm error log ---"; sudo tail -100 /var/log/php8.3-fpm.log
+            echo "--- php8.4-fpm error log ---"; sudo tail -100 /var/log/php8.4-fpm.log
             exit 1
           )
 
@@ -426,7 +429,7 @@ jobs:
           mkdir -p /tmp/server-logs
           sudo cp /var/log/nginx/error.log /tmp/server-logs/nginx-error.log 2>/dev/null || true
           sudo cp /var/log/nginx/access.log /tmp/server-logs/nginx-access.log 2>/dev/null || true
-          sudo cp /var/log/php8.3-fpm.log /tmp/server-logs/php8.3-fpm.log 2>/dev/null || true
+          sudo cp /var/log/php8.4-fpm.log /tmp/server-logs/php8.4-fpm.log 2>/dev/null || true
           sudo chmod -R a+r /tmp/server-logs
 
       - name: Dump ACL data and Magento's own logs for the failure artifact

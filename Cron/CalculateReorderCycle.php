@@ -15,8 +15,8 @@ use Psr\Log\LoggerInterface;
  */
 class CalculateReorderCycle
 {
-    private const MIN_ORDERS_TO_DETECT_PATTERN = 3;
-    private const LOOKBACK_ORDERS_PER_SKU = 10;
+    private const int MIN_ORDERS_TO_DETECT_PATTERN = 3;
+    private const int LOOKBACK_ORDERS_PER_SKU = 10;
 
     public function __construct(
         private readonly ResourceConnection $resourceConnection,

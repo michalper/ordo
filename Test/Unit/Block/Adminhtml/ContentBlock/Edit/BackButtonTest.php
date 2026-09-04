@@ -7,14 +7,16 @@ use Magento\Backend\Block\Widget\Context;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\UrlInterface;
 use Ordo\Automation\Block\Adminhtml\ContentBlock\Edit\BackButton;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 class BackButtonTest extends TestCase
 {
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetButtonDataIncludesBackUrl(): void
     {
         $urlBuilder = $this->createMock(UrlInterface::class);
-        $urlBuilder->method('getUrl')->with('*/*/')->willReturn('https://example.com/admin/ordo/contentblock/');
+        $urlBuilder->method('getUrl')->willReturnMap([['*/*/', [], 'https://example.com/admin/ordo/contentblock/']]);
 
         $request = $this->createStub(RequestInterface::class);
 

@@ -5,6 +5,7 @@ namespace Ordo\Automation\Test\Unit\Model\Campaign\Condition;
 
 use Ordo\Automation\Model\Campaign\Condition\ScoreAtLeast;
 use Ordo\Automation\Model\CustomerScoreManager;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 class ScoreAtLeastTest extends TestCase
@@ -18,23 +19,26 @@ class ScoreAtLeastTest extends TestCase
         $this->condition = new ScoreAtLeast($this->customerScoreManager);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSatisfiedWhenScoreMeetsThreshold(): void
     {
-        $this->customerScoreManager->method('getScore')->with(42)->willReturn(50);
+        $this->customerScoreManager->method('getScore')->willReturnMap([[42, 50]]);
 
         self::assertTrue($this->condition->isSatisfied(['customer_id' => 42], ['threshold' => '50']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSatisfiedWhenScoreExceedsThreshold(): void
     {
-        $this->customerScoreManager->method('getScore')->with(42)->willReturn(51);
+        $this->customerScoreManager->method('getScore')->willReturnMap([[42, 51]]);
 
         self::assertTrue($this->condition->isSatisfied(['customer_id' => 42], ['threshold' => '50']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testNotSatisfiedWhenScoreIsBelowThreshold(): void
     {
-        $this->customerScoreManager->method('getScore')->with(42)->willReturn(49);
+        $this->customerScoreManager->method('getScore')->willReturnMap([[42, 49]]);
 
         self::assertFalse($this->condition->isSatisfied(['customer_id' => 42], ['threshold' => '50']));
     }

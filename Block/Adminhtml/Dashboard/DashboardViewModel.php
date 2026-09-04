@@ -21,7 +21,7 @@ use Ordo\Automation\Model\TriggerOutcomeLogger;
  */
 class DashboardViewModel implements ArgumentInterface
 {
-    private const TRIGGER_LABELS = [
+    private const array TRIGGER_LABELS = [
         CampaignTriggerInterface::TRIGGER_ORDER_PLACED => 'Order Placed',
         CampaignTriggerInterface::TRIGGER_CUSTOMER_REGISTERED => 'Customer Registered',
         CampaignTriggerInterface::TRIGGER_TAG_ADDED => 'Tag Added',
@@ -37,7 +37,7 @@ class DashboardViewModel implements ArgumentInterface
      * the point of a "per fixed trigger" breakdown: it answers "which of the triggers we
      * support are actually being used" just as much as "how many campaigns use each one".
      */
-    private const FIXED_TRIGGER_EVENTS = [
+    private const array FIXED_TRIGGER_EVENTS = [
         CampaignTriggerInterface::TRIGGER_ORDER_PLACED,
         CampaignTriggerInterface::TRIGGER_CUSTOMER_REGISTERED,
         CampaignTriggerInterface::TRIGGER_TAG_ADDED,
@@ -51,7 +51,7 @@ class DashboardViewModel implements ArgumentInterface
      * from TRIGGER_LABELS/FIXED_TRIGGER_EVENTS above, which are campaign trigger *events*
      * (order_placed, tag_added, ...), not these standalone scheduled sends.
      */
-    private const TRIGGER_OUTCOME_LABELS = [
+    private const array TRIGGER_OUTCOME_LABELS = [
         TriggerOutcomeLogger::TRIGGER_REORDER_REMINDER => 'Reorder Reminder',
         TriggerOutcomeLogger::TRIGGER_OFFER_EXPIRY => 'Offer Expiry',
         TriggerOutcomeLogger::TRIGGER_CREDIT_LIMIT_ALERT => 'Credit Limit Alert',

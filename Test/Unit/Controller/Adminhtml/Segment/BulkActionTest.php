@@ -148,7 +148,7 @@ class BulkActionTest extends AbstractAdminActionTestCase
             ['tag', null, 'vip'],
         ]);
         $this->segment->method('getEntityId')->willReturn(5);
-        $this->segmentMemberResolver->method('getMatchingCustomerIds')->with(5)->willReturn([]);
+        $this->segmentMemberResolver->method('getMatchingCustomerIds')->willReturnMap([[5, []]]);
 
         $this->messageManager->expects(self::once())->method('addWarningMessage');
         $this->segmentBulkActionPublisher->expects(self::never())->method('publish');
@@ -167,7 +167,7 @@ class BulkActionTest extends AbstractAdminActionTestCase
             ['points', null, '10'],
         ]);
         $this->segment->method('getEntityId')->willReturn(5);
-        $this->segmentMemberResolver->method('getMatchingCustomerIds')->with(5)->willReturn([1, 2, 3]);
+        $this->segmentMemberResolver->method('getMatchingCustomerIds')->willReturnMap([[5, [1, 2, 3]]]);
 
         $this->segmentBulkActionPublisher->expects(self::once())
             ->method('publish')

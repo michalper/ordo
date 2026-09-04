@@ -26,9 +26,9 @@ use Psr\Log\LoggerInterface;
  */
 class SendOfferExpiryReminders
 {
-    private const XML_PATH_EMAIL_TEMPLATE = 'ordo_offer_expiring_soon';
-    private const XML_PATH_EMAIL_SENDER = 'general';
-    private const REMINDER_TYPE_EXPIRING_SOON = 'expiring_soon';
+    private const string XML_PATH_EMAIL_TEMPLATE = 'ordo_offer_expiring_soon';
+    private const string XML_PATH_EMAIL_SENDER = 'general';
+    private const string REMINDER_TYPE_EXPIRING_SOON = 'expiring_soon';
 
     public function __construct(
         private readonly Config $config,

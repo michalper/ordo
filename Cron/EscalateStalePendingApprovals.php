@@ -23,9 +23,9 @@ use Psr\Log\LoggerInterface;
  */
 class EscalateStalePendingApprovals
 {
-    private const XML_PATH_EMAIL_TEMPLATE = 'ordo_order_approval_escalation';
-    private const XML_PATH_EMAIL_SENDER = 'general';
-    private const MAX_ESCALATIONS = 3;
+    private const string XML_PATH_EMAIL_TEMPLATE = 'ordo_order_approval_escalation';
+    private const string XML_PATH_EMAIL_SENDER = 'general';
+    private const int MAX_ESCALATIONS = 3;
 
     public function __construct(
         private readonly Config $config,

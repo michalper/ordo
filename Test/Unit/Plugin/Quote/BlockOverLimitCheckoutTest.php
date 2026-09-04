@@ -46,12 +46,13 @@ class BlockOverLimitCheckoutTest extends TestCase
         self::assertSame([42, null], $result);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDoesNotBlockGuestQuote(): void
     {
         $this->config->method('isCreditLimitCheckoutBlockEnabled')->willReturn(true);
 
         $quote = $this->createQuoteStub(null);
-        $this->cartRepository->method('get')->with(42)->willReturn($quote);
+        $this->cartRepository->method('get')->willReturnMap([[42, $quote]]);
 
         $this->creditLimitCalculator->expects(self::never())->method('getUtilizationPercent');
 
@@ -60,28 +61,30 @@ class BlockOverLimitCheckoutTest extends TestCase
         self::assertSame([42, null], $result);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDoesNotBlockWhenUnderLimit(): void
     {
         $this->config->method('isCreditLimitCheckoutBlockEnabled')->willReturn(true);
 
         $quote = $this->createQuoteStub(7);
-        $this->cartRepository->method('get')->with(42)->willReturn($quote);
+        $this->cartRepository->method('get')->willReturnMap([[42, $quote]]);
 
-        $this->creditLimitCalculator->method('getUtilizationPercent')->with(7)->willReturn(99.99);
+        $this->creditLimitCalculator->method('getUtilizationPercent')->willReturnMap([[7, 99.99]]);
 
         $result = $this->plugin->beforePlaceOrder($this->subject, 42);
 
         self::assertSame([42, null], $result);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testBlocksWhenOverLimit(): void
     {
         $this->config->method('isCreditLimitCheckoutBlockEnabled')->willReturn(true);
 
         $quote = $this->createQuoteStub(7);
-        $this->cartRepository->method('get')->with(42)->willReturn($quote);
+        $this->cartRepository->method('get')->willReturnMap([[42, $quote]]);
 
-        $this->creditLimitCalculator->method('getUtilizationPercent')->with(7)->willReturn(150.0);
+        $this->creditLimitCalculator->method('getUtilizationPercent')->willReturnMap([[7, 150.0]]);
 
         $this->expectException(LocalizedException::class);
         $this->expectExceptionMessage(
@@ -92,14 +95,15 @@ class BlockOverLimitCheckoutTest extends TestCase
         $this->plugin->beforePlaceOrder($this->subject, 42);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testBlocksExactlyAtLimitBoundary(): void
     {
         $this->config->method('isCreditLimitCheckoutBlockEnabled')->willReturn(true);
 
         $quote = $this->createQuoteStub(7);
-        $this->cartRepository->method('get')->with(42)->willReturn($quote);
+        $this->cartRepository->method('get')->willReturnMap([[42, $quote]]);
 
-        $this->creditLimitCalculator->method('getUtilizationPercent')->with(7)->willReturn(100.0);
+        $this->creditLimitCalculator->method('getUtilizationPercent')->willReturnMap([[7, 100.0]]);
 
         $this->expectException(LocalizedException::class);
 

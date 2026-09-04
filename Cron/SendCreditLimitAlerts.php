@@ -25,9 +25,9 @@ use Psr\Log\LoggerInterface;
  */
 class SendCreditLimitAlerts
 {
-    private const XML_PATH_EMAIL_TEMPLATE = 'ordo_credit_limit_warning';
-    private const XML_PATH_EMAIL_SENDER = 'general';
-    private const OVER_LIMIT_BAND = 100;
+    private const string XML_PATH_EMAIL_TEMPLATE = 'ordo_credit_limit_warning';
+    private const string XML_PATH_EMAIL_SENDER = 'general';
+    private const int OVER_LIMIT_BAND = 100;
 
     public function __construct(
         private readonly Config $config,

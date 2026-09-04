@@ -23,7 +23,15 @@ use Throwable;
  */
 class SendSms implements ActionInterface
 {
-    private const CHANNEL = 'sms';
+    private const string CHANNEL = 'sms';
+
+    /**
+     * E.164: a leading "+", then 8-15 digits total, first digit non-zero (ITU-T E.164 caps the
+     * whole number, country code included, at 15 digits). Deliberately permissive beyond that —
+     * this is a fail-fast sanity check before spending a Twilio API call, not a full numbering-plan validator,
+     * so it doesn't try to validate per-country length/prefix rules.
+     */
+    private const string E164_PATTERN = '/^\+[1-9]\d{7,14}$/';
 
     public function __construct(
         private readonly CustomerRepositoryInterface $customerRepository,
@@ -60,6 +68,17 @@ class SendSms implements ActionInterface
                 'Ordo_Automation: send_sms action has no ordo_sms_phone set for customer #%d.',
                 $customerId
             ));
+            return;
+        }
+
+        if (!preg_match(self::E164_PATTERN, $phone)) {
+            $this->logger->error(sprintf(
+                'Ordo_Automation: send_sms action skipped for customer #%d, ordo_sms_phone "%s" is not a valid'
+                . ' E.164 number.',
+                $customerId,
+                $phone
+            ));
+            $this->messageLogWriter->recordFailed(self::CHANNEL, $customerId, $phone);
             return;
         }
 

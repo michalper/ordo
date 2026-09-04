@@ -30,8 +30,8 @@ use Psr\Log\LoggerInterface;
  */
 class HoldOrderForApproval implements ObserverInterface
 {
-    private const XML_PATH_EMAIL_TEMPLATE = 'ordo_order_approval_request';
-    private const XML_PATH_EMAIL_SENDER = 'general';
+    private const string XML_PATH_EMAIL_TEMPLATE = 'ordo_order_approval_request';
+    private const string XML_PATH_EMAIL_SENDER = 'general';
 
     public function __construct(
         private readonly Config $config,

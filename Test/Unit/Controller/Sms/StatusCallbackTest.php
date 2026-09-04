@@ -95,7 +95,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
     {
         $controller = $this->makeController();
         $postParams = ['MessageSid' => 'SM123', 'MessageStatus' => 'delivered'];
-        $this->request->method('getHeader')->with('X-Twilio-Signature')->willReturn('totally-forged-signature');
+        $this->request->method('getHeader')->willReturnMap([['X-Twilio-Signature', 'totally-forged-signature']]);
         $this->request->method('getPostValue')->willReturn($postParams);
 
         $this->messageLogCollectionFactory->expects(self::never())->method('create');
@@ -125,7 +125,8 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
     {
         $controller = $this->makeController();
         $postParams = ['MessageSid' => 'SM123', 'MessageStatus' => 'delivered'];
-        $this->request->method('getHeader')->with('X-Twilio-Signature')->willReturn($this->validSignatureFor($postParams));
+        $this->request->method('getHeader')
+            ->willReturnMap([['X-Twilio-Signature', $this->validSignatureFor($postParams)]]);
         $this->request->method('getPostValue')->willReturn($postParams);
 
         $log = $this->makeMessageLog(7);
@@ -148,7 +149,8 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
     {
         $controller = $this->makeController();
         $postParams = ['MessageSid' => 'SM123', 'MessageStatus' => 'undelivered', 'ErrorCode' => '30003'];
-        $this->request->method('getHeader')->with('X-Twilio-Signature')->willReturn($this->validSignatureFor($postParams));
+        $this->request->method('getHeader')
+            ->willReturnMap([['X-Twilio-Signature', $this->validSignatureFor($postParams)]]);
         $this->request->method('getPostValue')->willReturn($postParams);
 
         $log = $this->makeMessageLog(7);
@@ -170,7 +172,8 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
     {
         $controller = $this->makeController();
         $postParams = ['MessageSid' => 'SM-unknown', 'MessageStatus' => 'delivered'];
-        $this->request->method('getHeader')->with('X-Twilio-Signature')->willReturn($this->validSignatureFor($postParams));
+        $this->request->method('getHeader')
+            ->willReturnMap([['X-Twilio-Signature', $this->validSignatureFor($postParams)]]);
         $this->request->method('getPostValue')->willReturn($postParams);
 
         $log = $this->makeMessageLog(null);
@@ -190,7 +193,8 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
     {
         $controller = $this->makeController();
         $postParams = ['MessageStatus' => 'delivered'];
-        $this->request->method('getHeader')->with('X-Twilio-Signature')->willReturn($this->validSignatureFor($postParams));
+        $this->request->method('getHeader')
+            ->willReturnMap([['X-Twilio-Signature', $this->validSignatureFor($postParams)]]);
         $this->request->method('getPostValue')->willReturn($postParams);
 
         $this->messageLogCollectionFactory->expects(self::never())->method('create');

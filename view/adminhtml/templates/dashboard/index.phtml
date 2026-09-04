@@ -116,6 +116,12 @@ $segmentNavDesc = __(
                 $escaper->escapeHtml(__('Reusable HTML snippet, RSS, and product feed blocks for campaign emails'))
             ?></span>
         </a>
+        <a class="ordo-nav-card" href="<?= $escaper->escapeUrl($block->getUrl('ordo/messagelog/index')) ?>">
+            <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('Message Log')) ?></span>
+            <span class="ordo-nav-desc"><?=
+                $escaper->escapeHtml(__('Delivery status of every SMS/email a campaign action sent'))
+            ?></span>
+        </a>
         <a class="ordo-nav-card"
            href="<?= $escaper->escapeUrl($block->getUrl('adminhtml/system_config/edit/section/ordo_automation')) ?>">
             <span class="ordo-nav-title"><?= $escaper->escapeHtml(__('Configuration')) ?></span>

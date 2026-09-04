@@ -45,7 +45,7 @@ class RefreshRssTest extends AbstractAdminActionTestCase
     public function testExecuteReturnsFailureWithoutRepositoryCallWhenIdMissing(): void
     {
         $controller = $this->makeController();
-        $this->request->method('getParam')->with('content_block_id')->willReturn(null);
+        $this->request->method('getParam')->willReturnMap([['content_block_id', null]]);
 
         $this->contentBlockRepository->expects(self::never())->method('getById');
         $this->rssFetcher->expects(self::never())->method('fetch');
@@ -62,7 +62,7 @@ class RefreshRssTest extends AbstractAdminActionTestCase
     public function testExecuteReturnsFailureWithoutRepositoryCallWhenIdInvalid(): void
     {
         $controller = $this->makeController();
-        $this->request->method('getParam')->with('content_block_id')->willReturn('0');
+        $this->request->method('getParam')->willReturnMap([['content_block_id', '0']]);
 
         $this->contentBlockRepository->expects(self::never())->method('getById');
         $this->rssFetcher->expects(self::never())->method('fetch');
@@ -79,7 +79,7 @@ class RefreshRssTest extends AbstractAdminActionTestCase
     public function testExecuteReturnsFailureWhenBlockNotFound(): void
     {
         $controller = $this->makeController();
-        $this->request->method('getParam')->with('content_block_id')->willReturn('5');
+        $this->request->method('getParam')->willReturnMap([['content_block_id', '5']]);
 
         $this->contentBlockRepository->expects(self::once())->method('getById')->with(5)->willReturn(null);
         $this->rssFetcher->expects(self::never())->method('fetch');
@@ -96,7 +96,7 @@ class RefreshRssTest extends AbstractAdminActionTestCase
     public function testExecuteReturnsFailureWhenBlockIsNotRss(): void
     {
         $controller = $this->makeController();
-        $this->request->method('getParam')->with('content_block_id')->willReturn('5');
+        $this->request->method('getParam')->willReturnMap([['content_block_id', '5']]);
 
         $block = $this->createStub(ContentBlock::class);
         $block->method('getType')->willReturn('snippet');
@@ -116,7 +116,7 @@ class RefreshRssTest extends AbstractAdminActionTestCase
     public function testExecuteReturnsSuccessOnSuccessfulFetch(): void
     {
         $controller = $this->makeController();
-        $this->request->method('getParam')->with('content_block_id')->willReturn('5');
+        $this->request->method('getParam')->willReturnMap([['content_block_id', '5']]);
 
         $block = $this->createStub(ContentBlock::class);
         $block->method('getType')->willReturn('rss');
@@ -136,7 +136,7 @@ class RefreshRssTest extends AbstractAdminActionTestCase
     public function testExecuteReturnsFailureWhenFetchThrows(): void
     {
         $controller = $this->makeController();
-        $this->request->method('getParam')->with('content_block_id')->willReturn('5');
+        $this->request->method('getParam')->willReturnMap([['content_block_id', '5']]);
 
         $block = $this->createStub(ContentBlock::class);
         $block->method('getType')->willReturn('rss');

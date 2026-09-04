@@ -7,6 +7,15 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Message Log admin grid.** Read-only grid at Marketing → Ordo Automation → Message Log
+  (`Controller/Adminhtml/MessageLog/Index.php`, `ordo_messagelog_listing.xml`) over
+  `ordo_message_log` — previously the only way to check whether a `send_sms` campaign action
+  actually delivered was to query the database directly. Reuses the `Ordo_Automation::campaigns`
+  ACL resource rather than adding a new permission, same reasoning as the RFM report.
+- **E.164 validation for `ordo_sms_phone`.** `SendSms::execute()` now rejects a malformed phone
+  number before spending a Twilio API call (logged and recorded as `failed`, same as any other
+  send failure) instead of only finding out from a Twilio error 21211 at send time.
+
 - **Multi-trigger campaigns.** A campaign's trigger event moved from a single
   `ordo_campaign.trigger_event` column to its own child entity,
   `ordo_campaign_trigger` (`CampaignTriggerInterface`), matching the existing

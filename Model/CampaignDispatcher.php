@@ -52,7 +52,7 @@ class CampaignDispatcher
      */
     public const CACHE_TAG = 'ordo_campaign';
 
-    private const CACHE_KEY_PREFIX = 'ordo_campaign_trigger_';
+    private const string CACHE_KEY_PREFIX = 'ordo_campaign_trigger_';
 
     public function __construct(
         private readonly CampaignCollectionFactory $campaignCollectionFactory,
@@ -209,14 +209,7 @@ class CampaignDispatcher
         $actions = $this->campaignActionCollectionFactory->create();
         $actions->addCampaignFilter($campaignId);
         $actions = array_values(iterator_to_array($actions));
-
-        $startIndex = null;
-        foreach ($actions as $index => $actionRow) {
-            if ((int) $actionRow->getEntityId() === $resumeActionId) {
-                $startIndex = $index;
-                break;
-            }
-        }
+        $startIndex = array_find_key($actions, fn ($actionRow) => (int) $actionRow->getEntityId() === $resumeActionId);
 
         // The action (or the whole campaign) could have been deleted/edited between when this
         // was scheduled and now — nothing left to resume into, not an error.

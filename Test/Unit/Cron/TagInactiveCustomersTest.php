@@ -58,9 +58,9 @@ class TagInactiveCustomersTest extends TestCase
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $tagManager = $this->createMock(CustomerTagManager::class);
-        $tagManager->method('hasTag')->with(5, TagInactiveCustomers::TAG_INACTIVE)->willReturn(false);
+        $tagManager->method('hasTag')->willReturnMap([[5, TagInactiveCustomers::TAG_INACTIVE, false]]);
         $tagManager->expects(self::once())->method('addTag')->with(5, TagInactiveCustomers::TAG_INACTIVE);
-        $tagManager->method('getCustomerIdsWithTag')->with(TagInactiveCustomers::TAG_INACTIVE)->willReturn([9]);
+        $tagManager->method('getCustomerIdsWithTag')->willReturnMap([[TagInactiveCustomers::TAG_INACTIVE, [9]]]);
         $tagManager->expects(self::exactly(2))->method('removeTag')->willReturnCallback(
             function (int $customerId, string $tag) {
                 self::assertSame(9, $customerId);

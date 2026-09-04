@@ -37,7 +37,7 @@ class SegmentMatcherTest extends TestCase
     private function makeConditionRow(string $type, array $params): SegmentCondition
     {
         $row = $this->createMock(SegmentCondition::class);
-        $row->method('getData')->with('type')->willReturn($type);
+        $row->method('getData')->willReturnMap([['type', $type]]);
         $row->method('getParams')->willReturn($params);
 
         return $row;
@@ -61,9 +61,10 @@ class SegmentMatcherTest extends TestCase
 
         $condition = $this->createMock(ConditionInterface::class);
         $condition->method('isSatisfied')
-            ->with(['customer_id' => 42, '_in_segment_visited' => [3]], ['tag' => 'vip'])
-            ->willReturn(true);
-        $this->conditionPool->method('get')->with('tag')->willReturn($condition);
+            ->willReturnMap([
+                [['customer_id' => 42, '_in_segment_visited' => [3]], ['tag' => 'vip'], true],
+            ]);
+        $this->conditionPool->method('get')->willReturnMap([['tag', $condition]]);
 
         self::assertTrue($this->matcher->isCustomerInSegment(3, 42));
     }
@@ -77,7 +78,7 @@ class SegmentMatcherTest extends TestCase
 
         $condition = $this->createMock(ConditionInterface::class);
         $condition->method('isSatisfied')->willReturn(false);
-        $this->conditionPool->method('get')->with('tag')->willReturn($condition);
+        $this->conditionPool->method('get')->willReturnMap([['tag', $condition]]);
 
         self::assertFalse($this->matcher->isCustomerInSegment(3, 42));
     }

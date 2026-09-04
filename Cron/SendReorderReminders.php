@@ -24,8 +24,8 @@ use Psr\Log\LoggerInterface;
  */
 class SendReorderReminders
 {
-    private const XML_PATH_EMAIL_TEMPLATE = 'ordo_reorder_reminder';
-    private const XML_PATH_EMAIL_SENDER = 'general';
+    private const string XML_PATH_EMAIL_TEMPLATE = 'ordo_reorder_reminder';
+    private const string XML_PATH_EMAIL_SENDER = 'general';
 
     public function __construct(
         private readonly Config $config,

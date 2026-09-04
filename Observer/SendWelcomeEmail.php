@@ -19,8 +19,8 @@ use Psr\Log\LoggerInterface;
  */
 class SendWelcomeEmail implements ObserverInterface
 {
-    private const XML_PATH_EMAIL_TEMPLATE = 'ordo_welcome_email';
-    private const XML_PATH_EMAIL_SENDER = 'general';
+    private const string XML_PATH_EMAIL_TEMPLATE = 'ordo_welcome_email';
+    private const string XML_PATH_EMAIL_SENDER = 'general';
     public const TAG_NEW_CUSTOMER = 'new_customer';
 
     public function __construct(

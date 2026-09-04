@@ -87,8 +87,8 @@ class DataProviderTest extends TestCase
         $collection = $this->createMock(ContentBlockCollection::class);
         $collection->method('getItems')->willReturn([$contentBlock]);
 
-        $this->dataPersistor->method('get')->with('ordo_content_block')
-            ->willReturn(['entity_id' => 5, 'name' => 'Failed save attempt']);
+        $this->dataPersistor->method('get')
+            ->willReturnMap([['ordo_content_block', ['entity_id' => 5, 'name' => 'Failed save attempt']]]);
         $this->dataPersistor->expects(self::once())->method('clear')->with('ordo_content_block');
 
         $provider = $this->makeProvider($collection);

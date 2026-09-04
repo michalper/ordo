@@ -13,13 +13,14 @@ use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class DeleteTest extends AbstractAdminActionTestCase
 {
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsWithErrorWhenEntityIdMissing(): void
     {
         $context = $this->makeContext();
-        $this->request->method('getParam')->with('entity_id')->willReturn(null);
+        $this->request->method('getParam')->willReturnMap([['entity_id', null]]);
 
         $redirect = $this->createMock(Redirect::class);
-        $redirect->method('setPath')->with('*/*/')->willReturnSelf();
+        $redirect->method('setPath')->willReturnSelf();
         $this->resultRedirectFactory->method('create')->willReturn($redirect);
 
         $this->messageManager->expects(self::once())->method('addErrorMessage');
@@ -36,10 +37,10 @@ class DeleteTest extends AbstractAdminActionTestCase
     public function testExecuteDeletesAndRedirectsOnSuccess(): void
     {
         $context = $this->makeContext();
-        $this->request->method('getParam')->with('entity_id')->willReturn(5);
+        $this->request->method('getParam')->willReturnMap([['entity_id', 5]]);
 
         $redirect = $this->createMock(Redirect::class);
-        $redirect->method('setPath')->with('*/*/')->willReturnSelf();
+        $redirect->method('setPath')->willReturnSelf();
         $this->resultRedirectFactory->method('create')->willReturn($redirect);
 
         $this->messageManager->expects(self::once())->method('addSuccessMessage');
@@ -60,10 +61,10 @@ class DeleteTest extends AbstractAdminActionTestCase
     public function testExecuteRedirectsWithErrorWhenDeleteThrows(): void
     {
         $context = $this->makeContext();
-        $this->request->method('getParam')->with('entity_id')->willReturn(5);
+        $this->request->method('getParam')->willReturnMap([['entity_id', 5]]);
 
         $redirect = $this->createMock(Redirect::class);
-        $redirect->method('setPath')->with('*/*/')->willReturnSelf();
+        $redirect->method('setPath')->willReturnSelf();
         $this->resultRedirectFactory->method('create')->willReturn($redirect);
 
         $this->messageManager->expects(self::once())->method('addErrorMessage');

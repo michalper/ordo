@@ -19,7 +19,7 @@ use Ordo\Automation\Model\ContentBlockRepository;
  */
 class AddDynamicContent implements ActionInterface
 {
-    private const DEFAULT_OUTPUT_KEY = 'dynamic_content_html';
+    private const string DEFAULT_OUTPUT_KEY = 'dynamic_content_html';
 
     public function __construct(
         private readonly ContentBlockRepository $contentBlockRepository,

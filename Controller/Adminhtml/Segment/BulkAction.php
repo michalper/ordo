@@ -20,7 +20,7 @@ use Ordo\Automation\Model\SegmentFactory;
  */
 class BulkAction extends AbstractSegmentAction implements HttpPostActionInterface
 {
-    private const ACTION_LABELS = [
+    private const array ACTION_LABELS = [
         SegmentBulkActionConsumer::ACTION_ADD_TAG => 'Add Tag',
         SegmentBulkActionConsumer::ACTION_ADD_POINTS => 'Add Points',
     ];

@@ -5,6 +5,7 @@ namespace Ordo\Automation\Test\Unit\Model\Campaign\Condition;
 
 use Ordo\Automation\Model\Campaign\Condition\HasTag;
 use Ordo\Automation\Model\CustomerTagManager;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 class HasTagTest extends TestCase
@@ -18,16 +19,18 @@ class HasTagTest extends TestCase
         $this->condition = new HasTag($this->customerTagManager);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSatisfiedWhenCustomerHasTheTag(): void
     {
-        $this->customerTagManager->method('hasTag')->with(42, 'vip')->willReturn(true);
+        $this->customerTagManager->method('hasTag')->willReturnMap([[42, 'vip', true]]);
 
         self::assertTrue($this->condition->isSatisfied(['customer_id' => 42], ['tag' => 'vip']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testNotSatisfiedWhenCustomerLacksTheTag(): void
     {
-        $this->customerTagManager->method('hasTag')->with(42, 'vip')->willReturn(false);
+        $this->customerTagManager->method('hasTag')->willReturnMap([[42, 'vip', false]]);
 
         self::assertFalse($this->condition->isSatisfied(['customer_id' => 42], ['tag' => 'vip']));
     }

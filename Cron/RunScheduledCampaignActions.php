@@ -25,9 +25,9 @@ use Psr\Log\LoggerInterface;
  */
 class RunScheduledCampaignActions
 {
-    private const BATCH_SIZE = 500;
+    private const int BATCH_SIZE = 500;
 
-    private const MAX_BATCHES = 20;
+    private const int MAX_BATCHES = 20;
 
     public function __construct(
         private readonly ScheduledActionCollectionFactory $campaignScheduledActionCollectionFactory,
