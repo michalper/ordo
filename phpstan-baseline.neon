@@ -748,7 +748,7 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
-			path: Model/Campaign/Condition/RecencyPercentileAtLeast.php
+			path: Model/Campaign/Condition/AbstractPercentileAtLeast.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -2194,25 +2194,7 @@ parameters:
 			message: '#^Use service contracts to persist entities in favour of Magento\\Eav\\Model\\Entity\\Attribute\\AbstractAttribute\:\:save\(\) method$#'
 			identifier: bitExpertMagento.abstractModelUseServiceContract
 			count: 1
-			path: Setup/Patch/Data/AddCustomerCreditLimitAttribute.php
-
-		-
-			message: '#^Use service contracts to persist entities in favour of Magento\\Eav\\Model\\Entity\\Attribute\\AbstractAttribute\:\:save\(\) method$#'
-			identifier: bitExpertMagento.abstractModelUseServiceContract
-			count: 1
-			path: Setup/Patch/Data/AddCustomerSmsPhoneAttribute.php
-
-		-
-			message: '#^Use service contracts to persist entities in favour of Magento\\Eav\\Model\\Entity\\Attribute\\AbstractAttribute\:\:save\(\) method$#'
-			identifier: bitExpertMagento.abstractModelUseServiceContract
-			count: 2
-			path: Setup/Patch/Data/AddCustomerSpendLimitAttributes.php
-
-		-
-			message: '#^Use service contracts to persist entities in favour of Magento\\Eav\\Model\\Entity\\Attribute\\AbstractAttribute\:\:save\(\) method$#'
-			identifier: bitExpertMagento.abstractModelUseServiceContract
-			count: 1
-			path: Setup/Patch/Data/AddSalesRepAttributes.php
+			path: Setup/Patch/Data/AbstractCustomerAttributePatch.php
 
 		-
 			message: '#^Cannot access offset ''entity_id'' on mixed\.$#'

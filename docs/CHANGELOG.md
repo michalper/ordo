@@ -5,6 +5,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Deduplicated the `*PercentileAtLeast` campaign conditions and the customer-attribute Setup
+  patches**, per SonarCloud's duplication report. New shared base classes
+  `Model/Campaign/Condition/AbstractPercentileAtLeast.php` and
+  `Setup/Patch/Data/AbstractCustomerAttributePatch.php` — no behavior change, existing tests pass
+  unmodified.
+
 ### Added
 
 - **Message Log admin grid.** Read-only grid at Marketing → Ordo Automation → Message Log

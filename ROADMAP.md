@@ -40,25 +40,6 @@ scoped from real hands-on marketing automation experience.
   `ci.yml` runs (`--fail-on-phpunit-notice --fail-on-notice --fail-on-warning
   --fail-on-deprecation`): exit 0, 992 tests, 6526 assertions, zero notices/deprecations.
 
-## Code quality
-
-- **Code duplication flagged by SonarCloud on the Setup/Patch/Data attribute patches and the
-  percentile-condition/cron families.** Per the "New Code" duplication report: `Setup/Patch/Data/
-  AddCustomerCreditLimitAttribute.php` (100%, 7 lines), `Setup/Patch/Data/
-  AddCustomerSmsPhoneAttribute.php` (75.3%, 55 lines), `Model/Campaign/Condition/
-  MonetaryPercentileAtLeast.php` (60.0%, 24 lines), `Model/Campaign/Condition/
-  OrderFrequencyPercentileAtLeast.php` (60.0%, 24 lines), `Model/Campaign/Condition/
-  RecencyPercentileAtLeast.php` (55.8%, 24 lines), `Cron/SendWinBackEmails.php` (51.2%, 22 lines),
-  `Cron/SendOfferExpiryReminders.php` (41.5%, 22 lines), `Cron/SendReorderReminders.php` (36.4%,
-  20 lines). The three `*PercentileAtLeast` condition classes are near-certainly the same
-  NTILE-based percentile lookup copy-pasted per metric (recency/frequency/monetary) — a shared
-  base class or trait is the likely fix, mirroring how the RFM report already shares one query
-  shape across the same three metrics. The `Add*Attribute` Setup patches are boilerplate EAV
-  attribute-creation patches that may be an acceptable, deliberate duplication (Magento's own core
-  modules duplicate this same shape rather than share it, since each patch's dependency chain and
-  attribute config genuinely differ) — worth a real look before assuming it needs deduplicating,
-  not just acting on the percentage.
-
 ## Gaps vs. a full-market MA platform
 
 Not a code review — a capability comparison against the category. Each is a real, separate stream of work:
