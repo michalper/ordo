@@ -59,7 +59,7 @@ widzi większość zewnętrznych narzędzi MA.
 
 Wszystko konfigurowalne pod **Stores → Configuration → Ordo Automation** (albo, dla kampanii i gratisów, przez ich REST
 API), każda funkcja z własnym przełącznikiem włącz/wyłącz i zadaniem cron. Szczegóły implementacji i uzasadnienie
-decyzji projektowych są w [CHANGELOG.md](CHANGELOG.md); to, co wciąż w toku — w [ROADMAP.md](ROADMAP.md).
+decyzji projektowych są w [CHANGELOG.md](docs/CHANGELOG.md); to, co wciąż w toku — w [ROADMAP.md](ROADMAP.md).
 
 ## Architektura
 
@@ -181,7 +181,7 @@ naprawić dalej.
 
 ## Changelog
 
-Zobacz [CHANGELOG.md](CHANGELOG.md).
+Zobacz [CHANGELOG.md](docs/CHANGELOG.md).
 
 ## Licencja
 

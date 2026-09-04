@@ -1,7 +1,7 @@
 # Roadmap
 
 What's still open — for shipped/stable features see [README.md](README.md), for implementation history/verification
-detail see [CHANGELOG.md](CHANGELOG.md) and [VERIFICATION.md](VERIFICATION.md), for the REST API reference see
+detail see [CHANGELOG.md](docs/CHANGELOG.md) and [VERIFICATION.md](VERIFICATION.md), for the REST API reference see
 [API.md](API.md), and the `Test/*/README.md` files.
 
 Ownership split: B2B direction is scoped by the technical/architecture side (this repo's maintainer); B2C direction is
@@ -66,7 +66,7 @@ Not a code review — a capability comparison against the category. Each is a re
 ## Localization
 
 - **Native-speaker review of the 10 machine-translated locales** (`de_DE`, `fr_FR`, `es_ES`, `it_IT`, `pt_BR`,
-  `zh_Hans_CN`, `ja_JP`, `ru_RU`, `uk_UA`, `nl_NL`) — shipped as a machine-translated first pass (see CHANGELOG.md),
+  `zh_Hans_CN`, `ja_JP`, `ru_RU`, `uk_UA`, `nl_NL`) — shipped as a machine-translated first pass (see docs/CHANGELOG.md),
   not yet signed off by a human reviewer per locale. Highest priority: launch-blocking strings (error messages,
   delete confirmations) over descriptive/help text.
 

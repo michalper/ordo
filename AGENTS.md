@@ -1,165 +1,173 @@
 # AGENTS.md
 
-Moduł Magento 2 `ordo/module-automation` (marketing automation dla Ordo/Sellina): kreator scenariuszy kampanii (triggery → warunki → akcje) z edytorem flow opartym o Drawflow.
+Magento 2 module `ordo/module-automation` (marketing automation for Ordo/Sellina): a campaign-scenario builder (triggers → conditions → actions) with a Drawflow-based flow editor.
 
-## Jak testować zmiany
+## Directory structure (contract)
 
-Ten katalog to samodzielne repo modułu — nie ma tu `vendor/`, więc testów nie da się odpalić bezpośrednio stąd. Testy jednostkowe uruchamia się w osobnym środowisku Magento:
+- `docs/CHANGELOG.md` — history of decisions and changes (moved here from `CHANGELOG.md` at the root).
+- `docs/adr/` — Architecture Decision Records; decisions you can't reconstruct from the code alone.
+- `.env.example` — environment variable contract (today: `Test/Api/*` only, see `Test/Api/README.md`).
+- `README.md` / `README.pl.md` — functional description of the module (EN/PL), don't duplicate that content here.
+- `ROADMAP.md`, `VERIFICATION.md`, `API.md` — respectively: what's in progress, what's been manually/test-verified, REST API reference.
 
-- Środowisko testowe: `/Users/michalper/Projects/magento-ordo-test/`
-  - `docker-compose.yml` — usługi `db` (MySQL 8), `opensearch`, `php` (kontener `ordo_test_php`), `selenium`.
-  - `magento/` — pełna instalacja Magento Open Source 2.4.7.
-  - Ten katalog (`mma`) jest zamontowany w kontenerze php jako `/var/www/mma`.
+## How to test changes
 
-**Ważna pułapka:** moduł jest podpięty do Magento przez composer path repository z `"options": {"symlink": false}` — to znaczy, że Composer **kopiuje** pliki do `vendor/ordo/module-automation`, a nie linkuje symlinkiem. **Zmiany w plikach tego repo nie są widoczne w środowisku testowym, dopóki nie odświeżysz kopii przez `composer update`.**
+This directory is a standalone module repo — there's no `vendor/` here, so tests can't be run directly from it. Unit tests run in a separate Magento environment:
 
-**Druga pułapka:** wersja modułu w jego `composer.json` jest przypięta na sztywno (`"version": "1.0.0"`), więc samo `composer update ordo/module-automation` czasem zwraca "Nothing to modify in lock file" i **nie** przekopiowuje nowych plików, bo Composer nie widzi zmiany wersji. Jeśli po `composer update` testy dalej widzą starą wersję kodu, wymuś reinstalację:
+- Test environment: `/Users/michalper/Projects/magento-ordo-test/`
+  - `docker-compose.yml` — services `db` (MySQL 8), `opensearch`, `php` (container `ordo_test_php`), `selenium`.
+  - `magento/` — a full Magento Open Source 2.4.7 install.
+  - This directory (`mma`) is mounted into the php container as `/var/www/mma`.
+
+**Important pitfall:** the module is wired into Magento via a composer path repository with `"options": {"symlink": false}` — meaning Composer **copies** files into `vendor/ordo/module-automation` instead of symlinking. **Changes to files in this repo aren't visible in the test environment until you refresh the copy via `composer update`.**
+
+**Second pitfall:** the module's version is hard-pinned in its `composer.json` (`"version": "1.0.0"`), so plain `composer update ordo/module-automation` sometimes returns "Nothing to modify in lock file" and **doesn't** recopy the new files, because Composer doesn't see a version change. If tests still see the old code after `composer update`, force a reinstall:
 ```bash
 docker compose exec php sh -c "rm -rf vendor/ordo/module-automation && composer update ordo/module-automation"
 ```
 
-### Komendy
+### Commands
 
 ```bash
 cd /Users/michalper/Projects/magento-ordo-test
 
-# uruchomienie środowiska (jeśli kontenery nie działają)
+# start the environment (if containers aren't running)
 docker compose up -d
 
-# po KAŻDEJ zmianie w plikach mma — odśwież kopię w vendor/
+# after EVERY change to files in mma — refresh the copy in vendor/
 docker compose exec php composer update ordo/module-automation
 
-# uruchomienie testów jednostkowych tego modułu
+# run this module's unit tests
 docker compose exec php vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist vendor/ordo/module-automation/Test/Unit
 
-# albo cały pakiet testów jednostkowych Magento (moduł jest w nim uwzględniony automatycznie)
+# or the whole Magento unit test suite (the module is included in it automatically)
 docker compose exec php vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist
 ```
 
-Testy modułu wchodzą w skład standardowego testsuite `Magento_Unit_Tests_Other` zdefiniowanego w `magento/dev/tests/unit/phpunit.xml.dist` (obejmuje `vendor/*/module-*/Test/Unit`) — nie trzeba żadnej dodatkowej konfiguracji, wystarczy mieć aktualną kopię w `vendor/`.
+The module's tests are part of the standard `Magento_Unit_Tests_Other` test suite defined in `magento/dev/tests/unit/phpunit.xml.dist` (covers `vendor/*/module-*/Test/Unit`) — no extra configuration needed, just an up-to-date copy in `vendor/`.
 
-## Coding standard — napraw to lokalnie, nie w CI
+## Coding standard — fix it locally, not in CI
 
-CI (`ci.yml`, job `coding-standard`) odpala dwa osobne narzędzia, oba tylko **raportujące**, żadne nie naprawia automatycznie:
-- `vendor/bin/phpcs` (Magento2 coding standard) — część jego naruszeń jest auto-fixable przez `phpcbf`, ale CI go nie woła.
-- `composer cs-check` (`php-cs-fixer fix --dry-run --diff`) — formatowanie, kolejność `use` itd.
+CI (`ci.yml`, job `coding-standard`) runs two separate tools, both **report-only**, neither auto-fixes:
+- `vendor/bin/phpcs` (Magento2 coding standard) — some of its violations are auto-fixable via `phpcbf`, but CI doesn't call it.
+- `composer cs-check` (`php-cs-fixer fix --dry-run --diff`) — formatting, `use` ordering, etc.
 
-Oba potrafiły failować CI już po pushu (m.in. `$block->escapeHtml` zamiast `$escaper->escapeHtml` w nowym `.phtml`, kolejność importów w nowym pliku) — mimo że oba są w pełni auto-fixowalne. Żeby to przestało się powtarzać:
+Both have failed CI after a push (e.g. `$block->escapeHtml` instead of `$escaper->escapeHtml` in a new `.phtml`, import ordering in a new file) — even though both are fully auto-fixable. To stop that from recurring:
 
-**Włącz git hook raz per clone:**
+**Enable the git hook once per clone:**
 ```bash
 git config core.hooksPath .githooks
 ```
-`.githooks/pre-commit` odpala `phpcbf` + `php-cs-fixer fix` na plikach `.php` które akurat są staged, i re-stage'uje to co poprawi — nie trzeba o tym pamiętać przy każdym commicie.
+`.githooks/pre-commit` runs `phpcbf` + `php-cs-fixer fix` on staged `.php` files and re-stages whatever it fixes — no need to remember it on every commit.
 
-**Albo ręcznie przed pushem:**
+**Or manually before pushing:**
 ```bash
-composer cs-fix    # phpcbf + php-cs-fixer fix, naprawia na miejscu
-composer cs-check  # to samo co CI odpala — zero output = czysto
-vendor/bin/phpcs   # osobny check, bo phpcbf nie naprawia 100% swoich własnych naruszeń
+composer cs-fix    # phpcbf + php-cs-fixer fix, fixes in place
+composer cs-check  # same thing CI runs — zero output = clean
+vendor/bin/phpcs   # separate check, because phpcbf doesn't fix 100% of its own violations
 ```
 
-## Dispatch kampanii jest asynchroniczny (kolejka Magento)
+## Campaign dispatch is asynchronous (Magento queue)
 
-Triggery (`order_placed`, `customer_registered`, `tag_added`) nie wołają już `CampaignDispatcher::dispatch()` bezpośrednio z observera — publikują wiadomość na temat `ordo.automation.campaign.dispatch` (`Model/Queue/CampaignDispatchPublisher.php`), którą odbiera `Model/Queue/CampaignDispatchConsumer.php`. To po to, żeby checkout/rejestracja klienta nie czekały na wykonanie warunków/akcji kampanii.
+Triggers (`order_placed`, `customer_registered`, `tag_added`) no longer call `CampaignDispatcher::dispatch()` directly from the observer — they publish a message on the `ordo.automation.campaign.dispatch` topic (`Model/Queue/CampaignDispatchPublisher.php`), consumed by `Model/Queue/CampaignDispatchConsumer.php`. This is so checkout/customer registration doesn't wait on condition/action evaluation.
 
-To środowisko testowe **nie ma RabbitMQ** — Magento używa domyślnej kolejki opartej o bazę danych (DB queue driver). Konsument musi więc realnie działać w tle, nie tylko zbierać wiadomości w tabeli kolejki.
+This test environment **has no RabbitMQ** — Magento uses the default database-backed queue (DB queue driver). The consumer therefore has to actually run in the background, not just let messages pile up in the queue table.
 
-**To jest już zautomatyzowane w środowisku testowym, nie trzeba nic robić ręcznie.** Kontener `php` (`Dockerfile.php` + `docker/entrypoint.sh` + `supervisord.conf` w `magento-ordo-test/`) startuje przez `supervisord` zamiast `sleep infinity`:
-- `entrypoint.sh` przy każdym starcie kontenera dopisuje do `app/etc/env.php` sekcję `cron_consumers_runner` z `cron_run => false` (jeśli `env.php` już istnieje, czyli Magento jest zainstalowane).
-- `cron_run` jest celowo `false`, bo konsumery **nie** są uruchamiane przez cron — supervisord trzyma je jako stałe, długo żyjące procesy (`docker/run-consumer.sh ordo.automation.campaign.dispatch` / `...visitor.aggregate`, z `autorestart=true`), więc nie ma sensu, żeby cron *też* je odpalał (dublowałoby się to z realnym procesem konsumenta i marnowało cykle).
-- `docker/run-magento-cron.sh` osobno pętli `bin/magento cron:run` co 60s — to obsługuje zwykłe zadania cronowe modułu (np. `Cron\PrunePendingPopups`), niezależnie od konsumentów kolejki.
-- Wszystkie trzy skrypty czekają w pętli, aż `bin/magento`/`env.php` faktycznie istnieją (na wypadek świeżo zbudowanego obrazu przed instalacją Magento), więc bezpiecznie przetrwają `docker compose up -d --build` na pustym `magento/`.
+**This is already automated in the test environment, nothing to do manually.** The `php` container (`Dockerfile.php` + `docker/entrypoint.sh` + `supervisord.conf` in `magento-ordo-test/`) starts via `supervisord` instead of `sleep infinity`:
+- `entrypoint.sh` appends a `cron_consumers_runner` section with `cron_run => false` to `app/etc/env.php` on every container start (if `env.php` already exists, i.e. Magento is installed).
+- `cron_run` is deliberately `false`, because the consumers are **not** run via cron — supervisord keeps them as persistent, long-running processes (`docker/run-consumer.sh ordo.automation.campaign.dispatch` / `...visitor.aggregate`, with `autorestart=true`), so there's no point in cron *also* firing them (it would duplicate the real consumer process and waste cycles).
+- `docker/run-magento-cron.sh` separately loops `bin/magento cron:run` every 60s — this handles the module's regular cron jobs (e.g. `Cron\PrunePendingPopups`), independent of the queue consumers.
+- All three scripts loop-wait until `bin/magento`/`env.php` actually exist (in case of a freshly built image before Magento is installed), so they safely survive `docker compose up -d --build` against an empty `magento/`.
 
-Po świeżej instalacji Magento (`setup:install`/`setup:upgrade`) wystarczy `docker compose restart php`, żeby entrypoint dopisał `cron_consumers_runner` i supervisord zaczął trzymać konsumery żywe. Sprawdź `bin/magento queue:consumers:list` — powinien pokazać `ordo.automation.campaign.dispatch` i `ordo.automation.visitor.aggregate`.
+After a fresh Magento install (`setup:install`/`setup:upgrade`), `docker compose restart php` is enough for the entrypoint to append `cron_consumers_runner` and for supervisord to start keeping the consumers alive. Check `bin/magento queue:consumers:list` — it should show `ordo.automation.campaign.dispatch` and `ordo.automation.visitor.aggregate`.
 
-Przy okazji `docker-compose.yml`'s `db` service ma teraz na stałe `--log_bin_trust_function_creators=1` w `command`, więc `SET GLOBAL log_bin_trust_function_creators = 1;` nie trzeba już ręcznie odtwarzać po każdym restarcie kontenera bazy przed `setup:upgrade`.
+Incidentally, `docker-compose.yml`'s `db` service now has `--log_bin_trust_function_creators=1` permanently in its `command`, so `SET GLOBAL log_bin_trust_function_creators = 1;` no longer needs to be manually reapplied after every DB container restart before `setup:upgrade`.
 
-`CampaignDispatcher` cachuje też lookup "które kampanie są aktywne dla danego triggera" (tag cache `CampaignDispatcher::CACHE_TAG`, czyszczony przy zapisie/usunięciu kampanii/triggera — zobacz `Controller/Adminhtml/Campaign/Save.php`, `Delete.php`, `CampaignRepository.php`, `CampaignTriggerRepository.php`). Jeśli po zmianie triggera w adminie kampania "nie widzi" nowego triggera w testach manualnych, sprawdź najpierw czy cache faktycznie się wyczyścił (`bin/magento cache:flush` jako obejście, jeśli coś nie zadziała).
+`CampaignDispatcher` also caches the "which campaigns are active for a given trigger" lookup (tag cache `CampaignDispatcher::CACHE_TAG`, cleared on campaign/trigger save/delete — see `Controller/Adminhtml/Campaign/Save.php`, `Delete.php`, `CampaignRepository.php`, `CampaignTriggerRepository.php`). If a campaign "doesn't see" a newly changed trigger during manual testing, check first whether the cache actually got cleared (`bin/magento cache:flush` as a workaround if something didn't).
 
-## Testy integracyjne (`Test/Integration/`) — realne DI, realna baza, bez mocków
+## Integration tests (`Test/Integration/`) — real DI, real database, no mocks
 
-`Test/Unit/` mockuje wszystkich współpracowników — dowodzi, że logika jest poprawna, ale nie że mechanizm faktycznie działa jako całość. `Test/Integration/` używa wariantu ze skilla `magento-testing:magento-integration-test-lite`: prawdziwy bootstrap całej zainstalowanej aplikacji Magento (`app/bootstrap.php` + `Bootstrap::create`), prawdziwe DI, prawdziwa baza dev — bez drugiej instalacji do `dev/tests/integration` i **bez transakcyjnego rollbacku**. To oznacza, że każdy test sam sprząta po sobie w `tearDown()` (usuwa utworzone kampanie/klientów/reguły/kupony/tagi) — jeśli piszesz nowy test integracyjny, dopisz tam czyszczenie, inaczej zaśmiecisz bazę dev na stałe.
+`Test/Unit/` mocks every collaborator — it proves the logic is correct, not that the mechanism actually works as a whole. `Test/Integration/` uses the approach from the `magento-testing:magento-integration-test-lite` skill: a real bootstrap of the fully installed Magento application (`app/bootstrap.php` + `Bootstrap::create`), real DI, a real dev database — without a second install into `dev/tests/integration` and **without transactional rollback**. That means every test cleans up after itself in `tearDown()` (deletes created campaigns/customers/rules/coupons/tags) — if you write a new integration test, add cleanup there, or you'll permanently litter the dev database.
 
-Trzy pliki, różny zakres:
-- `CampaignDispatchScenarioTest.php` — silnik dispatchera pod każdym kątem: każdy typ warunku, każdy typ akcji (poza `send_email`, patrz niżej), AND warunków, nieznany typ warunku/akcji (fail-closed), opóźnione akcje + wznowienie przez `Cron\RunScheduledCampaignActions` (cofa `run_at` zamiast czekać realnego czasu), kampanie z wieloma triggerami, cache trigger→kampanie (dowodzi że jest stale i że inwalidacja działa). Woła `CampaignDispatcher::dispatch()` bezpośrednio — **celowo pomija observery i kolejkę**, żeby testować silnik w izolacji od transportu.
-- `CampaignQueueWiringTest.php` — dowodzi tego, co tamten plik pomija: prawdziwy event Magento (`customer_register_success`) faktycznie trafia do naszego observera (`etc/events.xml`), observer faktycznie publikuje na kolejkę (`etc/communication.xml`/`etc/queue*.xml`), a `bin/magento queue:consumers:start ordo.automation.campaign.dispatch --max-messages=1` (odpalane jako realny podproces, bo to środowisko ma tylko DB-queue, nie RabbitMQ) faktycznie konsumuje wiadomość i wywołuje dispatch.
-- `CampaignSendEmailActionTest.php` — jedyne miejsce gdzie podstawiamy coś sztucznie: `SendEmail` woła prawdziwy `TransportBuilder`, który realnie wysłałby maila / wymagałby zarejestrowanego szablonu e-mail. Podmieniamy tylko ogon `TransportBuilder::getTransport()` (klasa `RecordingTransportBuilder` w tym samym pliku) — reszta zależności (`CustomerRepositoryInterface`, `StoreManagerInterface`) jest prawdziwa.
-- `CampaignVisitorPopupScenarioTest.php` — ścieżka anonimowego odwiedzającego (Phase 5/7): realna agregacja `ordo_visitor_event` → `ordo_visitor_tag` bez logowania, realny dispatch triggera `visitor_tag_added`, realny warunek `visitor_tag`, realna akcja `popup` → prawdziwy wiersz `ordo_pending_popup`, plus test na realnej bazie że `UPDATE ... WHERE delivered_at IS NULL` faktycznie blokuje podwójne dostarczenie (nie mockowany SQL builder).
+Three files, different scope:
+- `CampaignDispatchScenarioTest.php` — the dispatcher engine from every angle: every condition type, every action type (except `send_email`, see below), ANDed conditions, unknown condition/action type (fail-closed), delayed actions + resumption via `Cron\RunScheduledCampaignActions` (rewinds `run_at` instead of waiting real time), campaigns with multiple triggers, the trigger→campaigns cache (proves it's stale-capable and that invalidation works). Calls `CampaignDispatcher::dispatch()` directly — **deliberately bypasses observers and the queue**, to test the engine in isolation from transport.
+- `CampaignQueueWiringTest.php` — proves what that file skips: a real Magento event (`customer_register_success`) actually reaches our observer (`etc/events.xml`), the observer actually publishes to the queue (`etc/communication.xml`/`etc/queue*.xml`), and `bin/magento queue:consumers:start ordo.automation.campaign.dispatch --max-messages=1` (run as a real subprocess, since this environment only has DB-queue, not RabbitMQ) actually consumes the message and triggers dispatch.
+- `CampaignSendEmailActionTest.php` — the one place where something is faked: `SendEmail` calls a real `TransportBuilder`, which would actually send an email / require a registered email template. Only the tail end, `TransportBuilder::getTransport()`, is swapped out (the `RecordingTransportBuilder` class in the same file) — the rest of the dependencies (`CustomerRepositoryInterface`, `StoreManagerInterface`) are real.
+- `CampaignVisitorPopupScenarioTest.php` — the anonymous visitor path (Phase 5/7): real aggregation of `ordo_visitor_event` → `ordo_visitor_tag` without login, real dispatch of the `visitor_tag_added` trigger, real `visitor_tag` condition, real `popup` action → a real `ordo_pending_popup` row, plus a test against the real database that `UPDATE ... WHERE delivered_at IS NULL` actually prevents double delivery (not a mocked SQL builder).
 
-### Uruchomienie
+### Running them
 
-**Ważne od czasu automatyzacji konsumentów przez supervisord (patrz sekcja wyżej): zatrzymaj oba stałe konsumery przed testami integracyjnymi, inaczej testy zawisną w nieskończoność.** `CampaignQueueWiringTest` i `CampaignVisitorPopupScenarioTest::drainPendingMessages()` publikują wiadomość, po czym same odpalają `bin/magento queue:consumers:start <temat> --max-messages=1` jako podproces i czekają, aż on skonsumuje *tę konkretną* wiadomość. Jeśli w tle działa też stały konsument z supervisorda (`consumer-campaign-dispatch`/`consumer-visitor-aggregate`), on zjada wiadomość pierwszy — podproces testu czeka wtedy na wiadomość, która już zniknęła, i wisi bez końca (napotkane i naprawione: dwa zawieszone przebiegi `phpunit` trzeba było ręcznie ubić przez `kill -9` po PID z `/proc/[0-9]*/cmdline`, bo `ps`/`pkill` nie ma w tym obrazie).
+**Important since the supervisord consumer automation (see the section above): stop both persistent consumers before running integration tests, or the tests will hang forever.** `CampaignQueueWiringTest` and `CampaignVisitorPopupScenarioTest::drainPendingMessages()` publish a message and then start `bin/magento queue:consumers:start <topic> --max-messages=1` themselves as a subprocess, waiting for it to consume *that specific* message. If a persistent supervisord consumer (`consumer-campaign-dispatch`/`consumer-visitor-aggregate`) is also running in the background, it eats the message first — the test's subprocess then waits for a message that's already gone, and hangs indefinitely (encountered and fixed: two hung `phpunit` runs had to be manually killed with `kill -9` by PID from `/proc/[0-9]*/cmdline`, since `ps`/`pkill` aren't in this image).
 
 ```bash
 cd /Users/michalper/Projects/magento-ordo-test
 docker compose up -d
 docker compose exec php sh -c "rm -rf vendor/ordo/module-automation && composer update ordo/module-automation"
 
-# zatrzymaj stałe konsumery na czas testów integracyjnych
+# stop the persistent consumers while running integration tests
 docker compose exec php supervisorctl stop consumer-campaign-dispatch consumer-visitor-aggregate
 
-# z katalogu Magento (nie modułu!) — wymaga --bootstrap app/bootstrap.php, inaczej BP nie istnieje
+# from the Magento directory (not the module!) — requires --bootstrap app/bootstrap.php, otherwise BP doesn't exist
 docker compose exec php vendor/bin/phpunit --bootstrap app/bootstrap.php \
     vendor/ordo/module-automation/Test/Integration
 
-# odpal je z powrotem po testach
+# start them back up after the tests
 docker compose exec php supervisorctl start consumer-campaign-dispatch consumer-visitor-aggregate
 ```
 
-Wymaga działającego `app/etc/env.php` (baza, cache) tego środowiska — to nie jest tryb bezstanowy, testy faktycznie łączą się z bazą dev. `CampaignQueueWiringTest` dodatkowo uruchamia `bin/magento` jako podproces (`exec()`), więc PHP w kontenerze musi mieć prawo odpalać poleceń powłoki.
+Requires this environment's working `app/etc/env.php` (database, cache) — this isn't stateless, the tests actually connect to the dev database. `CampaignQueueWiringTest` additionally runs `bin/magento` as a subprocess (`exec()`), so PHP in the container needs permission to run shell commands.
 
-## MFTF — od zapisu triggera po realny efekt
+## MFTF — from saving a trigger to a real effect
 
-- `AdminCreateMultiTriggerCampaignTest.xml` — tylko triggery (wielotriggerowość).
-- `AdminCreateCampaignWithConditionsAndActionsTest.xml` — to samo dla warunków i akcji (dotąd nieotestowane w MFTF).
-- `AdminCampaignScenarioEndToEndTest.xml` — **jedyny test w całym module, który dowodzi tego z pytania "czy to w ogóle ma sens i działa" bez żadnego skrótu**: buduje scenariusz w adminie (trigger=`order_placed`, warunek=`order_total_gte`, akcja=`generate_coupon` — wybrana bo ma realne, widoczne UI w adminie; `add_tag`/`send_email` nie mają żadnego grida), realny klient robi realny checkout na storefroncie, `queue:consumers:start ordo.automation.campaign.dispatch --max-messages=1` przetwarza wiadomość (znów: brak RabbitMQ w tym środowisku), i na końcu sprawdza w Marketing → Cart Price Rules → Manage Coupon Codes, że kupon **faktycznie tam jest**.
+- `AdminCreateMultiTriggerCampaignTest.xml` — triggers only (multi-trigger support).
+- `AdminCreateCampaignWithConditionsAndActionsTest.xml` — same, for conditions and actions (previously untested in MFTF).
+- `AdminCampaignScenarioEndToEndTest.xml` — **the only test in the whole module that answers "does this actually make sense and work" with no shortcuts**: builds a scenario in the admin (trigger=`order_placed`, condition=`order_total_gte`, action=`generate_coupon` — chosen because it has real, visible UI in the admin; `add_tag`/`send_email` have no grid at all), a real customer performs a real storefront checkout, `queue:consumers:start ordo.automation.campaign.dispatch --max-messages=1` processes the message (again: no RabbitMQ in this environment), and finally checks in Marketing → Cart Price Rules → Manage Coupon Codes that the coupon **is actually there**.
 
-### Uruchomienie MFTF w tym środowisku — realne pułapki, wszystkie napotkane i naprawione
+### Running MFTF in this environment — real pitfalls, all encountered and fixed
 
-To środowisko **nie ma prawdziwego webservera** — `docker-compose.yml`'s `php` service ma `command: sleep infinity`, więc ktoś (my) musi ręcznie odpalić wbudowany serwer PHP przed każdym `mftf run:test`. Napotkane i naprawione pułapki, w kolejności odkrycia:
+This environment **has no real webserver** — `docker-compose.yml`'s `php` service runs `command: sleep infinity`, so someone (us) has to manually start the PHP built-in server before every `mftf run:test`. Pitfalls encountered and fixed, in order of discovery:
 
-1. **Brak serwera w ogóle** → `curl` do `localhost:8080` z kontenera php dostawał "connection refused". Trzeba go odpalić ręcznie:
+1. **No server at all** → `curl` to `localhost:8080` from the php container got "connection refused". Start it manually:
    ```bash
    docker compose exec -d -e PHP_CLI_SERVER_WORKERS=8 php sh -c "cd /var/www/magento/dev/tests/acceptance/utils && exec php -S 0.0.0.0:8080 -t /var/www/magento/pub /tmp/router.php"
    ```
-   **`PHP_CLI_SERVER_WORKERS=8` jest obowiązkowe** — bez tego wbudowany serwer PHP obsługuje jeden request na raz, a Selenium/Chrome robi wiele równoległych requestów (JS/CSS/AJAX) — bez workerów strona admina renderuje się z urwanymi assetami (`Uncaught SyntaxError`, RequireJS `Script error`) albo zawiesza się na 60s timeout.
-   **Sprawdź, że port faktycznie się zwolnił przed restartem** — `docker compose exec` nie ubija starego procesu automatycznie; jeśli `php -S` już nasłuchuje na 8080, kolejne uruchomienie po prostu cicho nie zbinduje się i STARY proces (z inną konfiguracją) dalej obsługuje ruch, co wygląda jak "moja zmiana nie zadziałała". Zabij ręcznie przez skan `/proc/[0-9]*/cmdline` (brak `pgrep`/`ps` w tym obrazie) zanim wystartujesz nowy.
-2. **Statyczne assety generowane w locie** (`app mode: default`) pogłębiają problem #1 nawet z workerami — każdy request do niewdrożonego pliku w `pub/static/` triggeruje LESS/JS kompilację. Wdróż raz na start środowiska:
+   **`PHP_CLI_SERVER_WORKERS=8` is mandatory** — without it the PHP built-in server handles one request at a time, while Selenium/Chrome fires many parallel requests (JS/CSS/AJAX) — without workers the admin page renders with truncated assets (`Uncaught SyntaxError`, RequireJS `Script error`) or hangs for a 60s timeout.
+   **Check that the port actually freed up before restarting** — `docker compose exec` doesn't kill the old process automatically; if `php -S` is already listening on 8080, the next run silently fails to bind, and the OLD process (with a different config) keeps serving traffic, which looks like "my change didn't work". Kill it manually by scanning `/proc/[0-9]*/cmdline` (no `pgrep`/`ps` in this image) before starting a new one.
+2. **Static assets generated on the fly** (`app mode: default`) make problem #1 worse even with workers — every request to an undeployed file under `pub/static/` triggers LESS/JS compilation. Deploy once at environment startup:
    ```bash
    bin/magento setup:static-content:deploy -f en_US -a adminhtml
    bin/magento setup:static-content:deploy -f en_US -a frontend
    ```
-3. **`<magentoCLI>` w testach MFTF zwracał HTTP 404** — `.env` nie miał `MAGENTO_CLI_COMMAND_PATH`/`MAGENTO_CLI_COMMAND_PARAMETER` w ogóle (MFTF bez nich POSTuje na pusty base URL). Dodane do `dev/tests/acceptance/.env`:
+3. **`<magentoCLI>` in MFTF tests returned HTTP 404** — `.env` had no `MAGENTO_CLI_COMMAND_PATH`/`MAGENTO_CLI_COMMAND_PARAMETER` at all (without them MFTF POSTs to an empty base URL). Added to `dev/tests/acceptance/.env`:
    ```
    MAGENTO_CLI_COMMAND_PATH=cli-bridge/a/b/command.php
    MAGENTO_CLI_COMMAND_PARAMETER=command
    ```
-   **Ta ścieżka MUSI być dokładnie 3 katalogi głębokości pod `pub/`** — `dev/tests/acceptance/utils/command.php` liczy `bin/magento` jako `../../../../bin/magento` (4×`../`) **względem CWD, które wbudowany serwer PHP ustawia na `docroot + katalog żądania URL`**, nie względem rzeczywistej lokalizacji pliku (nawet jeśli plik jest symlinkiem, nawet jeśli serwer wystartował z innym CWD). Z docroot=`pub/`, 3 poziomy zagnieżdżenia + 4×`../` trafia dokładnie w katalog główny Magento. Symlink trzeba założyć ręcznie (nie jest w gicie, bo żyje w `pub/` środowiska testowego, nie w repo modułu):
+   **This path MUST be exactly 3 directories deep under `pub/`** — `dev/tests/acceptance/utils/command.php` computes `bin/magento` as `../../../../bin/magento` (4×`../`) **relative to the CWD, which the PHP built-in server sets to docroot + the requested URL's directory**, not to the file's actual location (even if the file is a symlink, even if the server started with a different CWD). With docroot=`pub/`, 3 levels of nesting + 4×`../` lands exactly on Magento's root directory. The symlink has to be created manually (it's not in git, since it lives under the test environment's `pub/`, not in the module repo):
    ```bash
    mkdir -p /var/www/magento/pub/cli-bridge/a/b
    ln -sf /var/www/magento/dev/tests/acceptance/utils/command.php /var/www/magento/pub/cli-bridge/a/b/command.php
    ```
-4. **Indeksy "Update by Schedule" ukrywają świeżo utworzone dane testowe** — produkt stworzony przez `<createData entity="SimpleProduct2">` nie jest "salable"/dodawalny do koszyka, dopóki indeksy stocku/ceny się nie przeliczą. Zamiast wymuszać `indexer:reindex` w każdym teście (co dodatkowo failuje cały krok, jeśli akurat OpenSearch nie żyje, bo `catalogsearch_fulltext` kaskaduje), ustaw raz globalnie:
+4. **"Update by Schedule" indexers hide freshly created test data** — a product created via `<createData entity="SimpleProduct2">` isn't "salable"/addable to cart until the stock/price indexers recalculate. Instead of forcing `indexer:reindex` in every test (which additionally fails the whole step if OpenSearch happens to be down, since `catalogsearch_fulltext` cascades), set this once globally:
    ```bash
    bin/magento indexer:set-mode realtime cataloginventory_stock catalog_product_price catalog_product_attribute catalog_category_product catalog_product_category
    ```
-   (celowo BEZ `catalogsearch_fulltext` — ten test go nie potrzebuje, a wymaga żywego OpenSearcha).
+   (deliberately WITHOUT `catalogsearch_fulltext` — this test doesn't need it, and it requires a live OpenSearch).
 
-**Znany, nierozwiązany problem: losowe `tab crashed` / `Operation timed out` w Chrome/Selenium.** Ten host ma zainstalowanych mnóstwo innych, niezwiązanych projektów Docker (widoczne w `docker stats` — jeden kontener sam zajmował 66% limitu pamięci Dockera), przez co `db`/`opensearch` regularnie padają z OOM (exit 137), a sesje Chrome w Selenium crashują w losowym, nieprzewidywalnym momencie testu (raz na pierwszym kroku, raz tuż przed metą). To **nie jest błąd w kodzie modułu ani w samym teście** — `AdminCreateMultiTriggerCampaignTest` i `AdminCreateCampaignWithConditionsAndActionsTest` (czysto adminowe, krótsze) przechodzą stabilnie po tych poprawkach; `AdminCampaignScenarioEndToEndTest` (długi, prawdziwy checkout) dochodził w kolejnych próbach coraz dalej (aż do wyboru akcji `generate_coupon`) bez ani jednego prawdziwego błędu logicznego, ale nie ukończył się w pełni z powodu wyczerpania pamięci hosta. Żeby faktycznie dokończyć weryfikację tego testu: albo zwolnij pamięć hosta (zatrzymaj inne, niepotrzebne w danej chwili projekty Docker), albo uruchom go w mniej obciążonym środowisku/CI.
+**Known, unresolved issue: random `tab crashed` / `Operation timed out` in Chrome/Selenium.** This host has a lot of other, unrelated Docker projects installed (visible in `docker stats` — one container alone took 66% of Docker's memory limit), so `db`/`opensearch` regularly get OOM-killed (exit 137), and Selenium's Chrome sessions crash at a random, unpredictable point in the test (sometimes on the first step, sometimes right before the finish line). This is **not a bug in the module's code or in the test itself** — `AdminCreateMultiTriggerCampaignTest` and `AdminCreateCampaignWithConditionsAndActionsTest` (purely admin-side, shorter) pass reliably after these fixes; `AdminCampaignScenarioEndToEndTest` (long, real checkout) got further with each successive attempt (as far as selecting the `generate_coupon` action) without a single real logic error, but never fully completed due to host memory exhaustion. To actually finish verifying this test: either free up host memory (stop other, currently unneeded Docker projects), or run it in a less loaded environment/CI.
 
-Uruchomienie:
+Running it:
 ```bash
 docker compose exec php vendor/bin/mftf generate:tests AdminCampaignScenarioEndToEndTest AdminCreateCampaignWithConditionsAndActionsTest AdminCreateMultiTriggerCampaignTest
 docker compose exec php vendor/bin/mftf run:test AdminCampaignScenarioEndToEndTest AdminCreateCampaignWithConditionsAndActionsTest AdminCreateMultiTriggerCampaignTest
 ```
 
-### MFTF w prawdziwym CI (GitHub Actions, `.github/workflows/mftf.yml`) — pułapki inne niż lokalny sandbox
+### MFTF in real CI (GitHub Actions, `.github/workflows/mftf.yml`) — different pitfalls than the local sandbox
 
-Ten workflow ma własny, real, nginx+PHP-FPM stack (nie `php -S`) — więc powyższe lokalne pułapki (workers, symlink cli-bridge, indeksy) już tam są rozwiązane inaczej i na stałe wpisane w workflow. Poniższe trzy okazały się specyficzne dla realnego, świeżego `setup:install` na GitHub Actions i nie miały odpowiednika w tym sandboxie — każda ma pełne uzasadnienie jako komentarz przy właściwym kroku w `mftf.yml`, tu tylko skrót:
+This workflow has its own, real nginx+PHP-FPM stack (not `php -S`) — so the local pitfalls above (workers, cli-bridge symlink, indexers) are already solved differently there and baked permanently into the workflow. The following three turned out to be specific to a real, fresh `setup:install` on GitHub Actions and had no equivalent in this sandbox — each has a full explanation as a comment at the relevant step in `mftf.yml`, here's just the summary:
 
-1. **"Add Secret Key to URLs" (`admin/security/use_form_key`) jest domyślnie WŁĄCZONE** na świeżym Magento (`vendor/magento/module-store/etc/config.xml`) — każdy `amOnPage("admin/...")` bez sekretnego `?key=` w URL-u (czyli każda literalna nawigacja w teście MFTF, w odróżnieniu od klikania w link wyrenderowany przez Magento) dostawał ciche 302 na Dashboard, zero komunikatu błędu. Namierzone przez curl-repro krok w workflow (`Location:` header zawierał `/key/<hash>/`). Naprawione: `bin/magento config:set admin/security/use_form_key 0` w kroku "Install Magento".
-2. **`<valueMap>` bezpośrednio w `<field><settings>` i `<settings><componentType>container</componentType></settings>` w `<container name="record">` łamią XSD** (`Magento_Ui:etc/ui_configuration.xsd`) — Magento zwraca to jako 500 (`LocalizedException`, "The XML ... is invalid"), nie jako coś widocznego w przeglądarce/Selenium. `valueMap` wolno tylko w `<formElements><checkbox><settings>`; `<container>` idzie prosto z `<argument>` do dzieci `<field>`, bez własnego `<settings>` — sprawdzone na realnych przykładach core'u (`module-backend`'s `design_config_form.xml`).
-3. **`sendmail_path` z nieocytowaną wartością zawierającą `=` jest ucinany przez parser INI PHP** na pierwszym wewnętrznym `=` — `mhsendmail --smtp-addr=127.0.0.1:1025` w praktyce docierał do PHP jako goły `mhsendmail --smtp-addr` (bez adresu, bez żadnych dalszych flag), co też łamało Symfony Mailer's `SendmailTransport` (wymaga dosłownego ` -bs` lub ` -t` we flagach). Naprawione cytowaniem całej wartości: `sendmail_path = "/usr/local/bin/mhsendmail --smtp-addr=127.0.0.1:1025 -t"`.
-4. **`queue:consumers:start --max-messages=N` domyślnie BLOKUJE** (`CallbackInvoker::invoke()`, `sleep(1)` w pętli, `maxIdleTime` domyślnie `PHP_INT_MAX`), dopóki w kolejce nie pojawi się N wiadomości — nie zwraca się wcześniej tylko dlatego że więcej już nie przybędzie. Test proszący o więcej wiadomości niż faktycznie jest w kolejce (np. żeby "osuszyć" zaległą wiadomość z innego testu w tym samym joku — nie ma tu żadnego działającego w tle konsumera między testami MFTF) wisi, aż HTTP-owy CLI-bridge (magentoCLI leci przez `command.php` pod nginx+PHP-FPM, nie bezpośrednio) dostanie 504 od proxy. Naprawione raz, globalnie: `bin/magento setup:config:set --consumers-wait-for-messages=0 -n` w kroku "Install Magento" (`Magento\MessageQueue\Setup\ConfigOptionsList` — to jest deployment config w `env.php`, nie zwykły `config:set`) — konsument wtedy wraca, gdy kolejka jest pusta, zamiast czekać.
-5. **`customer_save_after`'s `getCustomer()` NIE gwarantuje `CustomerInterface`** — w praktyce (potwierdzone realnym TypeError-em w logu) to zawsze legacy `Magento\Customer\Model\Customer` (a właściwie jego `\Interceptor`), który dziedziczy po `AbstractModel`/`DataObject`, nie implementuje `Api\Data\CustomerInterface`. Type-hint `CustomerInterface $customer` na tym obiekcie rzuca `TypeError` w locie (`Observer\EvaluateCustomerScoreRules`, patrz commit). Bezpieczne obejście: nie ufać typowi z eventu, tylko dociągnąć prawdziwy `CustomerInterface` przez `CustomerRepositoryInterface::getById((int) $eventCustomer->getId())`.
+1. **"Add Secret Key to URLs" (`admin/security/use_form_key`) is ON by default** on a fresh Magento (`vendor/magento/module-store/etc/config.xml`) — every `amOnPage("admin/...")` without a secret `?key=` in the URL (i.e. every literal navigation in an MFTF test, as opposed to clicking a link Magento rendered) got a silent 302 to the Dashboard, no error message. Tracked down via a curl-repro step in the workflow (the `Location:` header contained `/key/<hash>/`). Fixed: `bin/magento config:set admin/security/use_form_key 0` in the "Install Magento" step.
+2. **`<valueMap>` directly in `<field><settings>` and `<settings><componentType>container</componentType></settings>` in `<container name="record">` break the XSD** (`Magento_Ui:etc/ui_configuration.xsd`) — Magento returns this as a 500 (`LocalizedException`, "The XML ... is invalid"), not as something visible in the browser/Selenium. `valueMap` is only allowed under `<formElements><checkbox><settings>`; `<container>` passes straight from `<argument>` to `<field>` children, with no `<settings>` of its own — verified against real core examples (`module-backend`'s `design_config_form.xml`).
+3. **`sendmail_path` with an unquoted value containing `=` gets truncated by PHP's INI parser** at the first internal `=` — `mhsendmail --smtp-addr=127.0.0.1:1025` in practice reached PHP as a bare `mhsendmail --smtp-addr` (no address, no further flags), which also broke Symfony Mailer's `SendmailTransport` (requires literal ` -bs` or ` -t` in the flags). Fixed by quoting the whole value: `sendmail_path = "/usr/local/bin/mhsendmail --smtp-addr=127.0.0.1:1025 -t"`.
+4. **`queue:consumers:start --max-messages=N` BLOCKS by default** (`CallbackInvoker::invoke()`, `sleep(1)` in a loop, `maxIdleTime` defaults to `PHP_INT_MAX`) until N messages show up in the queue — it doesn't return early just because no more are coming. A test asking for more messages than are actually queued (e.g. to "drain" a leftover message from another test in the same job — there's no consumer running in the background between MFTF tests here) hangs until the HTTP CLI-bridge (magentoCLI goes through `command.php` under nginx+PHP-FPM, not directly) gets a 504 from the proxy. Fixed once, globally: `bin/magento setup:config:set --consumers-wait-for-messages=0 -n` in the "Install Magento" step (`Magento\MessageQueue\Setup\ConfigOptionsList` — this is deployment config in `env.php`, not a regular `config:set`) — the consumer then returns once the queue is empty instead of waiting.
+5. **`customer_save_after`'s `getCustomer()` does NOT guarantee `CustomerInterface`** — in practice (confirmed by a real TypeError in the log) it's always the legacy `Magento\Customer\Model\Customer` (actually its `\Interceptor`), which extends `AbstractModel`/`DataObject` and does not implement `Api\Data\CustomerInterface`. Type-hinting `CustomerInterface $customer` against that object throws a `TypeError` at runtime (`Observer\EvaluateCustomerScoreRules`, see commit). Safe workaround: don't trust the event's type, fetch a real `CustomerInterface` via `CustomerRepositoryInterface::getById((int) $eventCustomer->getId())`.

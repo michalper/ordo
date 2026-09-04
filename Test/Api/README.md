@@ -101,7 +101,11 @@ ORDO_API_ADMIN_PASSWORD=...
 ORDO_API_CUSTOMER_EMAIL=...
 ORDO_API_CUSTOMER_PASSWORD=...
 ORDO_API_TEST_PRODUCT_SKU=...          # FreeGiftApiTest only — a real, existing, purchasable SKU
+ORDO_API_TEST_APPROVAL_TOKEN=...       # OrderApprovalApiTest only — token of a freshly seeded, still-pending order
+ORDO_API_TEST_APPROVAL_ENTITY_ID=...   # OrderApprovalApiTest only — entity_id of that same order
 ```
+
+See `.env.example` at the module root for the same contract.
 
 ```
 vendor/bin/phpunit vendor/ordo/module-automation/Test/Api --bootstrap vendor/autoload.php

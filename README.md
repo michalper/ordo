@@ -61,7 +61,7 @@ tools structurally can't see.
 
 Everything is configurable under **Stores → Configuration → Ordo Automation** (or, for campaigns and free gifts, via
 their REST API), each with its own on/off switch and cron job. Implementation detail and the "why" behind each design
-decision live in [CHANGELOG.md](CHANGELOG.md); what's still in progress lives in [ROADMAP.md](ROADMAP.md).
+decision live in [CHANGELOG.md](docs/CHANGELOG.md); what's still in progress lives in [ROADMAP.md](ROADMAP.md).
 
 ## Architecture
 
@@ -183,7 +183,7 @@ walkthrough of every feature in this README, organized so a failure at any step 
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md).
+See [CHANGELOG.md](docs/CHANGELOG.md).
 
 ## License
 
