@@ -19,9 +19,9 @@ use Ordo\Automation\Cron\TagInactiveCustomers;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Setup\Patch\Data\AddSalesRepAttributes;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class SendSalesRepDigestTest extends TestCase
 {

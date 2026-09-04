@@ -9,8 +9,8 @@ use Ordo\Automation\Model\CreditLimitCalculator;
 use Ordo\Automation\Model\CreditLimitManagement;
 use Ordo\Automation\Model\CreditLimitStatus;
 use Ordo\Automation\Model\CreditLimitStatusFactory;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
 
 class CreditLimitManagementTest extends TestCase
 {

@@ -21,9 +21,9 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CreditLimitCalculator;
 use Ordo\Automation\Model\SalesRepEmailContext;
 use Ordo\Automation\Model\TriggerOutcomeLogger;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class SendCreditLimitAlertsTest extends TestCase
 {

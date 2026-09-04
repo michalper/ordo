@@ -5,9 +5,9 @@ namespace Ordo\Automation\Test\Unit\Model\Campaign\Action;
 
 use Ordo\Automation\Model\Campaign\Action\GenerateCoupon;
 use Ordo\Automation\Model\CouponGenerator;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class GenerateCouponTest extends TestCase
 {

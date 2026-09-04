@@ -22,12 +22,42 @@ scoped from real hands-on marketing automation experience.
 
 ## Tooling ideas, not yet actioned
 
-- **PHPUnit 13** (currently on `^12.0`) — blocked, not just a version bump: PHPUnit 13 requires PHP 8.4+, but every
-  workflow (`ci.yml`, `coverage.yml`, `mftf.yml`) runs PHP 8.3, and composer.json's own supported range starts at
-  `~8.2.0`. Needs a deliberate decision to move the whole CI matrix (and the module's minimum supported PHP version)
-  to 8.4 first — not something to fold into an unrelated change. PHPUnit 13 also requires the suite to already run
-  clean with zero deprecation warnings under PHPUnit 12.5 first, which `ci.yml`'s `--fail-on-*-deprecation` flags
-  already enforce today, so that half of the prerequisite is already satisfied.
+- ~~PHPUnit 13~~ — done. Bumped `composer.json`'s `"php"` constraint from `>=8.2 <8.6` to
+  `>=8.4 <8.6` and `phpunit/phpunit` to `^13.0`; moved the whole CI matrix (`ci.yml`,
+  `coverage.yml`, `mftf.yml`) from PHP 8.3 to 8.4, including the `mftf.yml` nginx+PHP-FPM stack,
+  which needed the `ppa:ondrej/php` PPA added since ubuntu-24.04's default apt repo only ships
+  8.3 natively. Also bumped `rector.php`'s `withPhpSets()` from `php82` to `php84`, which flagged
+  35 files needing `AddTypeToConstRector` (typed class constants) — applied. The real work was
+  the "zero deprecation warnings" prerequisite: PHPUnit 13 deprecates `->method('x')->with(args)`
+  used without a preceding `->expects(...)` (199 sites across 74 test files) — converted those to
+  `->willReturnMap([[...args, value]])` (stub-style, no call-count assertion, matching the
+  original behavior) rather than `->expects(self::any())`, since `any()` itself is *also*
+  deprecated in this PHPUnit version ("will be removed in PHPUnit 14"). That conversion had a
+  second-order effect: `willReturnMap()` doesn't set a "parameters rule" the way `->with()` did,
+  so 93 of those same mocks newly tripped PHPUnit's separate "no expectations configured" notice
+  — fixed by adding `#[AllowMockObjectsWithoutExpectations]`, the same attribute this suite
+  already used elsewhere for exactly this case. Verified against the literal command
+  `ci.yml` runs (`--fail-on-phpunit-notice --fail-on-notice --fail-on-warning
+  --fail-on-deprecation`): exit 0, 992 tests, 6526 assertions, zero notices/deprecations.
+
+## Code quality
+
+- **Code duplication flagged by SonarCloud on the Setup/Patch/Data attribute patches and the
+  percentile-condition/cron families.** Per the "New Code" duplication report: `Setup/Patch/Data/
+  AddCustomerCreditLimitAttribute.php` (100%, 7 lines), `Setup/Patch/Data/
+  AddCustomerSmsPhoneAttribute.php` (75.3%, 55 lines), `Model/Campaign/Condition/
+  MonetaryPercentileAtLeast.php` (60.0%, 24 lines), `Model/Campaign/Condition/
+  OrderFrequencyPercentileAtLeast.php` (60.0%, 24 lines), `Model/Campaign/Condition/
+  RecencyPercentileAtLeast.php` (55.8%, 24 lines), `Cron/SendWinBackEmails.php` (51.2%, 22 lines),
+  `Cron/SendOfferExpiryReminders.php` (41.5%, 22 lines), `Cron/SendReorderReminders.php` (36.4%,
+  20 lines). The three `*PercentileAtLeast` condition classes are near-certainly the same
+  NTILE-based percentile lookup copy-pasted per metric (recency/frequency/monetary) — a shared
+  base class or trait is the likely fix, mirroring how the RFM report already shares one query
+  shape across the same three metrics. The `Add*Attribute` Setup patches are boilerplate EAV
+  attribute-creation patches that may be an acceptable, deliberate duplication (Magento's own core
+  modules duplicate this same shape rather than share it, since each patch's dependency chain and
+  attribute config genuinely differ) — worth a real look before assuming it needs deduplicating,
+  not just acting on the percentage.
 
 ## Gaps vs. a full-market MA platform
 

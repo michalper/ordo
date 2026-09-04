@@ -7,9 +7,9 @@ use Magento\Framework\Serialize\SerializerInterface;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\Queue\CampaignDispatchConsumer;
 use Ordo\Automation\Model\Queue\CampaignDispatchGuard;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class CampaignDispatchConsumerTest extends TestCase
 {

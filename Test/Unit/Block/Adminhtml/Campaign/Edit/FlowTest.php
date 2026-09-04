@@ -25,8 +25,8 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as TriggerCo
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\ContentBlock\Collection as ContentBlockCollection;
 use Ordo\Automation\Model\ResourceModel\ContentBlock\CollectionFactory as ContentBlockCollectionFactory;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
 
 class FlowTest extends TestCase
 {

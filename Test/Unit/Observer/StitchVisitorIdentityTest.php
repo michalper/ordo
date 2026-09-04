@@ -9,8 +9,8 @@ use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Ordo\Automation\Model\VisitorEventLogger;
 use Ordo\Automation\Observer\StitchVisitorIdentity;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
 
 class StitchVisitorIdentityTest extends TestCase
 {

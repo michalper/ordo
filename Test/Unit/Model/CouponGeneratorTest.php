@@ -5,12 +5,12 @@ namespace Ordo\Automation\Test\Unit\Model;
 
 use Magento\Framework\Math\Random;
 use Magento\SalesRule\Helper\Coupon as CouponHelper;
-use Magento\SalesRule\Model\CouponFactory;
 use Magento\SalesRule\Model\Coupon;
+use Magento\SalesRule\Model\CouponFactory;
 use Magento\SalesRule\Model\ResourceModel\Coupon as CouponResource;
 use Ordo\Automation\Model\CouponGenerator;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
 
 class CouponGeneratorTest extends TestCase
 {

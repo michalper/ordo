@@ -6,9 +6,9 @@ namespace Ordo\Automation\Test\Unit\Model\Queue;
 use Magento\Framework\Serialize\SerializerInterface;
 use Ordo\Automation\Model\Queue\VisitorAggregationConsumer;
 use Ordo\Automation\Model\VisitorAggregator;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class VisitorAggregationConsumerTest extends TestCase
 {
