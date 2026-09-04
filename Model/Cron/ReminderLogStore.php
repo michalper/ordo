@@ -22,8 +22,8 @@ class ReminderLogStore
     }
 
     /**
-     * @param array<string, mixed> $conditions Maps a Zend_Db_Select::where() condition string
-     *   (e.g. 'customer_id = ?') to its bind value.
+     * @param array<string, int|string> $conditions Maps a Zend_Db_Select::where() condition
+     *   string (e.g. 'customer_id = ?') to its bind value.
      */
     public function countMatching(string $table, array $conditions): int
     {

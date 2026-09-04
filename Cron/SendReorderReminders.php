@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Cron;
 
+use Magento\Customer\Api\Data\CustomerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\Cron\ReminderLogStore;
@@ -73,11 +74,7 @@ class SendReorderReminders
                 $customer = $customerMap[$customerId];
                 $this->emailSender->send(
                     self::XML_PATH_EMAIL_TEMPLATE,
-                    array_merge([
-                        'customer_name' => $customer->getFirstname(),
-                        'sku' => $cycle->getSku(),
-                        'avg_interval_days' => $cycle->getAvgIntervalDays(),
-                    ], $this->salesRepEmailContext->getForCustomer($cycle->getCustomerId())),
+                    $this->buildTemplateVars($cycle, $customer),
                     $customer->getEmail(),
                     $customer->getFirstname()
                 );
@@ -96,6 +93,18 @@ class SendReorderReminders
         }
 
         $this->logger->info(sprintf('Ordo_Automation: sent %d reorder reminders.', $sent));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildTemplateVars(ReorderCycle $cycle, CustomerInterface $customer): array
+    {
+        return array_merge([
+            'customer_name' => $customer->getFirstname(),
+            'sku' => $cycle->getSku(),
+            'avg_interval_days' => $cycle->getAvgIntervalDays(),
+        ], $this->salesRepEmailContext->getForCustomer($cycle->getCustomerId()));
     }
 
     private function reminderAlreadySentToday(int $reorderCycleId): bool
