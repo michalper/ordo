@@ -67,6 +67,19 @@ composer cs-check  # same thing CI runs — zero output = clean
 vendor/bin/phpcs   # separate check, because phpcbf doesn't fix 100% of its own violations
 ```
 
+## PRs auto-merge once CI is green
+
+`main` has branch protection with required status checks: `unit-tests`, `static-analysis`, `rector`, `coding-standard`, `php-coverage`, `js-coverage`, `sonar` (`mutation-testing` is deliberately excluded — it's `continue-on-error: true` in `coverage.yml`, non-blocking by design). Repo settings have `allow_auto_merge` and `delete_branch_on_merge` both on.
+
+So opening a PR is not the end of the job — enable auto-merge on it right away, don't wait to be asked per PR:
+```bash
+gh pr create --fill
+gh pr merge --auto --squash
+```
+Once the required checks go green, GitHub merges the PR (squash) and deletes the branch by itself — no manual follow-up step. A local `prc` shell function (`~/.zshrc`, not part of this repo) does both in one call for interactive use.
+
+If a PR genuinely needs manual review/hold before merging, say so explicitly instead of enabling auto-merge on it.
+
 ## Campaign dispatch is asynchronous (Magento queue)
 
 Triggers (`order_placed`, `customer_registered`, `tag_added`) no longer call `CampaignDispatcher::dispatch()` directly from the observer — they publish a message on the `ordo.automation.campaign.dispatch` topic (`Model/Queue/CampaignDispatchPublisher.php`), consumed by `Model/Queue/CampaignDispatchConsumer.php`. This is so checkout/customer registration doesn't wait on condition/action evaluation.
