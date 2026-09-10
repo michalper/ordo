@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Sms;
 
+use Ordo\Automation\Model\CampaignOutcomeLogger;
 use Ordo\Automation\Model\MessageLog;
 use Ordo\Automation\Model\MessageLogFactory;
 use Ordo\Automation\Model\ResourceModel\MessageLog as MessageLogResource;
@@ -18,6 +19,7 @@ class MessageLogWriter
     public function __construct(
         private readonly MessageLogFactory $messageLogFactory,
         private readonly MessageLogResource $messageLogResource,
+        private readonly CampaignOutcomeLogger $campaignOutcomeLogger,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -26,24 +28,48 @@ class MessageLogWriter
         string $channel,
         ?int $customerId,
         string $toAddress,
-        ?string $providerMessageId
+        ?string $providerMessageId,
+        ?int $campaignId = null,
+        ?string $variant = null
     ): void {
         $log = $this->messageLogFactory->create();
         $log->setChannel($channel)
             ->setCustomerId($customerId)
             ->setToAddress($toAddress)
             ->setProviderMessageId($providerMessageId)
+            ->setCampaignId($campaignId)
+            ->setVariant($variant)
             ->setStatus(MessageLog::STATUS_SENT);
 
         $this->save($log);
+
+        // A genuine send is what a campaign's funnel counts as "sent" - only logged here (not in
+        // CampaignDispatcher itself), so an action type that doesn't actually send anything (e.g.
+        // add_tag) never produces a spurious campaign-outcome row.
+        if ($campaignId !== null && $customerId !== null) {
+            try {
+                $this->campaignOutcomeLogger->logSent($campaignId, $variant, $customerId);
+            } catch (\Throwable $e) {
+                $this->logger->error(
+                    sprintf('Ordo_Automation: failed to write ordo_campaign_outcome_log row: %s', $e->getMessage())
+                );
+            }
+        }
     }
 
-    public function recordOptedOut(string $channel, ?int $customerId, string $toAddress): void
-    {
+    public function recordOptedOut(
+        string $channel,
+        ?int $customerId,
+        string $toAddress,
+        ?int $campaignId = null,
+        ?string $variant = null
+    ): void {
         $log = $this->messageLogFactory->create();
         $log->setChannel($channel)
             ->setCustomerId($customerId)
             ->setToAddress($toAddress)
+            ->setCampaignId($campaignId)
+            ->setVariant($variant)
             ->setStatus(MessageLog::STATUS_OPTED_OUT);
 
         $this->save($log);
@@ -55,23 +81,37 @@ class MessageLogWriter
      * withdraw consent, they're just over the configured contact-volume cap for now) and from
      * failed (nothing was attempted, so there's no provider error to report).
      */
-    public function recordSuppressed(string $channel, ?int $customerId, string $toAddress): void
-    {
+    public function recordSuppressed(
+        string $channel,
+        ?int $customerId,
+        string $toAddress,
+        ?int $campaignId = null,
+        ?string $variant = null
+    ): void {
         $log = $this->messageLogFactory->create();
         $log->setChannel($channel)
             ->setCustomerId($customerId)
             ->setToAddress($toAddress)
+            ->setCampaignId($campaignId)
+            ->setVariant($variant)
             ->setStatus(MessageLog::STATUS_SUPPRESSED);
 
         $this->save($log);
     }
 
-    public function recordFailed(string $channel, ?int $customerId, string $toAddress): void
-    {
+    public function recordFailed(
+        string $channel,
+        ?int $customerId,
+        string $toAddress,
+        ?int $campaignId = null,
+        ?string $variant = null
+    ): void {
         $log = $this->messageLogFactory->create();
         $log->setChannel($channel)
             ->setCustomerId($customerId)
             ->setToAddress($toAddress)
+            ->setCampaignId($campaignId)
+            ->setVariant($variant)
             ->setStatus(MessageLog::STATUS_FAILED);
 
         $this->save($log);

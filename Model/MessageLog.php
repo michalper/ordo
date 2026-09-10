@@ -87,4 +87,26 @@ class MessageLog extends AbstractModel
     {
         return $this->setData('error_code', $errorCode);
     }
+
+    public function getCampaignId(): ?int
+    {
+        $id = $this->getData('campaign_id');
+        return $id === null ? null : (int) $id;
+    }
+
+    public function setCampaignId(?int $campaignId): self
+    {
+        return $this->setData('campaign_id', $campaignId);
+    }
+
+    public function getVariant(): ?string
+    {
+        $variant = $this->getData('variant');
+        return $variant === null ? null : (string) $variant;
+    }
+
+    public function setVariant(?string $variant): self
+    {
+        return $this->setData('variant', $variant);
+    }
 }

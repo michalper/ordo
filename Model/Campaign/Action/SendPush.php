@@ -48,6 +48,8 @@ class SendPush implements ActionInterface
     public function execute(array &$context, array $params): void
     {
         $customerId = (int) ($context['customer_id'] ?? 0);
+        $campaignId = isset($context['campaign_id']) ? (int) $context['campaign_id'] : null;
+        $variant = isset($context['ordo_split_variant']) ? (string) $context['ordo_split_variant'] : null;
         if ($customerId <= 0) {
             $this->logger->error('Ordo_Automation: send_push action is missing customer_id in context.');
             return;
@@ -69,11 +71,11 @@ class SendPush implements ActionInterface
                 'Ordo_Automation: send_push action skipped for customer #%d, push consent withdrawn.',
                 $customerId
             ));
-            $this->messageLogWriter->recordOptedOut(self::CHANNEL, $customerId, '');
+            $this->messageLogWriter->recordOptedOut(self::CHANNEL, $customerId, '', $campaignId, $variant);
             return;
         }
 
-        if (!$this->frequencyCapGate->allows($customerId, self::CHANNEL, '', 'send_push')) {
+        if (!$this->frequencyCapGate->allows($customerId, self::CHANNEL, '', 'send_push', $campaignId, $variant)) {
             return;
         }
 
@@ -107,17 +109,24 @@ class SendPush implements ActionInterface
                     },
                     static fn (Throwable $e): bool => !$e instanceof SubscriptionGoneException
                 );
-                $this->messageLogWriter->recordSent(self::CHANNEL, $customerId, $endpoint, null);
+                $this->messageLogWriter->recordSent(
+                    self::CHANNEL,
+                    $customerId,
+                    $endpoint,
+                    null,
+                    $campaignId,
+                    $variant
+                );
             } catch (SubscriptionGoneException) {
                 $this->pushSubscriptionManager->delete($subscription);
-                $this->messageLogWriter->recordFailed(self::CHANNEL, $customerId, $endpoint);
+                $this->messageLogWriter->recordFailed(self::CHANNEL, $customerId, $endpoint, $campaignId, $variant);
             } catch (Throwable $e) {
                 $this->logger->error(sprintf(
                     'Ordo_Automation: campaign send_push action failed for customer #%d: %s',
                     $customerId,
                     $e->getMessage()
                 ));
-                $this->messageLogWriter->recordFailed(self::CHANNEL, $customerId, $endpoint);
+                $this->messageLogWriter->recordFailed(self::CHANNEL, $customerId, $endpoint, $campaignId, $variant);
             }
         }
     }

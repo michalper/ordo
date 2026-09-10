@@ -604,8 +604,49 @@
         <column xsi:type="varchar" name="error_code" nullable="true" length="16" comment="Provider error code, if the status is failed/undelivered/opted_out"/>
         <column xsi:type="timestamp" name="sent_at" nullable="false" default="CURRENT_TIMESTAMP" comment="When this module attempted the send"/>
         <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Last time a delivery-status callback updated this row"/>
+        <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="true" comment="ordo_campaign.entity_id that triggered this send, if any — null for a non-campaign-driven send (e.g. a direct admin test send). No FK: a historical log row must survive the campaign it came from being deleted, same reasoning customer_id already has no FK here."/>
+        <column xsi:type="varchar" name="variant" nullable="true" length="32" comment="Split-test variant key (see a campaign action's own 'split' type) this send belongs to, if the sending action was inside a split. Null for a non-split-tested send."/>
         <constraint xsi:type="primary" referenceId="PRIMARY"><column name="entity_id"/></constraint>
         <constraint xsi:type="unique" referenceId="ORDO_MESSAGE_LOG_PROVIDER_MESSAGE_ID"><column name="provider_message_id"/></constraint>
+        <index referenceId="ORDO_MESSAGE_LOG_CAMPAIGN_ID_VARIANT" indexType="btree">
+            <column name="campaign_id"/>
+            <column name="variant"/>
+        </index>
+    </table>
+
+    <table name="ordo_message_log_event" resource="default" engine="innodb" comment="One row per open/click event a delivery-status webhook reported for a given ordo_message_log row — a separate event log rather than another ordo_message_log.status value, since a single message can be opened/clicked more than once and funnel counting needs each stage counted independently rather than collapsed into one terminal status">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="message_log_id" padding="10" unsigned="true" nullable="false" comment="ordo_message_log.entity_id this event belongs to"/>
+        <column xsi:type="varchar" name="event_type" nullable="false" length="16" comment="opened or clicked"/>
+        <column xsi:type="varchar" name="url" nullable="true" length="1024" comment="The clicked URL, for a clicked event — null for opened"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="When this event was recorded"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY"><column name="entity_id"/></constraint>
+        <constraint xsi:type="foreign" referenceId="ORDO_MESSAGE_LOG_EVENT_MESSAGE_LOG_ID_ORDO_MESSAGE_LOG_ENTITY_ID"
+                    table="ordo_message_log_event" column="message_log_id"
+                    referenceTable="ordo_message_log" referenceColumn="entity_id" onDelete="CASCADE"/>
+        <index referenceId="ORDO_MESSAGE_LOG_EVENT_MESSAGE_LOG_ID_EVENT_TYPE" indexType="btree">
+            <column name="message_log_id"/>
+            <column name="event_type"/>
+        </index>
+    </table>
+
+    <table name="ordo_campaign_outcome_log" resource="default" engine="innodb" comment="Sent/converted stats per campaign (and split-test variant) — the campaign-scoped counterpart of ordo_trigger_outcome_log, same first-plausible-match attribution philosophy (Observer\RecordCampaignOutcome sets acted_at/order_id once the customer places an order, not exact/billing-grade attribution). Additive to ordo_message_log, which already records the send itself; this table exists purely to answer 'did this campaign convert.'">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id"/>
+        <column xsi:type="varchar" name="variant" nullable="true" length="32" comment="Split-test variant key, if this send was inside a split action — null otherwise"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
+        <column xsi:type="datetime" name="sent_at" nullable="false" comment="When this campaign send happened"/>
+        <column xsi:type="datetime" name="acted_at" nullable="true" comment="Set once the customer places an order after this send — null until/unless they respond"/>
+        <column xsi:type="int" name="order_id" padding="10" unsigned="true" nullable="true" comment="sales_order.entity_id — the order that constitutes the conversion, set together with acted_at"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY"><column name="entity_id"/></constraint>
+        <index referenceId="ORDO_CAMPAIGN_OUTCOME_LOG_CAMPAIGN_ID_VARIANT" indexType="btree">
+            <column name="campaign_id"/>
+            <column name="variant"/>
+        </index>
+        <index referenceId="ORDO_CAMPAIGN_OUTCOME_LOG_CUSTOMER_ID_ACTED_AT" indexType="btree">
+            <column name="customer_id"/>
+            <column name="acted_at"/>
+        </index>
     </table>
 
     <table name="ordo_whatsapp_template" resource="default" engine="innodb" comment="A WhatsApp message template - the WhatsApp Business Platform only allows sending a free-form message inside a 24-hour customer-service window; anything outside that window (which is most campaign sends) must use a pre-approved template registered with Meta via Model/WhatsApp/WhatsAppTemplateClient, tracked here through its own approval lifecycle before the send_whatsapp campaign action is allowed to use it">

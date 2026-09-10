@@ -10,6 +10,7 @@ use Ordo\Automation\Api\Data\CampaignInterface;
 use Ordo\Automation\Api\Data\CampaignTriggerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign;
+use Ordo\Automation\Model\CampaignOutcomeLogger;
 use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\LoyaltyTierCalculator;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
@@ -75,6 +76,7 @@ class DashboardViewModel implements ArgumentInterface
         private readonly ReorderCycleCollectionFactory $reorderCycleCollectionFactory,
         private readonly FreeGiftOfferCollectionFactory $freeGiftOfferCollectionFactory,
         private readonly TriggerOutcomeLogger $triggerOutcomeLogger,
+        private readonly CampaignOutcomeLogger $campaignOutcomeLogger,
         private readonly PricingHelper $pricingHelper,
         private readonly LoyaltyTierCalculator $loyaltyTierCalculator,
         private readonly Config $config,
@@ -247,6 +249,36 @@ class DashboardViewModel implements ArgumentInterface
     public function getTriggerOutcomeLabel(string $triggerType): string
     {
         return self::TRIGGER_OUTCOME_LABELS[$triggerType] ?? $triggerType;
+    }
+
+    /**
+     * Cross-campaign totals (sent/converted/conversion_rate/revenue, summed across every
+     * campaign and variant) for a single dashboard summary card — the per-campaign, per-variant
+     * breakdown (plus opened/clicked, which this summary deliberately omits since they'd need a
+     * broader scan across every campaign's ordo_message_log_event rows) lives on each campaign's
+     * own edit page via Block\Adminhtml\Campaign\FunnelViewModel instead. Not a new menu item —
+     * see etc/adminhtml/menu.xml's own comment on why sub-features surface as dashboard cards.
+     *
+     * @return array{sent: int, converted: int, conversion_rate: float, revenue: float}
+     */
+    public function getCampaignFunnelSummary(): array
+    {
+        $sent = 0;
+        $converted = 0;
+        $revenue = 0.0;
+
+        foreach ($this->campaignOutcomeLogger->getStats() as $row) {
+            $sent += $row['sent'];
+            $converted += $row['converted'];
+            $revenue += $row['revenue'];
+        }
+
+        return [
+            'sent' => $sent,
+            'converted' => $converted,
+            'conversion_rate' => $sent > 0 ? round($converted / $sent * 100, 1) : 0.0,
+            'revenue' => $revenue,
+        ];
     }
 
     /**

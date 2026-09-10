@@ -10,6 +10,13 @@
             <block class="Ordo\Automation\Block\Adminhtml\Campaign\Edit\Flow"
                    name="ordo_campaign_flow"
                    template="Ordo_Automation::campaign/flow.phtml"/>
+            <block class="Magento\Framework\View\Element\Template"
+                   name="ordo_campaign_funnel"
+                   template="Ordo_Automation::campaign/funnel.phtml">
+                <arguments>
+                    <argument name="view_model" xsi:type="object">Ordo\Automation\Block\Adminhtml\Campaign\FunnelViewModel</argument>
+                </arguments>
+            </block>
             <uiComponent name="ordo_campaign_form"/>
         </referenceContainer>
     </body>

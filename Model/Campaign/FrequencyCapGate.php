@@ -27,8 +27,14 @@ class FrequencyCapGate
      * @return bool true if the send may proceed, false if it was suppressed (already logged and
      *     recorded - the caller just needs to stop, not log/record anything itself)
      */
-    public function allows(int $customerId, string $channel, string $toAddress, string $actionName): bool
-    {
+    public function allows(
+        int $customerId,
+        string $channel,
+        string $toAddress,
+        string $actionName,
+        ?int $campaignId = null,
+        ?string $variant = null
+    ): bool {
         if ($this->frequencyCapManager->hasCapacity($customerId)) {
             return true;
         }
@@ -38,7 +44,7 @@ class FrequencyCapGate
             $actionName,
             $customerId
         ));
-        $this->messageLogWriter->recordSuppressed($channel, $customerId, $toAddress);
+        $this->messageLogWriter->recordSuppressed($channel, $customerId, $toAddress, $campaignId, $variant);
 
         return false;
     }

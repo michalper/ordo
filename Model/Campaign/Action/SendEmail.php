@@ -62,6 +62,8 @@ class SendEmail implements ActionInterface
     {
         $customerId = (int) ($context['customer_id'] ?? 0);
         $templateIdentifier = (string) ($params['template'] ?? '');
+        $campaignId = isset($context['campaign_id']) ? (int) $context['campaign_id'] : null;
+        $variant = isset($context['ordo_split_variant']) ? (string) $context['ordo_split_variant'] : null;
 
         if ($customerId <= 0 || $templateIdentifier === '') {
             $this->logger->error(
@@ -78,7 +80,7 @@ class SendEmail implements ActionInterface
             return;
         }
 
-        if (!$this->frequencyCapGate->allows($customerId, self::CHANNEL, '', 'send_email')) {
+        if (!$this->frequencyCapGate->allows($customerId, self::CHANNEL, '', 'send_email', $campaignId, $variant)) {
             return;
         }
 
@@ -122,7 +124,9 @@ class SendEmail implements ActionInterface
                 self::CHANNEL,
                 $customerId,
                 $customer->getEmail(),
-                '<' . $messageId . '>'
+                '<' . $messageId . '>',
+                $campaignId,
+                $variant
             );
         } catch (\Throwable $e) {
             $this->logger->error(sprintf(
@@ -130,7 +134,13 @@ class SendEmail implements ActionInterface
                 $customerId,
                 $e->getMessage()
             ));
-            $this->messageLogWriter->recordFailed(self::CHANNEL, $customerId, $customer->getEmail());
+            $this->messageLogWriter->recordFailed(
+                self::CHANNEL,
+                $customerId,
+                $customer->getEmail(),
+                $campaignId,
+                $variant
+            );
         } finally {
             $this->pendingMessageIdHolder->consume();
             $this->inlineTranslation->resume();

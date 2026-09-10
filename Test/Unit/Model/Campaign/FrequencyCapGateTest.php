@@ -43,8 +43,19 @@ class FrequencyCapGateTest extends TestCase
 
         $this->logger->expects(self::once())->method('info')->with(self::stringContains('send_sms'));
         $this->messageLogWriter->expects(self::once())->method('recordSuppressed')
-            ->with('sms', 42, '+15551234567');
+            ->with('sms', 42, '+15551234567', null, null);
 
         self::assertFalse($this->gate->allows(42, 'sms', '+15551234567', 'send_sms'));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAllowsPassesCampaignIdAndVariantThroughToRecordSuppressed(): void
+    {
+        $this->frequencyCapManager->method('hasCapacity')->with(42)->willReturn(false);
+
+        $this->messageLogWriter->expects(self::once())->method('recordSuppressed')
+            ->with('sms', 42, '+15551234567', 5, 'b');
+
+        self::assertFalse($this->gate->allows(42, 'sms', '+15551234567', 'send_sms', 5, 'b'));
     }
 }

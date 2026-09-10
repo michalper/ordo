@@ -1,0 +1,52 @@
+<?php
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \Magento\Framework\Escaper $escaper */
+
+/** @var \Ordo\Automation\Block\Adminhtml\Campaign\FunnelViewModel $viewModel */
+$viewModel = $block->getData('view_model');
+if (!$viewModel->hasCampaign()) {
+    return;
+}
+
+$rows = $viewModel->getFunnelRows();
+$hasVariants = $viewModel->hasVariants();
+?>
+<div class="ordo-campaign-funnel">
+    <h2><?= $escaper->escapeHtml(__('Funnel')) ?></h2>
+    <?php if ($rows === []): ?>
+        <p><?= $escaper->escapeHtml(__('No sends recorded for this campaign yet.')) ?></p>
+    <?php else: ?>
+        <table class="data-table admin__table-primary">
+            <thead>
+                <tr>
+                    <?php if ($hasVariants): ?>
+                        <th><?= $escaper->escapeHtml(__('Variant')) ?></th>
+                    <?php endif; ?>
+                    <th><?= $escaper->escapeHtml(__('Sent')) ?></th>
+                    <th><?= $escaper->escapeHtml(__('Delivered')) ?></th>
+                    <th><?= $escaper->escapeHtml(__('Opened')) ?></th>
+                    <th><?= $escaper->escapeHtml(__('Clicked')) ?></th>
+                    <th><?= $escaper->escapeHtml(__('Converted')) ?></th>
+                    <th><?= $escaper->escapeHtml(__('Conversion Rate')) ?></th>
+                    <th><?= $escaper->escapeHtml(__('Revenue')) ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($rows as $row): ?>
+                    <tr>
+                        <?php if ($hasVariants): ?>
+                            <td><?= $escaper->escapeHtml($row['variant'] ?? __('(no split)')) ?></td>
+                        <?php endif; ?>
+                        <td><?= (int) $row['sent'] ?></td>
+                        <td><?= (int) $row['delivered'] ?></td>
+                        <td><?= (int) $row['opened'] ?></td>
+                        <td><?= (int) $row['clicked'] ?></td>
+                        <td><?= (int) $row['converted'] ?></td>
+                        <td><?= $escaper->escapeHtml(number_format($row['conversion_rate'], 1)) ?>%</td>
+                        <td><?= $escaper->escapeHtml($viewModel->formatCurrency($row['revenue'])) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php endif; ?>
+</div>

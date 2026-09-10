@@ -152,6 +152,27 @@ class CampaignDispatcherTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchInjectsCampaignIdIntoContextBeforeRunningActions(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $actionRow = $this->createMock(CampaignAction::class);
+        $actionRow->method('getCampaignId')->willReturn(1);
+        $actionRow->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $actionRow->method('getParams')->willReturn([]);
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$actionRow]));
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute')
+            ->with(self::callback(fn (array $context): bool => $context['campaign_id'] === 1), []);
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testDispatchReturnsEarlyWhenNoTriggerMatches(): void
     {
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([]));
@@ -286,7 +307,7 @@ class CampaignDispatcherTest extends TestCase
         $scheduled = $this->createMock(CampaignScheduledAction::class);
         $scheduled->expects(self::once())->method('setCampaignId')->with(1);
         $scheduled->expects(self::once())->method('setResumeActionId')->with(42);
-        $scheduled->expects(self::once())->method('setContext')->with(['customer_id' => 1]);
+        $scheduled->expects(self::once())->method('setContext')->with(['customer_id' => 1, 'campaign_id' => 1]);
         $scheduled->expects(self::once())->method('setRunAt');
         $this->campaignScheduledActionFactory->method('create')->willReturn($scheduled);
         $this->campaignScheduledActionResource->expects(self::once())->method('save')->with($scheduled);
@@ -391,6 +412,28 @@ class CampaignDispatcherTest extends TestCase
         $this->actionPool = new ActionPool(['tag_customer' => $action, 'unused_action' => $action]);
 
         $this->makeDispatcher()->resumeScheduledAction(1, 11, ['customer_id' => 1]);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResumeScheduledActionInjectsCampaignIdIntoContext(): void
+    {
+        $resumeAction = $this->createMock(CampaignAction::class);
+        $resumeAction->method('getEntityId')->willReturn(11);
+        $resumeAction->method('getDelayMinutes')->willReturn(0);
+        $resumeAction->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $resumeAction->method('getParams')->willReturn([]);
+
+        $actionCollection = $this->createMock(ActionCollection::class);
+        $actionCollection->method('addCampaignFilter');
+        $actionCollection->method('getIterator')->willReturn(new \ArrayIterator([$resumeAction]));
+        $this->actionCollectionFactory->method('create')->willReturn($actionCollection);
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute')
+            ->with(self::callback(fn (array $context): bool => $context['campaign_id'] === 9), []);
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->resumeScheduledAction(9, 11, ['customer_id' => 1]);
     }
 
     #[AllowMockObjectsWithoutExpectations]

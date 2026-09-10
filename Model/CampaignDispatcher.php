@@ -378,6 +378,7 @@ class CampaignDispatcher
         // elapsed to get here, so it must run unconditionally this time, not be re-scheduled
         // again for another delay_minutes just because that column is still > 0 on the row.
         // Only actions AFTER it go through the normal delay check.
+        $context['campaign_id'] = $campaignId;
         $this->runOneAction($actions[$startIndex], $context);
         $this->runActionsFrom($campaignId, $actions, $startIndex + 1, $context);
     }
@@ -389,6 +390,11 @@ class CampaignDispatcher
     private function runActionsFrom(int $campaignId, array $actions, int $startIndex, array $context): void
     {
         $actions = array_values($actions);
+        // Stamped here (not once in dispatch()) so it also survives resumeScheduledAction()'s own
+        // call into this method after a delay, and so every Send* action can attribute its
+        // ordo_message_log row back to the campaign without CampaignDispatcher needing to know
+        // which action types actually send anything.
+        $context['campaign_id'] = $campaignId;
 
         for ($i = $startIndex, $count = count($actions); $i < $count; $i++) {
             $actionRow = $actions[$i];

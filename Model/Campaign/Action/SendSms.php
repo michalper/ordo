@@ -56,6 +56,8 @@ class SendSms implements ActionInterface
     public function execute(array &$context, array $params): void
     {
         $customerId = (int) ($context['customer_id'] ?? 0);
+        $campaignId = isset($context['campaign_id']) ? (int) $context['campaign_id'] : null;
+        $variant = isset($context['ordo_split_variant']) ? (string) $context['ordo_split_variant'] : null;
         if ($customerId <= 0) {
             $this->logger->error('Ordo_Automation: send_sms action is missing customer_id in context.');
             return;
@@ -87,11 +89,11 @@ class SendSms implements ActionInterface
                 'Ordo_Automation: send_sms action skipped for customer #%d, SMS consent withdrawn.',
                 $customerId
             ));
-            $this->messageLogWriter->recordOptedOut(self::CHANNEL, $customerId, $phone);
+            $this->messageLogWriter->recordOptedOut(self::CHANNEL, $customerId, $phone, $campaignId, $variant);
             return;
         }
 
-        if (!$this->frequencyCapGate->allows($customerId, self::CHANNEL, $phone, 'send_sms')) {
+        if (!$this->frequencyCapGate->allows($customerId, self::CHANNEL, $phone, 'send_sms', $campaignId, $variant)) {
             return;
         }
 
@@ -102,7 +104,7 @@ class SendSms implements ActionInterface
                 $customerId,
                 $phone
             ));
-            $this->messageLogWriter->recordFailed(self::CHANNEL, $customerId, $phone);
+            $this->messageLogWriter->recordFailed(self::CHANNEL, $customerId, $phone, $campaignId, $variant);
             return;
         }
 
@@ -119,7 +121,14 @@ class SendSms implements ActionInterface
                 fn () => $this->smsSender->send($phone, $message),
                 static fn (Throwable $e): bool => !$e instanceof OptedOutException
             );
-            $this->messageLogWriter->recordSent(self::CHANNEL, $customerId, $phone, $providerMessageId);
+            $this->messageLogWriter->recordSent(
+                self::CHANNEL,
+                $customerId,
+                $phone,
+                $providerMessageId,
+                $campaignId,
+                $variant
+            );
         } catch (OptedOutException $e) {
             // Expected, routine outcome (Twilio's own STOP/opt-out handling) — not a delivery
             // failure, so this logs at a distinctly lower severity than the generic catch below
@@ -129,14 +138,14 @@ class SendSms implements ActionInterface
                 $customerId,
                 $e->getMessage()
             ));
-            $this->messageLogWriter->recordOptedOut(self::CHANNEL, $customerId, $phone);
+            $this->messageLogWriter->recordOptedOut(self::CHANNEL, $customerId, $phone, $campaignId, $variant);
         } catch (Throwable $e) {
             $this->logger->error(sprintf(
                 'Ordo_Automation: campaign send_sms action failed for customer #%d: %s',
                 $customerId,
                 $e->getMessage()
             ));
-            $this->messageLogWriter->recordFailed(self::CHANNEL, $customerId, $phone);
+            $this->messageLogWriter->recordFailed(self::CHANNEL, $customerId, $phone, $campaignId, $variant);
         }
     }
 }

@@ -11,6 +11,7 @@ use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Email\SendGridSignatureValidator;
 use Ordo\Automation\Model\MessageLog;
+use Ordo\Automation\Model\MessageLogEventWriter;
 use Ordo\Automation\Model\ResourceModel\MessageLog as MessageLogResource;
 use Ordo\Automation\Model\ResourceModel\MessageLog\Collection as MessageLogCollection;
 use Ordo\Automation\Model\ResourceModel\MessageLog\CollectionFactory as MessageLogCollectionFactory;
@@ -27,6 +28,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
     private SendGridSignatureValidator&\PHPUnit\Framework\MockObject\MockObject $signatureValidator;
     private MessageLogCollectionFactory $messageLogCollectionFactory;
     private MessageLogResource&\PHPUnit\Framework\MockObject\MockObject $messageLogResource;
+    private MessageLogEventWriter&\PHPUnit\Framework\MockObject\MockObject $messageLogEventWriter;
     private ConsentManager&\PHPUnit\Framework\MockObject\MockObject $consentManager;
     private LoggerInterface $logger;
     private Json $jsonResult;
@@ -39,6 +41,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         $this->signatureValidator = $this->createMock(SendGridSignatureValidator::class);
         $this->messageLogCollectionFactory = $this->createMock(MessageLogCollectionFactory::class);
         $this->messageLogResource = $this->createMock(MessageLogResource::class);
+        $this->messageLogEventWriter = $this->createMock(MessageLogEventWriter::class);
         $this->consentManager = $this->createMock(ConsentManager::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
@@ -57,6 +60,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
             $this->signatureValidator,
             $this->messageLogCollectionFactory,
             $this->messageLogResource,
+            $this->messageLogEventWriter,
             $this->consentManager,
             $this->logger
         );
@@ -291,7 +295,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
     {
         $controller = $this->makeController();
         $this->stubHeaders('real-signature', '1700000000');
-        $body = json_encode([['event' => 'open', 'smtp-id' => '<abc@example.com>']]);
+        $body = json_encode([['event' => 'processed', 'smtp-id' => '<abc@example.com>']]);
         $this->request->method('getContent')->willReturn($body);
         $this->signatureValidator->method('isValid')->willReturn(true);
 
@@ -299,6 +303,86 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
 
         $controller->execute();
+    }
+
+    /**
+     * Regression test for the funnel-analytics feature: "open"/"click" must write a new
+     * ordo_message_log_event row via MessageLogEventWriter, NOT touch ordo_message_log.status —
+     * overwriting status would destroy an earlier "delivered" signal the funnel still needs.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testValidSignatureWithOpenEventRecordsEventWithoutTouchingStatus(): void
+    {
+        $controller = $this->makeController();
+        $this->stubHeaders('real-signature', '1700000000');
+        $body = json_encode([['event' => 'open', 'smtp-id' => '<abc@example.com>']]);
+        $this->request->method('getContent')->willReturn($body);
+        $this->signatureValidator->method('isValid')->willReturn(true);
+
+        $log = $this->makeMessageLog(7);
+        $collection = $this->createStub(MessageLogCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getFirstItem')->willReturn($log);
+        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+
+        $this->messageLogResource->expects(self::never())->method('save');
+        $this->messageLogEventWriter->expects(self::once())->method('recordOpened')->with(7);
+
+        $controller->execute();
+
+        self::assertSame('', $log->getStatus());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testValidSignatureWithClickEventRecordsEventWithUrl(): void
+    {
+        $controller = $this->makeController();
+        $this->stubHeaders('real-signature', '1700000000');
+        $body = json_encode([[
+            'event' => 'click',
+            'smtp-id' => '<abc@example.com>',
+            'url' => 'https://example.com/product',
+        ]]);
+        $this->request->method('getContent')->willReturn($body);
+        $this->signatureValidator->method('isValid')->willReturn(true);
+
+        $log = $this->makeMessageLog(7);
+        $collection = $this->createStub(MessageLogCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getFirstItem')->willReturn($log);
+        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+
+        $this->messageLogResource->expects(self::never())->method('save');
+        $this->messageLogEventWriter->expects(self::once())->method('recordClicked')
+            ->with(7, 'https://example.com/product');
+
+        $controller->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testValidSignatureWithDeliveredThenOpenLeavesStatusAsDelivered(): void
+    {
+        $controller = $this->makeController();
+        $this->stubHeaders('real-signature', '1700000000');
+        $body = json_encode([
+            ['event' => 'delivered', 'smtp-id' => '<abc@example.com>'],
+            ['event' => 'open', 'smtp-id' => '<abc@example.com>'],
+        ]);
+        $this->request->method('getContent')->willReturn($body);
+        $this->signatureValidator->method('isValid')->willReturn(true);
+
+        $log = $this->makeMessageLog(7);
+        $collection = $this->createStub(MessageLogCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getFirstItem')->willReturn($log);
+        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+
+        $this->messageLogResource->expects(self::once())->method('save')->with($log);
+        $this->messageLogEventWriter->expects(self::once())->method('recordOpened')->with(7);
+
+        $controller->execute();
+
+        self::assertSame('delivered', $log->getStatus());
     }
 
     #[AllowMockObjectsWithoutExpectations]

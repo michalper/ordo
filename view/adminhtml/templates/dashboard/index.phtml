@@ -29,6 +29,19 @@ $segmentNavDesc = __(
             <div class="ordo-stat-value"><?= $escaper->escapeHtml((string) $viewModel->getFreeGiftOfferCount()) ?></div>
             <div class="ordo-stat-label"><?= $escaper->escapeHtml(__('Free gift offers')) ?></div>
         </div>
+        <?php $funnelSummary = $viewModel->getCampaignFunnelSummary(); ?>
+        <div class="ordo-stat-card">
+            <div class="ordo-stat-value"><?=
+                $escaper->escapeHtml(number_format($funnelSummary['conversion_rate'], 1))
+            ?>%</div>
+            <div class="ordo-stat-label"><?=
+                $escaper->escapeHtml(__(
+                    'Campaign conversion rate (%1 sent, %2 converted)',
+                    $funnelSummary['sent'],
+                    $funnelSummary['converted']
+                ))
+            ?></div>
+        </div>
     </div>
 
     <div class="ordo-dashboard-triggers">

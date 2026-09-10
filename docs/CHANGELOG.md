@@ -19,6 +19,25 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Per-campaign funnel analytics (sent → delivered → opened → clicked → converted)**, closing
+  Part A Phase 1 of the ROADMAP.md Tier 3 "A/B testing + per-campaign funnel analytics" item
+  (split/variant testing itself is Phase 2, still open). `ordo_message_log` gained nullable
+  `campaign_id`/`variant` columns, populated via `CampaignDispatcher::runActionsFrom()`/
+  `resumeScheduledAction()` stamping `$context['campaign_id']` before every action runs, read by
+  `SendEmail`/`SendSms`/`SendWhatsApp`/`SendPush` and `FrequencyCapGate` and passed through to
+  `Model\Sms\MessageLogWriter`. A new `ordo_message_log_event` table (via `MessageLogEvent`/
+  `MessageLogEventWriter`) records `opened`/`clicked` events — `Controller\Email\StatusCallback`
+  now handles SendGrid's `open`/`click` events (previously silently discarded) by writing a new
+  event row rather than overwriting `ordo_message_log.status`, so an earlier `delivered` signal
+  survives. A new `ordo_campaign_outcome_log` table + `Model\CampaignOutcomeLogger` (modeled on
+  `Model\TriggerOutcomeLogger`) + `Observer\RecordCampaignOutcome` (on `sales_order_place_after`,
+  same first-plausible-match attribution as `RecordTriggerOutcome`) track conversions —
+  `MessageLogWriter::recordSent()` calls `CampaignOutcomeLogger::logSent()` whenever a send is
+  campaign-attributed. `Model\CampaignFunnelStats` composes both sources into a funnel view,
+  rendered on each campaign's edit page (`Block\Adminhtml\Campaign\FunnelViewModel` +
+  `campaign/funnel.phtml`) and summarized as one new dashboard card
+  (`DashboardViewModel::getCampaignFunnelSummary()`) — no new menu item, per the existing flat-menu
+  convention.
 - **Flow canvas UI for the "Scheduled Date/Time"/"Recurring Schedule" trigger types**, closing the
   ROADMAP.md Tier 0 item. `Block\Adminhtml\Campaign\Edit\Flow::getFieldsConfig()` now has a
   `'trigger'` entry (a `scheduled_at` datetime input, a `cron_expression` text input for

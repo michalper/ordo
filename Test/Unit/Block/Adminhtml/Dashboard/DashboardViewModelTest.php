@@ -6,6 +6,7 @@ namespace Ordo\Automation\Test\Unit\Block\Adminhtml\Dashboard;
 use Ordo\Automation\Api\Data\CampaignTriggerInterface;
 use Ordo\Automation\Block\Adminhtml\Dashboard\DashboardViewModel;
 use Ordo\Automation\Model\Campaign;
+use Ordo\Automation\Model\CampaignOutcomeLogger;
 use Ordo\Automation\Model\ResourceModel\Campaign\Collection as CampaignCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as CampaignTriggerCollection;
@@ -30,6 +31,7 @@ class DashboardViewModelTest extends TestCase
         ?FreeGiftOfferCollectionFactory $freeGiftOfferCollectionFactory = null,
         ?CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory = null,
         ?TriggerOutcomeLogger $triggerOutcomeLogger = null,
+        ?CampaignOutcomeLogger $campaignOutcomeLogger = null,
         ?PricingHelper $pricingHelper = null,
         ?LoyaltyTierCalculator $loyaltyTierCalculator = null,
         ?Config $config = null,
@@ -46,6 +48,7 @@ class DashboardViewModelTest extends TestCase
             $reorderCycleCollectionFactory ?? $this->createStub(ReorderCycleCollectionFactory::class),
             $freeGiftOfferCollectionFactory ?? $this->createStub(FreeGiftOfferCollectionFactory::class),
             $triggerOutcomeLogger ?? $this->createStub(TriggerOutcomeLogger::class),
+            $campaignOutcomeLogger ?? $this->createStub(CampaignOutcomeLogger::class),
             $pricingHelper,
             $loyaltyTierCalculator ?? $this->createStub(LoyaltyTierCalculator::class),
             $config ?? $this->createStub(Config::class),
@@ -333,6 +336,35 @@ class DashboardViewModelTest extends TestCase
                 'recovered_revenue_formatted' => '$0.00',
             ],
             $stats[TriggerOutcomeLogger::TRIGGER_REORDER_REMINDER]
+        );
+    }
+
+    public function testGetCampaignFunnelSummarySumsAcrossCampaignsAndVariants(): void
+    {
+        $campaignOutcomeLogger = $this->createStub(CampaignOutcomeLogger::class);
+        $campaignOutcomeLogger->method('getStats')->willReturn([
+            ['campaign_id' => 5, 'variant' => 'a', 'sent' => 4, 'converted' => 1, 'conversion_rate' => 25.0, 'revenue' => 100.0],
+            ['campaign_id' => 5, 'variant' => 'b', 'sent' => 6, 'converted' => 3, 'conversion_rate' => 50.0, 'revenue' => 200.0],
+        ]);
+
+        $viewModel = $this->makeViewModel(null, null, null, null, null, $campaignOutcomeLogger);
+
+        self::assertSame(
+            ['sent' => 10, 'converted' => 4, 'conversion_rate' => 40.0, 'revenue' => 300.0],
+            $viewModel->getCampaignFunnelSummary()
+        );
+    }
+
+    public function testGetCampaignFunnelSummaryWithNoSendsReturnsZeroedStats(): void
+    {
+        $campaignOutcomeLogger = $this->createStub(CampaignOutcomeLogger::class);
+        $campaignOutcomeLogger->method('getStats')->willReturn([]);
+
+        $viewModel = $this->makeViewModel(null, null, null, null, null, $campaignOutcomeLogger);
+
+        self::assertSame(
+            ['sent' => 0, 'converted' => 0, 'conversion_rate' => 0.0, 'revenue' => 0.0],
+            $viewModel->getCampaignFunnelSummary()
         );
     }
 
