@@ -117,9 +117,6 @@ as bugs above, not repeated here)*
   today's escalation cron even run" is invisible without log-tailing.
 - Reorder Cycle is detection-only — `Cron/CalculateReorderCycle.php` computes `next_expected_date`
   but there's no one-click "build reorder cart" action and no manual per-customer reminder trigger.
-- `Cron/CalculateReorderCycle`'s interval estimate is a plain mean with no outlier resistance — one
-  anomalous gap (customer paused 6 months) skews the whole prediction; same-day repeat purchases
-  are silently dropped rather than handled distinctly.
 - Product feed is single-format (Google RSS only), single-store, with no admin grid for feed
   health/history — a generation failure only sets an error flag nobody can see without knowing to
   look.

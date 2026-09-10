@@ -94,7 +94,19 @@ class CalculateReorderCycle
                 $intervals[] = ((int) strtotime($dates[$i]) - (int) strtotime($dates[$i - 1])) / 86400;
             }
 
-            $avgIntervalDays = (int) round(array_sum($intervals) / count($intervals));
+            // Median rather than a plain arithmetic mean: a single anomalous gap (a customer
+            // pausing for months, or a one-off bulk restock that skips several normal cycles)
+            // would otherwise skew the whole prediction disproportionately, since the mean has
+            // no resistance to outliers. The median is the simplest well-understood estimator
+            // that doesn't have that problem, and needs nothing beyond a sort here.
+            sort($intervals);
+            $intervalCount = count($intervals);
+            $middle = intdiv($intervalCount, 2);
+            $median = $intervalCount % 2 === 0
+                ? ($intervals[$middle - 1] + $intervals[$middle]) / 2
+                : $intervals[$middle];
+
+            $avgIntervalDays = (int) round($median);
             if ($avgIntervalDays < 1) {
                 // Same-day repeat purchases don't make sense as a "reorder cycle" — skip.
                 continue;

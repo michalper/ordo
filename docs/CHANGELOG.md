@@ -222,6 +222,13 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- **`Cron/CalculateReorderCycle::execute()` now estimates the reorder interval as a median of the
+  per-SKU order-to-order gaps instead of a plain arithmetic mean**, closing the ROADMAP.md gap
+  where a single anomalous gap (a customer pausing for months, or a one-off bulk restock that
+  skips several normal cycles) skewed the whole prediction disproportionately, since a mean has no
+  resistance to outliers. No new dependency — sorts the (already-in-memory) interval list and
+  takes the middle value, or the average of the two middle values for an even count. The `< 1`
+  same-day-purchase skip, `MIN_ORDERS_TO_DETECT_PATTERN`, and `upsertCycle()` call are unchanged.
 - **Unified `CampaignDispatcher`/`SegmentMatcher`'s duplicated AND/OR/nested-group condition
   evaluator**, closing the campaign engine's "second, independent implementation" gap. Both
   `evaluateList`/`evaluateOne`/`evaluateGroup`/`asStringKeyedArray` were textually identical
