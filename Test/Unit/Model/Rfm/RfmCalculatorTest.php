@@ -18,6 +18,9 @@ class RfmCalculatorTest extends TestCase
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
         $select->method('join')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+        $select->method('order')->willReturnSelf();
+        $select->method('limit')->willReturnSelf();
 
         return $select;
     }
@@ -624,6 +627,8 @@ class RfmCalculatorTest extends TestCase
         $select = $this->createMock(Select::class);
         $select->method('where')->willReturnSelf();
         $select->method('group')->willReturnSelf();
+        $select->method('order')->willReturnSelf();
+        $select->method('limit')->willReturnSelf();
         $select->expects(self::once())->method('from')->with(
             'sales_order',
             self::identicalTo([
@@ -943,5 +948,73 @@ class RfmCalculatorTest extends TestCase
         self::assertSame(100.0, $ranks[1]['recency_percentile']);
         // customer 12 ordered longest ago (12 days) - only themselves has "days >= mine".
         self::assertEqualsWithDelta(8.333333333333, $ranks[12]['recency_percentile'], 0.0001);
+    }
+
+    /**
+     * Regression test for the ROADMAP.md Tier 4 "unbounded full-table scan" gap: getAllCustomerIds()
+     * used to run a single unbounded SELECT over the whole customer_entity table. It now pages
+     * through in SCAN_PAGE_SIZE (5,000) chunks, offsetting each call and stopping once a page
+     * comes back with fewer than a full page's worth of rows - proven here with a first page of
+     * exactly 5,000 ids (continues) followed by a second, partial page (stops).
+     */
+    #[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
+    public function testGetAllCustomerIdsPagesThroughMultiplePagesWhenTheCustomerBaseExceedsOnePage(): void
+    {
+        $firstPage = array_map('strval', range(1, 5000));
+        $secondPage = ['5001', '5002'];
+
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('order')->willReturnSelf();
+        $select->method('limit')->willReturnSelf();
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->expects(self::exactly(2))->method('fetchCol')
+            ->willReturnOnConsecutiveCalls($firstPage, $secondPage);
+
+        $calculator = $this->makeCalculator($connection);
+
+        $ids = $calculator->getAllCustomerIds();
+
+        self::assertCount(5002, $ids);
+        self::assertSame(1, $ids[0]);
+        self::assertSame(5002, $ids[5001]);
+    }
+
+    /**
+     * Same regression coverage as above, for getAggregatesForAllCustomers()'s pagination.
+     */
+    #[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
+    public function testGetAggregatesForAllCustomersPagesThroughMultiplePagesWhenOrdersExceedOnePage(): void
+    {
+        $makeRow = fn (int $customerId): array => [
+            'customer_id' => (string) $customerId,
+            'frequency' => '1',
+            'monetary' => '10.00',
+            'last_order_at' => null,
+        ];
+        $firstPage = array_map($makeRow, range(1, 5000));
+        $secondPage = [$makeRow(5001)];
+
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+        $select->method('order')->willReturnSelf();
+        $select->method('limit')->willReturnSelf();
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->expects(self::exactly(2))->method('fetchAll')
+            ->willReturnOnConsecutiveCalls($firstPage, $secondPage);
+
+        $calculator = $this->makeCalculator($connection);
+
+        $aggregates = $calculator->getAggregatesForAllCustomers();
+
+        self::assertCount(5001, $aggregates);
+        self::assertArrayHasKey(1, $aggregates);
+        self::assertArrayHasKey(5001, $aggregates);
     }
 }

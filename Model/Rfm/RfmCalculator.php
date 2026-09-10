@@ -33,6 +33,18 @@ class RfmCalculator
 
     private const int PERCENTILE_CACHE_TTL_SECONDS = 60;
 
+    /**
+     * Bounds how many rows getAllCustomerIds()/getAggregatesForAllCustomers() pull into PHP per
+     * round trip — without this, both ran a single unbounded SELECT over the whole customer_entity
+     * / sales_order tables, exactly the "unbounded full-table scan" ROADMAP.md Tier 4 flags as a
+     * real memory-exhaustion risk on a large store. Paginated with ORDER BY entity_id/customer_id
+     * + LIMIT/OFFSET rather than a cursor, since both callers (computePercentileRanks() and
+     * SegmentMemberResolver) still need the complete id list / aggregate map in memory afterward
+     * to sort/rank against — pagination here bounds the SQL round-trip size, not the final PHP
+     * array, which percentile ranking inherently needs whole regardless.
+     */
+    private const int SCAN_PAGE_SIZE = 5000;
+
     public function __construct(
         private readonly ResourceConnection $resourceConnection,
         private readonly DateTime $dateTime
@@ -113,37 +125,45 @@ class RfmCalculator
         $connection = $this->resourceConnection->getConnection();
         $orderTable = $this->resourceConnection->getTableName('sales_order');
 
-        $rows = $connection->fetchAll(
-            $connection->select()
-                ->from($orderTable, [
-                    'customer_id' => 'customer_id',
-                    'frequency' => 'COUNT(*)',
-                    'monetary' => 'SUM(grand_total)',
-                    'last_order_at' => 'MAX(created_at)',
-                ])
-                ->where('state != ?', 'canceled')
-                ->where('customer_id IS NOT NULL')
-                ->group('customer_id')
-        );
-
         $aggregates = [];
-        /** @var array<string, mixed> $row */
-        foreach ($rows as $row) {
-            $customerId = (int) $row['customer_id'];
-            $lastOrderAt = $row['last_order_at'] ?? null;
-            $recencyDays = null;
+        $offset = 0;
 
-            if ($lastOrderAt) {
-                $days = ($this->dateTime->gmtTimestamp() - strtotime((string) $lastOrderAt)) / 86400;
-                $recencyDays = max(0, (int) floor($days));
+        do {
+            $rows = $connection->fetchAll(
+                $connection->select()
+                    ->from($orderTable, [
+                        'customer_id' => 'customer_id',
+                        'frequency' => 'COUNT(*)',
+                        'monetary' => 'SUM(grand_total)',
+                        'last_order_at' => 'MAX(created_at)',
+                    ])
+                    ->where('state != ?', 'canceled')
+                    ->where('customer_id IS NOT NULL')
+                    ->group('customer_id')
+                    ->order('customer_id ASC')
+                    ->limit(self::SCAN_PAGE_SIZE, $offset)
+            );
+
+            /** @var array<string, mixed> $row */
+            foreach ($rows as $row) {
+                $customerId = (int) $row['customer_id'];
+                $lastOrderAt = $row['last_order_at'] ?? null;
+                $recencyDays = null;
+
+                if ($lastOrderAt) {
+                    $days = ($this->dateTime->gmtTimestamp() - strtotime((string) $lastOrderAt)) / 86400;
+                    $recencyDays = max(0, (int) floor($days));
+                }
+
+                $aggregates[$customerId] = [
+                    'frequency' => (int) $row['frequency'],
+                    'monetary' => (float) $row['monetary'],
+                    'recency_days' => $recencyDays,
+                ];
             }
 
-            $aggregates[$customerId] = [
-                'frequency' => (int) $row['frequency'],
-                'monetary' => (float) $row['monetary'],
-                'recency_days' => $recencyDays,
-            ];
-        }
+            $offset += self::SCAN_PAGE_SIZE;
+        } while (count($rows) === self::SCAN_PAGE_SIZE);
 
         return $aggregates;
     }
@@ -448,10 +468,24 @@ class RfmCalculator
         $connection = $this->resourceConnection->getConnection();
         $customerTable = $this->resourceConnection->getTableName('customer_entity');
 
-        $ids = $connection->fetchCol(
-            $connection->select()->from($customerTable, 'entity_id')
-        );
+        $ids = [];
+        $offset = 0;
 
-        return array_map('intval', $ids);
+        do {
+            $page = $connection->fetchCol(
+                $connection->select()
+                    ->from($customerTable, 'entity_id')
+                    ->order('entity_id ASC')
+                    ->limit(self::SCAN_PAGE_SIZE, $offset)
+            );
+
+            foreach ($page as $id) {
+                $ids[] = (int) $id;
+            }
+
+            $offset += self::SCAN_PAGE_SIZE;
+        } while (count($page) === self::SCAN_PAGE_SIZE);
+
+        return $ids;
     }
 }
