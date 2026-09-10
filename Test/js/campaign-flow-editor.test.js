@@ -58,4 +58,54 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor', function () {
 
         assert.deepEqual(initCampaignFlowEditor.findDisconnectedNodeIds({ 1: {}, 2: {} }, groups, 'A'), []);
     });
+
+    QUnit.test('cloneSplitVariant() fills in defaults for a bare/malformed raw entry', function (assert) {
+        const initCampaignFlowEditor = loadModule(MODULE_PATH);
+
+        assert.deepEqual(initCampaignFlowEditor.cloneSplitVariant(null), { key: '', weight: 0, actions: [] });
+        assert.deepEqual(initCampaignFlowEditor.cloneSplitVariant({}), { key: '', weight: 0, actions: [] });
+    });
+
+    QUnit.test('cloneSplitVariant() preserves a well-formed raw entry including its nested actions', function (assert) {
+        const initCampaignFlowEditor = loadModule(MODULE_PATH);
+        const raw = { key: 'a', weight: 50, actions: [{ type: 'add_tag', params: { tag: 'vip' } }] };
+
+        assert.deepEqual(initCampaignFlowEditor.cloneSplitVariant(raw), raw);
+    });
+
+    QUnit.test('cloneSplitVariant() defaults a malformed nested action to a blank type/empty params', function (assert) {
+        const initCampaignFlowEditor = loadModule(MODULE_PATH);
+        const raw = { key: 'a', weight: 50, actions: [null, { type: 'add_tag' }] };
+
+        assert.deepEqual(
+            initCampaignFlowEditor.cloneSplitVariant(raw),
+            { key: 'a', weight: 50, actions: [{ type: '', params: {} }, { type: 'add_tag', params: {} }] }
+        );
+    });
+
+    QUnit.test('buildSplitVariantActionTypeOptionsHtml() excludes "split" itself and marks the selected type', function (assert) {
+        const initCampaignFlowEditor = loadModule(MODULE_PATH);
+        const html = initCampaignFlowEditor.buildSplitVariantActionTypeOptionsHtml(
+            ['add_tag', 'send_email', 'split'],
+            { add_tag: 'Add Tag', send_email: 'Send Email' },
+            'send_email',
+            function (raw) { return raw; }
+        );
+
+        assert.notOk(html.includes('value="split"'));
+        assert.ok(html.includes('<option value="add_tag">Add Tag</option>'));
+        assert.ok(html.includes('<option value="send_email" selected="selected">Send Email</option>'));
+    });
+
+    QUnit.test('buildSplitVariantActionTypeOptionsHtml() falls back to the raw type key when no label is known', function (assert) {
+        const initCampaignFlowEditor = loadModule(MODULE_PATH);
+        const html = initCampaignFlowEditor.buildSplitVariantActionTypeOptionsHtml(
+            ['custom_action'],
+            {},
+            '',
+            function (raw) { return raw; }
+        );
+
+        assert.ok(html.includes('<option value="custom_action">custom_action</option>'));
+    });
 });

@@ -58,12 +58,11 @@ docs/CHANGELOG.md for each. (Free Gift Offer → cart integration was originally
 top item — struck from this list entirely: it turned out to already be a complete, shipped
 feature, see docs/CHANGELOG.md's correction entry.)
 
-**Tier 3 — real feature work, needs a scoping decision first:** A/B/split testing's Flow canvas UI
-(backend + funnel analytics are now closed, see the campaign engine section below); behavioral/
-event-based segmentation beyond purchase history (cart-add/wishlist-add events, see the
-segmentation section below). Scheduled/recurring campaigns' admin UI and unified suppression/
-frequency capping across all channels are both now closed (`Model\Campaign\FrequencyCapManager`,
-Flow canvas trigger fields — see docs/CHANGELOG.md for each).
+**Tier 3 — real feature work, needs a scoping decision first:** behavioral/event-based
+segmentation beyond purchase history (cart-add/wishlist-add events, see the segmentation section
+below) is the only item left here — A/B/split testing (backend, funnel analytics, and Flow canvas
+UI), scheduled/recurring campaigns' admin UI, and unified suppression/frequency capping across
+all channels are all now closed (see docs/CHANGELOG.md for each).
 
 **Tier 4 — scale hardening, not urgent below ~50-100k customers:** pagination/streaming in
 `RfmCalculator`'s aggregate queries; batching in `GoogleAdsSyncClient::addOperations()`; the
@@ -79,17 +78,15 @@ unbounded full-table scans in `CalculateReorderCycle`/`GoogleMerchantFeedGenerat
 - No campaign entry dedup — nothing stops a customer mid-flow (waiting on a `delay_minutes`
   resume) from re-entering the same campaign from scratch on a repeat trigger; `ordo_campaign_
   scheduled_action` has no uniqueness guard per customer+campaign.
-- ~~No A/B/split testing on actions and no campaign-level funnel analytics~~ — **both closed at
-  the backend/data level** (see docs/CHANGELOG.md): `Model\CampaignFunnelStats`/
-  `CampaignOutcomeLogger` track sent → delivered → opened → clicked → converted per campaign,
-  rendered on each campaign's edit page plus one dashboard summary card; `CampaignAction` rows
-  with `type = 'split'` (`Model\Campaign\SplitVariantSelector` + `CampaignDispatcher::runSplit()`)
-  deterministically branch a dispatch into a weighted variant, feeding the funnel's per-variant
-  breakdown. Still open: the Flow canvas has no UI to actually configure a `split` action —
-  campaigns using one are, for now, only configurable via direct API/DB row insertion (same
-  carve-out the `group` condition type already has). Needs a `variant_list` field descriptor in
-  `campaign-flow-editor.js`/`Block\Adminhtml\Campaign\Edit\Flow::getFieldsConfig()`, plus, as a
-  smaller known gap, no schema support yet for a variant's own action to carry `delay_minutes`.
+- ~~No A/B/split testing on actions and no campaign-level funnel analytics~~ — **closed**, backend
+  through admin UI (see docs/CHANGELOG.md): `Model\CampaignFunnelStats`/`CampaignOutcomeLogger`
+  track sent → delivered → opened → clicked → converted per campaign, rendered on each campaign's
+  edit page plus one dashboard summary card; `CampaignAction` rows with `type = 'split'`
+  (`Model\Campaign\SplitVariantSelector` + `CampaignDispatcher::runSplit()`) deterministically
+  branch a dispatch into a weighted variant, feeding the funnel's per-variant breakdown; the Flow
+  canvas now has a full interactive editor for building one (`campaign-flow-editor.js`'s
+  `renderVariantEditor()`). Known remaining limitation: a variant's own action can't carry its own
+  `delay_minutes` yet (no schema support for a synthetic action's scheduled-resume FK).
 - No time-zone-aware quiet hours for a campaign as a whole (only per-channel opt-out exists via
   `ConsentManager`) — a trigger-based send can land at 3am local time.
 - Flow canvas UX gaps that would frustrate daily use: no undo/redo, no node duplication/copy-paste,

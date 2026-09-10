@@ -149,9 +149,21 @@ class FlowTest extends TestCase
     public function testGetActionTypeLabelsMapsTypeToLabel(): void
     {
         self::assertSame(
-            ['add_tag' => 'Add Tag', 'send_email' => 'Send Email'],
+            ['add_tag' => 'Add Tag', 'send_email' => 'Send Email', 'split' => 'A/B Split Test'],
             $this->makeBlock()->getActionTypeLabels()
         );
+    }
+
+    /**
+     * 'split' is a reserved pseudo-type CampaignDispatcher::runSplit() intercepts before the
+     * ActionPool lookup (same shape as the 'group' condition type) - it must still appear in the
+     * Flow canvas's own action type list, even though ActionPool itself never registers it, or
+     * an admin could never add one.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetActionTypesAppendsTheReservedSplitPseudoType(): void
+    {
+        self::assertSame(['add_tag', 'send_email', 'split'], $this->makeBlock()->getActionTypes());
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -497,5 +509,14 @@ class FlowTest extends TestCase
         self::assertSame('title', $config[0]['name']);
         self::assertSame('body', $config[1]['name']);
         self::assertSame('url', $config[2]['name']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetFieldsConfigDescribesSplitAsAVariantListField(): void
+    {
+        $config = $this->makeBlock()->getFieldsConfig()['action']['split'];
+
+        self::assertSame('variants', $config[0]['name']);
+        self::assertSame('variant_list', $config[0]['type']);
     }
 }

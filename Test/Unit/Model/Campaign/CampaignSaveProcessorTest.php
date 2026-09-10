@@ -323,6 +323,77 @@ class CampaignSaveProcessorTest extends TestCase
     }
 
     /**
+     * The split action's 'variants' field is JSON, not a plain scalar like every other
+     * DEDICATED_PARAM_FIELDS entry - campaign-flow-editor.js's renderVariantEditor() posts it as
+     * a JSON string (its own serialized in-memory model), which must be decoded back into a real
+     * array before landing in params, not double-encoded as a JSON-string-inside-JSON.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessDecodesSplitActionVariantsFieldAsJsonNotAPlainString(): void
+    {
+        $processor = $this->makeProcessor();
+
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(1);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
+        $this->conditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+        $this->actionCollectionFactory->method('create')->willReturn($this->emptyActionCollection());
+
+        $variants = [
+            ['key' => 'a', 'weight' => 50, 'actions' => [['type' => 'add_tag', 'params' => ['tag' => 'vip']]]],
+            ['key' => 'b', 'weight' => 50, 'actions' => []],
+        ];
+
+        $action = $this->createMock(CampaignAction::class);
+        $action->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => json_decode($data['params'], true) === ['variants' => $variants]
+        ));
+        $this->campaignActionFactory->method('create')->willReturn($action);
+        $this->campaignActionResource->expects(self::once())->method('save')->with($action);
+
+        $processor->process([
+            'conditions' => ['conditions' => []],
+            'actions' => ['actions' => [[
+                'type' => 'split',
+                'variants' => json_encode($variants),
+                'params_json' => '',
+            ]]],
+        ]);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessOmitsVariantsFromParamsWhenBlank(): void
+    {
+        $processor = $this->makeProcessor();
+
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(1);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
+        $this->conditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+        $this->actionCollectionFactory->method('create')->willReturn($this->emptyActionCollection());
+
+        $action = $this->createMock(CampaignAction::class);
+        $action->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => json_decode($data['params'], true) === []
+        ));
+        $this->campaignActionFactory->method('create')->willReturn($action);
+        $this->campaignActionResource->expects(self::once())->method('save')->with($action);
+
+        $processor->process([
+            'conditions' => ['conditions' => []],
+            'actions' => ['actions' => [[
+                'type' => 'split',
+                'variants' => '',
+                'params_json' => '',
+            ]]],
+        ]);
+    }
+
+    /**
      * Regression test, same reasoning as testProcessPersistsDynamicContentActionFields above:
      * the RFM-based condition types (recency_days_at_most, order_frequency_at_least,
      * monetary_percentile_at_least, ...) render days/count/percentile as dedicated fields
