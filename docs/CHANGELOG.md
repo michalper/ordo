@@ -251,6 +251,12 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   every cache entry too, so `CampaignTriggerRepository`, `Controller\Adminhtml\Campaign\Delete`,
   and `Campaign\CampaignSaveProcessor` — which still flush it wholesale — keep invalidating
   everything they always did; only `CampaignRepository`'s own save/delete path got narrower.
+- **`Block\Adminhtml\Dashboard\DashboardViewModel` now caches its five `->getSize()` collection
+  counts** (total/enabled campaign count, reorder cycle count, free gift offer count, and
+  per-trigger campaign count) behind a new `cachedCount()` helper backed by
+  `Magento\Framework\App\CacheInterface`, 60-second TTL per key (`ordo_dashboard_count_*`) —
+  closing the "4+ separate uncached COUNT queries on every page load" half of the dashboard
+  ROADMAP.md item; the drill-down half of that item is still open.
 - **`Cron/CalculateReorderCycle::execute()` now estimates the reorder interval as a median of the
   per-SKU order-to-order gaps instead of a plain arithmetic mean**, closing the ROADMAP.md gap
   where a single anomalous gap (a customer pausing for months, or a one-off bulk restock that
