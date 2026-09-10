@@ -48,13 +48,26 @@ use Psr\Log\LoggerInterface;
 class CampaignDispatcher
 {
     /**
-     * Cache tag used to invalidate the "campaign ids enabled for trigger event X" lookup —
-     * flushed on ANY campaign/trigger/condition/action write (see CampaignRepository), since a
-     * change to any of those can change which campaigns a given trigger event should fire.
+     * Flat cache tag covering every "campaign ids enabled for trigger event X" cache entry,
+     * regardless of which trigger event it's for. Still stamped on every entry saved below (in
+     * addition to that entry's own per-trigger-event tag, built from CACHE_KEY_PREFIX) so any
+     * caller that flushes this tag alone — CampaignTriggerRepository, Controller\Adminhtml\
+     * Campaign\Delete, Campaign\CampaignSaveProcessor — keeps invalidating everything it always
+     * did. CampaignRepository::save()/delete() are the one place that flushes the narrower
+     * per-trigger tags instead, since it already knows exactly which trigger events a
+     * saved/deleted campaign touches.
      */
     public const CACHE_TAG = 'ordo_campaign';
 
-    private const string CACHE_KEY_PREFIX = 'ordo_campaign_trigger_';
+    /**
+     * Shared by both this class's own cache key for a trigger event's campaignIdsForTrigger()
+     * entry AND that same entry's per-trigger-event cache tag (distinct namespaces, so no
+     * collision) — public so a caller that knows only "these trigger events may have changed"
+     * (e.g. CampaignRepository, from a saved campaign's own ordo_campaign_trigger rows) can build
+     * the same tag itself (`CampaignDispatcher::CACHE_KEY_PREFIX . $triggerEvent`) and flush
+     * exactly those entries instead of the flat CACHE_TAG covering every trigger event's lookup.
+     */
+    public const string CACHE_KEY_PREFIX = 'ordo_campaign_trigger_';
 
     public function __construct(
         private readonly CampaignCollectionFactory $campaignCollectionFactory,
@@ -222,7 +235,11 @@ class CampaignDispatcher
             }
         }
 
-        $this->cache->save($this->serializer->serialize($conditionLogicByCampaign), $cacheKey, [self::CACHE_TAG]);
+        $this->cache->save(
+            $this->serializer->serialize($conditionLogicByCampaign),
+            $cacheKey,
+            [self::CACHE_TAG, self::CACHE_KEY_PREFIX . $triggerEvent]
+        );
 
         return $conditionLogicByCampaign;
     }

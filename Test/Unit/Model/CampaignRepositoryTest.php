@@ -14,9 +14,12 @@ use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\CampaignFactory;
 use Ordo\Automation\Model\CampaignRepository;
+use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\ResourceModel\Campaign as CampaignResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Collection;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as CampaignTriggerCollection;
+use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as CampaignTriggerCollectionFactory;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
@@ -28,6 +31,7 @@ class CampaignRepositoryTest extends TestCase
     private CampaignSearchResultsInterfaceFactory $searchResultsFactory;
     private CollectionProcessorInterface $collectionProcessor;
     private CacheInterface $cache;
+    private CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory;
     private CampaignRepository $repository;
 
     protected function setUp(): void
@@ -38,6 +42,10 @@ class CampaignRepositoryTest extends TestCase
         $this->searchResultsFactory = $this->createStub(CampaignSearchResultsInterfaceFactory::class);
         $this->collectionProcessor = $this->createStub(CollectionProcessorInterface::class);
         $this->cache = $this->createMock(CacheInterface::class);
+        $this->campaignTriggerCollectionFactory = $this->createStub(CampaignTriggerCollectionFactory::class);
+        $this->campaignTriggerCollectionFactory->method('create')->willReturn(
+            $this->triggerCollectionWithEvents([])
+        );
 
         $this->repository = new CampaignRepository(
             $this->resource,
@@ -45,23 +53,76 @@ class CampaignRepositoryTest extends TestCase
             $this->collectionFactory,
             $this->searchResultsFactory,
             $this->collectionProcessor,
-            $this->cache
+            $this->cache,
+            $this->campaignTriggerCollectionFactory
         );
+    }
+
+    /**
+     * @param string[] $triggerEvents
+     */
+    private function triggerCollectionWithEvents(array $triggerEvents): CampaignTriggerCollection
+    {
+        $triggers = array_map(function (string $triggerEvent): CampaignTrigger {
+            $trigger = $this->createStub(CampaignTrigger::class);
+            $trigger->method('getTriggerEvent')->willReturn($triggerEvent);
+            return $trigger;
+        }, $triggerEvents);
+
+        $collection = $this->createStub(CampaignTriggerCollection::class);
+        $collection->method('addCampaignFilter')->willReturn($collection);
+        $collection->method('getIterator')->willReturn(new \ArrayIterator($triggers));
+
+        return $collection;
     }
 
     public function testSaveReturnsSavedCampaign(): void
     {
         $campaign = $this->createStub(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(5);
         $this->resource->expects(self::once())->method('save')->with($campaign);
-        $this->cache->expects(self::once())->method('clean')->with([CampaignDispatcher::CACHE_TAG]);
+
+        $this->cache->expects(self::never())->method('clean');
 
         self::assertSame($campaign, $this->repository->save($campaign));
+    }
+
+    public function testSaveCleansTagsForOldAndNewTriggerEvents(): void
+    {
+        $campaign = $this->createStub(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(5);
+
+        $collections = [
+            $this->triggerCollectionWithEvents(['order_placed']),
+            $this->triggerCollectionWithEvents(['order_placed', 'customer_registered']),
+        ];
+        $this->campaignTriggerCollectionFactory = $this->createStub(CampaignTriggerCollectionFactory::class);
+        $this->campaignTriggerCollectionFactory->method('create')->willReturnOnConsecutiveCalls(...$collections);
+
+        $this->repository = new CampaignRepository(
+            $this->resource,
+            $this->campaignFactory,
+            $this->collectionFactory,
+            $this->searchResultsFactory,
+            $this->collectionProcessor,
+            $this->cache,
+            $this->campaignTriggerCollectionFactory
+        );
+        $this->resource->expects(self::once())->method('save')->with($campaign);
+
+        $this->cache->expects(self::once())->method('clean')->with([
+            CampaignDispatcher::CACHE_KEY_PREFIX . 'order_placed',
+            CampaignDispatcher::CACHE_KEY_PREFIX . 'customer_registered',
+        ]);
+
+        $this->repository->save($campaign);
     }
 
     #[AllowMockObjectsWithoutExpectations]
     public function testSaveWrapsExceptionInCouldNotSaveException(): void
     {
         $campaign = $this->createStub(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(5);
         $this->resource->method('save')->willThrowException(new \Exception('db down'));
 
         $this->expectException(CouldNotSaveException::class);
@@ -110,16 +171,45 @@ class CampaignRepositoryTest extends TestCase
     public function testDeleteReturnsTrue(): void
     {
         $campaign = $this->createStub(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(5);
         $this->resource->expects(self::once())->method('delete')->with($campaign);
-        $this->cache->expects(self::once())->method('clean')->with([CampaignDispatcher::CACHE_TAG]);
+        $this->cache->expects(self::never())->method('clean');
 
         self::assertTrue($this->repository->delete($campaign));
+    }
+
+    public function testDeleteCleansTagsForCampaignsTriggerEvents(): void
+    {
+        $campaign = $this->createStub(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(5);
+
+        $this->campaignTriggerCollectionFactory = $this->createStub(CampaignTriggerCollectionFactory::class);
+        $this->campaignTriggerCollectionFactory->method('create')->willReturn(
+            $this->triggerCollectionWithEvents(['order_placed'])
+        );
+
+        $this->repository = new CampaignRepository(
+            $this->resource,
+            $this->campaignFactory,
+            $this->collectionFactory,
+            $this->searchResultsFactory,
+            $this->collectionProcessor,
+            $this->cache,
+            $this->campaignTriggerCollectionFactory
+        );
+        $this->resource->expects(self::once())->method('delete')->with($campaign);
+
+        $this->cache->expects(self::once())->method('clean')
+            ->with([CampaignDispatcher::CACHE_KEY_PREFIX . 'order_placed']);
+
+        $this->repository->delete($campaign);
     }
 
     #[AllowMockObjectsWithoutExpectations]
     public function testDeleteWrapsExceptionInCouldNotSaveException(): void
     {
         $campaign = $this->createStub(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(5);
         $this->resource->method('delete')->willThrowException(new \Exception('locked'));
 
         $this->expectException(CouldNotSaveException::class);

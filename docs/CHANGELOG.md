@@ -245,6 +245,21 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   loaded at all this time around, rather than being fetched and then discarded by the scan. Same
   behavior otherwise: `runActionsFrom()` still gets the full ordered remainder from the resume
   point onward.
+- **`CampaignRepository::save()`/`delete()` now flush per-trigger-event cache tags instead of one
+  flat tag**, closing the campaign engine's "thrashes and reverts to a full DB scan far more than
+  necessary" gap. `CampaignDispatcher::campaignIdsForTrigger()`'s cached lookup used to be tagged
+  only with the flat `CampaignDispatcher::CACHE_TAG`, so saving or deleting *any* campaign flushed
+  *every* trigger event's cached lookup, even ones the saved campaign has nothing to do with — on
+  an install with many campaigns edited frequently, this thrashed the whole cache far more than
+  necessary. Each cached entry is now also tagged with a new
+  tag built from the now-public `CampaignDispatcher::CACHE_KEY_PREFIX . $triggerEvent`
+  (`ordo_campaign_trigger_{$triggerEvent}`),
+  and `CampaignRepository` reads the saved/deleted campaign's own `ordo_campaign_trigger` rows
+  before AND after the write, unions the two trigger-event sets (covering a trigger event added
+  and removed in the same save), and flushes only those tags. The flat tag is still stamped on
+  every cache entry too, so `CampaignTriggerRepository`, `Controller\Adminhtml\Campaign\Delete`,
+  and `Campaign\CampaignSaveProcessor` — which still flush it wholesale — keep invalidating
+  everything they always did; only `CampaignRepository`'s own save/delete path got narrower.
 - **`Block\Adminhtml\Dashboard\DashboardViewModel` now caches its five `->getSize()` collection
   counts** (total/enabled campaign count, reorder cycle count, free gift offer count, and
   per-trigger campaign count) behind a new `cachedCount()` helper backed by
