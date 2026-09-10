@@ -45,6 +45,7 @@ class SendSms implements ActionInterface
         private readonly Config $config,
         private readonly MessageLogWriter $messageLogWriter,
         private readonly ConsentManager $consentManager,
+        private readonly SendRetrier $sendRetrier,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -105,7 +106,12 @@ class SendSms implements ActionInterface
         }
 
         try {
-            $providerMessageId = $this->smsSender->send($phone, $message);
+            // OptedOutException means "this number opted out via STOP" - permanently invalid, not
+            // worth retrying, so it's excluded from SendRetrier's retry loop here.
+            $providerMessageId = $this->sendRetrier->attempt(
+                fn () => $this->smsSender->send($phone, $message),
+                static fn (Throwable $e): bool => !$e instanceof OptedOutException
+            );
             $this->messageLogWriter->recordSent(self::CHANNEL, $customerId, $phone, $providerMessageId);
         } catch (OptedOutException $e) {
             // Expected, routine outcome (Twilio's own STOP/opt-out handling) — not a delivery

@@ -5,6 +5,7 @@ namespace Ordo\Automation\Test\Unit\Model\Campaign\Action;
 
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign\Action\SendPush;
+use Ordo\Automation\Model\Campaign\Action\SendRetrier;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Push\Exception\SubscriptionGoneException;
@@ -45,6 +46,7 @@ class SendPushTest extends TestCase
             $this->config,
             $this->messageLogWriter,
             $this->consentManager,
+            new SendRetrier(1),
             $this->logger
         );
     }
@@ -129,12 +131,17 @@ class SendPushTest extends TestCase
         $this->makeAction()->execute($context, ['title' => 'Hi']);
     }
 
+    /**
+     * Regression test: a gone/dead subscription is permanently invalid, so it must fail fast on
+     * the first attempt, not burn through every retry on an outcome that can never change.
+     */
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteDeletesSubscriptionAndRecordsFailedWhenGone(): void
     {
         $subscription = $this->subscription('https://push.example.com/dead');
         $this->pushSubscriptionManager->method('getForCustomer')->willReturn([$subscription]);
-        $this->pushSender->method('send')->willThrowException(new SubscriptionGoneException('gone'));
+        $this->pushSender->expects(self::once())->method('send')
+            ->willThrowException(new SubscriptionGoneException('gone'));
 
         $this->pushSubscriptionManager->expects(self::once())->method('delete')->with($subscription);
         $this->messageLogWriter->expects(self::once())->method('recordFailed')->with('push', 42, 'https://push.example.com/dead');
@@ -148,7 +155,8 @@ class SendPushTest extends TestCase
     {
         $subscription = $this->subscription('https://push.example.com/a');
         $this->pushSubscriptionManager->method('getForCustomer')->willReturn([$subscription]);
-        $this->pushSender->method('send')->willThrowException(new \RuntimeException('push service down'));
+        $this->pushSender->expects(self::exactly(3))->method('send')
+            ->willThrowException(new \RuntimeException('push service down'));
 
         $this->pushSubscriptionManager->expects(self::never())->method('delete');
         $this->logger->expects(self::once())->method('error');
@@ -158,6 +166,35 @@ class SendPushTest extends TestCase
         $this->makeAction()->execute($context, ['title' => 'Hi']);
 
         self::assertTrue(true, 'execute() must not rethrow');
+    }
+
+    /**
+     * Regression test for the retry/backoff fix: a transient failure on the first attempt(s)
+     * must not permanently drop the message - a later attempt succeeding must still record the
+     * message as sent, not failed.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRetriesATransientSendFailureAndSucceeds(): void
+    {
+        $subscription = $this->subscription('https://push.example.com/a');
+        $this->pushSubscriptionManager->method('getForCustomer')->willReturn([$subscription]);
+        $this->pushSender->expects(self::exactly(2))->method('send')->willReturnCallback(
+            function () {
+                static $calls = 0;
+                $calls++;
+                if ($calls < 2) {
+                    throw new \RuntimeException('transient push service timeout');
+                }
+            }
+        );
+
+        $this->messageLogWriter->expects(self::once())->method('recordSent')
+            ->with('push', 42, 'https://push.example.com/a', null);
+        $this->messageLogWriter->expects(self::never())->method('recordFailed');
+        $this->logger->expects(self::never())->method('error');
+
+        $context = ['customer_id' => 42];
+        $this->makeAction()->execute($context, ['title' => 'Hi']);
     }
 
     #[AllowMockObjectsWithoutExpectations]

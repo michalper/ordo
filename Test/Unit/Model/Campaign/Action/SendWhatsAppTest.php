@@ -9,6 +9,7 @@ use Magento\Framework\Api\AttributeInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Campaign\Action\SendRetrier;
 use Ordo\Automation\Model\Campaign\Action\SendWhatsApp;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
@@ -56,6 +57,7 @@ class SendWhatsAppTest extends TestCase
             $this->whatsAppTemplateResource,
             $this->messageLogWriter,
             $this->consentManager,
+            new SendRetrier(1),
             $this->logger
         );
     }
@@ -267,7 +269,8 @@ class SendWhatsAppTest extends TestCase
     {
         $this->stubApprovedTemplate();
         $this->customerRepository->method('getById')->willReturn($this->customerWithPhone('+15551234567'));
-        $this->whatsAppSender->method('send')->willThrowException(new \RuntimeException('meta api down'));
+        $this->whatsAppSender->expects(self::exactly(3))->method('send')
+            ->willThrowException(new \RuntimeException('meta api down'));
         $this->logger->expects(self::once())->method('error');
         $this->messageLogWriter->expects(self::once())->method('recordFailed')
             ->with('whatsapp', 42, '+15551234567');
@@ -276,5 +279,34 @@ class SendWhatsAppTest extends TestCase
         $this->makeAction()->execute($context, ['template_id' => '3']);
 
         self::assertTrue(true, 'execute() must not rethrow');
+    }
+
+    /**
+     * Regression test for the retry/backoff fix: a transient failure on the first attempt(s)
+     * must not permanently drop the message - a later attempt succeeding must still record the
+     * message as sent, not failed.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRetriesATransientSendFailureAndSucceeds(): void
+    {
+        $this->stubApprovedTemplate();
+        $this->customerRepository->method('getById')->willReturn($this->customerWithPhone('+15551234567'));
+        $this->whatsAppSender->expects(self::exactly(2))->method('send')->willReturnCallback(
+            function () {
+                static $calls = 0;
+                $calls++;
+                if ($calls < 2) {
+                    throw new \RuntimeException('transient graph api timeout');
+                }
+                return 'wamid.123';
+            }
+        );
+        $this->messageLogWriter->expects(self::once())->method('recordSent')
+            ->with('whatsapp', 42, '+15551234567', 'wamid.123');
+        $this->messageLogWriter->expects(self::never())->method('recordFailed');
+        $this->logger->expects(self::never())->method('error');
+
+        $context = ['customer_id' => 42];
+        $this->makeAction()->execute($context, ['template_id' => '3']);
     }
 }

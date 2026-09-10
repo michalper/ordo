@@ -49,6 +49,7 @@ class SendEmail implements ActionInterface
         private readonly MessageIdGenerator $messageIdGenerator,
         private readonly PendingMessageIdHolder $pendingMessageIdHolder,
         private readonly MessageLogWriter $messageLogWriter,
+        private readonly SendRetrier $sendRetrier,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -95,15 +96,20 @@ class SendEmail implements ActionInterface
         $this->pendingMessageIdHolder->set($messageId);
 
         try {
-            $transport = $this->transportBuilder
-                ->setTemplateIdentifier($templateIdentifier)
-                ->setTemplateOptions(['area' => Area::AREA_FRONTEND, 'store' => $store->getId()])
-                ->setTemplateVars($templateVars)
-                ->setFromByScope(self::XML_PATH_EMAIL_SENDER, $store->getId())
-                ->addTo($customer->getEmail(), $customer->getFirstname())
-                ->getTransport();
+            // Only the actual network send is retried, not building the transport - a transient
+            // SMTP/relay hiccup is exactly the kind of failure that previously dropped this
+            // message permanently on its first attempt (see SendRetrier's own docblock).
+            $this->sendRetrier->attempt(function () use ($templateIdentifier, $store, $templateVars, $customer) {
+                $transport = $this->transportBuilder
+                    ->setTemplateIdentifier($templateIdentifier)
+                    ->setTemplateOptions(['area' => Area::AREA_FRONTEND, 'store' => $store->getId()])
+                    ->setTemplateVars($templateVars)
+                    ->setFromByScope(self::XML_PATH_EMAIL_SENDER, $store->getId())
+                    ->addTo($customer->getEmail(), $customer->getFirstname())
+                    ->getTransport();
 
-            $transport->sendMessage();
+                $transport->sendMessage();
+            });
             $this->messageLogWriter->recordSent(
                 self::CHANNEL,
                 $customerId,

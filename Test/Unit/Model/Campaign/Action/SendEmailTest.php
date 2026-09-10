@@ -12,14 +12,15 @@ use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Model\Campaign\Action\SendEmail;
+use Ordo\Automation\Model\Campaign\Action\SendRetrier;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Email\MessageIdGenerator;
 use Ordo\Automation\Model\Email\PendingMessageIdHolder;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class SendEmailTest extends TestCase
 {
@@ -64,6 +65,7 @@ class SendEmailTest extends TestCase
             $this->messageIdGenerator,
             $this->pendingMessageIdHolder,
             $this->messageLogWriter,
+            new SendRetrier(1),
             $this->logger
         );
     }
@@ -173,6 +175,46 @@ class SendEmailTest extends TestCase
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
+    }
+
+    /**
+     * Regression test for the retry/backoff fix: a transient failure on the first attempt(s)
+     * must not permanently drop the message - SendRetrier retries the send, and a later attempt
+     * succeeding must still record the message as sent, not failed.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRetriesATransientTransportFailureAndSucceeds(): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getFirstname')->willReturn('Jan');
+        $customer->method('getEmail')->willReturn('jan@example.com');
+        $this->customerRepository->method('getById')->willReturn($customer);
+
+        $this->transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
+        $this->transportBuilder->method('setTemplateOptions')->willReturnSelf();
+        $this->transportBuilder->method('setTemplateVars')->willReturnSelf();
+        $this->transportBuilder->method('setFromByScope')->willReturnSelf();
+        $this->transportBuilder->method('addTo')->willReturnSelf();
+
+        $attempts = 0;
+        $transport = $this->createStub(TransportInterface::class);
+        $this->transportBuilder->method('getTransport')->willReturnCallback(function () use (&$attempts, $transport) {
+            $attempts++;
+            if ($attempts < 2) {
+                throw new \RuntimeException('transient smtp timeout');
+            }
+            return $transport;
+        });
+
+        $this->messageLogWriter->expects(self::once())->method('recordSent')
+            ->with('email', 42, 'jan@example.com', self::anything());
+        $this->messageLogWriter->expects(self::never())->method('recordFailed');
+        $this->logger->expects(self::never())->method('error');
+
+        $context = ['customer_id' => 42];
+        $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
+
+        self::assertSame(2, $attempts);
     }
 
     #[AllowMockObjectsWithoutExpectations]

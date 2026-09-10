@@ -49,6 +49,7 @@ class SendWhatsApp implements ActionInterface
         private readonly WhatsAppTemplateResource $whatsAppTemplateResource,
         private readonly MessageLogWriter $messageLogWriter,
         private readonly ConsentManager $consentManager,
+        private readonly SendRetrier $sendRetrier,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -126,12 +127,12 @@ class SendWhatsApp implements ActionInterface
         $paramsList = $this->parseParams((string) ($params['params'] ?? ''));
 
         try {
-            $providerMessageId = $this->whatsAppSender->send(
+            $providerMessageId = $this->sendRetrier->attempt(fn () => $this->whatsAppSender->send(
                 $phone,
                 $template->getMetaTemplateName(),
                 $template->getLanguage(),
                 $paramsList
-            );
+            ));
             $this->messageLogWriter->recordSent(self::CHANNEL, $customerId, $phone, $providerMessageId);
         } catch (Throwable $e) {
             $this->logger->error(sprintf(

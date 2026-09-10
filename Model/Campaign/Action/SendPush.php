@@ -36,6 +36,7 @@ class SendPush implements ActionInterface
         private readonly Config $config,
         private readonly MessageLogWriter $messageLogWriter,
         private readonly ConsentManager $consentManager,
+        private readonly SendRetrier $sendRetrier,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -89,7 +90,15 @@ class SendPush implements ActionInterface
             // real, full endpoint used to send always comes straight from the subscription row.
             $endpoint = substr((string) $subscription->getEndpoint(), 0, 255);
             try {
-                $this->pushSender->send($subscription, $payload);
+                // A dead/gone subscription (SubscriptionGoneException) is permanently invalid -
+                // excluded from SendRetrier's retry loop, same reasoning as SendSms's
+                // OptedOutException exclusion.
+                $this->sendRetrier->attempt(
+                    function () use ($subscription, $payload): void {
+                        $this->pushSender->send($subscription, $payload);
+                    },
+                    static fn (Throwable $e): bool => !$e instanceof SubscriptionGoneException
+                );
                 $this->messageLogWriter->recordSent(self::CHANNEL, $customerId, $endpoint, null);
             } catch (SubscriptionGoneException) {
                 $this->pushSubscriptionManager->delete($subscription);

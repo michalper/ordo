@@ -8,6 +8,7 @@ use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\Api\AttributeInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Campaign\Action\SendRetrier;
 use Ordo\Automation\Model\Campaign\Action\SendSms;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
@@ -48,6 +49,7 @@ class SendSmsTest extends TestCase
             $this->config,
             $this->messageLogWriter,
             $this->consentManager,
+            new SendRetrier(1),
             $this->logger
         );
     }
@@ -214,7 +216,8 @@ class SendSmsTest extends TestCase
     public function testExecuteLogsErrorWhenSenderThrowsAndDoesNotRethrow(): void
     {
         $this->customerRepository->method('getById')->willReturn($this->customerWithPhone('+15551234567'));
-        $this->smsSender->method('send')->willThrowException(new \RuntimeException('twilio down'));
+        $this->smsSender->expects(self::exactly(3))->method('send')
+            ->willThrowException(new \RuntimeException('twilio down'));
         $this->logger->expects(self::once())->method('error');
         $this->messageLogWriter->expects(self::once())->method('recordFailed')->with('sms', 42, '+15551234567');
 
@@ -224,11 +227,43 @@ class SendSmsTest extends TestCase
         self::assertTrue(true, 'execute() must not rethrow');
     }
 
+    /**
+     * Regression test for the retry/backoff fix: a transient failure on the first attempt(s)
+     * must not permanently drop the message - a later attempt succeeding must still record the
+     * message as sent, not failed.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRetriesATransientSendFailureAndSucceeds(): void
+    {
+        $this->customerRepository->method('getById')->willReturn($this->customerWithPhone('+15551234567'));
+        $this->smsSender->expects(self::exactly(2))->method('send')->willReturnCallback(
+            function () {
+                static $calls = 0;
+                $calls++;
+                if ($calls < 2) {
+                    throw new \RuntimeException('transient timeout');
+                }
+                return 'SM123';
+            }
+        );
+        $this->messageLogWriter->expects(self::once())->method('recordSent')->with('sms', 42, '+15551234567', 'SM123');
+        $this->messageLogWriter->expects(self::never())->method('recordFailed');
+        $this->logger->expects(self::never())->method('error');
+
+        $context = ['customer_id' => 42];
+        $this->makeAction()->execute($context, ['message' => 'hello']);
+    }
+
+    /**
+     * Regression test: OptedOutException means "this number opted out via STOP" - permanently
+     * invalid, so it must fail fast on the first attempt, not burn through every retry.
+     */
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsInfoAndRecordsOptedOutWhenSenderThrowsOptedOutException(): void
     {
         $this->customerRepository->method('getById')->willReturn($this->customerWithPhone('+15551234567'));
-        $this->smsSender->method('send')->willThrowException(new OptedOutException('+15551234567 has opted out of SMS.'));
+        $this->smsSender->expects(self::once())->method('send')
+            ->willThrowException(new OptedOutException('+15551234567 has opted out of SMS.'));
         $this->logger->expects(self::never())->method('error');
         $this->logger->expects(self::once())->method('info');
         $this->messageLogWriter->expects(self::once())->method('recordOptedOut')->with('sms', 42, '+15551234567');

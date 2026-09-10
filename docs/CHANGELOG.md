@@ -5,6 +5,19 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Channel sends now retry a transient failure instead of dropping the message permanently on
+  the first attempt.** Closes the ROADMAP.md Tier 1 item. New `Model/Campaign/Action/SendRetrier`
+  retries the actual provider call (SMTP send, Twilio/Graph API/push HTTP call) up to 3 times with
+  exponential backoff, used by `SendEmail`/`SendSms`/`SendWhatsApp`/`SendPush`. Deliberately
+  excludes exceptions that mean "this destination is permanently invalid" - `OptedOutException`
+  (SMS STOP opt-out) and `SubscriptionGoneException` (dead push subscription) fail fast on the
+  first attempt rather than wasting 2 more retries on an outcome that can never change. This
+  covers the in-process retry case only; a failure that survives all 3 attempts is still
+  permanently recorded as failed (`Cron/RunScheduledCampaignActions.php`'s cross-cron retry queue
+  gap remains open, see ROADMAP.md).
+
 ### Added
 
 - **Nested AND/OR condition groups for Segment and Campaign conditions**, closing the
