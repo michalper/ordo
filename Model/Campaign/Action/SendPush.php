@@ -5,6 +5,7 @@ namespace Ordo\Automation\Model\Campaign\Action;
 
 use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Campaign\FrequencyCapManager;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Push\Exception\SubscriptionGoneException;
@@ -25,6 +26,8 @@ use Throwable;
  * or dead subscription on one device must never stop delivery to the others.
  *
  * Checks ConsentManager::hasConsent() before sending, same as send_email/send_sms/send_whatsapp.
+ * Also checks FrequencyCapManager::hasCapacity() right after (opt-in, cross-channel), once per
+ * customer before fanning out to their registered subscriptions.
  */
 class SendPush implements ActionInterface
 {
@@ -36,6 +39,8 @@ class SendPush implements ActionInterface
         private readonly Config $config,
         private readonly MessageLogWriter $messageLogWriter,
         private readonly ConsentManager $consentManager,
+        private readonly FrequencyCapManager $frequencyCapManager,
+        private readonly SendRetrier $sendRetrier,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -68,6 +73,15 @@ class SendPush implements ActionInterface
             return;
         }
 
+        if (!$this->frequencyCapManager->hasCapacity($customerId)) {
+            $this->logger->info(sprintf(
+                'Ordo_Automation: send_push action skipped for customer #%d, frequency cap reached.',
+                $customerId
+            ));
+            $this->messageLogWriter->recordSuppressed(self::CHANNEL, $customerId, '');
+            return;
+        }
+
         $subscriptions = $this->pushSubscriptionManager->getForCustomer($customerId);
         if ($subscriptions === []) {
             $this->logger->debug(sprintf(
@@ -89,7 +103,15 @@ class SendPush implements ActionInterface
             // real, full endpoint used to send always comes straight from the subscription row.
             $endpoint = substr((string) $subscription->getEndpoint(), 0, 255);
             try {
-                $this->pushSender->send($subscription, $payload);
+                // A dead/gone subscription (SubscriptionGoneException) is permanently invalid -
+                // excluded from SendRetrier's retry loop, same reasoning as SendSms's
+                // OptedOutException exclusion.
+                $this->sendRetrier->attempt(
+                    function () use ($subscription, $payload): void {
+                        $this->pushSender->send($subscription, $payload);
+                    },
+                    static fn (Throwable $e): bool => !$e instanceof SubscriptionGoneException
+                );
                 $this->messageLogWriter->recordSent(self::CHANNEL, $customerId, $endpoint, null);
             } catch (SubscriptionGoneException) {
                 $this->pushSubscriptionManager->delete($subscription);

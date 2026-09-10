@@ -96,6 +96,10 @@ class Config
     private const string XML_PATH_PUSH_VAPID_PRIVATE_KEY = 'ordo_automation/push/vapid_private_key';
     private const string XML_PATH_PUSH_VAPID_SUBJECT = 'ordo_automation/push/vapid_subject';
 
+    private const string XML_PATH_FREQUENCY_CAP_ENABLED = 'ordo_automation/frequency_cap/enabled';
+    private const string XML_PATH_FREQUENCY_CAP_MAX_MESSAGES = 'ordo_automation/frequency_cap/max_messages';
+    private const string XML_PATH_FREQUENCY_CAP_WINDOW_HOURS = 'ordo_automation/frequency_cap/window_hours';
+
     public function __construct(
         private readonly ScopeConfigInterface $scopeConfig,
         private readonly EncryptorInterface $encryptor
@@ -624,5 +628,28 @@ class Config
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
+    }
+
+    /**
+     * Opt-in (default off) - see Model\Campaign\FrequencyCapManager's own docblock for why this
+     * shouldn't suddenly start suppressing sends for an install that never asked for it.
+     */
+    public function isFrequencyCapEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_FREQUENCY_CAP_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getFrequencyCapMaxMessages(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_FREQUENCY_CAP_MAX_MESSAGES, 5, $storeId);
+    }
+
+    public function getFrequencyCapWindowHours(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_FREQUENCY_CAP_WINDOW_HOURS, 24, $storeId);
     }
 }

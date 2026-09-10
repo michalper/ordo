@@ -66,6 +66,19 @@ class MessageLogWriterTest extends TestCase
         self::assertNull($log->getProviderMessageId());
     }
 
+    public function testRecordSuppressedSavesARowWithStatusSuppressed(): void
+    {
+        $log = $this->makeLog();
+        $this->messageLogFactory->expects(self::once())->method('create')->willReturn($log);
+        $this->messageLogResource->expects(self::once())->method('save')->with($log);
+        $this->logger->expects(self::never())->method('error');
+
+        $this->writer->recordSuppressed('sms', 42, '+15551234567');
+
+        self::assertSame(MessageLog::STATUS_SUPPRESSED, $log->getStatus());
+        self::assertNull($log->getProviderMessageId());
+    }
+
     public function testRecordFailedSavesARowWithStatusFailed(): void
     {
         $log = $this->makeLog();

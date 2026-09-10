@@ -5,6 +5,8 @@ namespace Ordo\Automation\Test\Unit\Model\Campaign\Action;
 
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign\Action\SendPush;
+use Ordo\Automation\Model\Campaign\Action\SendRetrier;
+use Ordo\Automation\Model\Campaign\FrequencyCapManager;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Push\Exception\SubscriptionGoneException;
@@ -23,6 +25,7 @@ class SendPushTest extends TestCase
     private Config $config;
     private MessageLogWriter $messageLogWriter;
     private ConsentManager $consentManager;
+    private FrequencyCapManager $frequencyCapManager;
     private LoggerInterface $logger;
 
     protected function setUp(): void
@@ -34,6 +37,8 @@ class SendPushTest extends TestCase
         $this->messageLogWriter = $this->createMock(MessageLogWriter::class);
         $this->consentManager = $this->createStub(ConsentManager::class);
         $this->consentManager->method('hasConsent')->willReturn(true);
+        $this->frequencyCapManager = $this->createStub(FrequencyCapManager::class);
+        $this->frequencyCapManager->method('hasCapacity')->willReturn(true);
         $this->logger = $this->createMock(LoggerInterface::class);
     }
 
@@ -45,6 +50,8 @@ class SendPushTest extends TestCase
             $this->config,
             $this->messageLogWriter,
             $this->consentManager,
+            $this->frequencyCapManager,
+            new SendRetrier(1),
             $this->logger
         );
     }
@@ -120,6 +127,19 @@ class SendPushTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSkipsAndRecordsSuppressedWhenFrequencyCapReached(): void
+    {
+        $this->frequencyCapManager = $this->createMock(FrequencyCapManager::class);
+        $this->frequencyCapManager->expects(self::once())->method('hasCapacity')->with(42)->willReturn(false);
+        $this->pushSubscriptionManager->expects(self::never())->method('getForCustomer');
+        $this->pushSender->expects(self::never())->method('send');
+        $this->messageLogWriter->expects(self::once())->method('recordSuppressed')->with('push', 42, '');
+
+        $context = ['customer_id' => 42];
+        $this->makeAction()->execute($context, ['title' => 'Hi']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteDoesNothingWhenNoSubscriptionsRegistered(): void
     {
         $this->pushSubscriptionManager->method('getForCustomer')->willReturn([]);
@@ -129,12 +149,17 @@ class SendPushTest extends TestCase
         $this->makeAction()->execute($context, ['title' => 'Hi']);
     }
 
+    /**
+     * Regression test: a gone/dead subscription is permanently invalid, so it must fail fast on
+     * the first attempt, not burn through every retry on an outcome that can never change.
+     */
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteDeletesSubscriptionAndRecordsFailedWhenGone(): void
     {
         $subscription = $this->subscription('https://push.example.com/dead');
         $this->pushSubscriptionManager->method('getForCustomer')->willReturn([$subscription]);
-        $this->pushSender->method('send')->willThrowException(new SubscriptionGoneException('gone'));
+        $this->pushSender->expects(self::once())->method('send')
+            ->willThrowException(new SubscriptionGoneException('gone'));
 
         $this->pushSubscriptionManager->expects(self::once())->method('delete')->with($subscription);
         $this->messageLogWriter->expects(self::once())->method('recordFailed')->with('push', 42, 'https://push.example.com/dead');
@@ -148,7 +173,8 @@ class SendPushTest extends TestCase
     {
         $subscription = $this->subscription('https://push.example.com/a');
         $this->pushSubscriptionManager->method('getForCustomer')->willReturn([$subscription]);
-        $this->pushSender->method('send')->willThrowException(new \RuntimeException('push service down'));
+        $this->pushSender->expects(self::exactly(3))->method('send')
+            ->willThrowException(new \RuntimeException('push service down'));
 
         $this->pushSubscriptionManager->expects(self::never())->method('delete');
         $this->logger->expects(self::once())->method('error');
@@ -158,6 +184,35 @@ class SendPushTest extends TestCase
         $this->makeAction()->execute($context, ['title' => 'Hi']);
 
         self::assertTrue(true, 'execute() must not rethrow');
+    }
+
+    /**
+     * Regression test for the retry/backoff fix: a transient failure on the first attempt(s)
+     * must not permanently drop the message - a later attempt succeeding must still record the
+     * message as sent, not failed.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRetriesATransientSendFailureAndSucceeds(): void
+    {
+        $subscription = $this->subscription('https://push.example.com/a');
+        $this->pushSubscriptionManager->method('getForCustomer')->willReturn([$subscription]);
+        $this->pushSender->expects(self::exactly(2))->method('send')->willReturnCallback(
+            function () {
+                static $calls = 0;
+                $calls++;
+                if ($calls < 2) {
+                    throw new \RuntimeException('transient push service timeout');
+                }
+            }
+        );
+
+        $this->messageLogWriter->expects(self::once())->method('recordSent')
+            ->with('push', 42, 'https://push.example.com/a', null);
+        $this->messageLogWriter->expects(self::never())->method('recordFailed');
+        $this->logger->expects(self::never())->method('error');
+
+        $context = ['customer_id' => 42];
+        $this->makeAction()->execute($context, ['title' => 'Hi']);
     }
 
     #[AllowMockObjectsWithoutExpectations]

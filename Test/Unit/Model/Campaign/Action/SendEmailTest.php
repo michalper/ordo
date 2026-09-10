@@ -12,14 +12,16 @@ use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Model\Campaign\Action\SendEmail;
+use Ordo\Automation\Model\Campaign\Action\SendRetrier;
+use Ordo\Automation\Model\Campaign\FrequencyCapManager;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Email\MessageIdGenerator;
 use Ordo\Automation\Model\Email\PendingMessageIdHolder;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class SendEmailTest extends TestCase
 {
@@ -28,6 +30,7 @@ class SendEmailTest extends TestCase
     private StoreManagerInterface $storeManager;
     private StateInterface $inlineTranslation;
     private ConsentManager $consentManager;
+    private FrequencyCapManager $frequencyCapManager;
     private MessageIdGenerator $messageIdGenerator;
     private PendingMessageIdHolder&\PHPUnit\Framework\MockObject\MockObject $pendingMessageIdHolder;
     private MessageLogWriter&\PHPUnit\Framework\MockObject\MockObject $messageLogWriter;
@@ -42,6 +45,8 @@ class SendEmailTest extends TestCase
         $this->inlineTranslation = $this->createMock(StateInterface::class);
         $this->consentManager = $this->createStub(ConsentManager::class);
         $this->consentManager->method('hasConsent')->willReturn(true);
+        $this->frequencyCapManager = $this->createStub(FrequencyCapManager::class);
+        $this->frequencyCapManager->method('hasCapacity')->willReturn(true);
         $this->messageIdGenerator = $this->createStub(MessageIdGenerator::class);
         $this->messageIdGenerator->method('generate')->willReturn('abc123@example.com');
         $this->pendingMessageIdHolder = $this->createMock(PendingMessageIdHolder::class);
@@ -61,9 +66,11 @@ class SendEmailTest extends TestCase
             $this->storeManager,
             $this->inlineTranslation,
             $this->consentManager,
+            $this->frequencyCapManager,
             $this->messageIdGenerator,
             $this->pendingMessageIdHolder,
             $this->messageLogWriter,
+            new SendRetrier(1),
             $this->logger
         );
     }
@@ -76,6 +83,19 @@ class SendEmailTest extends TestCase
             ->with(42, ConsentChannel::Email)->willReturn(false);
         $this->customerRepository->expects(self::never())->method('getById');
         $this->logger->expects(self::once())->method('info');
+
+        $context = ['customer_id' => 42];
+        $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSkipsAndRecordsSuppressedWhenFrequencyCapReached(): void
+    {
+        $this->frequencyCapManager = $this->createMock(FrequencyCapManager::class);
+        $this->frequencyCapManager->expects(self::once())->method('hasCapacity')->with(42)->willReturn(false);
+        $this->customerRepository->expects(self::never())->method('getById');
+        $this->logger->expects(self::once())->method('info');
+        $this->messageLogWriter->expects(self::once())->method('recordSuppressed')->with('email', 42, '');
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
@@ -173,6 +193,46 @@ class SendEmailTest extends TestCase
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
+    }
+
+    /**
+     * Regression test for the retry/backoff fix: a transient failure on the first attempt(s)
+     * must not permanently drop the message - SendRetrier retries the send, and a later attempt
+     * succeeding must still record the message as sent, not failed.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRetriesATransientTransportFailureAndSucceeds(): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getFirstname')->willReturn('Jan');
+        $customer->method('getEmail')->willReturn('jan@example.com');
+        $this->customerRepository->method('getById')->willReturn($customer);
+
+        $this->transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
+        $this->transportBuilder->method('setTemplateOptions')->willReturnSelf();
+        $this->transportBuilder->method('setTemplateVars')->willReturnSelf();
+        $this->transportBuilder->method('setFromByScope')->willReturnSelf();
+        $this->transportBuilder->method('addTo')->willReturnSelf();
+
+        $attempts = 0;
+        $transport = $this->createStub(TransportInterface::class);
+        $this->transportBuilder->method('getTransport')->willReturnCallback(function () use (&$attempts, $transport) {
+            $attempts++;
+            if ($attempts < 2) {
+                throw new \RuntimeException('transient smtp timeout');
+            }
+            return $transport;
+        });
+
+        $this->messageLogWriter->expects(self::once())->method('recordSent')
+            ->with('email', 42, 'jan@example.com', self::anything());
+        $this->messageLogWriter->expects(self::never())->method('recordFailed');
+        $this->logger->expects(self::never())->method('error');
+
+        $context = ['customer_id' => 42];
+        $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
+
+        self::assertSame(2, $attempts);
     }
 
     #[AllowMockObjectsWithoutExpectations]

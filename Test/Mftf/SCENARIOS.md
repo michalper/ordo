@@ -11,7 +11,8 @@ jobs — not guessed from memory. Each scenario is marked:
 
 Cross-reference: `ROADMAP.md`'s "Test coverage" section for the standing priority list this feeds.
 
-**Status: every row below is ✅ except one 🔴 (see §10).** Re-audit this against `etc/di.xml`/
+**Status: every row below is ✅ except one 🔴 (see §10) and one ⬜ (the frequency-cap structural
+case in §1d, unit-tested but no MFTF/integration coverage yet).** Re-audit this against `etc/di.xml`/
 `Controller/Adminhtml/*`/`etc/events.xml` periodically rather than trusting it at face value — add a row (⬜)
 for anything newly added before considering it done.
 
@@ -99,6 +100,7 @@ cases separately from the type-by-type ones.
 | Campaign edited after creation (trigger/condition/action changed, re-saved, old rows replaced not duplicated) | ✅ `AdminEditCampaignConditionReplacesNotDuplicatesTest`    |
 | Campaign deleted — grid no longer lists it, dispatch no longer matches its old triggers                       | ✅ `AdminDeleteCampaignStopsDispatchTest`                   |
 | Unknown/removed condition or action type on a campaign (fails closed, logs, doesn't crash the whole dispatch) | ✅ `AdminCampaignUnknownActionTypeFailsClosedTest`          |
+| Cross-channel frequency cap (`Model\Campaign\FrequencyCapManager`, opt-in, disabled by default) — a customer over the configured per-window contact-volume cap is skipped by `send_email`/`send_sms`/`send_whatsapp`/`send_push` alike and recorded `suppressed` in `ordo_message_log`, not sent | ⬜ unit-tested (`FrequencyCapManagerTest`, each `Send*Test`'s own `...SuppressedWhenFrequencyCapReached` case), no MFTF/integration test against a real multi-channel dispatch yet |
 
 ## 2. Segments (`Model/Segment.php`, `Controller/Adminhtml/Segment/`)
 

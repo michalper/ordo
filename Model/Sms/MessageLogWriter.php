@@ -49,6 +49,23 @@ class MessageLogWriter
         $this->save($log);
     }
 
+    /**
+     * The cross-channel frequency cap (Model\Campaign\FrequencyCapManager) blocked this send
+     * before it was ever attempted - a distinct outcome from opted_out (the customer didn't
+     * withdraw consent, they're just over the configured contact-volume cap for now) and from
+     * failed (nothing was attempted, so there's no provider error to report).
+     */
+    public function recordSuppressed(string $channel, ?int $customerId, string $toAddress): void
+    {
+        $log = $this->messageLogFactory->create();
+        $log->setChannel($channel)
+            ->setCustomerId($customerId)
+            ->setToAddress($toAddress)
+            ->setStatus(MessageLog::STATUS_SUPPRESSED);
+
+        $this->save($log);
+    }
+
     public function recordFailed(string $channel, ?int $customerId, string $toAddress): void
     {
         $log = $this->messageLogFactory->create();

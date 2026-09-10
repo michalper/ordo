@@ -18,6 +18,7 @@ class MessageLog extends AbstractModel
     public const STATUS_FAILED = 'failed';
     public const STATUS_UNDELIVERED = 'undelivered';
     public const STATUS_OPTED_OUT = 'opted_out';
+    public const STATUS_SUPPRESSED = 'suppressed';
 
     protected function _construct(): void
     {
