@@ -38,6 +38,7 @@
         <selectOption selector="[name='operator']" userInput="equals" stepKey="selectOperator"/>
         <fillField selector="[name='value']" userInput="1" stepKey="fillValue"/>
         <fillField selector="[name='points']" userInput="150" stepKey="fillPoints"/>
+        <waitForElementClickable selector="#save" stepKey="waitForClickSaveScoreRuleClickable"/>
         <click selector="#save" stepKey="clickSaveScoreRule"/>
         <waitForPageLoad stepKey="waitForScoreRuleSave"/>
         <see selector=".message-success" userInput="The score rule has been saved." stepKey="seeScoreRuleSuccessMessage"/>

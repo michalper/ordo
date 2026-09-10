@@ -66,7 +66,7 @@
         <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addSegmentConditionRow"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForSegmentConditionRow"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="score_at_least" stepKey="selectSegmentConditionType"/>
-        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;threshold&quot;: &quot;999&quot;}" stepKey="fillSegmentConditionParams"/>
+        <fillField selector="[name='conditions[conditions][0][threshold]']" userInput="999" stepKey="fillSegmentConditionParams"/>
 
         <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueSegment"/>
         <waitForPageLoad stepKey="waitForSegmentSave"/>
@@ -145,7 +145,8 @@
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForExistingConditionRow"/>
         <!-- Same type (score_at_least), just a threshold (10) the customer's existing 80 points
              now clears — no new customer data, only the segment's own row changes. -->
-        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;threshold&quot;: &quot;10&quot;}" stepKey="fillSegmentConditionAmount"/>
+        <fillField selector="[name='conditions[conditions][0][threshold]']" userInput="10" stepKey="fillSegmentConditionAmount"/>
+        <waitForElementClickable selector="#save" stepKey="waitForClickSaveSegmentEditClickable"/>
         <click selector="#save" stepKey="clickSaveSegmentEdit"/>
         <waitForPageLoad stepKey="waitForSegmentEditSave"/>
         <see selector=".message-success" userInput="The segment has been saved." stepKey="seeSegmentEditSuccessMessage"/>

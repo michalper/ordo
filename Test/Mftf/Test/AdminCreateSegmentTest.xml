@@ -37,8 +37,9 @@
         <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRow"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRow"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="selectConditionType"/>
-        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;amount&quot;: &quot;500&quot;}" stepKey="fillConditionParams"/>
+        <fillField selector="[name='conditions[conditions][0][amount]']" userInput="500" stepKey="fillConditionParams"/>
 
+        <waitForElementClickable selector="#save" stepKey="waitForClickSaveClickable"/>
         <click selector="#save" stepKey="clickSave"/>
         <waitForPageLoad stepKey="waitForSave"/>
         <see selector=".message-success" userInput="The segment has been saved." stepKey="seeSuccessMessage"/>

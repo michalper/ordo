@@ -75,6 +75,7 @@
         <waitForElementVisible selector="[name='conditions[conditions][0][threshold]']" stepKey="waitForThresholdField"/>
         <fillField selector="[name='conditions[conditions][0][threshold]']" userInput="10" stepKey="fillThreshold"/>
 
+        <waitForElementClickable selector="#save" stepKey="waitForClickSaveEditClickable"/>
         <click selector="#save" stepKey="clickSaveEdit"/>
         <waitForPageLoad stepKey="waitForSaveEdit"/>
         <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSaveEditSuccessMessage"/>

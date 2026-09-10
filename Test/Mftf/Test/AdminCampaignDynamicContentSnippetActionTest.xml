@@ -43,6 +43,7 @@
              enabled=1) return nothing — confirmed via a real CI screenshot showing the flow
              canvas's "Content Block" field fall back to a plain text input instead of a select,
              since campaign-flow-editor.js only renders a <select> for a non-empty options map. -->
+        <waitForElementClickable selector="#save" stepKey="waitForClickSaveContentBlockClickable"/>
         <click selector="#save" stepKey="clickSaveContentBlock"/>
         <waitForPageLoad stepKey="waitForContentBlockSave"/>
         <see selector=".message-success" userInput="The content block has been saved." stepKey="seeContentBlockSuccessMessage"/>

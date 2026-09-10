@@ -37,6 +37,7 @@
         <selectOption selector="[name='operator']" userInput="equals" stepKey="selectOperator"/>
         <fillField selector="[name='value']" userInput="1" stepKey="fillValue"/>
         <fillField selector="[name='points']" userInput="80" stepKey="fillPoints"/>
+        <waitForElementClickable selector="#save" stepKey="waitForClickSaveScoreRuleClickable"/>
         <click selector="#save" stepKey="clickSaveScoreRule"/>
         <waitForPageLoad stepKey="waitForScoreRuleSave"/>
         <see selector=".message-success" userInput="The score rule has been saved." stepKey="seeScoreRuleSuccessMessage"/>
@@ -60,7 +61,7 @@
         <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRow"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRow"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="score_at_least" stepKey="selectConditionType"/>
-        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;threshold&quot;: &quot;40&quot;}" stepKey="fillConditionParams"/>
+        <fillField selector="[name='conditions[conditions][0][threshold]']" userInput="40" stepKey="fillConditionParams"/>
 
         <!-- Save & Continue Edit (not the plain "save" button AdminCreateSegmentTest uses),
              specifically to stay on the segment EDIT page — that's where BulkActions.php

@@ -55,6 +55,7 @@
         <waitForPageLoad stepKey="waitForEditScoreRulePage"/>
         <waitForElementVisible selector="[name='enabled']" stepKey="waitForEnabledField"/>
         <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="disableScoreRule"/>
+        <waitForElementClickable selector="#save" stepKey="waitForClickSaveDisabledScoreRuleClickable"/>
         <click selector="#save" stepKey="clickSaveDisabledScoreRule"/>
         <waitForPageLoad stepKey="waitForScoreRuleDisableSave"/>
         <see selector=".message-success" userInput="The score rule has been saved." stepKey="seeDisableSaveSuccessMessage"/>

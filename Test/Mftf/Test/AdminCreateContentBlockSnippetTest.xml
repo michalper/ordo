@@ -40,6 +40,7 @@
              <default>1</default> means a new content block is already enabled/pre-checked — no
              click needed here (clicking would toggle it OFF instead). -->
 
+        <waitForElementClickable selector="#save" stepKey="waitForClickSaveClickable"/>
         <click selector="#save" stepKey="clickSave"/>
         <waitForPageLoad stepKey="waitForSave"/>
         <see selector=".message-success" userInput="The content block has been saved." stepKey="seeSuccessMessage"/>

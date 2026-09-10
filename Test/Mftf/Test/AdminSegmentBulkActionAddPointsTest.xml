@@ -59,7 +59,7 @@
         <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRow"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRow"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="score_at_least" stepKey="selectConditionType"/>
-        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;threshold&quot;: &quot;40&quot;}" stepKey="fillConditionParams"/>
+        <fillField selector="[name='conditions[conditions][0][threshold]']" userInput="40" stepKey="fillConditionParams"/>
 
         <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinue"/>
         <waitForPageLoad stepKey="waitForSegmentSave"/>

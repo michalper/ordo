@@ -37,7 +37,7 @@
         <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRowOne"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForConditionRowOne"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="order_total_gte" stepKey="selectConditionTypeOne"/>
-        <fillField selector="[name='conditions[conditions][0][params_json]']" userInput="{&quot;amount&quot;: &quot;500&quot;}" stepKey="fillConditionParamsOne"/>
+        <fillField selector="[name='conditions[conditions][0][amount]']" userInput="500" stepKey="fillConditionParamsOne"/>
 
         <!-- Second condition row, index 1 — dynamicRows adds a new incrementing index per row,
              AND'd together with the first by SegmentMatcher. Different condition type from the
@@ -46,8 +46,9 @@
         <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRowTwo"/>
         <waitForElementVisible selector="[name='conditions[conditions][1][type]']" stepKey="waitForConditionRowTwo"/>
         <selectOption selector="[name='conditions[conditions][1][type]']" userInput="tag" stepKey="selectConditionTypeTwo"/>
-        <fillField selector="[name='conditions[conditions][1][params_json]']" userInput="{&quot;tag&quot;: &quot;vip&quot;}" stepKey="fillConditionParamsTwo"/>
+        <fillField selector="[name='conditions[conditions][1][tag]']" userInput="vip" stepKey="fillConditionParamsTwo"/>
 
+        <waitForElementClickable selector="#save" stepKey="waitForClickSaveClickable"/>
         <click selector="#save" stepKey="clickSave"/>
         <waitForPageLoad stepKey="waitForSave"/>
         <see selector=".message-success" userInput="The segment has been saved." stepKey="seeSuccessMessage"/>
