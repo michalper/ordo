@@ -163,10 +163,12 @@ unbounded full-table scans in `CalculateReorderCycle`/`GoogleMerchantFeedGenerat
   concurrency control and no respect for provider rate limits (Twilio, Graph API, push services);
   a campaign matching thousands of customers in one tick will serially hammer the provider API or
   start hitting 429s with no handling for it.
-- No retry/backoff for a failed send anywhere — every channel action catches `Throwable`, logs, and
-  moves on permanently; `Cron/RunScheduledCampaignActions.php`'s own docblock admits "a row that
-  failed stays failed; there's no retry queue for this yet." A transient provider 5xx permanently
-  drops that message.
+- ~~No retry/backoff for a failed send anywhere~~ — **closed for the immediate-retry case**:
+  `Model/Campaign/Action/SendRetrier.php` now retries the actual provider call up to 3 times with
+  exponential backoff inside the same action execution, excluding permanently-invalid outcomes
+  (SMS opt-out, dead push subscription) from the retry. Still open: `Cron/RunScheduledCampaignActions.php`'s
+  own gap remains real for a failure that survives all 3 in-process retries — "a row that failed
+  stays failed" across cron ticks, since there's still no persistent retry queue for that case.
 - SendGrid webhook only handles delivered/bounce/dropped and silently discards
   `spamreport`/`unsubscribe`/`group_unsubscribe` — a spam complaint or one-click unsubscribe from
   the mailbox provider never reaches `ConsentManager`, so `send_email` keeps mailing someone who
