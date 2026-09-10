@@ -179,6 +179,7 @@
                 <item name="order_frequency_percentile_at_least" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\OrderFrequencyPercentileAtLeast</item>
                 <item name="monetary_percentile_at_least" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\MonetaryPercentileAtLeast</item>
                 <item name="in_segment" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\InSegment</item>
+                <item name="not_in_segment" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\NotInSegment</item>
                 <item name="loyalty_tier_at_least" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\LoyaltyTierAtLeast</item>
                 <item name="nps_score_at_least" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\NpsScoreAtLeast</item>
                 <item name="purchased_sku" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\PurchasedSku</item>

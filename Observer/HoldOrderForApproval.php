@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Observer;
 
 use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\App\Area;
 use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\Event\ObserverInterface;
@@ -12,7 +13,6 @@ use Magento\Framework\Math\Random;
 use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order as OrderResource;
-use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\OrderApproval;
 use Ordo\Automation\Model\OrderApprovalFactory;
@@ -41,7 +41,6 @@ class HoldOrderForApproval implements ObserverInterface
         private readonly OrderApprovalResource $orderApprovalResource,
         private readonly Random $random,
         private readonly TransportBuilder $transportBuilder,
-        private readonly StoreManagerInterface $storeManager,
         private readonly StateInterface $inlineTranslation,
         private readonly LoggerInterface $logger
     ) {
@@ -55,13 +54,12 @@ class HoldOrderForApproval implements ObserverInterface
 
         /** @var Order $order */
         $order = $observer->getEvent()->getOrder();
-        if (!$order || !$order->getCustomerId()) {
+        if (!$order) {
             return;
         }
 
-        try {
-            $customer = $this->customerRepository->getById((int) $order->getCustomerId());
-        } catch (\Throwable $e) {
+        $customer = $this->resolveCustomer($order);
+        if (!$customer) {
             return;
         }
 
@@ -110,9 +108,47 @@ class HoldOrderForApproval implements ObserverInterface
         }
     }
 
+    /**
+     * A spend-limit/approval-admin-email attribute only exists on a *registered* customer record
+     * - so before this method resolved strictly by `$order->getCustomerId()`, anyone with those
+     * attributes configured could dodge approval entirely just by checking out as a guest with
+     * the same email (no login required, `getCustomerId()` stays null). Falling back to an
+     * email+website lookup closes that: a guest order whose email matches a real customer
+     * account is still checked against that account's limit. A genuine one-off guest with no
+     * matching account (the common case) simply won't resolve to anything here, same as before.
+     */
+    private function resolveCustomer(Order $order): ?CustomerInterface
+    {
+        $customerId = (int) $order->getCustomerId();
+        if ($customerId > 0) {
+            try {
+                return $this->customerRepository->getById($customerId);
+            } catch (\Throwable) {
+                return null;
+            }
+        }
+
+        $email = (string) $order->getCustomerEmail();
+        if ($email === '') {
+            return null;
+        }
+
+        try {
+            $websiteId = (int) $order->getStore()->getWebsiteId();
+            return $this->customerRepository->get($email, $websiteId);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     private function sendApprovalRequestEmail(Order $order, string $adminEmail, string $token): void
     {
-        $store = $this->storeManager->getStore();
+        // This order's own store, not StoreManagerInterface::getStore()'s "current" store - the
+        // latter is whatever store happened to be in scope on whatever process/request runs this
+        // observer (a cron-driven reindex, a different storefront's checkout, an admin action),
+        // not necessarily the store the order was actually placed on. On a multi-store install
+        // that mismatch sent decision-link emails pointing at the wrong storefront's base URL.
+        $store = $order->getStore();
         $baseUrl = rtrim((string) $store->getBaseUrl(), '/');
 
         $this->inlineTranslation->suspend();

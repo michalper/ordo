@@ -17,6 +17,14 @@ if (!$block->isSegmentSaved()) {
                 __('Customers currently matching this segment\'s saved conditions.')
             ) ?>
         </p>
+        <p class="ordo-audience-size-unsaved-warning" data-audience-size-unsaved-warning="1" style="display: none">
+            <?= $escaper->escapeHtml(
+                __(
+                    'You have unsaved changes on this page — the count below still reflects this'
+                    . ' segment\'s last saved conditions, not what\'s currently on screen.'
+                )
+            ) ?>
+        </p>
         <div class="ordo-audience-size-value" data-audience-size-value="1">
             <?= $escaper->escapeHtml(__('Not calculated yet')) ?>
         </div>

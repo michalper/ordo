@@ -8,7 +8,6 @@ use Magento\Framework\Mail\Template\TransportBuilder;
 use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
-use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Cron\CronRunLogger;
 use Ordo\Automation\Model\OrderApproval;
@@ -33,7 +32,6 @@ class EscalateStalePendingApprovals
         private readonly OrderApprovalResource $orderApprovalResource,
         private readonly OrderCollectionFactory $orderCollectionFactory,
         private readonly TransportBuilder $transportBuilder,
-        private readonly StoreManagerInterface $storeManager,
         private readonly StateInterface $inlineTranslation,
         private readonly TriggerOutcomeLogger $triggerOutcomeLogger,
         private readonly CronRunLogger $cronRunLogger
@@ -114,7 +112,10 @@ class EscalateStalePendingApprovals
 
     private function sendEscalationEmail(OrderApproval $approval, Order $order): void
     {
-        $store = $this->storeManager->getStore();
+        // This order's own store, not StoreManagerInterface::getStore()'s "current" store - see
+        // Observer\HoldOrderForApproval::sendApprovalRequestEmail()'s own comment for the same
+        // multi-store base-URL fix and why it matters here identically.
+        $store = $order->getStore();
         $baseUrl = rtrim((string) $store->getBaseUrl(), '/');
         $token = $approval->getToken();
 

@@ -8,29 +8,26 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Config as OrderConfig;
-use Magento\Sales\Model\ResourceModel\Order as OrderResource;
 use Magento\Sales\Model\ResourceModel\Order\Collection as OrderCollection;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
 use Magento\Store\Model\Store;
-use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Model\OrderApproval;
 use Ordo\Automation\Model\OrderApprovalDecisionLinks;
 use Ordo\Automation\Model\OrderApprovalDecisionLinksFactory;
 use Ordo\Automation\Model\OrderApprovalFactory;
 use Ordo\Automation\Model\OrderApprovalManagement;
 use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
-use PHPUnit\Framework\TestCase;
+use Ordo\Automation\Setup\Patch\Data\AddPendingApprovalOrderStatus;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
 
 class OrderApprovalManagementTest extends TestCase
 {
     private OrderApprovalFactory $orderApprovalFactory;
     private OrderApprovalResource $orderApprovalResource;
     private OrderCollectionFactory $orderCollectionFactory;
-    private OrderResource $orderResource;
     private OrderConfig $orderConfig;
     private OrderRepositoryInterface $orderRepository;
-    private StoreManagerInterface $storeManager;
     private OrderApprovalDecisionLinksFactory $decisionLinksFactory;
     private OrderApprovalManagement $management;
 
@@ -39,22 +36,37 @@ class OrderApprovalManagementTest extends TestCase
         $this->orderApprovalFactory = $this->createMock(OrderApprovalFactory::class);
         $this->orderApprovalResource = $this->createMock(OrderApprovalResource::class);
         $this->orderCollectionFactory = $this->createStub(OrderCollectionFactory::class);
-        $this->orderResource = $this->createMock(OrderResource::class);
         $this->orderConfig = $this->createMock(OrderConfig::class);
         $this->orderRepository = $this->createMock(OrderRepositoryInterface::class);
-        $this->storeManager = $this->createStub(StoreManagerInterface::class);
         $this->decisionLinksFactory = $this->createStub(OrderApprovalDecisionLinksFactory::class);
 
         $this->management = new OrderApprovalManagement(
             $this->orderApprovalFactory,
             $this->orderApprovalResource,
             $this->orderCollectionFactory,
-            $this->orderResource,
             $this->orderConfig,
             $this->orderRepository,
-            $this->storeManager,
             $this->decisionLinksFactory
         );
+    }
+
+    /**
+     * @param \PHPUnit\Framework\MockObject\MockObject&Order $order
+     */
+    private function makePendingOrder($order, int $orderId = 7): void
+    {
+        $order->method('getId')->willReturn($orderId);
+        $order->method('getStatus')->willReturn(AddPendingApprovalOrderStatus::STATUS_PENDING_APPROVAL);
+    }
+
+    private function makeOrderCollection(Order $order): OrderCollection
+    {
+        $orderCollection = $this->createStub(OrderCollection::class);
+        $orderCollection->method('addFieldToFilter')->willReturnSelf();
+        $orderCollection->method('getFirstItem')->willReturn($order);
+        $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
+
+        return $orderCollection;
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -85,13 +97,11 @@ class OrderApprovalManagementTest extends TestCase
         $approval->method('isPending')->willReturn(true);
         $approval->method('getOrderId')->willReturn(7);
         $this->orderApprovalFactory->method('create')->willReturn($approval);
+        $this->orderApprovalResource->method('claimPending')->willReturn(true);
 
         $order = $this->createMock(Order::class);
         $order->method('getId')->willReturn(null);
-        $orderCollection = $this->createStub(OrderCollection::class);
-        $orderCollection->method('addFieldToFilter')->willReturnSelf();
-        $orderCollection->method('getFirstItem')->willReturn($order);
-        $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
+        $this->makeOrderCollection($order);
 
         $this->expectException(LocalizedException::class);
         $this->management->approveByToken('tok');
@@ -107,19 +117,46 @@ class OrderApprovalManagementTest extends TestCase
         $this->orderApprovalFactory->method('create')->willReturn($approval);
 
         $order = $this->createMock(Order::class);
-        $order->method('getId')->willReturn(7);
+        $this->makePendingOrder($order);
         $order->expects(self::once())->method('setStatus')->with('processing');
-        $orderCollection = $this->createStub(OrderCollection::class);
-        $orderCollection->method('addFieldToFilter')->willReturnSelf();
-        $orderCollection->method('getFirstItem')->willReturn($order);
-        $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
+        $this->makeOrderCollection($order);
 
         $this->orderConfig->method('getStateDefaultStatus')->willReturnMap([[Order::STATE_NEW, 'processing']]);
-        $this->orderResource->expects(self::once())->method('save')->with($order);
+        $this->orderRepository->expects(self::once())->method('save')->with($order);
         $this->orderApprovalResource->expects(self::once())->method('claimPending')
             ->with($approval, OrderApproval::STATUS_APPROVED)->willReturn(true);
 
         self::assertSame($approval, $this->management->approveByToken('tok'));
+    }
+
+    /**
+     * Regression test for a real bug a code audit found: approveByToken()/rejectByToken() used to
+     * blindly overwrite the order's status once the approval-row claim succeeded, without
+     * re-checking that the *order itself* was still in the held "pending approval" state. An
+     * admin manually moving the order elsewhere (e.g. to Complete or Canceled) between the hold
+     * and this decision - while `ordo_order_approval` still sat "pending" - meant a stale decision
+     * link would silently revert that manual change.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testApproveByTokenThrowsWhenOrderIsNoLongerAwaitingApproval(): void
+    {
+        $approval = $this->createMock(OrderApproval::class);
+        $approval->method('getId')->willReturn(1);
+        $approval->method('isPending')->willReturn(true);
+        $approval->method('getOrderId')->willReturn(7);
+        $this->orderApprovalFactory->method('create')->willReturn($approval);
+        $this->orderApprovalResource->method('claimPending')->willReturn(true);
+
+        $order = $this->createMock(Order::class);
+        $order->method('getId')->willReturn(7);
+        $order->method('getStatus')->willReturn('complete');
+        $order->expects(self::never())->method('setStatus');
+        $this->makeOrderCollection($order);
+
+        $this->orderRepository->expects(self::never())->method('save');
+
+        $this->expectException(LocalizedException::class);
+        $this->management->approveByToken('tok');
     }
 
     /**
@@ -140,7 +177,7 @@ class OrderApprovalManagementTest extends TestCase
         $this->orderApprovalFactory->method('create')->willReturn($approval);
 
         $this->orderApprovalResource->method('claimPending')->willReturn(false);
-        $this->orderResource->expects(self::never())->method('save');
+        $this->orderRepository->expects(self::never())->method('save');
 
         $this->expectException(NoSuchEntityException::class);
         $this->management->approveByToken('tok');
@@ -156,18 +193,37 @@ class OrderApprovalManagementTest extends TestCase
         $this->orderApprovalFactory->method('create')->willReturn($approval);
 
         $order = $this->createMock(Order::class);
-        $order->method('getId')->willReturn(7);
+        $this->makePendingOrder($order);
         $order->expects(self::once())->method('cancel');
-        $orderCollection = $this->createStub(OrderCollection::class);
-        $orderCollection->method('addFieldToFilter')->willReturnSelf();
-        $orderCollection->method('getFirstItem')->willReturn($order);
-        $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
+        $this->makeOrderCollection($order);
 
         $this->orderRepository->expects(self::once())->method('save')->with($order);
         $this->orderApprovalResource->expects(self::once())->method('claimPending')
             ->with($approval, OrderApproval::STATUS_REJECTED)->willReturn(true);
 
         self::assertSame($approval, $this->management->rejectByToken('tok'));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRejectByTokenThrowsWhenOrderIsNoLongerAwaitingApproval(): void
+    {
+        $approval = $this->createMock(OrderApproval::class);
+        $approval->method('getId')->willReturn(1);
+        $approval->method('isPending')->willReturn(true);
+        $approval->method('getOrderId')->willReturn(7);
+        $this->orderApprovalFactory->method('create')->willReturn($approval);
+        $this->orderApprovalResource->method('claimPending')->willReturn(true);
+
+        $order = $this->createMock(Order::class);
+        $order->method('getId')->willReturn(7);
+        $order->method('getStatus')->willReturn('canceled');
+        $order->expects(self::never())->method('cancel');
+        $this->makeOrderCollection($order);
+
+        $this->orderRepository->expects(self::never())->method('save');
+
+        $this->expectException(LocalizedException::class);
+        $this->management->rejectByToken('tok');
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -209,10 +265,7 @@ class OrderApprovalManagementTest extends TestCase
 
         $order = $this->createMock(Order::class);
         $order->method('getId')->willReturn(null);
-        $orderCollection = $this->createStub(OrderCollection::class);
-        $orderCollection->method('addFieldToFilter')->willReturnSelf();
-        $orderCollection->method('getFirstItem')->willReturn($order);
-        $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
+        $this->makeOrderCollection($order);
 
         $this->expectException(LocalizedException::class);
         $this->management->rejectByToken('tok');
@@ -230,17 +283,21 @@ class OrderApprovalManagementTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
-    public function testGetDecisionLinksByIdBuildsUrlsFromToken(): void
+    public function testGetDecisionLinksByIdBuildsUrlsFromTheOrdersOwnStore(): void
     {
         $approval = $this->createMock(OrderApproval::class);
         $approval->method('getId')->willReturn(5);
         $approval->method('isPending')->willReturn(true);
         $approval->method('getToken')->willReturn('secret-token');
+        $approval->method('getOrderId')->willReturn(7);
         $this->orderApprovalFactory->method('create')->willReturn($approval);
 
         $store = $this->createStub(Store::class);
         $store->method('getBaseUrl')->willReturn('https://example.com/');
-        $this->storeManager->method('getStore')->willReturn($store);
+        $order = $this->createMock(Order::class);
+        $order->method('getId')->willReturn(7);
+        $order->method('getStore')->willReturn($store);
+        $this->makeOrderCollection($order);
 
         $links = $this->createMock(OrderApprovalDecisionLinks::class);
         $links->expects(self::once())->method('setApproveUrl')

@@ -4,11 +4,16 @@ declare(strict_types=1);
 namespace Ordo\Automation\Controller\Adminhtml\WhatsAppTemplate;
 
 use Magento\Backend\App\Action\Context;
-use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\App\Action\HttpPostActionInterface;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate as WhatsAppTemplateResource;
 use Ordo\Automation\Model\WhatsAppTemplateFactory;
 
-class Delete extends AbstractWhatsAppTemplateAction implements HttpGetActionInterface
+/**
+ * Invoked via a POST-with-confirm link (Magento_Ui's "post": true action flag &
+ * form-key validation, standard for HttpPostActionInterface controllers) - see
+ * Ui\Component\Listing\Column\WhatsAppTemplateActions/AbstractEntityActionsColumn.
+ */
+class Delete extends AbstractWhatsAppTemplateAction implements HttpPostActionInterface
 {
     public function __construct(
         Context $context,

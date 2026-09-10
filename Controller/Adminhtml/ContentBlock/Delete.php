@@ -4,14 +4,16 @@ declare(strict_types=1);
 namespace Ordo\Automation\Controller\Adminhtml\ContentBlock;
 
 use Magento\Backend\App\Action\Context;
-use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\App\Action\HttpPostActionInterface;
 use Ordo\Automation\Model\ContentBlockFactory;
 use Ordo\Automation\Model\ResourceModel\ContentBlock as ContentBlockResource;
 
 /**
- * Invoked via a plain GET link (see Ui\Component\Listing\Column\ContentBlockActions).
+ * Invoked via a POST-with-confirm link (Magento_Ui's "post": true action flag &
+ * form-key validation, standard for HttpPostActionInterface controllers) - see
+ * Ui\Component\Listing\Column\ContentBlockActions/AbstractEntityActionsColumn.
  */
-class Delete extends AbstractContentBlockAction implements HttpGetActionInterface
+class Delete extends AbstractContentBlockAction implements HttpPostActionInterface
 {
     public function __construct(
         Context $context,

@@ -4,17 +4,18 @@ declare(strict_types=1);
 namespace Ordo\Automation\Controller\Adminhtml\Campaign;
 
 use Magento\Backend\App\Action\Context;
-use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\CacheInterface;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\CampaignFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign as CampaignResource;
 
 /**
- * Invoked via a plain GET link (see Ui\Component\Listing\Column\CampaignActions), matching
- * the interface it's actually dispatched through.
+ * Invoked via a POST-with-confirm link (Magento_Ui's "post": true action flag &
+ * form-key validation, standard for HttpPostActionInterface controllers) - see
+ * Ui\Component\Listing\Column\CampaignActions/AbstractEntityActionsColumn.
  */
-class Delete extends AbstractCampaignAction implements HttpGetActionInterface
+class Delete extends AbstractCampaignAction implements HttpPostActionInterface
 {
     public function __construct(
         Context $context,

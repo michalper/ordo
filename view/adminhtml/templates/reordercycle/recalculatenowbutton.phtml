@@ -1,0 +1,14 @@
+<?php
+/**
+ * "Recalculate Now" button for the Reorder Cycles grid - same on-demand-refresh idea and markup
+ * as the Dashboard's "Refresh Now" shopping-feed button (view/adminhtml/templates/dashboard/
+ * index.phtml), just on its own listing page instead of a dashboard card.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+?>
+<a class="ordo-btn ordo-reorder-cycle-recalculate-now"
+   href="<?= $escaper->escapeUrl($block->getUrl('ordo/reordercycle/recalculatenow')) ?>">
+    <?= $escaper->escapeHtml(__('Recalculate Now')) ?>
+</a>

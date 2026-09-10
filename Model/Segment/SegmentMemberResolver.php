@@ -225,6 +225,8 @@ class SegmentMemberResolver
                 return $this->resolvePercentileAtLeast($params, 'monetary_percentile');
             case 'in_segment':
                 return $this->resolveInSegment($params, $visitedSegmentIds);
+            case 'not_in_segment':
+                return $this->resolveNotInSegment($params, $visitedSegmentIds);
             case 'purchased_sku':
                 return $this->resolvePurchasedSku($params);
             case 'purchased_category':
@@ -437,6 +439,45 @@ class SegmentMemberResolver
         }
 
         return $this->getMatchingCustomerIds($targetSegmentId, $visitedSegmentIds);
+    }
+
+    /**
+     * The exclusion counterpart to resolveInSegment() - closes the ROADMAP.md "segment exclusion
+     * operator" item ("customers in A but NOT in B"). Computed as the full registered-customer
+     * universe (RfmCalculator::getAllCustomerIds(), the same universe resolveOrderFrequencyAtLeast()/
+     * resolveMonetaryTotalAtLeast() already use for their own "threshold <= 0 matches everyone"
+     * case) minus whoever getMatchingCustomerIds() resolves for the target segment - an O(n+m)
+     * flipped-lookup diff, not array_diff(), for the same reason TagInactiveCustomers's own
+     * untag pass was fixed to avoid an O(n*m) in_array() scan.
+     *
+     * @param array<string, mixed> $params
+     * @param int[] $visitedSegmentIds
+     * @return int[]
+     */
+    private function resolveNotInSegment(array $params, array $visitedSegmentIds): array
+    {
+        $targetSegmentId = $params['segment_id'] ?? null;
+
+        if ($targetSegmentId === null || !is_numeric($targetSegmentId)) {
+            return [];
+        }
+
+        $targetSegmentId = (int) $targetSegmentId;
+
+        if (in_array($targetSegmentId, $visitedSegmentIds, true)) {
+            // Cycle (this segment excludes itself, directly or via another segment already
+            // being resolved) - fail closed the same way resolveInSegment() does, rather than
+            // silently treating an unresolvable exclusion as "excludes nobody" (which would
+            // match everyone here, the opposite of this module's fail-closed convention).
+            return [];
+        }
+
+        $excluded = array_flip($this->getMatchingCustomerIds($targetSegmentId, $visitedSegmentIds));
+
+        return array_values(array_filter(
+            $this->rfmCalculator->getAllCustomerIds(),
+            static fn (int $customerId): bool => !isset($excluded[$customerId])
+        ));
     }
 
     /**

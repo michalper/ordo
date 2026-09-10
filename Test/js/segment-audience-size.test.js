@@ -19,9 +19,21 @@ function stubFetch(responseInit) {
 
 function panelHtml() {
     return '<div class="ordo-audience-size-panel" data-segment-id="7" data-audience-size-url="/admin/ordo/segment/audienceSize">'
+        + '<p data-audience-size-unsaved-warning="1" style="display: none">unsaved changes</p>'
         + '<div data-audience-size-value="1">Not calculated yet</div>'
         + '<button type="button" data-audience-size-refresh="1">Refresh</button>'
         + '</div>';
+}
+
+/**
+ * Same panel, plus a stand-in for the rest of the segment condition form (a plain text input
+ * outside the audience-size panel) and the unrelated bulk-actions panel, to exercise the
+ * dirty-tracking listener's page-wide scope and its exclusions.
+ */
+function panelHtmlWithConditionFormAndBulkActionsPanel() {
+    return panelHtml()
+        + '<input type="text" id="segment-condition-field" value="">'
+        + '<div class="ordo-bulk-actions-panel"><select id="bulk-action-type"><option>add_tag</option></select></div>';
 }
 
 QUnit.module('Ordo_Automation/js/segment-audience-size', function () {
@@ -77,5 +89,32 @@ QUnit.module('Ordo_Automation/js/segment-audience-size', function () {
             assert.strictEqual(global.$('[data-audience-size-value]').text(), '2 customer(s)');
             done();
         }, 0);
+    });
+
+    QUnit.test('editing a field outside the panel shows the unsaved-changes warning', function (assert) {
+        loadModule(MODULE_PATH, panelHtmlWithConditionFormAndBulkActionsPanel());
+
+        assert.strictEqual(global.$('[data-audience-size-unsaved-warning]').css('display'), 'none');
+
+        global.$('#segment-condition-field').val('changed').trigger('input');
+
+        assert.notStrictEqual(global.$('[data-audience-size-unsaved-warning]').css('display'), 'none');
+    });
+
+    QUnit.test('editing a field inside the bulk-actions panel does not show the warning', function (assert) {
+        loadModule(MODULE_PATH, panelHtmlWithConditionFormAndBulkActionsPanel());
+
+        global.$('#bulk-action-type').trigger('change');
+
+        assert.strictEqual(global.$('[data-audience-size-unsaved-warning]').css('display'), 'none');
+    });
+
+    QUnit.test('markDirty() is idempotent and only needs to be called once to show the warning', function (assert) {
+        const api = loadModule(MODULE_PATH, panelHtml());
+
+        api.markDirty(global.$('.ordo-audience-size-panel'));
+        api.markDirty(global.$('.ordo-audience-size-panel'));
+
+        assert.notStrictEqual(global.$('[data-audience-size-unsaved-warning]').css('display'), 'none');
     });
 });

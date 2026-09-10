@@ -74,9 +74,14 @@ class TagInactiveCustomers
         // Anyone previously tagged "inactive" who has since ordered again is no longer inactive —
         // clear both tags so a future dry spell can trigger a fresh win-back cycle instead of
         // staying permanently marked as "already won back".
+        // A flipped lookup set, not in_array() inside the loop below - found via a code audit:
+        // in_array() against a plain array is O(n) per check, so checking every previously-tagged
+        // customer against it was effectively O(n*m) (n = previously tagged, m = still inactive),
+        // which gets real after a large win-back wave untags most of the inactive population.
+        $stillInactiveLookup = array_flip($stillInactiveIds);
         $untagged = 0;
         foreach ($this->customerTagManager->getCustomerIdsWithTag(self::TAG_INACTIVE) as $customerId) {
-            if (!in_array($customerId, $stillInactiveIds, true)) {
+            if (!isset($stillInactiveLookup[$customerId])) {
                 $this->customerTagManager->removeTag($customerId, self::TAG_INACTIVE);
                 $this->customerTagManager->removeTag($customerId, SendWinBackEmails::TAG_WIN_BACK_SENT);
                 $untagged++;

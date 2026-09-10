@@ -4,14 +4,16 @@ declare(strict_types=1);
 namespace Ordo\Automation\Controller\Adminhtml\FreeGiftOffer;
 
 use Magento\Backend\App\Action\Context;
-use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\App\Action\HttpPostActionInterface;
 use Ordo\Automation\Model\FreeGiftOfferFactory;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer as FreeGiftOfferResource;
 
 /**
- * Invoked via a plain GET link (see Ui\Component\Listing\Column\FreeGiftOfferActions).
+ * Invoked via a POST-with-confirm link (Magento_Ui's "post": true action flag &
+ * form-key validation, standard for HttpPostActionInterface controllers) - see
+ * Ui\Component\Listing\Column\FreeGiftOfferActions/AbstractEntityActionsColumn.
  */
-class Delete extends AbstractFreeGiftOfferAction implements HttpGetActionInterface
+class Delete extends AbstractFreeGiftOfferAction implements HttpPostActionInterface
 {
     public function __construct(
         Context $context,
