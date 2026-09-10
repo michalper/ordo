@@ -123,7 +123,7 @@ class HoldOrderForApproval implements ObserverInterface
         if ($customerId > 0) {
             try {
                 return $this->customerRepository->getById($customerId);
-            } catch (\Throwable $e) {
+            } catch (\Throwable) {
                 return null;
             }
         }
@@ -136,7 +136,7 @@ class HoldOrderForApproval implements ObserverInterface
         try {
             $websiteId = (int) $order->getStore()->getWebsiteId();
             return $this->customerRepository->get($email, $websiteId);
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             return null;
         }
     }
