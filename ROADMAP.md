@@ -116,9 +116,11 @@ unbounded full-table scans in `CalculateReorderCycle`/`GoogleMerchantFeedGenerat
 - No segment overlap/venn analysis (avoiding message fatigue by seeing "how many customers are in
   both Segment A and B") — would build directly on `SegmentMemberResolver::getMatchingCustomerIds()`,
   no new resolver logic needed.
-- No behavioral/event-based cohort conditions (browsing, cart, wishlist events) — only
-  `purchased_sku`/`purchased_category` exist for behavior; a real CDP's segmentation lives on
-  events like this.
+- No behavioral/event-based cohort *conditions* yet — event capture itself is now closed for
+  cart/wishlist (`Observer\TrackCartAdd`/`TrackWishlistAdd` log into `ordo_visitor_event`, see
+  docs/CHANGELOG.md), but there's still no `event_occurred`-style condition type to segment on it,
+  no `SegmentMemberResolver` bulk-membership case, and no admin form fields — only
+  `purchased_sku`/`purchased_category` exist as real segment conditions today.
 - Group condition editor's JSON fallback (for `in_segment`, `loyalty_tier_at_least`,
   `nps_score_at_least`) silently becomes `{}` on malformed JSON with no validation feedback — a
   non-technical marketer gets a condition that quietly matches nothing.

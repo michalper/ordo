@@ -19,6 +19,16 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Cart-add/wishlist-add event tracking (behavioral segmentation, Phase 1 — event capture
+  only)**, closing the first phase of ROADMAP.md's Tier 3 "behavioral/event-based segmentation"
+  item. New `Observer\TrackCartAdd` (on `checkout_cart_product_add_after`) and
+  `Observer\TrackWishlistAdd` (on `wishlist_product_add_after`) log `cart_add`/`wishlist_add` rows
+  into the existing `ordo_visitor_event` table via `Model\VisitorEventLogger` — the same table
+  `page_view`/`product_view`/`category_view` already populate, no schema change. Logged-in
+  customers only for v1 (an anonymous cart-add has no campaign use case yet — there's no channel
+  to message an anonymous visitor through), keyed by SKU (`event_key`), matching `purchased_sku`'s
+  own identity choice. No condition type or admin UI yet to actually segment on this data — that's
+  the next phase; this closes purely the "is anything captured at all" gap.
 - **A/B/split testing on campaign actions (backend only, no Flow canvas UI yet)**, closing Part A
   Phase 2 of the ROADMAP.md Tier 3 "A/B testing" item. A `CampaignAction` row with `type = 'split'`
   carries `{"variants": [{"key": "a", "weight": 50, "actions": [...]}]}` in `params` — the same
