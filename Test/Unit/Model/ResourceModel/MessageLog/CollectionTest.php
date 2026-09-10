@@ -18,4 +18,36 @@ class CollectionTest extends AbstractCollectionTestCase
         self::assertSame($resource, $collection->getResource());
         self::assertSame('ordo_message_log', $collection->getResource()->getMainTable());
     }
+
+    private function makeCollection(): Collection
+    {
+        [$entityFactory, $logger, $fetchStrategy, $eventManager] = $this->makeCollectionDeps();
+        $fetchStrategy->method('fetchAll')->willReturn([]);
+        return new Collection($entityFactory, $logger, $fetchStrategy, $eventManager, null, $this->makeResource());
+    }
+
+    /**
+     * @see Model\Campaign\FrequencyCapManager::hasCapacity() - these 3 filters are its whole
+     * query, chained fluently.
+     */
+    public function testAddCustomerFilterIsFluent(): void
+    {
+        $collection = $this->makeCollection();
+
+        self::assertSame($collection, $collection->addCustomerFilter(42));
+    }
+
+    public function testAddSentSinceFilterIsFluent(): void
+    {
+        $collection = $this->makeCollection();
+
+        self::assertSame($collection, $collection->addSentSinceFilter('2026-01-01 00:00:00'));
+    }
+
+    public function testAddRealSendAttemptFilterIsFluent(): void
+    {
+        $collection = $this->makeCollection();
+
+        self::assertSame($collection, $collection->addRealSendAttemptFilter());
+    }
 }

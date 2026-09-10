@@ -9,7 +9,7 @@ use Magento\Framework\Mail\Template\TransportBuilder;
 use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Api\Campaign\ActionInterface;
-use Ordo\Automation\Model\Campaign\FrequencyCapManager;
+use Ordo\Automation\Model\Campaign\FrequencyCapGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Email\MessageIdGenerator;
@@ -25,7 +25,7 @@ use Psr\Log\LoggerInterface;
  *
  * Checks ConsentManager::hasConsent() before sending anything — an explicit email opt-out
  * silently skips this action (not an error; skipping is the intended behavior). Also checks
- * FrequencyCapManager::hasCapacity() (opt-in, cross-channel) right after — a customer over the
+ * FrequencyCapGate::allows() (opt-in, cross-channel) right after — a customer over the
  * configured contact-volume cap is skipped and recorded as suppressed, not sent.
  *
  * Writes to the same channel-generic ordo_message_log SendSms already writes to (see that
@@ -49,7 +49,7 @@ class SendEmail implements ActionInterface
         private readonly StoreManagerInterface $storeManager,
         private readonly StateInterface $inlineTranslation,
         private readonly ConsentManager $consentManager,
-        private readonly FrequencyCapManager $frequencyCapManager,
+        private readonly FrequencyCapGate $frequencyCapGate,
         private readonly MessageIdGenerator $messageIdGenerator,
         private readonly PendingMessageIdHolder $pendingMessageIdHolder,
         private readonly MessageLogWriter $messageLogWriter,
@@ -78,12 +78,7 @@ class SendEmail implements ActionInterface
             return;
         }
 
-        if (!$this->frequencyCapManager->hasCapacity($customerId)) {
-            $this->logger->info(sprintf(
-                'Ordo_Automation: send_email action skipped for customer #%d, frequency cap reached.',
-                $customerId
-            ));
-            $this->messageLogWriter->recordSuppressed(self::CHANNEL, $customerId, '');
+        if (!$this->frequencyCapGate->allows($customerId, self::CHANNEL, '', 'send_email')) {
             return;
         }
 

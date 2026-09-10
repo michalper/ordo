@@ -11,7 +11,7 @@ use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign\Action\SendRetrier;
 use Ordo\Automation\Model\Campaign\Action\SendWhatsApp;
-use Ordo\Automation\Model\Campaign\FrequencyCapManager;
+use Ordo\Automation\Model\Campaign\FrequencyCapGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate as WhatsAppTemplateResource;
@@ -32,7 +32,7 @@ class SendWhatsAppTest extends TestCase
     private WhatsAppTemplateResource $whatsAppTemplateResource;
     private MessageLogWriter $messageLogWriter;
     private ConsentManager $consentManager;
-    private FrequencyCapManager $frequencyCapManager;
+    private FrequencyCapGate $frequencyCapGate;
     private LoggerInterface $logger;
 
     protected function setUp(): void
@@ -46,8 +46,8 @@ class SendWhatsAppTest extends TestCase
         $this->messageLogWriter = $this->createMock(MessageLogWriter::class);
         $this->consentManager = $this->createStub(ConsentManager::class);
         $this->consentManager->method('hasConsent')->willReturn(true);
-        $this->frequencyCapManager = $this->createStub(FrequencyCapManager::class);
-        $this->frequencyCapManager->method('hasCapacity')->willReturn(true);
+        $this->frequencyCapGate = $this->createStub(FrequencyCapGate::class);
+        $this->frequencyCapGate->method('allows')->willReturn(true);
         $this->logger = $this->createMock(LoggerInterface::class);
     }
 
@@ -61,7 +61,7 @@ class SendWhatsAppTest extends TestCase
             $this->whatsAppTemplateResource,
             $this->messageLogWriter,
             $this->consentManager,
-            $this->frequencyCapManager,
+            $this->frequencyCapGate,
             new SendRetrier(1),
             $this->logger
         );
@@ -260,12 +260,12 @@ class SendWhatsAppTest extends TestCase
     {
         $this->stubApprovedTemplate();
         $this->customerRepository->method('getById')->willReturn($this->customerWithPhone('+15551234567'));
-        $this->frequencyCapManager = $this->createMock(FrequencyCapManager::class);
-        $this->frequencyCapManager->expects(self::once())->method('hasCapacity')->with(42)->willReturn(false);
+        $this->frequencyCapGate = $this->createMock(FrequencyCapGate::class);
+        $this->frequencyCapGate->expects(self::once())->method('allows')
+            ->with(42, 'whatsapp', '+15551234567', 'send_whatsapp')->willReturn(false);
         $this->whatsAppSender->expects(self::never())->method('send');
-        $this->logger->expects(self::once())->method('info');
-        $this->messageLogWriter->expects(self::once())->method('recordSuppressed')
-            ->with('whatsapp', 42, '+15551234567');
+        $this->logger->expects(self::never())->method('info');
+        $this->messageLogWriter->expects(self::never())->method('recordSuppressed');
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['template_id' => '3']);

@@ -6,7 +6,7 @@ namespace Ordo\Automation\Test\Unit\Model\Campaign\Action;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign\Action\SendPush;
 use Ordo\Automation\Model\Campaign\Action\SendRetrier;
-use Ordo\Automation\Model\Campaign\FrequencyCapManager;
+use Ordo\Automation\Model\Campaign\FrequencyCapGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Push\Exception\SubscriptionGoneException;
@@ -25,7 +25,7 @@ class SendPushTest extends TestCase
     private Config $config;
     private MessageLogWriter $messageLogWriter;
     private ConsentManager $consentManager;
-    private FrequencyCapManager $frequencyCapManager;
+    private FrequencyCapGate $frequencyCapGate;
     private LoggerInterface $logger;
 
     protected function setUp(): void
@@ -37,8 +37,8 @@ class SendPushTest extends TestCase
         $this->messageLogWriter = $this->createMock(MessageLogWriter::class);
         $this->consentManager = $this->createStub(ConsentManager::class);
         $this->consentManager->method('hasConsent')->willReturn(true);
-        $this->frequencyCapManager = $this->createStub(FrequencyCapManager::class);
-        $this->frequencyCapManager->method('hasCapacity')->willReturn(true);
+        $this->frequencyCapGate = $this->createStub(FrequencyCapGate::class);
+        $this->frequencyCapGate->method('allows')->willReturn(true);
         $this->logger = $this->createMock(LoggerInterface::class);
     }
 
@@ -50,7 +50,7 @@ class SendPushTest extends TestCase
             $this->config,
             $this->messageLogWriter,
             $this->consentManager,
-            $this->frequencyCapManager,
+            $this->frequencyCapGate,
             new SendRetrier(1),
             $this->logger
         );
@@ -129,11 +129,12 @@ class SendPushTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsAndRecordsSuppressedWhenFrequencyCapReached(): void
     {
-        $this->frequencyCapManager = $this->createMock(FrequencyCapManager::class);
-        $this->frequencyCapManager->expects(self::once())->method('hasCapacity')->with(42)->willReturn(false);
+        $this->frequencyCapGate = $this->createMock(FrequencyCapGate::class);
+        $this->frequencyCapGate->expects(self::once())->method('allows')
+            ->with(42, 'push', '', 'send_push')->willReturn(false);
         $this->pushSubscriptionManager->expects(self::never())->method('getForCustomer');
         $this->pushSender->expects(self::never())->method('send');
-        $this->messageLogWriter->expects(self::once())->method('recordSuppressed')->with('push', 42, '');
+        $this->messageLogWriter->expects(self::never())->method('recordSuppressed');
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['title' => 'Hi']);
