@@ -201,6 +201,18 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- **Unified `CampaignDispatcher`/`SegmentMatcher`'s duplicated AND/OR/nested-group condition
+  evaluator**, closing the campaign engine's "second, independent implementation" gap. Both
+  `evaluateList`/`evaluateOne`/`evaluateGroup`/`asStringKeyedArray` were textually identical
+  (down to comments) in each class — now extracted into a new
+  `Model\Condition\ConditionGroupEvaluator`, injected into both. A pre-extraction audit found no
+  accidental drift between the two: they already agreed on every tested case except one
+  deliberate, documented asymmetry (a campaign with zero top-level conditions fires
+  unconditionally; a segment with zero conditions never matches), which each caller still applies
+  itself before ever delegating to the shared evaluator — pure refactor, no behavior change.
+  `Model\Segment\SegmentMemberResolver`'s own separate, third (set-level, `int[]`-returning)
+  reimplementation of the same group-walk shape is a distinct, bigger unification question, not
+  attempted here.
 - **SendGrid webhook `unsubscribe`/`spamreport`/`group_unsubscribe` now record a real consent
   opt-out**, closing the ROADMAP.md Tier 1 item. These three used to fall into the "unhandled,
   silently skipped" bucket — a one-click unsubscribe or spam complaint from the recipient's own

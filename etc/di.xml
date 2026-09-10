@@ -190,16 +190,17 @@
     </type>
 
     <!--
-        ConditionPool -> InSegment -> SegmentMatcher -> ConditionPool would otherwise be a
-        genuine constructor cycle (ConditionPool's array argument instantiates every condition,
-        including InSegment, eagerly at construction time). Breaking it with a Proxy here means
-        SegmentMatcher gets a lazy stand-in that only actually builds the real ConditionPool the
-        first time isCustomerInSegment() calls ->get(), by which point ConditionPool itself has
-        already finished constructing.
+        ConditionPool -> InSegment -> SegmentMatcher -> ConditionGroupEvaluator -> ConditionPool
+        would otherwise be a genuine constructor cycle (ConditionPool's array argument
+        instantiates every condition, including InSegment, eagerly at construction time).
+        Breaking it with a Proxy here means SegmentMatcher gets a lazy stand-in that only actually
+        builds the real ConditionGroupEvaluator (and, transitively, ConditionPool) the first time
+        isCustomerInSegment() calls ->evaluate(), by which point ConditionPool itself has already
+        finished constructing.
     -->
     <type name="Ordo\Automation\Model\Segment\SegmentMatcher">
         <arguments>
-            <argument name="conditionPool" xsi:type="object">Ordo\Automation\Model\Campaign\ConditionPool\Proxy</argument>
+            <argument name="conditionGroupEvaluator" xsi:type="object">Ordo\Automation\Model\Condition\ConditionGroupEvaluator\Proxy</argument>
         </arguments>
     </type>
 

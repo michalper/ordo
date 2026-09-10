@@ -18,6 +18,7 @@ use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\CampaignScheduledAction;
 use Ordo\Automation\Model\CampaignScheduledActionFactory;
 use Ordo\Automation\Model\CampaignTrigger;
+use Ordo\Automation\Model\Condition\ConditionGroupEvaluator;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\Collection as ActionCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Collection as CampaignCollection;
@@ -89,7 +90,7 @@ class CampaignDispatcherTest extends TestCase
             $this->campaignActionFactory,
             $this->campaignScheduledActionFactory,
             $this->campaignScheduledActionResource,
-            $this->conditionPool,
+            new ConditionGroupEvaluator($this->conditionPool, $this->logger),
             $this->actionPool,
             $this->splitVariantSelector,
             $this->campaignEntryGuard,

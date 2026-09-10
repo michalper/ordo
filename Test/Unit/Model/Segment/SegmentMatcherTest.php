@@ -5,6 +5,7 @@ namespace Ordo\Automation\Test\Unit\Model\Segment;
 
 use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\Campaign\ConditionPool;
+use Ordo\Automation\Model\Condition\ConditionGroupEvaluator;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\Collection as SegmentConditionCollection;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\CollectionFactory as SegmentConditionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
@@ -47,10 +48,9 @@ class SegmentMatcherTest extends TestCase
 
         $this->matcher = new SegmentMatcher(
             $this->collectionFactory,
-            $this->conditionPool,
+            new ConditionGroupEvaluator($this->conditionPool, $this->logger),
             $this->segmentFactory,
-            $this->segmentResource,
-            $this->logger
+            $this->segmentResource
         );
     }
 

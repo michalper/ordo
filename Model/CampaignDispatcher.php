@@ -7,8 +7,8 @@ use Magento\Framework\App\CacheInterface;
 use Magento\Framework\Serialize\SerializerInterface;
 use Ordo\Automation\Model\Campaign\ActionPool;
 use Ordo\Automation\Model\Campaign\CampaignEntryGuard;
-use Ordo\Automation\Model\Campaign\ConditionPool;
 use Ordo\Automation\Model\Campaign\SplitVariantSelector;
+use Ordo\Automation\Model\Condition\ConditionGroupEvaluator;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as CampaignActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as CampaignConditionCollectionFactory;
@@ -64,7 +64,7 @@ class CampaignDispatcher
         private readonly CampaignActionFactory $campaignActionFactory,
         private readonly CampaignScheduledActionFactory $campaignScheduledActionFactory,
         private readonly CampaignScheduledActionResource $campaignScheduledActionResource,
-        private readonly ConditionPool $conditionPool,
+        private readonly ConditionGroupEvaluator $conditionGroupEvaluator,
         private readonly ActionPool $actionPool,
         private readonly SplitVariantSelector $splitVariantSelector,
         private readonly CampaignEntryGuard $campaignEntryGuard,
@@ -253,8 +253,8 @@ class CampaignDispatcher
     {
         // A campaign with zero conditions has always meant "fire unconditionally" regardless of
         // AND/OR — deliberately asymmetric from SegmentMatcher, which fails closed on zero
-        // conditions either way (see SegmentMatcher's own docblock). Handled before the loop so
-        // it doesn't depend on which logic happens to be selected.
+        // conditions either way (see SegmentMatcher's own docblock). Handled here, before ever
+        // reaching ConditionGroupEvaluator, since that policy is specific to this caller.
         if ($conditions === []) {
             return true;
         }
@@ -264,114 +264,7 @@ class CampaignDispatcher
             $specs[] = ['type' => (string) $conditionRow->getData('type'), 'params' => $conditionRow->getParams()];
         }
 
-        return $this->evaluateList($specs, $logic, $context);
-    }
-
-    /**
-     * @param array<int, array{type: string, params: array<string, mixed>}> $specs
-     * @param array<string, mixed> $context
-     */
-    private function evaluateList(array $specs, string $logic, array $context): bool
-    {
-        $matchAny = $logic === 'any';
-
-        foreach ($specs as $spec) {
-            $satisfied = $this->evaluateOne($spec, $context);
-
-            if ($matchAny && $satisfied) {
-                return true;
-            }
-
-            if (!$matchAny && !$satisfied) {
-                return false;
-            }
-        }
-
-        // Loop finished without an early return: under AND every entry passed, under OR none of
-        // them did.
-        return !$matchAny;
-    }
-
-    /**
-     * A row whose type is the reserved 'group' pseudo-type holds its own nested
-     * {"logic": ..., "conditions": [...]} in params instead of a real ConditionPool condition —
-     * see Model\Segment\SegmentMatcher::evaluateGroup()'s docblock for why this needs no schema
-     * change and isn't reachable via the Flow canvas yet.
-     *
-     * @param array{type: string, params: array<string, mixed>} $spec
-     * @param array<string, mixed> $context
-     */
-    private function evaluateOne(array $spec, array $context): bool
-    {
-        if ($spec['type'] === 'group') {
-            return $this->evaluateGroup($spec['params'], $context);
-        }
-
-        $condition = $this->conditionPool->get($spec['type']);
-
-        if (!$condition instanceof \Ordo\Automation\Api\Campaign\ConditionInterface) {
-            $this->logger->error(sprintf(
-                'Ordo_Automation: unknown campaign condition type "%s".',
-                $spec['type']
-            ));
-            return false;
-        }
-
-        return $condition->isSatisfied($context, $spec['params']);
-    }
-
-    /**
-     * @param array<string, mixed> $groupParams
-     * @param array<string, mixed> $context
-     */
-    private function evaluateGroup(array $groupParams, array $context): bool
-    {
-        $nestedLogic = ($groupParams['logic'] ?? 'all') === 'any' ? 'any' : 'all';
-        $nested = $groupParams['conditions'] ?? null;
-
-        if (!is_array($nested) || $nested === []) {
-            // Unlike a campaign's top-level zero-conditions case, an empty nested group is NOT
-            // "fire unconditionally" — it's a group an admin built and left empty, so it fails
-            // closed the same way SegmentMatcher::evaluateGroup() does.
-            return false;
-        }
-
-        $specs = [];
-        foreach ($nested as $item) {
-            if (!is_array($item) || !isset($item['type']) || !is_string($item['type'])) {
-                continue;
-            }
-            $specs[] = ['type' => $item['type'], 'params' => $this->asStringKeyedArray($item['params'] ?? [])];
-        }
-
-        if ($specs === []) {
-            return false;
-        }
-
-        return $this->evaluateList($specs, $nestedLogic, $context);
-    }
-
-    /**
-     * Same normalization as Model\Segment\SegmentMatcher::asStringKeyedArray() - a decoded-JSON
-     * 'group' params blob's nested "conditions" entries aren't guaranteed to be string-keyed
-     * maps the way a real CampaignCondition row's getParams() already is.
-     *
-     * @return array<string, mixed>
-     */
-    private function asStringKeyedArray(mixed $value): array
-    {
-        if (!is_array($value)) {
-            return [];
-        }
-
-        $result = [];
-        foreach ($value as $key => $item) {
-            if (is_string($key)) {
-                $result[$key] = $item;
-            }
-        }
-
-        return $result;
+        return $this->conditionGroupEvaluator->evaluate($specs, $logic, $context, 'campaign condition');
     }
 
     /**
@@ -534,6 +427,30 @@ class CampaignDispatcher
         }
 
         return $variants;
+    }
+
+    /**
+     * Normalizes a decoded-JSON split-variant action spec's params into a guaranteed
+     * array<string, mixed> before re-encoding it as a synthetic CampaignAction's params_json -
+     * a hand-written variant spec's "params" blob isn't guaranteed to be string-keyed the way a
+     * real CampaignAction row's own getParams() already is.
+     *
+     * @return array<string, mixed>
+     */
+    private function asStringKeyedArray(mixed $value): array
+    {
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($value as $key => $item) {
+            if (is_string($key)) {
+                $result[$key] = $item;
+            }
+        }
+
+        return $result;
     }
 
     /**

@@ -3,11 +3,10 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Segment;
 
-use Ordo\Automation\Model\Campaign\ConditionPool;
+use Ordo\Automation\Model\Condition\ConditionGroupEvaluator;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\CollectionFactory as SegmentConditionCollectionFactory;
 use Ordo\Automation\Model\SegmentFactory;
-use Psr\Log\LoggerInterface;
 
 /**
  * Evaluates a saved segment's conditions against a customer, reusing the exact same
@@ -35,10 +34,9 @@ class SegmentMatcher
 {
     public function __construct(
         private readonly SegmentConditionCollectionFactory $segmentConditionCollectionFactory,
-        private readonly ConditionPool $conditionPool,
+        private readonly ConditionGroupEvaluator $conditionGroupEvaluator,
         private readonly SegmentFactory $segmentFactory,
-        private readonly SegmentResource $segmentResource,
-        private readonly LoggerInterface $logger
+        private readonly SegmentResource $segmentResource
     ) {
     }
 
@@ -78,82 +76,12 @@ class SegmentMatcher
             ];
         }
 
-        return $this->evaluateList($specs, $segment->getConditionLogic(), $context);
-    }
-
-    /**
-     * @param array<int, array{type: string, params: array<string, mixed>}> $specs
-     * @param array<string, mixed> $context
-     */
-    private function evaluateList(array $specs, string $logic, array $context): bool
-    {
-        $matchAny = $logic === 'any';
-
-        foreach ($specs as $spec) {
-            $satisfied = $this->evaluateOne($spec, $context);
-
-            if ($matchAny && $satisfied) {
-                return true;
-            }
-
-            if (!$matchAny && !$satisfied) {
-                return false;
-            }
-        }
-
-        // Loop finished without an early return: under AND every entry passed, under OR none of
-        // them did.
-        return !$matchAny;
-    }
-
-    /**
-     * @param array{type: string, params: array<string, mixed>} $spec
-     * @param array<string, mixed> $context
-     */
-    private function evaluateOne(array $spec, array $context): bool
-    {
-        if ($spec['type'] === 'group') {
-            return $this->evaluateGroup($spec['params'], $context);
-        }
-
-        $condition = $this->conditionPool->get($spec['type']);
-
-        if (!$condition instanceof \Ordo\Automation\Api\Campaign\ConditionInterface) {
-            $this->logger->error(sprintf('Ordo_Automation: unknown segment condition type "%s".', $spec['type']));
-            return false;
-        }
-
-        return $condition->isSatisfied($context, $spec['params']);
-    }
-
-    /**
-     * @param array<string, mixed> $groupParams
-     * @param array<string, mixed> $context
-     */
-    private function evaluateGroup(array $groupParams, array $context): bool
-    {
-        $nestedLogic = ($groupParams['logic'] ?? 'all') === 'any' ? 'any' : 'all';
-        $nested = $groupParams['conditions'] ?? null;
-
-        if (!is_array($nested) || $nested === []) {
-            // Same fail-closed reasoning as a segment with zero conditions - an empty group is
-            // never treated as "matches everyone" under AND.
-            return false;
-        }
-
-        $specs = [];
-        foreach ($nested as $item) {
-            if (!is_array($item) || !isset($item['type']) || !is_string($item['type'])) {
-                continue;
-            }
-            $specs[] = ['type' => $item['type'], 'params' => $this->asStringKeyedArray($item['params'] ?? [])];
-        }
-
-        if ($specs === []) {
-            return false;
-        }
-
-        return $this->evaluateList($specs, $nestedLogic, $context);
+        return $this->conditionGroupEvaluator->evaluate(
+            $specs,
+            $segment->getConditionLogic(),
+            $context,
+            'segment condition'
+        );
     }
 
     /**

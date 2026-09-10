@@ -105,9 +105,14 @@ the unbounded single-pass memory build in `GoogleMerchantFeedGenerator`, and pag
 - No dead-letter/retry policy for the dispatch queue — `CampaignDispatchConsumer` explicitly drops
   a malformed message rather than requeuing it, and no alerting surfaces a broken campaign (e.g. a
   deleted email template ID) beyond a log line.
-- `CampaignDispatcher`'s own AND/OR/nested-group evaluator (`evaluateGroup`/`evaluateList`) is a
-  second, independent implementation of the same logic `Model/Segment/SegmentMatcher` already has
-  — a fix to one (e.g. "empty group fails closed") can silently drift from the other over time.
+- ~~`CampaignDispatcher`'s own AND/OR/nested-group evaluator is a second, independent
+  implementation of the same logic `SegmentMatcher` already has~~ — **closed**: both now delegate
+  to a new shared `Model\Condition\ConditionGroupEvaluator`. An audit before extracting it found
+  no accidental drift between the two — they already agreed on every case except one deliberate,
+  documented asymmetry (a campaign with zero top-level conditions fires unconditionally; a segment
+  with zero conditions never matches), which each caller still applies itself before delegating.
+  `Model\Segment\SegmentMemberResolver`'s own, third (set-level, `int[]`-returning) reimplementation
+  of the same group-walk shape is a separate, bigger unification question — not attempted here.
 
 ### Segmentation, RFM & lead scoring (`Model/Segment/*`, `Model/Rfm/*`, `Model/ScoreRule/*`, `Model/AdAudience/*`)
 
