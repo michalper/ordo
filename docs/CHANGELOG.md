@@ -5,8 +5,34 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- `.github/workflows/coverage.yml`: PHP and JS coverage used to run sequentially as two halves
+  of one `coverage` job, gating the PR check on their combined runtime. Split into parallel
+  `php-coverage` / `js-coverage` jobs, plus a `sonar` job that `needs` both and downloads their
+  `clover.xml`/`lcov.info` artifacts to run the scan. `mutation-testing` was already a separate,
+  parallel job.
+- `main` branch protection now requires `unit-tests`, `static-analysis`, `rector`,
+  `coding-standard`, `php-coverage`, `js-coverage`, and `sonar` to pass (`mutation-testing`
+  stays non-blocking, `continue-on-error: true`); `allow_auto_merge` and
+  `delete_branch_on_merge` are on. See AGENTS.md's "PRs auto-merge once CI is green" for the
+  workflow this enables.
+
 ### Fixed
 
+- `Test/js/free-gift-offer-form.test.js`'s `sleep()` test asserted `Date.now() - start >= 10`,
+  which depends on real wall-clock timing and was flaky on a loaded CI runner (failed at least
+  once in CI). Rewritten to stub `setTimeout` and assert the actual contract instead: `sleep()`
+  schedules a callback with the given delay, and its promise resolves only once that callback
+  fires — no dependency on real elapsed time.
+- `AdminCreateSegmentWithNestedGroupConditionTest`'s `dontSeeElement` used a bare CSS class
+  selector (`.ordo-group-manage-button`), which routes Codeception's WebDriver module through
+  Selenium's native "class name" locator strategy — that strategy threw `MalformedLocatorException`
+  on this CI's driver/Selenium combination even though the class name itself was syntactically
+  valid. Fixed by rewriting the selector as `[class~='ordo-group-manage-button']`, an attribute
+  selector that forces the CSS selector engine instead. Verified locally against a live
+  Magento/Selenium stack (`vendor/bin/mftf run:test AdminCreateSegmentWithNestedGroupConditionTest`
+  now passes).
 - `send_push` was missing from `Block\Adminhtml\Campaign\Edit\Flow::getFieldsConfig()` and
   `Model\Campaign\TypeLabels` — the action itself worked end to end (confirmed against a real
   browser subscription and a real push service delivery), but the Flow canvas editor had no
