@@ -15,7 +15,8 @@ use Magento\Framework\App\ResourceConnection;
 class CustomerDataExporter
 {
     public function __construct(
-        private readonly ResourceConnection $resourceConnection
+        private readonly ResourceConnection $resourceConnection,
+        private readonly CustomerDataTableProvider $tableProvider
     ) {
     }
 
@@ -34,16 +35,11 @@ class CustomerDataExporter
             return $connection->fetchAll($select);
         };
 
-        return [
-            'customer_id' => $customerId,
-            'consent' => $fetch('ordo_customer_consent'),
-            'tags' => $fetch('ordo_customer_tag'),
-            'score' => $fetch('ordo_customer_score'),
-            'demographic_score' => $fetch('ordo_customer_demographic_score'),
-            'notifications' => $fetch('ordo_notification'),
-            'survey_responses' => $fetch('ordo_survey_prompt'),
-            'pending_popups' => $fetch('ordo_pending_popup'),
-            'message_log' => $fetch('ordo_message_log'),
-        ];
+        $payload = ['customer_id' => $customerId];
+        foreach ($this->tableProvider->getExportKeysByTable() as $table => $exportKey) {
+            $payload[$exportKey] = $fetch($table);
+        }
+
+        return $payload;
     }
 }
