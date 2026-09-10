@@ -204,6 +204,43 @@ class SegmentSaveProcessorTest extends TestCase
         ]);
     }
 
+    /**
+     * Regression test for the ROADMAP.md "Group condition editor's JSON fallback ... no
+     * validation feedback" work: in_segment/not_in_segment/loyalty_tier_at_least now have real
+     * dedicated fields (segment_id/tier) instead of requiring a hand-typed params_json.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessPersistsSegmentIdAndTierDedicatedFields(): void
+    {
+        $processor = $this->makeProcessor();
+
+        $segment = $this->createMock(Segment::class);
+        $segment->method('getEntityId')->willReturn(1);
+        $this->segmentFactory->method('create')->willReturn($segment);
+
+        $this->segmentConditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+
+        $inSegmentCondition = $this->createMock(SegmentCondition::class);
+        $inSegmentCondition->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => $data['type'] === 'in_segment'
+                && json_decode($data['params'], true) === ['segment_id' => '3']
+        ));
+        $tierCondition = $this->createMock(SegmentCondition::class);
+        $tierCondition->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => $data['type'] === 'loyalty_tier_at_least'
+                && json_decode($data['params'], true) === ['tier' => 'gold']
+        ));
+        $this->segmentConditionFactory->method('create')
+            ->willReturnOnConsecutiveCalls($inSegmentCondition, $tierCondition);
+
+        $processor->process([
+            'conditions' => ['conditions' => [
+                ['type' => 'in_segment', 'segment_id' => '3', 'params_json' => ''],
+                ['type' => 'loyalty_tier_at_least', 'tier' => 'gold', 'params_json' => ''],
+            ]],
+        ]);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testProcessSetsAnyConditionLogicWhenPosted(): void
     {

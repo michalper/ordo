@@ -228,6 +228,15 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   `Magento\Framework\App\CacheInterface`, 60-second TTL per key (`ordo_dashboard_count_*`) —
   closing the "4+ separate uncached COUNT queries on every page load" half of the dashboard
   ROADMAP.md item; the drill-down half of that item is still open.
+- **Separated 4 admin screens from the broader ACL resources they were incorrectly reusing**,
+  closing the ROADMAP.md "ACL resources are shared across functionally distinct screens" finding.
+  Message Log, Reorder Cycles (index + recalculate-now), and Product Feed refresh no longer gate
+  on `Ordo_Automation::campaigns`; RFM no longer gates on `Ordo_Automation::segments`. Each now has
+  its own dedicated `etc/acl.xml` resource: `Ordo_Automation::message_log`,
+  `Ordo_Automation::reorder_cycle`, `Ordo_Automation::product_feed`, `Ordo_Automation::rfm`.
+  **Behavior change, not a silent no-op**: any existing custom admin role granted only the
+  broader `campaigns` or `segments` resource will lose access to these 4 screens until an admin
+  explicitly re-grants the corresponding new resource.
 - **Unified `CampaignDispatcher`/`SegmentMatcher`'s duplicated AND/OR/nested-group condition
   evaluator**, closing the campaign engine's "second, independent implementation" gap. Both
   `evaluateList`/`evaluateOne`/`evaluateGroup`/`asStringKeyedArray` were textually identical

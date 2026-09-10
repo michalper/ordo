@@ -6,6 +6,7 @@ namespace Ordo\Automation\Test\Unit\Model\Gdpr;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
 use Ordo\Automation\Model\Gdpr\CustomerDataEraser;
+use Ordo\Automation\Model\Gdpr\CustomerDataTableProvider;
 use PHPUnit\Framework\TestCase;
 
 class CustomerDataEraserTest extends TestCase
@@ -21,7 +22,7 @@ class CustomerDataEraserTest extends TestCase
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        $result = (new CustomerDataEraser($resourceConnection))->erase(42);
+        $result = (new CustomerDataEraser($resourceConnection, new CustomerDataTableProvider()))->erase(42);
 
         self::assertArrayHasKey('ordo_customer_consent', $result);
         self::assertArrayHasKey('ordo_customer_tag', $result);

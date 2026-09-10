@@ -19,9 +19,8 @@ use Ordo\Automation\Cron\CalculateReorderCycle;
  */
 class RecalculateNow extends Action implements HttpGetActionInterface
 {
-    // Same resource Controller\Adminhtml\ReorderCycle\Index already gates on - see that
-    // controller's own docblock for why campaigns, not config.
-    public const ADMIN_RESOURCE = 'Ordo_Automation::campaigns';
+    // Same resource Controller\Adminhtml\ReorderCycle\Index already gates on.
+    public const ADMIN_RESOURCE = 'Ordo_Automation::reorder_cycle';
 
     public function __construct(
         Context $context,

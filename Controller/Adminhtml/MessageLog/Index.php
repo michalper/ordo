@@ -12,13 +12,13 @@ use Magento\Framework\View\Result\PageFactory;
  * Read-only view of ordo_message_log — the only way to see whether a send_sms campaign action
  * actually delivered without querying the database directly (Model\Sms\MessageLogWriter records
  * every send/opt-out/failure here, Controller\Sms\StatusCallback updates status on Twilio's
- * delivery-status webhook). Guarded by the campaigns ACL resource rather than a new one of its
- * own, same reasoning as Rfm\Index: this is an operational view of what campaign actions already
- * did, not a separate feature with its own permission boundary.
+ * delivery-status webhook). Guarded by its own dedicated ACL resource (message_log) rather than
+ * the broader campaigns resource, so access can be granted independently of full campaign
+ * management permissions.
  */
 class Index extends Action implements HttpGetActionInterface
 {
-    public const ADMIN_RESOURCE = 'Ordo_Automation::campaigns';
+    public const ADMIN_RESOURCE = 'Ordo_Automation::message_log';
 
     public function __construct(
         Context $context,
@@ -30,7 +30,7 @@ class Index extends Action implements HttpGetActionInterface
     public function execute()
     {
         $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::campaigns');
+        $resultPage->setActiveMenu('Ordo_Automation::message_log');
         $resultPage->getConfig()->getTitle()->prepend(__('Message Log'));
 
         return $resultPage;

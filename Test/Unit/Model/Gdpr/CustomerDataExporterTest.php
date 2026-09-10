@@ -7,6 +7,7 @@ use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\DB\Select;
 use Ordo\Automation\Model\Gdpr\CustomerDataExporter;
+use Ordo\Automation\Model\Gdpr\CustomerDataTableProvider;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
@@ -27,7 +28,7 @@ class CustomerDataExporterTest extends TestCase
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        $result = (new CustomerDataExporter($resourceConnection))->export(42);
+        $result = (new CustomerDataExporter($resourceConnection, new CustomerDataTableProvider()))->export(42);
 
         self::assertSame(42, $result['customer_id']);
         self::assertArrayHasKey('consent', $result);
