@@ -229,6 +229,16 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   resistance to outliers. No new dependency — sorts the (already-in-memory) interval list and
   takes the middle value, or the average of the two middle values for an even count. The `< 1`
   same-day-purchase skip, `MIN_ORDERS_TO_DETECT_PATTERN`, and `upsertCycle()` call are unchanged.
+- **SendGrid webhook status updates are now rank-based instead of last-write-wins**, closing the
+  "no ordering/idempotency guard against provider redelivery" gap: `Controller\Email\StatusCallback`
+  has no per-event timestamp column to compare against, and SendGrid's account-wide Event Webhook
+  can redeliver events out of order, so a late-arriving redelivered `delivered` event used to be
+  able to regress an already-`bounced`/`failed`/`opted_out` message's status backward. A new
+  `STATUS_RANK` precedence table (`sent` < `delivered` < the three terminal outcomes, which rank
+  equal to each other) plus a small `isStatusDowngrade()` helper now make `applyStatus()` skip
+  (and log) any incoming status that ranks below the log row's current one, while a same-or-higher
+  rank — including the normal in-order `sent` → `delivered` → `bounced` sequence — still updates as
+  before.
 - **Separated 4 admin screens from the broader ACL resources they were incorrectly reusing**,
   closing the ROADMAP.md "ACL resources are shared across functionally distinct screens" finding.
   Message Log, Reorder Cycles (index + recalculate-now), and Product Feed refresh no longer gate
