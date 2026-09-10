@@ -5,10 +5,18 @@ if (!$block->isSegmentSaved()) {
     return;
 }
 ?>
-<div class="admin__fieldset-wrapper ordo-bulk-actions-panel">
-    <div class="admin__fieldset-wrapper-title">
+<!--
+    <details>, collapsed by default (no "open" attribute) - this panel fires a real, immediate,
+    asynchronously-applied action against every customer currently matching the segment, so it's
+    deliberately NOT rendered open-by-default directly under the conditions fieldset above (an
+    admin scrolling through conditions used to land straight on "Run Bulk Action" with nothing
+    separating the two). Native <details>/<summary> needs no JS to collapse/expand and is
+    keyboard/screen-reader accessible out of the box.
+-->
+<details class="admin__fieldset-wrapper ordo-bulk-actions-panel">
+    <summary class="admin__fieldset-wrapper-title">
         <strong><?= $escaper->escapeHtml(__('Bulk actions on current members')) ?></strong>
-    </div>
+    </summary>
     <div class="admin__fieldset-wrapper-content">
         <p><?= $escaper->escapeHtml(
             __(
@@ -66,7 +74,7 @@ if (!$block->isSegmentSaved()) {
             </div>
         </form>
     </div>
-</div>
+</details>
 <script>
 require(['Ordo_Automation/js/segment-bulk-actions']);
 </script>

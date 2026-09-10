@@ -55,19 +55,6 @@ specific date/time instead of only on a customer event?**
 Needs a scoping decision before implementation: is a one-off scheduled send (e.g. "Black Friday
 email, Nov 28 9am") or a recurring schedule (e.g. "every Monday") the more valuable first case.
 
-## Segment/Campaign condition builder follow-ups
-
-The core AND/OR nested-group gap is closed: both `Segment` and `Campaign` conditions support a
-reserved `'group'` pseudo-type holding its own nested `{"logic": "all"|"any", "conditions": [...]}`
-blob (one level of nesting), matched by `SegmentMemberResolver`/`CampaignDispatcher` recursing into
-`resolveGroup()`, and built in the admin UI by `segment-group-modal.js` (inline, not a modal
-despite the filename — see its own docblock for why nested `dynamicRows` didn't work). Covered by
-`Test/Mftf/Test/AdminCreateSegmentWithNestedGroupConditionTest`. Remaining open items:
-
-- The "Bulk actions on current members" block still shares the same form/page as the condition
-  builder — flagged as a mis-grouping risk (an action button living directly below unrelated
-  condition rows). Worth its own tab/section or a confirmation step. Not started.
-
 ## Localization
 
 - **Native-speaker review of the 10 machine-translated locales** (`de_DE`, `fr_FR`, `es_ES`, `it_IT`, `pt_BR`,

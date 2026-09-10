@@ -7,6 +7,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Nested AND/OR condition groups for Segment and Campaign conditions**, closing the
+  ROADMAP.md "Segment/Campaign condition builder follow-ups" item (the "Bulk actions" mis-grouping
+  sub-item is covered separately below). A reserved `'group'` pseudo-type holds its own nested
+  `{"logic": "all"|"any", "conditions": [...]}` blob (one level of nesting), matched by
+  `SegmentMemberResolver`/`CampaignDispatcher` recursing into `resolveGroup()`, and built in the
+  admin UI by `segment-group-modal.js` (inline, not an actual modal despite the filename — nested
+  `dynamicRows` didn't work, see its own docblock). Covered by
+  `Test/Mftf/Test/AdminCreateSegmentWithNestedGroupConditionTest`.
 - **Estimated audience size for segments**, closing the ROADMAP.md follow-up. Two parts:
   - `ordo_segment.estimated_audience_size`/`audience_size_computed_at` (new columns) back a
     grid column pair, refreshed every 15 minutes by
@@ -21,6 +29,12 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- **"Bulk actions on current members" no longer reads as one continuous step with the segment's
+  condition builder**, closing the ROADMAP.md mis-grouping follow-up. `bulkactions.phtml`'s panel
+  is now a native `<details>`/`<summary>` (collapsed by default, no JS needed for the
+  expand/collapse itself), visually separated with a red top border and extra margin, and its
+  `+`/`-` toggle icon reinforces that it's a distinct, deliberate action rather than the next
+  field in the form above it.
 - **Mutation testing is now blocking**, closing the ROADMAP.md follow-up. 5 consecutive CI runs
   across main and feature branches all landed at the identical 4943/7043 killed+errored+timed-out
   mutants (~70.2% MSI, `coveredMsi` the same since `Not Covered` is 0) — a stable baseline, not
