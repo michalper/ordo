@@ -1,13 +1,13 @@
 .ordo-dashboard {
-  --ordo-border: #e4e7ee;
-  --ordo-text-muted: #6b7180;
-  --ordo-primary: #7c3aed;
+  --ordo-border: var(--ordo-color-border);
+  --ordo-text-muted: var(--ordo-color-muted);
+  --ordo-primary: var(--ordo-color-primary);
   --ordo-primary-dark: #6425c9;
   --ordo-success: #1c9b6a;
   --ordo-success-bg: #e7f7f0;
   --ordo-danger: #DC2626;
   --ordo-off-bg: #f1f1f5;
-  --ordo-off-text: #6b7180;
+  --ordo-off-text: var(--ordo-color-muted);
   --ordo-radius: 10px;
 
   /* Type scale — every font-size/font-weight in this file (and flow.css's matching
@@ -111,7 +111,7 @@
   display: block;
   font-weight: var(--ordo-weight-medium);
   font-size: var(--ordo-font-md);
-  color: #1b1f2a;
+  color: var(--ordo-color-ink);
   margin-bottom: 4px;
 }
 
@@ -145,7 +145,7 @@
 
 .ordo-trigger-stat-row + .ordo-trigger-stat-row { border-top: 1px solid var(--ordo-border); }
 
-.ordo-trigger-stat-label { color: #1b1f2a; }
+.ordo-trigger-stat-label { color: var(--ordo-color-ink); }
 .ordo-trigger-stat-value { font-weight: var(--ordo-weight-bold); color: var(--ordo-primary); }
 
 .ordo-trigger-outcome-table {
@@ -193,8 +193,8 @@
    Calendar) that have no other way back — this module has a single flat admin menu entry
    (see etc/adminhtml/menu.xml's comment) plus dashboard cards, not a menu tree, so a page
    reached only via a dashboard card left the browser back button as the only way back. */
-.ordo-btn-secondary { background: #fff; border: 1px solid var(--ordo-border); color: #1b1f2a; }
-.ordo-btn-secondary:hover { border-color: var(--ordo-primary); color: #1b1f2a; }
+.ordo-btn-secondary { background: #fff; border: 1px solid var(--ordo-border); color: var(--ordo-color-ink); }
+.ordo-btn-secondary:hover { border-color: var(--ordo-primary); color: var(--ordo-color-ink); }
 
 /* Matches the grey toolbar bar Magento renders above every ui-component listing (where the
    declarative "Back to Dashboard"/"+ Add New" buttons land) — GDPR/Consent and Campaign
@@ -217,7 +217,7 @@
   display: inline-block;
   font-size: var(--ordo-font-base);
   font-weight: var(--ordo-weight-medium);
-  color: #1b1f2a;
+  color: var(--ordo-color-ink);
   text-decoration: none;
 }
 
@@ -292,7 +292,7 @@ body.ordo-campaign-index #add:hover {
 
 .ordo-gdpr-consent-row + .ordo-gdpr-consent-row { border-top: 1px solid var(--ordo-border); }
 
-.ordo-gdpr-consent-label { font-weight: var(--ordo-weight-medium); color: #1b1f2a; }
+.ordo-gdpr-consent-label { font-weight: var(--ordo-weight-medium); color: var(--ordo-color-ink); }
 
 .ordo-gdpr-consent-controls { display: flex; align-items: center; gap: 12px; }
 
@@ -332,7 +332,7 @@ body.ordo-campaign-index #add:hover {
   flex-wrap: wrap;
 }
 
-.ordo-empty-hint-text { margin: 0; font-size: var(--ordo-font-md); color: #1b1f2a; }
+.ordo-empty-hint-text { margin: 0; font-size: var(--ordo-font-md); color: var(--ordo-color-ink); }
 
 .ordo-empty-state { color: var(--ordo-text-muted); font-size: var(--ordo-font-md); }
 
@@ -363,7 +363,7 @@ body.ordo-campaign-index #add:hover {
   margin-bottom: 8px;
 }
 
-.ordo-campaign-name { font-weight: var(--ordo-weight-medium); font-size: var(--ordo-font-md); color: #1b1f2a; }
+.ordo-campaign-name { font-weight: var(--ordo-weight-medium); font-size: var(--ordo-font-md); color: var(--ordo-color-ink); }
 
 .ordo-badge {
   display: inline-block;

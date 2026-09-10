@@ -12,13 +12,13 @@
  */
 
 :root {
-    --ordo-accent: #4f46e5;
-    --ordo-accent-dark: #4338ca;
+    --ordo-accent: var(--ordo-color-accent);
+    --ordo-accent-dark: var(--ordo-color-accent-dark);
     --ordo-accent-tint: #f5f4ff;
     --ordo-accent-border: #ddd9fb;
-    --ordo-ink: #1b1f2a;
-    --ordo-muted: #6b7180;
-    --ordo-border: #e4e7ee;
+    --ordo-ink: var(--ordo-color-ink);
+    --ordo-muted: var(--ordo-color-muted);
+    --ordo-border: var(--ordo-color-border);
     --ordo-danger: #dc2626;
     --ordo-radius: 8px;
     --ordo-gap: 16px;

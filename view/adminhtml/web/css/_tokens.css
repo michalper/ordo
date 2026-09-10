@@ -1,0 +1,16 @@
+/*
+ * Shared color tokens for the admin CSS files below. Each token's value is the hex that was
+ * already the most-used one for that role across dashboard.css / segment-form.css / flow.css /
+ * free-gift-offer-form.css before this file existed - centralizing on-purpose, not restyling.
+ * Loaded via <css src="Ordo_Automation::css/_tokens.css"/> ahead of any file that consumes it
+ * (that's this codebase's existing wiring mechanism for shared/page CSS - see layout XML - there
+ * was no @import precedent to follow instead).
+ */
+:root {
+    --ordo-color-primary: #7c3aed;
+    --ordo-color-accent: #4f46e5;
+    --ordo-color-accent-dark: #4338ca;
+    --ordo-color-ink: #1b1f2a;
+    --ordo-color-muted: #6b7180;
+    --ordo-color-border: #e4e7ee;
+}

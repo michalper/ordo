@@ -153,6 +153,48 @@ $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, 
     }
 
     /**
+     * Regression test for the plain-mean interval estimate being skewed by a single anomalous
+     * gap: dates yield intervals [30, 30, 30, 300] (e.g. a customer pausing for months once).
+     * A plain mean would land around 97 days; the median stays close to the normal 30-day
+     * cadence, which is what the majority of the customer's actual reorders look like.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteUsesMedianIntervalResistantToOneAnomalousGap(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-01-01 00:00:00'],
+            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-01-31 00:00:00'],
+            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-03-02 00:00:00'],
+            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-04-01 00:00:00'],
+            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-12-27 00:00:00'],
+        ]);
+        $connection->method('fetchOne')->willReturn(false);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $model = $this->createMock(ReorderCycle::class);
+        $model->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => $data['avg_interval_days'] === 30
+        ));
+
+        $reorderCycleFactory = $this->createMock(ReorderCycleFactory::class);
+        $reorderCycleFactory->method('create')->willReturn($model);
+
+        $reorderCycleResource = $this->createMock(ReorderCycleResource::class);
+        $reorderCycleResource->method('getConnection')->willReturn($connection);
+        $reorderCycleResource->method('getMainTable')->willReturn('ordo_reorder_cycle');
+        $reorderCycleResource->expects(self::once())->method('save')->with($model);
+
+        $logger = $this->createStub(LoggerInterface::class);
+
+        (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, new CronRunLogger($logger)))->execute();
+    }
+
+    /**
      * Regression test for the ROADMAP.md Tier 4 "unbounded full-table scan" gap: the query used
      * to have no lower bound on order age at all, re-scanning a store's entire order history on
      * every single cron run regardless of how old it was.
