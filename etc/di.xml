@@ -184,6 +184,7 @@
                 <item name="nps_score_at_least" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\NpsScoreAtLeast</item>
                 <item name="purchased_sku" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\PurchasedSku</item>
                 <item name="purchased_category" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\PurchasedCategory</item>
+                <item name="event_occurred" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\EventOccurred</item>
             </argument>
         </arguments>
     </type>

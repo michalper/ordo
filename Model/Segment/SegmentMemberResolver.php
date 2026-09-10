@@ -5,6 +5,7 @@ namespace Ordo\Automation\Model\Segment;
 
 use Ordo\Automation\Model\CustomerScoreManager;
 use Ordo\Automation\Model\CustomerTagManager;
+use Ordo\Automation\Model\Event\EventOccurredResolver;
 use Ordo\Automation\Model\Purchase\PurchasedProductResolver;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\CollectionFactory as SegmentConditionCollectionFactory;
@@ -61,7 +62,8 @@ class SegmentMemberResolver
         private readonly SegmentFactory $segmentFactory,
         private readonly SegmentResource $segmentResource,
         private readonly LoggerInterface $logger,
-        private readonly PurchasedProductResolver $purchasedProductResolver
+        private readonly PurchasedProductResolver $purchasedProductResolver,
+        private readonly EventOccurredResolver $eventOccurredResolver
     ) {
     }
 
@@ -231,6 +233,8 @@ class SegmentMemberResolver
                 return $this->resolvePurchasedSku($params);
             case 'purchased_category':
                 return $this->resolvePurchasedCategory($params);
+            case 'event_occurred':
+                return $this->resolveEventOccurred($params);
             case 'order_total_gte':
             case 'visitor_tag':
                 return [];
@@ -283,6 +287,27 @@ class SegmentMemberResolver
         }
 
         return $this->purchasedProductResolver->getCustomerIdsWhoPurchasedInCategory((int) $categoryId);
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     * @return int[]
+     */
+    private function resolveEventOccurred(array $params): array
+    {
+        $eventType = trim((string) ($params['event_type'] ?? ''));
+        if ($eventType === '') {
+            return [];
+        }
+
+        $eventKey = trim((string) ($params['event_key'] ?? ''));
+        $withinDays = (int) ($params['within_days'] ?? 0);
+
+        return $this->eventOccurredResolver->getCustomerIdsWithEvent(
+            $eventType,
+            $eventKey !== '' ? $eventKey : null,
+            $withinDays
+        );
     }
 
     /**

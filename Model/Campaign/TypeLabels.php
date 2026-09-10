@@ -31,6 +31,7 @@ class TypeLabels
         'nps_score_at_least' => 'NPS Score At Least',
         'purchased_sku' => 'Purchased Product (SKU)',
         'purchased_category' => 'Purchased From Category',
+        'event_occurred' => 'Event Occurred (cart/wishlist add)',
     ];
 
     private const array ACTION_LABELS = [

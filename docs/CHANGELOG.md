@@ -19,6 +19,20 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **`event_occurred` condition type (behavioral segmentation, Phase 2)**, closing the second phase
+  of ROADMAP.md's Tier 3 "behavioral/event-based segmentation" item — usable in campaign triggers
+  immediately; segment-form admin UI and `SegmentMemberResolver` bulk-membership wiring are later
+  phases (the bulk case is actually already wired below, ahead of the form fields). Params:
+  `{"event_type": "cart_add"|"wishlist_add", "event_key": "24-MB01" (optional), "within_days": 14}`.
+  New `Model\Event\EventOccurredResolver` (per-customer `hasEventOccurred()` + bulk
+  `getCustomerIdsWithEvent()`), mirroring `Model\Purchase\PurchasedProductResolver`'s own
+  single-customer/whole-base pairing, queried live against `ordo_visitor_event` (populated by
+  Phase 1's `TrackCartAdd`/`TrackWishlistAdd`). New `Model\Campaign\Condition\EventOccurred`
+  (per-customer, wired into `ConditionPool` via `etc/di.xml`) and a new
+  `SegmentMemberResolver::resolveEventOccurred()` case (set-level, for segment audience
+  size/bulk actions). Caveat documented in code: `within_days` beyond
+  `Cron\PruneVisitorEvents`'s retention window (default 7 days) silently stops matching pruned
+  rows — not validated/capped in this pass.
 - **A/B/split testing on campaign actions (backend only, no Flow canvas UI yet)**, closing Part A
   Phase 2 of the ROADMAP.md Tier 3 "A/B testing" item. A `CampaignAction` row with `type = 'split'`
   carries `{"variants": [{"key": "a", "weight": 50, "actions": [...]}]}` in `params` — the same

@@ -59,11 +59,12 @@ top item — struck from this list entirely: it turned out to already be a compl
 feature, see docs/CHANGELOG.md's correction entry.)
 
 **Tier 3 — real feature work, needs a scoping decision first:** A/B/split testing's Flow canvas UI
-(backend + funnel analytics are now closed, see the campaign engine section below); behavioral/
-event-based segmentation beyond purchase history (cart-add/wishlist-add events, see the
-segmentation section below). Scheduled/recurring campaigns' admin UI and unified suppression/
-frequency capping across all channels are both now closed (`Model\Campaign\FrequencyCapManager`,
-Flow canvas trigger fields — see docs/CHANGELOG.md for each).
+(backend + funnel analytics are now closed, see the campaign engine section below); the admin
+form UI for the new `event_occurred` behavioral condition (capture, resolver, and condition type
+itself are now closed — see the segmentation section below). Scheduled/recurring campaigns' admin
+UI and unified suppression/frequency capping across all channels are both now closed
+(`Model\Campaign\FrequencyCapManager`, Flow canvas trigger fields — see docs/CHANGELOG.md for
+each).
 
 **Tier 4 — scale hardening, not urgent below ~50-100k customers:** pagination/streaming in
 `RfmCalculator`'s aggregate queries; batching in `GoogleAdsSyncClient::addOperations()`; the
@@ -116,9 +117,14 @@ unbounded full-table scans in `CalculateReorderCycle`/`GoogleMerchantFeedGenerat
 - No segment overlap/venn analysis (avoiding message fatigue by seeing "how many customers are in
   both Segment A and B") — would build directly on `SegmentMemberResolver::getMatchingCustomerIds()`,
   no new resolver logic needed.
-- No behavioral/event-based cohort conditions (browsing, cart, wishlist events) — only
-  `purchased_sku`/`purchased_category` exist for behavior; a real CDP's segmentation lives on
-  events like this.
+- ~~No behavioral/event-based cohort conditions (browsing, cart, wishlist events)~~ — **mostly
+  closed** (see docs/CHANGELOG.md): `Observer\TrackCartAdd`/`TrackWishlistAdd` capture the events,
+  and the new `event_occurred` condition type (`Model\Event\EventOccurredResolver` +
+  `Model\Campaign\Condition\EventOccurred`) is usable in campaign triggers today, with
+  `SegmentMemberResolver::resolveEventOccurred()` already wired for segment audience
+  size/bulk actions too. Still open: no admin form UI to actually build one — `event_occurred`
+  isn't in `ordo_segment_form.xml`'s switcherConfig yet, so it's configurable only via
+  API/direct DB row insertion for now (same carve-out the `group` condition type has).
 - Group condition editor's JSON fallback (for `in_segment`, `loyalty_tier_at_least`,
   `nps_score_at_least`) silently becomes `{}` on malformed JSON with no validation feedback — a
   non-technical marketer gets a condition that quietly matches nothing.

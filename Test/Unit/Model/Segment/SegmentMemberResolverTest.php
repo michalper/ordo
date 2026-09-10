@@ -5,6 +5,7 @@ namespace Ordo\Automation\Test\Unit\Model\Segment;
 
 use Ordo\Automation\Model\CustomerScoreManager;
 use Ordo\Automation\Model\CustomerTagManager;
+use Ordo\Automation\Model\Event\EventOccurredResolver;
 use Ordo\Automation\Model\Purchase\PurchasedProductResolver;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\Collection as SegmentConditionCollection;
@@ -28,6 +29,7 @@ class SegmentMemberResolverTest extends TestCase
     private SegmentResource&\PHPUnit\Framework\MockObject\MockObject $segmentResource;
     private LoggerInterface&\PHPUnit\Framework\MockObject\MockObject $logger;
     private PurchasedProductResolver&\PHPUnit\Framework\MockObject\MockObject $purchasedProductResolver;
+    private EventOccurredResolver&\PHPUnit\Framework\MockObject\MockObject $eventOccurredResolver;
     private SegmentMemberResolver $resolver;
     private Segment $segmentStub;
 
@@ -44,6 +46,7 @@ class SegmentMemberResolverTest extends TestCase
         $this->segmentResource = $this->createMock(SegmentResource::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->purchasedProductResolver = $this->createMock(PurchasedProductResolver::class);
+        $this->eventOccurredResolver = $this->createMock(EventOccurredResolver::class);
 
         // willReturnCallback (not willReturn) so stubSegmentConditionLogic() can change what's
         // returned later in a test — PHPUnit stacks multiple ->method('create') stubs FIFO, so a
@@ -61,7 +64,8 @@ class SegmentMemberResolverTest extends TestCase
             $this->segmentFactory,
             $this->segmentResource,
             $this->logger,
-            $this->purchasedProductResolver
+            $this->purchasedProductResolver,
+            $this->eventOccurredResolver
         );
     }
 
@@ -360,6 +364,47 @@ class SegmentMemberResolverTest extends TestCase
         $this->primeFactory();
 
         $this->purchasedProductResolver->expects(self::never())->method('getCustomerIdsWhoPurchasedInCategory');
+
+        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testEventOccurredConditionReturnsMatchingCustomerIds(): void
+    {
+        $this->stubSegment(1, [[
+            'type' => 'event_occurred',
+            'params' => ['event_type' => 'cart_add', 'event_key' => '24-MB01', 'within_days' => 14],
+        ]]);
+        $this->primeFactory();
+
+        $this->eventOccurredResolver->method('getCustomerIdsWithEvent')
+            ->willReturnMap([['cart_add', '24-MB01', 14, [8, 9]]]);
+
+        self::assertSame([8, 9], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testEventOccurredConditionWithBlankEventKeyPassesNull(): void
+    {
+        $this->stubSegment(1, [[
+            'type' => 'event_occurred',
+            'params' => ['event_type' => 'cart_add', 'event_key' => '', 'within_days' => 14],
+        ]]);
+        $this->primeFactory();
+
+        $this->eventOccurredResolver->method('getCustomerIdsWithEvent')
+            ->willReturnMap([['cart_add', null, 14, [8]]]);
+
+        self::assertSame([8], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testEventOccurredFailsClosedOnEmptyEventType(): void
+    {
+        $this->stubSegment(1, [['type' => 'event_occurred', 'params' => ['event_type' => '', 'within_days' => 14]]]);
+        $this->primeFactory();
+
+        $this->eventOccurredResolver->expects(self::never())->method('getCustomerIdsWithEvent');
 
         self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
     }

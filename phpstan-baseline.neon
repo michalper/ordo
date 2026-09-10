@@ -973,8 +973,32 @@ parameters:
 			path: Model/Campaign/Condition/PurchasedSku.php
 
 		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Event/EventOccurredResolver.php
+
+		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
+			count: 2
+			path: Model/Campaign/Condition/EventOccurred.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Campaign/Condition/EventOccurred.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
+			path: Model/Segment/SegmentMemberResolver.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
 			count: 1
 			path: Model/Segment/SegmentMemberResolver.php
 
