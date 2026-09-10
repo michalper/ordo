@@ -19,6 +19,16 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Tier 4 scale-hardening fixes (2/3)**: `GoogleAdsSyncClient::addOperations()` now chunks a
+  segment's hashed emails into batches of 10,000 identifiers (Google Ads' documented per-request
+  Customer Match limit) instead of sending the whole segment as a single, oversized (and rejected)
+  `:addOperations` call — an empty segment now makes zero `:addOperations` calls instead of one
+  no-op call. `CalculateReorderCycle`'s order-history query is now bounded to a 730-day lookback
+  (`MAX_LOOKBACK_DAYS`) instead of rescanning a store's entire historical order volume on every
+  cron run. `GoogleMerchantFeedGenerator::generate()` now pages through the product collection
+  500 products at a time (`fetchProductsByPage()`) instead of loading the whole enabled/visible
+  catalog into memory in a single query before rendering a single `<item>`. `RfmCalculator`
+  pagination/streaming remains open (Tier 4, 3/3).
 - **`event_occurred` admin form UI (behavioral segmentation, Phase 4)**, closing the ROADMAP.md
   Tier 3 "behavioral/event-based segmentation" item in full — `ordo_segment_form.xml` gained
   dedicated `event_type` (select, `Model\Config\Source\EventType`), `event_key` (optional SKU),

@@ -151,4 +151,48 @@ $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, 
 
         (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, new CronRunLogger($logger)))->execute();
     }
+
+    /**
+     * Regression test for the ROADMAP.md Tier 4 "unbounded full-table scan" gap: the query used
+     * to have no lower bound on order age at all, re-scanning a store's entire order history on
+     * every single cron run regardless of how old it was.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteBoundsTheQueryToRecentOrderHistory(): void
+    {
+        $select = $this->createMock(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('joinInner')->willReturnSelf();
+        $select->method('order')->willReturnSelf();
+
+        $capturedCutoff = null;
+        $select->method('where')->willReturnCallback(
+            function (string $condition, $value = null) use ($select, &$capturedCutoff) {
+                if ($condition === 'o.created_at >= ?') {
+                    $capturedCutoff = $value;
+                }
+                return $select;
+            }
+        );
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchAll')->willReturn([]);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $reorderCycleFactory = $this->createStub(ReorderCycleFactory::class);
+        $reorderCycleResource = $this->createStub(ReorderCycleResource::class);
+        $logger = $this->createStub(LoggerInterface::class);
+
+        (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, new CronRunLogger($logger)))->execute();
+
+        self::assertNotNull($capturedCutoff, 'Expected a created_at >= ? cutoff to be applied.');
+        // Roughly 730 days ago (within a minute of tolerance for test execution time) - not an
+        // exact match, since the cutoff is computed from the current time at call time.
+        $expected = strtotime('-730 days');
+        self::assertEqualsWithDelta($expected, strtotime((string) $capturedCutoff), 60);
+    }
 }

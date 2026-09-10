@@ -24,6 +24,15 @@ use Ordo\Automation\Helper\Config;
  */
 class GoogleMerchantFeedGenerator
 {
+    /**
+     * Bounds how many product models the collection materializes in memory at once - without
+     * this, generate() loaded the WHOLE catalog collection (every enabled, visible product, with
+     * every EAV attribute join addAttributeToSelect() pulls in) in a single query/result set
+     * before rendering a single <item>, which is exactly the "unbounded ... single-pass memory
+     * build" ROADMAP.md Tier 4 flags as a real memory-exhaustion risk on a large catalog.
+     */
+    private const int PAGE_SIZE = 500;
+
     public function __construct(
         private readonly ProductCollectionFactory $productCollectionFactory,
         private readonly CatalogImageHelper $catalogImageHelper,
@@ -43,11 +52,8 @@ class GoogleMerchantFeedGenerator
         $store = $this->storeManager->getStore();
         $currencyCode = $store->getCurrentCurrencyCode();
 
-        $collection = $this->makeCollection();
-
         $items = [];
-        foreach ($collection as $product) {
-            /** @var \Magento\Catalog\Model\Product $product */
+        foreach ($this->fetchProductsByPage() as $product) {
             $item = $this->renderItem($product, $currencyCode);
             if ($item !== null) {
                 $items[] = $item;
@@ -63,6 +69,37 @@ class GoogleMerchantFeedGenerator
             . '</channel></rss>';
 
         return ['xml' => $xml, 'productCount' => count($items)];
+    }
+
+    /**
+     * Pages through the whole catalog PAGE_SIZE products at a time instead of loading it all at
+     * once - one collection object reused across pages (setCurPage() + clear() between each), the
+     * standard Magento pattern for iterating a large collection without holding every page's
+     * loaded product models in memory simultaneously. A do/while (not a while-precheck loop) so
+     * an empty catalog still runs the loop body once - getLastPageNumber() is only meaningful
+     * after the first page has actually loaded.
+     *
+     * @return \Generator<int, \Magento\Catalog\Model\Product>
+     */
+    private function fetchProductsByPage(): \Generator
+    {
+        $collection = $this->makeCollection();
+        $collection->setPageSize(self::PAGE_SIZE);
+
+        $page = 1;
+        do {
+            $collection->setCurPage($page);
+            $collection->load();
+
+            foreach ($collection as $product) {
+                /** @var \Magento\Catalog\Model\Product $product */
+                yield $product;
+            }
+
+            $lastPage = $collection->getLastPageNumber();
+            $collection->clear();
+            $page++;
+        } while ($page <= $lastPage);
     }
 
     private function makeCollection(): ProductCollection

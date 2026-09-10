@@ -27,6 +27,16 @@ class GoogleAdsSyncClient implements SyncClientInterface
 {
     private const string API_VERSION = 'v17';
 
+    /**
+     * Google Ads' own documented cap on how many user identifiers a single addOperations call
+     * may carry (offline user data jobs) - previously sent as one unbounded request regardless
+     * of segment size, which would fail outright (not just run slowly) for any segment larger
+     * than this, since Google Ads rejects an over-limit request rather than truncating it.
+     *
+     * @see https://developers.google.com/google-ads/api/docs/remarketing/audience-types/customer-match#customer_match_limits
+     */
+    private const int MAX_IDENTIFIERS_PER_BATCH = 10000;
+
     public function __construct(
         private readonly JsonApiClient $jsonApiClient,
         private readonly Config $config,
@@ -86,6 +96,20 @@ class GoogleAdsSyncClient implements SyncClientInterface
      */
     private function addOperations(string $jobResourceName, array $hashedEmails, string $accessToken): void
     {
+        // Chunked into multiple requests, never one unbounded call - a segment larger than
+        // MAX_IDENTIFIERS_PER_BATCH would otherwise have Google Ads reject the whole request
+        // outright (not just run slowly), since the API doesn't truncate an over-limit batch on
+        // its own.
+        foreach (array_chunk($hashedEmails, self::MAX_IDENTIFIERS_PER_BATCH) as $batch) {
+            $this->addOperationsBatch($jobResourceName, $batch, $accessToken);
+        }
+    }
+
+    /**
+     * @param array<int, string> $hashedEmailBatch at most MAX_IDENTIFIERS_PER_BATCH entries
+     */
+    private function addOperationsBatch(string $jobResourceName, array $hashedEmailBatch, string $accessToken): void
+    {
         $body = $this->request(
             sprintf(
                 'https://googleads.googleapis.com/%s/%s:addOperations',
@@ -97,7 +121,7 @@ class GoogleAdsSyncClient implements SyncClientInterface
                     'create' => [
                         'userIdentifiers' => array_map(
                             static fn (string $hash): array => ['hashedEmail' => $hash],
-                            $hashedEmails
+                            $hashedEmailBatch
                         ),
                     ],
                 ]],
@@ -108,7 +132,9 @@ class GoogleAdsSyncClient implements SyncClientInterface
         // Google Ads can return HTTP 200 for this call while still rejecting some or all of the
         // batch (a malformed hash, a policy violation, ...), reported via partialFailureError
         // rather than a non-2xx status - a batch that returns 200 with every identifier rejected
-        // would otherwise be recorded as a full sync success by Cron\SyncAdAudiences.
+        // would otherwise be recorded as a full sync success by Cron\SyncAdAudiences. Any one
+        // batch failing aborts the whole sync (thrown, not swallowed) rather than silently
+        // reporting a partial success as complete.
         if (isset($body['partialFailureError'])) {
             $partialFailureError = $body['partialFailureError'];
             throw new \RuntimeException(sprintf(

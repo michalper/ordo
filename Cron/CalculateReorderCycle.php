@@ -22,6 +22,19 @@ class CalculateReorderCycle
     private const int MIN_ORDERS_TO_DETECT_PATTERN = 3;
     private const int LOOKBACK_ORDERS_PER_SKU = 10;
 
+    /**
+     * Bounds the SQL scan itself to recent order history, not just the in-PHP slicing
+     * LOOKBACK_ORDERS_PER_SKU already does after the fact - without this, every single cron run
+     * re-fetches every (customer, sku, order date) row ever placed, regardless of age, which
+     * scales with total historical order volume rather than recent activity (ROADMAP.md Tier 4:
+     * "unbounded full-table scans ... real memory-exhaustion risk on large stores"). Two years is
+     * generous slack past any realistic reorder cadence this module could still usefully act on -
+     * a customer whose last order predates this window has, by definition, gone quiet longer than
+     * any detected cycle would have predicted, so their older rows contribute nothing a fresher
+     * cutoff would have missed for an actually-still-reordering customer.
+     */
+    private const int MAX_LOOKBACK_DAYS = 730;
+
     public function __construct(
         private readonly ResourceConnection $resourceConnection,
         private readonly ReorderCycleFactory $reorderCycleFactory,
@@ -51,6 +64,7 @@ class CalculateReorderCycle
             )
             ->where('o.customer_id IS NOT NULL')
             ->where('o.state != ?', 'canceled')
+            ->where('o.created_at >= ?', $this->lookbackCutoff())
             ->order(['o.customer_id ASC', 'oi.sku ASC', 'o.created_at ASC']);
 
         /** @var array<int, array{customer_id: int|string, sku: string, created_at: string}> $rows */
@@ -106,6 +120,11 @@ class CalculateReorderCycle
         $this->cronRunLogger->logSummary(sprintf('recalculated %d reorder cycles', $processed));
 
         return $processed;
+    }
+
+    private function lookbackCutoff(): string
+    {
+        return date('Y-m-d H:i:s', strtotime('-' . self::MAX_LOOKBACK_DAYS . ' days'));
     }
 
     private function upsertCycle(

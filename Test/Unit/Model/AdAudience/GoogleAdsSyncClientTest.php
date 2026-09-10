@@ -110,4 +110,60 @@ class GoogleAdsSyncClientTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->client->sync('customers/1234567890/userLists/555', ['hash1']);
     }
+
+    /**
+     * Regression test for the ROADMAP.md Tier 4 "unbatched API call" gap: a segment larger than
+     * Google Ads' own documented per-request identifier limit used to be sent as one oversized
+     * addOperations call, which Google Ads rejects outright rather than truncating.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSyncSplitsALargeSegmentAcrossMultipleAddOperationsCalls(): void
+    {
+        $hashedEmails = array_map(static fn (int $i): string => 'hash' . $i, range(1, 10001));
+
+        $calls = [];
+        $this->curl->method('post')->willReturnCallback(function (string $url, string $body) use (&$calls) {
+            $calls[] = ['url' => $url, 'body' => json_decode($body, true)];
+        });
+        $this->curl->method('getStatus')->willReturn(200);
+        $this->curl->method('getBody')->willReturnCallback(function () use (&$calls) {
+            // First call ever made is offlineUserDataJobs:create - everything after that is
+            // either an :addOperations batch or the final :run, both of which return an empty
+            // body here (a real addOperations response has no resourceName field to fake).
+            return count($calls) === 1
+                ? json_encode(['resourceName' => 'customers/1234567890/offlineUserDataJobs/999'])
+                : json_encode([]);
+        });
+
+        $this->client->sync('customers/1234567890/userLists/555', $hashedEmails);
+
+        // create + 2 addOperations batches (10,000 + 1) + run = 4 total calls.
+        self::assertCount(4, $calls);
+        self::assertStringEndsWith(':addOperations', $calls[1]['url']);
+        self::assertCount(10000, $calls[1]['body']['operations'][0]['create']['userIdentifiers']);
+        self::assertStringEndsWith(':addOperations', $calls[2]['url']);
+        self::assertCount(1, $calls[2]['body']['operations'][0]['create']['userIdentifiers']);
+        self::assertStringEndsWith(':run', $calls[3]['url']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSyncSkipsAddOperationsEntirelyForAnEmptySegment(): void
+    {
+        $calls = [];
+        $this->curl->method('post')->willReturnCallback(function (string $url) use (&$calls) {
+            $calls[] = $url;
+        });
+        $this->curl->method('getStatus')->willReturn(200);
+        $this->curl->method('getBody')->willReturnOnConsecutiveCalls(
+            json_encode(['resourceName' => 'customers/1234567890/offlineUserDataJobs/999']),
+            json_encode([])
+        );
+
+        $this->client->sync('customers/1234567890/userLists/555', []);
+
+        // create + run only - no addOperations call at all for an empty batch.
+        self::assertCount(2, $calls);
+        self::assertStringEndsWith(':create', $calls[0]);
+        self::assertStringEndsWith(':run', $calls[1]);
+    }
 }
