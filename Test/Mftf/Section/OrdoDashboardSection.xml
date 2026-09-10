@@ -3,6 +3,11 @@
           xsi:noNamespaceSchemaLocation="urn:magento:mftf:Page/etc/SectionObject.xsd">
     <section name="OrdoDashboardSection">
         <element name="statCardByLabel" type="text" selector="//div[@class='ordo-stat-card'][.//div[@class='ordo-stat-label' and normalize-space(text())='{{label}}']]//div[@class='ordo-stat-value']" parameterized="true"/>
-        <element name="navCardByTitle" type="text" selector="//a[@class='ordo-nav-card'][.//span[@class='ordo-nav-title' and normalize-space(text())='{{title}}']]" parameterized="true"/>
+        <!-- Not @class='ordo-nav-card' (exact-string match) - the two diagnostic cards
+             (Reorder Cycles, Message Log) render as class="ordo-nav-card ordo-nav-card-diagnostic"
+             since the dashboard nav cards were regrouped by merchant goal, so an exact match
+             misses them entirely. contains(concat(...)) matches the class TOKEN regardless of
+             what else is in the attribute. -->
+        <element name="navCardByTitle" type="text" selector="//a[contains(concat(' ', normalize-space(@class), ' '), ' ordo-nav-card ')][.//span[@class='ordo-nav-title' and normalize-space(text())='{{title}}']]" parameterized="true"/>
     </section>
 </sections>
