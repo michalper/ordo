@@ -40,6 +40,20 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   variants): a synthetic split-variant action has no real `ordo_campaign_action` row to defer
   against, so quiet hours don't apply to those — the gate proceeds with the send rather than
   silently dropping it.
+- **Campaign entry dedup**, closing the campaign engine's "No campaign entry dedup" gap:
+  `ordo_campaign_scheduled_action` gained a nullable `customer_id` column (denormalized from the
+  dispatch context at `scheduleResume()` time, since the customer identity previously only lived
+  inside the row's opaque JSON `context` blob) plus a `(campaign_id, customer_id, executed_at)`
+  index. New `Model\Campaign\CampaignEntryGuard::hasPendingEntry()` queries for a still-unclaimed
+  row via a new `Collection::addPendingForCampaignAndCustomerFilter()`, and is checked by
+  `CampaignDispatcher::dispatch()`/`dispatchScheduledTrigger()` before entering a campaign from
+  action index 0 — a customer already mid-flow (waiting on a `delay_minutes` resume) in that exact
+  campaign is skipped for this dispatch instead of accumulating a second, independent action chain
+  in parallel. Deliberately not a DB unique constraint (unlike this codebase's usual dedup
+  pattern): a completed chain leaves behind a row with `executed_at` set, and a customer can
+  legitimately re-enter the same campaign on a future, unrelated trigger — only *unexecuted* rows
+  count as "still in-flight". `resumeScheduledAction()` itself remains unguarded, since it
+  continues an already-entered chain rather than starting a new one.
 - **Tier 4 scale-hardening fixes — now fully closed**: `GoogleAdsSyncClient::addOperations()` now
   chunks a segment's hashed emails into batches of 10,000 identifiers (Google Ads' documented
   per-request Customer Match limit) instead of sending the whole segment as a single, oversized

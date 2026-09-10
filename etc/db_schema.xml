@@ -264,6 +264,7 @@
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id"/>
         <column xsi:type="int" name="resume_action_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign_action.entity_id — the delayed action to run when this row is resumed, then continue on to the rest of the chain"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="true" comment="Denormalized copy of context['customer_id'] at scheduleResume() time, nullable since not every dispatch context necessarily identifies a customer — exists purely so Campaign\CampaignEntryGuard can look up 'does this customer already have a pending resume in this campaign' without decoding the context JSON blob per row. No FK: same small-table, no-cascade-needed reasoning as other customer_id-bearing tables in this module that don't reference customer_entity directly."/>
         <column xsi:type="text" name="context" nullable="false" comment="JSON-encoded dispatch context (customer_id, order_id, etc. — whatever the trigger observer originally passed in, including any mutations earlier, non-delayed actions in the same chain made before the delay was hit)"/>
         <column xsi:type="datetime" name="run_at" nullable="false" comment="Earliest time this row is eligible to resume"/>
         <column xsi:type="datetime" name="executed_at" nullable="true" comment="Set the moment the cron claims this row, before running it — not just on success — so a row can never be picked up twice even if execution itself throws"/>
@@ -279,6 +280,11 @@
                     referenceTable="ordo_campaign_action" referenceColumn="entity_id" onDelete="CASCADE"/>
         <index referenceId="ORDO_CAMPAIGN_SCHEDULED_ACTION_RUN_AT_EXECUTED_AT" indexType="btree">
             <column name="run_at"/>
+            <column name="executed_at"/>
+        </index>
+        <index referenceId="ORDO_CAMPAIGN_SCHEDULED_ACTION_CAMPAIGN_ID_CUSTOMER_ID_EXECUTED_AT" indexType="btree">
+            <column name="campaign_id"/>
+            <column name="customer_id"/>
             <column name="executed_at"/>
         </index>
     </table>

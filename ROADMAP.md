@@ -76,9 +76,12 @@ the unbounded single-pass memory build in `GoogleMerchantFeedGenerator`, and pag
   caps *volume*, not *re-entry* — see the campaign entry dedup item right below, a related but
   distinct gap (a customer can still restart the same campaign's flow from scratch on a repeat
   trigger; capping just limits how many messages that can eventually produce).
-- No campaign entry dedup — nothing stops a customer mid-flow (waiting on a `delay_minutes`
-  resume) from re-entering the same campaign from scratch on a repeat trigger; `ordo_campaign_
-  scheduled_action` has no uniqueness guard per customer+campaign.
+- ~~No campaign entry dedup~~ — **closed**: `ordo_campaign_scheduled_action` gained a `customer_id`
+  column (denormalized from the dispatch context), and `Model\Campaign\CampaignEntryGuard` checks
+  it before `dispatch()`/`dispatchScheduledTrigger()` enter a campaign — a customer with an
+  unclaimed (still-pending) resume row in that campaign is skipped rather than re-entering the
+  flow from scratch. `resumeScheduledAction()` itself is deliberately unguarded, since it's the
+  continuation of an already-entered chain, not a new entry.
 - ~~No A/B/split testing on actions and no campaign-level funnel analytics~~ — **closed**, backend
   through admin UI (see docs/CHANGELOG.md): `Model\CampaignFunnelStats`/`CampaignOutcomeLogger`
   track sent → delivered → opened → clicked → converted per campaign, rendered on each campaign's
