@@ -90,11 +90,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
   start hitting 429s with no handling for it.
 - `Cron/RunScheduledCampaignActions.php` has no persistent retry queue for a send that fails all 3
   of `SendRetrier`'s in-process retries — "a row that failed stays failed" across cron ticks.
-- SendGrid webhook only handles delivered/bounce/dropped and silently discards
-  `spamreport`/`unsubscribe`/`group_unsubscribe` — a spam complaint or one-click unsubscribe from
-  the mailbox provider never reaches `ConsentManager`, so `send_email` keeps mailing someone who
-  opted out through their inbox rather than through this module's own UI (deliverability/CAN-SPAM
-  risk).
 - Webhook handling has no ordering/idempotency guard against provider redelivery — an
   out-of-order redelivered `delivered` event arriving after a later `failed` one can regress a
   message's logged status backward.
@@ -125,9 +120,6 @@ as bugs above, not repeated here)*
 - `Cron/CalculateReorderCycle`'s interval estimate is a plain mean with no outlier resistance — one
   anomalous gap (customer paused 6 months) skews the whole prediction; same-day repeat purchases
   are silently dropped rather than handled distinctly.
-- `CalculateReorderCycle`/`GoogleMerchantFeedGenerator` both run as full unbounded scans/single-pass
-  memory builds with no incremental/last-run filtering — both get linearly slower as order
-  history/catalog size grows, with real memory-exhaustion risk on large stores.
 - Product feed is single-format (Google RSS only), single-store, with no admin grid for feed
   health/history — a generation failure only sets an error flag nobody can see without knowing to
   look.
@@ -143,8 +135,6 @@ as bugs above, not repeated here)*
 - No export/import for campaigns or segments — the only export capability in the whole module is
   GDPR customer-data export; nothing lets a merchant move a campaign/segment definition between
   dev/staging/prod or back it up before a risky edit.
-- No column filtering on any grid, anywhere (only sorting) — as message log/RFM data grows, an
-  admin can't search "messages that failed" without paging through manually.
 - Color-token duplication instead of one shared design-system file — `dashboard.css`,
   `segment-form.css`, `flow.css`, and `free-gift-offer-form.css` each independently (re)define
   near-identical but not-identical palettes (e.g. two different purple accent hues); a rebrand
