@@ -675,6 +675,14 @@ td:has(> [data-index="group_logic"]) {
     margin-bottom: 12px;
 }
 
+/* Matches (rather than !important-ing over) the muted ".admin__fieldset-wrapper-content > p"
+   rule's own specificity above - this warning needs to actually stand out, not read as the same
+   descriptive grey text as the panel's intro sentence. */
+.ordo-audience-size-panel .admin__fieldset-wrapper-content > p.ordo-audience-size-unsaved-warning {
+    color: var(--ordo-danger);
+    font-weight: 600;
+}
+
 /* SKU autocomplete dropdown (segment-sku-autocomplete.js) - matches unified accent used
    throughout this card, positioned directly under whichever "sku" input it was rendered against. */
 .ordo-sku-suggest {
