@@ -608,32 +608,96 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->dispatch('order_placed', []);
     }
 
+    /**
+     * Builds the pair of collection mocks resumeScheduledAction() now needs: one for the small
+     * "find the resume row's own sort_order" lookup query (campaign_id + entity_id filter,
+     * getFirstItem()), one for the main "sort_order >= that" query (addCampaignFilter() +
+     * getIterator()) - matching the two campaignActionCollectionFactory->create() calls the
+     * method makes, in order.
+     *
+     * @param CampaignAction[] $mainRows
+     */
+    private function makeResumeActionCollections(?CampaignAction $resumeRow, array $mainRows): void
+    {
+        $lookupCollection = $this->createStub(ActionCollection::class);
+        $lookupCollection->method('addFieldToFilter')->willReturnSelf();
+        $lookupCollection->method('getFirstItem')->willReturn(
+            $resumeRow ?? $this->createStub(CampaignAction::class)
+        );
+
+        $mainCollection = $this->createStub(ActionCollection::class);
+        $mainCollection->method('addCampaignFilter')->willReturnSelf();
+        $mainCollection->method('addFieldToFilter')->willReturnSelf();
+        $mainCollection->method('getIterator')->willReturn(new \ArrayIterator($mainRows));
+
+        $this->actionCollectionFactory->method('create')
+            ->willReturnOnConsecutiveCalls($lookupCollection, $mainCollection);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testResumeScheduledActionRunsFromResumePointOnward(): void
     {
-        $firstAction = $this->createMock(CampaignAction::class);
-        $firstAction->method('getEntityId')->willReturn(10);
-        $firstAction->method('getDelayMinutes')->willReturn(0);
-        $firstAction->method('getData')->willReturnMap([['type', 'unused_action']]);
-
         $resumeAction = $this->createMock(CampaignAction::class);
         $resumeAction->method('getEntityId')->willReturn(11);
+        $resumeAction->method('getSortOrder')->willReturn(20);
         $resumeAction->method('getDelayMinutes')->willReturn(0);
         $resumeAction->method('getData')->willReturnMap([['type', 'tag_customer']]);
         $resumeAction->method('getParams')->willReturn(['tag' => 'reactivated']);
 
-        $actionCollection = $this->createMock(ActionCollection::class);
-        $actionCollection->method('addCampaignFilter');
-        $actionCollection->method('getIterator')->willReturn(new \ArrayIterator([$firstAction, $resumeAction]));
-        $this->actionCollectionFactory->method('create')->willReturn($actionCollection);
+        // The main query is now filtered to sort_order >= the resume row's own sort_order, so
+        // an action that already ran before the resume point is never even loaded — never mind
+        // executed — this time around.
+        $this->makeResumeActionCollections($resumeAction, [$resumeAction]);
 
         $action = $this->createMock(ActionInterface::class);
-        // Only the resumed action (and anything after it) should ever run — never the one
-        // before the resume point, that already ran in the original synchronous dispatch.
         $action->expects(self::once())->method('execute')->with(self::anything(), ['tag' => 'reactivated']);
-        $this->actionPool = new ActionPool(['tag_customer' => $action, 'unused_action' => $action]);
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
 
         $this->makeDispatcher()->resumeScheduledAction(1, 11, ['customer_id' => 1]);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResumeScheduledActionFiltersMainQueryBySortOrderOfResumeRow(): void
+    {
+        $resumeAction = $this->createMock(CampaignAction::class);
+        $resumeAction->method('getEntityId')->willReturn(11);
+        $resumeAction->method('getSortOrder')->willReturn(30);
+        $resumeAction->method('getDelayMinutes')->willReturn(0);
+        $resumeAction->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $resumeAction->method('getParams')->willReturn([]);
+
+        $lookupFilters = [];
+        $lookupCollection = $this->createMock(ActionCollection::class);
+        $lookupCollection->method('addFieldToFilter')->willReturnCallback(
+            function (string $field, $condition) use (&$lookupFilters, $lookupCollection) {
+                $lookupFilters[] = [$field, $condition];
+                return $lookupCollection;
+            }
+        );
+        $lookupCollection->method('getFirstItem')->willReturn($resumeAction);
+
+        $mainFilters = [];
+        $mainCollection = $this->createMock(ActionCollection::class);
+        $mainCollection->method('addCampaignFilter')->willReturnSelf();
+        $mainCollection->method('addFieldToFilter')->willReturnCallback(
+            function (string $field, $condition) use (&$mainFilters, $mainCollection) {
+                $mainFilters[] = [$field, $condition];
+                return $mainCollection;
+            }
+        );
+        $mainCollection->method('getIterator')->willReturn(new \ArrayIterator([$resumeAction]));
+
+        $this->actionCollectionFactory->method('create')
+            ->willReturnOnConsecutiveCalls($lookupCollection, $mainCollection);
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute');
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->resumeScheduledAction(1, 11, []);
+
+        self::assertSame([['campaign_id', ['eq' => 1]], ['entity_id', ['eq' => 11]]], $lookupFilters);
+        self::assertSame([['sort_order', ['gteq' => 30]]], $mainFilters);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -641,14 +705,12 @@ class CampaignDispatcherTest extends TestCase
     {
         $resumeAction = $this->createMock(CampaignAction::class);
         $resumeAction->method('getEntityId')->willReturn(11);
+        $resumeAction->method('getSortOrder')->willReturn(20);
         $resumeAction->method('getDelayMinutes')->willReturn(0);
         $resumeAction->method('getData')->willReturnMap([['type', 'tag_customer']]);
         $resumeAction->method('getParams')->willReturn([]);
 
-        $actionCollection = $this->createMock(ActionCollection::class);
-        $actionCollection->method('addCampaignFilter');
-        $actionCollection->method('getIterator')->willReturn(new \ArrayIterator([$resumeAction]));
-        $this->actionCollectionFactory->method('create')->willReturn($actionCollection);
+        $this->makeResumeActionCollections($resumeAction, [$resumeAction]);
 
         $action = $this->createMock(ActionInterface::class);
         $action->expects(self::once())->method('execute')
@@ -661,10 +723,9 @@ class CampaignDispatcherTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testResumeScheduledActionDoesNothingWhenActionNoLongerExists(): void
     {
-        $actionCollection = $this->createMock(ActionCollection::class);
-        $actionCollection->method('addCampaignFilter');
-        $actionCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
-        $this->actionCollectionFactory->method('create')->willReturn($actionCollection);
+        // getFirstItem() on the lookup collection returns a fresh, id-less model - the standard
+        // AbstractCollection "nothing matched" result - so getEntityId() === null here.
+        $this->makeResumeActionCollections(null, []);
 
         $this->campaignScheduledActionFactory->expects(self::never())->method('create');
 
@@ -1152,10 +1213,11 @@ class CampaignDispatcherTest extends TestCase
         $actionRow = $this->createMock(CampaignAction::class);
         $actionRow->method('getEntityId')->willReturn(11);
         $actionRow->method('getCampaignId')->willReturn(1);
+        $actionRow->method('getSortOrder')->willReturn(10);
         $actionRow->method('getDelayMinutes')->willReturn(0);
         $actionRow->method('getData')->willReturnMap([['type', 'tag_customer']]);
         $actionRow->method('getParams')->willReturn([]);
-        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$actionRow]));
+        $this->makeResumeActionCollections($actionRow, [$actionRow]);
 
         $action = $this->createMock(ActionInterface::class);
         $action->method('execute');

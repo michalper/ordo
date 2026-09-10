@@ -222,6 +222,15 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- **`resumeScheduledAction()` no longer loads and linear-scans every action in a campaign to find
+  the one row it's resuming**, closing the campaign engine's "loads and materializes *all* of a
+  campaign's actions just to find one row's index" audit finding. It now runs one small extra
+  query first (`campaign_id` + `entity_id` filter, `getFirstItem()`) to get just the resume row's
+  own `sort_order`, then filters the main `ordo_campaign_action` query to `sort_order >=` that
+  value instead of the whole campaign — actions that already ran before the resume point are never
+  loaded at all this time around, rather than being fetched and then discarded by the scan. Same
+  behavior otherwise: `runActionsFrom()` still gets the full ordered remainder from the resume
+  point onward.
 - **Separated 4 admin screens from the broader ACL resources they were incorrectly reusing**,
   closing the ROADMAP.md "ACL resources are shared across functionally distinct screens" finding.
   Message Log, Reorder Cycles (index + recalculate-now), and Product Feed refresh no longer gate

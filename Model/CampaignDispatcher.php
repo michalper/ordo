@@ -276,13 +276,31 @@ class CampaignDispatcher
      */
     public function resumeScheduledAction(int $campaignId, int $resumeActionId, array $context): void
     {
-        $actions = $this->campaignActionCollectionFactory->create();
-        $actions->addCampaignFilter($campaignId);
-        $actions = array_values(iterator_to_array($actions));
-        $startIndex = array_find_key($actions, fn ($actionRow) => (int) $actionRow->getEntityId() === $resumeActionId);
+        // One small lookup for the resume row's own sort_order, so the main query below can be
+        // filtered to "sort_order >= that" instead of loading every action in the campaign just
+        // to linear-scan for the one entity_id we already know.
+        $resumeRowCollection = $this->campaignActionCollectionFactory->create();
+        $resumeRowCollection->addFieldToFilter('campaign_id', ['eq' => $campaignId]);
+        $resumeRowCollection->addFieldToFilter('entity_id', ['eq' => $resumeActionId]);
+        // getFirstItem() always returns a model instance - a fresh, id-less one when nothing
+        // matched - never null, so getEntityId() === null is how "not found" shows up here.
+        $resumeRow = $resumeRowCollection->getFirstItem();
 
         // The action (or the whole campaign) could have been deleted/edited between when this
         // was scheduled and now — nothing left to resume into, not an error.
+        if ($resumeRow->getEntityId() === null) {
+            return;
+        }
+
+        $actions = $this->campaignActionCollectionFactory->create();
+        $actions->addCampaignFilter($campaignId);
+        $actions->addFieldToFilter('sort_order', ['gteq' => $resumeRow->getSortOrder()]);
+        $actions = array_values(iterator_to_array($actions));
+        $startIndex = array_find_key($actions, fn ($actionRow) => (int) $actionRow->getEntityId() === $resumeActionId);
+
+        // Same "nothing left to resume into" guard as above, for the (very unlikely) case where
+        // the resume row itself still exists but no longer sorts as >= its own sort_order — e.g.
+        // a concurrent edit between the two queries above.
         if ($startIndex === null) {
             return;
         }

@@ -47,9 +47,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 - Flow canvas UX gaps that would frustrate daily use: no undo/redo, no node duplication/copy-paste,
   no inline "send test" before saving an action, no search/filter across the ~20+ condition/action
   types in the palette (`view/adminhtml/web/js/campaign-flow-editor.js`).
-- `resumeScheduledAction()` loads and materializes *all* of a campaign's actions just to find one
-  row's index, on every single scheduled resume — an indexed lookup would scale better as the
-  scheduled-action backlog grows (`Model/CampaignDispatcher.php`).
 - Cache invalidation for "which campaigns are active for trigger X" is one flat tag flushed on
   *any* campaign/trigger/condition/action write anywhere — on an install with many campaigns
   edited frequently, this thrashes and reverts to a full DB scan far more than necessary.
