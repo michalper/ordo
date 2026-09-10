@@ -229,7 +229,8 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   *every* trigger event's cached lookup, even ones the saved campaign has nothing to do with — on
   an install with many campaigns edited frequently, this thrashed the whole cache far more than
   necessary. Each cached entry is now also tagged with a new
-  `CampaignDispatcher::triggerCacheTag($triggerEvent)` (`ordo_campaign_trigger_{$triggerEvent}`),
+  tag built from the now-public `CampaignDispatcher::CACHE_KEY_PREFIX . $triggerEvent`
+  (`ordo_campaign_trigger_{$triggerEvent}`),
   and `CampaignRepository` reads the saved/deleted campaign's own `ordo_campaign_trigger` rows
   before AND after the write, unions the two trigger-event sets (covering a trigger event added
   and removed in the same save), and flushes only those tags. The flat tag is still stamped on

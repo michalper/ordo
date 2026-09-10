@@ -50,28 +50,24 @@ class CampaignDispatcher
     /**
      * Flat cache tag covering every "campaign ids enabled for trigger event X" cache entry,
      * regardless of which trigger event it's for. Still stamped on every entry saved below (in
-     * addition to that entry's own per-trigger-event tag from triggerCacheTag()) so any caller
-     * that flushes this tag alone — CampaignTriggerRepository, Controller\Adminhtml\Campaign\
-     * Delete, Campaign\CampaignSaveProcessor — keeps invalidating everything it always did.
-     * CampaignRepository::save()/delete() are the one place that flushes the narrower per-trigger
-     * tags instead, since it already knows exactly which trigger events a saved/deleted campaign
-     * touches.
+     * addition to that entry's own per-trigger-event tag, built from CACHE_KEY_PREFIX) so any
+     * caller that flushes this tag alone — CampaignTriggerRepository, Controller\Adminhtml\
+     * Campaign\Delete, Campaign\CampaignSaveProcessor — keeps invalidating everything it always
+     * did. CampaignRepository::save()/delete() are the one place that flushes the narrower
+     * per-trigger tags instead, since it already knows exactly which trigger events a
+     * saved/deleted campaign touches.
      */
     public const CACHE_TAG = 'ordo_campaign';
 
-    private const string CACHE_KEY_PREFIX = 'ordo_campaign_trigger_';
-
     /**
-     * The per-trigger-event cache tag for $triggerEvent's campaignIdsForTrigger() entry —
-     * shares its string with that entry's own cache key (distinct namespaces, so no collision),
-     * letting a caller that knows only "these trigger events may have changed" (e.g.
-     * CampaignRepository, from a saved campaign's own ordo_campaign_trigger rows) flush exactly
-     * those entries instead of the flat CACHE_TAG covering every trigger event's lookup.
+     * Shared by both this class's own cache key for a trigger event's campaignIdsForTrigger()
+     * entry AND that same entry's per-trigger-event cache tag (distinct namespaces, so no
+     * collision) — public so a caller that knows only "these trigger events may have changed"
+     * (e.g. CampaignRepository, from a saved campaign's own ordo_campaign_trigger rows) can build
+     * the same tag itself (`CampaignDispatcher::CACHE_KEY_PREFIX . $triggerEvent`) and flush
+     * exactly those entries instead of the flat CACHE_TAG covering every trigger event's lookup.
      */
-    public static function triggerCacheTag(string $triggerEvent): string
-    {
-        return self::CACHE_KEY_PREFIX . $triggerEvent;
-    }
+    public const string CACHE_KEY_PREFIX = 'ordo_campaign_trigger_';
 
     public function __construct(
         private readonly CampaignCollectionFactory $campaignCollectionFactory,
@@ -242,7 +238,7 @@ class CampaignDispatcher
         $this->cache->save(
             $this->serializer->serialize($conditionLogicByCampaign),
             $cacheKey,
-            [self::CACHE_TAG, self::triggerCacheTag($triggerEvent)]
+            [self::CACHE_TAG, self::CACHE_KEY_PREFIX . $triggerEvent]
         );
 
         return $conditionLogicByCampaign;

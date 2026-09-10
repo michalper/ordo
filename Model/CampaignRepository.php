@@ -142,7 +142,10 @@ class CampaignRepository implements CampaignRepositoryInterface
             return;
         }
 
-        $tags = array_map(CampaignDispatcher::triggerCacheTag(...), $triggerEvents);
+        $tags = array_map(
+            static fn (string $triggerEvent): string => CampaignDispatcher::CACHE_KEY_PREFIX . $triggerEvent,
+            $triggerEvents
+        );
         $this->cache->clean($tags);
     }
 }

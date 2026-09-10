@@ -111,8 +111,8 @@ class CampaignRepositoryTest extends TestCase
         $this->resource->expects(self::once())->method('save')->with($campaign);
 
         $this->cache->expects(self::once())->method('clean')->with([
-            CampaignDispatcher::triggerCacheTag('order_placed'),
-            CampaignDispatcher::triggerCacheTag('customer_registered'),
+            CampaignDispatcher::CACHE_KEY_PREFIX . 'order_placed',
+            CampaignDispatcher::CACHE_KEY_PREFIX . 'customer_registered',
         ]);
 
         $this->repository->save($campaign);
@@ -200,7 +200,7 @@ class CampaignRepositoryTest extends TestCase
         $this->resource->expects(self::once())->method('delete')->with($campaign);
 
         $this->cache->expects(self::once())->method('clean')
-            ->with([CampaignDispatcher::triggerCacheTag('order_placed')]);
+            ->with([CampaignDispatcher::CACHE_KEY_PREFIX . 'order_placed']);
 
         $this->repository->delete($campaign);
     }
