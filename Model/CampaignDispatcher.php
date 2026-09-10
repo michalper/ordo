@@ -534,6 +534,12 @@ class CampaignDispatcher
             return;
         }
 
+        // Stamped so a Send* action can hand its own action id to QuietHoursGate - the one piece
+        // of identity actions didn't already receive via context (campaign_id/ordo_split_variant
+        // were already stamped elsewhere). Not persisted anywhere itself; only meaningful for the
+        // duration of this one execute() call.
+        $context['ordo_action_id'] = (int) $actionRow->getEntityId();
+
         $action->execute($context, $actionRow->getParams());
     }
 
@@ -542,11 +548,41 @@ class CampaignDispatcher
      */
     private function scheduleResume(int $campaignId, int $resumeActionId, int $delayMinutes, array $context): void
     {
+        $this->writeScheduledAction(
+            $campaignId,
+            $resumeActionId,
+            $context,
+            date('Y-m-d H:i:s', strtotime("+{$delayMinutes} minutes"))
+        );
+    }
+
+    /**
+     * Public counterpart to scheduleResume() for deferrals that aren't a fixed "N minutes from
+     * now" delay - today only QuietHoursGate, which computes an explicit "quiet hours end" UTC
+     * instant rather than a duration. Writes the exact same ordo_campaign_scheduled_action row
+     * shape scheduleResume() does (same FK to a real, persisted ordo_campaign_action row -
+     * $actionId must be one, same known limitation for synthetic split-variant actions as
+     * delay_minutes already has, see runSplit()'s docblock), so resumeScheduledAction() and
+     * CampaignEntryGuard's pending-entry dedup both apply to a deferred send automatically, with
+     * no extra code on either side.
+     *
+     * @param array<string, mixed> $context
+     */
+    public function deferActionUntil(int $campaignId, int $actionId, string $runAtUtc, array $context): void
+    {
+        $this->writeScheduledAction($campaignId, $actionId, $context, $runAtUtc);
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function writeScheduledAction(int $campaignId, int $resumeActionId, array $context, string $runAt): void
+    {
         $scheduled = $this->campaignScheduledActionFactory->create();
         $scheduled->setCampaignId($campaignId);
         $scheduled->setResumeActionId($resumeActionId);
         $scheduled->setContext($context);
-        $scheduled->setRunAt(date('Y-m-d H:i:s', strtotime("+{$delayMinutes} minutes")));
+        $scheduled->setRunAt($runAt);
 
         $this->campaignScheduledActionResource->save($scheduled);
     }

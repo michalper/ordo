@@ -14,6 +14,7 @@ use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Model\Campaign\Action\SendEmail;
 use Ordo\Automation\Model\Campaign\Action\SendRetrier;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
+use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Email\MessageIdGenerator;
@@ -30,6 +31,7 @@ class SendEmailTest extends TestCase
     private StoreManagerInterface $storeManager;
     private StateInterface $inlineTranslation;
     private ConsentManager $consentManager;
+    private QuietHoursGate $quietHoursGate;
     private FrequencyCapGate $frequencyCapGate;
     private MessageIdGenerator $messageIdGenerator;
     private PendingMessageIdHolder&\PHPUnit\Framework\MockObject\MockObject $pendingMessageIdHolder;
@@ -45,6 +47,8 @@ class SendEmailTest extends TestCase
         $this->inlineTranslation = $this->createMock(StateInterface::class);
         $this->consentManager = $this->createStub(ConsentManager::class);
         $this->consentManager->method('hasConsent')->willReturn(true);
+        $this->quietHoursGate = $this->createStub(QuietHoursGate::class);
+        $this->quietHoursGate->method('allows')->willReturn(true);
         $this->frequencyCapGate = $this->createStub(FrequencyCapGate::class);
         $this->frequencyCapGate->method('allows')->willReturn(true);
         $this->messageIdGenerator = $this->createStub(MessageIdGenerator::class);
@@ -66,6 +70,7 @@ class SendEmailTest extends TestCase
             $this->storeManager,
             $this->inlineTranslation,
             $this->consentManager,
+            $this->quietHoursGate,
             $this->frequencyCapGate,
             $this->messageIdGenerator,
             $this->pendingMessageIdHolder,
@@ -83,6 +88,19 @@ class SendEmailTest extends TestCase
             ->with(42, ConsentChannel::Email)->willReturn(false);
         $this->customerRepository->expects(self::never())->method('getById');
         $this->logger->expects(self::once())->method('info');
+
+        $context = ['customer_id' => 42];
+        $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSkipsWhenQuietHoursGateDefers(): void
+    {
+        $this->quietHoursGate = $this->createMock(QuietHoursGate::class);
+        $this->quietHoursGate->expects(self::once())->method('allows')->willReturn(false);
+        $this->frequencyCapGate = $this->createMock(FrequencyCapGate::class);
+        $this->frequencyCapGate->expects(self::never())->method('allows');
+        $this->customerRepository->expects(self::never())->method('getById');
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);

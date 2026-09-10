@@ -99,6 +99,9 @@ class Config
     private const string XML_PATH_FREQUENCY_CAP_ENABLED = 'ordo_automation/frequency_cap/enabled';
     private const string XML_PATH_FREQUENCY_CAP_MAX_MESSAGES = 'ordo_automation/frequency_cap/max_messages';
     private const string XML_PATH_FREQUENCY_CAP_WINDOW_HOURS = 'ordo_automation/frequency_cap/window_hours';
+    private const string XML_PATH_QUIET_HOURS_ENABLED = 'ordo_automation/quiet_hours/enabled';
+    private const string XML_PATH_QUIET_HOURS_START_HOUR = 'ordo_automation/quiet_hours/start_hour';
+    private const string XML_PATH_QUIET_HOURS_END_HOUR = 'ordo_automation/quiet_hours/end_hour';
 
     public function __construct(
         private readonly ScopeConfigInterface $scopeConfig,
@@ -651,5 +654,37 @@ class Config
     public function getFrequencyCapWindowHours(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_FREQUENCY_CAP_WINDOW_HOURS, 24, $storeId);
+    }
+
+    /**
+     * Opt-in (default off) - same "existing installs shouldn't suddenly have sends silently
+     * deferred" reasoning as isFrequencyCapEnabled() above.
+     */
+    public function isQuietHoursEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_QUIET_HOURS_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Hour-of-day (0-23, in the resolved customer/store timezone) quiet hours begin. Clamped
+     * defensively - the admin field only validates "digits", not a 0-23 range, since Magento has
+     * no built-in JS validator for an arbitrary numeric range without extra client-side wiring.
+     */
+    public function getQuietHoursStartHour(?int $storeId = null): int
+    {
+        return max(0, min(23, $this->intConfig(self::XML_PATH_QUIET_HOURS_START_HOUR, 21, $storeId)));
+    }
+
+    /**
+     * Hour-of-day (0-23) quiet hours end - may be numerically less than the start hour, which
+     * means the window spans midnight (e.g. 21 -> 8); see Campaign\QuietHoursCalculator.
+     */
+    public function getQuietHoursEndHour(?int $storeId = null): int
+    {
+        return max(0, min(23, $this->intConfig(self::XML_PATH_QUIET_HOURS_END_HOUR, 8, $storeId)));
     }
 }

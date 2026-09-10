@@ -10,6 +10,7 @@ use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
+use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Email\MessageIdGenerator;
@@ -49,6 +50,7 @@ class SendEmail implements ActionInterface
         private readonly StoreManagerInterface $storeManager,
         private readonly StateInterface $inlineTranslation,
         private readonly ConsentManager $consentManager,
+        private readonly QuietHoursGate $quietHoursGate,
         private readonly FrequencyCapGate $frequencyCapGate,
         private readonly MessageIdGenerator $messageIdGenerator,
         private readonly PendingMessageIdHolder $pendingMessageIdHolder,
@@ -77,6 +79,11 @@ class SendEmail implements ActionInterface
                 'Ordo_Automation: send_email action skipped for customer #%d, email consent withdrawn.',
                 $customerId
             ));
+            return;
+        }
+
+        $actionId = (int) ($context['ordo_action_id'] ?? 0);
+        if (!$this->quietHoursGate->allows($customerId, $campaignId ?? 0, $actionId, $context)) {
             return;
         }
 

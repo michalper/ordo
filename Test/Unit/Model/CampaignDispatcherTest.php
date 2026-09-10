@@ -1076,4 +1076,51 @@ class CampaignDispatcherTest extends TestCase
 
         $this->makeDispatcher()->dispatchScheduledTrigger(5, []);
     }
+
+    /**
+     * Regression test for the ROADMAP.md "No time-zone-aware quiet hours" work: an action's own
+     * entity_id is stamped into context as ordo_action_id right before execute() - the one piece
+     * of identity a Send* action needs to hand QuietHoursGate for deferral.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchStampsTheActionsOwnEntityIdIntoContextBeforeExecuting(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $actionRow = $this->createMock(CampaignAction::class);
+        $actionRow->method('getCampaignId')->willReturn(1);
+        $actionRow->method('getEntityId')->willReturn(77);
+        $actionRow->method('getDelayMinutes')->willReturn(0);
+        $actionRow->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $actionRow->method('getParams')->willReturn([]);
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$actionRow]));
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute')
+            ->with(self::callback(fn (array $context): bool => $context['ordo_action_id'] === 77), []);
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
+    }
+
+    /**
+     * deferActionUntil() (QuietHoursGate's public entry point into the scheduled-action write
+     * path) must write the exact same row shape scheduleResume() does, just with an explicit
+     * run_at instead of one computed from delay_minutes.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDeferActionUntilWritesAScheduledActionRowWithTheGivenRunAt(): void
+    {
+        $scheduled = $this->createMock(CampaignScheduledAction::class);
+        $scheduled->expects(self::once())->method('setCampaignId')->with(3);
+        $scheduled->expects(self::once())->method('setResumeActionId')->with(15);
+        $scheduled->expects(self::once())->method('setContext')->with(['customer_id' => 9]);
+        $scheduled->expects(self::once())->method('setRunAt')->with('2026-01-16 08:00:00');
+        $this->campaignScheduledActionFactory->method('create')->willReturn($scheduled);
+        $this->campaignScheduledActionResource->expects(self::once())->method('save')->with($scheduled);
+
+        $this->makeDispatcher()->deferActionUntil(3, 15, '2026-01-16 08:00:00', ['customer_id' => 9]);
+    }
 }

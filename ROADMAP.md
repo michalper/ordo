@@ -88,8 +88,14 @@ the unbounded single-pass memory build in `GoogleMerchantFeedGenerator`, and pag
   canvas now has a full interactive editor for building one (`campaign-flow-editor.js`'s
   `renderVariantEditor()`). Known remaining limitation: a variant's own action can't carry its own
   `delay_minutes` yet (no schema support for a synthetic action's scheduled-resume FK).
-- No time-zone-aware quiet hours for a campaign as a whole (only per-channel opt-out exists via
-  `ConsentManager`) — a trigger-based send can land at 3am local time.
+- ~~No time-zone-aware quiet hours for a campaign as a whole~~ — **closed**: opt-in
+  `Model\Campaign\QuietHoursGate`, checked from every Send* action right alongside
+  `FrequencyCapGate`, defers a send due during the customer's local quiet-hours window until it
+  ends instead of sending immediately — reusing the exact `ordo_campaign_scheduled_action`
+  mechanism `delay_minutes` already uses (`CampaignDispatcher::deferActionUntil()`), so
+  `CampaignEntryGuard`'s dedup and `Cron\RunScheduledCampaignActions`'s resume both apply for
+  free. Customer timezone resolved via a new `ordo_timezone` customer attribute, falling back to
+  the store's configured `general/locale/timezone` when unset (nothing auto-detects it).
 - Flow canvas UX gaps that would frustrate daily use: no undo/redo, no node duplication/copy-paste,
   no inline "send test" before saving an action, no search/filter across the ~20+ condition/action
   types in the palette (`view/adminhtml/web/js/campaign-flow-editor.js`).

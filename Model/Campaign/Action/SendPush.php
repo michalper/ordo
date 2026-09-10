@@ -6,6 +6,7 @@ namespace Ordo\Automation\Model\Campaign\Action;
 use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
+use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Push\Exception\SubscriptionGoneException;
@@ -39,6 +40,7 @@ class SendPush implements ActionInterface
         private readonly Config $config,
         private readonly MessageLogWriter $messageLogWriter,
         private readonly ConsentManager $consentManager,
+        private readonly QuietHoursGate $quietHoursGate,
         private readonly FrequencyCapGate $frequencyCapGate,
         private readonly SendRetrier $sendRetrier,
         private readonly LoggerInterface $logger
@@ -72,6 +74,11 @@ class SendPush implements ActionInterface
                 $customerId
             ));
             $this->messageLogWriter->recordOptedOut(self::CHANNEL, $customerId, '', $campaignId, $variant);
+            return;
+        }
+
+        $actionId = (int) ($context['ordo_action_id'] ?? 0);
+        if (!$this->quietHoursGate->allows($customerId, $campaignId ?? 0, $actionId, $context)) {
             return;
         }
 

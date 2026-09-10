@@ -19,6 +19,27 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Time-zone-aware campaign quiet hours**, closing the campaign engine's "No time-zone-aware
+  quiet hours" gap. New `ordo_timezone` customer attribute (`AddCustomerTimezoneAttribute`, an
+  IANA zone string, e.g. `Europe/Warsaw`) and a `quiet_hours` admin config section
+  (enabled/start_hour/end_hour, opt-in and off by default). `Model\Campaign\CustomerTimezoneResolver`
+  resolves a customer's timezone from that attribute, falling back to the store's configured
+  `general/locale/timezone` when unset — nothing auto-detects a real timezone (no geo-IP/browser
+  reporting), that's an explicit, named boundary. `Model\Campaign\QuietHoursCalculator` is pure
+  hour-of-day window logic (handles overnight-wraparound windows like 21-8). New
+  `Model\Campaign\QuietHoursGate`, called from every Send* action right alongside the existing
+  `FrequencyCapGate` — a send due during the customer's local quiet hours is deferred until they
+  end instead of sending immediately, by reusing the exact `ordo_campaign_scheduled_action`
+  mechanism `delay_minutes` actions already use (`CampaignDispatcher::deferActionUntil()`, a new
+  public counterpart to the existing private `scheduleResume()`, sharing the same underlying
+  write path). Because it's the same mechanism, `CampaignEntryGuard`'s pending-entry dedup and
+  `Cron\RunScheduledCampaignActions`'s resume both apply to a deferred send automatically, with no
+  extra code either side. `CampaignDispatcher::runOneAction()` now stamps the action's own
+  `entity_id` into `$context['ordo_action_id']` — the one piece of plumbing a Send* action needed
+  to identify itself to the gate. Known limitation (same shape as `delay_minutes` inside split
+  variants): a synthetic split-variant action has no real `ordo_campaign_action` row to defer
+  against, so quiet hours don't apply to those — the gate proceeds with the send rather than
+  silently dropping it.
 - **Tier 4 scale-hardening fixes — now fully closed**: `GoogleAdsSyncClient::addOperations()` now
   chunks a segment's hashed emails into batches of 10,000 identifiers (Google Ads' documented
   per-request Customer Match limit) instead of sending the whole segment as a single, oversized

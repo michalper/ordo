@@ -408,6 +408,27 @@
                     <depends><field id="enabled">1</field></depends>
                 </field>
             </group>
+
+            <group id="quiet_hours" translate="label" type="text" sortOrder="180" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Quiet Hours</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Off by default. When on, a send_email/send_sms/send_whatsapp/send_push campaign action due during the customer's local quiet hours is deferred until quiet hours end instead of sending immediately, using the customer's Timezone attribute (falls back to this store's General &gt; Locale Options &gt; Timezone when unset).</comment>
+                </field>
+                <field id="start_hour" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Quiet hours start (0-23)</label>
+                    <comment>Local hour of day quiet hours begin, e.g. 21 for 9pm.</comment>
+                    <validate>validate-digits</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="end_hour" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Quiet hours end (0-23)</label>
+                    <comment>Local hour of day quiet hours end, e.g. 8 for 8am. May be numerically less than the start hour - that means the window spans midnight.</comment>
+                    <validate>validate-digits</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
         </section>
     </system>
 </config>

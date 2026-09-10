@@ -11,6 +11,7 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign\Action\SendRetrier;
 use Ordo\Automation\Model\Campaign\Action\SendSms;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
+use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
@@ -27,6 +28,7 @@ class SendSmsTest extends TestCase
     private Config $config;
     private MessageLogWriter $messageLogWriter;
     private ConsentManager $consentManager;
+    private QuietHoursGate $quietHoursGate;
     private FrequencyCapGate $frequencyCapGate;
     private LoggerInterface $logger;
 
@@ -38,6 +40,8 @@ class SendSmsTest extends TestCase
         $this->messageLogWriter = $this->createMock(MessageLogWriter::class);
         $this->consentManager = $this->createStub(ConsentManager::class);
         $this->consentManager->method('hasConsent')->willReturn(true);
+        $this->quietHoursGate = $this->createStub(QuietHoursGate::class);
+        $this->quietHoursGate->method('allows')->willReturn(true);
         $this->frequencyCapGate = $this->createStub(FrequencyCapGate::class);
         $this->frequencyCapGate->method('allows')->willReturn(true);
         $this->logger = $this->createMock(LoggerInterface::class);
@@ -53,6 +57,7 @@ class SendSmsTest extends TestCase
             $this->config,
             $this->messageLogWriter,
             $this->consentManager,
+            $this->quietHoursGate,
             $this->frequencyCapGate,
             new SendRetrier(1),
             $this->logger
@@ -70,6 +75,20 @@ class SendSmsTest extends TestCase
         $this->logger->expects(self::once())->method('info');
         $this->messageLogWriter->expects(self::once())->method('recordOptedOut')
             ->with('sms', 42, '+15551234567');
+
+        $context = ['customer_id' => 42];
+        $this->makeAction()->execute($context, ['message' => 'hello']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSkipsWhenQuietHoursGateDefers(): void
+    {
+        $this->customerRepository->method('getById')->willReturn($this->customerWithPhone('+15551234567'));
+        $this->quietHoursGate = $this->createMock(QuietHoursGate::class);
+        $this->quietHoursGate->expects(self::once())->method('allows')->willReturn(false);
+        $this->frequencyCapGate = $this->createMock(FrequencyCapGate::class);
+        $this->frequencyCapGate->expects(self::never())->method('allows');
+        $this->smsSender->expects(self::never())->method('send');
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['message' => 'hello']);

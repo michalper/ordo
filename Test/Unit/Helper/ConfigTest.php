@@ -50,6 +50,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isWhatsAppEnabled());
         self::assertTrue($this->config->isPushEnabled());
         self::assertTrue($this->config->isFrequencyCapEnabled());
+        self::assertTrue($this->config->isQuietHoursEnabled());
     }
 
     public function testPushGettersDelegateToScopeConfig(): void
@@ -154,6 +155,19 @@ class ConfigTest extends TestCase
         self::assertSame(500, $this->config->getLoyaltyGoldThreshold());
         self::assertSame(5, $this->config->getFrequencyCapMaxMessages());
         self::assertSame(24, $this->config->getFrequencyCapWindowHours());
+        self::assertSame(21, $this->config->getQuietHoursStartHour());
+        self::assertSame(8, $this->config->getQuietHoursEndHour());
+    }
+
+    public function testQuietHoursHourGettersClampOutOfRangeConfigValues(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_automation/quiet_hours/start_hour', 'store', null, '99'],
+            ['ordo_automation/quiet_hours/end_hour', 'store', null, '-5'],
+        ]);
+
+        self::assertSame(23, $this->config->getQuietHoursStartHour());
+        self::assertSame(0, $this->config->getQuietHoursEndHour());
     }
 
     public function testIntGetterHonorsExplicitZero(): void
