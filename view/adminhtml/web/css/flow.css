@@ -80,7 +80,7 @@
 .ordo-flow-toolbar button[data-flow-action="apply"] {
     /* Brand accent violet, shared with the dashboard's --ordo-primary; #7c3aed against
        white text reaches ~5.5:1, above WCAG AA's 4.5:1 for normal text. */
-    background: #7c3aed;
+    background: var(--ordo-color-primary);
     color: #fff;
     margin-left: auto;
 }
@@ -154,7 +154,7 @@
 
 .ordo-flow-templates-menu button:hover {
     background: #f4f5f6;
-    color: #7c3aed;
+    color: var(--ordo-color-primary);
 }
 
 .ordo-flow-body {
@@ -188,7 +188,7 @@
 
 .ordo-flow-palette-group-trigger { border-left-color: #c026d3; }
 .ordo-flow-palette-group-condition { border-left-color: #0369a1; }
-.ordo-flow-palette-group-action { border-left-color: #7c3aed; }
+.ordo-flow-palette-group-action { border-left-color: var(--ordo-color-primary); }
 
 .ordo-flow-palette-group summary {
     display: flex;
@@ -247,7 +247,7 @@
 
 .ordo-flow-palette-group-trigger .ordo-flow-palette-item::before { background: #c026d3; }
 .ordo-flow-palette-group-condition .ordo-flow-palette-item::before { background: #0369a1; }
-.ordo-flow-palette-group-action .ordo-flow-palette-item::before { background: #7c3aed; }
+.ordo-flow-palette-group-action .ordo-flow-palette-item::before { background: var(--ordo-color-primary); }
 
 .ordo-flow-palette-item:last-child {
     margin-bottom: 0;
@@ -428,7 +428,7 @@
 }
 
 .ordo-flow-canvas .drawflow-node.ordo-flow-action {
-    background: linear-gradient(135deg, #c084fc, #7c3aed);
+    background: linear-gradient(135deg, #c084fc, var(--ordo-color-primary));
     border: none;
 }
 
