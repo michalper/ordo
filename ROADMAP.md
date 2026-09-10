@@ -114,8 +114,8 @@ as bugs above, not repeated here)*
 - Product feed is single-format (Google RSS only), single-store, with no admin grid for feed
   health/history — a generation failure only sets an error flag nobody can see without knowing to
   look.
-- Dashboard runs 4+ separate uncached COUNT queries on every page load and has no drill-down for
-  "N approvals stuck" / "N crons failed" — the KPIs shown aren't actionable.
+- Dashboard has no drill-down for "N approvals stuck" / "N crons failed" — the KPIs shown aren't
+  actionable.
 
 ### Admin platform, UX consistency & API
 

@@ -245,6 +245,12 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   loaded at all this time around, rather than being fetched and then discarded by the scan. Same
   behavior otherwise: `runActionsFrom()` still gets the full ordered remainder from the resume
   point onward.
+- **`Block\Adminhtml\Dashboard\DashboardViewModel` now caches its five `->getSize()` collection
+  counts** (total/enabled campaign count, reorder cycle count, free gift offer count, and
+  per-trigger campaign count) behind a new `cachedCount()` helper backed by
+  `Magento\Framework\App\CacheInterface`, 60-second TTL per key (`ordo_dashboard_count_*`) —
+  closing the "4+ separate uncached COUNT queries on every page load" half of the dashboard
+  ROADMAP.md item; the drill-down half of that item is still open.
 - **`Cron/CalculateReorderCycle::execute()` now estimates the reorder interval as a median of the
   per-SKU order-to-order gaps instead of a plain arithmetic mean**, closing the ROADMAP.md gap
   where a single anomalous gap (a customer pausing for months, or a one-off bulk restock that
