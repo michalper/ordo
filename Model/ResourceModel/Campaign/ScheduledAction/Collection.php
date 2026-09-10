@@ -24,4 +24,19 @@ class Collection extends AbstractCollection
         $this->addFieldToFilter('run_at', ['lteq' => $now]);
         return $this;
     }
+
+    /**
+     * Every still-pending (unclaimed) row for a given campaign+customer — Campaign\
+     * CampaignEntryGuard's existence check. Scoped to executed_at IS NULL, not just campaign_id +
+     * customer_id, because a customer who has already completed a past run through this campaign
+     * legitimately has old rows here with executed_at set; those must never count as "still
+     * in-flight".
+     */
+    public function addPendingForCampaignAndCustomerFilter(int $campaignId, int $customerId): self
+    {
+        $this->addFieldToFilter('campaign_id', ['eq' => $campaignId]);
+        $this->addFieldToFilter('customer_id', ['eq' => $customerId]);
+        $this->addFieldToFilter('executed_at', ['null' => true]);
+        return $this;
+    }
 }

@@ -6,6 +6,7 @@ namespace Ordo\Automation\Model;
 use Magento\Framework\App\CacheInterface;
 use Magento\Framework\Serialize\SerializerInterface;
 use Ordo\Automation\Model\Campaign\ActionPool;
+use Ordo\Automation\Model\Campaign\CampaignEntryGuard;
 use Ordo\Automation\Model\Campaign\ConditionPool;
 use Ordo\Automation\Model\Campaign\SplitVariantSelector;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as CampaignActionCollectionFactory;
@@ -66,6 +67,7 @@ class CampaignDispatcher
         private readonly ConditionPool $conditionPool,
         private readonly ActionPool $actionPool,
         private readonly SplitVariantSelector $splitVariantSelector,
+        private readonly CampaignEntryGuard $campaignEntryGuard,
         private readonly CacheInterface $cache,
         private readonly SerializerInterface $serializer,
         private readonly LoggerInterface $logger
@@ -106,8 +108,17 @@ class CampaignDispatcher
             return;
         }
 
+        $customerId = $this->customerIdFromContext($context);
+
         foreach ($campaignIds as $campaignId) {
             try {
+                if ($customerId !== null && $this->campaignEntryGuard->hasPendingEntry($campaignId, $customerId)) {
+                    // Already mid-flow (waiting on a delay_minutes resume) in this exact
+                    // campaign - skip re-entering it from scratch on this repeat trigger rather
+                    // than accumulating a second, independent action chain in parallel.
+                    continue;
+                }
+
                 $logic = $conditionLogicByCampaign[$campaignId] ?? 'all';
                 if (!$this->conditionsSatisfied($logic, $conditionsByCampaign[$campaignId] ?? [], $context)) {
                     continue;
@@ -143,6 +154,12 @@ class CampaignDispatcher
         $campaign = $campaigns->getFirstItem();
 
         if (!$campaign->getId()) {
+            return;
+        }
+
+        $customerId = $this->customerIdFromContext($context);
+        if ($customerId !== null && $this->campaignEntryGuard->hasPendingEntry($campaignId, $customerId)) {
+            // Already mid-flow in this exact campaign - see the identical guard in dispatch().
             return;
         }
 
@@ -540,11 +557,30 @@ class CampaignDispatcher
     /**
      * @param array<string, mixed> $context
      */
+    /**
+     * context['customer_id'] is the universal convention key every trigger observer populates
+     * (CustomerTagManager, VisitorEventLogger, TriggerOutcomeLogger, SegmentMatcher, ...) - reused
+     * here for both CampaignEntryGuard's lookup and scheduleResume()'s denormalized column. Null
+     * when the context doesn't identify a customer at all (a purely order-scoped trigger, in
+     * theory), in which case the guard is skipped entirely rather than deduping against nothing.
+     *
+     * @param array<string, mixed> $context
+     */
+    private function customerIdFromContext(array $context): ?int
+    {
+        $customerId = $context['customer_id'] ?? null;
+        return is_numeric($customerId) ? (int) $customerId : null;
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
     private function scheduleResume(int $campaignId, int $resumeActionId, int $delayMinutes, array $context): void
     {
         $scheduled = $this->campaignScheduledActionFactory->create();
         $scheduled->setCampaignId($campaignId);
         $scheduled->setResumeActionId($resumeActionId);
+        $scheduled->setCustomerId($this->customerIdFromContext($context));
         $scheduled->setContext($context);
         $scheduled->setRunAt(date('Y-m-d H:i:s', strtotime("+{$delayMinutes} minutes")));
 

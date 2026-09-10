@@ -8,6 +8,7 @@ use Magento\Framework\Serialize\Serializer\Json as JsonSerializer;
 use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\Campaign\ActionPool;
+use Ordo\Automation\Model\Campaign\CampaignEntryGuard;
 use Ordo\Automation\Model\Campaign\ConditionPool;
 use Ordo\Automation\Model\Campaign\SplitVariantSelector;
 use Ordo\Automation\Model\CampaignAction;
@@ -42,6 +43,7 @@ class CampaignDispatcherTest extends TestCase
     private ConditionPool $conditionPool;
     private ActionPool $actionPool;
     private SplitVariantSelector $splitVariantSelector;
+    private CampaignEntryGuard&\PHPUnit\Framework\MockObject\MockObject $campaignEntryGuard;
     private CacheInterface $cache;
     private LoggerInterface $logger;
 
@@ -58,6 +60,8 @@ class CampaignDispatcherTest extends TestCase
         $this->conditionPool = new ConditionPool();
         $this->actionPool = new ActionPool();
         $this->splitVariantSelector = new SplitVariantSelector();
+        $this->campaignEntryGuard = $this->createMock(CampaignEntryGuard::class);
+        $this->campaignEntryGuard->method('hasPendingEntry')->willReturn(false);
         $this->cache = $this->createStub(CacheInterface::class);
         $this->cache->method('load')->willReturn(false);
         $this->logger = $this->createMock(LoggerInterface::class);
@@ -88,6 +92,7 @@ class CampaignDispatcherTest extends TestCase
             $this->conditionPool,
             $this->actionPool,
             $this->splitVariantSelector,
+            $this->campaignEntryGuard,
             $this->cache,
             new JsonSerializer(),
             $this->logger
@@ -1075,5 +1080,89 @@ class CampaignDispatcherTest extends TestCase
         $this->logger->expects(self::once())->method('error');
 
         $this->makeDispatcher()->dispatchScheduledTrigger(5, []);
+    }
+
+    /**
+     * Regression test for the ROADMAP.md "No campaign entry dedup" gap: dispatch() must not
+     * re-enter a campaign the customer is already mid-flow in (waiting on a delay_minutes resume).
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchSkipsACampaignTheCustomerAlreadyHasAPendingEntryIn(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+        // Conditions/actions for ALL matched campaigns are still batch-loaded up front
+        // (dispatch()'s own N+1 avoidance) before the per-campaign guard check - only the actual
+        // per-campaign runActionsFrom() call is what the guard must prevent.
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([]));
+
+        $this->campaignEntryGuard = $this->createMock(CampaignEntryGuard::class);
+        $this->campaignEntryGuard->expects(self::once())->method('hasPendingEntry')->with(1, 42)->willReturn(true);
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 42]);
+    }
+
+    /**
+     * A dispatch context with no identified customer at all can't be deduped against anything -
+     * the guard must be skipped entirely, not treated as "always blocked" or "always allowed
+     * against customer 0".
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchNeverConsultsTheGuardWhenContextHasNoCustomerId(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([]));
+
+        $this->campaignEntryGuard = $this->createMock(CampaignEntryGuard::class);
+        $this->campaignEntryGuard->expects(self::never())->method('hasPendingEntry');
+
+        $this->makeDispatcher()->dispatch('order_placed', []);
+    }
+
+    /**
+     * dispatchScheduledTrigger() (the scheduled_at/recurring_schedule entry path) gets the same
+     * guard as dispatch() - both end at runActionsFrom($campaignId, ..., 0, $context).
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchScheduledTriggerSkipsACampaignTheCustomerAlreadyHasAPendingEntryIn(): void
+    {
+        $this->campaignCollectionFactory->method('create')->willReturn(
+            $this->makeSingleCampaignCollection($this->makeCampaign(5))
+        );
+        $this->conditionCollectionFactory->expects(self::never())->method('create');
+
+        $this->campaignEntryGuard = $this->createMock(CampaignEntryGuard::class);
+        $this->campaignEntryGuard->expects(self::once())->method('hasPendingEntry')->with(5, 42)->willReturn(true);
+
+        $this->makeDispatcher()->dispatchScheduledTrigger(5, ['customer_id' => 42]);
+    }
+
+    /**
+     * resumeScheduledAction() is deliberately NOT guarded - it's the continuation of an already
+     * in-flight chain, not a new entry, so it must run even if (hypothetically) a pending row
+     * existed for this customer+campaign.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResumeScheduledActionNeverConsultsTheGuard(): void
+    {
+        $actionRow = $this->createMock(CampaignAction::class);
+        $actionRow->method('getEntityId')->willReturn(11);
+        $actionRow->method('getCampaignId')->willReturn(1);
+        $actionRow->method('getDelayMinutes')->willReturn(0);
+        $actionRow->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $actionRow->method('getParams')->willReturn([]);
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$actionRow]));
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->method('execute');
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->campaignEntryGuard = $this->createMock(CampaignEntryGuard::class);
+        $this->campaignEntryGuard->expects(self::never())->method('hasPendingEntry');
+
+        $this->makeDispatcher()->resumeScheduledAction(1, 11, ['customer_id' => 42]);
     }
 }

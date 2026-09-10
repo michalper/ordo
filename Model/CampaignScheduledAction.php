@@ -18,6 +18,7 @@ class CampaignScheduledAction extends AbstractModel
     public const ENTITY_ID = 'entity_id';
     public const CAMPAIGN_ID = 'campaign_id';
     public const RESUME_ACTION_ID = 'resume_action_id';
+    public const CUSTOMER_ID = 'customer_id';
     public const CONTEXT = 'context';
     public const RUN_AT = 'run_at';
     public const EXECUTED_AT = 'executed_at';
@@ -46,6 +47,23 @@ class CampaignScheduledAction extends AbstractModel
     public function setResumeActionId(int $resumeActionId): self
     {
         $this->setData(self::RESUME_ACTION_ID, $resumeActionId);
+        return $this;
+    }
+
+    /**
+     * Null when the dispatch context that created this row had no identified customer (e.g. a
+     * purely order-scoped trigger) — Campaign\CampaignEntryGuard skips its check entirely in
+     * that case rather than deduping against nothing.
+     */
+    public function getCustomerId(): ?int
+    {
+        $value = $this->getData(self::CUSTOMER_ID);
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setCustomerId(?int $customerId): self
+    {
+        $this->setData(self::CUSTOMER_ID, $customerId);
         return $this;
     }
 

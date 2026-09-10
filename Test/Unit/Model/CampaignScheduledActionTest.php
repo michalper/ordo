@@ -28,6 +28,19 @@ class CampaignScheduledActionTest extends AbstractModelTestCase
         self::assertSame(12, $model->getResumeActionId());
     }
 
+    public function testCustomerIdDefaultsToNull(): void
+    {
+        self::assertNull($this->makeModel()->getCustomerId());
+    }
+
+    public function testCustomerIdRoundTrip(): void
+    {
+        $model = $this->makeModel();
+        $model->setCustomerId(42);
+
+        self::assertSame(42, $model->getCustomerId());
+    }
+
     public function testGetContextReturnsEmptyArrayWhenUnset(): void
     {
         self::assertSame([], $this->makeModel()->getContext());

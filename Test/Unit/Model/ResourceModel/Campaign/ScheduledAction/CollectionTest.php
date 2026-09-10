@@ -17,4 +17,14 @@ class CollectionTest extends AbstractCollectionTestCase
 
         self::assertSame($collection, $result);
     }
+
+    public function testAddPendingForCampaignAndCustomerFilterIsFluent(): void
+    {
+        [$entityFactory, $logger, $fetchStrategy, $eventManager] = $this->makeCollectionDeps();
+        $collection = new Collection($entityFactory, $logger, $fetchStrategy, $eventManager, null, $this->makeResource());
+
+        $result = $collection->addPendingForCampaignAndCustomerFilter(7, 42);
+
+        self::assertSame($collection, $result);
+    }
 }

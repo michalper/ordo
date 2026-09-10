@@ -1300,7 +1300,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 2
+			count: 3
 			path: Model/CampaignScheduledAction.php
 
 		-
