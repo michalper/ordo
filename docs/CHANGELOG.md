@@ -222,6 +222,20 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- **`CampaignRepository::save()`/`delete()` now flush per-trigger-event cache tags instead of one
+  flat tag**, closing the campaign engine's "thrashes and reverts to a full DB scan far more than
+  necessary" gap. `CampaignDispatcher::campaignIdsForTrigger()`'s cached lookup used to be tagged
+  only with the flat `CampaignDispatcher::CACHE_TAG`, so saving or deleting *any* campaign flushed
+  *every* trigger event's cached lookup, even ones the saved campaign has nothing to do with — on
+  an install with many campaigns edited frequently, this thrashed the whole cache far more than
+  necessary. Each cached entry is now also tagged with a new
+  `CampaignDispatcher::triggerCacheTag($triggerEvent)` (`ordo_campaign_trigger_{$triggerEvent}`),
+  and `CampaignRepository` reads the saved/deleted campaign's own `ordo_campaign_trigger` rows
+  before AND after the write, unions the two trigger-event sets (covering a trigger event added
+  and removed in the same save), and flushes only those tags. The flat tag is still stamped on
+  every cache entry too, so `CampaignTriggerRepository`, `Controller\Adminhtml\Campaign\Delete`,
+  and `Campaign\CampaignSaveProcessor` — which still flush it wholesale — keep invalidating
+  everything they always did; only `CampaignRepository`'s own save/delete path got narrower.
 - **Separated 4 admin screens from the broader ACL resources they were incorrectly reusing**,
   closing the ROADMAP.md "ACL resources are shared across functionally distinct screens" finding.
   Message Log, Reorder Cycles (index + recalculate-now), and Product Feed refresh no longer gate

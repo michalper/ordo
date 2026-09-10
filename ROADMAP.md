@@ -50,9 +50,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 - `resumeScheduledAction()` loads and materializes *all* of a campaign's actions just to find one
   row's index, on every single scheduled resume — an indexed lookup would scale better as the
   scheduled-action backlog grows (`Model/CampaignDispatcher.php`).
-- Cache invalidation for "which campaigns are active for trigger X" is one flat tag flushed on
-  *any* campaign/trigger/condition/action write anywhere — on an install with many campaigns
-  edited frequently, this thrashes and reverts to a full DB scan far more than necessary.
 - No dead-letter/retry policy for the dispatch queue — `CampaignDispatchConsumer` explicitly drops
   a malformed message rather than requeuing it, and no alerting surfaces a broken campaign (e.g. a
   deleted email template ID) beyond a log line.
