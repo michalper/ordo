@@ -12,8 +12,9 @@ scoped from real hands-on marketing automation experience.
 - **Ad-audience sync (`Cron\SyncAdAudiences`) has no test against a real Google Ads/Meta account.** Note:
   a since-fixed bug (docs/CHANGELOG.md "Fixed") meant `getGoogleAdsClientSecret()`/`getGoogleAdsRefreshToken()`/
   `getGoogleAdsDeveloperToken()`/`getMetaAccessToken()` returned ciphertext at runtime, not the decrypted
-  secret — every real API call would have failed auth regardless of this gap. Same shape
-  as `send_sms` above: unit tests (`GoogleAdsSyncClientTest`/`MetaSyncClientTest`/`GoogleOAuthTokenProviderTest`)
+  secret — every real API call would have failed auth regardless of this gap. Same shape as
+  `send_sms`'s equivalent gap, already closed (see docs/CHANGELOG.md): unit tests
+  (`GoogleAdsSyncClientTest`/`MetaSyncClientTest`/`GoogleOAuthTokenProviderTest`)
   drive the real request-building/response-parsing logic via a fake `Curl`, and the integration test
   (`SyncAdAudiencesTest`) uses real DI/database (real segment/tag/customer rows, real `SegmentMemberResolver`
   query, real `PiiHasher`) but swaps `SyncClientInterface` for a `RecordingSyncClient` — so the actual HTTP
