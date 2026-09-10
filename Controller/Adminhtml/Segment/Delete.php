@@ -4,14 +4,16 @@ declare(strict_types=1);
 namespace Ordo\Automation\Controller\Adminhtml\Segment;
 
 use Magento\Backend\App\Action\Context;
-use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\App\Action\HttpPostActionInterface;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\SegmentFactory;
 
 /**
- * Invoked via a plain GET link (see Ui\Component\Listing\Column\SegmentActions).
+ * Invoked via a POST-with-confirm link (Magento_Ui's "post": true action flag &
+ * form-key validation, standard for HttpPostActionInterface controllers) - see
+ * Ui\Component\Listing\Column\SegmentActions/AbstractEntityActionsColumn.
  */
-class Delete extends AbstractSegmentAction implements HttpGetActionInterface
+class Delete extends AbstractSegmentAction implements HttpPostActionInterface
 {
     public function __construct(
         Context $context,

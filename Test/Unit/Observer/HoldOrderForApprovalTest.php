@@ -16,7 +16,6 @@ use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order as OrderResource;
 use Magento\Store\Model\Store;
-use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\OrderApproval;
 use Ordo\Automation\Model\OrderApprovalFactory;
@@ -24,9 +23,9 @@ use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
 use Ordo\Automation\Observer\HoldOrderForApproval;
 use Ordo\Automation\Setup\Patch\Data\AddCustomerSpendLimitAttributes;
 use Ordo\Automation\Setup\Patch\Data\AddPendingApprovalOrderStatus;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class HoldOrderForApprovalTest extends TestCase
 {
@@ -37,7 +36,6 @@ class HoldOrderForApprovalTest extends TestCase
     private OrderApprovalResource $orderApprovalResource;
     private Random $random;
     private TransportBuilder $transportBuilder;
-    private StoreManagerInterface $storeManager;
     private StateInterface $inlineTranslation;
     private LoggerInterface $logger;
 
@@ -51,7 +49,6 @@ class HoldOrderForApprovalTest extends TestCase
         $this->orderApprovalResource = $this->createMock(OrderApprovalResource::class);
         $this->random = $this->createStub(Random::class);
         $this->transportBuilder = $this->createStub(TransportBuilder::class);
-        $this->storeManager = $this->createStub(StoreManagerInterface::class);
         $this->inlineTranslation = $this->createStub(StateInterface::class);
         $this->logger = $this->createMock(LoggerInterface::class);
     }
@@ -66,7 +63,6 @@ class HoldOrderForApprovalTest extends TestCase
             $this->orderApprovalResource,
             $this->random,
             $this->transportBuilder,
-            $this->storeManager,
             $this->inlineTranslation,
             $this->logger
         );
@@ -82,6 +78,18 @@ class HoldOrderForApprovalTest extends TestCase
         return $observer;
     }
 
+    /**
+     * @param \PHPUnit\Framework\MockObject\MockObject&Order $order
+     */
+    private function stubOrderStore($order, int $websiteId = 1): void
+    {
+        $store = $this->createStub(Store::class);
+        $store->method('getWebsiteId')->willReturn($websiteId);
+        $store->method('getId')->willReturn($websiteId);
+        $store->method('getBaseUrl')->willReturn('https://example.com/');
+        $order->method('getStore')->willReturn($store);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsWhenApprovalDisabled(): void
     {
@@ -95,12 +103,79 @@ class HoldOrderForApprovalTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
-    public function testExecuteDoesNothingWhenOrderHasNoCustomer(): void
+    public function testExecuteDoesNothingForAGuestOrderWithNoMatchingCustomerAccount(): void
     {
         $order = $this->createMock(Order::class);
         $order->method('getCustomerId')->willReturn(null);
+        $order->method('getCustomerEmail')->willReturn('oneoff-guest@example.com');
+        $this->stubOrderStore($order);
 
         $this->customerRepository->expects(self::never())->method('getById');
+        $this->customerRepository->expects(self::once())->method('get')
+            ->with('oneoff-guest@example.com', 1)
+            ->willThrowException(new LocalizedException(__('no such customer')));
+
+        $this->orderResource->expects(self::never())->method('save');
+
+        $this->makeObserverInstance()->execute($this->makeEventObserver($order));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteHoldsAGuestOrderWhoseEmailMatchesACustomerWithASpendLimit(): void
+    {
+        // The real bypass this closes: an admin configures a spend limit/approval email on a
+        // registered customer's account, and that customer simply checks out as a guest (same
+        // email, no login) to dodge it. getCustomerId() stays null for a guest order, so this
+        // must fall back to resolving the customer by email instead.
+        $order = $this->createMock(Order::class);
+        $order->method('getCustomerId')->willReturn(null);
+        $order->method('getCustomerEmail')->willReturn('vip@example.com');
+        $order->method('getGrandTotal')->willReturn(500.0);
+        $order->method('getEntityId')->willReturn(7);
+        $order->method('getIncrementId')->willReturn('000000007');
+        $order->method('getCustomerFirstname')->willReturn('Jan');
+        $order->method('getCustomerLastname')->willReturn('Kowalski');
+        $order->expects(self::once())->method('setStatus')->with(AddPendingApprovalOrderStatus::STATUS_PENDING_APPROVAL);
+        $this->stubOrderStore($order);
+
+        $spendLimitAttr = $this->createStub(AttributeInterface::class);
+        $spendLimitAttr->method('getValue')->willReturn('100');
+        $adminEmailAttr = $this->createStub(AttributeInterface::class);
+        $adminEmailAttr->method('getValue')->willReturn('admin@example.com');
+
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getCustomAttribute')->willReturnMap([
+            [AddCustomerSpendLimitAttributes::ATTRIBUTE_SPEND_LIMIT, $spendLimitAttr],
+            [AddCustomerSpendLimitAttributes::ATTRIBUTE_APPROVAL_ADMIN_EMAIL, $adminEmailAttr],
+        ]);
+
+        $this->customerRepository->expects(self::never())->method('getById');
+        $this->customerRepository->expects(self::once())->method('get')->with('vip@example.com', 1)
+            ->willReturn($customer);
+
+        $this->orderResource->expects(self::once())->method('save')->with($order);
+
+        $this->random->method('getUniqueHash')->willReturn('token123');
+
+        $approval = $this->createMock(OrderApproval::class);
+        $approval->expects(self::once())->method('setData')->with([
+            'order_id' => 7,
+            'admin_email' => 'admin@example.com',
+            'token' => 'token123',
+            'status' => OrderApproval::STATUS_PENDING,
+        ]);
+        $this->orderApprovalFactory->method('create')->willReturn($approval);
+        $this->orderApprovalResource->expects(self::once())->method('save')->with($approval);
+
+        $this->transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
+        $this->transportBuilder->method('setTemplateOptions')->willReturnSelf();
+        $this->transportBuilder->method('setTemplateVars')->willReturnSelf();
+        $this->transportBuilder->method('setFromByScope')->willReturnSelf();
+        $this->transportBuilder->method('addTo')->willReturnSelf();
+
+        $transport = $this->createMock(TransportInterface::class);
+        $transport->expects(self::once())->method('sendMessage');
+        $this->transportBuilder->method('getTransport')->willReturn($transport);
 
         $this->makeObserverInstance()->execute($this->makeEventObserver($order));
     }
@@ -152,6 +227,7 @@ class HoldOrderForApprovalTest extends TestCase
         $order->method('getCustomerFirstname')->willReturn('Jan');
         $order->method('getCustomerLastname')->willReturn('Kowalski');
         $order->expects(self::once())->method('setStatus')->with(AddPendingApprovalOrderStatus::STATUS_PENDING_APPROVAL);
+        $this->stubOrderStore($order);
 
         $spendLimitAttr = $this->createStub(AttributeInterface::class);
         $spendLimitAttr->method('getValue')->willReturn('100');
@@ -179,11 +255,6 @@ class HoldOrderForApprovalTest extends TestCase
         $this->orderApprovalFactory->method('create')->willReturn($approval);
         $this->orderApprovalResource->expects(self::once())->method('save')->with($approval);
 
-        $store = $this->createStub(Store::class);
-        $store->method('getId')->willReturn(1);
-        $store->method('getBaseUrl')->willReturn('https://example.com/');
-        $this->storeManager->method('getStore')->willReturn($store);
-
         $this->transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
         $this->transportBuilder->method('setTemplateOptions')->willReturnSelf();
         $this->transportBuilder->method('setTemplateVars')->willReturnSelf();
@@ -204,6 +275,7 @@ class HoldOrderForApprovalTest extends TestCase
         $order->method('getCustomerId')->willReturn(42);
         $order->method('getGrandTotal')->willReturn(500.0);
         $order->method('getEntityId')->willReturn(7);
+        $order->method('getStore')->willThrowException(new \RuntimeException('no store'));
 
         $spendLimitAttr = $this->createStub(AttributeInterface::class);
         $spendLimitAttr->method('getValue')->willReturn('100');
@@ -219,8 +291,6 @@ class HoldOrderForApprovalTest extends TestCase
 
         $this->random->method('getUniqueHash')->willReturn('token123');
         $this->orderApprovalFactory->method('create')->willReturn($this->createStub(OrderApproval::class));
-
-        $this->storeManager->method('getStore')->willThrowException(new \RuntimeException('no store'));
 
         $this->logger->expects(self::once())->method('error');
 

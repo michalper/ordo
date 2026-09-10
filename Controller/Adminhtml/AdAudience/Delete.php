@@ -4,11 +4,16 @@ declare(strict_types=1);
 namespace Ordo\Automation\Controller\Adminhtml\AdAudience;
 
 use Magento\Backend\App\Action\Context;
-use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\App\Action\HttpPostActionInterface;
 use Ordo\Automation\Model\AdAudienceFactory;
 use Ordo\Automation\Model\ResourceModel\AdAudience as AdAudienceResource;
 
-class Delete extends AbstractAdAudienceAction implements HttpGetActionInterface
+/**
+ * Invoked via a POST-with-confirm link (Magento_Ui's "post": true action flag &
+ * form-key validation, standard for HttpPostActionInterface controllers) - see
+ * Ui\Component\Listing\Column\AdAudienceActions/AbstractEntityActionsColumn.
+ */
+class Delete extends AbstractAdAudienceAction implements HttpPostActionInterface
 {
     public function __construct(
         Context $context,

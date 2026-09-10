@@ -4,14 +4,16 @@ declare(strict_types=1);
 namespace Ordo\Automation\Controller\Adminhtml\ScoreRule;
 
 use Magento\Backend\App\Action\Context;
-use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\App\Action\HttpPostActionInterface;
 use Ordo\Automation\Model\ResourceModel\ScoreRule as ScoreRuleResource;
 use Ordo\Automation\Model\ScoreRuleFactory;
 
 /**
- * Invoked via a plain GET link (see Ui\Component\Listing\Column\ScoreRuleActions).
+ * Invoked via a POST-with-confirm link (Magento_Ui's "post": true action flag &
+ * form-key validation, standard for HttpPostActionInterface controllers) - see
+ * Ui\Component\Listing\Column\ScoreRuleActions/AbstractEntityActionsColumn.
  */
-class Delete extends AbstractScoreRuleAction implements HttpGetActionInterface
+class Delete extends AbstractScoreRuleAction implements HttpPostActionInterface
 {
     public function __construct(
         Context $context,

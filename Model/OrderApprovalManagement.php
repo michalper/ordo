@@ -8,13 +8,12 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Config as OrderConfig;
-use Magento\Sales\Model\ResourceModel\Order as OrderResource;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
-use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Api\Data\OrderApprovalDecisionLinksInterface;
 use Ordo\Automation\Api\Data\OrderApprovalInterface;
 use Ordo\Automation\Api\OrderApprovalManagementInterface;
 use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
+use Ordo\Automation\Setup\Patch\Data\AddPendingApprovalOrderStatus;
 
 /**
  * The one place the approve/reject decision is actually made — both the email-link controllers
@@ -28,10 +27,8 @@ class OrderApprovalManagement implements OrderApprovalManagementInterface
         private readonly OrderApprovalFactory $orderApprovalFactory,
         private readonly OrderApprovalResource $orderApprovalResource,
         private readonly OrderCollectionFactory $orderCollectionFactory,
-        private readonly OrderResource $orderResource,
         private readonly OrderConfig $orderConfig,
         private readonly OrderRepositoryInterface $orderRepository,
-        private readonly StoreManagerInterface $storeManager,
         private readonly OrderApprovalDecisionLinksFactory $decisionLinksFactory
     ) {
     }
@@ -49,11 +46,12 @@ class OrderApprovalManagement implements OrderApprovalManagementInterface
         }
 
         $order = $this->loadOrder($approval->getOrderId());
+        $this->assertOrderStillAwaitingApproval($order);
 
         // Release the order into whatever status is normally the default for the "new" state —
         // i.e. exactly where it would have landed if it had never been held.
         $order->setStatus($this->orderConfig->getStateDefaultStatus(Order::STATE_NEW));
-        $this->orderResource->save($order);
+        $this->orderRepository->save($order);
 
         return $approval;
     }
@@ -68,6 +66,7 @@ class OrderApprovalManagement implements OrderApprovalManagementInterface
         }
 
         $order = $this->loadOrder($approval->getOrderId());
+        $this->assertOrderStillAwaitingApproval($order);
 
         // cancel() also releases any reserved inventory back to stock.
         $order->cancel();
@@ -88,7 +87,11 @@ class OrderApprovalManagement implements OrderApprovalManagementInterface
             );
         }
 
-        $baseUrl = rtrim((string) $this->storeManager->getStore()->getBaseUrl(), '/');
+        // The order's own store, not "whatever store happens to be in scope right now" - see
+        // Observer\HoldOrderForApproval::sendApprovalRequestEmail()'s own comment for the same
+        // fix and the multi-store bug it closes.
+        $order = $this->loadOrder($approval->getOrderId());
+        $baseUrl = rtrim((string) $order->getStore()->getBaseUrl(), '/');
         $token = $approval->getToken();
 
         /** @var OrderApprovalDecisionLinks $links */
@@ -118,6 +121,23 @@ class OrderApprovalManagement implements OrderApprovalManagementInterface
         }
 
         return $approval;
+    }
+
+    /**
+     * `claimPending()` guards against two concurrent requests both acting on the same *approval*
+     * row, but that's a different state machine than the *order's* own status - an admin could
+     * have manually moved the order elsewhere (e.g. straight to Complete, or Canceled) between
+     * the hold and this decision while the `ordo_order_approval` row was still sitting "pending".
+     * Without this check, a stale decision link would silently overwrite whatever status the
+     * admin had already set, back to "released"/"canceled" as if nothing had happened since.
+     */
+    private function assertOrderStillAwaitingApproval(Order $order): void
+    {
+        if ($order->getStatus() !== AddPendingApprovalOrderStatus::STATUS_PENDING_APPROVAL) {
+            throw new LocalizedException(
+                __('This order is no longer awaiting approval and cannot be acted on via this link.')
+            );
+        }
     }
 
     private function loadOrder(int $orderId): Order

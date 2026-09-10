@@ -48,6 +48,7 @@ class ScoreRuleActionsTest extends TestCase
         $actions = $result['data']['items'][0]['actions'];
         self::assertStringContainsString('entity_id/5', $actions['edit']['href']);
         self::assertStringContainsString('entity_id/5', $actions['delete']['href']);
+        self::assertTrue($actions['delete']['post'], 'delete action must submit via POST, not a plain GET navigation');
         self::assertStringContainsString('score rule', (string) $actions['delete']['confirm']['title']);
         self::assertStringContainsString('group_id', (string) $actions['delete']['confirm']['title']);
     }
