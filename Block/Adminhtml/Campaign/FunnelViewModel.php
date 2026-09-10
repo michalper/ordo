@@ -30,7 +30,8 @@ class FunnelViewModel implements ArgumentInterface
 
     public function hasCampaign(): bool
     {
-        return $this->getCampaign() instanceof Campaign && (bool) $this->getCampaign()?->getEntityId();
+        $campaign = $this->getCampaign();
+        return $campaign instanceof Campaign && (bool) $campaign->getEntityId();
     }
 
     /**
@@ -62,13 +63,7 @@ class FunnelViewModel implements ArgumentInterface
      */
     public function hasVariants(): bool
     {
-        foreach ($this->getFunnelRows() as $row) {
-            if ($row['variant'] !== null) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($this->getFunnelRows(), fn ($row) => $row['variant'] !== null);
     }
 
     public function formatCurrency(float $amount): string

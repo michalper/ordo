@@ -98,6 +98,7 @@ class CampaignFunnelStats
                 ->group('variant')
         );
 
+        /** @var array<string, array{sent: int, delivered: int, opened: int, clicked: int}> $stats */
         $stats = [];
         foreach ($rows as $row) {
             $variant = $row['variant'] ?? '';
@@ -113,6 +114,9 @@ class CampaignFunnelStats
         // counts once toward the funnel, same "each stage counted once" semantics the funnel
         // view needs (see ordo_message_log_event's own db_schema.xml comment for why raw event
         // rows aren't 1:1 with a funnel count).
+        /**
+         * @var array<int, array{variant: string|null, event_type: string, count: string|int}> $eventRows
+         */
         $eventRows = $connection->fetchAll(
             $connection->select()
                 ->from(['e' => $eventTable], ['event_type'])

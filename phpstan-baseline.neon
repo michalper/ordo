@@ -613,9 +613,15 @@ parameters:
 			path: Controller/Email/StatusCallback.php
 
 		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Controller/Email/StatusCallback.php
+
+		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 6
+			count: 7
 			path: Controller/Email/StatusCallback.php
 
 		-
@@ -873,25 +879,25 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 1
+			count: 2
 			path: Model/Campaign/Action/SendEmail.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 2
+			count: 3
 			path: Model/Campaign/Action/SendEmail.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 1
+			count: 2
 			path: Model/Campaign/Action/SendSms.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 2
+			count: 3
 			path: Model/Campaign/Action/SendSms.php
 
 		-
@@ -1809,14 +1815,26 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 1
+			count: 2
 			path: Model/MessageLog.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 5
+			count: 6
 			path: Model/MessageLog.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/MessageLogEvent.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Model/MessageLogEvent.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -2482,6 +2500,12 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
+			path: Observer/RecordCampaignOutcome.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
 			path: Observer/RecordTriggerOutcome.php
 
 		-
@@ -2756,13 +2780,13 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 2
+			count: 3
 			path: Model/Campaign/Action/SendWhatsApp.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 2
+			count: 3
 			path: Model/Campaign/Action/SendWhatsApp.php
 
 		-
@@ -2869,13 +2893,13 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 1
+			count: 2
 			path: Model/Campaign/Action/SendPush.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 3
+			count: 4
 			path: Model/Campaign/Action/SendPush.php
 
 		-
