@@ -29,7 +29,7 @@ class SegmentSaveProcessor
      */
     private const array DEDICATED_PARAM_FIELDS = [
         'tag', 'amount', 'threshold', 'days', 'count', 'percentile', 'sku', 'category_id',
-        'event_type', 'event_key', 'within_days',
+        'event_type', 'event_key', 'within_days', 'segment_id', 'tier',
     ];
 
     /**
