@@ -49,18 +49,12 @@ at ordering it into "what do we tackle first."
 `approveByToken()`/`rejectByToken()`'s inconsistent save path + missing order-state re-check; pull
 "Scheduled Date/Time" out of the trigger-type UI until it actually fires anything.
 
-**Tier 1 — this quarter, highest business leverage:** SendGrid webhook handling
-`spamreport`/`unsubscribe`/`group_unsubscribe` (deliverability/compliance risk today);
-retry/backoff for failed channel sends (one shared mechanism across Email/SMS/WhatsApp/Push);
-segment exclusion operator ("A but not B") — promoted up from Tier 2, cheap given
-`SegmentMemberResolver` already computes full ID sets.
-(Free Gift Offer → cart integration was originally listed here as the top item — struck from this
-list entirely: it turned out to already be a complete, shipped feature, see docs/CHANGELOG.md's
-correction entry.)
-
-**Tier 2 — good ROI, moderate effort:** unsaved-changes warning on the "Estimated Audience Size"
-refresh panel; an on-demand recalculation endpoint for Reorder Cycle (mirrors the pattern segments
-just got); `TagInactiveCustomers`'s O(n²) untag loop (one `array_flip`).
+**Tier 1 and Tier 2 are both fully closed** (SendGrid webhook opt-out handling, channel-send
+retry/backoff, the `not_in_segment` exclusion operator, the audience-size unsaved-changes warning,
+Reorder Cycle's on-demand recalculation endpoint, and `TagInactiveCustomers`'s O(n²) fix) — see
+docs/CHANGELOG.md for each. (Free Gift Offer → cart integration was originally listed as Tier 1's
+top item — struck from this list entirely: it turned out to already be a complete, shipped
+feature, see docs/CHANGELOG.md's correction entry.)
 
 **Tier 3 — real feature work, needs a scoping decision first:** scheduled/recurring campaigns
 (the real implementation behind Tier 0's dead trigger option); unified suppression/frequency
@@ -137,23 +131,15 @@ unbounded full-table scans in `CalculateReorderCycle`/`GoogleMerchantFeedGenerat
 - No behavioral/event-based cohort conditions (browsing, cart, wishlist events) — only
   `purchased_sku`/`purchased_category` exist for behavior; a real CDP's segmentation lives on
   events like this.
-- No segment exclusion operator ("customers in A but NOT in B") — only inclusion (`in_segment`)
-  exists today; cheap to add given the resolver already computes full ID sets.
 - Group condition editor's JSON fallback (for `in_segment`, `loyalty_tier_at_least`,
   `nps_score_at_least`) silently becomes `{}` on malformed JSON with no validation feedback — a
   non-technical marketer gets a condition that quietly matches nothing.
-- "Estimated Audience Size" panel doesn't warn when the on-screen conditions are unsaved — a click
-  on Refresh returns the live count for the *last saved* definition, easy to mistake for reflecting
-  current edits.
 - `RfmCalculator::getAggregatesForAllCustomers()`/`getAllCustomerIds()` have no pagination/streaming
   — a full `sales_order` GROUP BY and full `customer_entity` SELECT into memory on every resolve;
   fine at 10-20k customers, a real cost driver at 100k+.
 - `Cron\SyncAdAudiences`/`GoogleAdsSyncClient::addOperations()` sends every hashed email as one
   single unbatched API call — Google Ads' documented per-request operation limits would make a
   large segment fail outright, not just run slowly.
-- `Cron\TagInactiveCustomers`'s untag pass uses `in_array()` against a plain PHP array inside a
-  loop — effectively O(n²) in the worst case after a big win-back wave untags most of the inactive
-  population; a flipped lookup set fixes it cheaply.
 - Fail-closed semantics for event-only conditions (`order_total_gte`, `visitor_tag`) used inside a
   Segment are invisible to the admin — they silently zero out an AND-segment with no UI
   explanation that these condition types only make sense in Campaign trigger context.
@@ -244,10 +230,6 @@ as bugs above, not repeated here)*
 - ACL resources are shared across functionally distinct screens, weakening least-privilege —
   Message Log, Reorder Cycles, and Product Feed refresh all reuse the `campaigns` resource, RFM
   reuses `segments`; a role can't be scoped to just one of these.
-- Reorder cycles has no on-demand recalculation endpoint, unlike the equivalent pattern segments
-  just got via `SegmentAudienceSizeRecalculator`/`Controller/Adminhtml/Segment/AudienceSize.php` —
-  an inconsistency between two conceptually similar "cached, periodically-recalculated metric"
-  features worth reconciling.
 - No `fields`/sparse-fieldset support and no documented rate limiting anywhere in `API.md`; the
   anonymous order-approval endpoints (`.../approve`, `.../reject`) are token-guarded but not
   rate-limited against brute-forcing a token guess.

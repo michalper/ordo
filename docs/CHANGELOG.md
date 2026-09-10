@@ -19,6 +19,25 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **`not_in_segment` condition type** — the exclusion counterpart to `in_segment` ("customers in A
+  but NOT in B"), closing the ROADMAP.md Tier 1 "segment exclusion operator" item. New
+  `Model\Campaign\Condition\NotInSegment` (per-customer, shared by Campaign conditions and
+  `SegmentMatcher` via `ConditionPool`) and `Model\Segment\SegmentMemberResolver::resolveNotInSegment()`
+  (set-level, for bulk actions/audience size — the full customer universe minus the target
+  segment's members). Both fail closed on a self-referencing cycle rather than matching everyone.
+  Picked up automatically by the admin Type dropdown (`Model\Config\Source\ConditionType` reads
+  `ConditionPool`).
+- **On-demand "Recalculate Now" for Reorder Cycle**, closing the ROADMAP.md Tier 2 inconsistency
+  with segments' own on-demand refresh. `Controller\Adminhtml\ReorderCycle\RecalculateNow` mirrors
+  `Controller\Adminhtml\ProductFeed\RefreshNow`'s existing pattern; `Cron\CalculateReorderCycle::execute()`
+  now returns the processed count (was `void`) so the controller can report it.
+- **Retry/backoff for failed channel sends**, closing the ROADMAP.md Tier 1 item. New
+  `Model\Campaign\Action\SendRetrier` retries the actual provider call (SMTP send, Twilio/Graph
+  API/push HTTP call) up to 3 times with exponential backoff, used by
+  `SendEmail`/`SendSms`/`SendWhatsApp`/`SendPush`. Excludes exceptions that mean "this destination
+  is permanently invalid" (SMS opt-out, dead push subscription) from the retry via an optional
+  `shouldRetry` predicate — those fail fast on the first attempt instead. Covers the in-process
+  retry case only; `Cron\RunScheduledCampaignActions.php`'s cross-cron retry-queue gap remains open.
 - **Nested AND/OR condition groups for Segment and Campaign conditions**, closing the
   ROADMAP.md "Segment/Campaign condition builder follow-ups" item (the "Bulk actions" mis-grouping
   sub-item is covered separately below). A reserved `'group'` pseudo-type holds its own nested
@@ -41,6 +60,18 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- **SendGrid webhook `unsubscribe`/`spamreport`/`group_unsubscribe` now record a real consent
+  opt-out**, closing the ROADMAP.md Tier 1 item. These three used to fall into the "unhandled,
+  silently skipped" bucket — a one-click unsubscribe or spam complaint from the recipient's own
+  mailbox provider never reached `ConsentManager`, so `send_email` kept mailing someone who had, in
+  every real sense, opted out. Mapped to `MessageLog::STATUS_OPTED_OUT` and, when the log row has
+  a known `customer_id`, calls `ConsentManager::setConsent(..., ConsentChannel::Email, false, ...)`.
+- **Unsaved-changes warning on the "Estimated Audience Size" refresh panel**, closing the
+  ROADMAP.md Tier 2 item. The count this panel shows is always resolved from the segment's *saved*
+  conditions, so an admin who edits a condition then clicks Refresh without saving first used to
+  see a live-looking number that actually still reflected the old, saved definition. Any
+  input/change event anywhere on the page outside this panel (and the unrelated bulk-actions
+  panel) now marks the page dirty and shows a warning next to the count.
 - **"Bulk actions on current members" no longer reads as one continuous step with the segment's
   condition builder**, closing the ROADMAP.md mis-grouping follow-up. `bulkactions.phtml`'s panel
   is now a native `<details>`/`<summary>` (collapsed by default, no JS needed for the
@@ -67,6 +98,9 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- `Cron\TagInactiveCustomers`'s untag pass used `in_array()` against a plain PHP array inside a
+  loop, effectively O(n²) after a big win-back wave untags most of the inactive population.
+  Closes the ROADMAP.md Tier 2 item — flipped into a lookup set once before the loop instead.
 - `Test/js/free-gift-offer-form.test.js`'s `sleep()` test asserted `Date.now() - start >= 10`,
   which depends on real wall-clock timing and was flaky on a loaded CI runner (failed at least
   once in CI). Rewritten to stub `setTimeout` and assert the actual contract instead: `sleep()`
