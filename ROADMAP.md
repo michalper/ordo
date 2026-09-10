@@ -47,7 +47,8 @@ at ordering it into "what do we tackle first."
 **Tier 0 — this week, security/trust risk, cheap fixes:** `FreeGiftOffer/Delete.php` GET→POST
 + form-key; guest checkout bypassing order approval; the 3-site multi-store decision-link URL bug;
 `approveByToken()`/`rejectByToken()`'s inconsistent save path + missing order-state re-check; pull
-"Scheduled Date/Time" out of the trigger-type UI until it actually fires anything.
+"Scheduled Date/Time" out of the trigger-type UI until an admin can actually configure a date/cron
+expression for it.
 
 **Tier 1 and Tier 2 are both fully closed** (SendGrid webhook opt-out handling, channel-send
 retry/backoff, the `not_in_segment` exclusion operator, the audience-size unsaved-changes warning,
@@ -84,12 +85,17 @@ unbounded full-table scans in `CalculateReorderCycle`/`GoogleMerchantFeedGenerat
   `EscalateStalePendingApprovals`, and `getDecisionLinksById` all resolve "current store" via
   `StoreManagerInterface::getStore()` instead of the order's own store, so decision-link emails
   can point at the wrong storefront in a multi-store setup.
-- **The "Scheduled Date/Time" trigger type is already selectable in the admin UI with nothing
-  behind it.** `Api\Data\CampaignTriggerInterface::TRIGGER_SCHEDULED_AT`/`TRIGGER_RECURRING_SCHEDULE`
-  and `Model\Config\Source\TriggerEvent`'s option list already expose these, but no
-  `ScheduledTriggerScanner`/dispatch cron exists — an admin can pick it, save the campaign, and it
-  will simply never fire, with zero error anywhere. Needs either the real implementation (see
-  "Scheduled (date-based) campaigns" below) or pulling the option out of the UI until it's real.
+- **The "Scheduled Date/Time" trigger type is selectable in the admin UI but still can't
+  actually be configured.** The backend is real now — `CampaignDispatcher::dispatchScheduledTrigger()`,
+  `Model\Campaign\ScheduledTriggerScanner`, and `Cron\DispatchScheduledCampaignTriggers` (every 5
+  minutes) correctly fire a campaign once its `scheduled_at` datetime or `recurring_schedule` cron
+  expression is due. What's still missing is purely the admin UI: the Flow canvas gives every
+  trigger node zero fields of its own (`Block\Adminhtml\Campaign\Edit\Flow::getFieldsConfig()` has
+  no `'trigger'` entry, and `campaign-flow-editor.js` never renders one), so there is no way to
+  actually type in a date or cron expression — picking the type still silently saves a trigger
+  that can never become due. Needs `getFieldsConfig()`'s `'trigger'` key (a datetime input for
+  `scheduled_at`, a text input for `recurring_schedule`'s `cron_expression`) plus canvas support
+  for rendering trigger-node fields the same way condition/action nodes already do.
 
 ### Campaign engine (`Model/CampaignDispatcher.php`, `Model/Queue/*`, Flow canvas)
 
@@ -239,25 +245,23 @@ as bugs above, not repeated here)*
   anonymous order-approval endpoints (`.../approve`, `.../reject`) are token-guarded but not
   rate-limited against brute-forcing a token guess.
 
-## Scheduled (date-based) campaigns and a real calendar view
+## Scheduled (date-based) campaigns: admin UI + a real calendar view
 
-Raised directly after renaming "Campaign Calendar" to "Campaign Action Timeline" (it showed
-relative delay offsets, not dates — every trigger today fires on a customer event, not a fixed
-schedule, so a literal calendar would have been empty): **should a campaign be able to fire at a
-specific date/time instead of only on a customer event?**
+The backend is done: `scheduled_at` (fixed date/time, fires once) and `recurring_schedule`
+(cron-like, e.g. every Monday) are both real trigger types now —
+`Model\Campaign\ScheduledTriggerScanner` / `Cron\DispatchScheduledCampaignTriggers` scan for due
+triggers every 5 minutes and fire them through `CampaignDispatcher::dispatchScheduledTrigger()`,
+the rest of the pipeline (conditions, actions, delay_minutes chaining) unchanged. What's left:
 
-- A new trigger type, e.g. `scheduled_at` (fixed date/time) or `recurring_schedule` (cron-like:
-  every Monday, first of the month, etc.) — `CampaignTriggerInterface` and `TriggerEvent`'s option
-  source are the two places a new trigger type is wired in.
-- A cron that scans for campaigns whose scheduled time has arrived and fires them the same way
-  `CampaignDispatcher` fires event-based triggers today, so the rest of the pipeline (conditions,
-  actions, delay_minutes chaining) needs no change.
+- **Admin UI to actually configure one.** The Flow canvas's trigger nodes have no fields of their
+  own yet — `Block\Adminhtml\Campaign\Edit\Flow::getFieldsConfig()` needs a `'trigger'` entry
+  (a datetime input for `scheduled_at`, a text input for `recurring_schedule`'s
+  `cron_expression`) and `campaign-flow-editor.js` needs to render it, the same way condition/
+  action nodes already get their own fields. Until this exists, picking either type in the admin
+  silently saves a trigger that can never become due (see the Tier 0 item above).
 - Only once that exists does an actual date-grid calendar view become meaningful — plotting when
   each scheduled campaign will (or did) fire. Worth revisiting whether "Campaign Action Timeline"
   should grow a calendar-view toggle at that point, or stay a separate screen.
-
-Needs a scoping decision before implementation: is a one-off scheduled send (e.g. "Black Friday
-email, Nov 28 9am") or a recurring schedule (e.g. "every Monday") the more valuable first case.
 
 ## Localization
 
