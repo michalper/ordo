@@ -77,17 +77,13 @@
                 <label translate="true">Created</label>
             </settings>
         </column>
+        <!-- Refreshed by Cron\RecalculateSegmentAudienceSizes every 15 minutes - not
+             necessarily accurate to this exact moment. -->
         <column name="estimated_audience_size">
             <settings>
                 <sorting>desc</sorting>
                 <dataType>text</dataType>
                 <label translate="true">Estimated Audience Size</label>
-                <tooltip>
-                    <description translate="true">
-                        Customers currently matching this segment, as of the last cron refresh
-                        (every 15 minutes) - not necessarily this exact moment.
-                    </description>
-                </tooltip>
             </settings>
         </column>
         <column name="audience_size_computed_at" class="Magento\Ui\Component\Listing\Columns\Date">
