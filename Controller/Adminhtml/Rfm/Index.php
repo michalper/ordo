@@ -9,14 +9,13 @@ use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\View\Result\PageFactory;
 
 /**
- * Read-only RFM report across the whole customer base. Guarded by the segments ACL resource
- * rather than a new one of its own: this is the analytical view behind segment building, and
- * anyone allowed to define RFM segments is already allowed to see the RFM numbers those segments
- * are built from.
+ * Read-only RFM report across the whole customer base. Guarded by its own dedicated ACL
+ * resource (rfm) rather than the broader segments resource, so access can be granted
+ * independently of full segment management permissions.
  */
 class Index extends Action implements HttpGetActionInterface
 {
-    public const ADMIN_RESOURCE = 'Ordo_Automation::segments';
+    public const ADMIN_RESOURCE = 'Ordo_Automation::rfm';
 
     public function __construct(
         Context $context,

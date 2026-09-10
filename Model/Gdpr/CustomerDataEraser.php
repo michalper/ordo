@@ -19,19 +19,9 @@ use Magento\Framework\App\ResourceConnection;
  */
 class CustomerDataEraser
 {
-    private const array TABLES = [
-        'ordo_customer_consent',
-        'ordo_customer_tag',
-        'ordo_customer_score',
-        'ordo_customer_demographic_score',
-        'ordo_notification',
-        'ordo_survey_prompt',
-        'ordo_pending_popup',
-        'ordo_message_log',
-    ];
-
     public function __construct(
-        private readonly ResourceConnection $resourceConnection
+        private readonly ResourceConnection $resourceConnection,
+        private readonly CustomerDataTableProvider $tableProvider
     ) {
     }
 
@@ -43,7 +33,7 @@ class CustomerDataEraser
         $connection = $this->resourceConnection->getConnection();
         $deleted = [];
 
-        foreach (self::TABLES as $table) {
+        foreach ($this->tableProvider->getTables() as $table) {
             $deleted[$table] = $connection->delete(
                 $this->resourceConnection->getTableName($table),
                 ['customer_id = ?' => $customerId]

@@ -27,7 +27,7 @@ class IndexTest extends AbstractAdminActionTestCase
         $resultPage = $this->createMock(Page::class);
         $resultPage->expects(self::once())
             ->method('setActiveMenu')
-            ->with('Ordo_Automation::campaigns')
+            ->with('Ordo_Automation::message_log')
             ->willReturnSelf();
         $resultPage->method('getConfig')->willReturn($pageConfig);
 
@@ -40,6 +40,6 @@ class IndexTest extends AbstractAdminActionTestCase
 
     public function testUsesCampaignsAclResource(): void
     {
-        self::assertSame('Ordo_Automation::campaigns', Index::ADMIN_RESOURCE);
+        self::assertSame('Ordo_Automation::message_log', Index::ADMIN_RESOURCE);
     }
 }
