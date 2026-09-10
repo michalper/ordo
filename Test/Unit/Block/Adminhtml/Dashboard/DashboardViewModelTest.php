@@ -18,6 +18,7 @@ use Ordo\Automation\Model\ResourceModel\ReorderCycle\Collection as ReorderCycleC
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory as ReorderCycleCollectionFactory;
 use Ordo\Automation\Model\TriggerOutcomeLogger;
 use Ordo\Automation\Helper\Config;
+use Magento\Framework\App\CacheInterface;
 use Magento\Framework\Pricing\Helper\Data as PricingHelper;
 use Magento\Store\Model\StoreManagerInterface;
 use PHPUnit\Framework\TestCase;
@@ -35,12 +36,16 @@ class DashboardViewModelTest extends TestCase
         ?PricingHelper $pricingHelper = null,
         ?LoyaltyTierCalculator $loyaltyTierCalculator = null,
         ?Config $config = null,
-        ?StoreManagerInterface $storeManager = null
+        ?StoreManagerInterface $storeManager = null,
+        ?CacheInterface $cache = null
     ): DashboardViewModel {
         $pricingHelper ??= $this->createStub(PricingHelper::class);
         $pricingHelper->method('currency')->willReturnCallback(
             fn (float $amount): string => '$' . number_format($amount, 2)
         );
+
+        $cache ??= $this->createStub(CacheInterface::class);
+        $cache->method('load')->willReturn(false);
 
         return new DashboardViewModel(
             $campaignCollectionFactory ?? $this->createStub(CampaignCollectionFactory::class),
@@ -52,7 +57,8 @@ class DashboardViewModelTest extends TestCase
             $pricingHelper,
             $loyaltyTierCalculator ?? $this->createStub(LoyaltyTierCalculator::class),
             $config ?? $this->createStub(Config::class),
-            $storeManager ?? $this->createStub(StoreManagerInterface::class)
+            $storeManager ?? $this->createStub(StoreManagerInterface::class),
+            $cache
         );
     }
 
@@ -143,6 +149,40 @@ class DashboardViewModelTest extends TestCase
         $campaignCollectionFactory->method('create')->willReturn($collection);
 
         $viewModel = $this->makeViewModel($campaignCollectionFactory);
+
+        self::assertSame(3, $viewModel->getTotalCampaignCount());
+    }
+
+    public function testGetTotalCampaignCountOnCacheHitSkipsCollectionQuery(): void
+    {
+        $collection = $this->createMock(CampaignCollection::class);
+        $collection->expects(self::never())->method('getSize');
+
+        $campaignCollectionFactory = $this->createStub(CampaignCollectionFactory::class);
+        $campaignCollectionFactory->method('create')->willReturn($collection);
+
+        $cache = $this->createMock(CacheInterface::class);
+        $cache->method('load')->with('ordo_dashboard_count_total_campaign')->willReturn('9');
+        $cache->expects(self::never())->method('save');
+
+        $viewModel = $this->makeViewModel($campaignCollectionFactory, cache: $cache);
+
+        self::assertSame(9, $viewModel->getTotalCampaignCount());
+    }
+
+    public function testGetTotalCampaignCountOnCacheMissComputesAndStores(): void
+    {
+        $collection = $this->createMock(CampaignCollection::class);
+        $collection->expects(self::once())->method('getSize')->willReturn(3);
+
+        $campaignCollectionFactory = $this->createStub(CampaignCollectionFactory::class);
+        $campaignCollectionFactory->method('create')->willReturn($collection);
+
+        $cache = $this->createMock(CacheInterface::class);
+        $cache->method('load')->with('ordo_dashboard_count_total_campaign')->willReturn(false);
+        $cache->expects(self::once())->method('save')->with('3', 'ordo_dashboard_count_total_campaign', [], 60);
+
+        $viewModel = $this->makeViewModel($campaignCollectionFactory, cache: $cache);
 
         self::assertSame(3, $viewModel->getTotalCampaignCount());
     }

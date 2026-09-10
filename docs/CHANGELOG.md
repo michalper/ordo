@@ -222,6 +222,12 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- **`Block\Adminhtml\Dashboard\DashboardViewModel` now caches its five `->getSize()` collection
+  counts** (total/enabled campaign count, reorder cycle count, free gift offer count, and
+  per-trigger campaign count) behind a new `cachedCount()` helper backed by
+  `Magento\Framework\App\CacheInterface`, 60-second TTL per key (`ordo_dashboard_count_*`) —
+  closing the "4+ separate uncached COUNT queries on every page load" half of the dashboard
+  ROADMAP.md item; the drill-down half of that item is still open.
 - **Unified `CampaignDispatcher`/`SegmentMatcher`'s duplicated AND/OR/nested-group condition
   evaluator**, closing the campaign engine's "second, independent implementation" gap. Both
   `evaluateList`/`evaluateOne`/`evaluateGroup`/`asStringKeyedArray` were textually identical

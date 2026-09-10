@@ -37,6 +37,24 @@ parameters:
 			path: Block/Adminhtml/Campaign/Edit/Flow.php
 
 		-
+			message: '#^Constant Ordo\\Automation\\Block\\Adminhtml\\Dashboard\\DashboardViewModel\:\:COUNT_CACHE_LIFETIME is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: Block/Adminhtml/Dashboard/DashboardViewModel.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and false will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: Block/Adminhtml/Dashboard/DashboardViewModel.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: Block/Adminhtml/Dashboard/DashboardViewModel.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1

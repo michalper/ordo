@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Block\Adminhtml\Dashboard;
 
+use Magento\Framework\App\CacheInterface;
 use Magento\Framework\Pricing\Helper\Data as PricingHelper;
 use Magento\Framework\View\Element\Block\ArgumentInterface;
 use Magento\Store\Model\StoreManagerInterface;
@@ -25,6 +26,15 @@ use Ordo\Automation\Model\TriggerOutcomeLogger;
  */
 class DashboardViewModel implements ArgumentInterface
 {
+    /**
+     * Short TTL for the dashboard's cached counts — dashboard counts don't need to be
+     * second-accurate, just not stale for minutes, so a plain time-based expiry (no tag
+     * invalidation) is enough here.
+     */
+    private const int COUNT_CACHE_LIFETIME = 60;
+
+    private const string COUNT_CACHE_KEY_PREFIX = 'ordo_dashboard_count_';
+
     private const array TRIGGER_LABELS = [
         CampaignTriggerInterface::TRIGGER_ORDER_PLACED => 'Order Placed',
         CampaignTriggerInterface::TRIGGER_CUSTOMER_REGISTERED => 'Customer Registered',
@@ -80,7 +90,8 @@ class DashboardViewModel implements ArgumentInterface
         private readonly PricingHelper $pricingHelper,
         private readonly LoyaltyTierCalculator $loyaltyTierCalculator,
         private readonly Config $config,
-        private readonly StoreManagerInterface $storeManager
+        private readonly StoreManagerInterface $storeManager,
+        private readonly CacheInterface $cache
     ) {
     }
 
@@ -134,25 +145,39 @@ class DashboardViewModel implements ArgumentInterface
 
     public function getTotalCampaignCount(): int
     {
-        return $this->campaignCollectionFactory->create()->getSize();
+        return $this->cachedCount(
+            'total_campaign',
+            fn (): int => $this->campaignCollectionFactory->create()->getSize()
+        );
     }
 
     public function getEnabledCampaignCount(): int
     {
-        $collection = $this->campaignCollectionFactory->create();
-        $collection->addFieldToFilter('enabled', '1');
+        return $this->cachedCount(
+            'enabled_campaign',
+            function (): int {
+                $collection = $this->campaignCollectionFactory->create();
+                $collection->addFieldToFilter('enabled', '1');
 
-        return $collection->getSize();
+                return $collection->getSize();
+            }
+        );
     }
 
     public function getReorderCycleCount(): int
     {
-        return $this->reorderCycleCollectionFactory->create()->getSize();
+        return $this->cachedCount(
+            'reorder_cycle',
+            fn (): int => $this->reorderCycleCollectionFactory->create()->getSize()
+        );
     }
 
     public function getFreeGiftOfferCount(): int
     {
-        return $this->freeGiftOfferCollectionFactory->create()->getSize();
+        return $this->cachedCount(
+            'free_gift_offer',
+            fn (): int => $this->freeGiftOfferCollectionFactory->create()->getSize()
+        );
     }
 
     /**
@@ -189,10 +214,15 @@ class DashboardViewModel implements ArgumentInterface
      */
     public function getCampaignCountForTrigger(string $triggerEvent): int
     {
-        $collection = $this->campaignTriggerCollectionFactory->create();
-        $collection->addFieldToFilter('trigger_event', $triggerEvent);
+        return $this->cachedCount(
+            'campaign_for_trigger_' . $triggerEvent,
+            function () use ($triggerEvent): int {
+                $collection = $this->campaignTriggerCollectionFactory->create();
+                $collection->addFieldToFilter('trigger_event', $triggerEvent);
 
-        return $collection->getSize();
+                return $collection->getSize();
+            }
+        );
     }
 
     /**
@@ -244,6 +274,25 @@ class DashboardViewModel implements ArgumentInterface
             static fn (array $labels): string => implode(', ', $labels),
             $labelsByCampaignId
         );
+    }
+
+    /**
+     * Short-TTL cache around one of this page's collection ->getSize() counts, so a dashboard
+     * reload within COUNT_CACHE_LIFETIME seconds doesn't re-run the same COUNT query.
+     */
+    private function cachedCount(string $cacheKey, callable $countFn): int
+    {
+        $fullCacheKey = self::COUNT_CACHE_KEY_PREFIX . $cacheKey;
+        $cached = $this->cache->load($fullCacheKey);
+
+        if ($cached !== false) {
+            return (int) $cached;
+        }
+
+        $count = $countFn();
+        $this->cache->save((string) $count, $fullCacheKey, [], self::COUNT_CACHE_LIFETIME);
+
+        return $count;
     }
 
     public function getTriggerOutcomeLabel(string $triggerType): string
