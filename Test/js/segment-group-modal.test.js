@@ -137,10 +137,12 @@ QUnit.module('Ordo_Automation/js/segment-group-modal', function () {
         const api = loadModule(MODULE_PATH);
         const $rows = global.$('<div></div>');
 
+        // in_segment now renders a <select> (see the "select cloning" test above) - this exercises
+        // the still-real JSON-fallback path via a type with no dedicated field at all.
         api.appendInlineRow(
             $rows,
-            [{ value: 'in_segment', label: 'In Segment' }],
-            { type: 'in_segment', params: {} },
+            [{ value: 'some_future_condition_type', label: 'Some Future Condition Type' }],
+            { type: 'some_future_condition_type', params: {} },
             function () {}
         );
         $rows.find('textarea').val('{not valid json');
@@ -156,13 +158,13 @@ QUnit.module('Ordo_Automation/js/segment-group-modal', function () {
 
         api.appendInlineRow(
             $rows,
-            [{ value: 'in_segment', label: 'In Segment' }],
-            { type: 'in_segment', params: {} },
+            [{ value: 'some_future_condition_type', label: 'Some Future Condition Type' }],
+            { type: 'some_future_condition_type', params: {} },
             function () {}
         );
         $rows.find('textarea').val('{not valid json');
         api.readRows($rows);
-        $rows.find('textarea').val('{"segment_id": 3}');
+        $rows.find('textarea').val('{"anything": 3}');
         api.readRows($rows);
 
         assert.strictEqual($rows.find('textarea').hasClass('ordo-group-json-invalid'), false);
