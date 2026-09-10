@@ -36,4 +36,35 @@ class CampaignTriggerTest extends AbstractModelTestCase
 
         self::assertSame('customer_registered', $model->getTriggerEvent());
     }
+
+    public function testParamsJsonRoundTrip(): void
+    {
+        $model = $this->makeModel();
+        $model->setParamsJson('{"scheduled_at":"2026-11-28 09:00:00"}');
+
+        self::assertSame('{"scheduled_at":"2026-11-28 09:00:00"}', $model->getParamsJson());
+    }
+
+    public function testGetParamsDecodesJson(): void
+    {
+        $model = $this->makeModel();
+        $model->setParamsJson('{"scheduled_at":"2026-11-28 09:00:00"}');
+
+        self::assertSame(['scheduled_at' => '2026-11-28 09:00:00'], $model->getParams());
+    }
+
+    public function testGetParamsReturnsEmptyArrayWhenParamsJsonIsEmpty(): void
+    {
+        $model = $this->makeModel();
+
+        self::assertSame([], $model->getParams());
+    }
+
+    public function testGetParamsReturnsEmptyArrayWhenParamsJsonIsNotAJsonObjectOrArray(): void
+    {
+        $model = $this->makeModel();
+        $model->setParamsJson('"just a string"');
+
+        self::assertSame([], $model->getParams());
+    }
 }

@@ -25,4 +25,19 @@ class CollectionTest extends AbstractCollectionTestCase
         $collection = $this->makeCollection();
         self::assertSame($collection, $collection->addTriggerEventFilter('order_placed'));
     }
+
+    public function testAddTriggerEventsFilterIsFluent(): void
+    {
+        $collection = $this->makeCollection();
+        self::assertSame(
+            $collection,
+            $collection->addTriggerEventsFilter(['scheduled_at', 'recurring_schedule'])
+        );
+    }
+
+    public function testAddEnabledCampaignFilterIsFluent(): void
+    {
+        $collection = $this->makeCollection();
+        self::assertSame($collection, $collection->addEnabledCampaignFilter());
+    }
 }

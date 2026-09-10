@@ -99,6 +99,23 @@ class ScheduledTriggerScannerTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testScheduledAtDoesNotFireWhenScheduledAtIsMissing(): void
+    {
+        $trigger = $this->makeTrigger(
+            1,
+            5,
+            CampaignTriggerInterface::TRIGGER_SCHEDULED_AT,
+            '{}'
+        );
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([$trigger]));
+        $this->scheduledTriggerState->method('getState')->willReturn(null);
+
+        $this->campaignDispatcher->expects(self::never())->method('dispatchScheduledTrigger');
+
+        self::assertSame(0, $this->makeScanner()->scan());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testScheduledAtDoesNotFireAgainOnceAlreadyFiredUnderTheSameConfig(): void
     {
         $paramsJson = '{"scheduled_at": "2026-01-01 00:00:00"}';
