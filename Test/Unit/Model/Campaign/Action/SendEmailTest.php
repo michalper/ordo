@@ -13,7 +13,7 @@ use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Model\Campaign\Action\SendEmail;
 use Ordo\Automation\Model\Campaign\Action\SendRetrier;
-use Ordo\Automation\Model\Campaign\FrequencyCapManager;
+use Ordo\Automation\Model\Campaign\FrequencyCapGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Email\MessageIdGenerator;
@@ -30,7 +30,7 @@ class SendEmailTest extends TestCase
     private StoreManagerInterface $storeManager;
     private StateInterface $inlineTranslation;
     private ConsentManager $consentManager;
-    private FrequencyCapManager $frequencyCapManager;
+    private FrequencyCapGate $frequencyCapGate;
     private MessageIdGenerator $messageIdGenerator;
     private PendingMessageIdHolder&\PHPUnit\Framework\MockObject\MockObject $pendingMessageIdHolder;
     private MessageLogWriter&\PHPUnit\Framework\MockObject\MockObject $messageLogWriter;
@@ -45,8 +45,8 @@ class SendEmailTest extends TestCase
         $this->inlineTranslation = $this->createMock(StateInterface::class);
         $this->consentManager = $this->createStub(ConsentManager::class);
         $this->consentManager->method('hasConsent')->willReturn(true);
-        $this->frequencyCapManager = $this->createStub(FrequencyCapManager::class);
-        $this->frequencyCapManager->method('hasCapacity')->willReturn(true);
+        $this->frequencyCapGate = $this->createStub(FrequencyCapGate::class);
+        $this->frequencyCapGate->method('allows')->willReturn(true);
         $this->messageIdGenerator = $this->createStub(MessageIdGenerator::class);
         $this->messageIdGenerator->method('generate')->willReturn('abc123@example.com');
         $this->pendingMessageIdHolder = $this->createMock(PendingMessageIdHolder::class);
@@ -66,7 +66,7 @@ class SendEmailTest extends TestCase
             $this->storeManager,
             $this->inlineTranslation,
             $this->consentManager,
-            $this->frequencyCapManager,
+            $this->frequencyCapGate,
             $this->messageIdGenerator,
             $this->pendingMessageIdHolder,
             $this->messageLogWriter,
@@ -91,11 +91,12 @@ class SendEmailTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsAndRecordsSuppressedWhenFrequencyCapReached(): void
     {
-        $this->frequencyCapManager = $this->createMock(FrequencyCapManager::class);
-        $this->frequencyCapManager->expects(self::once())->method('hasCapacity')->with(42)->willReturn(false);
+        $this->frequencyCapGate = $this->createMock(FrequencyCapGate::class);
+        $this->frequencyCapGate->expects(self::once())->method('allows')
+            ->with(42, 'email', '', 'send_email')->willReturn(false);
         $this->customerRepository->expects(self::never())->method('getById');
-        $this->logger->expects(self::once())->method('info');
-        $this->messageLogWriter->expects(self::once())->method('recordSuppressed')->with('email', 42, '');
+        $this->logger->expects(self::never())->method('info');
+        $this->messageLogWriter->expects(self::never())->method('recordSuppressed');
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);

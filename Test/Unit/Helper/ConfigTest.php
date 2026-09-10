@@ -49,6 +49,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isSmsEnabled());
         self::assertTrue($this->config->isWhatsAppEnabled());
         self::assertTrue($this->config->isPushEnabled());
+        self::assertTrue($this->config->isFrequencyCapEnabled());
     }
 
     public function testPushGettersDelegateToScopeConfig(): void
@@ -151,6 +152,8 @@ class ConfigTest extends TestCase
         self::assertSame(100, $this->config->getScoreThreshold());
         self::assertSame(100, $this->config->getLoyaltySilverThreshold());
         self::assertSame(500, $this->config->getLoyaltyGoldThreshold());
+        self::assertSame(5, $this->config->getFrequencyCapMaxMessages());
+        self::assertSame(24, $this->config->getFrequencyCapWindowHours());
     }
 
     public function testIntGetterHonorsExplicitZero(): void

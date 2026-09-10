@@ -6,7 +6,7 @@ namespace Ordo\Automation\Model\Campaign\Action;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Helper\Config;
-use Ordo\Automation\Model\Campaign\FrequencyCapManager;
+use Ordo\Automation\Model\Campaign\FrequencyCapGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate as WhatsAppTemplateResource;
@@ -32,7 +32,7 @@ use Throwable;
  * field (Block/Adminhtml/Campaign/Edit/Flow.php::getFieldsConfig()) can drive it directly.
  *
  * Checks ConsentManager::hasConsent() before sending, same as send_email/send_sms. Also checks
- * FrequencyCapManager::hasCapacity() right after (opt-in, cross-channel).
+ * FrequencyCapGate::allows() right after (opt-in, cross-channel).
  */
 class SendWhatsApp implements ActionInterface
 {
@@ -51,7 +51,7 @@ class SendWhatsApp implements ActionInterface
         private readonly WhatsAppTemplateResource $whatsAppTemplateResource,
         private readonly MessageLogWriter $messageLogWriter,
         private readonly ConsentManager $consentManager,
-        private readonly FrequencyCapManager $frequencyCapManager,
+        private readonly FrequencyCapGate $frequencyCapGate,
         private readonly SendRetrier $sendRetrier,
         private readonly LoggerInterface $logger
     ) {
@@ -114,12 +114,7 @@ class SendWhatsApp implements ActionInterface
             return;
         }
 
-        if (!$this->frequencyCapManager->hasCapacity($customerId)) {
-            $this->logger->info(sprintf(
-                'Ordo_Automation: send_whatsapp action skipped for customer #%d, frequency cap reached.',
-                $customerId
-            ));
-            $this->messageLogWriter->recordSuppressed(self::CHANNEL, $customerId, $phone);
+        if (!$this->frequencyCapGate->allows($customerId, self::CHANNEL, $phone, 'send_whatsapp')) {
             return;
         }
 
