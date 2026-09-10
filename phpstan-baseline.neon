@@ -484,6 +484,12 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
+			path: Controller/Adminhtml/Segment/AudienceSize.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
 			path: Controller/Adminhtml/Segment/BulkAction.php
 
 		-
