@@ -28,16 +28,6 @@ scoped from real hands-on marketing automation experience.
   (`RefreshStatus`), and an actual template message send have never been exercised against a live WABA/phone
   number, and the webhook receiver has never received a genuine callback from Meta.
 
-### Mutation testing
-
-`mutation-testing` runs in CI on every PR but is non-blocking (Quality Gate/merge never wait on
-it) — right now nobody actually reads its output before merging, which raises the question of
-whether the line-coverage push above is proving real test *quality* or just exercising lines.
-Needs: someone to actually open the mutation-testing report on a few recent PRs and see what
-survives (untested edge cases the coverage number hides), decide a realistic minimum mutation
-score, and only then flip the job to blocking — flipping it blind, before knowing the current
-baseline, would just make every PR red on day one.
-
 ### MFTF/scenario coverage
 
 Full inventory with what's covered and why: `Test/Mftf/SCENARIOS.md`. Every row there is currently ✅ — no open

@@ -21,6 +21,13 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- **Mutation testing is now blocking**, closing the ROADMAP.md follow-up. 5 consecutive CI runs
+  across main and feature branches all landed at the identical 4943/7043 killed+errored+timed-out
+  mutants (~70.2% MSI, `coveredMsi` the same since `Not Covered` is 0) — a stable baseline, not
+  noise. `infection.json5`'s `minMsi`/`minCoveredMsi` set to 70 (a couple points under that
+  baseline, so ordinary mutant-selection variance across runs doesn't fail a PR with no real
+  regression); `coverage.yml`'s `mutation-testing` job no longer has `continue-on-error`, and
+  `main`'s required status checks now include it.
 - `.github/workflows/coverage.yml`: PHP and JS coverage used to run sequentially as two halves
   of one `coverage` job, gating the PR check on their combined runtime. Split into parallel
   `php-coverage` / `js-coverage` jobs, plus a `sonar` job that `needs` both and downloads their

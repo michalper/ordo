@@ -69,7 +69,7 @@ vendor/bin/phpcs   # separate check, because phpcbf doesn't fix 100% of its own 
 
 ## PRs auto-merge once CI is green
 
-`main` has branch protection with required status checks: `unit-tests`, `static-analysis`, `rector`, `coding-standard`, `php-coverage`, `js-coverage`, `sonar` (`mutation-testing` is deliberately excluded — it's `continue-on-error: true` in `coverage.yml`, non-blocking by design). Repo settings have `allow_auto_merge` and `delete_branch_on_merge` both on.
+`main` has branch protection with required status checks: `unit-tests`, `static-analysis`, `rector`, `coding-standard`, `php-coverage`, `js-coverage`, `sonar`, `mutation-testing` (gated at `minMsi`/`minCoveredMsi` 70 in `infection.json5`, a couple points under the measured ~70.2% baseline). Repo settings have `allow_auto_merge` and `delete_branch_on_merge` both on.
 
 So opening a PR is not the end of the job — enable auto-merge on it right away, don't wait to be asked per PR:
 ```bash

@@ -18,10 +18,12 @@
         "summary": "infection-summary.log",
         "github": true
     },
-    // Starting low on purpose — the goal of the first CI runs is to see a real, honest MSI number
-    // for a 184-file unit suite whose mutation coverage has never been measured, not to gate merges
-    // on a guessed threshold. Raise both once a baseline run has actually reported a number.
-    "minMsi": 0,
-    "minCoveredMsi": 0,
+    // Baseline measured across 5 consecutive CI runs (main + feature branches, all identical):
+    // 4943/7043 mutants killed/errored/timed-out = ~70.2% MSI, coveredMsi the same since
+    // Not Covered is 0. Set a couple points under that so ordinary mutant-selection noise across
+    // runs doesn't fail a PR that introduced no real regression — raise as real test-quality work
+    // pushes the actual number up, don't lower it to make a red PR pass.
+    "minMsi": 70,
+    "minCoveredMsi": 70,
     "testFramework": "phpunit"
 }
