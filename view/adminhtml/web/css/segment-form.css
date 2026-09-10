@@ -521,6 +521,17 @@ td:has(> [data-index="group_logic"]) {
     min-height: 32px;
 }
 
+.ordo-group-json-invalid {
+    border-color: #e02b27;
+    background: #fdf0ef;
+}
+
+.ordo-group-json-error-message {
+    color: #e02b27;
+    font-size: 11px;
+    margin-top: 2px;
+}
+
 .ordo-group-row-delete {
     background: none;
     border: 1px solid var(--ordo-border);
