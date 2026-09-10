@@ -7,6 +7,8 @@ use Magento\Framework\Controller\Result\Json;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Ordo\Automation\Controller\Email\StatusCallback;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\ConsentChannel;
+use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Email\SendGridSignatureValidator;
 use Ordo\Automation\Model\MessageLog;
 use Ordo\Automation\Model\ResourceModel\MessageLog as MessageLogResource;
@@ -25,6 +27,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
     private SendGridSignatureValidator&\PHPUnit\Framework\MockObject\MockObject $signatureValidator;
     private MessageLogCollectionFactory $messageLogCollectionFactory;
     private MessageLogResource&\PHPUnit\Framework\MockObject\MockObject $messageLogResource;
+    private ConsentManager&\PHPUnit\Framework\MockObject\MockObject $consentManager;
     private LoggerInterface $logger;
     private Json $jsonResult;
 
@@ -36,6 +39,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         $this->signatureValidator = $this->createMock(SendGridSignatureValidator::class);
         $this->messageLogCollectionFactory = $this->createMock(MessageLogCollectionFactory::class);
         $this->messageLogResource = $this->createMock(MessageLogResource::class);
+        $this->consentManager = $this->createMock(ConsentManager::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->jsonResult = $this->createMock(Json::class);
@@ -53,11 +57,12 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
             $this->signatureValidator,
             $this->messageLogCollectionFactory,
             $this->messageLogResource,
+            $this->consentManager,
             $this->logger
         );
     }
 
-    private function makeMessageLog(?int $id): MessageLog
+    private function makeMessageLog(?int $id, ?int $customerId = null): MessageLog
     {
         $resource = $this->createStub(\Magento\Framework\Model\ResourceModel\Db\AbstractDb::class);
         $resource->method('getIdFieldName')->willReturn('entity_id');
@@ -69,6 +74,9 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         );
         if ($id !== null) {
             $log->setId($id);
+        }
+        if ($customerId !== null) {
+            $log->setCustomerId($customerId);
         }
 
         return $log;
@@ -161,6 +169,100 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
 
         self::assertSame('undelivered', $log->getStatus());
         self::assertSame('550 mailbox unavailable', $log->getErrorCode());
+    }
+
+    /**
+     * Regression test for a real bug a code audit found: unsubscribe/spamreport/
+     * group_unsubscribe used to fall into the "unhandled event type, silently skipped" bucket -
+     * a one-click unsubscribe or spam complaint never reached ConsentManager, so send_email kept
+     * mailing someone who had, in every real sense, opted out.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testValidSignatureWithUnsubscribeEventRecordsConsentOptOut(): void
+    {
+        $controller = $this->makeController();
+        $this->stubHeaders('real-signature', '1700000000');
+        $body = json_encode([['event' => 'unsubscribe', 'smtp-id' => '<abc@example.com>']]);
+        $this->request->method('getContent')->willReturn($body);
+        $this->signatureValidator->method('isValid')->willReturn(true);
+
+        $log = $this->makeMessageLog(7, 42);
+        $collection = $this->createStub(MessageLogCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getFirstItem')->willReturn($log);
+        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+
+        $this->messageLogResource->expects(self::once())->method('save')->with($log);
+        $this->consentManager->expects(self::once())->method('setConsent')
+            ->with(42, ConsentChannel::Email, false, 'sendgrid_unsubscribe');
+
+        $controller->execute();
+
+        self::assertSame('opted_out', $log->getStatus());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testValidSignatureWithSpamreportEventRecordsConsentOptOut(): void
+    {
+        $controller = $this->makeController();
+        $this->stubHeaders('real-signature', '1700000000');
+        $body = json_encode([['event' => 'spamreport', 'smtp-id' => '<abc@example.com>']]);
+        $this->request->method('getContent')->willReturn($body);
+        $this->signatureValidator->method('isValid')->willReturn(true);
+
+        $log = $this->makeMessageLog(7, 42);
+        $collection = $this->createStub(MessageLogCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getFirstItem')->willReturn($log);
+        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+
+        $this->messageLogResource->expects(self::once())->method('save')->with($log);
+        $this->consentManager->expects(self::once())->method('setConsent')
+            ->with(42, ConsentChannel::Email, false, 'sendgrid_spamreport');
+
+        $controller->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testValidSignatureWithUnsubscribeEventButNoKnownCustomerSkipsConsentUpdate(): void
+    {
+        $controller = $this->makeController();
+        $this->stubHeaders('real-signature', '1700000000');
+        $body = json_encode([['event' => 'unsubscribe', 'smtp-id' => '<abc@example.com>']]);
+        $this->request->method('getContent')->willReturn($body);
+        $this->signatureValidator->method('isValid')->willReturn(true);
+
+        $log = $this->makeMessageLog(7);
+        $collection = $this->createStub(MessageLogCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getFirstItem')->willReturn($log);
+        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+
+        $this->messageLogResource->expects(self::once())->method('save')->with($log);
+        $this->consentManager->expects(self::never())->method('setConsent');
+
+        $controller->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testValidSignatureWithDeliveredEventDoesNotTouchConsent(): void
+    {
+        $controller = $this->makeController();
+        $this->stubHeaders('real-signature', '1700000000');
+        $body = json_encode([['event' => 'delivered', 'smtp-id' => '<abc@example.com>']]);
+        $this->request->method('getContent')->willReturn($body);
+        $this->signatureValidator->method('isValid')->willReturn(true);
+
+        $log = $this->makeMessageLog(7, 42);
+        $collection = $this->createStub(MessageLogCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getFirstItem')->willReturn($log);
+        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+
+        $this->messageLogResource->method('save');
+        $this->consentManager->expects(self::never())->method('setConsent');
+
+        $controller->execute();
     }
 
     #[AllowMockObjectsWithoutExpectations]
