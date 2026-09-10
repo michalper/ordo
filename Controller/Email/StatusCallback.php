@@ -107,7 +107,8 @@ class StatusCallback extends Action implements HttpPostActionInterface, CsrfAwar
      */
     private function processEvent(array $event): void
     {
-        $status = self::EVENT_TO_STATUS[(string) ($event['event'] ?? '')] ?? null;
+        $eventType = (string) ($event['event'] ?? '');
+        $status = self::EVENT_TO_STATUS[$eventType] ?? null;
         $messageId = (string) ($event['smtp-id'] ?? '');
         if ($status === null || $messageId === '') {
             return;
@@ -125,7 +126,7 @@ class StatusCallback extends Action implements HttpPostActionInterface, CsrfAwar
             $this->logger->info(sprintf(
                 'Ordo_Automation: SendGrid event webhook for unknown smtp-id "%s" (event=%s).',
                 $messageId,
-                (string) ($event['event'] ?? '')
+                $eventType
             ));
 
             return;
@@ -144,7 +145,7 @@ class StatusCallback extends Action implements HttpPostActionInterface, CsrfAwar
                 $log->getCustomerId(),
                 ConsentChannel::Email,
                 false,
-                'sendgrid_' . (string) ($event['event'] ?? '')
+                'sendgrid_' . $eventType
             );
         }
     }
