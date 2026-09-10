@@ -32,9 +32,17 @@
              action=generate_coupon. Both rows live on this one campaign, indices 0 and 1 under the
              same conditions[conditions] dynamicRows, per AdminCreateSegmentWithMultipleConditionsTest.xml's
              established convention for a second condition row. order_total_gte has its own dedicated
-             "amount" field (see AdminCampaignScenarioEndToEndTest.xml); tag has no dedicated field
-             and goes through the generic params_json fallback (see
-             AdminCampaignInSegmentConditionTest.xml's identical comment on in_segment for why).
+             "amount" field (see AdminCampaignScenarioEndToEndTest.xml); tag ALSO has a dedicated
+             field (Block/Adminhtml/Campaign/Edit/Flow::getFieldsConfig()'s 'tag' => [['name' =>
+             'tag', ...]]) - unlike in_segment, which genuinely has none and falls back to the
+             generic params_json field (see AdminCampaignInSegmentConditionTest.xml's comment on
+             that). A real CI run root-caused this test silently never generating a coupon on
+             either order back to exactly this: buildChain's field-setter only touches
+             [data-field="..."] elements that actually exist on the node
+             (view/adminhtml/web/js/campaign-flow-editor.js's applyBuildChainNodeFields()), and a
+             tag condition node renders the dedicated "tag" input, not a "params_json" textarea -
+             so passing fields: {params_json: '...'} was a silent no-op, the tag input stayed
+             empty, and HasTag::isSatisfied() always returned false. -->
 
              Created BEFORE Campaign A below, deliberately — CampaignDispatcher::dispatch() runs
              every campaign matched to one trigger in a single foreach, in ascending campaign id
@@ -62,14 +70,14 @@
              since there's no shared dynamicRows grid rerendering between the two condition nodes
              here — each condition is its own canvas node with its own DOM, added via addNode(),
              not a row inserted into a collection that re-indexes existing rows. order_total_gte
-             has its own dedicated "amount" field; tag has none and goes through the generic
-             params_json fallback (see AdminCampaignInSegmentConditionTest.xml's identical
-             comment on in_segment for why). -->
+             has its own dedicated "amount" field; tag has its own dedicated "tag" field too (see
+             Step 1's comment above on why params_json - used correctly elsewhere for in_segment,
+             which has no dedicated field - is wrong here). -->
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvasB"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
             {kind: 'condition', type: 'order_total_gte', fields: {amount: '50'}},
-            {kind: 'condition', type: 'tag', fields: {params_json: '{&quot;tag&quot;: &quot;vip&quot;}'}},
+            {kind: 'condition', type: 'tag', fields: {tag: 'vip'}},
             {kind: 'action', type: 'generate_coupon', fields: {rule_id: '$createRule.rule_id$', prefix: 'ANDTEST', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraphB"/>
 
