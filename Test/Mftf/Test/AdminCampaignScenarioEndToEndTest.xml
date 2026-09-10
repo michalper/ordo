@@ -59,6 +59,7 @@
         <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
         <waitForPageLoad stepKey="waitForSave"/>
         <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
 
         <!-- Step 2: a REAL order, through REAL storefront checkout, as the REAL customer created
              above — not a synthetic dispatch() call like Test/Integration/CampaignDispatchScenarioTest. -->
@@ -108,5 +109,17 @@
              not that the row data arrived — a one-shot <see> could fire before it did.
              <waitForText> polls for the text instead of checking once. -->
         <waitForText selector="#couponCodesGrid_table" userInput="E2ETEST-" stepKey="seeGeneratedCouponInGrid"/>
+
+        <!-- Cleanup: this campaign's order_placed trigger + order_total_gte(50) condition is
+             satisfied by essentially any real order placed later in this same "campaign3" group's
+             CI job, so a leftover here queues a stray, unwanted E2ETEST- coupon on every later
+             test's own order - same root-caused leftover-campaign pollution
+             AdminCampaignInSegmentConditionTest.xml's own cleanup comment describes. Delete from
+             this same admin rule-edit page (already an admin context, so no storefront-FORM_KEY
+             concern). -->
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
     </test>
 </tests>

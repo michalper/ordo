@@ -40,6 +40,7 @@
         <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
         <waitForPageLoad stepKey="waitForSave"/>
         <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
 
         <!-- Step 2: a REAL order, through REAL storefront checkout - RfmCalculator::getRecencyDays()
              reads MAX(sales_order.created_at) directly, so this order (created "now") gives a
@@ -64,5 +65,18 @@
             <argument name="expectedText">Recency days condition fired.</argument>
             <argument name="toAddress">$createCustomer.email$</argument>
         </helper>
+
+        <!-- Cleanup: this campaign's order_placed trigger + recency_days_at_most(1) condition is
+             satisfied by literally any order placed "now", i.e. every real order any later test in
+             this same "tracking" group's CI job places - same root-caused leftover-campaign
+             pollution AdminCampaignInSegmentConditionTest.xml's own cleanup comment describes. Left
+             undeleted before, this queued a stray "Recency days condition fired." email for every
+             later test's own customer, which MailHogHelper::seeTextInLatestEmail (only ever
+             checking the single latest message) could then read back instead of that other test's
+             own expected copy. -->
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
     </test>
 </tests>

@@ -121,6 +121,30 @@ class HoldOrderForApprovalTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteDoesNothingWhenEventHasNoOrder(): void
+    {
+        $this->customerRepository->expects(self::never())->method('getById');
+        $this->customerRepository->expects(self::never())->method('get');
+
+        $this->makeObserverInstance()->execute($this->makeEventObserver(null));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteDoesNothingForAGuestOrderWithNoEmail(): void
+    {
+        $order = $this->createMock(Order::class);
+        $order->method('getCustomerId')->willReturn(null);
+        $order->method('getCustomerEmail')->willReturn('');
+
+        $this->customerRepository->expects(self::never())->method('getById');
+        $this->customerRepository->expects(self::never())->method('get');
+
+        $this->orderResource->expects(self::never())->method('save');
+
+        $this->makeObserverInstance()->execute($this->makeEventObserver($order));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteHoldsAGuestOrderWhoseEmailMatchesACustomerWithASpendLimit(): void
     {
         // The real bypass this closes: an admin configures a spend limit/approval email on a

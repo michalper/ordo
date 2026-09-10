@@ -40,6 +40,7 @@
         <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
         <waitForPageLoad stepKey="waitForSave"/>
         <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
 
         <!-- Step 2: a REAL order (SimpleProduct2, 123.00) - comfortably clears the 100.00
              threshold via a real getMonetaryTotal() sum, not just the order's own total echoed
@@ -64,5 +65,18 @@
             <argument name="expectedText">Monetary total condition fired.</argument>
             <argument name="toAddress">$createCustomer.email$</argument>
         </helper>
+
+        <!-- Cleanup: this campaign's order_placed trigger + monetary_total_at_least(100) condition
+             is unconditionally satisfied by essentially any real order placed later in this same
+             "segment" group's CI job (every SimpleProduct2 checkout clears 123.00 >= 100) - same
+             root-caused leftover-campaign pollution AdminCampaignInSegmentConditionTest.xml's own
+             cleanup comment describes. Left undeleted before, this queued a stray "Monetary total
+             condition fired." email for every later test's own customer, which
+             MailHogHelper::seeTextInLatestEmail (only ever checking the single latest message)
+             could then read back instead of that other test's own expected copy. -->
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
     </test>
 </tests>
