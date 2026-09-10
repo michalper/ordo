@@ -64,15 +64,10 @@ its resolver, `SegmentMemberResolver` bulk wiring, and the segment-form admin UI
 recurring campaigns' admin UI, and unified suppression/frequency capping across all channels
 (`Model\Campaign\FrequencyCapManager`).
 
-**Tier 4 — scale hardening, not urgent below ~50-100k customers:**
-- ~~batching in `GoogleAdsSyncClient::addOperations()`~~ — **closed**: segments larger than Google
-  Ads' per-request identifier limit are now chunked across multiple `:addOperations` calls instead
-  of sent as one oversized (rejected) request.
-- ~~unbounded full-table scan in `CalculateReorderCycle`~~ — **closed**: the order-history query is
-  now bounded to a 730-day lookback instead of rescanning full historical order volume every run.
-- ~~unbounded single-pass memory build in `GoogleMerchantFeedGenerator`~~ — **closed**: `generate()`
-  now pages through the product collection instead of loading the whole catalog into memory at once.
-- Still open: pagination/streaming in `RfmCalculator`'s aggregate queries.
+**Tier 4 is fully closed** — see docs/CHANGELOG.md for each: batching in
+`GoogleAdsSyncClient::addOperations()`, the unbounded full-table scan in `CalculateReorderCycle`,
+the unbounded single-pass memory build in `GoogleMerchantFeedGenerator`, and pagination in
+`RfmCalculator`'s `getAllCustomerIds()`/`getAggregatesForAllCustomers()`.
 
 ### Campaign engine (`Model/CampaignDispatcher.php`, `Model/Queue/*`, Flow canvas)
 
