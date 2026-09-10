@@ -39,66 +39,11 @@ controller/cron gets a row there before it's considered done).
 
 Five independent passes over the whole module (campaign engine, segmentation/RFM/scoring,
 communication channels, commerce features, admin platform/UX/API), each grounded in the actual
-code rather than guesswork. Organized by domain below; the priority tiers here are the first pass
-at ordering it into "what do we tackle first."
-
-### Priority order
-
-**Tier 0 is fully closed** — see docs/CHANGELOG.md for each: `FreeGiftOffer/Delete.php` GET→POST
-+ form-key; guest checkout bypassing order approval (fallback to email match); the 3-site
-multi-store decision-link URL bug (order's own store, not "current store"); `approveByToken()`/
-`rejectByToken()`'s save path unified with an atomic claim + order-state re-check; the Flow canvas
-now renders `scheduled_at`/`cron_expression` fields for the "Scheduled Date/Time"/"Recurring
-Schedule" trigger types.
-
-**Tier 1 and Tier 2 are both fully closed** (SendGrid webhook opt-out handling, channel-send
-retry/backoff, the `not_in_segment` exclusion operator, the audience-size unsaved-changes warning,
-Reorder Cycle's on-demand recalculation endpoint, and `TagInactiveCustomers`'s O(n²) fix) — see
-docs/CHANGELOG.md for each. (Free Gift Offer → cart integration was originally listed as Tier 1's
-top item — struck from this list entirely: it turned out to already be a complete, shipped
-feature, see docs/CHANGELOG.md's correction entry.)
-
-**Tier 3 is fully closed** — see docs/CHANGELOG.md for each: A/B/split testing (backend, funnel
-analytics, and Flow canvas UI), behavioral/event-based segmentation (`event_occurred` condition,
-its resolver, `SegmentMemberResolver` bulk wiring, and the segment-form admin UI), scheduled/
-recurring campaigns' admin UI, and unified suppression/frequency capping across all channels
-(`Model\Campaign\FrequencyCapManager`).
-
-**Tier 4 is fully closed** — see docs/CHANGELOG.md for each: batching in
-`GoogleAdsSyncClient::addOperations()`, the unbounded full-table scan in `CalculateReorderCycle`,
-the unbounded single-pass memory build in `GoogleMerchantFeedGenerator`, and pagination in
-`RfmCalculator`'s `getAllCustomerIds()`/`getAggregatesForAllCustomers()`.
+code rather than guesswork. Organized by domain below. Tiers 0-4 from the original pass are all
+fully closed — see docs/CHANGELOG.md for the full history of each.
 
 ### Campaign engine (`Model/CampaignDispatcher.php`, `Model/Queue/*`, Flow canvas)
 
-- ~~No suppression/frequency capping~~ — **closed**: `Model\Campaign\FrequencyCapManager` now caps
-  total cross-channel message volume per customer per rolling window (opt-in). Still open: this
-  caps *volume*, not *re-entry* — see the campaign entry dedup item right below, a related but
-  distinct gap (a customer can still restart the same campaign's flow from scratch on a repeat
-  trigger; capping just limits how many messages that can eventually produce).
-- ~~No campaign entry dedup~~ — **closed**: `ordo_campaign_scheduled_action` gained a `customer_id`
-  column (denormalized from the dispatch context), and `Model\Campaign\CampaignEntryGuard` checks
-  it before `dispatch()`/`dispatchScheduledTrigger()` enter a campaign — a customer with an
-  unclaimed (still-pending) resume row in that campaign is skipped rather than re-entering the
-  flow from scratch. `resumeScheduledAction()` itself is deliberately unguarded, since it's the
-  continuation of an already-entered chain, not a new entry.
-- ~~No A/B/split testing on actions and no campaign-level funnel analytics~~ — **closed**, backend
-  through admin UI (see docs/CHANGELOG.md): `Model\CampaignFunnelStats`/`CampaignOutcomeLogger`
-  track sent → delivered → opened → clicked → converted per campaign, rendered on each campaign's
-  edit page plus one dashboard summary card; `CampaignAction` rows with `type = 'split'`
-  (`Model\Campaign\SplitVariantSelector` + `CampaignDispatcher::runSplit()`) deterministically
-  branch a dispatch into a weighted variant, feeding the funnel's per-variant breakdown; the Flow
-  canvas now has a full interactive editor for building one (`campaign-flow-editor.js`'s
-  `renderVariantEditor()`). Known remaining limitation: a variant's own action can't carry its own
-  `delay_minutes` yet (no schema support for a synthetic action's scheduled-resume FK).
-- ~~No time-zone-aware quiet hours for a campaign as a whole~~ — **closed**: opt-in
-  `Model\Campaign\QuietHoursGate`, checked from every Send* action right alongside
-  `FrequencyCapGate`, defers a send due during the customer's local quiet-hours window until it
-  ends instead of sending immediately — reusing the exact `ordo_campaign_scheduled_action`
-  mechanism `delay_minutes` already uses (`CampaignDispatcher::deferActionUntil()`), so
-  `CampaignEntryGuard`'s dedup and `Cron\RunScheduledCampaignActions`'s resume both apply for
-  free. Customer timezone resolved via a new `ordo_timezone` customer attribute, falling back to
-  the store's configured `general/locale/timezone` when unset (nothing auto-detects it).
 - Flow canvas UX gaps that would frustrate daily use: no undo/redo, no node duplication/copy-paste,
   no inline "send test" before saving an action, no search/filter across the ~20+ condition/action
   types in the palette (`view/adminhtml/web/js/campaign-flow-editor.js`).
@@ -111,14 +56,10 @@ the unbounded single-pass memory build in `GoogleMerchantFeedGenerator`, and pag
 - No dead-letter/retry policy for the dispatch queue — `CampaignDispatchConsumer` explicitly drops
   a malformed message rather than requeuing it, and no alerting surfaces a broken campaign (e.g. a
   deleted email template ID) beyond a log line.
-- ~~`CampaignDispatcher`'s own AND/OR/nested-group evaluator is a second, independent
-  implementation of the same logic `SegmentMatcher` already has~~ — **closed**: both now delegate
-  to a new shared `Model\Condition\ConditionGroupEvaluator`. An audit before extracting it found
-  no accidental drift between the two — they already agreed on every case except one deliberate,
-  documented asymmetry (a campaign with zero top-level conditions fires unconditionally; a segment
-  with zero conditions never matches), which each caller still applies itself before delegating.
-  `Model\Segment\SegmentMemberResolver`'s own, third (set-level, `int[]`-returning) reimplementation
-  of the same group-walk shape is a separate, bigger unification question — not attempted here.
+- `Model\Segment\SegmentMemberResolver`'s own, separate (set-level, `int[]`-returning)
+  reimplementation of the same AND/OR/nested-group-walk shape `Model\Condition\ConditionGroupEvaluator`
+  already covers for the per-customer boolean case — a bigger unification question than that one
+  was, since its leaf resolution (aggregate/set queries) is genuinely different, not attempted yet.
 
 ### Segmentation, RFM & lead scoring (`Model/Segment/*`, `Model/Rfm/*`, `Model/ScoreRule/*`, `Model/AdAudience/*`)
 
@@ -128,35 +69,15 @@ the unbounded single-pass memory build in `GoogleMerchantFeedGenerator`, and pag
 - No segment overlap/venn analysis (avoiding message fatigue by seeing "how many customers are in
   both Segment A and B") — would build directly on `SegmentMemberResolver::getMatchingCustomerIds()`,
   no new resolver logic needed.
-- ~~No behavioral/event-based cohort conditions (browsing, cart, wishlist events)~~ — **closed**
-  (see docs/CHANGELOG.md): `Observer\TrackCartAdd`/`TrackWishlistAdd` capture the events; the new
-  `event_occurred` condition type (`Model\Event\EventOccurredResolver` +
-  `Model\Campaign\Condition\EventOccurred`) is usable in campaign triggers, with
-  `SegmentMemberResolver::resolveEventOccurred()` wired for segment audience size/bulk actions;
-  and `ordo_segment_form.xml` now has real `event_type`/`event_key`/`within_days` fields for it —
-  a marketer can build "added product X to cart in the last 14 days" without touching the API/DB.
-  Known limitation, not yet validated: `within_days` set beyond `PruneVisitorEvents`'s retention
-  window silently stops matching pruned rows.
 - Group condition editor's JSON fallback (for `in_segment`, `loyalty_tier_at_least`,
   `nps_score_at_least`) silently becomes `{}` on malformed JSON with no validation feedback — a
   non-technical marketer gets a condition that quietly matches nothing.
-- `RfmCalculator::getAggregatesForAllCustomers()`/`getAllCustomerIds()` have no pagination/streaming
-  — a full `sales_order` GROUP BY and full `customer_entity` SELECT into memory on every resolve;
-  fine at 10-20k customers, a real cost driver at 100k+.
-- `Cron\SyncAdAudiences`/`GoogleAdsSyncClient::addOperations()` sends every hashed email as one
-  single unbatched API call — Google Ads' documented per-request operation limits would make a
-  large segment fail outright, not just run slowly.
 - Fail-closed semantics for event-only conditions (`order_total_gte`, `visitor_tag`) used inside a
   Segment are invisible to the admin — they silently zero out an AND-segment with no UI
   explanation that these condition types only make sense in Campaign trigger context.
 
 ### Communication channels (Email/SMS/WhatsApp/Push)
 
-- ~~No unified suppression/frequency-capping layer across channels~~ — **closed**:
-  `Model\Campaign\FrequencyCapManager` caps total messages per customer per rolling window across
-  Email/SMS/WhatsApp/Push combined (opt-in, see docs/CHANGELOG.md). Still open: no quiet-hours
-  concept (a capped-but-still-eligible send can still land at 3am local time, see the campaign
-  engine section above).
 - No template preview or test-send anywhere in admin, for any channel — merchants routinely typo
   `{{var}}`/WhatsApp `{{1}}` placeholders and only discover it once a real customer gets the
   broken message.
@@ -167,12 +88,8 @@ the unbounded single-pass memory build in `GoogleMerchantFeedGenerator`, and pag
   concurrency control and no respect for provider rate limits (Twilio, Graph API, push services);
   a campaign matching thousands of customers in one tick will serially hammer the provider API or
   start hitting 429s with no handling for it.
-- ~~No retry/backoff for a failed send anywhere~~ — **closed for the immediate-retry case**:
-  `Model/Campaign/Action/SendRetrier.php` now retries the actual provider call up to 3 times with
-  exponential backoff inside the same action execution, excluding permanently-invalid outcomes
-  (SMS opt-out, dead push subscription) from the retry. Still open: `Cron/RunScheduledCampaignActions.php`'s
-  own gap remains real for a failure that survives all 3 in-process retries — "a row that failed
-  stays failed" across cron ticks, since there's still no persistent retry queue for that case.
+- `Cron/RunScheduledCampaignActions.php` has no persistent retry queue for a send that fails all 3
+  of `SendRetrier`'s in-process retries — "a row that failed stays failed" across cron ticks.
 - SendGrid webhook only handles delivered/bounce/dropped and silently discards
   `spamreport`/`unsubscribe`/`group_unsubscribe` — a spam complaint or one-click unsubscribe from
   the mailbox provider never reaches `ConsentManager`, so `send_email` keeps mailing someone who
