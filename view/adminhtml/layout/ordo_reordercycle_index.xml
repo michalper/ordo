@@ -11,6 +11,9 @@
                     <argument name="intro_text" xsi:type="string">Read-only view of what the reorder-detection engine has calculated for each customer/SKU pair, including whether a sent reminder actually led to a reorder. You don't need to check this screen for reminders to keep working — it's here to verify the detection looks right.</argument>
                 </arguments>
             </block>
+            <block class="Magento\Framework\View\Element\Template" name="ordo_reorder_cycle_recalculate_now_button"
+                   template="Ordo_Automation::reordercycle/recalculatenowbutton.phtml"
+                   before="ordo_reorder_cycle_listing"/>
             <uiComponent name="ordo_reorder_cycle_listing"/>
         </referenceContainer>
     </body>

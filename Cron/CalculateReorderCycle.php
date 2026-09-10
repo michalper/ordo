@@ -12,6 +12,10 @@ use Ordo\Automation\Model\ResourceModel\ReorderCycle as ReorderCycleResource;
  * Detects, per registered customer and SKU, a recurring purchase pattern from order history
  * and stores the predicted next order date. This is the data foundation the reminder cron
  * (SendReorderReminders) reads from — it never emails anyone by itself.
+ *
+ * Also invoked synchronously, outside the normal schedule, by
+ * Controller\Adminhtml\ReorderCycle\RecalculateNow — same "on-demand refresh" pattern
+ * Controller\Adminhtml\ProductFeed\RefreshNow already established for the shopping feed cron.
  */
 class CalculateReorderCycle
 {
@@ -26,7 +30,11 @@ class CalculateReorderCycle
     ) {
     }
 
-    public function execute(): void
+    /**
+     * @return int Number of reorder cycles (customer_id, sku) recalculated — surfaced back to
+     *     RecalculateNow's success message; the cron itself only logs it via CronRunLogger.
+     */
+    public function execute(): int
     {
         $connection = $this->resourceConnection->getConnection();
         $orderTable = $this->resourceConnection->getTableName('sales_order');
@@ -96,6 +104,8 @@ class CalculateReorderCycle
         }
 
         $this->cronRunLogger->logSummary(sprintf('recalculated %d reorder cycles', $processed));
+
+        return $processed;
     }
 
     private function upsertCycle(

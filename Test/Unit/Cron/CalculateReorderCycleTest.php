@@ -50,7 +50,9 @@ class CalculateReorderCycleTest extends TestCase
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('info')->with(self::stringContains('0 reorder cycles'));
 
-        (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, new CronRunLogger($logger)))->execute();
+$result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, new CronRunLogger($logger)))->execute();
+
+        self::assertSame(0, $result);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -85,7 +87,9 @@ class CalculateReorderCycleTest extends TestCase
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('info')->with(self::stringContains('1 reorder cycles'));
 
-        (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, new CronRunLogger($logger)))->execute();
+$result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, new CronRunLogger($logger)))->execute();
+
+        self::assertSame(1, $result);
     }
 
     public function testExecuteSkipsSameDayRepeatPurchases(): void
