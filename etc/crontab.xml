@@ -61,5 +61,8 @@
         <job name="ordo_automation_recalculate_segment_audience_sizes" instance="Ordo\Automation\Cron\RecalculateSegmentAudienceSizes" method="execute">
             <schedule>*/15 * * * *</schedule>
         </job>
+        <job name="ordo_automation_dispatch_scheduled_campaign_triggers" instance="Ordo\Automation\Cron\DispatchScheduledCampaignTriggers" method="execute">
+            <schedule>*/5 * * * *</schedule>
+        </job>
     </group>
 </config>

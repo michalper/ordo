@@ -123,6 +123,52 @@ class CampaignDispatcher
     }
 
     /**
+     * Fires exactly one campaign's condition/action chain, bypassing the "which campaigns are
+     * enabled for trigger event X" lookup dispatch() does above. scheduled_at/recurring_schedule
+     * triggers are due per-campaign (each carries its own date or cron expression in its own
+     * params, not a shared global event every registered campaign reacts to together), so
+     * Cron\Campaign\DispatchScheduledTriggers already knows exactly which single campaign is
+     * due right now and calls this directly instead of going through dispatch().
+     *
+     * @param array<string, mixed> $context
+     */
+    public function dispatchScheduledTrigger(int $campaignId, array $context): void
+    {
+        $campaigns = $this->campaignCollectionFactory->create();
+        $campaigns->addIdsFilter([$campaignId]);
+        $campaigns->addEnabledFilter();
+        $campaign = $campaigns->getFirstItem();
+
+        if (!$campaign->getId()) {
+            return;
+        }
+
+        $logic = (string) $campaign->getData('condition_logic') === 'any' ? 'any' : 'all';
+
+        try {
+            $conditionCollection = $this->campaignConditionCollectionFactory->create();
+            $conditionCollection->addCampaignFilter($campaignId);
+            $conditions = array_values(iterator_to_array($conditionCollection));
+
+            if (!$this->conditionsSatisfied($logic, $conditions, $context)) {
+                return;
+            }
+
+            $actionCollection = $this->campaignActionCollectionFactory->create();
+            $actionCollection->addCampaignFilter($campaignId);
+            $actions = array_values(iterator_to_array($actionCollection));
+
+            $this->runActionsFrom($campaignId, $actions, 0, $context);
+        } catch (\Throwable $e) {
+            $this->logger->error(sprintf(
+                'Ordo_Automation: scheduled campaign #%d failed: %s',
+                $campaignId,
+                $e->getMessage()
+            ));
+        }
+    }
+
+    /**
      * @return array<int, string> enabled campaign ids with a trigger row for $triggerEvent,
      *  mapped to that campaign's condition_logic ('all'/'any') — carrying it through the cache
      *  here avoids a second per-campaign query just to read it back in dispatch().

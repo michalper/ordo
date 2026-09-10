@@ -21,6 +21,11 @@ Directory/class map for anyone working on the code. Not shipped documentation fo
 - `TagInactiveCustomers.php`, `SendWinBackEmails.php`
 - `EscalateStalePendingApprovals.php`
 - `SendSalesRepDigest.php`
+- `RecomputeRfmScores.php`, `SyncAdAudiences.php`
+- `RunScheduledCampaignActions.php` (delay_minutes chaining)
+- `DispatchScheduledCampaignTriggers.php` (scheduled_at / recurring_schedule campaign triggers)
+- `RefreshProductFeed.php`, `RefreshRssContentBlocks.php`
+- `PruneNotifications.php`, `PrunePendingPopups.php`, `PruneSurveyPrompts.php`, `PruneVisitorEvents.php`
 
 ## Observers
 
@@ -29,6 +34,10 @@ Directory/class map for anyone working on the code. Not shipped documentation fo
 - `DispatchOrderPlacedCampaigns.php` — `sales_order_place_after`
 - `DispatchCustomerRegisteredCampaigns.php` — `customer_register_success`
 - `DispatchTagAddedCampaigns.php` — `ordo_customer_tag_added` (custom event)
+- `DispatchVisitorTagAddedCampaigns.php` — on-site-tracking-derived tag threshold crossing
+- `DispatchScoreThresholdCampaigns.php` — lead-score threshold crossing
+- `EvaluateCustomerScoreRules.php` — recomputes `ScoreRule` matches on relevant customer events
+- `RecordTriggerOutcome.php` — logs campaign dispatch outcomes for diagnostics
 - `TrimExcessFreeGifts.php` — drops gifts that no longer qualify when subtotal falls
 - `StitchVisitorIdentity.php` — attributes pre-login visitor events to the customer on login
 
@@ -45,6 +54,76 @@ Directory/class map for anyone working on the code. Not shipped documentation fo
 - `Ui/Component/Listing/Column/` — `CampaignActions`, `FreeGiftOfferActions` (Edit/Delete row links)
 - `view/adminhtml/ui_component/` — `ordo_campaign_listing/form`, `ordo_reorder_cycle_listing`,
   `ordo_free_gift_offer_listing/form`
+
+## Segmentation
+
+- `Model/Segment.php`, `Model/SegmentCondition.php` — a segment's own condition rows (flat list,
+  AND-joined by default) plus one reserved `'group'` pseudo-type per row holding its own nested
+  `{"logic": "all"|"any", "conditions": [...]}` blob (one level of nesting)
+- `Model/Segment/SegmentSaveProcessor.php` — delete-and-reinsert persistence for a segment's conditions,
+  including `normalizeGroupRow()` for the nested-group blob
+- `Model/Segment/SegmentMemberResolver.php`, `Model/Segment/SegmentMatcher.php` — segment-membership
+  matching, recursing into nested groups the same way `CampaignDispatcher` does for campaign conditions
+  (see "Campaign engine" below)
+- `view/adminhtml/web/js/segment-group-modal.js` — admin UI for a group's own nested condition list,
+  rendered inline (not a modal despite older naming — see the file's own docblock)
+- `Controller/Adminhtml/Segment/`, `Block/Adminhtml/Segment/BulkActions.php` — admin grid/form,
+  "Bulk actions on current members" (add tag / add points)
+
+## Lead scoring & RFM
+
+- `Model/ScoreRule.php`, `Model/ScoreRule/ScoreRuleEvaluator.php` — point rules matched against
+  customer attributes (including core `CustomerInterface` getters like `group_id`) plus EAV custom
+  attributes; `Observer/EvaluateCustomerScoreRules.php` recomputes on relevant events,
+  `Observer/DispatchScoreThresholdCampaigns.php` fires campaigns on threshold crossing
+- `Model/CustomerScoreManager.php` — running customer score state
+- `Model/Rfm/RfmCalculator.php`, `Cron/RecomputeRfmScores.php` — Recency/Frequency/Monetary
+  percentile scoring, feeding the `recency_percentile_at_least`/`order_frequency_percentile_at_least`/
+  `monetary_percentile_at_least` segment condition types
+- `Controller/Adminhtml/Rfm/Index.php` — read-only RFM report grid
+
+## Ad-audience sync
+
+- `Model/AdAudience.php`, `Api/AdAudience/SyncClientInterface.php` — audience definitions synced to
+  an external ad platform
+- `Model/AdAudience/GoogleAdsSyncClient.php`, `Model/AdAudience/MetaSyncClient.php` — one client per
+  platform, registered in `Model/AdAudience/SyncClientPool.php`
+- `Model/AdAudience/PiiHasher.php` — hashes customer PII (email/phone) before it ever leaves this
+  module, per each platform's Customer Match / Custom Audience upload format
+- `Model/AdAudience/GoogleOAuthTokenProvider.php` — OAuth token exchange/refresh for Google Ads
+- `Cron/SyncAdAudiences.php` — periodic sync driving the clients above
+- `Controller/Adminhtml/AdAudience/` — admin CRUD
+
+## WhatsApp & Web Push
+
+- `Model/WhatsAppTemplate.php`, `Model/WhatsApp/WhatsAppTemplateClient.php` — Meta WhatsApp Business
+  Cloud API template submission/approval-polling (`SubmitForReview`/`RefreshStatus`)
+- `Model/WhatsApp/WhatsAppSender.php`, `Model/Campaign/Action/SendWhatsApp.php` — the `send_whatsapp`
+  campaign action
+- `Model/WhatsApp/WhatsAppSignatureValidator.php`, `Controller/WhatsApp/Webhook.php` — HMAC-SHA256
+  signature-verified delivery-status webhook
+- `Model/Push/WebPushCrypto.php`, `Model/Push/Der.php`, `Model/Push/VapidTokenBuilder.php` — RFC
+  8291/8188/8292 Web Push encryption and VAPID signing (no vendor SDK)
+- `Model/Push/PushSender.php`, `Model/Push/PushSubscriptionManager.php` — the `send_push` campaign
+  action and per-customer/visitor subscription storage (capped at 20 devices, LRU eviction)
+- `Model/Push/PushEndpointValidator.php` — HTTPS-only, rejects private/loopback/link-local IP ranges
+  (SSRF guard on the customer-supplied push endpoint), enforced at registration and again before
+  every send
+- `Controller/Adminhtml/WhatsAppTemplate/` — admin CRUD + approval lifecycle actions
+
+## GDPR
+
+- `Model/Gdpr/CustomerDataExporter.php`, `Model/Gdpr/CustomerDataEraser.php` — per-customer data
+  export/erasure across this module's own tables
+- `Model/Gdpr/ConsentStates.php`, `Model/CustomerConsent.php`, `Model/ConsentManager.php`,
+  `Model/ConsentChannel.php` — per-channel (email/SMS/WhatsApp/push) consent tracking
+- `Controller/Adminhtml/Gdpr/` — admin export/erase/set-consent actions
+
+## Dashboard
+
+- `Block/Adminhtml/Dashboard/DashboardViewModel.php` — aggregates stats across campaigns/segments/
+  offers/approvals for the admin landing page, nav cards grouped by merchant goal (Diagnostics
+  section separated out)
 
 ## Content blocks
 
@@ -101,4 +180,6 @@ Directory/class map for anyone working on the code. Not shipped documentation fo
 ## Tests & i18n
 
 - `Test/Unit/` — PHPUnit tests
+- `Test/Mftf/` — full-stack acceptance tests (see `Test/Mftf/SCENARIOS.md`, `Test/Mftf/README.md`)
+- `Test/Api/` — REST endpoint tests against a live instance (see `Test/Api/README.md`)
 - `i18n/` — translation CSVs (`en_US`, `pl_PL`, + 10 machine-translated locales)

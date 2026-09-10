@@ -39,8 +39,11 @@ strukturalnie nie widzą.
 - Odzyskiwanie porzuconych koszyków, limitowane na koszyk.
 - E-mail powitalny przy rejestracji.
 - E-mail win-back po N dniach nieaktywności, czyszczony automatycznie po kolejnym zamówieniu.
-- SMS (Twilio) — akcja kampanii `send_sms`, ze śledzeniem statusu dostarczenia i obsługą opt-out. WhatsApp i push
-  są w ROADMAP.md, jeszcze niezbudowane.
+- SMS (Twilio) — akcja kampanii `send_sms`, ze śledzeniem statusu dostarczenia i obsługą opt-out.
+- WhatsApp (Meta Cloud API) — akcja kampanii `send_whatsapp` wysyłająca zatwierdzone wcześniej szablony, z własnym
+  cyklem zatwierdzania szablonów w adminie i webhookiem statusu dostarczenia.
+- Powiadomienia Web Push — akcja kampanii `send_push` dostarczająca prawdziwe powiadomienia przeglądarki/systemu
+  (RFC 8291/8292, bez SDK dostawcy), na każde urządzenie, z którego klient się zasubskrybował.
 
 **Wspólny fundament**
 

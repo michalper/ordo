@@ -1173,7 +1173,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 2
+			count: 3
 			path: Model/CampaignDispatcher.php
 
 		-
@@ -1207,9 +1207,15 @@ parameters:
 			path: Model/CampaignDispatcher.php
 
 		-
-			message: '#^Parameter \#2 \$actions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:runActionsFrom\(\) expects array\<Ordo\\Automation\\Model\\CampaignAction\>, list\<mixed\> given\.$#'
+			message: '#^Parameter \#2 \$conditions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:conditionsSatisfied\(\) expects array\<Ordo\\Automation\\Model\\CampaignCondition\>, list\<mixed\> given\.$#'
 			identifier: argument.type
 			count: 1
+			path: Model/CampaignDispatcher.php
+
+		-
+			message: '#^Parameter \#2 \$actions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:runActionsFrom\(\) expects array\<Ordo\\Automation\\Model\\CampaignAction\>, list\<mixed\> given\.$#'
+			identifier: argument.type
+			count: 2
 			path: Model/CampaignDispatcher.php
 
 		-
@@ -1221,12 +1227,6 @@ parameters:
 		-
 			message: '#^Parameter \#2 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
 			identifier: argument.type
-			count: 1
-			path: Model/CampaignDispatcher.php
-
-		-
-			message: '#^Property Ordo\\Automation\\Model\\CampaignDispatcher\:\:\$campaignCollectionFactory is never read, only written\.$#'
-			identifier: property.onlyWritten
 			count: 1
 			path: Model/CampaignDispatcher.php
 
@@ -1293,7 +1293,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 1
+			count: 2
 			path: Model/CampaignTrigger.php
 
 		-
@@ -2123,6 +2123,30 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Model/ResourceModel/Campaign/ScheduledAction.php
+
+		-
+			message: '#^Cannot access offset ''config_hash'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
+
+		-
+			message: '#^Cannot access offset ''last_fired_at'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Model/Campaign/ScheduledTriggerScanner.php
 
 		-
 			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, int given\.$#'

@@ -30,4 +30,37 @@ class Collection extends AbstractCollection
         $this->addFieldToFilter('trigger_event', $triggerEvent);
         return $this;
     }
+
+    /**
+     * Qualified with the table alias (unlike addTriggerEventFilter() above) because
+     * addEnabledCampaignFilter() joins ordo_campaign, which has its own (deprecated, unread)
+     * trigger_event column - an unqualified filter is ambiguous the moment both are used
+     * together, confirmed via a real "Column 'trigger_event' in where clause is ambiguous"
+     * SQL error.
+     *
+     * @param string[] $triggerEvents
+     */
+    public function addTriggerEventsFilter(array $triggerEvents): self
+    {
+        $this->addFieldToFilter('main_table.trigger_event', ['in' => $triggerEvents]);
+        return $this;
+    }
+
+    /**
+     * Scoped to enabled campaigns only — Model\Campaign\ScheduledTriggerScanner's own
+     * equivalent of CampaignDispatcher::campaignIdsForTrigger()'s enabled check, done as a join
+     * instead of a second query since the scanner already needs the full row (not just an id
+     * list) to read each trigger's own params.
+     */
+    public function addEnabledCampaignFilter(): self
+    {
+        $this->getSelect()->join(
+            ['ordo_campaign_enabled_filter' => $this->getTable('ordo_campaign')],
+            'main_table.campaign_id = ordo_campaign_enabled_filter.entity_id'
+            . ' AND ordo_campaign_enabled_filter.enabled = 1',
+            []
+        );
+
+        return $this;
+    }
 }

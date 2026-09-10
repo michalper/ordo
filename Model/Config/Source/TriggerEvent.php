@@ -26,6 +26,11 @@ class TriggerEvent implements OptionSourceInterface
                 'value' => CampaignTriggerInterface::TRIGGER_SCORE_THRESHOLD_CROSSED,
                 'label' => __('Score Threshold Crossed'),
             ],
+            ['value' => CampaignTriggerInterface::TRIGGER_SCHEDULED_AT, 'label' => __('Scheduled Date/Time')],
+            [
+                'value' => CampaignTriggerInterface::TRIGGER_RECURRING_SCHEDULE,
+                'label' => __('Recurring Schedule'),
+            ],
         ];
     }
 }

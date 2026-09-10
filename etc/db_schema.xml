@@ -286,7 +286,7 @@
     <table name="ordo_campaign_scheduled_trigger_state" resource="default" engine="innodb" comment="Fire-tracking for scheduled_at/recurring_schedule campaign triggers, kept separate from ordo_campaign_trigger itself: CampaignSaveProcessor deletes and recreates every trigger row on every campaign save (see its own saveTriggers() comment), which would silently wipe fire-tracking on an unrelated re-save (e.g. renaming the campaign) if it lived on that row instead. config_hash guards the other direction: an actual change to the scheduled date/cron expression changes the hash too, so Model\Campaign\ScheduledTriggerScanner treats it as a fresh, not-yet-fired config rather than something already fired under the old value.">
         <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id"/>
         <column xsi:type="varchar" name="trigger_event" nullable="false" length="64" comment="scheduled_at or recurring_schedule"/>
-        <column xsi:type="varchar" name="config_hash" nullable="false" length="32" comment="md5 of the trigger row's params JSON at the time it last fired (or was last checked)"/>
+        <column xsi:type="varchar" name="config_hash" nullable="false" length="64" comment="sha256 of the trigger row's params JSON at the time it last fired (or was last checked)"/>
         <column xsi:type="timestamp" name="last_fired_at" nullable="true" comment="Null until this exact config has fired at least once. recurring_schedule also uses this to avoid re-firing within the same matching minute if the scan cron runs more than once per minute."/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="campaign_id"/>

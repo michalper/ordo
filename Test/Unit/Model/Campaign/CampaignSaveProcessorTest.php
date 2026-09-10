@@ -118,10 +118,11 @@ class CampaignSaveProcessorTest extends TestCase
         $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
 
         $trigger = $this->createMock(CampaignTrigger::class);
-        $trigger->expects(self::once())->method('setData')->with([
-            'campaign_id' => 7,
-            'trigger_event' => 'customer_registered',
-        ]);
+        $trigger->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => $data['campaign_id'] === 7
+                && $data['trigger_event'] === 'customer_registered'
+                && $data['params'] === '{}'
+        ));
         $this->campaignTriggerFactory->method('create')->willReturn($trigger);
         $this->campaignTriggerResource->expects(self::once())->method('save')->with($trigger);
 
@@ -184,6 +185,37 @@ class CampaignSaveProcessorTest extends TestCase
                 ['trigger_event' => 'order_placed'],
                 ['trigger_event' => 'order_placed'],
                 ['trigger_event' => ''],
+            ]],
+        ]);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessNormalizesScheduledAtTriggerParamsLikeAConditionOrAction(): void
+    {
+        $processor = $this->makeProcessor();
+
+        $campaign = $this->createStub(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(11);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
+
+        $trigger = $this->createMock(CampaignTrigger::class);
+        $trigger->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => $data['trigger_event'] === 'scheduled_at'
+                && json_decode($data['params'], true) === ['scheduled_at' => '2026-11-28 09:00:00']
+        ));
+        $this->campaignTriggerFactory->method('create')->willReturn($trigger);
+        $this->campaignTriggerResource->expects(self::once())->method('save')->with($trigger);
+
+        $this->conditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+        $this->actionCollectionFactory->method('create')->willReturn($this->emptyActionCollection());
+
+        $processor->process([
+            'entity_id' => 0,
+            'name' => 'Black Friday',
+            'triggers' => ['triggers' => [
+                ['trigger_event' => 'scheduled_at', 'scheduled_at' => '2026-11-28 09:00:00'],
             ]],
         ]);
     }

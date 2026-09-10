@@ -47,4 +47,29 @@ class CampaignTrigger extends AbstractModel implements CampaignTriggerInterface
         $this->setData(self::TRIGGER_EVENT, $triggerEvent);
         return $this;
     }
+
+    public function getParamsJson(): string
+    {
+        return (string) $this->getData(self::PARAMS);
+    }
+
+    public function setParamsJson(string $paramsJson): self
+    {
+        $this->setData(self::PARAMS, $paramsJson);
+        return $this;
+    }
+
+    /**
+     * Decoded params, same shape/reasoning as AbstractCampaignChildModel::getParams() (not
+     * shared from there - see that class's own docblock for why CampaignTrigger doesn't extend
+     * it).
+     *
+     * @return array<mixed>
+     */
+    public function getParams(): array
+    {
+        $raw = $this->getParamsJson();
+        $decoded = $raw !== '' ? json_decode($raw, true) : [];
+        return is_array($decoded) ? $decoded : [];
+    }
 }

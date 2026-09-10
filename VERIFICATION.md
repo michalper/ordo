@@ -6,7 +6,7 @@ same thing by hand.
 
 ## 0. Prerequisites
 
-- [ ] PHP >=8.4 <8.6, Composer 2.x, MySQL 8.0, OpenSearch 2.12
+- [ ] PHP >=8.4 <8.6, Composer 2.x, MySQL 8.0, OpenSearch 2.19
 - [ ] Magento Open Source 2.4.8 or 2.4.9 installed
 
 ## 1. Install

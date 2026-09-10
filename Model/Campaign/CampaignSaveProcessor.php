@@ -39,7 +39,7 @@ class CampaignSaveProcessor
         'tag', 'amount', 'rule_id', 'prefix', 'template', 'message',
         'headline', 'body', 'cta_label', 'cta_url', 'points', 'threshold',
         'content_block_id', 'output_key', 'days', 'count', 'percentile', 'question',
-        'sku', 'category_id',
+        'sku', 'category_id', 'scheduled_at', 'cron_expression',
     ];
 
     public function __construct(
@@ -128,6 +128,7 @@ class CampaignSaveProcessor
             $trigger->setData([
                 'campaign_id' => $campaignId,
                 'trigger_event' => $triggerEvent,
+                'params' => $this->normalizeRowParams($row),
             ]);
             $this->campaignTriggerResource->save($trigger);
         }
