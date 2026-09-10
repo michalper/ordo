@@ -139,6 +139,183 @@ define([
     'use strict';
 
     /**
+     * @param {String} raw
+     * @return {String}
+     */
+    function escapeHtml(raw) {
+        return $('<div>').text(raw).html();
+    }
+
+    /**
+     * One variant's own action row inside the variant editor widget - a type <select> (every
+     * real action type except 'split') plus a JSON textarea for that action's params.
+     * Deliberately the "advanced JSON" shape (not the full per-type dedicated-field rendering
+     * renderFields() itself gives top-level condition/action nodes) - reusing that here would
+     * mean these nested inputs also carry `data-field` attributes, which collectNodeFields()'s
+     * `$node.find('[data-field]')` (a DEEP descendant search) would then incorrectly fold into
+     * the SPLIT action's own row alongside its real fields. Keeping nested-action state out of
+     * `[data-field]` entirely and only ever serializing it into the split's own single hidden
+     * `data-field="variants"` input (see renderVariantEditor() below) avoids that collision by
+     * construction.
+     *
+     * Module-level (a sibling of initCampaignFlowEditor, not nested inside it) rather than a
+     * closure over a live `typesConfig` - takes it as an explicit parameter instead, same
+     * reasoning as buildSplitVariantActionTypeOptionsHtml() above: independently testable
+     * without needing a real Drawflow instance (initCampaignFlowEditor()'s own body constructs
+     * one for real, which Test/js/support's stub Drawflow can't stand in for).
+     *
+     * @param {Object} action {type, params}
+     * @param {Object} typesConfig
+     * @param {function(): void} onChange
+     * @param {function(): void} onRemove
+     * @return {jQuery}
+     */
+    function renderVariantActionRow(action, typesConfig, onChange, onRemove) {
+        var $typeSelect = $('<select class="ordo-flow-variant-action-type"></select>')
+                .html(buildSplitVariantActionTypeOptionsHtml(
+                    typesConfig.actions,
+                    typesConfig.labels.action || {},
+                    action.type,
+                    escapeHtml
+                ))
+                .on('change', function () {
+                    action.type = $(this).val();
+                    onChange();
+                }),
+            $paramsTextarea = $('<textarea class="ordo-flow-variant-action-params" placeholder="Params (JSON)"></textarea>')
+                .val(Object.keys(action.params).length ? JSON.stringify(action.params) : '')
+                .on('input', function () {
+                    var raw = $(this).val().trim();
+                    try {
+                        // Only a successfully-parsed object replaces the in-memory params -
+                        // invalid/mid-edit JSON is left as whatever it last validly was, rather
+                        // than corrupting the model collectRows()/save() reads from.
+                        action.params = raw ? JSON.parse(raw) : {};
+                    } catch (e) {
+                        return;
+                    }
+                    onChange();
+                }),
+            $removeButton = $('<button type="button" class="ordo-flow-variant-action-remove" title="Remove action">&times;</button>')
+                .on('click', onRemove);
+
+        return $('<div class="ordo-flow-variant-action-row"></div>')
+            .append($typeSelect, $paramsTextarea, $removeButton);
+    }
+
+    /**
+     * One variant block: key/weight inputs, its own action list, and "add action"/"remove
+     * variant" controls. Module-level for the same reason as renderVariantActionRow() above.
+     *
+     * @param {Object} variant {key, weight, actions}
+     * @param {Object} typesConfig
+     * @param {function(): void} onChange re-serializes the whole editor's hidden input
+     * @param {function(): void} onRemove re-renders the whole editor after this variant is
+     *   spliced out of the parent `variants` array
+     * @return {jQuery}
+     */
+    function renderVariantBlock(variant, typesConfig, onChange, onRemove) {
+        var $keyInput = $('<input type="text" class="ordo-flow-variant-key" placeholder="Variant key, e.g. a">')
+                .val(variant.key)
+                .on('input', function () {
+                    variant.key = $(this).val();
+                    onChange();
+                }),
+            $weightInput = $('<input type="number" min="0" class="ordo-flow-variant-weight" placeholder="Weight">')
+                .val(variant.weight)
+                .on('input', function () {
+                    variant.weight = Number($(this).val()) || 0;
+                    onChange();
+                }),
+            $removeVariantButton = $(
+                '<button type="button" class="ordo-flow-variant-remove">' + escapeHtml('Remove variant') + '</button>'
+            ).on('click', onRemove),
+            $actionsList = $('<div class="ordo-flow-variant-actions"></div>'),
+            $addActionButton = $(
+                '<button type="button" class="ordo-flow-variant-action-add">' + escapeHtml('+ Add action') + '</button>'
+            );
+
+        function renderActions() {
+            $actionsList.empty();
+            variant.actions.forEach(function (action, actionIndex) {
+                $actionsList.append(renderVariantActionRow(action, typesConfig, onChange, function () {
+                    variant.actions.splice(actionIndex, 1);
+                    onChange();
+                    renderActions();
+                }));
+            });
+        }
+
+        renderActions();
+        $addActionButton.on('click', function () {
+            variant.actions.push({ type: (typesConfig.actions || []).filter(function (t) {
+                return t !== 'split';
+            })[0] || '', params: {} });
+            onChange();
+            renderActions();
+        });
+
+        return $('<div class="ordo-flow-variant-block"></div>').append(
+            $('<div class="ordo-flow-variant-head"></div>').append(
+                '<label>' + escapeHtml('Key') + '</label>', $keyInput,
+                '<label>' + escapeHtml('Weight') + '</label>', $weightInput,
+                $removeVariantButton
+            ),
+            $actionsList,
+            $addActionButton
+        );
+    }
+
+    /**
+     * The whole widget for a `variant_list`-type field (currently only the `split` action's own
+     * `variants` field) - keeps an in-memory `variants` array as the single source of truth,
+     * re-rendered on every structural change (add/remove variant or action), and serializes into
+     * one hidden `data-field="<fieldName>"` input on every change so collectRows() picks it up
+     * exactly like any other field, no different handling needed there. Module-level for the
+     * same reason as renderVariantActionRow()/renderVariantBlock() above - exposed on the
+     * exported function (see the bottom of this file) so Test/js/campaign-flow-editor.test.js
+     * can drive the whole interactive widget against a real jsdom container without needing a
+     * working Drawflow instance.
+     *
+     * @param {jQuery} $container
+     * @param {String} fieldName
+     * @param {Array} initialVariants
+     * @param {Object} typesConfig
+     */
+    function renderVariantEditor($container, fieldName, initialVariants, typesConfig) {
+        var variants = (Array.isArray(initialVariants) ? initialVariants : []).map(cloneSplitVariant),
+            $hidden = $('<input type="hidden" class="ordo-flow-field-input" data-field="' + fieldName + '">'),
+            $items = $('<div class="ordo-flow-variant-items"></div>'),
+            $addVariantButton = $(
+                '<button type="button" class="ordo-flow-variant-add">' + escapeHtml('+ Add variant') + '</button>'
+            );
+
+        function sync() {
+            $hidden.val(JSON.stringify(variants));
+        }
+
+        function renderAll() {
+            $items.empty();
+            variants.forEach(function (variant, variantIndex) {
+                $items.append(renderVariantBlock(variant, typesConfig, sync, function () {
+                    variants.splice(variantIndex, 1);
+                    sync();
+                    renderAll();
+                }));
+            });
+            sync();
+        }
+
+        $addVariantButton.on('click', function () {
+            variants.push({ key: '', weight: 0, actions: [] });
+            renderAll();
+        });
+
+        $container.empty().append($hidden, $items, $addVariantButton);
+        renderAll();
+    }
+
+    /**
      * @param {HTMLElement} container
      * @param {Object} flowData
      * @param {String} formProviderName
@@ -231,164 +408,6 @@ define([
             }
 
             /**
-             * One variant's own action row inside the variant editor widget - a type <select>
-             * (every real action type except 'split') plus a JSON textarea for that action's
-             * params. Deliberately the "advanced JSON" shape (not the full per-type dedicated-
-             * field rendering renderFields() itself gives top-level condition/action nodes) -
-             * reusing that here would mean these nested inputs also carry `data-field`
-             * attributes, which collectNodeFields()'s `$node.find('[data-field]')` (a DEEP
-             * descendant search) would then incorrectly fold into the SPLIT action's own row
-             * alongside its real fields. Keeping nested-action state out of `[data-field]`
-             * entirely and only ever serializing it into the split's own single hidden
-             * `data-field="variants"` input (see renderVariantEditor() below) avoids that
-             * collision by construction.
-             *
-             * @param {Object} action {type, params}
-             * @param {function(): void} onChange
-             * @param {function(): void} onRemove
-             * @return {jQuery}
-             */
-            function renderVariantActionRow(action, onChange, onRemove) {
-                var $typeSelect = $('<select class="ordo-flow-variant-action-type"></select>')
-                        .html(buildSplitVariantActionTypeOptionsHtml(
-                            typesConfig.actions,
-                            typesConfig.labels.action || {},
-                            action.type,
-                            escapeHtml
-                        ))
-                        .on('change', function () {
-                            action.type = $(this).val();
-                            onChange();
-                        }),
-                    $paramsTextarea = $('<textarea class="ordo-flow-variant-action-params" placeholder="Params (JSON)"></textarea>')
-                        .val(Object.keys(action.params).length ? JSON.stringify(action.params) : '')
-                        .on('input', function () {
-                            var raw = $(this).val().trim();
-                            try {
-                                // Only a successfully-parsed object replaces the in-memory params -
-                                // invalid/mid-edit JSON is left as whatever it last validly was,
-                                // rather than corrupting the model collectRows()/save() reads from.
-                                action.params = raw ? JSON.parse(raw) : {};
-                            } catch (e) {
-                                return;
-                            }
-                            onChange();
-                        }),
-                    $removeButton = $('<button type="button" class="ordo-flow-variant-action-remove" title="Remove action">&times;</button>')
-                        .on('click', onRemove);
-
-                return $('<div class="ordo-flow-variant-action-row"></div>')
-                    .append($typeSelect, $paramsTextarea, $removeButton);
-            }
-
-            /**
-             * One variant block: key/weight inputs, its own action list, and "add action"/
-             * "remove variant" controls.
-             *
-             * @param {Object} variant {key, weight, actions}
-             * @param {function(): void} onChange re-serializes the whole editor's hidden input
-             * @param {function(): void} onRemove re-renders the whole editor after this variant
-             *   is spliced out of the parent `variants` array
-             * @return {jQuery}
-             */
-            function renderVariantBlock(variant, onChange, onRemove) {
-                var $keyInput = $('<input type="text" class="ordo-flow-variant-key" placeholder="Variant key, e.g. a">')
-                        .val(variant.key)
-                        .on('input', function () {
-                            variant.key = $(this).val();
-                            onChange();
-                        }),
-                    $weightInput = $('<input type="number" min="0" class="ordo-flow-variant-weight" placeholder="Weight">')
-                        .val(variant.weight)
-                        .on('input', function () {
-                            variant.weight = Number($(this).val()) || 0;
-                            onChange();
-                        }),
-                    $removeVariantButton = $(
-                        '<button type="button" class="ordo-flow-variant-remove">' + escapeHtml('Remove variant') + '</button>'
-                    ).on('click', onRemove),
-                    $actionsList = $('<div class="ordo-flow-variant-actions"></div>'),
-                    $addActionButton = $(
-                        '<button type="button" class="ordo-flow-variant-action-add">' + escapeHtml('+ Add action') + '</button>'
-                    );
-
-                function renderActions() {
-                    $actionsList.empty();
-                    variant.actions.forEach(function (action, actionIndex) {
-                        $actionsList.append(renderVariantActionRow(action, onChange, function () {
-                            variant.actions.splice(actionIndex, 1);
-                            onChange();
-                            renderActions();
-                        }));
-                    });
-                }
-
-                renderActions();
-                $addActionButton.on('click', function () {
-                    variant.actions.push({ type: (typesConfig.actions || []).filter(function (t) {
-                        return t !== 'split';
-                    })[0] || '', params: {} });
-                    onChange();
-                    renderActions();
-                });
-
-                return $('<div class="ordo-flow-variant-block"></div>').append(
-                    $('<div class="ordo-flow-variant-head"></div>').append(
-                        '<label>' + escapeHtml('Key') + '</label>', $keyInput,
-                        '<label>' + escapeHtml('Weight') + '</label>', $weightInput,
-                        $removeVariantButton
-                    ),
-                    $actionsList,
-                    $addActionButton
-                );
-            }
-
-            /**
-             * The whole widget for a `variant_list`-type field (currently only the `split`
-             * action's own `variants` field) - keeps an in-memory `variants` array as the single
-             * source of truth, re-rendered on every structural change (add/remove variant or
-             * action), and serializes into one hidden `data-field="<fieldName>"` input on every
-             * change so collectRows() picks it up exactly like any other field, no different
-             * handling needed there.
-             *
-             * @param {jQuery} $container
-             * @param {String} fieldName
-             * @param {Array} initialVariants
-             */
-            function renderVariantEditor($container, fieldName, initialVariants) {
-                var variants = (Array.isArray(initialVariants) ? initialVariants : []).map(cloneSplitVariant),
-                    $hidden = $('<input type="hidden" class="ordo-flow-field-input" data-field="' + fieldName + '">'),
-                    $items = $('<div class="ordo-flow-variant-items"></div>'),
-                    $addVariantButton = $(
-                        '<button type="button" class="ordo-flow-variant-add">' + escapeHtml('+ Add variant') + '</button>'
-                    );
-
-                function sync() {
-                    $hidden.val(JSON.stringify(variants));
-                }
-
-                function renderAll() {
-                    $items.empty();
-                    variants.forEach(function (variant, variantIndex) {
-                        $items.append(renderVariantBlock(variant, sync, function () {
-                            variants.splice(variantIndex, 1);
-                            sync();
-                            renderAll();
-                        }));
-                    });
-                    sync();
-                }
-
-                $addVariantButton.on('click', function () {
-                    variants.push({ key: '', weight: 0, actions: [] });
-                    renderAll();
-                });
-
-                $container.empty().append($hidden, $items, $addVariantButton);
-                renderAll();
-            }
-
-            /**
              * Renders labeled inputs for the node's current type into its `.ordo-flow-fields`
              * container, pre-filled from `params` where a value exists. A type with no mapped
              * fields (a custom condition/action a store added, not one of the six this module
@@ -478,7 +497,8 @@ define([
                         renderVariantEditor(
                             $fields.find('[data-variant-editor="' + field.name + '"]'),
                             field.name,
-                            params?.[field.name]
+                            params?.[field.name],
+                            typesConfig
                         );
                     });
                 }
@@ -516,14 +536,6 @@ define([
 
             var KIND_LABELS = { trigger: 'Trigger', condition: 'Condition', action: 'Action' },
                 KIND_TYPE_LISTS = { trigger: 'triggers', condition: 'conditions', action: 'actions' };
-
-            /**
-             * @param {String} raw
-             * @return {String}
-             */
-            function escapeHtml(raw) {
-                return $('<div>').text(raw).html();
-            }
 
             /**
              * @param {String} kind 'trigger' | 'condition' | 'action'
@@ -1205,6 +1217,7 @@ define([
     initCampaignFlowEditor.findDisconnectedNodeIds = findDisconnectedNodeIds;
     initCampaignFlowEditor.cloneSplitVariant = cloneSplitVariant;
     initCampaignFlowEditor.buildSplitVariantActionTypeOptionsHtml = buildSplitVariantActionTypeOptionsHtml;
+    initCampaignFlowEditor.renderVariantEditor = renderVariantEditor;
 
     return initCampaignFlowEditor;
 });
