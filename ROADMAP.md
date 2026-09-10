@@ -50,6 +50,199 @@ Full inventory with what's covered and why: `Test/Mftf/SCENARIOS.md`. Every row 
 gaps. Kept as the standing scope check for anything newly added to the module (new trigger/condition/action/
 controller/cron gets a row there before it's considered done).
 
+## Full-codebase improvement audit (2026-09-10)
+
+Five independent passes over the whole module (campaign engine, segmentation/RFM/scoring,
+communication channels, commerce features, admin platform/UX/API), each grounded in the actual
+code rather than guesswork. Not yet scoped/prioritized as a team — this is raw input for that
+conversation, organized by domain. Items already covered elsewhere in this file aren't repeated.
+
+### Correctness issues found along the way (not "improvements" — real bugs)
+
+- **Free Gift Offer never actually applies to a cart.** `Model/FreeGiftOffer*.php`,
+  `FreeGiftOfferSaveProcessor.php` are pure admin CRUD — there is no quote/checkout observer or
+  totals plugin anywhere that reads a configured offer and adds a gift to a cart. A merchant can
+  fully configure "spend $100, get 2 gifts" today and nothing ever happens at checkout. This is
+  the single biggest gap found in this audit: a fully-built admin feature with no runtime effect.
+- **Guest checkout bypasses order-approval entirely.** `Observer/HoldOrderForApproval::execute()`
+  returns early when `!$order->getCustomerId()` — since the spend-limit/approval attributes only
+  exist on registered customers, anyone can dodge approval by checking out as a guest.
+- **`Controller/Adminhtml/FreeGiftOffer/Delete.php` is a GET action** — no form-key CSRF
+  protection on a destructive one-click-from-a-crafted-URL action.
+- **Approval decision paths save inconsistently** — `rejectByToken()` goes through
+  `OrderRepositoryInterface::save()`, `approveByToken()` through the raw resource model's
+  `save()`. A plugin wired to `OrderRepositoryInterface::save` fires on reject but silently not
+  on approve.
+- **`approveByToken()` doesn't re-check order state before applying the token.** If an admin
+  manually moved the order (e.g. to Complete/Canceled) between hold and decision, a stale approval
+  link can blindly revert its status.
+- **Multi-store base URL bug repeated at 3 call sites** — `HoldOrderForApproval`,
+  `EscalateStalePendingApprovals`, and `getDecisionLinksById` all resolve "current store" via
+  `StoreManagerInterface::getStore()` instead of the order's own store, so decision-link emails
+  can point at the wrong storefront in a multi-store setup.
+- **The "Scheduled Date/Time" trigger type is already selectable in the admin UI with nothing
+  behind it.** `Api\Data\CampaignTriggerInterface::TRIGGER_SCHEDULED_AT`/`TRIGGER_RECURRING_SCHEDULE`
+  and `Model\Config\Source\TriggerEvent`'s option list already expose these, but no
+  `ScheduledTriggerScanner`/dispatch cron exists — an admin can pick it, save the campaign, and it
+  will simply never fire, with zero error anywhere. Needs either the real implementation (see
+  "Scheduled (date-based) campaigns" below) or pulling the option out of the UI until it's real.
+
+### Campaign engine (`Model/CampaignDispatcher.php`, `Model/Queue/*`, Flow canvas)
+
+- No suppression/frequency capping — `CampaignDispatcher::dispatch()` fires a matched campaign
+  every single time its trigger occurs, with no "don't message this customer more than N times per
+  period" anywhere. A customer who repeatedly triggers `tag_added`/`order_placed` gets spammed by
+  design.
+- No campaign entry dedup — nothing stops a customer mid-flow (waiting on a `delay_minutes`
+  resume) from re-entering the same campaign from scratch on a repeat trigger; `ordo_campaign_
+  scheduled_action` has no uniqueness guard per customer+campaign.
+- No A/B/split testing on actions and no campaign-level funnel analytics (open/click/conversion
+  tied back to a specific campaign) — dispatch pass/fail is logged, but nothing answers "did this
+  campaign actually work."
+- No time-zone-aware quiet hours for a campaign as a whole (only per-channel opt-out exists via
+  `ConsentManager`) — a trigger-based send can land at 3am local time.
+- Flow canvas UX gaps that would frustrate daily use: no undo/redo, no node duplication/copy-paste,
+  no inline "send test" before saving an action, no search/filter across the ~20+ condition/action
+  types in the palette (`view/adminhtml/web/js/campaign-flow-editor.js`).
+- `resumeScheduledAction()` loads and materializes *all* of a campaign's actions just to find one
+  row's index, on every single scheduled resume — an indexed lookup would scale better as the
+  scheduled-action backlog grows (`Model/CampaignDispatcher.php`).
+- Cache invalidation for "which campaigns are active for trigger X" is one flat tag flushed on
+  *any* campaign/trigger/condition/action write anywhere — on an install with many campaigns
+  edited frequently, this thrashes and reverts to a full DB scan far more than necessary.
+- No dead-letter/retry policy for the dispatch queue — `CampaignDispatchConsumer` explicitly drops
+  a malformed message rather than requeuing it, and no alerting surfaces a broken campaign (e.g. a
+  deleted email template ID) beyond a log line.
+- `CampaignDispatcher`'s own AND/OR/nested-group evaluator (`evaluateGroup`/`evaluateList`) is a
+  second, independent implementation of the same logic `Model/Segment/SegmentMatcher` already has
+  — a fix to one (e.g. "empty group fails closed") can silently drift from the other over time.
+
+### Segmentation, RFM & lead scoring (`Model/Segment/*`, `Model/Rfm/*`, `Model/ScoreRule/*`, `Model/AdAudience/*`)
+
+- No segment membership history — `estimated_audience_size`/`audience_size_computed_at` store only
+  the latest snapshot, so "how has this segment grown/shrunk over the last 3 months" isn't
+  answerable without external tracking.
+- No segment overlap/venn analysis (avoiding message fatigue by seeing "how many customers are in
+  both Segment A and B") — would build directly on `SegmentMemberResolver::getMatchingCustomerIds()`,
+  no new resolver logic needed.
+- No behavioral/event-based cohort conditions (browsing, cart, wishlist events) — only
+  `purchased_sku`/`purchased_category` exist for behavior; a real CDP's segmentation lives on
+  events like this.
+- No segment exclusion operator ("customers in A but NOT in B") — only inclusion (`in_segment`)
+  exists today; cheap to add given the resolver already computes full ID sets.
+- Group condition editor's JSON fallback (for `in_segment`, `loyalty_tier_at_least`,
+  `nps_score_at_least`) silently becomes `{}` on malformed JSON with no validation feedback — a
+  non-technical marketer gets a condition that quietly matches nothing.
+- "Estimated Audience Size" panel doesn't warn when the on-screen conditions are unsaved — a click
+  on Refresh returns the live count for the *last saved* definition, easy to mistake for reflecting
+  current edits.
+- `RfmCalculator::getAggregatesForAllCustomers()`/`getAllCustomerIds()` have no pagination/streaming
+  — a full `sales_order` GROUP BY and full `customer_entity` SELECT into memory on every resolve;
+  fine at 10-20k customers, a real cost driver at 100k+.
+- `Cron\SyncAdAudiences`/`GoogleAdsSyncClient::addOperations()` sends every hashed email as one
+  single unbatched API call — Google Ads' documented per-request operation limits would make a
+  large segment fail outright, not just run slowly.
+- `Cron\TagInactiveCustomers`'s untag pass uses `in_array()` against a plain PHP array inside a
+  loop — effectively O(n²) in the worst case after a big win-back wave untags most of the inactive
+  population; a flipped lookup set fixes it cheaply.
+- Fail-closed semantics for event-only conditions (`order_total_gte`, `visitor_tag`) used inside a
+  Segment are invisible to the admin — they silently zero out an AND-segment with no UI
+  explanation that these condition types only make sense in Campaign trigger context.
+
+### Communication channels (Email/SMS/WhatsApp/Push)
+
+- No unified suppression/frequency-capping layer across channels at all — `ConsentManager` is a
+  binary per-channel opt-in/opt-out with no "max N messages/day" or quiet-hours concept; a customer
+  matching several campaigns in one dispatch tick can be emailed, texted, WhatsApp'd, and
+  push-notified back to back.
+- No template preview or test-send anywhere in admin, for any channel — merchants routinely typo
+  `{{var}}`/WhatsApp `{{1}}` placeholders and only discover it once a real customer gets the
+  broken message.
+- Product recommendations are effectively email-only — `AddProductRecommendations` only renders
+  HTML; SMS/WhatsApp/Push actions have no plain-text equivalent, even though the underlying
+  `ProductRecommender` data would support it.
+- Every send is one synchronous, unbatched HTTP call per customer inline in the dispatch path — no
+  concurrency control and no respect for provider rate limits (Twilio, Graph API, push services);
+  a campaign matching thousands of customers in one tick will serially hammer the provider API or
+  start hitting 429s with no handling for it.
+- No retry/backoff for a failed send anywhere — every channel action catches `Throwable`, logs, and
+  moves on permanently; `Cron/RunScheduledCampaignActions.php`'s own docblock admits "a row that
+  failed stays failed; there's no retry queue for this yet." A transient provider 5xx permanently
+  drops that message.
+- SendGrid webhook only handles delivered/bounce/dropped and silently discards
+  `spamreport`/`unsubscribe`/`group_unsubscribe` — a spam complaint or one-click unsubscribe from
+  the mailbox provider never reaches `ConsentManager`, so `send_email` keeps mailing someone who
+  opted out through their inbox rather than through this module's own UI (deliverability/CAN-SPAM
+  risk).
+- Webhook handling has no ordering/idempotency guard against provider redelivery — an
+  out-of-order redelivered `delivered` event arriving after a later `failed` one can regress a
+  message's logged status backward.
+- WhatsApp template admin form is a raw textarea with manual `{{1}}`/`{{2}}` placeholders, no
+  character-limit check against Meta's real limits, and no rendered preview — each submission
+  costs a real Meta review cycle, so mistakes are expensive.
+
+### Commerce features (free gifts, order approval, reorder cycles, GDPR, product feed, dashboard)
+
+*(the "Free Gift never applies to a cart" and "guest checkout bypasses approval" items are listed
+as bugs above, not repeated here)*
+
+- Order approval is single-level with a hard escalation ceiling (`MAX_ESCALATIONS = 3` in
+  `Cron/EscalateStalePendingApprovals.php`) and then the order sits pending forever — no second
+  approver, no delegate-when-absent, no auto-approve/auto-cancel fallback.
+- No admin grid for order approvals at all — only email tokens + REST API; an admin who loses the
+  original email has no in-backend way to browse or act on a pending approval, unlike every other
+  domain entity in this module.
+- GDPR erasure/export hand-maintain two independent table lists with no single source of truth —
+  the same "quietly goes stale" pattern already bit `SetConsent`'s channel list once (since fixed);
+  a new customer-keyed table can silently be omitted from erasure.
+- No consent audit trail — `SetConsent` overwrites current state with no timestamped history, which
+  is what most real GDPR audits actually ask for ("was this customer opted in for SMS on date X").
+- No persisted cron-run log/grid — `Model/Cron/CronRunLogger.php` only writes to `var/log`; "did
+  today's escalation cron even run" is invisible without log-tailing.
+- Reorder Cycle is detection-only — `Cron/CalculateReorderCycle.php` computes `next_expected_date`
+  but there's no one-click "build reorder cart" action and no manual per-customer reminder trigger.
+- `Cron/CalculateReorderCycle`'s interval estimate is a plain mean with no outlier resistance — one
+  anomalous gap (customer paused 6 months) skews the whole prediction; same-day repeat purchases
+  are silently dropped rather than handled distinctly.
+- `CalculateReorderCycle`/`GoogleMerchantFeedGenerator` both run as full unbounded scans/single-pass
+  memory builds with no incremental/last-run filtering — both get linearly slower as order
+  history/catalog size grows, with real memory-exhaustion risk on large stores.
+- Product feed is single-format (Google RSS only), single-store, with no admin grid for feed
+  health/history — a generation failure only sets an error flag nobody can see without knowing to
+  look.
+- Dashboard runs 4+ separate uncached COUNT queries on every page load and has no drill-down for
+  "N approvals stuck" / "N crons failed" — the KPIs shown aren't actionable.
+
+### Admin platform, UX consistency & API
+
+- No audit log of admin actions anywhere — no way to answer "who changed this campaign last
+  Tuesday," despite campaigns/segments/offers directly affecting revenue and customer comms.
+- No bulk/mass-action on any of the ~10 listing grids (`grep` across every `*_listing.xml` finds
+  zero `massaction` blocks) — enabling/disabling/deleting is strictly one row at a time everywhere.
+- No export/import for campaigns or segments — the only export capability in the whole module is
+  GDPR customer-data export; nothing lets a merchant move a campaign/segment definition between
+  dev/staging/prod or back it up before a risky edit.
+- No column filtering on any grid, anywhere (only sorting) — as message log/RFM data grows, an
+  admin can't search "messages that failed" without paging through manually.
+- Color-token duplication instead of one shared design-system file — `dashboard.css`,
+  `segment-form.css`, `flow.css`, and `free-gift-offer-form.css` each independently (re)define
+  near-identical but not-identical palettes (e.g. two different purple accent hues); a rebrand
+  touches 4+ files with no single source of truth.
+- No setup wizard/guided first-run flow across the module — per-grid empty-state CTAs exist, but
+  nothing walks a fresh install through the real dependency order (configure a channel → build a
+  segment → build a campaign); an admin can build a `send_sms` action before ever configuring
+  Twilio credentials and only discovers the gap when sends silently fail.
+- ACL resources are shared across functionally distinct screens, weakening least-privilege —
+  Message Log, Reorder Cycles, and Product Feed refresh all reuse the `campaigns` resource, RFM
+  reuses `segments`; a role can't be scoped to just one of these.
+- Reorder cycles has no on-demand recalculation endpoint, unlike the equivalent pattern segments
+  just got via `SegmentAudienceSizeRecalculator`/`Controller/Adminhtml/Segment/AudienceSize.php` —
+  an inconsistency between two conceptually similar "cached, periodically-recalculated metric"
+  features worth reconciling.
+- No `fields`/sparse-fieldset support and no documented rate limiting anywhere in `API.md`; the
+  anonymous order-approval endpoints (`.../approve`, `.../reject`) are token-guarded but not
+  rate-limited against brute-forcing a token guess.
+
 ## Scheduled (date-based) campaigns and a real calendar view
 
 Raised directly after renaming "Campaign Calendar" to "Campaign Action Timeline" (it showed
