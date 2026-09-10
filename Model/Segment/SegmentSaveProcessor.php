@@ -27,8 +27,10 @@ class SegmentSaveProcessor
      * CampaignSaveProcessor's full list, since a segment condition only ever needs the ones
      * ConditionPool's condition types actually read.
      */
-    private const array DEDICATED_PARAM_FIELDS
-        = ['tag', 'amount', 'threshold', 'days', 'count', 'percentile', 'sku', 'category_id'];
+    private const array DEDICATED_PARAM_FIELDS = [
+        'tag', 'amount', 'threshold', 'days', 'count', 'percentile', 'sku', 'category_id',
+        'event_type', 'event_key', 'within_days',
+    ];
 
     /**
      * Applies to both the top-level conditions list and a single group's own nested list - the

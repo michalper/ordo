@@ -19,6 +19,18 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **`event_occurred` admin form UI (behavioral segmentation, Phase 4)**, closing the ROADMAP.md
+  Tier 3 "behavioral/event-based segmentation" item in full — `ordo_segment_form.xml` gained
+  dedicated `event_type` (select, `Model\Config\Source\EventType`), `event_key` (optional SKU),
+  and `within_days` fields, plus a new switcherConfig rule showing/hiding them (mechanical:
+  every one of the existing 17 rules also gained 3 new hide-actions for these fields, same
+  "switcherConfig has no else semantics" pattern already documented on the form). A marketer can
+  now actually build "added product X to cart in the last 14 days" without touching the API/DB
+  directly. `Model\Segment\SegmentSaveProcessor::DEDICATED_PARAM_FIELDS` gained the 3 new plain
+  fields (no special JSON handling needed, unlike `split`'s `variants`). The nested-group inline
+  editor (`segment-group-modal.js`) needed no change — an unlisted type in its `VALUE_FIELD_BY_TYPE`
+  map already falls back to its "Advanced (JSON)" textarea, which is exactly right for a 3-field
+  condition like this one.
 - **`event_occurred` condition type (behavioral segmentation, Phase 2)**, closing the second phase
   of ROADMAP.md's Tier 3 "behavioral/event-based segmentation" item — usable in campaign triggers
   immediately; segment-form admin UI and `SegmentMemberResolver` bulk-membership wiring are later

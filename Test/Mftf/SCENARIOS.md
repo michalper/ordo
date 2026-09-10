@@ -65,6 +65,7 @@ cases separately from the type-by-type ones.
 | `nps_score_at_least`                  | `{threshold}` (same dedicated "threshold" field as `score_at_least`)    | ✅ `AdminCampaignNpsSurveyActionTest` (customer_id only — no visitor_id path)                     |
 | `purchased_sku`                       | `{sku}` (dedicated field, autocompleted)                          | ⬜ unit-tested (`PurchasedSkuTest`, `PurchasedProductResolverTest`), no MFTF yet                       |
 | `purchased_category`                  | `{category_id}` (dedicated field, incl. subcategories)             | ⬜ unit-tested (`PurchasedCategoryTest`, `PurchasedProductResolverTest`), no MFTF yet                  |
+| `event_occurred`                      | `{event_type, event_key?, within_days}` (dedicated fields, cart_add/wishlist_add) | ⬜ unit-tested (`EventOccurredTest`, `EventOccurredResolverTest`), no MFTF yet — also new: `Observer\TrackCartAdd`/`TrackWishlistAdd` themselves have no MFTF coverage of the real storefront add-to-cart/wishlist flow |
 
 ### 1c. Actions (`Model\Campaign\ActionPool`)
 
