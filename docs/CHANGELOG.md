@@ -228,6 +228,16 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   `Magento\Framework\App\CacheInterface`, 60-second TTL per key (`ordo_dashboard_count_*`) —
   closing the "4+ separate uncached COUNT queries on every page load" half of the dashboard
   ROADMAP.md item; the drill-down half of that item is still open.
+- **SendGrid webhook status updates are now rank-based instead of last-write-wins**, closing the
+  "no ordering/idempotency guard against provider redelivery" gap: `Controller\Email\StatusCallback`
+  has no per-event timestamp column to compare against, and SendGrid's account-wide Event Webhook
+  can redeliver events out of order, so a late-arriving redelivered `delivered` event used to be
+  able to regress an already-`bounced`/`failed`/`opted_out` message's status backward. A new
+  `STATUS_RANK` precedence table (`sent` < `delivered` < the three terminal outcomes, which rank
+  equal to each other) plus a small `isStatusDowngrade()` helper now make `applyStatus()` skip
+  (and log) any incoming status that ranks below the log row's current one, while a same-or-higher
+  rank — including the normal in-order `sent` → `delivered` → `bounced` sequence — still updates as
+  before.
 - **Separated 4 admin screens from the broader ACL resources they were incorrectly reusing**,
   closing the ROADMAP.md "ACL resources are shared across functionally distinct screens" finding.
   Message Log, Reorder Cycles (index + recalculate-now), and Product Feed refresh no longer gate
