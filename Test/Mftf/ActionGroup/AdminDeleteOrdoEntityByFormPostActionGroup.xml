@@ -13,12 +13,21 @@
             what Magento_Ui/js/grid/columns/actions.js's 'post: true' does for the grid's own
             Delete link (see AbstractEntityActionsColumn::prepareDataSource) - instead of
             clicking through the link's confirm() dialog, which this suite has no existing
-            grid-row-action MFTF pattern for.</description>
+            grid-row-action MFTF pattern for. Forces a real admin page load first -
+            window.FORM_KEY (set only by Magento_Backend's require_js.phtml) is undefined on any
+            non-admin page, and several callers invoke this action group straight after a
+            storefront flow (placing an order, polling a notification) without ever navigating
+            back to admin first - submitting with an undefined/stale form_key fails CSRF
+            validation silently (redirect, no success message, entity not actually deleted),
+            which is exactly the failure a real CI run caught in the "tracking" job after the
+            first fix pass missed this.</description>
         </annotations>
         <arguments>
             <argument name="url" type="string"/>
             <argument name="successMessage" type="string"/>
         </arguments>
+        <amOnPage url="admin/admin" stepKey="goToAdminPageBeforeDelete"/>
+        <waitForPageLoad stepKey="waitForAdminPageBeforeDelete"/>
         <executeJS function="var f=document.createElement('form'); f.method='POST'; f.action='/{{url}}'; var i=document.createElement('input'); i.type='hidden'; i.name='form_key'; i.value=window.FORM_KEY; f.appendChild(i); document.body.appendChild(f); f.submit();" stepKey="submitDeleteForm"/>
         <waitForPageLoad stepKey="waitForDeleteRedirect"/>
         <see selector=".message-success" userInput="{{successMessage}}" stepKey="seeDeleteSuccessMessage"/>
