@@ -209,7 +209,7 @@
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id"/>
         <column xsi:type="varchar" name="trigger_event" nullable="false" length="64" comment="e.g. order_placed, customer_registered, tag_added, scheduled_at, recurring_schedule"/>
-        <column xsi:type="text" name="params" nullable="true" comment="JSON-encoded trigger configuration - e.g. {&quot;scheduled_at&quot;: &quot;2026-11-28 09:00:00&quot;} for the scheduled_at trigger type, or {&quot;cron_expression&quot;: &quot;0 8 * * 1&quot;} for recurring_schedule. Unused/null for every event-based trigger type, which carries no config of its own - see Model\CampaignTrigger::getParams()."/>
+        <column xsi:type="text" name="params" nullable="true" comment="JSON-encoded trigger configuration for the scheduled_at and recurring_schedule trigger types. Unused and null for every event-based trigger type, which carries no config of its own - see CampaignTrigger getParams method."/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
