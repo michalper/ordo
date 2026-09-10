@@ -5,6 +5,18 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Corrected
+
+- **ROADMAP.md's "Free Gift Offer never actually applies to a cart" audit finding was wrong.**
+  That audit pass grepped only for `*FreeGiftOffer*`-named files and missed the real cart
+  integration, which lives under different names: `Model/FreeGiftManagement.php` (the
+  `FreeGiftManagementInterface` API — `getEligibility`/`selectGifts`), `Model/FreeGiftEligibility.php`,
+  `Model/FreeGiftSelection.php`, and `Observer/TrimExcessFreeGifts.php` (drops gifts that no longer
+  fit after the cart total drops). Fully wired (`etc/webapi.xml`, `etc/di.xml`) and already tested
+  (`Test/Unit/Model/FreeGiftManagementTest.php`, `Test/Integration/FreeGiftManagementScenarioTest.php`,
+  `Test/Api/FreeGiftApiTest.php`) — this was a complete, shipped feature the whole time. Removed
+  from ROADMAP.md's audit findings and Tier 1 priority list.
+
 ### Added
 
 - **Nested AND/OR condition groups for Segment and Campaign conditions**, closing the

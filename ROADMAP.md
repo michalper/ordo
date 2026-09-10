@@ -49,16 +49,18 @@ at ordering it into "what do we tackle first."
 `approveByToken()`/`rejectByToken()`'s inconsistent save path + missing order-state re-check; pull
 "Scheduled Date/Time" out of the trigger-type UI until it actually fires anything.
 
-**Tier 1 — this quarter, highest business leverage:** Free Gift Offer → real cart integration
-(the single biggest gap in this audit — a fully-built admin feature with zero runtime effect);
-SendGrid webhook handling `spamreport`/`unsubscribe`/`group_unsubscribe` (deliverability/compliance
-risk today); retry/backoff for failed channel sends (one shared mechanism across
-Email/SMS/WhatsApp/Push).
+**Tier 1 — this quarter, highest business leverage:** SendGrid webhook handling
+`spamreport`/`unsubscribe`/`group_unsubscribe` (deliverability/compliance risk today);
+retry/backoff for failed channel sends (one shared mechanism across Email/SMS/WhatsApp/Push);
+segment exclusion operator ("A but not B") — promoted up from Tier 2, cheap given
+`SegmentMemberResolver` already computes full ID sets.
+(Free Gift Offer → cart integration was originally listed here as the top item — struck from this
+list entirely: it turned out to already be a complete, shipped feature, see docs/CHANGELOG.md's
+correction entry.)
 
-**Tier 2 — good ROI, moderate effort:** segment exclusion operator ("A but not B"); unsaved-changes
-warning on the "Estimated Audience Size" refresh panel; an on-demand recalculation endpoint for
-Reorder Cycle (mirrors the pattern segments just got); `TagInactiveCustomers`'s O(n²) untag loop
-(one `array_flip`).
+**Tier 2 — good ROI, moderate effort:** unsaved-changes warning on the "Estimated Audience Size"
+refresh panel; an on-demand recalculation endpoint for Reorder Cycle (mirrors the pattern segments
+just got); `TagInactiveCustomers`'s O(n²) untag loop (one `array_flip`).
 
 **Tier 3 — real feature work, needs a scoping decision first:** scheduled/recurring campaigns
 (the real implementation behind Tier 0's dead trigger option); unified suppression/frequency
@@ -71,11 +73,6 @@ unbounded full-table scans in `CalculateReorderCycle`/`GoogleMerchantFeedGenerat
 
 ### Correctness issues found along the way (not "improvements" — real bugs)
 
-- **Free Gift Offer never actually applies to a cart.** `Model/FreeGiftOffer*.php`,
-  `FreeGiftOfferSaveProcessor.php` are pure admin CRUD — there is no quote/checkout observer or
-  totals plugin anywhere that reads a configured offer and adds a gift to a cart. A merchant can
-  fully configure "spend $100, get 2 gifts" today and nothing ever happens at checkout. This is
-  the single biggest gap found in this audit: a fully-built admin feature with no runtime effect.
 - **Guest checkout bypasses order-approval entirely.** `Observer/HoldOrderForApproval::execute()`
   returns early when `!$order->getCustomerId()` — since the spend-limit/approval attributes only
   exist on registered customers, anyone can dodge approval by checking out as a guest.
