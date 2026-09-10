@@ -5,6 +5,20 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- **Estimated audience size for segments**, closing the ROADMAP.md follow-up. Two parts:
+  - `ordo_segment.estimated_audience_size`/`audience_size_computed_at` (new columns) back a
+    grid column pair, refreshed every 15 minutes by
+    `Cron\RecalculateSegmentAudienceSizes`/`Model\Segment\SegmentAudienceSizeRecalculator` for
+    every segment at once — a cached snapshot rather than a live per-row resolve, since the grid
+    can list many segments at a time and `SegmentMemberResolver` runs real aggregate queries per
+    condition.
+  - The segment edit page gets its own live, on-demand counter
+    (`Block`/`Controller\Adminhtml\Segment\AudienceSize`, `segment-audience-size.js`) that
+    re-resolves the segment's saved conditions via the same `SegmentMemberResolver` on an
+    explicit refresh click — exact rather than a snapshot, cheap enough for one segment in view.
+
 ### Changed
 
 - `.github/workflows/coverage.yml`: PHP and JS coverage used to run sequentially as two halves

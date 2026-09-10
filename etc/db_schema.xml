@@ -105,6 +105,10 @@
         <column xsi:type="varchar" name="name" nullable="false" length="255" comment="Admin-facing name"/>
         <column xsi:type="boolean" name="enabled" nullable="false" default="1" comment="Enabled"/>
         <column xsi:type="varchar" name="condition_logic" nullable="false" length="3" default="all" comment="'all' (AND, default) or 'any' (OR) across this segment's conditions - see Model\Segment\SegmentMatcher/SegmentMemberResolver"/>
+        <column xsi:type="int" name="estimated_audience_size" padding="10" unsigned="true" nullable="true"
+                comment="Cached count of customers currently matching this segment, refreshed periodically by Cron\RecalculateSegmentAudienceSizes for the segment grid. Null means never computed yet (e.g. brand new segment) - see Model\Segment\SegmentMemberResolver for the live, on-demand equivalent used on the edit page and by BulkAction."/>
+        <column xsi:type="timestamp" name="audience_size_computed_at" nullable="true"
+                comment="When estimated_audience_size was last refreshed - shown next to the grid count so it reads as a snapshot, not a live number"/>
         <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
         <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
@@ -204,7 +208,8 @@
     <table name="ordo_campaign_trigger" resource="default" engine="innodb" comment="One trigger event that starts a campaign — a campaign can fire on more than one, e.g. both customer_registered and tag_added, running the same conditions/actions either way">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id"/>
-        <column xsi:type="varchar" name="trigger_event" nullable="false" length="64" comment="e.g. order_placed, customer_registered, tag_added"/>
+        <column xsi:type="varchar" name="trigger_event" nullable="false" length="64" comment="e.g. order_placed, customer_registered, tag_added, scheduled_at, recurring_schedule"/>
+        <column xsi:type="text" name="params" nullable="true" comment="JSON-encoded trigger configuration - e.g. {&quot;scheduled_at&quot;: &quot;2026-11-28 09:00:00&quot;} for the scheduled_at trigger type, or {&quot;cron_expression&quot;: &quot;0 8 * * 1&quot;} for recurring_schedule. Unused/null for every event-based trigger type, which carries no config of its own - see Model\CampaignTrigger::getParams()."/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
@@ -276,6 +281,20 @@
             <column name="run_at"/>
             <column name="executed_at"/>
         </index>
+    </table>
+
+    <table name="ordo_campaign_scheduled_trigger_state" resource="default" engine="innodb" comment="Fire-tracking for scheduled_at/recurring_schedule campaign triggers, kept separate from ordo_campaign_trigger itself: CampaignSaveProcessor deletes and recreates every trigger row on every campaign save (see its own saveTriggers() comment), which would silently wipe fire-tracking on an unrelated re-save (e.g. renaming the campaign) if it lived on that row instead. config_hash guards the other direction: an actual change to the scheduled date/cron expression changes the hash too, so Model\Campaign\ScheduledTriggerScanner treats it as a fresh, not-yet-fired config rather than something already fired under the old value.">
+        <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id"/>
+        <column xsi:type="varchar" name="trigger_event" nullable="false" length="64" comment="scheduled_at or recurring_schedule"/>
+        <column xsi:type="varchar" name="config_hash" nullable="false" length="32" comment="md5 of the trigger row's params JSON at the time it last fired (or was last checked)"/>
+        <column xsi:type="timestamp" name="last_fired_at" nullable="true" comment="Null until this exact config has fired at least once. recurring_schedule also uses this to avoid re-firing within the same matching minute if the scan cron runs more than once per minute."/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="campaign_id"/>
+            <column name="trigger_event"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="ORDO_CAMPAIGN_SCHEDULED_TRIGGER_STATE_CAMPAIGN_ID_CAMPAIGN_ENTITY_ID"
+                    table="ordo_campaign_scheduled_trigger_state" column="campaign_id"
+                    referenceTable="ordo_campaign" referenceColumn="entity_id" onDelete="CASCADE"/>
     </table>
 
     <table name="ordo_visitor_event" resource="default" engine="innodb" comment="Raw on-site behavior events — short-lived by design, see PruneVisitorEvents. Deliberately kept separate from ordo_campaign/ordo_customer_tag, which are low-frequency and long-lived.">

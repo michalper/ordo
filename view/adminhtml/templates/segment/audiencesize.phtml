@@ -1,0 +1,30 @@
+<?php
+/** @var \Ordo\Automation\Block\Adminhtml\Segment\AudienceSize $block */
+/** @var \Magento\Framework\Escaper $escaper */
+if (!$block->isSegmentSaved()) {
+    return;
+}
+?>
+<div class="admin__fieldset-wrapper ordo-audience-size-panel"
+     data-segment-id="<?= (int) $block->getSegmentId() ?>"
+     data-audience-size-url="<?= $escaper->escapeUrl($block->getAudienceSizeUrl()) ?>">
+    <div class="admin__fieldset-wrapper-title">
+        <strong><?= $escaper->escapeHtml(__('Estimated Audience Size')) ?></strong>
+    </div>
+    <div class="admin__fieldset-wrapper-content">
+        <p>
+            <?= $escaper->escapeHtml(
+                __('Customers currently matching this segment\'s saved conditions.')
+            ) ?>
+        </p>
+        <div class="ordo-audience-size-value" data-audience-size-value="1">
+            <?= $escaper->escapeHtml(__('Not calculated yet')) ?>
+        </div>
+        <button type="button" class="action-secondary" data-audience-size-refresh="1">
+            <span><?= $escaper->escapeHtml(__('Refresh')) ?></span>
+        </button>
+    </div>
+</div>
+<script>
+require(['Ordo_Automation/js/segment-audience-size']);
+</script>

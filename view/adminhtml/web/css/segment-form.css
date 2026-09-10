@@ -554,20 +554,47 @@ td:has(> [data-index="group_logic"]) {
     display: none;
 }
 
+/* .ordo-bulk-actions-panel is a <details> now (collapsed by default - see bulkactions.phtml's own
+   comment): a visibly distinct top border plus extra margin separates it from the conditions
+   fieldset immediately above, so it doesn't read as one continuous form/step. */
 .ordo-bulk-actions-panel {
     max-width: 560px;
-    margin-top: 24px;
+    margin-top: 32px;
     background: #fff;
     border: 1px solid var(--ordo-border);
+    border-top: 3px solid var(--ordo-danger);
     border-radius: var(--ordo-radius);
     padding: 18px 20px;
 }
 
+.ordo-audience-size-panel + .ordo-bulk-actions-panel {
+    margin-top: 20px;
+}
+
 .ordo-bulk-actions-panel .admin__fieldset-wrapper-title {
+    display: block;
     font-size: 14px;
     font-weight: 700;
     color: var(--ordo-ink);
     margin-bottom: 4px;
+    cursor: pointer;
+}
+
+/* Native <summary> marker replaced with a plain "+"/"-" so it reads as an expand/collapse toggle
+   rather than a browser-default disclosure triangle that clashes with the rest of this form's
+   styling. */
+.ordo-bulk-actions-panel .admin__fieldset-wrapper-title::-webkit-details-marker {
+    display: none;
+}
+
+.ordo-bulk-actions-panel .admin__fieldset-wrapper-title::before {
+    content: '+ ';
+    color: var(--ordo-danger);
+    font-weight: 700;
+}
+
+.ordo-bulk-actions-panel[open] .admin__fieldset-wrapper-title::before {
+    content: '- ';
 }
 
 .ordo-bulk-actions-panel .admin__fieldset-wrapper-content > p {
@@ -617,6 +644,35 @@ td:has(> [data-index="group_logic"]) {
 
 .ordo-bulk-actions-panel .action-primary:hover {
     background: var(--ordo-accent-dark);
+}
+
+.ordo-audience-size-panel {
+    max-width: 560px;
+    margin-top: 24px;
+    background: var(--ordo-accent-tint);
+    border: 1px solid var(--ordo-accent-border);
+    border-radius: var(--ordo-radius);
+    padding: 18px 20px;
+}
+
+.ordo-audience-size-panel .admin__fieldset-wrapper-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ordo-ink);
+    margin-bottom: 4px;
+}
+
+.ordo-audience-size-panel .admin__fieldset-wrapper-content > p {
+    margin: 0 0 12px;
+    color: var(--ordo-muted);
+    font-size: 12px;
+}
+
+.ordo-audience-size-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ordo-ink);
+    margin-bottom: 12px;
 }
 
 /* SKU autocomplete dropdown (segment-sku-autocomplete.js) - matches unified accent used

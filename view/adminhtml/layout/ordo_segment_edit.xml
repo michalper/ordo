@@ -9,6 +9,8 @@
             <block class="Magento\Framework\View\Element\Template"
                    name="ordo_segment_group_modal_js"
                    template="Ordo_Automation::segment/require_group_modal_js.phtml"/>
+            <block class="Ordo\Automation\Block\Adminhtml\Segment\AudienceSize" name="ordo_segment_audience_size"
+                   template="Ordo_Automation::segment/audiencesize.phtml"/>
             <block class="Ordo\Automation\Block\Adminhtml\Segment\BulkActions" name="ordo_segment_bulk_actions"
                    template="Ordo_Automation::segment/bulkactions.phtml"/>
         </referenceContainer>

@@ -58,5 +58,8 @@
         <job name="ordo_automation_refresh_rss_content_blocks" instance="Ordo\Automation\Cron\RefreshRssContentBlocks" method="execute">
             <schedule>*/30 * * * *</schedule>
         </job>
+        <job name="ordo_automation_recalculate_segment_audience_sizes" instance="Ordo\Automation\Cron\RecalculateSegmentAudienceSizes" method="execute">
+            <schedule>*/15 * * * *</schedule>
+        </job>
     </group>
 </config>
