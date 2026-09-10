@@ -16,7 +16,7 @@ use Ordo\Automation\Model\ProductFeed\ProductFeedCacheWriter;
  */
 class RefreshNow extends Action implements HttpGetActionInterface
 {
-    public const ADMIN_RESOURCE = 'Ordo_Automation::campaigns';
+    public const ADMIN_RESOURCE = 'Ordo_Automation::product_feed';
 
     public function __construct(
         Context $context,

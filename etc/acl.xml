@@ -18,6 +18,10 @@
                 <resource id="Ordo_Automation::gdpr" title="Ordo Automation GDPR / Consent" translate="title" sortOrder="560"/>
                 <resource id="Ordo_Automation::ad_audiences" title="Ordo Automation Ad Audiences" translate="title" sortOrder="570"/>
                 <resource id="Ordo_Automation::whatsapp_templates" title="Ordo Automation WhatsApp Templates" translate="title" sortOrder="580"/>
+                <resource id="Ordo_Automation::message_log" title="Ordo Automation Message Log" translate="title" sortOrder="590"/>
+                <resource id="Ordo_Automation::reorder_cycle" title="Ordo Automation Reorder Cycle" translate="title" sortOrder="600"/>
+                <resource id="Ordo_Automation::product_feed" title="Ordo Automation Product Feed" translate="title" sortOrder="610"/>
+                <resource id="Ordo_Automation::rfm" title="Ordo Automation RFM" translate="title" sortOrder="620"/>
             </resource>
         </resources>
     </acl>
