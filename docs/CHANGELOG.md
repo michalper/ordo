@@ -19,6 +19,15 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Cross-channel frequency cap for campaign sends**, closing the ROADMAP.md Tier 3 "unified
+  suppression/frequency capping across all channels" item. New `Model\Campaign\FrequencyCapManager::hasCapacity()`
+  - opt-in (disabled by default), counts `ordo_message_log` rows across Email/SMS/WhatsApp/Push
+  combined for a configurable rolling window (default: max 5 messages / 24h), since the point is
+  capping total contact volume, not per-channel volume. Checked in
+  `SendEmail`/`SendSms`/`SendWhatsApp`/`SendPush` right after the existing consent check; a
+  customer over the cap is skipped and recorded as a new `MessageLog::STATUS_SUPPRESSED` outcome
+  (distinct from `opted_out` - they didn't withdraw consent, they're just over the volume cap for
+  now). New config: Stores > Configuration > Ordo Automation > Frequency Cap (cross-channel).
 - **`not_in_segment` condition type** — the exclusion counterpart to `in_segment` ("customers in A
   but NOT in B"), closing the ROADMAP.md Tier 1 "segment exclusion operator" item. New
   `Model\Campaign\Condition\NotInSegment` (per-customer, shared by Campaign conditions and

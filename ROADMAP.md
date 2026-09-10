@@ -57,9 +57,10 @@ top item — struck from this list entirely: it turned out to already be a compl
 feature, see docs/CHANGELOG.md's correction entry.)
 
 **Tier 3 — real feature work, needs a scoping decision first:** scheduled/recurring campaigns
-(the real implementation behind Tier 0's dead trigger option); unified suppression/frequency
-capping across all channels; A/B testing + per-campaign funnel analytics; behavioral/event-based
-segmentation beyond purchase history.
+(the real implementation behind Tier 0's dead trigger option); A/B testing + per-campaign funnel
+analytics; behavioral/event-based segmentation beyond purchase history. Unified suppression/
+frequency capping across all channels is now closed (`Model\Campaign\FrequencyCapManager`, see
+docs/CHANGELOG.md).
 
 **Tier 4 — scale hardening, not urgent below ~50-100k customers:** pagination/streaming in
 `RfmCalculator`'s aggregate queries; batching in `GoogleAdsSyncClient::addOperations()`; the
@@ -92,10 +93,11 @@ unbounded full-table scans in `CalculateReorderCycle`/`GoogleMerchantFeedGenerat
 
 ### Campaign engine (`Model/CampaignDispatcher.php`, `Model/Queue/*`, Flow canvas)
 
-- No suppression/frequency capping — `CampaignDispatcher::dispatch()` fires a matched campaign
-  every single time its trigger occurs, with no "don't message this customer more than N times per
-  period" anywhere. A customer who repeatedly triggers `tag_added`/`order_placed` gets spammed by
-  design.
+- ~~No suppression/frequency capping~~ — **closed**: `Model\Campaign\FrequencyCapManager` now caps
+  total cross-channel message volume per customer per rolling window (opt-in). Still open: this
+  caps *volume*, not *re-entry* — see the campaign entry dedup item right below, a related but
+  distinct gap (a customer can still restart the same campaign's flow from scratch on a repeat
+  trigger; capping just limits how many messages that can eventually produce).
 - No campaign entry dedup — nothing stops a customer mid-flow (waiting on a `delay_minutes`
   resume) from re-entering the same campaign from scratch on a repeat trigger; `ordo_campaign_
   scheduled_action` has no uniqueness guard per customer+campaign.
@@ -146,10 +148,11 @@ unbounded full-table scans in `CalculateReorderCycle`/`GoogleMerchantFeedGenerat
 
 ### Communication channels (Email/SMS/WhatsApp/Push)
 
-- No unified suppression/frequency-capping layer across channels at all — `ConsentManager` is a
-  binary per-channel opt-in/opt-out with no "max N messages/day" or quiet-hours concept; a customer
-  matching several campaigns in one dispatch tick can be emailed, texted, WhatsApp'd, and
-  push-notified back to back.
+- ~~No unified suppression/frequency-capping layer across channels~~ — **closed**:
+  `Model\Campaign\FrequencyCapManager` caps total messages per customer per rolling window across
+  Email/SMS/WhatsApp/Push combined (opt-in, see docs/CHANGELOG.md). Still open: no quiet-hours
+  concept (a capped-but-still-eligible send can still land at 3am local time, see the campaign
+  engine section above).
 - No template preview or test-send anywhere in admin, for any channel — merchants routinely typo
   `{{var}}`/WhatsApp `{{1}}` placeholders and only discover it once a real customer gets the
   broken message.
