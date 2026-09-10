@@ -87,9 +87,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
   start hitting 429s with no handling for it.
 - `Cron/RunScheduledCampaignActions.php` has no persistent retry queue for a send that fails all 3
   of `SendRetrier`'s in-process retries — "a row that failed stays failed" across cron ticks.
-- Webhook handling has no ordering/idempotency guard against provider redelivery — an
-  out-of-order redelivered `delivered` event arriving after a later `failed` one can regress a
-  message's logged status backward.
 - WhatsApp template admin form is a raw textarea with manual `{{1}}`/`{{2}}` placeholders, no
   character-limit check against Meta's real limits, and no rendered preview — each submission
   costs a real Meta review cycle, so mistakes are expensive.
@@ -114,9 +111,6 @@ as bugs above, not repeated here)*
   today's escalation cron even run" is invisible without log-tailing.
 - Reorder Cycle is detection-only — `Cron/CalculateReorderCycle.php` computes `next_expected_date`
   but there's no one-click "build reorder cart" action and no manual per-customer reminder trigger.
-- `Cron/CalculateReorderCycle`'s interval estimate is a plain mean with no outlier resistance — one
-  anomalous gap (customer paused 6 months) skews the whole prediction; same-day repeat purchases
-  are silently dropped rather than handled distinctly.
 - Product feed is single-format (Google RSS only), single-store, with no admin grid for feed
   health/history — a generation failure only sets an error flag nobody can see without knowing to
   look.
@@ -132,10 +126,6 @@ as bugs above, not repeated here)*
 - No export/import for campaigns or segments — the only export capability in the whole module is
   GDPR customer-data export; nothing lets a merchant move a campaign/segment definition between
   dev/staging/prod or back it up before a risky edit.
-- Color-token duplication instead of one shared design-system file — `dashboard.css`,
-  `segment-form.css`, `flow.css`, and `free-gift-offer-form.css` each independently (re)define
-  near-identical but not-identical palettes (e.g. two different purple accent hues); a rebrand
-  touches 4+ files with no single source of truth.
 - No setup wizard/guided first-run flow across the module — per-grid empty-state CTAs exist, but
   nothing walks a fresh install through the real dependency order (configure a channel → build a
   segment → build a campaign); an admin can build a `send_sms` action before ever configuring

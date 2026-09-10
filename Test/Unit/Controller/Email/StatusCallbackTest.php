@@ -385,6 +385,127 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         self::assertSame('delivered', $log->getStatus());
     }
 
+    /**
+     * Regression test for the missing ordering/idempotency guard: SendGrid can redeliver an
+     * older "delivered" event after this module already recorded a later, more terminal "bounce"
+     * event - the redelivered event must not regress the log row's status backward.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRedeliveredDeliveredEventDoesNotDowngradeAnAlreadyBouncedStatus(): void
+    {
+        $controller = $this->makeController();
+        $this->stubHeaders('real-signature', '1700000000');
+        $body = json_encode([['event' => 'delivered', 'smtp-id' => '<abc@example.com>']]);
+        $this->request->method('getContent')->willReturn($body);
+        $this->signatureValidator->method('isValid')->willReturn(true);
+
+        $log = $this->makeMessageLog(7);
+        $log->setStatus(MessageLog::STATUS_UNDELIVERED);
+        $log->setErrorCode('550 mailbox unavailable');
+        $collection = $this->createStub(MessageLogCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getFirstItem')->willReturn($log);
+        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+
+        $this->messageLogResource->expects(self::never())->method('save');
+        $this->logger->expects(self::once())->method('info');
+
+        $controller->execute();
+
+        self::assertSame('undelivered', $log->getStatus());
+        self::assertSame('550 mailbox unavailable', $log->getErrorCode());
+    }
+
+    /**
+     * Same guard, but for an opted_out log row - a redelivered "delivered" event must not undo a
+     * recorded opt-out either.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRedeliveredDeliveredEventDoesNotDowngradeAnAlreadyOptedOutStatus(): void
+    {
+        $controller = $this->makeController();
+        $this->stubHeaders('real-signature', '1700000000');
+        $body = json_encode([['event' => 'delivered', 'smtp-id' => '<abc@example.com>']]);
+        $this->request->method('getContent')->willReturn($body);
+        $this->signatureValidator->method('isValid')->willReturn(true);
+
+        $log = $this->makeMessageLog(7, 42);
+        $log->setStatus(MessageLog::STATUS_OPTED_OUT);
+        $collection = $this->createStub(MessageLogCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getFirstItem')->willReturn($log);
+        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+
+        $this->messageLogResource->expects(self::never())->method('save');
+        $this->consentManager->expects(self::never())->method('setConsent');
+
+        $controller->execute();
+
+        self::assertSame('opted_out', $log->getStatus());
+    }
+
+    /**
+     * A normal in-order sequence - sent, then delivered, then bounced - must still update the
+     * status each time, since each new status is at least as final as the one before it.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testInOrderSentDeliveredBounceSequenceUpdatesStatusEachTime(): void
+    {
+        $controller = $this->makeController();
+        $this->stubHeaders('real-signature', '1700000000');
+        $body = json_encode([
+            ['event' => 'delivered', 'smtp-id' => '<abc@example.com>'],
+            ['event' => 'bounce', 'smtp-id' => '<abc@example.com>', 'reason' => '550 mailbox unavailable'],
+        ]);
+        $this->request->method('getContent')->willReturn($body);
+        $this->signatureValidator->method('isValid')->willReturn(true);
+
+        $log = $this->makeMessageLog(7);
+        $log->setStatus(MessageLog::STATUS_SENT);
+        $collection = $this->createStub(MessageLogCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getFirstItem')->willReturn($log);
+        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+
+        $this->messageLogResource->expects(self::exactly(2))->method('save')->with($log);
+
+        $controller->execute();
+
+        self::assertSame('undelivered', $log->getStatus());
+        self::assertSame('550 mailbox unavailable', $log->getErrorCode());
+    }
+
+    /**
+     * A bounce arriving after an already-bounced row (e.g. the same terminal event redelivered)
+     * is not a downgrade - equal rank is still allowed to overwrite, so the reason/error_code can
+     * still be refreshed.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRedeliveredBounceEventAtTheSameRankStillUpdatesTheLogRow(): void
+    {
+        $controller = $this->makeController();
+        $this->stubHeaders('real-signature', '1700000000');
+        $body = json_encode([
+            ['event' => 'bounce', 'smtp-id' => '<abc@example.com>', 'reason' => '550 mailbox unavailable'],
+        ]);
+        $this->request->method('getContent')->willReturn($body);
+        $this->signatureValidator->method('isValid')->willReturn(true);
+
+        $log = $this->makeMessageLog(7);
+        $log->setStatus(MessageLog::STATUS_UNDELIVERED);
+        $collection = $this->createStub(MessageLogCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getFirstItem')->willReturn($log);
+        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+
+        $this->messageLogResource->expects(self::once())->method('save')->with($log);
+
+        $controller->execute();
+
+        self::assertSame('undelivered', $log->getStatus());
+        self::assertSame('550 mailbox unavailable', $log->getErrorCode());
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testValidSignatureWithInvalidJsonPayloadReturnsInvalidPayload(): void
     {

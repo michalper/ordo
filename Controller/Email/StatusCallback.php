@@ -70,6 +70,31 @@ class StatusCallback extends Action implements HttpPostActionInterface, CsrfAwar
         'click' => MessageLogEvent::TYPE_CLICKED,
     ];
 
+    /**
+     * @var array<string, int> MessageLog::STATUS_* constant => rank, least to most "final".
+     *
+     * SendGrid's Event Webhook has no per-event timestamp column on ordo_message_log to compare
+     * against, and the same account-wide webhook can (and does) redeliver events out of order -
+     * so instead of trusting arrival order, applyStatus() only lets a new status overwrite the
+     * current one when it is at least as final. A status not listed here (notably the empty
+     * string a brand-new row starts with) ranks below everything, so it's always overwritable.
+     *
+     * "delivered" ranks below the three terminal outcomes: a late-arriving redelivered
+     * "delivered" event must never regress a message that's already bounced, permanently failed,
+     * or had the recipient opt out - those are truer, more final signals than "it got delivered
+     * at some earlier point". STATUS_SUSPENDED - sorry, STATUS_SUPPRESSED - never reaches this
+     * webhook (it's a pre-send state) but ranks alongside the other terminal outcomes for
+     * completeness, should that ever change.
+     */
+    private const array STATUS_RANK = [
+        MessageLog::STATUS_SENT => 0,
+        MessageLog::STATUS_DELIVERED => 1,
+        MessageLog::STATUS_UNDELIVERED => 2,
+        MessageLog::STATUS_FAILED => 2,
+        MessageLog::STATUS_OPTED_OUT => 2,
+        MessageLog::STATUS_SUPPRESSED => 2,
+    ];
+
     public function __construct(
         Context $context,
         private readonly JsonFactory $resultJsonFactory,
@@ -170,6 +195,20 @@ class StatusCallback extends Action implements HttpPostActionInterface, CsrfAwar
      */
     private function applyStatus(MessageLog $log, string $status, array $event, string $eventType): void
     {
+        if ($this->isStatusDowngrade($log->getStatus(), $status)) {
+            $this->logger->info(sprintf(
+                'Ordo_Automation: ignored a SendGrid event webhook status downgrade for message '
+                . 'log #%d (event=%s, current status=%s, incoming status=%s) - likely an '
+                . 'out-of-order redelivery.',
+                (int) $log->getId(),
+                $eventType,
+                $log->getStatus(),
+                $status
+            ));
+
+            return;
+        }
+
         $log->setStatus($status);
         $reason = $event['reason'] ?? $event['type'] ?? null;
         $log->setErrorCode($reason !== null ? (string) $reason : null);
@@ -186,6 +225,19 @@ class StatusCallback extends Action implements HttpPostActionInterface, CsrfAwar
                 'sendgrid_' . $eventType
             );
         }
+    }
+
+    /**
+     * True when applying $incomingStatus over $currentStatus would move the message log
+     * backward in the STATUS_RANK precedence table - i.e. an out-of-order redelivery of an
+     * earlier, less-final event arriving after a later, more-final one already landed.
+     */
+    private function isStatusDowngrade(string $currentStatus, string $incomingStatus): bool
+    {
+        $currentRank = self::STATUS_RANK[$currentStatus] ?? -1;
+        $incomingRank = self::STATUS_RANK[$incomingStatus] ?? -1;
+
+        return $incomingRank < $currentRank;
     }
 
     public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException

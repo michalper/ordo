@@ -5,6 +5,20 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Centralized the admin CSS color tokens duplicated across `dashboard.css`, `segment-form.css`,
+  `flow.css`, and `free-gift-offer-form.css` into one shared file.** New
+  `view/adminhtml/web/css/_tokens.css` defines `:root` custom properties (`--ordo-color-primary`,
+  `--ordo-color-accent`, `--ordo-color-accent-dark`, `--ordo-color-ink`, `--ordo-color-muted`,
+  `--ordo-color-border`), loaded via a `<css src="Ordo_Automation::css/_tokens.css"/>` layout
+  declaration ahead of each of the 4 files (this module's existing CSS-inclusion mechanism — no
+  `@import` precedent existed to follow instead). Each token's value is the hex that was already
+  the most-used one for that role across the 4 files (`#7c3aed` for primary purple: 11 occurrences
+  vs. 1 each for `#4f46e5`/`#4338ca`; `#1b1f2a`, `#6b7180`, `#e4e7ee` for ink/muted/border, all
+  already identical across files), so this is purely structural — no computed color changed
+  anywhere.
+
 ### Corrected
 
 - **ROADMAP.md's "Free Gift Offer never actually applies to a cart" audit finding was wrong.**
@@ -237,6 +251,23 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   every cache entry too, so `CampaignTriggerRepository`, `Controller\Adminhtml\Campaign\Delete`,
   and `Campaign\CampaignSaveProcessor` — which still flush it wholesale — keep invalidating
   everything they always did; only `CampaignRepository`'s own save/delete path got narrower.
+- **`Cron/CalculateReorderCycle::execute()` now estimates the reorder interval as a median of the
+  per-SKU order-to-order gaps instead of a plain arithmetic mean**, closing the ROADMAP.md gap
+  where a single anomalous gap (a customer pausing for months, or a one-off bulk restock that
+  skips several normal cycles) skewed the whole prediction disproportionately, since a mean has no
+  resistance to outliers. No new dependency — sorts the (already-in-memory) interval list and
+  takes the middle value, or the average of the two middle values for an even count. The `< 1`
+  same-day-purchase skip, `MIN_ORDERS_TO_DETECT_PATTERN`, and `upsertCycle()` call are unchanged.
+- **SendGrid webhook status updates are now rank-based instead of last-write-wins**, closing the
+  "no ordering/idempotency guard against provider redelivery" gap: `Controller\Email\StatusCallback`
+  has no per-event timestamp column to compare against, and SendGrid's account-wide Event Webhook
+  can redeliver events out of order, so a late-arriving redelivered `delivered` event used to be
+  able to regress an already-`bounced`/`failed`/`opted_out` message's status backward. A new
+  `STATUS_RANK` precedence table (`sent` < `delivered` < the three terminal outcomes, which rank
+  equal to each other) plus a small `isStatusDowngrade()` helper now make `applyStatus()` skip
+  (and log) any incoming status that ranks below the log row's current one, while a same-or-higher
+  rank — including the normal in-order `sent` → `delivered` → `bounced` sequence — still updates as
+  before.
 - **Separated 4 admin screens from the broader ACL resources they were incorrectly reusing**,
   closing the ROADMAP.md "ACL resources are shared across functionally distinct screens" finding.
   Message Log, Reorder Cycles (index + recalculate-now), and Product Feed refresh no longer gate
