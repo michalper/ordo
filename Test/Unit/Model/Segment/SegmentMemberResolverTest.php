@@ -6,17 +6,17 @@ namespace Ordo\Automation\Test\Unit\Model\Segment;
 use Ordo\Automation\Model\CustomerScoreManager;
 use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Model\Purchase\PurchasedProductResolver;
+use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\Collection as SegmentConditionCollection;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\CollectionFactory as SegmentConditionCollectionFactory;
-use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\Rfm\RfmCalculator;
 use Ordo\Automation\Model\Segment;
 use Ordo\Automation\Model\Segment\SegmentMemberResolver;
 use Ordo\Automation\Model\SegmentCondition;
 use Ordo\Automation\Model\SegmentFactory;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class SegmentMemberResolverTest extends TestCase
 {
@@ -380,6 +380,39 @@ class SegmentMemberResolverTest extends TestCase
     public function testInSegmentCycleDetectionFailsClosed(): void
     {
         $this->stubSegment(1, [['type' => 'in_segment', 'params' => ['segment_id' => '1']]]);
+        $this->primeFactory();
+
+        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testNotInSegmentExcludesTargetSegmentMembers(): void
+    {
+        $this->stubSegment(1, [['type' => 'not_in_segment', 'params' => ['segment_id' => '2']]]);
+        $this->stubSegment(2, [['type' => 'tag', 'params' => ['tag' => 'vip']]]);
+        $this->primeFactory();
+
+        $this->customerTagManager->method('getCustomerIdsWithTag')->willReturnMap([['vip', [9]]]);
+        $this->rfmCalculator->method('getAllCustomerIds')->willReturn([5, 9, 20]);
+
+        self::assertSame([5, 20], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testNotInSegmentCycleDetectionFailsClosed(): void
+    {
+        $this->stubSegment(1, [['type' => 'not_in_segment', 'params' => ['segment_id' => '1']]]);
+        $this->primeFactory();
+
+        $this->rfmCalculator->expects(self::never())->method('getAllCustomerIds');
+
+        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testNotInSegmentFailsClosedOnNonNumericSegmentId(): void
+    {
+        $this->stubSegment(1, [['type' => 'not_in_segment', 'params' => ['segment_id' => 'not-a-number']]]);
         $this->primeFactory();
 
         self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
