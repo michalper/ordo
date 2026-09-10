@@ -5,6 +5,20 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Centralized the admin CSS color tokens duplicated across `dashboard.css`, `segment-form.css`,
+  `flow.css`, and `free-gift-offer-form.css` into one shared file.** New
+  `view/adminhtml/web/css/_tokens.css` defines `:root` custom properties (`--ordo-color-primary`,
+  `--ordo-color-accent`, `--ordo-color-accent-dark`, `--ordo-color-ink`, `--ordo-color-muted`,
+  `--ordo-color-border`), loaded via a `<css src="Ordo_Automation::css/_tokens.css"/>` layout
+  declaration ahead of each of the 4 files (this module's existing CSS-inclusion mechanism — no
+  `@import` precedent existed to follow instead). Each token's value is the hex that was already
+  the most-used one for that role across the 4 files (`#7c3aed` for primary purple: 11 occurrences
+  vs. 1 each for `#4f46e5`/`#4338ca`; `#1b1f2a`, `#6b7180`, `#e4e7ee` for ink/muted/border, all
+  already identical across files), so this is purely structural — no computed color changed
+  anywhere.
+
 ### Corrected
 
 - **ROADMAP.md's "Free Gift Offer never actually applies to a cart" audit finding was wrong.**

@@ -135,10 +135,6 @@ as bugs above, not repeated here)*
 - No export/import for campaigns or segments — the only export capability in the whole module is
   GDPR customer-data export; nothing lets a merchant move a campaign/segment definition between
   dev/staging/prod or back it up before a risky edit.
-- Color-token duplication instead of one shared design-system file — `dashboard.css`,
-  `segment-form.css`, `flow.css`, and `free-gift-offer-form.css` each independently (re)define
-  near-identical but not-identical palettes (e.g. two different purple accent hues); a rebrand
-  touches 4+ files with no single source of truth.
 - No setup wizard/guided first-run flow across the module — per-grid empty-state CTAs exist, but
   nothing walks a fresh install through the real dependency order (configure a channel → build a
   segment → build a campaign); an admin can build a `send_sms` action before ever configuring

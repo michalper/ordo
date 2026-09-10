@@ -49,16 +49,16 @@
 .ordo-picker-modal-row .ordo-picker-suggestion-name {
     flex: 1 1 auto;
     font-weight: 600;
-    color: #1b1f2a;
+    color: var(--ordo-color-ink);
 }
 
 .ordo-picker-suggestion-sku {
-    color: #6b7180;
+    color: var(--ordo-color-muted);
     font-size: 12px;
 }
 
 .ordo-picker-suggestion-qty {
-    color: #6b7180;
+    color: var(--ordo-color-muted);
     font-size: 12px;
     white-space: nowrap;
 }
@@ -76,18 +76,18 @@
     font-size: 12px;
 }
 
-.ordo-picker-chip-noimg { background: #e4e7ee; }
+.ordo-picker-chip-noimg { background: var(--ordo-color-border); }
 
-.ordo-picker-chip-name { font-weight: 600; color: #1b1f2a; }
+.ordo-picker-chip-name { font-weight: 600; color: var(--ordo-color-ink); }
 
-.ordo-picker-chip-sku { color: #6b7180; }
+.ordo-picker-chip-sku { color: var(--ordo-color-muted); }
 
 .ordo-picker-bulk-button,
 .ordo-tier-sort-button {
     margin-left: 8px;
     background: #fff;
-    border: 1px solid #7c3aed;
-    color: #7c3aed;
+    border: 1px solid var(--ordo-color-primary);
+    color: var(--ordo-color-primary);
     border-radius: 4px;
     padding: 7px 14px;
     font-size: 12px;
@@ -106,7 +106,7 @@
     border-radius: 4px;
     padding: 4px 10px;
     cursor: pointer;
-    color: #6b7180;
+    color: var(--ordo-color-muted);
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
@@ -115,14 +115,14 @@
 }
 
 .ordo-tier-duplicate:hover {
-    border-color: #7c3aed;
-    color: #7c3aed;
+    border-color: var(--ordo-color-primary);
+    color: var(--ordo-color-primary);
 }
 
 .ordo-tier-note {
     margin-top: 10px;
     font-size: 12px;
-    color: #6b7180;
+    color: var(--ordo-color-muted);
     font-style: italic;
 }
 
@@ -149,7 +149,7 @@
 .ordo-picker-modal-empty {
     padding: 20px;
     text-align: center;
-    color: #6b7180;
+    color: var(--ordo-color-muted);
 }
 
 /* "Tier cards": the Tiers table restyled into a vertical stack of cards without changing its
@@ -176,7 +176,7 @@
     align-items: flex-start;
     gap: 16px 20px;
     background: #fff;
-    border: 1px solid #e4e7ee;
+    border: 1px solid var(--ordo-color-border);
     border-radius: 8px;
     padding: 14px 16px;
     position: relative;
@@ -207,7 +207,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: .03em;
-    color: #6b7180;
+    color: var(--ordo-color-muted);
     margin-bottom: 4px;
 }
 
@@ -262,7 +262,7 @@
 [data-index="tiers"].admin__dynamic-rows tr.data-row td:last-child .action-delete {
     background: none;
     border: none;
-    color: #6b7180;
+    color: var(--ordo-color-muted);
     cursor: pointer;
     padding: 4px;
 }
