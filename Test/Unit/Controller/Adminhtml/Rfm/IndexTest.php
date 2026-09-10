@@ -40,6 +40,6 @@ class IndexTest extends AbstractAdminActionTestCase
 
     public function testUsesSegmentsAclResource(): void
     {
-        self::assertSame('Ordo_Automation::segments', Index::ADMIN_RESOURCE);
+        self::assertSame('Ordo_Automation::rfm', Index::ADMIN_RESOURCE);
     }
 }
