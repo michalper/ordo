@@ -10,3 +10,8 @@ coverage-js/
 .php-cs-fixer.cache
 composer.lock
 .playwright-mcp/
+.aider*
+.env
+
+# Local AI-assistant config with real API keys — never commit
+config.json
