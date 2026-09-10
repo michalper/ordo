@@ -74,6 +74,7 @@
              time "Add Points" / 25 instead of "Add Tag" / a tag string. -->
         <amOnPage url="admin/ordo/segment/edit/entity_id/{$grabSegmentId}" stepKey="goToSegmentEditPage"/>
         <waitForPageLoad stepKey="waitForSegmentEditPage"/>
+        <click selector=".ordo-bulk-actions-panel summary" stepKey="expandBulkActionsPanel"/>
         <waitForElementVisible selector="#ordo-segment-bulk-action-type" stepKey="waitForBulkActionForm"/>
         <selectOption selector="#ordo-segment-bulk-action-type" userInput="add_points" stepKey="selectAddPointsAction"/>
         <fillField selector="#ordo-segment-bulk-points" userInput="25" stepKey="fillBulkPoints"/>
