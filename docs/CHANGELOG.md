@@ -5,21 +5,27 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
-### Fixed
+### Corrected
 
-- **Channel sends now retry a transient failure instead of dropping the message permanently on
-  the first attempt.** Closes the ROADMAP.md Tier 1 item. New `Model/Campaign/Action/SendRetrier`
-  retries the actual provider call (SMTP send, Twilio/Graph API/push HTTP call) up to 3 times with
-  exponential backoff, used by `SendEmail`/`SendSms`/`SendWhatsApp`/`SendPush`. Deliberately
-  excludes exceptions that mean "this destination is permanently invalid" - `OptedOutException`
-  (SMS STOP opt-out) and `SubscriptionGoneException` (dead push subscription) fail fast on the
-  first attempt rather than wasting 2 more retries on an outcome that can never change. This
-  covers the in-process retry case only; a failure that survives all 3 attempts is still
-  permanently recorded as failed (`Cron/RunScheduledCampaignActions.php`'s cross-cron retry queue
-  gap remains open, see ROADMAP.md).
+- **ROADMAP.md's "Free Gift Offer never actually applies to a cart" audit finding was wrong.**
+  That audit pass grepped only for `*FreeGiftOffer*`-named files and missed the real cart
+  integration, which lives under different names: `Model/FreeGiftManagement.php` (the
+  `FreeGiftManagementInterface` API — `getEligibility`/`selectGifts`), `Model/FreeGiftEligibility.php`,
+  `Model/FreeGiftSelection.php`, and `Observer/TrimExcessFreeGifts.php` (drops gifts that no longer
+  fit after the cart total drops). Fully wired (`etc/webapi.xml`, `etc/di.xml`) and already tested
+  (`Test/Unit/Model/FreeGiftManagementTest.php`, `Test/Integration/FreeGiftManagementScenarioTest.php`,
+  `Test/Api/FreeGiftApiTest.php`) — this was a complete, shipped feature the whole time. Removed
+  from ROADMAP.md's audit findings and Tier 1 priority list.
 
 ### Added
 
+- **Retry/backoff for failed channel sends**, closing the ROADMAP.md Tier 1 item. New
+  `Model\Campaign\Action\SendRetrier` retries the actual provider call (SMTP send, Twilio/Graph
+  API/push HTTP call) up to 3 times with exponential backoff, used by
+  `SendEmail`/`SendSms`/`SendWhatsApp`/`SendPush`. Excludes exceptions that mean "this destination
+  is permanently invalid" (SMS opt-out, dead push subscription) from the retry via an optional
+  `shouldRetry` predicate — those fail fast on the first attempt instead. Covers the in-process
+  retry case only; `Cron\RunScheduledCampaignActions.php`'s cross-cron retry-queue gap remains open.
 - **Nested AND/OR condition groups for Segment and Campaign conditions**, closing the
   ROADMAP.md "Segment/Campaign condition builder follow-ups" item (the "Bulk actions" mis-grouping
   sub-item is covered separately below). A reserved `'group'` pseudo-type holds its own nested
