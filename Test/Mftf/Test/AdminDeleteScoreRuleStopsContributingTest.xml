@@ -52,9 +52,10 @@
 
         <!-- Step 3: delete the rule — same direct-GET approach as AdminDeleteCampaignStopsDispatchTest.xml
              (a faithful, non-flaky equivalent to confirming the grid's own JS confirm() dialog). -->
-        <amOnPage url="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleId}" stepKey="deleteScoreRule"/>
-        <waitForPageLoad stepKey="waitForScoreRuleDelete"/>
-        <see selector=".message-success" userInput="The score rule has been deleted." stepKey="seeScoreRuleDeleteSuccessMessage"/>
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteScoreRule">
+            <argument name="url" value="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleId}"/>
+            <argument name="successMessage" value="The score rule has been deleted."/>
+        </actionGroup>
 
         <amOnPage url="admin/ordo/scorerule/index" stepKey="goToScoreRuleGrid"/>
         <waitForPageLoad stepKey="waitForScoreRuleGrid"/>

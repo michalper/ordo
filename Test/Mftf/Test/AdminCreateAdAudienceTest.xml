@@ -58,17 +58,19 @@
         <see selector="table.data-grid" userInput="Google Ads" stepKey="seePlatformInGrid"/>
 
         <!-- Step 4: delete it for real. -->
-        <amOnPage url="admin/ordo/adaudience/delete/entity_id/{$grabAdAudienceId}" stepKey="deleteAdAudience"/>
-        <waitForPageLoad stepKey="waitForDeleteAdAudience"/>
-        <see selector=".message-success" userInput="The ad audience has been deleted." stepKey="seeDeleteSuccessMessage"/>
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteAdAudience">
+            <argument name="url" value="admin/ordo/adaudience/delete/entity_id/{$grabAdAudienceId}"/>
+            <argument name="successMessage" value="The ad audience has been deleted."/>
+        </actionGroup>
         <amOnPage url="admin/ordo/adaudience/index" stepKey="goToAdAudienceGridAfterDelete"/>
         <waitForPageLoad stepKey="waitForGridAfterDelete"/>
         <waitForElementVisible selector="table.data-grid" stepKey="waitForDataGridAfterDelete"/>
         <dontSee selector="table.data-grid" userInput="Test Ad Audience" stepKey="dontSeeAdAudienceInGrid"/>
 
         <!-- Cleanup: the segment. -->
-        <amOnPage url="admin/ordo/segment/delete/entity_id/{$grabSegmentId}" stepKey="deleteSegment"/>
-        <waitForPageLoad stepKey="waitForDeleteSegment"/>
-        <see selector=".message-success" userInput="The segment has been deleted." stepKey="seeDeleteSegmentSuccessMessage"/>
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteSegment">
+            <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabSegmentId}"/>
+            <argument name="successMessage" value="The segment has been deleted."/>
+        </actionGroup>
     </test>
 </tests>

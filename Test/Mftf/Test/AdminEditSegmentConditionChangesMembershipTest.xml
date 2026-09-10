@@ -180,8 +180,9 @@
              CI job (this test and AdminSegmentBulkActionAddTagTest.xml/AdminSegmentBulkActionAddPointsTest.xml
              all share the "segment" group and the same DB), silently inflating those tests' own
              "matching customer" counts. -->
-        <amOnPage url="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleId}" stepKey="deleteScoreRule"/>
-        <waitForPageLoad stepKey="waitForScoreRuleDelete"/>
-        <see selector=".message-success" userInput="The score rule has been deleted." stepKey="seeScoreRuleDeleteSuccessMessage"/>
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteScoreRule">
+            <argument name="url" value="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleId}"/>
+            <argument name="successMessage" value="The score rule has been deleted."/>
+        </actionGroup>
     </test>
 </tests>

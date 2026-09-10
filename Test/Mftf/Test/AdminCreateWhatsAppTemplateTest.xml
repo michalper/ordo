@@ -50,9 +50,10 @@
         <see selector="table.data-grid" userInput="test_order_shipped_v1" stepKey="seeMetaTemplateNameInGrid"/>
 
         <!-- Step 3: delete it for real. -->
-        <amOnPage url="admin/ordo/whatsapptemplate/delete/entity_id/{$grabTemplateId}" stepKey="deleteTemplate"/>
-        <waitForPageLoad stepKey="waitForDeleteTemplate"/>
-        <see selector=".message-success" userInput="The WhatsApp template has been deleted." stepKey="seeDeleteSuccessMessage"/>
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteTemplate">
+            <argument name="url" value="admin/ordo/whatsapptemplate/delete/entity_id/{$grabTemplateId}"/>
+            <argument name="successMessage" value="The WhatsApp template has been deleted."/>
+        </actionGroup>
         <amOnPage url="admin/ordo/whatsapptemplate/index" stepKey="goToTemplateGridAfterDelete"/>
         <waitForPageLoad stepKey="waitForGridAfterDelete"/>
         <waitForElementVisible selector="table.data-grid" stepKey="waitForDataGridAfterDelete"/>

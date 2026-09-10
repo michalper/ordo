@@ -87,7 +87,9 @@
         <!-- Cleanup: no <deleteData> equivalent for this REST-less entity - delete it directly
              through the real admin UI instead, same reasoning as every other content-block test
              in this suite. -->
-        <amOnPage url="admin/ordo/contentblock/delete/entity_id/{$grabContentBlockId}/" stepKey="deleteContentBlock"/>
-        <waitForPageLoad stepKey="waitForDeleteContentBlock"/>
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteContentBlock">
+            <argument name="url" value="admin/ordo/contentblock/delete/entity_id/{$grabContentBlockId}/"/>
+            <argument name="successMessage" value="The content block has been deleted."/>
+        </actionGroup>
     </test>
 </tests>

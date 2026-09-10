@@ -69,11 +69,13 @@
              created for the rest of this same CI job. Both rules match essentially any real
              customer (not_equals 99, contains a fixture-standard email domain), making this
              cleanup even more important than the group_id=1-only rules elsewhere in this suite. -->
-        <amOnPage url="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleIdNotEquals}" stepKey="deleteScoreRuleNotEquals"/>
-        <waitForPageLoad stepKey="waitForScoreRuleDeleteNotEquals"/>
-        <see selector=".message-success" userInput="The score rule has been deleted." stepKey="seeScoreRuleDeleteSuccessMessageNotEquals"/>
-        <amOnPage url="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleIdContains}" stepKey="deleteScoreRuleContains"/>
-        <waitForPageLoad stepKey="waitForScoreRuleDeleteContains"/>
-        <see selector=".message-success" userInput="The score rule has been deleted." stepKey="seeScoreRuleDeleteSuccessMessageContains"/>
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteScoreRuleNotEquals">
+            <argument name="url" value="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleIdNotEquals}"/>
+            <argument name="successMessage" value="The score rule has been deleted."/>
+        </actionGroup>
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteScoreRuleContains">
+            <argument name="url" value="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleIdContains}"/>
+            <argument name="successMessage" value="The score rule has been deleted."/>
+        </actionGroup>
     </test>
 </tests>

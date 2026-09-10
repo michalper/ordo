@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actionGroups xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/actionGroupSchema.xsd">
+    <actionGroup name="AdminDeleteOrdoEntityByFormPostActionGroup">
+        <annotations>
+            <description>Deletes an ordo_* admin entity via a real POST - all 7 Delete
+            controllers (Campaign/Segment/AdAudience/WhatsAppTemplate/ContentBlock/
+            FreeGiftOffer/ScoreRule) implement HttpPostActionInterface since #24's Tier 0 CSRF
+            fix, so Magento's HttpMethodValidator now 404s a plain GET to the delete URL before
+            Delete::execute() ever runs (root-caused via a real CI run: every "has been deleted"
+            .message-success assertion failed identically because the delete itself never
+            happened). Builds and submits a hidden form with the session's form_key - exactly
+            what Magento_Ui/js/grid/columns/actions.js's 'post: true' does for the grid's own
+            Delete link (see AbstractEntityActionsColumn::prepareDataSource) - instead of
+            clicking through the link's confirm() dialog, which this suite has no existing
+            grid-row-action MFTF pattern for.</description>
+        </annotations>
+        <arguments>
+            <argument name="url" type="string"/>
+            <argument name="successMessage" type="string"/>
+        </arguments>
+        <executeJS function="var f=document.createElement('form'); f.method='POST'; f.action='/{{url}}'; var i=document.createElement('input'); i.type='hidden'; i.name='form_key'; i.value=window.FORM_KEY; f.appendChild(i); document.body.appendChild(f); f.submit();" stepKey="submitDeleteForm"/>
+        <waitForPageLoad stepKey="waitForDeleteRedirect"/>
+        <see selector=".message-success" userInput="{{successMessage}}" stepKey="seeDeleteSuccessMessage"/>
+    </actionGroup>
+</actionGroups>

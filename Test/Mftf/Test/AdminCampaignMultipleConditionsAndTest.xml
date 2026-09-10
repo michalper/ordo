@@ -199,11 +199,13 @@
              fail deterministically in every full-group run (confirmed via a real CI run — see
              AdminCampaignInSegmentConditionTest.xml's own campaign A, which was the actual
              source); closing it here too so no test alphabetically after this one inherits it. -->
-        <amOnPage url="admin/ordo/campaign/delete/entity_id/{$grabCampaignIdA}" stepKey="deleteCampaignA"/>
-        <waitForPageLoad stepKey="waitForDeleteCampaignA"/>
-        <see selector=".message-success" userInput="The campaign has been deleted." stepKey="seeDeleteCampaignASuccessMessage"/>
-        <amOnPage url="admin/ordo/campaign/delete/entity_id/{$grabCampaignIdB}" stepKey="deleteCampaignB"/>
-        <waitForPageLoad stepKey="waitForDeleteCampaignB"/>
-        <see selector=".message-success" userInput="The campaign has been deleted." stepKey="seeDeleteCampaignBSuccessMessage"/>
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaignA">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignIdA}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaignB">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignIdB}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
     </test>
 </tests>

@@ -91,7 +91,9 @@
         <!-- Cleanup: no <deleteData> equivalent for this REST-less entity - same reasoning as
              OfferTestHelper's own tables - delete it directly through the real admin UI instead,
              which this module's ContentBlock controllers do support. -->
-        <amOnPage url="admin/ordo/contentblock/delete/entity_id/{$grabContentBlockId}/" stepKey="deleteContentBlock"/>
-        <waitForPageLoad stepKey="waitForDeleteContentBlock"/>
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteContentBlock">
+            <argument name="url" value="admin/ordo/contentblock/delete/entity_id/{$grabContentBlockId}/"/>
+            <argument name="successMessage" value="The content block has been deleted."/>
+        </actionGroup>
     </test>
 </tests>

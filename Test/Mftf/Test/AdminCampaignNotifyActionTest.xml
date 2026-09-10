@@ -101,8 +101,9 @@
         <!-- Cleanup: same root-caused reasoning as AdminCampaignPopupActionTest.xml's identical
              closing step - this campaign's order_total_gte condition (50) matches essentially
              any real order in this same "tracking" group's CI job. -->
-        <amOnPage url="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}" stepKey="deleteCampaign"/>
-        <waitForPageLoad stepKey="waitForDeleteCampaign"/>
-        <see selector=".message-success" userInput="The campaign has been deleted." stepKey="seeDeleteCampaignSuccessMessage"/>
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
     </test>
 </tests>

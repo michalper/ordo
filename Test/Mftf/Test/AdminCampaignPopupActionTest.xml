@@ -147,8 +147,9 @@
              would keep queuing an extra, unrelated popup for every future order-placing test's
              own customer for the rest of the run (AdminCampaignPopupClaimedOnceTest.xml, which
              runs right after this one alphabetically, places a real order too). -->
-        <amOnPage url="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}" stepKey="deleteCampaign"/>
-        <waitForPageLoad stepKey="waitForDeleteCampaign"/>
-        <see selector=".message-success" userInput="The campaign has been deleted." stepKey="seeDeleteCampaignSuccessMessage"/>
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
     </test>
 </tests>

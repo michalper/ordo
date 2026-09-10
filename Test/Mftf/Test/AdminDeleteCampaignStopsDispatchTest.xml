@@ -59,9 +59,10 @@
 
         <!-- Step 2: delete it — same direct-GET approach as AdminDeleteSegmentTest.xml (a
              faithful, non-flaky equivalent to confirming the grid's own JS confirm() dialog). -->
-        <amOnPage url="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}" stepKey="deleteCampaign"/>
-        <waitForPageLoad stepKey="waitForDeleteRedirect"/>
-        <see selector=".message-success" userInput="The campaign has been deleted." stepKey="seeDeleteSuccessMessage"/>
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
 
         <amOnPage url="admin/ordo/campaign/index" stepKey="goToCampaignGridAfterDelete"/>
         <waitForPageLoad stepKey="waitForGridAfterDelete"/>

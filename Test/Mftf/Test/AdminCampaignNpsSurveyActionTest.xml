@@ -174,8 +174,9 @@
         <!-- Cleanup: same reasoning as AdminCampaignTagAddedTriggerTest.xml's identical closing
              step - an unscoped group_id=1 demographic score rule would otherwise stack on every
              General customer created for the rest of this same CI job. -->
-        <amOnPage url="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleId}" stepKey="deleteScoreRule"/>
-        <waitForPageLoad stepKey="waitForScoreRuleDelete"/>
-        <see selector=".message-success" userInput="The score rule has been deleted." stepKey="seeScoreRuleDeleteSuccessMessage"/>
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteScoreRule">
+            <argument name="url" value="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleId}"/>
+            <argument name="successMessage" value="The score rule has been deleted."/>
+        </actionGroup>
     </test>
 </tests>

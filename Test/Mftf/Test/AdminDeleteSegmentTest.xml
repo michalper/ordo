@@ -6,7 +6,7 @@
             <features value="Ordo Automation"/>
             <stories value="Saved segments"/>
             <title value="Admin can delete a saved segment"/>
-            <description value="Covers Controller/Adminhtml/Segment/Delete.php: create a segment via the same form flow as AdminCreateSegmentTest, then delete it. Confirms the grid no longer lists it afterwards — the SCENARIOS.md row this closes. Deletes via a direct GET to the same entity_id-bearing URL the grid's Delete link itself points at (see Ui/Component/Listing/Column/AbstractEntityActionsColumn.php), rather than clicking the link and its JS confirm() dialog — this suite has no existing grid-row-action MFTF pattern to reuse, and a raw GET is a faithful, non-flaky equivalent to confirming the dialog since Delete.php itself is a plain HttpGetActionInterface with no CSRF/form-key check on this GET route."/>
+            <description value="Covers Controller/Adminhtml/Segment/Delete.php: create a segment via the same form flow as AdminCreateSegmentTest, then delete it. Confirms the grid no longer lists it afterwards — the SCENARIOS.md row this closes. Deletes via AdminDeleteOrdoEntityByFormPostActionGroup (a real POST with form_key to the same entity_id-bearing URL the grid's Delete link itself points at - see Ui/Component/Listing/Column/AbstractEntityActionsColumn.php), rather than clicking the link and its JS confirm() dialog — this suite has no existing grid-row-action MFTF pattern to reuse, and Delete.php implements HttpPostActionInterface (since #24's Tier 0 CSRF fix), so a plain GET now 404s before it ever runs."/>
             <severity value="MAJOR"/>
             <group value="ordo_automation"/>
             <group value="segment"/>
@@ -51,10 +51,10 @@
              string instead of the current page's own URL. -->
         <executeJS function="return '{$grabEditHref}'.match(/entity_id\/(\d+)/)[1];" stepKey="grabEntityId"/>
 
-        <amOnPage url="admin/ordo/segment/delete/entity_id/{$grabEntityId}" stepKey="deleteSegment"/>
-
-        <waitForPageLoad stepKey="waitForDeleteRedirect"/>
-        <see selector=".message-success" userInput="The segment has been deleted." stepKey="seeDeleteSuccessMessage"/>
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteSegment">
+            <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabEntityId}"/>
+            <argument name="successMessage" value="The segment has been deleted."/>
+        </actionGroup>
 
         <amOnPage url="admin/ordo/segment/index" stepKey="goToSegmentGridAfterDelete"/>
         <waitForPageLoad stepKey="waitForGridAfterDelete"/>
