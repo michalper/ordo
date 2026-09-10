@@ -229,6 +229,90 @@ class CampaignDispatcherTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchSplitActionSkipsMalformedActionSpecsInsideTheChosenVariant(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $splitAction = $this->createMock(CampaignAction::class);
+        $splitAction->method('getCampaignId')->willReturn(1);
+        $splitAction->method('getEntityId')->willReturn(20);
+        $splitAction->method('getDelayMinutes')->willReturn(0);
+        $splitAction->method('getData')->willReturnMap([['type', 'split']]);
+        $splitAction->method('getParams')->willReturn([
+            'variants' => [
+                ['key' => 'a', 'weight' => 100, 'actions' => [
+                    'not-an-array',
+                    ['params' => []], // missing 'type'
+                    ['type' => 123], // 'type' not a string
+                    ['type' => 'tag_customer', 'params' => ['tag' => 'kept']],
+                ]],
+            ],
+        ]);
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$splitAction]));
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute')->with(self::anything(), ['tag' => 'kept']);
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchSplitActionWithNonArrayVariantsParamLogsAndSkips(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $splitAction = $this->createMock(CampaignAction::class);
+        $splitAction->method('getCampaignId')->willReturn(1);
+        $splitAction->method('getEntityId')->willReturn(20);
+        $splitAction->method('getDelayMinutes')->willReturn(0);
+        $splitAction->method('getData')->willReturnMap([['type', 'split']]);
+        $splitAction->method('getParams')->willReturn(['variants' => 'not-an-array']);
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$splitAction]));
+
+        $this->logger->expects(self::once())->method('error');
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchSplitActionSkipsMalformedVariantEntries(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $splitAction = $this->createMock(CampaignAction::class);
+        $splitAction->method('getCampaignId')->willReturn(1);
+        $splitAction->method('getEntityId')->willReturn(20);
+        $splitAction->method('getDelayMinutes')->willReturn(0);
+        $splitAction->method('getData')->willReturnMap([['type', 'split']]);
+        $splitAction->method('getParams')->willReturn([
+            'variants' => [
+                'not-an-array',
+                ['weight' => 100, 'actions' => []], // missing 'key'
+                ['key' => '', 'weight' => 100, 'actions' => []], // empty 'key'
+                ['key' => 'a', 'weight' => 'not-numeric', 'actions' => []], // non-numeric weight
+                ['key' => 'kept', 'weight' => 100, 'actions' => [['type' => 'tag_customer', 'params' => []]]],
+            ],
+        ]);
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$splitAction]));
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute')->with(
+            self::callback(fn (array $context): bool => $context['ordo_split_variant'] === 'kept'),
+            []
+        );
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testDispatchSplitActionWithNoUsableVariantsLogsAndSkips(): void
     {
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));

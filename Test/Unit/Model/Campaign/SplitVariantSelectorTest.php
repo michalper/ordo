@@ -117,4 +117,27 @@ class SplitVariantSelectorTest extends TestCase
 
         self::assertContains($variant['key'], ['a', 'b']);
     }
+
+    public function testSelectVariantResetsAMalformedNonArrayAssignmentsEntry(): void
+    {
+        // A malformed context (e.g. hand-crafted via a direct API call rather than produced by
+        // this module's own dispatcher) where 'ordo_split_assignments' isn't an array at all -
+        // must not crash, and must end up a clean array afterward.
+        $context = ['customer_id' => 42, 'ordo_split_assignments' => 'not-an-array'];
+
+        $variant = $this->selector->selectVariant(5, 10, $this->variants(), $context);
+
+        self::assertContains($variant['key'], ['a', 'b']);
+        self::assertIsArray($context['ordo_split_assignments']);
+        self::assertSame($variant['key'], $context['ordo_split_assignments'][10]);
+    }
+
+    public function testSelectVariantFallsBackToARandomPickWithNoIdentityInContext(): void
+    {
+        $context = [];
+
+        $variant = $this->selector->selectVariant(5, 10, $this->variants(), $context);
+
+        self::assertContains($variant['key'], ['a', 'b']);
+    }
 }
