@@ -123,7 +123,7 @@ define([
         }
 
         if (!$message.length) {
-            $message = $('<div class="ordo-group-json-error-message"></div>')
+            $('<div class="ordo-group-json-error-message"></div>')
                 .text('Invalid JSON - this condition will match nothing until fixed.')
                 .insertAfter($textarea);
         }
@@ -193,7 +193,8 @@ define([
                         params = JSON.parse(raw);
                         markJsonValidity($textarea, true);
                     } catch (e) {
-                        // Still falls back to {} (a malformed group condition matching nothing is
+                        // "e" (the SyntaxError JSON.parse threw) is intentionally not inspected -
+                        // still falls back to {} (a malformed group condition matching nothing is
                         // the safe failure direction, same as an empty group) - but now visibly,
                         // instead of the admin silently getting a condition that quietly matches
                         // nothing with no indication why.
@@ -230,6 +231,8 @@ define([
         try {
             existing = JSON.parse($jsonField.val() || '[]');
         } catch (e) {
+            // "e" is intentionally not inspected - any parse failure is treated the same way
+            // (start from an empty condition list, shown visibly below rather than silently).
             existing = [];
             $('<div class="ordo-group-json-error-message"></div>')
                 .text('This group\'s saved conditions were corrupted and could not be loaded - starting empty.')
