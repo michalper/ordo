@@ -110,8 +110,10 @@ define([
      *
      * @param {jQuery} $textarea
      * @param {Boolean} isValid
+     * @param {String} [reason] the underlying JSON.parse() error message, appended to the
+     *     visible notice so an admin who does know JSON gets an actual clue, not just "invalid".
      */
-    function markJsonValidity($textarea, isValid) {
+    function markJsonValidity($textarea, isValid, reason) {
         var $wrap = $textarea.closest('.ordo-group-value'),
             $message = $wrap.find('.ordo-group-json-error-message');
 
@@ -123,10 +125,10 @@ define([
         }
 
         if (!$message.length) {
-            $('<div class="ordo-group-json-error-message"></div>')
-                .text('Invalid JSON - this condition will match nothing until fixed.')
-                .insertAfter($textarea);
+            $message = $('<div class="ordo-group-json-error-message"></div>').insertAfter($textarea);
         }
+        $message.text('Invalid JSON - this condition will match nothing until fixed.'
+            + (reason ? ' (' + reason + ')' : ''));
     }
 
     /**
@@ -193,13 +195,12 @@ define([
                         params = JSON.parse(raw);
                         markJsonValidity($textarea, true);
                     } catch (e) {
-                        // "e" (the SyntaxError JSON.parse threw) is intentionally not inspected -
-                        // still falls back to {} (a malformed group condition matching nothing is
+                        // Still falls back to {} (a malformed group condition matching nothing is
                         // the safe failure direction, same as an empty group) - but now visibly,
-                        // instead of the admin silently getting a condition that quietly matches
-                        // nothing with no indication why.
+                        // surfacing e.message in the notice instead of the admin silently getting
+                        // a condition that quietly matches nothing with no indication why.
                         params = {};
-                        markJsonValidity($textarea, false);
+                        markJsonValidity($textarea, false, e.message);
                     }
                 } else {
                     markJsonValidity($textarea, true);
@@ -231,11 +232,12 @@ define([
         try {
             existing = JSON.parse($jsonField.val() || '[]');
         } catch (e) {
-            // "e" is intentionally not inspected - any parse failure is treated the same way
-            // (start from an empty condition list, shown visibly below rather than silently).
+            // Any parse failure is treated the same way (start from an empty condition list,
+            // shown visibly below rather than silently) - e.message surfaced for debugging.
             existing = [];
             $('<div class="ordo-group-json-error-message"></div>')
-                .text('This group\'s saved conditions were corrupted and could not be loaded - starting empty.')
+                .text('This group\'s saved conditions were corrupted and could not be loaded - starting empty. ('
+                    + e.message + ')')
                 .appendTo($panel);
         }
         if (!Array.isArray(existing)) {
