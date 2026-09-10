@@ -9,7 +9,9 @@ use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\Campaign\ActionPool;
 use Ordo\Automation\Model\Campaign\ConditionPool;
+use Ordo\Automation\Model\Campaign\SplitVariantSelector;
 use Ordo\Automation\Model\CampaignAction;
+use Ordo\Automation\Model\CampaignActionFactory;
 use Ordo\Automation\Model\CampaignCondition;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\CampaignScheduledAction;
@@ -34,10 +36,12 @@ class CampaignDispatcherTest extends TestCase
     private TriggerCollectionFactory $triggerCollectionFactory;
     private ConditionCollectionFactory $conditionCollectionFactory;
     private ActionCollectionFactory $actionCollectionFactory;
+    private CampaignActionFactory $campaignActionFactory;
     private CampaignScheduledActionFactory $campaignScheduledActionFactory;
     private CampaignScheduledActionResource $campaignScheduledActionResource;
     private ConditionPool $conditionPool;
     private ActionPool $actionPool;
+    private SplitVariantSelector $splitVariantSelector;
     private CacheInterface $cache;
     private LoggerInterface $logger;
 
@@ -47,13 +51,28 @@ class CampaignDispatcherTest extends TestCase
         $this->triggerCollectionFactory = $this->createMock(TriggerCollectionFactory::class);
         $this->conditionCollectionFactory = $this->createMock(ConditionCollectionFactory::class);
         $this->actionCollectionFactory = $this->createMock(ActionCollectionFactory::class);
+        $this->campaignActionFactory = $this->createStub(CampaignActionFactory::class);
+        $this->campaignActionFactory->method('create')->willReturnCallback(fn () => $this->makeRealCampaignAction());
         $this->campaignScheduledActionFactory = $this->createMock(CampaignScheduledActionFactory::class);
         $this->campaignScheduledActionResource = $this->createMock(CampaignScheduledActionResource::class);
         $this->conditionPool = new ConditionPool();
         $this->actionPool = new ActionPool();
+        $this->splitVariantSelector = new SplitVariantSelector();
         $this->cache = $this->createStub(CacheInterface::class);
         $this->cache->method('load')->willReturn(false);
         $this->logger = $this->createMock(LoggerInterface::class);
+    }
+
+    private function makeRealCampaignAction(): CampaignAction
+    {
+        $resource = $this->createStub(\Magento\Framework\Model\ResourceModel\Db\AbstractDb::class);
+        $resource->method('getIdFieldName')->willReturn('entity_id');
+
+        return new CampaignAction(
+            $this->createStub(\Magento\Framework\Model\Context::class),
+            $this->createStub(\Magento\Framework\Registry::class),
+            $resource
+        );
     }
 
     private function makeDispatcher(): CampaignDispatcher
@@ -63,10 +82,12 @@ class CampaignDispatcherTest extends TestCase
             $this->triggerCollectionFactory,
             $this->conditionCollectionFactory,
             $this->actionCollectionFactory,
+            $this->campaignActionFactory,
             $this->campaignScheduledActionFactory,
             $this->campaignScheduledActionResource,
             $this->conditionPool,
             $this->actionPool,
+            $this->splitVariantSelector,
             $this->cache,
             new JsonSerializer(),
             $this->logger
@@ -147,6 +168,117 @@ class CampaignDispatcherTest extends TestCase
         $action = $this->createMock(ActionInterface::class);
         $action->expects(self::once())->method('execute')->with(self::anything(), ['tag' => 'vip']);
         $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchRunsSplitActionRunningOnlyTheChosenVariantsActions(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $splitAction = $this->createMock(CampaignAction::class);
+        $splitAction->method('getCampaignId')->willReturn(1);
+        $splitAction->method('getEntityId')->willReturn(20);
+        $splitAction->method('getDelayMinutes')->willReturn(0);
+        $splitAction->method('getData')->willReturnMap([['type', 'split']]);
+        // Weight 100/0 - deterministically always variant 'a', regardless of identity hash.
+        $splitAction->method('getParams')->willReturn([
+            'variants' => [
+                ['key' => 'a', 'weight' => 100, 'actions' => [['type' => 'tag_customer', 'params' => ['tag' => 'variant-a']]]],
+                ['key' => 'b', 'weight' => 0, 'actions' => [['type' => 'tag_customer', 'params' => ['tag' => 'variant-b']]]],
+            ],
+        ]);
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$splitAction]));
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute')
+            ->with(self::anything(), ['tag' => 'variant-a']);
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchSplitActionStampsChosenVariantIntoContext(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $splitAction = $this->createMock(CampaignAction::class);
+        $splitAction->method('getCampaignId')->willReturn(1);
+        $splitAction->method('getEntityId')->willReturn(20);
+        $splitAction->method('getDelayMinutes')->willReturn(0);
+        $splitAction->method('getData')->willReturnMap([['type', 'split']]);
+        $splitAction->method('getParams')->willReturn([
+            'variants' => [
+                ['key' => 'a', 'weight' => 100, 'actions' => [['type' => 'tag_customer', 'params' => []]]],
+            ],
+        ]);
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$splitAction]));
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute')
+            ->with(self::callback(fn (array $context): bool => $context['ordo_split_variant'] === 'a'), []);
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchSplitActionWithNoUsableVariantsLogsAndSkips(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $splitAction = $this->createMock(CampaignAction::class);
+        $splitAction->method('getCampaignId')->willReturn(1);
+        $splitAction->method('getEntityId')->willReturn(20);
+        $splitAction->method('getDelayMinutes')->willReturn(0);
+        $splitAction->method('getData')->willReturnMap([['type', 'split']]);
+        $splitAction->method('getParams')->willReturn(['variants' => []]);
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$splitAction]));
+
+        $this->logger->expects(self::once())->method('error');
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchSplitFollowedByDelayedActionPersistsVariantIntoScheduledContext(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $splitAction = $this->createMock(CampaignAction::class);
+        $splitAction->method('getCampaignId')->willReturn(1);
+        $splitAction->method('getEntityId')->willReturn(20);
+        $splitAction->method('getDelayMinutes')->willReturn(0);
+        $splitAction->method('getData')->willReturnMap([['type', 'split']]);
+        $splitAction->method('getParams')->willReturn([
+            'variants' => [['key' => 'a', 'weight' => 100, 'actions' => []]],
+        ]);
+
+        $delayedAction = $this->createStub(CampaignAction::class);
+        $delayedAction->method('getCampaignId')->willReturn(1);
+        $delayedAction->method('getEntityId')->willReturn(21);
+        $delayedAction->method('getDelayMinutes')->willReturn(60);
+
+        $this->actionCollectionFactory->method('create')
+            ->willReturn($this->makeActionCollection([$splitAction, $delayedAction]));
+
+        $scheduled = $this->createMock(CampaignScheduledAction::class);
+        $scheduled->method('setCampaignId')->willReturnSelf();
+        $scheduled->method('setResumeActionId')->willReturnSelf();
+        $scheduled->expects(self::once())->method('setContext')
+            ->with(self::callback(fn (array $context): bool => $context['ordo_split_variant'] === 'a'));
+        $scheduled->method('setRunAt')->willReturnSelf();
+        $this->campaignScheduledActionFactory->method('create')->willReturn($scheduled);
 
         $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
     }

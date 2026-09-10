@@ -19,6 +19,24 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **A/B/split testing on campaign actions (backend only, no Flow canvas UI yet)**, closing Part A
+  Phase 2 of the ROADMAP.md Tier 3 "A/B testing" item. A `CampaignAction` row with `type = 'split'`
+  carries `{"variants": [{"key": "a", "weight": 50, "actions": [...]}]}` in `params` — the same
+  reserved-pseudo-type shape the `group` condition type already uses, not a new `ActionPool`
+  entry or schema change. `Model\Campaign\SplitVariantSelector::selectVariant()` picks a variant
+  deterministically per `(campaign_id, split_action_id, customer/visitor/email identity)` via a
+  stable hash, so the same customer always lands in the same variant on a repeat dispatch; the
+  chosen key is written into `$context['ordo_split_assignments']`, which survives a
+  `delay_minutes` resume elsewhere in the chain (persisted in
+  `ordo_campaign_scheduled_action.context`) without ever re-rolling. `CampaignDispatcher::runSplit()`
+  builds synthetic (never-persisted) `CampaignAction` rows for the chosen variant's own action
+  list and runs them through the existing `runActionsFrom()` pipeline, stamping
+  `$context['ordo_split_variant']` so `Send*` actions attribute their `ordo_message_log` row to
+  the right variant (populating the funnel's per-variant breakdown added in Phase 1). Known
+  limitation: a variant's own actions can't have their own `delay_minutes` yet (no schema support
+  for a synthetic action's scheduled-resume FK) — only top-level actions after a split can pause
+  the chain. Campaigns using `split` are configurable for now only via direct API/DB row
+  insertion, same carve-out `group` conditions already have — Flow canvas UI is Phase 3.
 - **Per-campaign funnel analytics (sent → delivered → opened → clicked → converted)**, closing
   Part A Phase 1 of the ROADMAP.md Tier 3 "A/B testing + per-campaign funnel analytics" item
   (split/variant testing itself is Phase 2, still open). `ordo_message_log` gained nullable

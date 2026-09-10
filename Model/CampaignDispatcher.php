@@ -7,6 +7,7 @@ use Magento\Framework\App\CacheInterface;
 use Magento\Framework\Serialize\SerializerInterface;
 use Ordo\Automation\Model\Campaign\ActionPool;
 use Ordo\Automation\Model\Campaign\ConditionPool;
+use Ordo\Automation\Model\Campaign\SplitVariantSelector;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as CampaignActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as CampaignConditionCollectionFactory;
@@ -59,10 +60,12 @@ class CampaignDispatcher
         private readonly CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory,
         private readonly CampaignConditionCollectionFactory $campaignConditionCollectionFactory,
         private readonly CampaignActionCollectionFactory $campaignActionCollectionFactory,
+        private readonly CampaignActionFactory $campaignActionFactory,
         private readonly CampaignScheduledActionFactory $campaignScheduledActionFactory,
         private readonly CampaignScheduledActionResource $campaignScheduledActionResource,
         private readonly ConditionPool $conditionPool,
         private readonly ActionPool $actionPool,
+        private readonly SplitVariantSelector $splitVariantSelector,
         private readonly CacheInterface $cache,
         private readonly SerializerInterface $serializer,
         private readonly LoggerInterface $logger
@@ -409,8 +412,111 @@ class CampaignDispatcher
                 return;
             }
 
+            // Same "reserved pseudo-type handled before the pool lookup" shape as 'group' is for
+            // conditions (see evaluateOne() above) - 'split' is deliberately NOT an ActionPool
+            // entry, since it has no send/tag/whatever effect of its own, only a branching one.
+            if ((string) $actionRow->getData('type') === 'split') {
+                $this->runSplit($campaignId, $actionRow, $context);
+                continue;
+            }
+
             $this->runOneAction($actionRow, $context);
         }
+    }
+
+    /**
+     * Resolves which variant this dispatch belongs to (SplitVariantSelector - deterministic per
+     * customer/visitor identity, and reused rather than re-rolled if this exact split node was
+     * already resolved earlier in the same dispatch/resume chain), stamps the choice into
+     * context so every Send* action inside the variant's own chain can attribute its
+     * ordo_message_log row to it, then runs that variant's actions the same way any other action
+     * list runs - including, transitively, any delay_minutes pause they cause.
+     *
+     * Variant actions are synthetic (never-persisted) CampaignAction rows built fresh from the
+     * split's own `params` JSON on every call - not loaded from ordo_campaign_action, since they
+     * don't have their own rows there. A known limitation (phase 1 of split testing): a variant
+     * action's own delay_minutes is deliberately ignored/forced to 0 here - scheduleResume()'s
+     * resume_action_id column is a real FK to ordo_campaign_action.entity_id, which a synthetic
+     * row has no matching entry for, so honoring an in-variant delay would need either a schema
+     * change or a distinct resume-id encoding scheme, neither of which phase 1 takes on.
+     *
+     * @param array<string, mixed> $context
+     */
+    private function runSplit(int $campaignId, CampaignAction $splitActionRow, array &$context): void
+    {
+        $variants = $this->normalizeVariants($splitActionRow->getParams()['variants'] ?? null);
+        if ($variants === []) {
+            $this->logger->error(sprintf(
+                'Ordo_Automation: split action #%d on campaign #%d has no usable variants.',
+                (int) $splitActionRow->getEntityId(),
+                $campaignId
+            ));
+            return;
+        }
+
+        $variant = $this->splitVariantSelector->selectVariant(
+            $campaignId,
+            (int) $splitActionRow->getEntityId(),
+            $variants,
+            $context
+        );
+        $context['ordo_split_variant'] = $variant['key'];
+
+        $variantActions = [];
+        foreach ($variant['actions'] as $sortOrder => $spec) {
+            if (!is_array($spec) || !isset($spec['type']) || !is_string($spec['type'])) {
+                continue;
+            }
+
+            /** @var CampaignAction $actionRow */
+            $actionRow = $this->campaignActionFactory->create();
+            $actionRow->setCampaignId($campaignId)
+                ->setType($spec['type'])
+                ->setParamsJson((string) json_encode($this->asStringKeyedArray($spec['params'] ?? [])))
+                ->setSortOrder((int) $sortOrder)
+                ->setDelayMinutes(0);
+            $variantActions[] = $actionRow;
+        }
+
+        $this->runActionsFrom($campaignId, $variantActions, 0, $context);
+    }
+
+    /**
+     * Validates/normalizes a split action's raw `params['variants']` into a clean list of
+     * {key, weight, actions} - malformed entries (missing key, non-numeric weight, missing
+     * actions list) are dropped rather than crashing the whole dispatch, same fail-closed
+     * philosophy as evaluateGroup()'s own malformed-item handling above.
+     *
+     * @return array<int, array{key: string, weight: float, actions: array<int|string, mixed>}>
+     */
+    private function normalizeVariants(mixed $rawVariants): array
+    {
+        if (!is_array($rawVariants)) {
+            return [];
+        }
+
+        $variants = [];
+        foreach ($rawVariants as $rawVariant) {
+            if (!is_array($rawVariant) || !isset($rawVariant['key']) || !is_string($rawVariant['key'])
+                || $rawVariant['key'] === ''
+            ) {
+                continue;
+            }
+
+            $weight = $rawVariant['weight'] ?? 0;
+            if (!is_int($weight) && !is_float($weight)) {
+                continue;
+            }
+
+            $actions = $rawVariant['actions'] ?? [];
+            $variants[] = [
+                'key' => $rawVariant['key'],
+                'weight' => (float) $weight,
+                'actions' => is_array($actions) ? $actions : [],
+            ];
+        }
+
+        return $variants;
     }
 
     /**

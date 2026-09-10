@@ -1179,8 +1179,9 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 3
+			count: 4
 			path: Model/CampaignDispatcher.php
+
 
 		-
 			message: '#^Method Ordo\\Automation\\Model\\CampaignDispatcher\:\:campaignIdsForTrigger\(\) should return array\<int, string\> but returns array\|bool\|float\|int\|string\|null\.$#'
