@@ -47,6 +47,7 @@ class TypeLabels
         'nps_survey' => 'NPS Survey',
         'send_whatsapp' => 'Send WhatsApp',
         'send_push' => 'Send Push',
+        'split' => 'A/B Split Test',
     ];
 
     public function conditionLabel(string $type): string

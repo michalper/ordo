@@ -90,11 +90,17 @@ class Flow extends Template
     }
 
     /**
+     * 'split' is deliberately appended here rather than registered in ActionPool -
+     * CampaignDispatcher::runSplit() intercepts type === 'split' before the ActionPool lookup
+     * (the same reserved-pseudo-type shape the 'group' condition type already has), so it has no
+     * ActionInterface implementation of its own to register. Still needs to appear in the Flow
+     * canvas's own action type list, though, or an admin could never actually add one.
+     *
      * @return string[]
      */
     public function getActionTypes(): array
     {
-        return $this->actionPool->getAvailableTypes();
+        return [...$this->actionPool->getAvailableTypes(), 'split'];
     }
 
     /**
@@ -293,6 +299,26 @@ class Flow extends Template
                         'notice' => (string) __(
                             'Opened by push-sw.js\'s notificationclick handler when the browser'
                             . ' notification is clicked - defaults to "/" if left blank.'
+                        ),
+                    ],
+                ],
+                'split' => [
+                    [
+                        'name' => 'variants',
+                        'label' => (string) __('Variants'),
+                        // Not a plain text/select field - campaign-flow-editor.js's
+                        // renderVariantEditor() renders a whole interactive sub-editor for this
+                        // one (add/remove variant, each with its own weight and nested action
+                        // chain), keyed off this 'type' rather than an 'options' map the way
+                        // add_dynamic_content's content_block_id field is.
+                        'type' => 'variant_list',
+                        'notice' => (string) __(
+                            'Each variant gets a relative weight (they don\'t need to sum to 100)'
+                            . ' and its own action chain. A customer is assigned to exactly one'
+                            . ' variant, deterministically, the first time they enter this split -'
+                            . ' repeat dispatches (and a delayed resume elsewhere in the chain)'
+                            . ' always land in the same variant. A variant\'s own actions can\'t'
+                            . ' have their own delay yet.'
                         ),
                     ],
                 ],

@@ -45,6 +45,26 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   size/bulk actions). Caveat documented in code: `within_days` beyond
   `Cron\PruneVisitorEvents`'s retention window (default 7 days) silently stops matching pruned
   rows — not validated/capped in this pass.
+- **Flow canvas UI for A/B/split testing**, closing Part A Phase 3 of the ROADMAP.md Tier 3 "A/B
+  testing" item — the backend (Phase 2) already ran a `type = 'split'` action correctly, but a
+  campaign could only get one via a direct API/DB row insertion; there was no way to actually
+  build one in the admin UI. `Block\Adminhtml\Campaign\Edit\Flow::getActionTypes()` now appends
+  the reserved `split` pseudo-type to the Flow canvas's own action type list (it's still
+  deliberately not an `ActionPool` entry — `CampaignDispatcher::runSplit()` still intercepts it
+  before that lookup), and `getFieldsConfig()['action']['split']` describes its one field
+  (`variants`) with a new `type: 'variant_list'` marker. `campaign-flow-editor.js` gained a whole
+  interactive sub-editor for it (`renderVariantEditor()`/`renderVariantBlock()`/
+  `renderVariantActionRow()`) — add/remove variant, each with its own weight and a nested action
+  list (a type `<select>` covering every real action type except `split` itself, plus a JSON
+  params field per nested action) — serialized into one hidden `data-field="variants"` input kept
+  in sync on every change, so `collectRows()` needs no changes of its own. Deliberately does NOT
+  reuse the per-type dedicated-field rendering `renderFields()` gives top-level nodes for this
+  nested editor: that would emit `data-field`-marked inputs nested inside the split node's own
+  subtree, which `collectNodeFields()`'s deep `[data-field]` search would then incorrectly fold
+  into the split action's own row. `Model\Campaign\CampaignSaveProcessor`'s
+  `DEDICATED_PARAM_FIELDS` gained `variants` with special JSON-decode handling (every other
+  dedicated field is a plain string) so the posted JSON lands in `params.variants` as a real
+  array, not a JSON-string-inside-JSON. New label: `Model\Campaign\TypeLabels::ACTION_LABELS['split']`.
 - **Cart-add/wishlist-add event tracking (behavioral segmentation, Phase 1 — event capture
   only)**, closing the first phase of ROADMAP.md's Tier 3 "behavioral/event-based segmentation"
   item. New `Observer\TrackCartAdd` (on `checkout_cart_product_add_after`) and

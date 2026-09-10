@@ -78,17 +78,15 @@ unbounded full-table scans in `CalculateReorderCycle`/`GoogleMerchantFeedGenerat
 - No campaign entry dedup — nothing stops a customer mid-flow (waiting on a `delay_minutes`
   resume) from re-entering the same campaign from scratch on a repeat trigger; `ordo_campaign_
   scheduled_action` has no uniqueness guard per customer+campaign.
-- ~~No A/B/split testing on actions and no campaign-level funnel analytics~~ — **both closed at
-  the backend/data level** (see docs/CHANGELOG.md): `Model\CampaignFunnelStats`/
-  `CampaignOutcomeLogger` track sent → delivered → opened → clicked → converted per campaign,
-  rendered on each campaign's edit page plus one dashboard summary card; `CampaignAction` rows
-  with `type = 'split'` (`Model\Campaign\SplitVariantSelector` + `CampaignDispatcher::runSplit()`)
-  deterministically branch a dispatch into a weighted variant, feeding the funnel's per-variant
-  breakdown. Still open: the Flow canvas has no UI to actually configure a `split` action —
-  campaigns using one are, for now, only configurable via direct API/DB row insertion (same
-  carve-out the `group` condition type already has). Needs a `variant_list` field descriptor in
-  `campaign-flow-editor.js`/`Block\Adminhtml\Campaign\Edit\Flow::getFieldsConfig()`, plus, as a
-  smaller known gap, no schema support yet for a variant's own action to carry `delay_minutes`.
+- ~~No A/B/split testing on actions and no campaign-level funnel analytics~~ — **closed**, backend
+  through admin UI (see docs/CHANGELOG.md): `Model\CampaignFunnelStats`/`CampaignOutcomeLogger`
+  track sent → delivered → opened → clicked → converted per campaign, rendered on each campaign's
+  edit page plus one dashboard summary card; `CampaignAction` rows with `type = 'split'`
+  (`Model\Campaign\SplitVariantSelector` + `CampaignDispatcher::runSplit()`) deterministically
+  branch a dispatch into a weighted variant, feeding the funnel's per-variant breakdown; the Flow
+  canvas now has a full interactive editor for building one (`campaign-flow-editor.js`'s
+  `renderVariantEditor()`). Known remaining limitation: a variant's own action can't carry its own
+  `delay_minutes` yet (no schema support for a synthetic action's scheduled-resume FK).
 - No time-zone-aware quiet hours for a campaign as a whole (only per-channel opt-out exists via
   `ConsentManager`) — a trigger-based send can land at 3am local time.
 - Flow canvas UX gaps that would frustrate daily use: no undo/redo, no node duplication/copy-paste,
