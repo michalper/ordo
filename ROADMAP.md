@@ -54,8 +54,35 @@ controller/cron gets a row there before it's considered done).
 
 Five independent passes over the whole module (campaign engine, segmentation/RFM/scoring,
 communication channels, commerce features, admin platform/UX/API), each grounded in the actual
-code rather than guesswork. Not yet scoped/prioritized as a team — this is raw input for that
-conversation, organized by domain. Items already covered elsewhere in this file aren't repeated.
+code rather than guesswork. Organized by domain below; the priority tiers here are the first pass
+at ordering it into "what do we tackle first."
+
+### Priority order
+
+**Tier 0 — this week, security/trust risk, cheap fixes:** `FreeGiftOffer/Delete.php` GET→POST
++ form-key; guest checkout bypassing order approval; the 3-site multi-store decision-link URL bug;
+`approveByToken()`/`rejectByToken()`'s inconsistent save path + missing order-state re-check; pull
+"Scheduled Date/Time" out of the trigger-type UI until it actually fires anything.
+
+**Tier 1 — this quarter, highest business leverage:** Free Gift Offer → real cart integration
+(the single biggest gap in this audit — a fully-built admin feature with zero runtime effect);
+SendGrid webhook handling `spamreport`/`unsubscribe`/`group_unsubscribe` (deliverability/compliance
+risk today); retry/backoff for failed channel sends (one shared mechanism across
+Email/SMS/WhatsApp/Push).
+
+**Tier 2 — good ROI, moderate effort:** segment exclusion operator ("A but not B"); unsaved-changes
+warning on the "Estimated Audience Size" refresh panel; an on-demand recalculation endpoint for
+Reorder Cycle (mirrors the pattern segments just got); `TagInactiveCustomers`'s O(n²) untag loop
+(one `array_flip`).
+
+**Tier 3 — real feature work, needs a scoping decision first:** scheduled/recurring campaigns
+(the real implementation behind Tier 0's dead trigger option); unified suppression/frequency
+capping across all channels; A/B testing + per-campaign funnel analytics; behavioral/event-based
+segmentation beyond purchase history.
+
+**Tier 4 — scale hardening, not urgent below ~50-100k customers:** pagination/streaming in
+`RfmCalculator`'s aggregate queries; batching in `GoogleAdsSyncClient::addOperations()`; the
+unbounded full-table scans in `CalculateReorderCycle`/`GoogleMerchantFeedGenerator`.
 
 ### Correctness issues found along the way (not "improvements" — real bugs)
 
