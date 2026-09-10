@@ -96,7 +96,7 @@ class ScheduledTriggerScanner
             }
 
             $scheduledAt = $this->parseDateTime((string) ($trigger->getParams()['scheduled_at'] ?? ''));
-            return $scheduledAt !== null && $scheduledAt <= $now;
+            return $scheduledAt instanceof \DateTimeImmutable && $scheduledAt <= $now;
         }
 
         // recurring_schedule: due every time it matches AND hasn't already fired for this exact
