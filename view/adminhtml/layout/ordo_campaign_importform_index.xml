@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <block class="Ordo\Automation\Block\Adminhtml\Import\Form" name="ordo_campaign_import_form"
+                   template="Ordo_Automation::import/form.phtml">
+                <arguments>
+                    <argument name="import_url_path" xsi:type="string">ordo/campaign/import</argument>
+                    <argument name="back_url_path" xsi:type="string">ordo/campaign/index</argument>
+                    <argument name="entity_label" xsi:type="string" translate="true">Campaign</argument>
+                </arguments>
+            </block>
+        </referenceContainer>
+    </body>
+</page>

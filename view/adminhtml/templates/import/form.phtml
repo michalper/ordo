@@ -1,0 +1,38 @@
+<?php
+/** @var \Ordo\Automation\Block\Adminhtml\Import\Form $block */
+/** @var \Magento\Framework\Escaper $escaper */
+?>
+<div class="admin__fieldset-wrapper ordo-import-form">
+    <div class="admin__fieldset-wrapper-title">
+        <strong><?= $escaper->escapeHtml(__('Import %1', $block->getEntityLabel())) ?></strong>
+    </div>
+    <div class="admin__fieldset-wrapper-content">
+        <p>
+            <?= $escaper->escapeHtml(__(
+                'Choose a JSON file previously downloaded from this %1\'s own Export action. '
+                . 'Importing always creates a brand-new %1 - it never overwrites an existing one.',
+                $block->getEntityLabel()
+            )) ?>
+        </p>
+        <form
+            action="<?= $escaper->escapeUrl($block->getImportUrl()) ?>"
+            method="post"
+            enctype="multipart/form-data"
+        >
+            <?= $block->getBlockHtml('formkey') ?>
+            <div class="admin__field">
+                <div class="admin__field-control">
+                    <input type="file" name="import_file" accept="application/json,.json" required>
+                </div>
+            </div>
+            <div class="admin__field">
+                <button type="submit" class="action-primary">
+                    <span><?= $escaper->escapeHtml(__('Import')) ?></span>
+                </button>
+                <a class="action-secondary" href="<?= $escaper->escapeUrl($block->getBackUrl()) ?>">
+                    <span><?= $escaper->escapeHtml(__('Cancel')) ?></span>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
