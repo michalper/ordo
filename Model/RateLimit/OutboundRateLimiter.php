@@ -40,8 +40,8 @@ class OutboundRateLimiter
      */
     private const int CACHE_LIFETIME_SECONDS = 60;
 
-    private \Closure $sleep;
-    private \Closure $now;
+    private readonly \Closure $sleep;
+    private readonly \Closure $now;
 
     /**
      * @param (callable(int): void)|null $sleep Overridable purely so unit tests don't have to
@@ -95,8 +95,6 @@ class OutboundRateLimiter
      */
     private function nowMicrotime(): float
     {
-        $now = ($this->now)(true);
-
-        return (is_int($now) || is_float($now) ? (float) $now : 0.0) * 1_000_000;
+        return ((float) ($this->now)(true)) * 1_000_000;
     }
 }
