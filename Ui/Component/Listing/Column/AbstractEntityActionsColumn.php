@@ -38,6 +38,15 @@ abstract class AbstractEntityActionsColumn extends Column
      */
     abstract protected function getEntityLabel(): string;
 
+    /**
+     * Null (the default) omits the "Export" row action entirely — most entities in this module
+     * have no export controller. Override to opt in (e.g. "ordo/campaign/export").
+     */
+    protected function getExportUrlPath(): ?string
+    {
+        return null;
+    }
+
     public function prepareDataSource(array $dataSource): array
     {
         if (!isset($dataSource['data']['items'])) {
@@ -47,27 +56,38 @@ abstract class AbstractEntityActionsColumn extends Column
         foreach ($dataSource['data']['items'] as &$item) {
             $entityId = $item['entity_id'];
 
-            $item[$this->getData('name')] = [
+            $actions = [
                 'edit' => [
                     'href' => $this->urlBuilder->getUrl($this->getEditUrlPath(), ['entity_id' => $entityId]),
                     'label' => __('Edit'),
                 ],
-                'delete' => [
-                    'href' => $this->urlBuilder->getUrl($this->getDeleteUrlPath(), ['entity_id' => $entityId]),
-                    'label' => __('Delete'),
-                    // 'post' => true makes Magento_Ui/js/grid/columns/actions submit this as a real
-                    // POST (with the admin form key attached) instead of just navigating the
-                    // browser to $href - the delete controllers behind this all now implement
-                    // HttpPostActionInterface, not HttpGetActionInterface, specifically so a
-                    // crafted GET link/<img> tag can no longer trigger a delete for a logged-in
-                    // admin (no CSRF form-key check applies to a plain GET dispatch).
-                    'post' => true,
-                    'confirm' => [
-                        'title' => __('Delete %1 "%2"', $this->getEntityLabel(), $item['name']),
-                        'message' => __('Are you sure you want to delete this %1?', $this->getEntityLabel()),
-                    ],
+            ];
+
+            $exportUrlPath = $this->getExportUrlPath();
+            if ($exportUrlPath !== null) {
+                $actions['export'] = [
+                    'href' => $this->urlBuilder->getUrl($exportUrlPath, ['entity_id' => $entityId]),
+                    'label' => __('Export'),
+                ];
+            }
+
+            $actions['delete'] = [
+                'href' => $this->urlBuilder->getUrl($this->getDeleteUrlPath(), ['entity_id' => $entityId]),
+                'label' => __('Delete'),
+                // 'post' => true makes Magento_Ui/js/grid/columns/actions submit this as a real
+                // POST (with the admin form key attached) instead of just navigating the
+                // browser to $href - the delete controllers behind this all now implement
+                // HttpPostActionInterface, not HttpGetActionInterface, specifically so a
+                // crafted GET link/<img> tag can no longer trigger a delete for a logged-in
+                // admin (no CSRF form-key check applies to a plain GET dispatch).
+                'post' => true,
+                'confirm' => [
+                    'title' => __('Delete %1 "%2"', $this->getEntityLabel(), $item['name']),
+                    'message' => __('Are you sure you want to delete this %1?', $this->getEntityLabel()),
                 ],
             ];
+
+            $item[$this->getData('name')] = $actions;
         }
 
         return $dataSource;
