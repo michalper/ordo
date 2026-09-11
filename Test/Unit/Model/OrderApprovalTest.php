@@ -69,6 +69,14 @@ class OrderApprovalTest extends AbstractModelTestCase
         self::assertSame(OrderApproval::STATUS_APPROVED, $model->getStatus());
     }
 
+    public function testEscalationTierReadFromData(): void
+    {
+        $model = $this->makeModel();
+        $model->setData('escalation_tier', '2');
+
+        self::assertSame(2, $model->getEscalationTier());
+    }
+
     public function testRemindersSentReadFromData(): void
     {
         $model = $this->makeModel();

@@ -132,6 +132,24 @@ class SplitVariantSelectorTest extends TestCase
         self::assertSame($variant['key'], $context['ordo_split_assignments'][10]);
     }
 
+    public function testSelectVariantFallsBackToTheLastVariantWhenCumulativeWeightNeverReachesTheBucket(): void
+    {
+        // A non-finite weight (never produced by the admin form, but not validated against here
+        // either) makes every cumulative-weight comparison in the loop resolve to false (any
+        // comparison against NAN does), so the loop runs out without ever picking a variant -
+        // exactly the "cumulative never overtakes the bucket" case the last-variant fallback
+        // exists for, just reached here by a pathological weight instead of by rounding.
+        $context = ['customer_id' => 42];
+        $variants = [
+            ['key' => 'a', 'weight' => INF, 'actions' => []],
+            ['key' => 'b', 'weight' => 1, 'actions' => []],
+        ];
+
+        $variant = $this->selector->selectVariant(5, 10, $variants, $context);
+
+        self::assertSame('b', $variant['key']);
+    }
+
     public function testSelectVariantFallsBackToARandomPickWithNoIdentityInContext(): void
     {
         $context = [];

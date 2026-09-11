@@ -162,4 +162,31 @@ class CampaignDispatchConsumerTest extends TestCase
 
         self::assertFalse($dispatchGuard->isConsuming());
     }
+
+    public function testExecuteSwallowsAndLogsWhenPersistingTheDeadLetterItselfFails(): void
+    {
+        $dispatcher = $this->createStub(CampaignDispatcher::class);
+        $serializer = $this->createStub(SerializerInterface::class);
+        $logger = $this->createMock(LoggerInterface::class);
+        $dispatchGuard = new CampaignDispatchGuard();
+
+        $serializer->method('unserialize')->willReturn([
+            'trigger_event' => 'order_placed',
+            'context' => [],
+        ]);
+        $dispatcher->method('dispatch')->willThrowException(new \RuntimeException('boom'));
+        // Once for the original dispatch failure, once for the dead-letter persistence failure.
+        $logger->expects(self::exactly(2))->method('error');
+
+        $this->deadLetterFactory = $this->createStub(CampaignDispatchDeadLetterFactory::class);
+        $this->deadLetterFactory->method('create')->willReturn($this->createStub(CampaignDispatchDeadLetter::class));
+        $this->deadLetterResource = $this->createStub(CampaignDispatchDeadLetterResource::class);
+        $this->deadLetterResource->method('save')->willThrowException(new \RuntimeException('db down'));
+
+        // Must not throw or resurface the original dispatch exception - a DB hiccup persisting the
+        // dead letter is not allowed to crash the consumer.
+        $this->makeConsumer($dispatcher, $serializer, $logger, $dispatchGuard)->execute('raw-message');
+
+        self::assertFalse($dispatchGuard->isConsuming());
+    }
 }

@@ -143,6 +143,7 @@ class ConfigTest extends TestCase
         self::assertSame(7, $this->config->getCreditLimitAlertCooldownDays());
         self::assertSame(90, $this->config->getWinBackInactiveDays());
         self::assertSame(2, $this->config->getOrderApprovalEscalationDays());
+        self::assertSame(3, $this->config->getOrderApprovalEscalationMaxRemindersPerTier());
         self::assertSame(7, $this->config->getTrackingRetentionDays());
         self::assertSame(3, $this->config->getTrackingViewThreshold());
         self::assertSame(1, $this->config->getTrackingClickThreshold());
@@ -157,6 +158,23 @@ class ConfigTest extends TestCase
         self::assertSame(24, $this->config->getFrequencyCapWindowHours());
         self::assertSame(21, $this->config->getQuietHoursStartHour());
         self::assertSame(8, $this->config->getQuietHoursEndHour());
+    }
+
+    public function testOrderApprovalEscalationChainEmailsSplitsAndTrimsLines(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn("first@example.com\n second@example.com \r\n\nthird@example.com");
+
+        self::assertSame(
+            ['first@example.com', 'second@example.com', 'third@example.com'],
+            $this->config->getOrderApprovalEscalationChainEmails()
+        );
+    }
+
+    public function testOrderApprovalEscalationChainEmailsIsEmptyWhenUnconfigured(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn(null);
+
+        self::assertSame([], $this->config->getOrderApprovalEscalationChainEmails());
     }
 
     public function testQuietHoursHourGettersClampOutOfRangeConfigValues(): void

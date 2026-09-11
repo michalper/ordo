@@ -112,4 +112,30 @@ class RetryFailedCampaignActionsTest extends TestCase
 
         $this->makeCron()->execute();
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteCountsAnExhaustedRetryBudgetInTheSummary(): void
+    {
+        $retry = $this->createMock(CampaignActionRetry::class);
+        // Already at MAX_ATTEMPTS - 1: this failure's attemptNumber (MAX_ATTEMPTS) is the one
+        // that exhausts the row's retry budget.
+        $retry->method('getAttempts')->willReturn(RetryFailedCampaignActions::MAX_ATTEMPTS - 1);
+        $retry->method('getCampaignId')->willReturn(3);
+        $retry->method('getResumeActionId')->willReturn(9);
+        $retry->method('getContext')->willReturn([]);
+
+        $collection = $this->createStub(CampaignActionRetryCollection::class);
+        $collection->method('addDueFilter');
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$retry]));
+        $this->collectionFactory->method('create')->willReturn($collection);
+
+        $this->resource->method('claim')->willReturn(true);
+        $this->dispatcher->method('resumeScheduledAction')->willThrowException(new \RuntimeException('still broken'));
+
+        $this->resource->expects(self::once())->method('save')->with($retry);
+        $this->logger->expects(self::once())->method('error');
+        $this->logger->expects(self::once())->method('info')->with(self::stringContains('1 exhausted their retry budget'));
+
+        $this->makeCron()->execute();
+    }
 }

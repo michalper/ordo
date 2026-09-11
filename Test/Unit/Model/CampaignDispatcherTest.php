@@ -241,6 +241,37 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
     }
 
+    /**
+     * A hand-written variant action spec's "params" isn't guaranteed to be string-keyed (or even
+     * an array at all) the way a real CampaignAction row's own getParams() already is - must be
+     * normalized to an empty array rather than crashing json_encode()/the executed action.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchSplitActionNormalizesANonArrayParamsBlobInTheChosenVariant(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $splitAction = $this->createMock(CampaignAction::class);
+        $splitAction->method('getCampaignId')->willReturn(1);
+        $splitAction->method('getEntityId')->willReturn(20);
+        $splitAction->method('getDelayMinutes')->willReturn(0);
+        $splitAction->method('getData')->willReturnMap([['type', 'split']]);
+        $splitAction->method('getParams')->willReturn([
+            'variants' => [
+                ['key' => 'a', 'weight' => 100, 'actions' => [['type' => 'tag_customer', 'params' => 'not-an-array']]],
+            ],
+        ]);
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$splitAction]));
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute')->with(self::anything(), []);
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testDispatchSplitActionSkipsMalformedActionSpecsInsideTheChosenVariant(): void
     {
@@ -737,6 +768,30 @@ class CampaignDispatcherTest extends TestCase
         $this->campaignScheduledActionFactory->expects(self::never())->method('create');
 
         $this->makeDispatcher()->resumeScheduledAction(1, 999, []);
+    }
+
+    /**
+     * The resume row itself was found (has an entity id), but the main "sort_order >= that"
+     * query it it's own sort_order no longer turns it up - e.g. a concurrent edit between the two
+     * queries above changed its sort_order. Must not crash trying to run into a chain it can no
+     * longer locate.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResumeScheduledActionDoesNothingWhenResumeRowMissingFromMainQuery(): void
+    {
+        $resumeAction = $this->createMock(CampaignAction::class);
+        $resumeAction->method('getEntityId')->willReturn(11);
+        $resumeAction->method('getSortOrder')->willReturn(20);
+
+        // The main query's own result set doesn't include the resume action - simulating the
+        // race the code's own docblock describes.
+        $this->makeResumeActionCollections($resumeAction, []);
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::never())->method('execute');
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->resumeScheduledAction(1, 11, []);
     }
 
     #[AllowMockObjectsWithoutExpectations]

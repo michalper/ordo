@@ -86,6 +86,40 @@ class CampaignFunnelStatsTest extends TestCase
         );
     }
 
+    /**
+     * An event row for a variant that never showed up in the send/delivered query (e.g. a split
+     * variant since deleted from the campaign definition, or a stray row from a bad webhook
+     * retry) must be skipped rather than fabricating a new $stats entry for it.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetForCampaignSkipsEventRowsForAnUnknownVariant(): void
+    {
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturnOnConsecutiveCalls(
+            [
+                ['variant' => 'a', 'sent' => '10', 'delivered' => '9'],
+            ],
+            [
+                ['variant' => 'removed-variant', 'event_type' => 'opened', 'count' => '1'],
+            ]
+        );
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $campaignOutcomeLogger = $this->createStub(CampaignOutcomeLogger::class);
+        $campaignOutcomeLogger->method('getStats')->willReturn([]);
+
+        $stats = new CampaignFunnelStats($resourceConnection, $campaignOutcomeLogger);
+        $rows = $stats->getForCampaign(5);
+
+        self::assertCount(1, $rows);
+        self::assertSame('a', $rows[0]['variant']);
+        self::assertSame(0, $rows[0]['opened']);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testGetForCampaignWithNoSplitUsesNullVariant(): void
     {
