@@ -68,6 +68,12 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- **Unit test coverage for the plain data/resource-model classes several recent features added**
+  (`CampaignActionRetry`, `AdminActionLog`, `ProductFeed\ProductFeedRunLog`,
+  `CampaignDispatchDeadLetter`, their resource models and collections, plus
+  `Config\Source\EventType`/`ProductFeedRunLogStatus`) — flagged at 0% by Codecov since they
+  shipped without their own dedicated test file, even though the features using them were
+  otherwise tested end to end. No behavior change.
 - **`Model\Campaign\ScheduledTriggerScanner` now batches its fire-state lookup.** `isDue()` used
   to call `ScheduledTriggerState::getState()` once per scheduled/recurring trigger inside the scan
   loop (one SELECT per trigger, every 5 minutes per `etc/crontab.xml`). `ScheduledTriggerState`
