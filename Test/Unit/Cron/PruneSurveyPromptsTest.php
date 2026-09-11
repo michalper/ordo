@@ -9,9 +9,12 @@ use Ordo\Automation\Cron\PruneSurveyPrompts;
 use Ordo\Automation\Model\Cron\CronRunLogger;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class PruneSurveyPromptsTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     public function testExecuteDeletesRespondedExpiredAndStaleDeliveredRowsAndLogs(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
@@ -26,6 +29,6 @@ class PruneSurveyPromptsTest extends TestCase
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('info');
 
-        (new PruneSurveyPrompts($resourceConnection, new CronRunLogger($logger)))->execute();
+        (new PruneSurveyPrompts($resourceConnection, $this->makeCronRunLogger($logger)))->execute();
     }
 }

@@ -8,9 +8,12 @@ use Ordo\Automation\Model\Campaign\ScheduledTriggerScanner;
 use Ordo\Automation\Model\Cron\CronRunLogger;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class DispatchScheduledCampaignTriggersTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     public function testExecuteLogsWhenTriggersFired(): void
     {
         $scanner = $this->createMock(ScheduledTriggerScanner::class);
@@ -21,7 +24,7 @@ class DispatchScheduledCampaignTriggersTest extends TestCase
             'Ordo_Automation: fired 2 scheduled campaign trigger(s).'
         );
 
-        (new DispatchScheduledCampaignTriggers($scanner, new CronRunLogger($logger)))->execute();
+        (new DispatchScheduledCampaignTriggers($scanner, $this->makeCronRunLogger($logger)))->execute();
     }
 
     public function testExecuteLogsNothingWhenNoTriggersFired(): void
@@ -32,6 +35,6 @@ class DispatchScheduledCampaignTriggersTest extends TestCase
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::never())->method('info');
 
-        (new DispatchScheduledCampaignTriggers($scanner, new CronRunLogger($logger)))->execute();
+        (new DispatchScheduledCampaignTriggers($scanner, $this->makeCronRunLogger($logger)))->execute();
     }
 }

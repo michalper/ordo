@@ -16,9 +16,12 @@ use Ordo\Automation\Model\ResourceModel\ContentBlock\CollectionFactory;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class RefreshRssContentBlocksTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     private CollectionFactory $collectionFactory;
     private ResourceConnection $resourceConnection;
     private AdapterInterface $connection;
@@ -45,7 +48,7 @@ class RefreshRssContentBlocksTest extends TestCase
             $this->resourceConnection,
             $this->rssFetcher,
             $this->dateTime,
-            new CronRunLogger($this->logger)
+            $this->makeCronRunLogger($this->logger)
         );
     }
 

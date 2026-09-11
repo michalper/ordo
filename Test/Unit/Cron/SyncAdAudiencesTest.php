@@ -20,9 +20,12 @@ use Ordo\Automation\Model\Segment\SegmentMemberResolver;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class SyncAdAudiencesTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     private AdAudienceCollectionFactory&\PHPUnit\Framework\MockObject\MockObject $collectionFactory;
     private AdAudienceResource&\PHPUnit\Framework\MockObject\MockObject $adAudienceResource;
     private SegmentMemberResolver&\PHPUnit\Framework\MockObject\MockObject $segmentMemberResolver;
@@ -51,7 +54,7 @@ class SyncAdAudiencesTest extends TestCase
             new PiiHasher(),
             $this->syncClientPool,
             $this->consentManager,
-            new CronRunLogger($this->createStub(LoggerInterface::class)),
+            $this->makeCronRunLogger($this->createStub(LoggerInterface::class)),
             $this->logger
         );
     }
@@ -132,7 +135,7 @@ class SyncAdAudiencesTest extends TestCase
             new PiiHasher(),
             $this->syncClientPool,
             $this->consentManager,
-            new CronRunLogger($this->createStub(LoggerInterface::class)),
+            $this->makeCronRunLogger($this->createStub(LoggerInterface::class)),
             $this->logger
         );
 
