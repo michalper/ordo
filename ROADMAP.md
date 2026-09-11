@@ -81,9 +81,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
   start hitting 429s with no handling for it.
 - `Cron/RunScheduledCampaignActions.php` has no persistent retry queue for a send that fails all 3
   of `SendRetrier`'s in-process retries — "a row that failed stays failed" across cron ticks.
-- WhatsApp template admin form is a raw textarea with manual `{{1}}`/`{{2}}` placeholders, no
-  character-limit check against Meta's real limits, and no rendered preview — each submission
-  costs a real Meta review cycle, so mistakes are expensive.
 
 ### Commerce features (free gifts, order approval, reorder cycles, GDPR, product feed, dashboard)
 
