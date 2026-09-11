@@ -34,6 +34,12 @@
                  exercises. Already in codecov.yml's ignore list; mirrored here so local coverage
                  runs report the same thing. -->
             <file>registration.php</file>
+            <!-- Rector's own CLI config, not application code — read by the rector CLI (process
+                 or dry run mode), never executed by anything PHPUnit runs. Already in
+                 codecov.yml's ignore list (same as the two files above); this one was missed
+                 when that list was first mirrored here, leaving it as the only file still
+                 showing 0% locally. -->
+            <file>rector.php</file>
         </exclude>
     </source>
 </phpunit>
