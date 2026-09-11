@@ -16,6 +16,20 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   since a checklist that only ever needs "has this actually happened yet" doesn't need a
   dismiss/skip state of its own. A dashboard banner links to it, and disappears once every step
   is done.
+- **Admin action audit log for Campaign and Segment saves**, closing the first slice of the
+  admin-platform ROADMAP.md "no audit log of admin actions" gap — narrowed to these two
+  highest-value entities first, same "start narrow, extend mechanically later" pattern as the
+  mass-action work before it. New `Model\AdminActionLog\Recorder`, backed by a new append-only
+  `ordo_admin_action_log` table, records who (admin user id/username, denormalized so the log
+  still reads correctly after the account is deleted), what (create/update), and which top-level
+  fields changed (`name`/`enabled`/`condition_logic` — child rows like triggers/conditions/actions
+  are always fully deleted-and-reinserted regardless of whether they changed, so diffing them
+  would be pure noise) for every admin save. Hooked in via two new admin-scoped plugins
+  (`Plugin\Campaign\CampaignSaveProcessorAuditPlugin`, `Plugin\Segment\SegmentSaveProcessorAuditPlugin`)
+  wrapping `CampaignSaveProcessor`/`SegmentSaveProcessor::process()` — the first place in this
+  module to read `Magento\Backend\Model\Auth\Session`. New read-only **Admin Action Log** admin
+  grid (`ordo/adminactionlog/index`), linked from the dashboard's Diagnostics section. Every other
+  admin-managed entity remains unaudited for now — see ROADMAP.md.
 - **Rate limiting for the anonymous order-approval token endpoints**, closing the API.md gap
   where `Controller\Approval\{Approve,Reject}` were token-guarded but not throttled against
   brute-forcing a token guess. New `Model\Approval\ApprovalRateLimiter` — a bespoke cache-backed

@@ -692,6 +692,23 @@
             <column name="created_at"/>
         </index>
     </table>
+    <table name="ordo_admin_action_log" resource="default" engine="innodb" comment="Append-only audit trail of admin Campaign/Segment saves - who changed what, and when. No FK to ordo_campaign/ordo_segment - a log row must survive the entity it references being deleted, same reasoning already documented for ordo_message_log.campaign_id.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="entity_type" nullable="false" length="32" comment="campaign or segment"/>
+        <column xsi:type="int" name="target_entity_id" padding="10" unsigned="true" nullable="true" comment="The campaign/segment entity_id affected - null only if the save somehow failed before an id existed"/>
+        <column xsi:type="varchar" name="action" nullable="false" length="16" comment="create or update"/>
+        <column xsi:type="int" name="admin_user_id" padding="10" unsigned="true" nullable="true" comment="admin_user.user_id - nullable for a save with no admin session (e.g. CLI)"/>
+        <column xsi:type="varchar" name="admin_username" nullable="true" length="128" comment="Denormalized so the log still reads correctly after the admin user account is deleted"/>
+        <column xsi:type="text" name="changes_json" nullable="true" comment="JSON-encoded {field: [old, new]} map of changed top-level fields (name/enabled/condition_logic) - null on create, since there's no 'old' to diff against"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="ORDO_ADMIN_ACTION_LOG_ENTITY_TYPE_TARGET_ENTITY_ID" indexType="btree">
+            <column name="entity_type"/>
+            <column name="target_entity_id"/>
+        </index>
+    </table>
 
     <table name="ordo_message_log" resource="default" engine="innodb" comment="One row per individual outbound message a campaign action dispatched — deliberately channel-generic so sms/email/whatsapp all share the same table/webhook shape instead of a one-off design per channel">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>

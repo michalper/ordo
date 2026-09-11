@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="ordo_adminactionlog_listing_intro"
+                   template="Ordo_Automation::listing_intro.phtml" before="ordo_adminactionlog_listing">
+                <arguments>
+                    <argument name="intro_text" xsi:type="string">Every admin save of a Campaign or Segment - who, when, create or update, and which top-level fields changed. Other admin-managed entities are not yet audited.</argument>
+                </arguments>
+            </block>
+            <uiComponent name="ordo_adminactionlog_listing"/>
+        </referenceContainer>
+    </body>
+</page>
