@@ -49,6 +49,17 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Campaign and Segment export**, closing half of the admin-platform ROADMAP.md gap where the
+  only export capability anywhere in the module was GDPR customer-data export — nothing let a
+  merchant back up a campaign/segment definition or move it between environments.
+  `Controller\Adminhtml\Campaign\Export` and `Controller\Adminhtml\Segment\Export` (new "Export"
+  row action on both grids, alongside Edit/Delete) each stream a JSON download of the full entity
+  graph — for a campaign: triggers, conditions, and actions, in `sort_order`; for a segment:
+  conditions, including nested `type === "group"` rows as-is (already the `{logic, conditions}`
+  shape `SegmentSaveProcessor::normalizeGroupRow()` builds). Deliberately excludes every row's own
+  `entity_id`/`campaign_id`/`segment_id` — only the parts that actually describe the definition
+  are exported, since a future import would assign fresh ids anyway. Import itself is not part of
+  this change — see ROADMAP.md.
 - **Segment membership history**, closing the segmentation ROADMAP.md gap where
   `estimated_audience_size`/`audience_size_computed_at` only ever held the latest snapshot, so
   "how has this segment grown/shrunk over the last 3 months" wasn't answerable without external
