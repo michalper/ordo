@@ -15,6 +15,11 @@ class SegmentActions extends AbstractEntityActionsColumn
         return 'ordo/segment/delete';
     }
 
+    protected function getExportUrlPath(): ?string
+    {
+        return 'ordo/segment/export';
+    }
+
     protected function getEntityLabel(): string
     {
         return (string) __('segment');
