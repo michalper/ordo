@@ -126,9 +126,6 @@ new. Two are real bugs worth fixing soon; the rest are minor cleanups/optimizati
 - `API.md`'s Order Approvals section doesn't mention the order-approval token rate limiter
   (`Model/Approval/ApprovalRateLimiter.php`, 10 attempts/15 min) even though docs/CHANGELOG.md
   already lists that gap as closed.
-- `VERIFICATION.md`'s manual checklist has no steps for anything shipped since 2026-09-10 (admin
-  action audit log, Order Approvals grid, Campaign/Segment export, product feed health grid,
-  dead-letter/retry, multi-tier escalation).
 
 ## Scheduled (date-based) campaigns: calendar view
 
