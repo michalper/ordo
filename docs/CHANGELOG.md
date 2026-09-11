@@ -47,6 +47,19 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   push notification has no "address" to test-send to outside a real, already-registered browser
   subscription.
 
+- **`send_sms`/`send_push` campaign actions can now include product recommendations as plain
+  text**, closing the "product recommendations are effectively email-only" gap.
+  `Model\Recommendation\ProductRecommendationRenderer` gained a `renderText()` method (one line
+  per product, `"Name - $Price"`, no HTML) alongside its existing `renderHtml()`;
+  `AddProductRecommendations` now writes both `recommended_products_html` (unchanged, for
+  `send_email`) and a
+  new `recommended_products_text` into the context. `send_sms`'s `message` and `send_push`'s
+  `body` params now substitute the literal token `{{recommended_products_text}}` with that
+  context value if present — a single, deliberately narrow token substitution, not a general
+  templating engine. `send_whatsapp` is explicitly out of scope: its "params" are positional
+  values filled into an already Meta-approved template, not free text a recommendation block could
+  substitute into.
+
 - **Campaign and Segment grids gained enable/disable/delete bulk actions**, closing the
   admin-platform ROADMAP.md gap where every listing's `selectionsColumn` checkboxes rendered but
   did nothing. New `<massaction>` block in `ordo_campaign_listing.xml`/`ordo_segment_listing.xml`
