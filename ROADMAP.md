@@ -134,12 +134,6 @@ stayed invisible until now. Fix shape for all three: convert through `Store::get
 
 Fresh pass over crons/queries not already covered above:
 
-- **`Cron\SyncAdAudiences` calls `ConsentManager::hasConsent()` once per customer instead of the
-  existing batched `hasConsentForCustomers()`.** Every other batch cron in the module
-  (`SendReorderReminders`, `SendWinBackEmails`, `SendCreditLimitAlerts`, `SendOfferExpiryReminders`,
-  `SendAbandonedCartReminders`) already switched to the batched call specifically to avoid one query per
-  customer; `SyncAdAudiences` is the one remaining caller still doing it the old way. A 20k-customer
-  ad-audience segment does 20k separate `SELECT`s once a day per configured audience.
 - **`ordo_cron_run_log` has no supporting index for its own hot-path query and no prune cron.**
   `db_schema.xml` gives it only a `PRIMARY` key, while the dashboard's "crons failed (last 24h)" KPI and
   the Cron Run Log grid both filter on `level` + `created_at` — the same shape of query that
@@ -186,30 +180,27 @@ zasobów zewnętrznych):
    kwalifikacja do gratisu). Najwyższy priorytet mimo że dotyczy tylko sklepów z więcej niż
    jedną obsługiwaną walutą — trzeba to najpierw potwierdzić na produkcji (czy Sellina/klienci
    faktycznie używają multi-currency), bo jeśli tak, to blokuje realne transakcje już teraz.
-2. **`Cron\SyncAdAudiences` — przejście na `hasConsentForCustomers()`** — mechaniczna,
-   niskoryzykowna poprawka o realnym wpływie na duże audiencje reklamowe; wzorzec już
-   istnieje w 5 innych cronach.
-3. **Retry pojedynczego sendu po `SendRetrier`** — naturalne rozszerzenie istniejącego wzorca
+2. **Retry pojedynczego sendu po `SendRetrier`** — naturalne rozszerzenie istniejącego wzorca
    dead-letter (ADR 0001, `CampaignDispatchDeadLetter`) na `ordo_message_log`; brak zależności
    zewnętrznych, czysto techniczny dług niezawodności.
-4. **Indeks + prune cron dla `ordo_cron_run_log`** — mały, samodzielny fix (analogiczny do
+3. **Indeks + prune cron dla `ordo_cron_run_log`** — mały, samodzielny fix (analogiczny do
    istniejących `Prune*` cronów i indeksu na `ordo_order_approval`), zapobiega przyszłemu
    problemowi zanim stanie się bolesny.
-5. **`fields`/sparse-fieldset w API.md** — kontraktowo mała, samodzielna zmiana API.
-6. **Bulk actions na MessageLog/ReorderCycle/Rfm** — wymaga najpierw decyzji projektowej,
+4. **`fields`/sparse-fieldset w API.md** — kontraktowo mała, samodzielna zmiana API.
+5. **Bulk actions na MessageLog/ReorderCycle/Rfm** — wymaga najpierw decyzji projektowej,
    potem implementacji.
-7. **Flow canvas UX (undo/redo, duplikacja, inline send-test)** — większy, ale samodzielny
+6. **Flow canvas UX (undo/redo, duplikacja, inline send-test)** — większy, ale samodzielny
    front-endowy temat; wysoka wartość dla codziennego użytku.
-8. **Nowe funkcje (sekcja "Candidate new features" powyżej)** — do rozważenia razem z
+7. **Nowe funkcje (sekcja "Candidate new features" powyżej)** — do rozważenia razem z
    biznesem/produktem pod kątem priorytetu; browse-abandonment i webhook action/trigger
    wyglądają na najmniejszy koszt wejścia względem wartości.
-9. **Drugi format product feedu** — większa, osobna abstrakcja; wymaga wyboru formatu
+8. **Drugi format product feedu** — większa, osobna abstrakcja; wymaga wyboru formatu
    docelowego przed implementacją.
-10. **Kalendarz dat dla scheduled campaigns** — opcjonalny polish.
-11. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
+9. **Kalendarz dat dla scheduled campaigns** — opcjonalny polish.
+10. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
     poświadczeń testowych.
-12. **Recenzja natywna 10 lokalizacji** — zależna od dostępności recenzentów per język.
-13. **GitHub Wiki (PL/EN, screenshots)** — wymaga wcześniej decyzji o strukturze.
+11. **Recenzja natywna 10 lokalizacji** — zależna od dostępności recenzentów per język.
+12. **GitHub Wiki (PL/EN, screenshots)** — wymaga wcześniej decyzji o strukturze.
 
 Uwaga poza roadmapą: na branchu `feature/reorder-cycle-build-cart` jest niedokończona,
 nie-scommitowana praca nad akcją "build reorder cart" (temat sam w sobie już częściowo
