@@ -305,6 +305,36 @@
             <column name="executed_at"/>
         </index>
     </table>
+    <table name="ordo_campaign_action_retry" resource="default" engine="innodb" comment="A resumeScheduledAction() call that failed (Cron\RunScheduledCampaignActions) - previously just logged and abandoned, the row stayed marked executed and stayed failed forever. This is the persisted retry queue for that: one row per failed resume, re-attempted with exponential backoff (Model\Campaign\ActionRetryQueue) by Cron\RetryFailedCampaignActions until either it succeeds (row deleted) or attempts reaches the configured max, at which point it's left in place as a dead letter for manual investigation.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id"/>
+        <column xsi:type="int" name="resume_action_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign_action.entity_id - same meaning as ordo_campaign_scheduled_action.resume_action_id"/>
+        <column xsi:type="text" name="context" nullable="false" comment="JSON-encoded dispatch context, copied from the ordo_campaign_scheduled_action row at the moment its resume first failed"/>
+        <column xsi:type="smallint" name="attempts" unsigned="true" nullable="false" default="0" comment="How many times this has been retried so far - a row stops being selected once this reaches Cron\RetryFailedCampaignActions::MAX_ATTEMPTS, becoming a permanent dead letter"/>
+        <column xsi:type="text" name="last_error" nullable="true" comment="The most recent failure's exception message"/>
+        <column xsi:type="datetime" name="next_retry_at" nullable="false" comment="Earliest time this row is eligible to be retried again - bumped forward as the claim itself (see ResourceModel\CampaignActionRetry::claim()), then corrected to the real backoff delay once the retry's own outcome is known"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="ORDO_CAMPAIGN_ACTION_RETRY_CAMPAIGN_ID_CAMPAIGN_ENTITY_ID"
+                    table="ordo_campaign_action_retry" column="campaign_id"
+                    referenceTable="ordo_campaign" referenceColumn="entity_id" onDelete="CASCADE"/>
+        <index referenceId="ORDO_CAMPAIGN_ACTION_RETRY_NEXT_RETRY_AT_ATTEMPTS" indexType="btree">
+            <column name="next_retry_at"/>
+            <column name="attempts"/>
+        </index>
+    </table>
+    <table name="ordo_campaign_dispatch_dead_letter" resource="default" engine="innodb" comment="A CampaignDispatchConsumer::execute() call that threw an exception it couldn't recover from (malformed message, or an exception CampaignDispatcher::dispatch() itself didn't already swallow internally) - previously this propagated uncaught to the message-queue framework and was lost with only a framework-level error log, no persisted record and no way to inspect what the message actually contained. Append-only, insert-only: nothing in this module currently re-processes these rows automatically, they exist purely so a broken/malformed dispatch is visible instead of silently dropped.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="trigger_event" nullable="true" length="64" comment="The trigger_event the message claimed, if the message could be decoded far enough to read it"/>
+        <column xsi:type="text" name="message" nullable="false" comment="The raw, still-serialized message body exactly as received, so the original payload is never lost even if it couldn't be decoded at all"/>
+        <column xsi:type="text" name="error" nullable="false" comment="The caught exception's message"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+    </table>
 
     <table name="ordo_campaign_scheduled_trigger_state" resource="default" engine="innodb" comment="Fire-tracking for scheduled_at/recurring_schedule campaign triggers, kept separate from ordo_campaign_trigger itself: CampaignSaveProcessor deletes and recreates every trigger row on every campaign save (see its own saveTriggers() comment), which would silently wipe fire-tracking on an unrelated re-save (e.g. renaming the campaign) if it lived on that row instead. config_hash guards the other direction: an actual change to the scheduled date/cron expression changes the hash too, so Model\Campaign\ScheduledTriggerScanner treats it as a fresh, not-yet-fired config rather than something already fired under the old value.">
         <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id"/>
