@@ -23,6 +23,7 @@ class CampaignActionsTest extends TestCase
         $urlBuilder = $this->createStub(UrlInterface::class);
         $urlBuilder->method('getUrl')->willReturnMap([
             ['ordo/campaign/edit', ['entity_id' => 5], 'https://example.com/admin/ordo/campaign/edit/entity_id/5/'],
+            ['ordo/campaign/export', ['entity_id' => 5], 'https://example.com/admin/ordo/campaign/export/entity_id/5/'],
             ['ordo/campaign/delete', ['entity_id' => 5], 'https://example.com/admin/ordo/campaign/delete/entity_id/5/'],
         ]);
 
@@ -44,6 +45,7 @@ class CampaignActionsTest extends TestCase
 
         $actions = $result['data']['items'][0]['actions'];
         self::assertStringContainsString('entity_id/5', $actions['edit']['href']);
+        self::assertStringContainsString('entity_id/5', $actions['export']['href']);
         self::assertStringContainsString('entity_id/5', $actions['delete']['href']);
         self::assertTrue($actions['delete']['post'], 'delete action must submit via POST, not a plain GET navigation');
     }

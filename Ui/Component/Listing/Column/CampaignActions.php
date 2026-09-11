@@ -15,6 +15,11 @@ class CampaignActions extends AbstractEntityActionsColumn
         return 'ordo/campaign/delete';
     }
 
+    protected function getExportUrlPath(): ?string
+    {
+        return 'ordo/campaign/export';
+    }
+
     protected function getEntityLabel(): string
     {
         return (string) __('campaign');

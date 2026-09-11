@@ -23,6 +23,7 @@ class SegmentActionsTest extends TestCase
         $urlBuilder = $this->createStub(UrlInterface::class);
         $urlBuilder->method('getUrl')->willReturnMap([
             ['ordo/segment/edit', ['entity_id' => 5], 'https://example.com/admin/ordo/segment/edit/entity_id/5/'],
+            ['ordo/segment/export', ['entity_id' => 5], 'https://example.com/admin/ordo/segment/export/entity_id/5/'],
             ['ordo/segment/delete', ['entity_id' => 5], 'https://example.com/admin/ordo/segment/delete/entity_id/5/'],
         ]);
 
@@ -44,6 +45,7 @@ class SegmentActionsTest extends TestCase
 
         $actions = $result['data']['items'][0]['actions'];
         self::assertStringContainsString('entity_id/5', $actions['edit']['href']);
+        self::assertStringContainsString('entity_id/5', $actions['export']['href']);
         self::assertStringContainsString('entity_id/5', $actions['delete']['href']);
         self::assertTrue($actions['delete']['post'], 'delete action must submit via POST, not a plain GET navigation');
         self::assertStringContainsString('segment', (string) $actions['delete']['confirm']['title']);

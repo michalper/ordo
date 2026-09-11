@@ -96,9 +96,9 @@ as bugs above, not repeated here)*
   enable/disable/delete mass actions — see docs/CHANGELOG.md; ContentBlock, FreeGiftOffer,
   MessageLog, ReorderCycle, Rfm, ScoreRule, WhatsAppTemplate, and AdAudience still don't) —
   enabling/disabling/deleting is strictly one row at a time on those.
-- No export/import for campaigns or segments — the only export capability in the whole module is
-  GDPR customer-data export; nothing lets a merchant move a campaign/segment definition between
-  dev/staging/prod or back it up before a risky edit.
+- No **import** for campaigns or segments yet (export now exists — see docs/CHANGELOG.md) — a
+  merchant can back up or move a definition's JSON out of an environment, but there's no way to
+  bring it back in; that's still a manual conversation with support/engineering.
 - No setup wizard/guided first-run flow across the module — per-grid empty-state CTAs exist, but
   nothing walks a fresh install through the real dependency order (configure a channel → build a
   segment → build a campaign); an admin can build a `send_sms` action before ever configuring
