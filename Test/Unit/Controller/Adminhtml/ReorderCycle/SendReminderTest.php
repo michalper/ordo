@@ -66,29 +66,32 @@ class SendReminderTest extends AbstractAdminActionTestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteReturnsErrorWhenEntityIdMissing(): void
     {
+        $controller = $this->makeController();
         $this->request->method('getParam')->willReturnMap([['entity_id', null, null]]);
 
         $this->reorderCycleFactory->expects(self::never())->method('create');
         $this->messageManager->expects(self::once())->method('addErrorMessage');
 
-        self::assertSame($this->redirect, $this->makeController()->execute());
+        self::assertSame($this->redirect, $controller->execute());
     }
 
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteReturnsErrorWhenCycleNoLongerExists(): void
     {
+        $controller = $this->makeController();
         $this->request->method('getParam')->willReturnMap([['entity_id', null, 5]]);
         $this->reorderCycleFactory->method('create')->willReturn($this->makeCycle(null));
 
         $this->customerRepository->expects(self::never())->method('getById');
         $this->messageManager->expects(self::once())->method('addErrorMessage');
 
-        self::assertSame($this->redirect, $this->makeController()->execute());
+        self::assertSame($this->redirect, $controller->execute());
     }
 
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSendsReminderAndRedirectsWithSuccess(): void
     {
+        $controller = $this->makeController();
         $this->request->method('getParam')->willReturnMap([['entity_id', null, 5]]);
         $cycle = $this->makeCycle(5, 7);
         $this->reorderCycleFactory->method('create')->willReturn($cycle);
@@ -101,12 +104,13 @@ class SendReminderTest extends AbstractAdminActionTestCase
         $this->messageManager->expects(self::once())->method('addSuccessMessage');
         $this->messageManager->expects(self::never())->method('addErrorMessage');
 
-        self::assertSame($this->redirect, $this->makeController()->execute());
+        self::assertSame($this->redirect, $controller->execute());
     }
 
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteReturnsErrorWhenCustomerNoLongerExists(): void
     {
+        $controller = $this->makeController();
         $this->request->method('getParam')->willReturnMap([['entity_id', null, 5]]);
         $this->reorderCycleFactory->method('create')->willReturn($this->makeCycle(5, 7));
         $this->customerRepository->method('getById')->willThrowException(
@@ -115,12 +119,13 @@ class SendReminderTest extends AbstractAdminActionTestCase
 
         $this->messageManager->expects(self::once())->method('addErrorMessage');
 
-        self::assertSame($this->redirect, $this->makeController()->execute());
+        self::assertSame($this->redirect, $controller->execute());
     }
 
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteReturnsSpecificErrorWhenCustomerOptedOut(): void
     {
+        $controller = $this->makeController();
         $this->request->method('getParam')->willReturnMap([['entity_id', null, 5]]);
         $cycle = $this->makeCycle(5, 7);
         $this->reorderCycleFactory->method('create')->willReturn($cycle);
@@ -132,12 +137,13 @@ class SendReminderTest extends AbstractAdminActionTestCase
         $this->messageManager->expects(self::once())->method('addErrorMessage')
             ->with(self::stringContains('opted out'));
 
-        self::assertSame($this->redirect, $this->makeController()->execute());
+        self::assertSame($this->redirect, $controller->execute());
     }
 
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteReturnsGenericErrorWhenSendThrows(): void
     {
+        $controller = $this->makeController();
         $this->request->method('getParam')->willReturnMap([['entity_id', null, 5]]);
         $cycle = $this->makeCycle(5, 7);
         $this->reorderCycleFactory->method('create')->willReturn($cycle);
@@ -149,6 +155,6 @@ class SendReminderTest extends AbstractAdminActionTestCase
         $this->messageManager->expects(self::once())->method('addErrorMessage')
             ->with(self::stringContains('smtp down'));
 
-        self::assertSame($this->redirect, $this->makeController()->execute());
+        self::assertSame($this->redirect, $controller->execute());
     }
 }
