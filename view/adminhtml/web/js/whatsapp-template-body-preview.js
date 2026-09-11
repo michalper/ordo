@@ -11,6 +11,29 @@
  * as long as the page is open - simpler and just as correct for a field that, once rendered,
  * never gets removed/re-created.
  */
+/**
+ * @param {String} bodyText
+ * @return {Number}
+ */
+function charCount(bodyText) {
+    return bodyText.length;
+}
+
+/**
+ * Substitutes {{1}}, {{2}}, ... positional placeholders with a generic sample value each - the
+ * form has no per-variable sample-value fields to render real examples from, so this is
+ * deliberately generic (matching what an admin can expect Meta's own review-time preview to
+ * look like), not a fabricated realistic message.
+ *
+ * @param {String} bodyText
+ * @return {String}
+ */
+function renderPreview(bodyText) {
+    return bodyText.replace(/{{\s*(\d+)\s*}}/g, function (match, index) {
+        return '[Sample value ' + index + ']';
+    });
+}
+
 define([
     'jquery',
     'domReady!'
@@ -21,34 +44,11 @@ define([
         POLL_MAX_ATTEMPTS = 40; // ~4 seconds - generous slack past any real form render time.
 
     /**
-     * @param {String} bodyText
-     * @return {Number}
-     */
-    function charCount(bodyText) {
-        return bodyText.length;
-    }
-
-    /**
-     * Substitutes {{1}}, {{2}}, ... positional placeholders with a generic sample value each -
-     * the form has no per-variable sample-value fields to render real examples from, so this is
-     * deliberately generic (matching what an admin can expect Meta's own review-time preview to
-     * look like), not a fabricated realistic message.
-     *
-     * @param {String} bodyText
-     * @return {String}
-     */
-    function renderPreview(bodyText) {
-        return bodyText.replace(/{{\s*(\d+)\s*}}/g, function (match, index) {
-            return '[Sample value ' + index + ']';
-        });
-    }
-
-    /**
      * @param {jQuery} $panel the .ordo-whatsapp-body-preview wrapper
      * @param {String} bodyText
      */
     function update($panel, bodyText) {
-        var max = parseInt($panel.data('bodyPreviewMax'), 10) || 0,
+        var max = Number.parseInt($panel.data('bodyPreviewMax'), 10) || 0,
             count = charCount(bodyText),
             $count = $panel.find('[data-body-preview-count]'),
             $text = $panel.find('[data-body-preview-text]');

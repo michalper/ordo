@@ -118,8 +118,8 @@ function paletteItemMatchesQuery(label, type, query) {
         return true;
     }
 
-    return (label || '').toLowerCase().indexOf(trimmed) !== -1
-        || (type || '').toLowerCase().indexOf(trimmed) !== -1;
+    return (label || '').toLowerCase().includes(trimmed)
+        || (type || '').toLowerCase().includes(trimmed);
 }
 
 /**
@@ -150,6 +150,46 @@ function connectPendingTriggers(editor, pendingTriggerIds, nodeId) {
     pendingTriggerIds.forEach(function (triggerId) {
         editor.addConnection(triggerId, nodeId, 'output_1', 'input_1');
     });
+}
+
+/**
+ * Toggles a single palette item's visibility per the search query and reports whether it
+ * matched - pulled out of the palette-search group $.each() for the same nesting-depth reason
+ * as connectPendingTriggers() above; no behavior change.
+ *
+ * @param {jQuery} $item
+ * @param {String} query
+ * @return {Boolean} true if this item matches (and was shown)
+ */
+function applyPaletteItemSearch($item, query) {
+    var matches = paletteItemMatchesQuery($item.text(), $item.attr('data-flow-type'), query);
+
+    $item.toggle(matches);
+
+    return matches;
+}
+
+/**
+ * Filters one palette group's items by the search query and shows/hides the group itself based
+ * on whether any item still matches - pulled out of the palette-search input handler for the
+ * same nesting-depth reason as connectPendingTriggers() above; no behavior change.
+ *
+ * @param {jQuery} $group
+ * @param {String} query
+ * @param {Boolean} hasQuery
+ */
+function applyPaletteGroupSearch($group, query, hasQuery) {
+    var groupHasMatch = false;
+
+    $group.find('.ordo-flow-palette-item').each(function () {
+        groupHasMatch = applyPaletteItemSearch($(this), query) || groupHasMatch;
+    });
+
+    if (hasQuery) {
+        $group.prop('open', groupHasMatch).toggle(groupHasMatch);
+    } else {
+        $group.show();
+    }
 }
 
 define([
@@ -270,9 +310,9 @@ define([
 
         renderActions();
         $addActionButton.on('click', function () {
-            variant.actions.push({ type: (typesConfig.actions || []).filter(function (t) {
+            variant.actions.push({ type: (typesConfig.actions || []).find(function (t) {
                 return t !== 'split';
-            })[0] || '', params: {} });
+            }) || '', params: {} });
             onChange();
             renderActions();
         });
@@ -878,26 +918,7 @@ define([
                     $groups = $(this).closest('.ordo-flow-palette').find('.ordo-flow-palette-group');
 
                 $groups.each(function () {
-                    var $group = $(this),
-                        groupHasMatch = false;
-
-                    $group.find('.ordo-flow-palette-item').each(function () {
-                        var $item = $(this),
-                            matches = paletteItemMatchesQuery(
-                                $item.text(),
-                                $item.attr('data-flow-type'),
-                                query
-                            );
-
-                        $item.toggle(matches);
-                        groupHasMatch = groupHasMatch || matches;
-                    });
-
-                    if (hasQuery) {
-                        $group.prop('open', groupHasMatch).toggle(groupHasMatch);
-                    } else {
-                        $group.show();
-                    }
+                    applyPaletteGroupSearch($(this), query, hasQuery);
                 });
             });
 

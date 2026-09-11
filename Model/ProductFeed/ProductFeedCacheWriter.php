@@ -37,7 +37,8 @@ class ProductFeedCacheWriter
         $connection->query(
             // phpcs:ignore Magento2.SQL.RawQuery.FoundRawSql
             'INSERT INTO ' . $connection->quoteIdentifier($table)
-            . ' (feed_code, store_id, xml, product_count, generated_at, generation_error) VALUES (?, ?, ?, ?, NOW(), NULL) '
+            . ' (feed_code, store_id, xml, product_count, generated_at, generation_error) '
+            . 'VALUES (?, ?, ?, ?, NOW(), NULL) '
             . 'ON DUPLICATE KEY UPDATE xml = VALUES(xml), product_count = VALUES(product_count), '
             . 'generated_at = VALUES(generated_at), generation_error = NULL',
             [self::FEED_CODE, $storeId, $xml, $productCount]

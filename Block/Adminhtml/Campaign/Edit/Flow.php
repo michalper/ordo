@@ -580,7 +580,11 @@ class Flow extends Template
                 $id,
                 'ordo-flow-trigger',
                 $this->triggerNodeHtml(
-                    $this->typeOptionsHtml($this->getTriggerEventTypes(), $triggerEvent, $this->getTriggerEventLabels()),
+                    $this->typeOptionsHtml(
+                        $this->getTriggerEventTypes(),
+                        $triggerEvent,
+                        $this->getTriggerEventLabels()
+                    ),
                     $trigger->getParamsJson()
                 ),
                 $x,

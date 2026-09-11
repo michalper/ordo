@@ -47,8 +47,11 @@ class QuietHoursCalculator
      * still well-defined (returns today's or tomorrow's end-hour instant, whichever is next)
      * even if called otherwise.
      */
-    public function nextQuietHoursEndUtc(\DateTimeZone $timezone, int $endHour, \DateTimeImmutable $nowUtc): \DateTimeImmutable
-    {
+    public function nextQuietHoursEndUtc(
+        \DateTimeZone $timezone,
+        int $endHour,
+        \DateTimeImmutable $nowUtc
+    ): \DateTimeImmutable {
         $localNow = $nowUtc->setTimezone($timezone);
         $candidate = $localNow->setTime($endHour, 0, 0);
 
