@@ -2480,6 +2480,18 @@ parameters:
 			path: Model/Segment/DataProvider.php
 
 		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Model/Segment/SegmentAudienceSizeHistory.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/Segment/SegmentAudienceSizeHistory.php
+
+		-
 			message: '#^Cannot call method getData\(\) on mixed\.$#'
 			identifier: method.nonObject
 			count: 1

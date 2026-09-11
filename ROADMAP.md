@@ -57,9 +57,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 
 ### Segmentation, RFM & lead scoring (`Model/Segment/*`, `Model/Rfm/*`, `Model/ScoreRule/*`, `Model/AdAudience/*`)
 
-- No segment membership history — `estimated_audience_size`/`audience_size_computed_at` store only
-  the latest snapshot, so "how has this segment grown/shrunk over the last 3 months" isn't
-  answerable without external tracking.
 - Group condition editor's JSON fallback (for `in_segment`, `loyalty_tier_at_least`,
   `nps_score_at_least`) silently becomes `{}` on malformed JSON with no validation feedback — a
   non-technical marketer gets a condition that quietly matches nothing.
