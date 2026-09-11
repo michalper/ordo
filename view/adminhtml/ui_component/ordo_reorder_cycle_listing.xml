@@ -123,5 +123,10 @@
                 <label translate="true">Last Recalculated</label>
             </settings>
         </column>
+        <actionsColumn name="actions" class="Ordo\Automation\Ui\Component\Listing\Column\ReorderCycleActions">
+            <settings>
+                <indexField>entity_id</indexField>
+            </settings>
+        </actionsColumn>
     </columns>
 </listing>
