@@ -397,3 +397,47 @@ body.ordo-campaign-index #add:hover {
 .ordo-tier-dot-gold { background: #EAB308; }
 
 .ordo-campaign-trigger { font-size: var(--ordo-font-base); color: var(--ordo-text-muted); }
+
+/* Setup Guide (ordo/setup/index) checklist - a plain <ol> of dependency-ordered steps, each
+   with a done/step-number badge and, only while still undone, a "Go" link to actually do it. */
+.ordo-setup-wizard-steps {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ordo-setup-wizard-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  border: 1px solid var(--ordo-border);
+  border-radius: 8px;
+  padding: 14px 18px;
+}
+
+.ordo-setup-wizard-step-done { opacity: .7; }
+
+.ordo-setup-wizard-step-body p {
+  margin: 4px 0 8px;
+  color: var(--ordo-text-muted);
+  font-size: var(--ordo-font-base);
+}
+
+/* Dashboard banner (setup_wizard_banner.phtml) - only rendered while at least one step is
+   still undone, so a fully set-up install never sees it again. */
+.ordo-setup-wizard-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 14px 20px;
+  border: 1px solid var(--ordo-border);
+  border-radius: 8px;
+  background: var(--ordo-color-accent, #f5f3ff);
+}
+
+.ordo-setup-wizard-banner p { margin: 2px 0 0; color: var(--ordo-text-muted); font-size: var(--ordo-font-base); }

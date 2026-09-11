@@ -1,0 +1,23 @@
+<?php
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \Magento\Framework\Escaper $escaper */
+
+/** @var \Ordo\Automation\Block\Adminhtml\Setup\SetupWizardViewModel $viewModel */
+$viewModel = $block->getData('view_model');
+
+if ($viewModel->isComplete()) {
+    return;
+}
+?>
+<div class="ordo-setup-wizard-banner">
+    <div>
+        <strong><?= $escaper->escapeHtml(__('New here? Finish setting up Ordo Automation.')) ?></strong>
+        <p><?= $escaper->escapeHtml(__(
+            'A quick checklist for the real dependency order: configure a channel, build a '
+            . 'segment, then a campaign that uses it.'
+        )) ?></p>
+    </div>
+    <a class="ordo-btn ordo-btn-primary" href="<?= $escaper->escapeUrl($block->getUrl('ordo/setup/index')) ?>">
+        <?= $escaper->escapeHtml(__('Open Setup Guide')) ?>
+    </a>
+</div>
