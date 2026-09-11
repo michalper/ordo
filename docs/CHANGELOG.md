@@ -5,6 +5,22 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- **Order approval escalation is now multi-level instead of a flat, single-recipient reminder
+  loop.** `Cron/EscalateStalePendingApprovals.php` previously re-reminded the same
+  customer-assigned `admin_email` up to a hardcoded `MAX_ESCALATIONS = 3` times and then left the
+  order pending forever with no further action. It now supports a configurable escalation chain
+  (Stores > Configuration > Ordo Automation > Order Approval): **Reminders to send before
+  escalating to the next tier** (`getOrderApprovalEscalationMaxRemindersPerTier()`, default 3,
+  replacing the old constant) and **Escalation chain** (`getOrderApprovalEscalationChainEmails()`,
+  one email per line, empty by default). Once the current tier's reminder cap is reached, the next
+  reminder goes to the first configured chain email instead (tier 1), then the second (tier 2), and
+  so on; a new `escalation_tier` column on `ordo_order_approval` (smallint, default 0) tracks this,
+  resetting `reminders_sent` to 0/1 each time it advances. Leaving the chain unconfigured keeps the
+  exact original behavior — indefinite reminders to the same recipient, no schema/config change
+  required for existing installs to see no difference.
+
 ### Changed
 
 - **Centralized the admin CSS color tokens duplicated across `dashboard.css`, `segment-form.css`,
@@ -44,6 +60,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   `entity_id`/`campaign_id`/`segment_id` — only the parts that actually describe the definition
   are exported, since a future import would assign fresh ids anyway. Import itself is not part of
   this change — see ROADMAP.md.
+- **Segment membership history**, closing the segmentation ROADMAP.md gap where
+  `estimated_audience_size`/`audience_size_computed_at` only ever held the latest snapshot, so
+  "how has this segment grown/shrunk over the last 3 months" wasn't answerable without external
+  tracking. New append-only `ordo_segment_audience_size_history` table
+  (`Model\Segment\SegmentAudienceSizeHistory`, FK `ON DELETE CASCADE` to `ordo_segment`);
+  `SegmentAudienceSizeRecalculator::recalculateAll()` now appends one history row per segment on
+  every pass, alongside its existing overwrite-in-place update to `ordo_segment` itself. No
+  admin trend view yet — a natural follow-up once there is real history to show.
 - **New "Template Test Send" admin page**, closing the communication-channels ROADMAP.md gap
   where there was no template preview or test-send anywhere in admin, for any channel — merchants
   routinely typo `{{var}}`/WhatsApp `{{1}}` placeholders and only discovered it once a real

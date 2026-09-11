@@ -12,7 +12,6 @@ use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollection
 use Magento\Store\Model\Store;
 use Ordo\Automation\Cron\EscalateStalePendingApprovals;
 use Ordo\Automation\Helper\Config;
-use Ordo\Automation\Model\Cron\CronRunLogger;
 use Ordo\Automation\Model\OrderApproval;
 use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
 use Ordo\Automation\Model\ResourceModel\OrderApproval\Collection as ApprovalCollection;
@@ -21,7 +20,6 @@ use Ordo\Automation\Model\TriggerOutcomeLogger;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class EscalateStalePendingApprovalsTest extends TestCase
 {
@@ -41,6 +39,8 @@ class EscalateStalePendingApprovalsTest extends TestCase
         $this->config = $this->createStub(Config::class);
         $this->config->method('isOrderApprovalEnabled')->willReturn(true);
         $this->config->method('getOrderApprovalEscalationDays')->willReturn(2);
+        $this->config->method('getOrderApprovalEscalationMaxRemindersPerTier')->willReturn(3);
+        $this->config->method('getOrderApprovalEscalationChainEmails')->willReturn([]);
         $this->approvalCollectionFactory = $this->createMock(ApprovalCollectionFactory::class);
         $this->orderApprovalResource = $this->createMock(OrderApprovalResource::class);
         $this->orderCollectionFactory = $this->createMock(OrderCollectionFactory::class);
@@ -88,6 +88,105 @@ class EscalateStalePendingApprovalsTest extends TestCase
         $this->approvalCollectionFactory->method('create')->willReturn($collection);
 
         $this->orderCollectionFactory->expects(self::never())->method('create');
+        $this->logger->expects(self::once())->method('info')->with(self::stringContains('0 order approval escalations'));
+
+        $this->makeCron()->execute();
+    }
+
+    /**
+     * A chain IS configured and the approval is already at its reminder cap at tier 0 - the next
+     * reminder must go to the first chain email (tier 1), with escalation_tier advanced and
+     * reminders_sent reset to 1 (this send's own reminder), not left at the old tier's count.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteAdvancesTierAndRemindsChainRecipient(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isOrderApprovalEnabled')->willReturn(true);
+        $config->method('getOrderApprovalEscalationDays')->willReturn(2);
+        $config->method('getOrderApprovalEscalationMaxRemindersPerTier')->willReturn(3);
+        $config->method('getOrderApprovalEscalationChainEmails')->willReturn(['tier1@example.com']);
+        $this->config = $config;
+
+        $approval = $this->createMock(OrderApproval::class);
+        $approval->method('getRemindersSent')->willReturn(3);
+        $approval->method('getEscalationTier')->willReturn(0);
+        $approval->method('getOrderId')->willReturn(7);
+        $approval->method('getToken')->willReturn('tok');
+        $setDataCalls = [];
+        $approval->method('setData')->willReturnCallback(function ($key, $value) use (&$setDataCalls) {
+            $setDataCalls[] = [$key, $value];
+        });
+
+        $collection = $this->createStub(ApprovalCollection::class);
+        $collection->method('addStalePendingFilter');
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$approval]));
+        $this->approvalCollectionFactory->method('create')->willReturn($collection);
+
+        $store = $this->createStub(Store::class);
+        $store->method('getId')->willReturn(1);
+        $store->method('getBaseUrl')->willReturn('https://example.com/');
+
+        $order = $this->createStub(Order::class);
+        $order->method('getId')->willReturn(7);
+        $order->method('getEntityId')->willReturn(7);
+        $order->method('getIncrementId')->willReturn('000000007');
+        $order->method('getGrandTotal')->willReturn(150.0);
+        $order->method('getCustomerId')->willReturn(null);
+        $order->method('getStore')->willReturn($store);
+
+        $orderCollection = $this->createStub(OrderCollection::class);
+        $orderCollection->method('addFieldToFilter')->willReturnSelf();
+        $orderCollection->method('getIterator')->willReturn(new \ArrayIterator([$order]));
+        $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
+
+        $this->transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
+        $this->transportBuilder->method('setTemplateOptions')->willReturnSelf();
+        $this->transportBuilder->method('setTemplateVars')->willReturnSelf();
+        $this->transportBuilder->method('setFromByScope')->willReturnSelf();
+        $sentTo = null;
+        $this->transportBuilder->method('addTo')->willReturnCallback(function ($to) use (&$sentTo) {
+            $sentTo = $to;
+            return $this->transportBuilder;
+        });
+
+        $transport = $this->createStub(TransportInterface::class);
+        $this->transportBuilder->method('getTransport')->willReturn($transport);
+
+        $this->orderApprovalResource->expects(self::once())->method('save')->with($approval);
+
+        $this->makeCron()->execute();
+
+        self::assertSame('tier1@example.com', $sentTo);
+        self::assertSame([['escalation_tier', 1], ['reminders_sent', 1]], $setDataCalls);
+    }
+
+    /**
+     * At the cap, with no further chain email configured past the current tier, the approval is
+     * skipped entirely - same terminal "sits pending forever" outcome the original single-level
+     * behavior had, now reached once the whole configured chain (however long) is exhausted.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSkipsWhenChainExhausted(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isOrderApprovalEnabled')->willReturn(true);
+        $config->method('getOrderApprovalEscalationDays')->willReturn(2);
+        $config->method('getOrderApprovalEscalationMaxRemindersPerTier')->willReturn(3);
+        $config->method('getOrderApprovalEscalationChainEmails')->willReturn(['tier1@example.com']);
+        $this->config = $config;
+
+        $approval = $this->createMock(OrderApproval::class);
+        $approval->method('getRemindersSent')->willReturn(3);
+        $approval->method('getEscalationTier')->willReturn(1);
+
+        $collection = $this->createStub(ApprovalCollection::class);
+        $collection->method('addStalePendingFilter');
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$approval]));
+        $this->approvalCollectionFactory->method('create')->willReturn($collection);
+
+        $this->orderCollectionFactory->expects(self::never())->method('create');
+        $this->orderApprovalResource->expects(self::never())->method('save');
         $this->logger->expects(self::once())->method('info')->with(self::stringContains('0 order approval escalations'));
 
         $this->makeCron()->execute();

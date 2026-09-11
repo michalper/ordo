@@ -57,9 +57,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 
 ### Segmentation, RFM & lead scoring (`Model/Segment/*`, `Model/Rfm/*`, `Model/ScoreRule/*`, `Model/AdAudience/*`)
 
-- No segment membership history — `estimated_audience_size`/`audience_size_computed_at` store only
-  the latest snapshot, so "how has this segment grown/shrunk over the last 3 months" isn't
-  answerable without external tracking.
 - Group condition editor's JSON fallback (for `in_segment`, `loyalty_tier_at_least`,
   `nps_score_at_least`) silently becomes `{}` on malformed JSON with no validation feedback — a
   non-technical marketer gets a condition that quietly matches nothing.
@@ -78,12 +75,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 *(the "Free Gift never applies to a cart" and "guest checkout bypasses approval" items are listed
 as bugs above, not repeated here)*
 
-- Order approval is single-level with a hard escalation ceiling (`MAX_ESCALATIONS = 3` in
-  `Cron/EscalateStalePendingApprovals.php`) and then the order sits pending forever — no second
-  approver, no delegate-when-absent, no auto-approve/auto-cancel fallback.
-- No admin grid for order approvals at all — only email tokens + REST API; an admin who loses the
-  original email has no in-backend way to browse or act on a pending approval, unlike every other
-  domain entity in this module.
 - GDPR erasure/export hand-maintain two independent table lists with no single source of truth —
   the same "quietly goes stale" pattern already bit `SetConsent`'s channel list once (since fixed);
   a new customer-keyed table can silently be omitted from erasure.
