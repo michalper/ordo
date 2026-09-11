@@ -43,6 +43,16 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   top-level condition row; `segment-group-modal.js`'s `renderValueField()` renders the same
   warning text for a nested "group" row, since those aren't backed by ui-component fields at all.
 
+- **WhatsApp Template Edit page now has a character-limit validation, live counter, and rendered
+  preview for the Body Text field**, closing the communication-channels ROADMAP.md gap where a raw
+  textarea with manual `{{1}}`/`{{2}}` placeholders had no feedback before a real (costly) Meta
+  review submission. The field's UI-component validation gained a `max_text_length` rule (1024
+  characters, matching Meta's own documented WhatsApp template body limit —
+  `Block\Adminhtml\WhatsAppTemplate\BodyPreview::BODY_MAX_LENGTH`), and a new sibling panel
+  (`whatsapp-template-body-preview.js`) shows a live `n / 1024 characters` counter (flagged once
+  over the limit) plus the body text with every `{{N}}` placeholder substituted for a generic
+  `[Sample value N]`, updated on every keystroke.
+
 - **New Segment Overlap admin page**, closing the segmentation ROADMAP.md gap where there was no
   way to see "how many customers are in both Segment A and B" — useful for avoiding message
   fatigue from campaigns that unknowingly target overlapping audiences. A new
