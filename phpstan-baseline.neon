@@ -613,6 +613,30 @@ parameters:
 			path: Controller/Adminhtml/Segment/OverlapCompute.php
 
 		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/TemplateTestSend/Index.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/TemplateTestSend/Index.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 7
+			path: Controller/Adminhtml/TemplateTestSend/Send.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Adminhtml/TemplateTestSend/Send.php
+
+		-
 			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getPostValue\(\)\.$#'
 			identifier: method.notFound
 			count: 1
