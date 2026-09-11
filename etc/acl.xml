@@ -23,6 +23,7 @@
                 <resource id="Ordo_Automation::product_feed" title="Ordo Automation Product Feed" translate="title" sortOrder="610"/>
                 <resource id="Ordo_Automation::rfm" title="Ordo Automation RFM" translate="title" sortOrder="620"/>
                 <resource id="Ordo_Automation::cron_run_log" title="Ordo Automation Cron Run Log" translate="title" sortOrder="630"/>
+                <resource id="Ordo_Automation::order_approval" title="Ordo Automation Order Approval" translate="title" sortOrder="640"/>
             </resource>
         </resources>
     </acl>
