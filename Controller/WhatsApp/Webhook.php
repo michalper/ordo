@@ -191,6 +191,7 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
 
         $collection = $this->messageLogCollectionFactory->create();
         $collection->addFieldToFilter('provider_message_id', $providerMessageId);
+        /** @var MessageLog $log */
         $log = $collection->getFirstItem();
 
         if (!$log->getId()) {

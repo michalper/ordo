@@ -11,6 +11,7 @@ use Magento\Framework\App\Request\InvalidRequestException;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\MessageLog;
 use Ordo\Automation\Model\MessageLog\StatusDowngradeGuard;
 use Ordo\Automation\Model\ResourceModel\MessageLog as MessageLogResource;
 use Ordo\Automation\Model\ResourceModel\MessageLog\CollectionFactory as MessageLogCollectionFactory;
@@ -69,6 +70,7 @@ class StatusCallback extends Action implements HttpPostActionInterface, CsrfAwar
 
         $collection = $this->messageLogCollectionFactory->create();
         $collection->addFieldToFilter('provider_message_id', $messageSid);
+        /** @var MessageLog $log */
         $log = $collection->getFirstItem();
 
         if (!$log->getId()) {
