@@ -33,6 +33,16 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **New Segment Overlap admin page**, closing the segmentation ROADMAP.md gap where there was no
+  way to see "how many customers are in both Segment A and B" — useful for avoiding message
+  fatigue from campaigns that unknowingly target overlapping audiences. A new
+  `Controller\Adminhtml\Segment\Overlap` page (linked from a new dashboard card) lets an admin pick
+  any two segments; `Controller\Adminhtml\Segment\OverlapCompute` (an AJAX endpoint following the
+  same shape as the existing `Segment\AudienceSize` one) calls
+  `SegmentMemberResolver::getMatchingCustomerIds()` once per segment and returns each segment's
+  size plus the `array_intersect()`/`array_diff()`-derived intersection and unique-remainder
+  counts — no new resolver logic needed, purely new UI + a thin controller.
+
 - **Time-zone-aware campaign quiet hours**, closing the campaign engine's "No time-zone-aware
   quiet hours" gap. New `ordo_timezone` customer attribute (`AddCustomerTimezoneAttribute`, an
   IANA zone string, e.g. `Europe/Warsaw`) and a `quiet_hours` admin config section
