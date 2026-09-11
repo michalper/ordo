@@ -33,6 +33,15 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Segment membership history**, closing the segmentation ROADMAP.md gap where
+  `estimated_audience_size`/`audience_size_computed_at` only ever held the latest snapshot, so
+  "how has this segment grown/shrunk over the last 3 months" wasn't answerable without external
+  tracking. New append-only `ordo_segment_audience_size_history` table
+  (`Model\Segment\SegmentAudienceSizeHistory`, FK `ON DELETE CASCADE` to `ordo_segment`);
+  `SegmentAudienceSizeRecalculator::recalculateAll()` now appends one history row per segment on
+  every pass, alongside its existing overwrite-in-place update to `ordo_segment` itself. No
+  admin trend view yet — a natural follow-up once there is real history to show.
+
 - **Consent audit trail**, closing the commerce-features ROADMAP.md gap where `SetConsent`
   overwrote the current state with no timestamped history — what most real GDPR audits actually
   ask for ("was this customer opted in for SMS on date X"). New append-only
