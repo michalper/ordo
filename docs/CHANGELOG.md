@@ -47,6 +47,17 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   push notification has no "address" to test-send to outside a real, already-registered browser
   subscription.
 
+- **Consent audit trail**, closing the commerce-features ROADMAP.md gap where `SetConsent`
+  overwrote the current state with no timestamped history — what most real GDPR audits actually
+  ask for ("was this customer opted in for SMS on date X"). New append-only
+  `ordo_customer_consent_log` table (`Model\CustomerConsentLog`); `ConsentManager::setConsent()`
+  now writes a log row alongside its existing upsert into `ordo_customer_consent`, after that
+  upsert succeeds — never before. `Model\Gdpr\CustomerDataTableProvider` (the single source of
+  truth for every customer-keyed table) picked up the new table automatically, so GDPR
+  erasure/export both already include it (`consent_history` export key) with no separate change
+  needed. No new admin grid to browse this log yet — a natural follow-up once there's a concrete
+  need to view it, not attempted here.
+
 - **`send_sms`/`send_push` campaign actions can now include product recommendations as plain
   text**, closing the "product recommendations are effectively email-only" gap.
   `Model\Recommendation\ProductRecommendationRenderer` gained a `renderText()` method (one line

@@ -422,6 +422,21 @@
         </constraint>
     </table>
 
+    <table name="ordo_customer_consent_log" resource="default" engine="innodb" comment="Append-only audit trail of every Model\ConsentManager::setConsent() call - unlike ordo_customer_consent (which only ever holds the current state, upserted in place), a row here is never updated once written, so who consented/opted out on which channel and when is still answerable after the current state has since changed again.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="The customer this consent change applies to"/>
+        <column xsi:type="varchar" name="channel" nullable="false" length="32" comment="email, sms, or push"/>
+        <column xsi:type="boolean" name="consented" nullable="false" comment="1=opted in, 0=opted out, as of this log entry"/>
+        <column xsi:type="varchar" name="source" nullable="true" length="64" comment="Where this change was recorded from, e.g. admin, unsubscribe_link, checkout"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="ORDO_CUSTOMER_CONSENT_LOG_CUSTOMER_ID" indexType="btree">
+            <column name="customer_id"/>
+        </index>
+    </table>
+
     <table name="ordo_ad_audience" resource="default" engine="innodb" comment="A segment configured to sync as a remarketing audience to an external ad platform (google_ads or meta) - Cron\SyncAdAudiences hashes each matching segment members email (Model\AdAudience\PiiHasher) and pushes the list via the platform SyncClientInterface implementation, refreshed on a cron.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="name" nullable="false" length="255" comment="Admin-facing name"/>

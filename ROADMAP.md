@@ -87,8 +87,6 @@ as bugs above, not repeated here)*
 - GDPR erasure/export hand-maintain two independent table lists with no single source of truth —
   the same "quietly goes stale" pattern already bit `SetConsent`'s channel list once (since fixed);
   a new customer-keyed table can silently be omitted from erasure.
-- No consent audit trail — `SetConsent` overwrites current state with no timestamped history, which
-  is what most real GDPR audits actually ask for ("was this customer opted in for SMS on date X").
 - No persisted cron-run log/grid — `Model/Cron/CronRunLogger.php` only writes to `var/log`; "did
   today's escalation cron even run" is invisible without log-tailing.
 - Reorder Cycle is detection-only — `Cron/CalculateReorderCycle.php` computes `next_expected_date`

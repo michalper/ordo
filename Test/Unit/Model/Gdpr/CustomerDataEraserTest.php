@@ -14,7 +14,7 @@ class CustomerDataEraserTest extends TestCase
     public function testEraseDeletesFromEveryTableFilteredByCustomerId(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
-        $connection->expects(self::exactly(8))->method('delete')
+        $connection->expects(self::exactly(9))->method('delete')
             ->with(self::callback('is_string'), ['customer_id = ?' => 42])
             ->willReturn(1);
 
