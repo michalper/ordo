@@ -10,7 +10,7 @@
         <p>
             <?= $escaper->escapeHtml(__(
                 'Choose a JSON file previously downloaded from this %1\'s own Export action. '
-                . 'Importing always creates a brand-new %1 - it never overwrites an existing one.',
+                    . 'Importing always creates a brand-new %1 - it never overwrites an existing one.',
                 $block->getEntityLabel()
             )) ?>
         </p>
@@ -21,8 +21,17 @@
         >
             <?= $block->getBlockHtml('formkey') ?>
             <div class="admin__field">
+                <label class="admin__field-label" for="ordo-import-file">
+                    <?= $escaper->escapeHtml(__('File')) ?>
+                </label>
                 <div class="admin__field-control">
-                    <input type="file" name="import_file" accept="application/json,.json" required>
+                    <input
+                        type="file"
+                        id="ordo-import-file"
+                        name="import_file"
+                        accept="application/json,.json"
+                        required
+                    >
                 </div>
             </div>
             <div class="admin__field">
