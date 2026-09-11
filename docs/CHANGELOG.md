@@ -47,6 +47,22 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   call sites. Configurable per channel (`Twilio`/`WhatsApp`/`Push` sections in system.xml),
   `0` disables throttling entirely; conservative non-zero defaults (Twilio 1/s, WhatsApp 5/s, Push
   20/s) so this protects an upgraded install without any config change required.
+- **Import for campaigns and segments**, the other half of the export capability that already
+  existed (`Controller\Adminhtml\{Campaign,Segment}\Export`) — a merchant can now bring a
+  previously-exported JSON definition back in, not just take one out. New "Import
+  {Campaign,Segment}" buttons on each grid open a small upload page
+  (`Controller\Adminhtml\{Campaign,Segment}\ImportForm`); the POST handler
+  (`Controller\Adminhtml\{Campaign,Segment}\Import`) hands the decoded file to a new
+  `Model\Campaign\CampaignImporter`/`Model\Segment\SegmentImporter`. Deliberately its own class
+  rather than reusing `CampaignSaveProcessor`/`SegmentSaveProcessor`: those expect the admin
+  form's own posted shape (`params_json`/dedicated-fields-to-merge), not Export's already-clean
+  `{type, params, sort_order}` shape — forcing one through the other would mean re-encoding
+  params back into a fake `params_json` string just to have it immediately decoded again. Always
+  creates a brand-new entity, never overwrites an existing one, exactly like Export's own "no
+  entity ids in the payload" promise; a malformed/unknown-type row is dropped rather than failing
+  the whole import (same fail-soft philosophy the save processors already apply to a
+  hand-crafted/tampered form POST), while a fundamentally wrong file (missing name, wrong
+  `export_type`) is rejected outright with a clear error message.
 - **Dashboard drill-down KPIs for stuck order approvals and failed cron runs**, closing the
   admin-platform ROADMAP.md gap where neither was visible without navigating to their grids first.
   Two new clickable cards on `ordo/dashboard/index`: "Order approvals stuck" (pending approvals
