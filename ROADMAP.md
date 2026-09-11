@@ -86,10 +86,11 @@ as bugs above, not repeated here)*
 - Admin action audit log now covers Campaign and Segment saves only (see docs/CHANGELOG.md) —
   every other admin-managed entity (Free Gift Offers, WhatsApp Templates, Content Blocks, etc.)
   is still unaudited; extend the same plugin pattern to each as a natural follow-up.
-- No bulk/mass-action on 8 of the ~10 listing grids (Campaign and Segment now have
-  enable/disable/delete mass actions — see docs/CHANGELOG.md; ContentBlock, FreeGiftOffer,
-  MessageLog, ReorderCycle, Rfm, ScoreRule, WhatsAppTemplate, and AdAudience still don't) —
-  enabling/disabling/deleting is strictly one row at a time on those.
+- No bulk/mass-action on MessageLog, ReorderCycle, and Rfm's grids (Campaign, Segment,
+  ContentBlock, FreeGiftOffer, ScoreRule, and AdAudience now have enable/disable/delete mass
+  actions, and WhatsAppTemplate has mass-delete — see docs/CHANGELOG.md) — those three remaining
+  grids are read-only/log/diagnostic views without an "enabled" concept to toggle, so a mass
+  action there would need its own new capability first, not just wiring up an existing one.
 - No **import** for campaigns or segments yet (export now exists — see docs/CHANGELOG.md) — a
   merchant can back up or move a definition's JSON out of an environment, but there's no way to
   bring it back in; that's still a manual conversation with support/engineering.
@@ -123,8 +124,6 @@ new. Two are real bugs worth fixing soon; the rest are minor cleanups/optimizati
   SELECT per trigger inside its scan loop instead of one batched query for every
   (campaign_id, trigger_event) pair up front. A natural prerequisite if the calendar view below
   ever gets built (same triggers, same lookup).
-- `Infra/Sms/TwilioSmsSender.php` constructs a new Twilio `Client` on every `send()` call instead
-  of reusing one instance.
 
 ### Documentation drift
 
@@ -134,11 +133,6 @@ new. Two are real bugs worth fixing soon; the rest are minor cleanups/optimizati
 - `VERIFICATION.md`'s manual checklist has no steps for anything shipped since 2026-09-10 (admin
   action audit log, Order Approvals grid, Campaign/Segment export, product feed health grid,
   dead-letter/retry, multi-tier escalation).
-- Five listing grids (`ordo_adaudience_listing.xml`, `ordo_contentblock_listing.xml`,
-  `ordo_free_gift_offer_listing.xml`, `ordo_scorerule_listing.xml`,
-  `ordo_whatsapptemplate_listing.xml`) render row-selection checkboxes (`<selectionsColumn>`)
-  with no `<massaction>` behind them — worse than simply lacking mass actions (already tracked
-  above), these are checkboxes that visibly do nothing.
 
 ## Scheduled (date-based) campaigns: calendar view
 
