@@ -76,7 +76,15 @@
                 <item name="ordo_messagelog_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\MessageLog\Grid\Collection</item>
                 <item name="ordo_adaudience_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\AdAudience\Grid\Collection</item>
                 <item name="ordo_whatsapptemplate_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\WhatsAppTemplate\Grid\Collection</item>
+                <item name="ordo_orderapproval_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\OrderApproval\Grid\Collection</item>
             </argument>
+        </arguments>
+    </type>
+
+    <type name="Ordo\Automation\Model\ResourceModel\OrderApproval\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">ordo_order_approval</argument>
+            <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\OrderApproval</argument>
         </arguments>
     </type>
 

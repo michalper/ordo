@@ -326,6 +326,12 @@ $segmentNavDesc = __(
             'desc' => __('Read-only: raw delivery status of every SMS/email a campaign action sent'),
             'icon' => 'inbox',
         ],
+        [
+            'url' => $block->getUrl('ordo/orderapproval/index'),
+            'title' => __('Order Approvals'),
+            'desc' => __('Browse and act on pending order approvals without the original decision email'),
+            'icon' => 'shield',
+        ],
     ];
     ?>
     <?php foreach ($navGroups as $navGroup): ?>

@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="ordo_orderapproval_listing_intro"
+                   template="Ordo_Automation::listing_intro.phtml" before="ordo_orderapproval_listing">
+                <arguments>
+                    <argument name="intro_text" xsi:type="string">Every order-approval hold this module has ever created. Approve/Reject act through the same token-authenticated link the original decision email carries - no separate admin-only decision path to keep in sync.</argument>
+                </arguments>
+            </block>
+            <uiComponent name="ordo_orderapproval_listing"/>
+        </referenceContainer>
+    </body>
+</page>

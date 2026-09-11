@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">ordo_orderapproval_listing.ordo_orderapproval_listing_data_source</item>
+        </item>
+    </argument>
+    <settings>
+        <spinner>ordo_orderapproval_columns</spinner>
+        <deps>
+            <dep>ordo_orderapproval_listing.ordo_orderapproval_listing_data_source</dep>
+        </deps>
+        <buttons>
+            <button name="back_to_dashboard">
+                <url path="ordo/dashboard/index"/>
+                <class>back</class>
+                <label translate="true">Back to Dashboard</label>
+            </button>
+        </buttons>
+    </settings>
+
+    <dataSource name="ordo_orderapproval_listing_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider</argument>
+            <argument name="name" xsi:type="string">ordo_orderapproval_listing_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">entity_id</argument>
+            <argument name="requestFieldName" xsi:type="string">entity_id</argument>
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="update_url" xsi:type="url" path="mui/index/render"/>
+                </item>
+            </argument>
+        </argument>
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/grid/provider</item>
+            </item>
+        </argument>
+    </dataSource>
+
+    <columns name="ordo_orderapproval_columns">
+        <column name="entity_id">
+            <settings>
+                <filter>text</filter>
+                <sorting>desc</sorting>
+                <label translate="true">ID</label>
+            </settings>
+        </column>
+        <column name="order_id">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Order ID</label>
+            </settings>
+        </column>
+        <column name="admin_email">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Notified Admin</label>
+            </settings>
+        </column>
+        <column name="status" component="Magento_Ui/js/grid/columns/select">
+            <settings>
+                <filter>select</filter>
+                <options class="Ordo\Automation\Model\Config\Source\OrderApprovalStatus"/>
+                <dataType>select</dataType>
+                <label translate="true">Status</label>
+            </settings>
+        </column>
+        <column name="reminders_sent">
+            <settings>
+                <filter>textRange</filter>
+                <dataType>text</dataType>
+                <label translate="true">Reminders Sent</label>
+            </settings>
+        </column>
+        <column name="created_at" class="Magento\Ui\Component\Listing\Columns\Date">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Created</label>
+            </settings>
+        </column>
+        <column name="decided_at" class="Magento\Ui\Component\Listing\Columns\Date">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Decided</label>
+            </settings>
+        </column>
+        <actionsColumn name="actions" class="Ordo\Automation\Ui\Component\Listing\Column\OrderApprovalActions">
+            <settings>
+                <indexField>entity_id</indexField>
+            </settings>
+        </actionsColumn>
+    </columns>
+</listing>

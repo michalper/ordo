@@ -11,9 +11,10 @@ jobs — not guessed from memory. Each scenario is marked:
 
 Cross-reference: `ROADMAP.md`'s "Test coverage" section for the standing priority list this feeds.
 
-**Status: every row below is ✅ except one 🔴 (see §10) and three ⬜ (the frequency-cap structural
-case in §1d, the Segment Overlap page in §2, and the WhatsApp Template Body Text preview panel in
-§15 — all unit-tested but no MFTF/integration coverage yet).** Re-audit this against `etc/di.xml`/
+**Status: every row below is ✅ except one 🔴 (see §10) and four ⬜ (the frequency-cap structural
+case in §1d, the Order Approvals grid in §6, the Segment Overlap page in §2, and the WhatsApp
+Template Body Text preview panel in §15 — all unit-tested but no MFTF/integration coverage
+yet).** Re-audit this against `etc/di.xml`/
 `Controller/Adminhtml/*`/`etc/events.xml` periodically rather than trusting it at face value — add a row (⬜)
 for anything newly added before considering it done.
 
@@ -172,6 +173,7 @@ through. `Controller/Offer/*` (self-extend,
 | `Cron\EscalateStalePendingApprovals` — a pending approval past its SLA gets escalated                                                | ✅ `AdminEscalateStalePendingApprovalTest`              |
 | Order under spend limit — never held at all (negative case)                                                                          | ✅ `AdminOrderUnderSpendLimitNotHeldTest`               |
 | Customer with no spend limit / no approval admin email configured — never held                                                       | ✅ `AdminOrderNeverHeldWithoutSpendLimitConfiguredTest` |
+| Order Approvals admin grid (`ordo/orderapproval/index`) — Approve/Reject action links for a still-pending row                        | ⬜ unit-tested (`OrderApprovalActionsTest`, `IndexTest`), no MFTF yet |
 
 ## 7. Tracking & popups (`view/frontend/web/js/tracker.js`, `Controller/Track/`)
 
