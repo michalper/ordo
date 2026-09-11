@@ -48,12 +48,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
   no inline "send test" before saving an action (palette search/filter now exists — see
   docs/CHANGELOG.md).
 
-### Segmentation, RFM & lead scoring (`Model/Segment/*`, `Model/Rfm/*`, `Model/ScoreRule/*`, `Model/AdAudience/*`)
-
-- Group condition editor's JSON fallback (for `in_segment`, `loyalty_tier_at_least`,
-  `nps_score_at_least`) silently becomes `{}` on malformed JSON with no validation feedback — a
-  non-technical marketer gets a condition that quietly matches nothing.
-
 ### Communication channels (Email/SMS/WhatsApp/Push)
 
 - Every send is one synchronous, unbatched HTTP call per customer inline in the dispatch path — no
