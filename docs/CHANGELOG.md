@@ -140,6 +140,13 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   up front; `matchesCronExpression()` also now reuses one `Magento\Cron\Model\Schedule` instance
   per scan instead of creating a new one via `cronScheduleFactory` on every recurring trigger
   checked.
+- **`Cron\SyncAdAudiences` now checks ad-sharing consent for a whole segment in one query**,
+  closing the last remaining ROADMAP.md item in this shape (the other five batch crons —
+  `SendReorderReminders`, `SendWinBackEmails`, `SendCreditLimitAlerts`,
+  `SendOfferExpiryReminders`, `SendAbandonedCartReminders` — already switched). Replaced the
+  per-customer `ConsentManager::hasConsent()` call inside the sync loop with one
+  `hasConsentForCustomers()` call before it, same pattern as the others — a 20k-customer ad
+  audience used to run 20k separate `SELECT`s per configured audience, once a day.
 - **`Model\Sms\TwilioSmsSender` now reuses one `Twilio\Rest\Client` instance** across `send()`
   calls instead of constructing a new one every time, rebuilding only if the API key/secret
   actually changed since the last call (credential rotation) — matters most for the long-lived

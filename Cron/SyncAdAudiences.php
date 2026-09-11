@@ -89,9 +89,14 @@ class SyncAdAudiences
         // still match the segment - this is data leaving the store entirely, not just a message
         // being sent, so it's checked per customer before hashing/upload, same as every other
         // channel's send action checks hasConsent() before sending.
+        // One query for the whole batch instead of one hasConsent() call per customer inside the
+        // loop below - found via a performance audit, same reasoning as
+        // CreditLimitCalculator::getUsedCreditForCustomers().
+        $consentByCustomer = $this->consentManager->hasConsentForCustomers($customerIds, ConsentChannel::Ads);
+
         $emails = [];
         foreach ($customerMap as $customerId => $customer) {
-            if (!$this->consentManager->hasConsent((int) $customerId, ConsentChannel::Ads)) {
+            if (!($consentByCustomer[$customerId] ?? true)) {
                 continue;
             }
 

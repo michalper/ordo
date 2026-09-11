@@ -43,7 +43,8 @@ class SyncAdAudiencesTest extends TestCase
         $this->customerMapBuilder = $this->createMock(CustomerMapBuilder::class);
         $this->syncClientPool = $this->createMock(SyncClientPool::class);
         $this->consentManager = $this->createMock(ConsentManager::class);
-        $this->consentManager->method('hasConsent')->willReturn(true);
+        $this->consentManager->method('hasConsentForCustomers')
+            ->willReturnCallback(static fn (array $customerIds): array => array_fill_keys($customerIds, true));
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->cron = new SyncAdAudiences(
@@ -123,10 +124,9 @@ class SyncAdAudiencesTest extends TestCase
         $this->customerMapBuilder->method('build')->willReturn([42 => $consentedCustomer, 43 => $optedOutCustomer]);
 
         $this->consentManager = $this->createMock(ConsentManager::class);
-        $this->consentManager->method('hasConsent')->willReturnMap([
-            [42, ConsentChannel::Ads, true],
-            [43, ConsentChannel::Ads, false],
-        ]);
+        $this->consentManager->expects(self::once())->method('hasConsentForCustomers')
+            ->with([42, 43], ConsentChannel::Ads)
+            ->willReturn([42 => true, 43 => false]);
         $this->cron = new SyncAdAudiences(
             $this->collectionFactory,
             $this->adAudienceResource,
