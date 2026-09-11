@@ -78,9 +78,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 *(the "Free Gift never applies to a cart" and "guest checkout bypasses approval" items are listed
 as bugs above, not repeated here)*
 
-- Order approval is single-level with a hard escalation ceiling (`MAX_ESCALATIONS = 3` in
-  `Cron/EscalateStalePendingApprovals.php`) and then the order sits pending forever — no second
-  approver, no delegate-when-absent, no auto-approve/auto-cancel fallback.
 - GDPR erasure/export hand-maintain two independent table lists with no single source of truth —
   the same "quietly goes stale" pattern already bit `SetConsent`'s channel list once (since fixed);
   a new customer-keyed table can silently be omitted from erasure.

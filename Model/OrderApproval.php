@@ -44,6 +44,16 @@ class OrderApproval extends AbstractModel implements OrderApprovalInterface
         return (int) $this->getData(self::REMINDERS_SENT);
     }
 
+    /**
+     * 0 = the original customer-assigned admin_email; 1, 2, 3, ... index into
+     * Config::getOrderApprovalEscalationChainEmails() for who the next reminder actually goes to
+     * - see Cron\EscalateStalePendingApprovals::resolveRecipientEmail().
+     */
+    public function getEscalationTier(): int
+    {
+        return (int) $this->getData(self::ESCALATION_TIER);
+    }
+
     public function getCreatedAt(): ?string
     {
         return $this->getData(self::CREATED_AT);

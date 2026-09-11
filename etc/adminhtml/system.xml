@@ -122,6 +122,16 @@
                     <validate>validate-digits validate-greater-than-zero</validate>
                     <depends><field id="enabled">1</field></depends>
                 </field>
+                <field id="escalation_max_reminders_per_tier" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Reminders to send before escalating to the next tier</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="escalation_chain_emails" translate="label comment" type="textarea" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Escalation chain (one email per line)</label>
+                    <comment>Once the current recipient (the customer's own "Order Approval Admin Email" attribute, tier 0) has had this many reminders with no decision, the next still-pending reminder goes to the first email here instead (tier 1), then the second (tier 2), and so on. Leave empty to keep re-reminding the original recipient indefinitely, as before.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
             </group>
 
             <group id="sales_rep" translate="label" type="text" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">

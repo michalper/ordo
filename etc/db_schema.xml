@@ -165,7 +165,8 @@
         <column xsi:type="varchar" name="admin_email" nullable="false" length="255" comment="Email of the person who must approve"/>
         <column xsi:type="varchar" name="token" nullable="false" length="64" comment="Opaque token used in the approve/reject links, no login required"/>
         <column xsi:type="varchar" name="status" nullable="false" length="20" default="pending" comment="pending|approved|rejected"/>
-        <column xsi:type="smallint" name="reminders_sent" unsigned="true" nullable="false" default="0" comment="Number of escalation reminders sent"/>
+        <column xsi:type="smallint" name="reminders_sent" unsigned="true" nullable="false" default="0" comment="Number of escalation reminders sent at the current tier - reset to 0 each time escalation_tier advances"/>
+        <column xsi:type="smallint" name="escalation_tier" unsigned="true" nullable="false" default="0" comment="0 = the original customer-assigned admin_email; 1, 2, 3, ... index into Config::getOrderApprovalEscalationChainEmails() for who the next reminder actually goes to"/>
         <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
         <column xsi:type="timestamp" name="decided_at" nullable="true" comment="Decided At"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
