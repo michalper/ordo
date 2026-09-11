@@ -66,9 +66,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 
 ### Communication channels (Email/SMS/WhatsApp/Push)
 
-- No template preview or test-send anywhere in admin, for any channel — merchants routinely typo
-  `{{var}}`/WhatsApp `{{1}}` placeholders and only discover it once a real customer gets the
-  broken message.
 - Product recommendations are effectively email-only — `AddProductRecommendations` only renders
   HTML; SMS/WhatsApp/Push actions have no plain-text equivalent, even though the underlying
   `ProductRecommender` data would support it.
