@@ -8,9 +8,12 @@ use Ordo\Automation\Model\Cron\CronRunLogger;
 use Ordo\Automation\Model\Rfm\RfmCalculator;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class RecomputeRfmScoresTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     public function testExecuteDelegatesToRfmCalculatorAndLogs(): void
     {
         $rfmCalculator = $this->createMock(RfmCalculator::class);
@@ -21,6 +24,6 @@ class RecomputeRfmScoresTest extends TestCase
             'Ordo_Automation: recomputed RFM percentile ranks and quintiles.'
         );
 
-        (new RecomputeRfmScores($rfmCalculator, new CronRunLogger($logger)))->execute();
+        (new RecomputeRfmScores($rfmCalculator, $this->makeCronRunLogger($logger)))->execute();
     }
 }

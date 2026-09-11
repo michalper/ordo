@@ -92,8 +92,6 @@ as bugs above, not repeated here)*
   a new customer-keyed table can silently be omitted from erasure.
 - No consent audit trail — `SetConsent` overwrites current state with no timestamped history, which
   is what most real GDPR audits actually ask for ("was this customer opted in for SMS on date X").
-- No persisted cron-run log/grid — `Model/Cron/CronRunLogger.php` only writes to `var/log`; "did
-  today's escalation cron even run" is invisible without log-tailing.
 - Reorder Cycle is detection-only — `Cron/CalculateReorderCycle.php` computes `next_expected_date`
   but there's no one-click "build reorder cart" action and no manual per-customer reminder trigger.
 - Product feed is single-format (Google RSS only), single-store, with no admin grid for feed

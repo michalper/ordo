@@ -30,9 +30,12 @@ use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Ordo\Automation\Model\Cron\CronRunLogger;
 use Psr\Log\LoggerInterface;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class SendCreditLimitAlertsTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     private function makeSelect(): Select
     {
         $select = $this->createStub(Select::class);
@@ -194,7 +197,7 @@ class SendCreditLimitAlertsTest extends TestCase
             $this->createStub(SalesRepEmailContext::class),
             $consentManager,
             $this->createStub(TriggerOutcomeLogger::class),
-            new CronRunLogger($this->createStub(LoggerInterface::class))
+            $this->makeCronRunLogger($this->createStub(LoggerInterface::class))
         ))->execute();
     }
 
@@ -267,7 +270,7 @@ class SendCreditLimitAlertsTest extends TestCase
             $salesRepEmailContext,
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            new CronRunLogger($logger)
+            $this->makeCronRunLogger($logger)
         ))->execute();
     }
 
@@ -312,7 +315,7 @@ class SendCreditLimitAlertsTest extends TestCase
             $this->createStub(SalesRepEmailContext::class),
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            new CronRunLogger($logger)
+            $this->makeCronRunLogger($logger)
         ))->execute();
     }
 
@@ -354,7 +357,7 @@ class SendCreditLimitAlertsTest extends TestCase
             $salesRepEmailContext,
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            new CronRunLogger($logger ?? $this->createStub(LoggerInterface::class))
+            $this->makeCronRunLogger($logger ?? $this->createStub(LoggerInterface::class))
         );
     }
 }

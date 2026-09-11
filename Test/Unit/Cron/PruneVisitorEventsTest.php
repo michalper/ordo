@@ -10,9 +10,12 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Cron\CronRunLogger;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class PruneVisitorEventsTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     public function testExecuteDeletesOldRowsAndLogs(): void
     {
         $config = $this->createStub(Config::class);
@@ -30,6 +33,6 @@ class PruneVisitorEventsTest extends TestCase
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('info');
 
-        (new PruneVisitorEvents($config, $resourceConnection, new CronRunLogger($logger)))->execute();
+        (new PruneVisitorEvents($config, $resourceConnection, $this->makeCronRunLogger($logger)))->execute();
     }
 }

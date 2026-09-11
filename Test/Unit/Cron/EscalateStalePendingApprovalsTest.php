@@ -21,9 +21,12 @@ use Ordo\Automation\Model\TriggerOutcomeLogger;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class EscalateStalePendingApprovalsTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     private Config $config;
     private ApprovalCollectionFactory $approvalCollectionFactory;
     private OrderApprovalResource $orderApprovalResource;
@@ -57,7 +60,7 @@ class EscalateStalePendingApprovalsTest extends TestCase
             $this->transportBuilder,
             $this->inlineTranslation,
             $this->triggerOutcomeLogger,
-            new CronRunLogger($this->logger)
+            $this->makeCronRunLogger($this->logger)
         );
     }
 
