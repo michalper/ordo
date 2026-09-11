@@ -42,18 +42,22 @@ class GoogleMerchantFeedGenerator
     }
 
     /**
+     * @param int $storeId Which store's price/currency/base-URL scope (and
+     *   Config::getShoppingFeedTitle()/getShoppingFeedDescription() store-scoped config) to
+     *   generate the feed for — see Cron\RefreshProductFeed, which now calls this once per
+     *   store instead of once for the whole install.
      * @return array{xml: string, productCount: int}
      */
-    public function generate(): array
+    public function generate(int $storeId): array
     {
         /** @var \Magento\Store\Model\Store $store getCurrentCurrencyCode() isn't declared on
          *  StoreInterface, only the concrete Store model — same real-world usage as core's own
          *  currency-formatting code throughout Magento. */
-        $store = $this->storeManager->getStore();
+        $store = $this->storeManager->getStore($storeId);
         $currencyCode = $store->getCurrentCurrencyCode();
 
         $items = [];
-        foreach ($this->fetchProductsByPage() as $product) {
+        foreach ($this->fetchProductsByPage($storeId) as $product) {
             $item = $this->renderItem($product, $currencyCode);
             if ($item !== null) {
                 $items[] = $item;
@@ -62,9 +66,9 @@ class GoogleMerchantFeedGenerator
 
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
             . '<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0"><channel>'
-            . '<title>' . $this->escape($this->config->getShoppingFeedTitle()) . '</title>'
+            . '<title>' . $this->escape($this->config->getShoppingFeedTitle($storeId)) . '</title>'
             . '<link>' . $this->escape($store->getBaseUrl()) . '</link>'
-            . '<description>' . $this->escape($this->config->getShoppingFeedDescription()) . '</description>'
+            . '<description>' . $this->escape($this->config->getShoppingFeedDescription($storeId)) . '</description>'
             . implode('', $items)
             . '</channel></rss>';
 
@@ -81,9 +85,9 @@ class GoogleMerchantFeedGenerator
      *
      * @return \Generator<int, \Magento\Catalog\Model\Product>
      */
-    private function fetchProductsByPage(): \Generator
+    private function fetchProductsByPage(int $storeId): \Generator
     {
-        $collection = $this->makeCollection();
+        $collection = $this->makeCollection($storeId);
         $collection->setPageSize(self::PAGE_SIZE);
 
         $page = 1;
@@ -102,9 +106,10 @@ class GoogleMerchantFeedGenerator
         } while ($page <= $lastPage);
     }
 
-    private function makeCollection(): ProductCollection
+    private function makeCollection(int $storeId): ProductCollection
     {
         $collection = $this->productCollectionFactory->create();
+        $collection->setStore($storeId);
         $collection->addAttributeToSelect(['name', 'description', 'price']);
         $collection->addAttributeToFilter('status', ['eq' => 1]);
         $collection->addAttributeToFilter('visibility', [
