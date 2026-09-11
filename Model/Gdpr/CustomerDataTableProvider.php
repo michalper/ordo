@@ -27,6 +27,7 @@ class CustomerDataTableProvider
      */
     private const array TABLES_TO_EXPORT_KEYS = [
         'ordo_customer_consent' => 'consent',
+        'ordo_customer_consent_log' => 'consent_history',
         'ordo_customer_tag' => 'tags',
         'ordo_customer_score' => 'score',
         'ordo_customer_demographic_score' => 'demographic_score',

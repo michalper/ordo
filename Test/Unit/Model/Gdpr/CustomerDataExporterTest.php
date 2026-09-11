@@ -22,7 +22,7 @@ class CustomerDataExporterTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($select);
-        $connection->expects(self::exactly(8))->method('fetchAll')->with($select)->willReturn([['row' => 1]]);
+        $connection->expects(self::exactly(9))->method('fetchAll')->with($select)->willReturn([['row' => 1]]);
 
         $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -32,6 +32,7 @@ class CustomerDataExporterTest extends TestCase
 
         self::assertSame(42, $result['customer_id']);
         self::assertArrayHasKey('consent', $result);
+        self::assertArrayHasKey('consent_history', $result);
         self::assertArrayHasKey('tags', $result);
         self::assertArrayHasKey('score', $result);
         self::assertArrayHasKey('demographic_score', $result);

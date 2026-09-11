@@ -5,6 +5,7 @@ namespace Ordo\Automation\Model;
 
 use Ordo\Automation\Model\ResourceModel\CustomerConsent as CustomerConsentResource;
 use Ordo\Automation\Model\ResourceModel\CustomerConsent\CollectionFactory as CustomerConsentCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\CustomerConsentLog as CustomerConsentLogResource;
 
 /**
  * Single source of truth for per-customer, per-channel marketing consent — Model\Campaign\
@@ -16,13 +17,20 @@ use Ordo\Automation\Model\ResourceModel\CustomerConsent\CollectionFactory as Cus
  * one asked for; what GDPR actually requires here is that an explicit opt-out is always honored,
  * which this does unconditionally the moment such a row exists, and that a data subject can see/
  * export/erase their own record (Controller\Adminhtml\Gdpr\*).
+ *
+ * setConsent() also appends a row to ordo_customer_consent_log (Model\CustomerConsentLog) on
+ * every call - unlike ordo_customer_consent itself (upserted in place, current state only), that
+ * table never updates a previous row, so "was this customer opted in for SMS on date X" stays
+ * answerable after the state has since changed again.
  */
 class ConsentManager
 {
     public function __construct(
         private readonly CustomerConsentCollectionFactory $customerConsentCollectionFactory,
         private readonly CustomerConsentFactory $customerConsentFactory,
-        private readonly CustomerConsentResource $customerConsentResource
+        private readonly CustomerConsentResource $customerConsentResource,
+        private readonly CustomerConsentLogFactory $customerConsentLogFactory,
+        private readonly CustomerConsentLogResource $customerConsentLogResource
     ) {
     }
 
@@ -44,6 +52,15 @@ class ConsentManager
         $consent->setSource($source);
 
         $this->customerConsentResource->save($consent);
+
+        // Append-only - never updates a previous log row, unlike ordo_customer_consent's own
+        // upsert above. See CustomerConsentLog's own class doc for why this exists.
+        $logEntry = $this->customerConsentLogFactory->create();
+        $logEntry->setCustomerId($customerId);
+        $logEntry->setChannel($channel->value);
+        $logEntry->setConsented($consented);
+        $logEntry->setSource($source);
+        $this->customerConsentLogResource->save($logEntry);
     }
 
     /**
