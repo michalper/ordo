@@ -42,7 +42,10 @@ class CustomerTimezoneResolver
         }
 
         return new \DateTimeZone(
-            $this->timezone->getConfigTimezone(ScopeInterface::SCOPE_STORE, $storeId !== null ? (string) $storeId : null)
+            $this->timezone->getConfigTimezone(
+                ScopeInterface::SCOPE_STORE,
+                $storeId !== null ? (string) $storeId : null
+            )
         );
     }
 

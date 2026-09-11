@@ -64,7 +64,9 @@ class CronRunLogger
             $entry->setMessage($message);
             $this->cronRunLogResource->save($entry);
         } catch (\Throwable $e) {
-            $this->logger->error(sprintf('Ordo_Automation: failed to persist cron run log entry: %s', $e->getMessage()));
+            $this->logger->error(
+                sprintf('Ordo_Automation: failed to persist cron run log entry: %s', $e->getMessage())
+            );
         }
     }
 }

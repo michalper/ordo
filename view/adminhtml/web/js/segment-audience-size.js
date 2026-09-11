@@ -16,6 +16,36 @@
  * of the full-page reload a real form submit already causes, so this warning only ever needs to
  * turn on, never back off, within one edit session.
  */
+/**
+ * @param {jQuery} $panel the .ordo-audience-size-panel wrapper
+ * @return {Promise}
+ */
+function refresh($panel) {
+    var segmentId = $panel.data('segmentId'),
+        url = $panel.data('audienceSizeUrl'),
+        $value = $panel.find('[data-audience-size-value]'),
+        $button = $panel.find('[data-audience-size-refresh]');
+
+    $button.prop('disabled', true);
+    $value.text('Calculating...');
+
+    return fetch(url + '?segment_id=' + encodeURIComponent(segmentId), {credentials: 'same-origin'})
+        .then(function (response) {
+            return response.ok ? response.json() : null;
+        })
+        .then(function (data) {
+            var count = data && typeof data.count === 'number' ? data.count : null;
+
+            $value.text(count === null ? 'Could not calculate audience size.' : count + ' customer(s)');
+        })
+        .catch(function () {
+            $value.text('Could not calculate audience size.');
+        })
+        .finally(function () {
+            $button.prop('disabled', false);
+        });
+}
+
 define([
     'jquery',
     'domReady!'
@@ -23,36 +53,6 @@ define([
     'use strict';
 
     var isDirty = false;
-
-    /**
-     * @param {jQuery} $panel the .ordo-audience-size-panel wrapper
-     * @return {Promise}
-     */
-    function refresh($panel) {
-        var segmentId = $panel.data('segmentId'),
-            url = $panel.data('audienceSizeUrl'),
-            $value = $panel.find('[data-audience-size-value]'),
-            $button = $panel.find('[data-audience-size-refresh]');
-
-        $button.prop('disabled', true);
-        $value.text('Calculating...');
-
-        return fetch(url + '?segment_id=' + encodeURIComponent(segmentId), {credentials: 'same-origin'})
-            .then(function (response) {
-                return response.ok ? response.json() : null;
-            })
-            .then(function (data) {
-                var count = data && typeof data.count === 'number' ? data.count : null;
-
-                $value.text(count === null ? 'Could not calculate audience size.' : count + ' customer(s)');
-            })
-            .catch(function () {
-                $value.text('Could not calculate audience size.');
-            })
-            .finally(function () {
-                $button.prop('disabled', false);
-            });
-    }
 
     /**
      * @param {jQuery} $panel the .ordo-audience-size-panel wrapper

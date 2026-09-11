@@ -2,7 +2,10 @@
 /** @var \Ordo\Automation\Block\Adminhtml\WhatsAppTemplate\BodyPreview $block */
 /** @var \Magento\Framework\Escaper $escaper */
 ?>
-<div class="admin__fieldset-wrapper ordo-whatsapp-body-preview" data-body-preview-max="<?= (int) $block->getBodyMaxLength() ?>">
+<div
+    class="admin__fieldset-wrapper ordo-whatsapp-body-preview"
+    data-body-preview-max="<?= (int) $block->getBodyMaxLength() ?>"
+>
     <div class="admin__fieldset-wrapper-title">
         <strong><?= $escaper->escapeHtml(__('Preview')) ?></strong>
     </div>

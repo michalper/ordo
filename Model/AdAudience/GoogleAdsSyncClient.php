@@ -33,7 +33,8 @@ class GoogleAdsSyncClient implements SyncClientInterface
      * of segment size, which would fail outright (not just run slowly) for any segment larger
      * than this, since Google Ads rejects an over-limit request rather than truncating it.
      *
-     * @see https://developers.google.com/google-ads/api/docs/remarketing/audience-types/customer-match#customer_match_limits
+     * @see https://developers.google.com/google-ads/api/docs/remarketing/audience-types/customer-match
+     *      #customer_match_limits
      */
     private const int MAX_IDENTIFIERS_PER_BATCH = 10000;
 

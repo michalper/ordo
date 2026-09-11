@@ -25,8 +25,12 @@ class GroupWalker
      *   called for every non-'group' spec; never called with a 'group' spec, which this class
      *   always intercepts and recurses into itself
      */
-    public function walk(array $specs, string $logic, callable $leafResolver, GroupCombineStrategyInterface $strategy): mixed
-    {
+    public function walk(
+        array $specs,
+        string $logic,
+        callable $leafResolver,
+        GroupCombineStrategyInterface $strategy
+    ): mixed {
         $matchAny = $logic === 'any';
         $accumulator = $strategy->identity($matchAny);
 
@@ -60,8 +64,11 @@ class GroupWalker
      * @param array<string, mixed> $groupParams
      * @param callable(array{type: string, params: array<string, mixed>}): mixed $leafResolver
      */
-    private function walkGroup(array $groupParams, callable $leafResolver, GroupCombineStrategyInterface $strategy): mixed
-    {
+    private function walkGroup(
+        array $groupParams,
+        callable $leafResolver,
+        GroupCombineStrategyInterface $strategy
+    ): mixed {
         $nestedLogic = ($groupParams['logic'] ?? 'all') === 'any' ? 'any' : 'all';
         $nested = $groupParams['conditions'] ?? null;
 

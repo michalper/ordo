@@ -119,7 +119,7 @@ define([
 
         $valueWrap.empty();
 
-        if (field && field.select) {
+        if (field?.select) {
             var $select = $('<select class="admin__control-select ordo-group-value-select"></select>'),
                 existingValue = String(existingParams[field.key] || '');
 
@@ -143,7 +143,7 @@ define([
             $valueWrap.data('valueKey', null);
         }
 
-        if (EVENT_ONLY_TYPES.indexOf(type) !== -1) {
+        if (EVENT_ONLY_TYPES.includes(type)) {
             $('<p class="ordo-group-event-only-warning"></p>')
                 .text(
                     'This condition only has an effect inside a Campaign\'s trigger conditions - used '

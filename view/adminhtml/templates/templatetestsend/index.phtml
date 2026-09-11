@@ -2,7 +2,10 @@
 /** @var \Ordo\Automation\Block\Adminhtml\TemplateTestSend\Index $block */
 /** @var \Magento\Framework\Escaper $escaper */
 ?>
-<div class="admin__fieldset-wrapper ordo-template-test-send" data-test-send-url="<?= $escaper->escapeUrl($block->getSendUrl()) ?>">
+<div
+    class="admin__fieldset-wrapper ordo-template-test-send"
+    data-test-send-url="<?= $escaper->escapeUrl($block->getSendUrl()) ?>"
+>
     <div class="admin__fieldset-wrapper-title">
         <strong><?= $escaper->escapeHtml(__('Template Test Send')) ?></strong>
     </div>
@@ -15,7 +18,9 @@
             ) ?>
         </p>
         <div class="admin__field">
-            <label class="admin__field-label" for="ordo-test-send-channel"><?= $escaper->escapeHtml(__('Channel')) ?></label>
+            <label class="admin__field-label" for="ordo-test-send-channel">
+                <?= $escaper->escapeHtml(__('Channel')) ?>
+            </label>
             <div class="admin__field-control">
                 <select id="ordo-test-send-channel" class="admin__control-select" data-test-send-channel>
                     <option value="email"><?= $escaper->escapeHtml(__('Email')) ?></option>
@@ -28,26 +33,36 @@
             <label class="admin__field-label" for="ordo-test-send-to"><?= $escaper->escapeHtml(__('Send to')) ?></label>
             <div class="admin__field-control">
                 <input type="text" id="ordo-test-send-to" class="admin__control-text" data-test-send-to
-                       placeholder="<?= $escaper->escapeHtmlAttr(__('Email address, or +15551234567 for SMS/WhatsApp')) ?>">
+                       placeholder="<?= $escaper->escapeHtmlAttr(
+                           __('Email address, or +15551234567 for SMS/WhatsApp')
+                       ) ?>">
             </div>
         </div>
         <div class="admin__field" data-test-send-field="message">
-            <label class="admin__field-label" for="ordo-test-send-message"><?= $escaper->escapeHtml(__('Message')) ?></label>
+            <label class="admin__field-label" for="ordo-test-send-message">
+                <?= $escaper->escapeHtml(__('Message')) ?>
+            </label>
             <div class="admin__field-control">
                 <textarea id="ordo-test-send-message" class="admin__control-textarea" data-test-send-message></textarea>
             </div>
         </div>
         <div class="admin__field" data-test-send-field="whatsapp" style="display: none">
-            <label class="admin__field-label" for="ordo-test-send-template"><?= $escaper->escapeHtml(__('WhatsApp Template')) ?></label>
+            <label class="admin__field-label" for="ordo-test-send-template">
+                <?= $escaper->escapeHtml(__('WhatsApp Template')) ?>
+            </label>
             <div class="admin__field-control">
                 <select id="ordo-test-send-template" class="admin__control-select" data-test-send-template>
                     <option value=""><?= $escaper->escapeHtml(__('-- Select --')) ?></option>
                     <?php foreach ($block->getWhatsAppTemplateOptions() as $option): ?>
-                        <option value="<?= (int) $option['value'] ?>"><?= $escaper->escapeHtml((string) $option['label']) ?></option>
+                        <option value="<?= (int) $option['value'] ?>">
+                            <?= $escaper->escapeHtml((string) $option['label']) ?>
+                        </option>
                     <?php endforeach; ?>
                 </select>
             </div>
-            <label class="admin__field-label" for="ordo-test-send-params"><?= $escaper->escapeHtml(__('Params (comma-separated)')) ?></label>
+            <label class="admin__field-label" for="ordo-test-send-params">
+                <?= $escaper->escapeHtml(__('Params (comma-separated)')) ?>
+            </label>
             <div class="admin__field-control">
                 <input type="text" id="ordo-test-send-params" class="admin__control-text" data-test-send-params
                        placeholder="<?= $escaper->escapeHtmlAttr('value1,value2') ?>">
