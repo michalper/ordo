@@ -5,6 +5,7 @@ namespace Ordo\Automation\Model\WhatsApp;
 
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Http\JsonApiClient;
+use Ordo\Automation\Model\RateLimit\OutboundRateLimiter;
 
 /**
  * Sends a single WhatsApp template message via the real Meta Graph API - real HTTP, no SDK, same
@@ -21,7 +22,8 @@ class WhatsAppSender
 
     public function __construct(
         private readonly JsonApiClient $jsonApiClient,
-        private readonly Config $config
+        private readonly Config $config,
+        private readonly OutboundRateLimiter $rateLimiter
     ) {
     }
 
@@ -33,6 +35,8 @@ class WhatsAppSender
      */
     public function send(string $toPhone, string $metaTemplateName, string $language, array $params): string
     {
+        $this->rateLimiter->throttle('whatsapp', (float) $this->config->getWhatsAppMaxRequestsPerSecond());
+
         $components = [];
         if ($params !== []) {
             $components[] = [

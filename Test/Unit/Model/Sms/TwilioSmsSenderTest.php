@@ -5,6 +5,7 @@ namespace Ordo\Automation\Test\Unit\Model\Sms;
 
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Sms\CallbackUrlBuilder;
+use Ordo\Automation\Model\RateLimit\OutboundRateLimiter;
 use Ordo\Automation\Model\Sms\OptedOutException;
 use Ordo\Automation\Model\Sms\TwilioSmsSender;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -33,6 +34,7 @@ class TwilioSmsSenderTest extends TestCase
     private Config $config;
     private CallbackUrlBuilder $callbackUrlBuilder;
     private LoggerInterface&\PHPUnit\Framework\MockObject\MockObject $logger;
+    private OutboundRateLimiter $rateLimiter;
 
     protected function setUp(): void
     {
@@ -41,11 +43,15 @@ class TwilioSmsSenderTest extends TestCase
         $this->config->method('getTwilioApiKeySid')->willReturn(self::API_KEY_SID);
         $this->config->method('getTwilioApiKeySecret')->willReturn(self::API_KEY_SECRET);
         $this->config->method('getTwilioFromNumber')->willReturn(self::FROM_NUMBER);
+        // 0 = throttling off - these tests aren't exercising OutboundRateLimiter itself (see its
+        // own dedicated test), and a real per-call rate limit here would just slow the suite down.
+        $this->config->method('getTwilioMaxRequestsPerSecond')->willReturn(0);
 
         $this->callbackUrlBuilder = $this->createStub(CallbackUrlBuilder::class);
         $this->callbackUrlBuilder->method('getSmsStatusCallbackUrl')->willReturn(self::CALLBACK_URL);
 
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->rateLimiter = $this->createStub(OutboundRateLimiter::class);
     }
 
     /**
@@ -95,14 +101,15 @@ class TwilioSmsSenderTest extends TestCase
      */
     private function makeSenderWithFakeHttpClient(TwilioHttpClient $httpClient): TwilioSmsSender
     {
-        return new class ($this->config, $this->callbackUrlBuilder, $this->logger, $httpClient) extends TwilioSmsSender {
+        return new class ($this->config, $this->callbackUrlBuilder, $this->logger, $this->rateLimiter, $httpClient) extends TwilioSmsSender {
             public function __construct(
                 Config $config,
                 CallbackUrlBuilder $callbackUrlBuilder,
                 LoggerInterface $logger,
+                OutboundRateLimiter $rateLimiter,
                 private readonly TwilioHttpClient $httpClient
             ) {
-                parent::__construct($config, $callbackUrlBuilder, $logger);
+                parent::__construct($config, $callbackUrlBuilder, $logger, $rateLimiter);
             }
 
             protected function makeHttpClient(): TwilioHttpClient
@@ -127,6 +134,25 @@ class TwilioSmsSenderTest extends TestCase
         self::assertSame(self::FROM_NUMBER, $captured['data']['From']);
         self::assertSame('hello there', $captured['data']['Body']);
         self::assertSame(self::CALLBACK_URL, $captured['data']['StatusCallback']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSendThrottlesOnTheTwilioChannelAtTheConfiguredRate(): void
+    {
+        $this->config = $this->createStub(Config::class);
+        $this->config->method('getTwilioAccountSid')->willReturn(self::ACCOUNT_SID);
+        $this->config->method('getTwilioApiKeySid')->willReturn(self::API_KEY_SID);
+        $this->config->method('getTwilioApiKeySecret')->willReturn(self::API_KEY_SECRET);
+        $this->config->method('getTwilioFromNumber')->willReturn(self::FROM_NUMBER);
+        $this->config->method('getTwilioMaxRequestsPerSecond')->willReturn(3);
+
+        $this->rateLimiter = $this->createMock(OutboundRateLimiter::class);
+        $this->rateLimiter->expects(self::once())->method('throttle')->with('twilio', 3.0);
+
+        $captured = [];
+        $httpClient = $this->makeFakeHttpClient(201, ['sid' => 'SM123abc', 'status' => 'queued'], $captured);
+
+        $this->makeSenderWithFakeHttpClient($httpClient)->send('+15551234567', 'hello there');
     }
 
     public function testOptedOutErrorCodeThrowsOptedOutExceptionWithoutLoggingAsError(): void
@@ -183,7 +209,7 @@ class TwilioSmsSenderTest extends TestCase
     {
         $this->logger->expects(self::never())->method('error');
 
-        $sender = new TwilioSmsSender($this->config, $this->callbackUrlBuilder, $this->logger);
+        $sender = new TwilioSmsSender($this->config, $this->callbackUrlBuilder, $this->logger, $this->rateLimiter);
 
         $method = new \ReflectionMethod($sender, 'makeHttpClient');
 
@@ -197,15 +223,16 @@ class TwilioSmsSenderTest extends TestCase
      */
     private function makeCountingSenderWithFakeHttpClient(TwilioHttpClient $httpClient, array &$makeHttpClientCalls): TwilioSmsSender
     {
-        return new class ($this->config, $this->callbackUrlBuilder, $this->logger, $httpClient, $makeHttpClientCalls) extends TwilioSmsSender {
+        return new class ($this->config, $this->callbackUrlBuilder, $this->logger, $this->rateLimiter, $httpClient, $makeHttpClientCalls) extends TwilioSmsSender {
             public function __construct(
                 Config $config,
                 CallbackUrlBuilder $callbackUrlBuilder,
                 LoggerInterface $logger,
+                OutboundRateLimiter $rateLimiter,
                 private readonly TwilioHttpClient $httpClient,
                 private array &$makeHttpClientCalls
             ) {
-                parent::__construct($config, $callbackUrlBuilder, $logger);
+                parent::__construct($config, $callbackUrlBuilder, $logger, $rateLimiter);
             }
 
             protected function makeHttpClient(): TwilioHttpClient

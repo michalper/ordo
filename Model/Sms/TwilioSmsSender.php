@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Model\Sms;
 
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\RateLimit\OutboundRateLimiter;
 use Psr\Log\LoggerInterface;
 use Twilio\Exceptions\RestException;
 use Twilio\Exceptions\TwilioException;
@@ -48,13 +49,16 @@ class TwilioSmsSender implements SmsSenderInterface
     public function __construct(
         private readonly Config $config,
         private readonly CallbackUrlBuilder $callbackUrlBuilder,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly OutboundRateLimiter $rateLimiter
     ) {
     }
 
     public function send(string $toPhone, string $message): string
     {
         $client = $this->getClient();
+
+        $this->rateLimiter->throttle('twilio', (float) $this->config->getTwilioMaxRequestsPerSecond());
 
         try {
             $twilioMessage = $client->messages->create($toPhone, [

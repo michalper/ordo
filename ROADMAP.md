@@ -50,10 +50,10 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 
 ### Communication channels (Email/SMS/WhatsApp/Push)
 
-- Every send is one synchronous, unbatched HTTP call per customer inline in the dispatch path — no
-  concurrency control and no respect for provider rate limits (Twilio, Graph API, push services);
-  a campaign matching thousands of customers in one tick will serially hammer the provider API or
-  start hitting 429s with no handling for it.
+- Every send is still one synchronous, unbatched HTTP call per customer inline in the dispatch
+  path — no concurrency control (client-side pacing per provider now exists, see docs/CHANGELOG.md
+  — that's throttling one process's own call rate, not coordinating concurrency across multiple
+  queue consumers/cron processes hitting the same provider at once).
 - `SendRetrier`'s 3 in-process retries are still the only retry a per-customer send gets — once
   those are exhausted, `Send{Email,Sms,WhatsApp,Push}` catches the failure, writes an
   `ordo_message_log` row with `STATUS_FAILED`, and moves on; nothing ever revisits that row. (Note:

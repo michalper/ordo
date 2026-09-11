@@ -285,6 +285,11 @@
                     <comment>E.164 format, e.g. "+15551234567".</comment>
                     <depends><field id="enabled">1</field></depends>
                 </field>
+                <field id="twilio_max_requests_per_second" translate="label comment" type="text" sortOrder="45" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Max Requests Per Second</label>
+                    <comment>Paces outbound Twilio API calls so a campaign/cron reaching many customers in one tick doesn't exceed Twilio's own rate limit. 0 disables throttling entirely.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
             </group>
             <group id="ad_audience_sync" translate="label" type="text" sortOrder="120" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Ad Audience Sync (Google Ads / Meta)</label>
@@ -374,6 +379,11 @@
                     <comment>An arbitrary string you choose here and enter again when registering "/ordo/whatsapp/webhook" as the Callback URL in the Meta App Dashboard's Webhooks settings - proves the one-time subscription handshake is really Meta.</comment>
                     <depends><field id="enabled">1</field></depends>
                 </field>
+                <field id="max_requests_per_second" translate="label comment" type="text" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Max Requests Per Second</label>
+                    <comment>Paces outbound Graph API calls so a campaign/cron reaching many customers in one tick doesn't exceed Meta's own rate limit. 0 disables throttling entirely.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
             </group>
             <group id="push" translate="label" type="text" sortOrder="160" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Push Notifications (Web Push)</label>
@@ -396,6 +406,11 @@
                 <field id="vapid_subject" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>VAPID Contact (mailto: or https:// URL)</label>
                     <comment>Required by the Web Push standard (RFC 8292) so a push service (Chrome/Firefox/etc.) can reach this site's operator if its traffic needs attention, e.g. "mailto:ops@example.com".</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="max_requests_per_second" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Max Requests Per Second</label>
+                    <comment>Paces outbound push requests so a campaign/cron reaching many subscribers in one tick doesn't hammer whichever push service (FCM, Mozilla autopush, ...) each subscription's endpoint belongs to. 0 disables throttling entirely.</comment>
                     <depends><field id="enabled">1</field></depends>
                 </field>
             </group>

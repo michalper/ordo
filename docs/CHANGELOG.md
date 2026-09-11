@@ -36,6 +36,17 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Client-side rate limiting for outbound Twilio/Meta Graph API/Web Push calls.** Every send used
+  to be one unbatched HTTP call with zero regard for the provider's own documented rate limit —
+  a campaign or cron (`Cron\SendWinBackEmails` and friends already loop over a whole audience
+  serially) reaching thousands of customers in one tick could hammer Twilio/Graph API/a push
+  service well past what it allows. New `Model\RateLimit\OutboundRateLimiter` spaces consecutive
+  calls to the same channel at least `1/max_requests_per_second` seconds apart (a short `usleep()`
+  pace-setter, not a hard reject — `SendRetrier` still handles an actual `429` if the provider's
+  own limit is hit anyway), wired into `TwilioSmsSender`/`WhatsAppSender`/`PushSender`'s real HTTP
+  call sites. Configurable per channel (`Twilio`/`WhatsApp`/`Push` sections in system.xml),
+  `0` disables throttling entirely; conservative non-zero defaults (Twilio 1/s, WhatsApp 5/s, Push
+  20/s) so this protects an upgraded install without any config change required.
 - **Dashboard drill-down KPIs for stuck order approvals and failed cron runs**, closing the
   admin-platform ROADMAP.md gap where neither was visible without navigating to their grids first.
   Two new clickable cards on `ordo/dashboard/index`: "Order approvals stuck" (pending approvals
