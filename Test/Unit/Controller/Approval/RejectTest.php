@@ -5,11 +5,10 @@ namespace Ordo\Automation\Test\Unit\Controller\Approval;
 
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Framework\HTTP\PhpEnvironment\RemoteAddress;
+use Magento\Framework\Webapi\Exception as WebapiException;
 use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Ordo\Automation\Controller\Approval\Reject;
-use Ordo\Automation\Model\Approval\ApprovalRateLimiter;
 use Ordo\Automation\Model\OrderApproval;
 use Ordo\Automation\Model\OrderApprovalManagement;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
@@ -19,22 +18,17 @@ class RejectTest extends AbstractFrontendActionTestCase
 {
     private OrderApprovalManagement $orderApprovalManagement;
     private OrderRepositoryInterface $orderRepository;
-    private ApprovalRateLimiter $rateLimiter;
 
     protected function setUp(): void
     {
         $this->orderApprovalManagement = $this->createMock(OrderApprovalManagement::class);
         $this->orderRepository = $this->createMock(OrderRepositoryInterface::class);
-        $this->rateLimiter = $this->createStub(ApprovalRateLimiter::class);
-        $this->rateLimiter->method('isAllowed')->willReturn(true);
     }
 
     private function makeController(): Reject
     {
         return new Reject(
             $this->makeContext(),
-            $this->rateLimiter,
-            $this->createStub(RemoteAddress::class),
             $this->orderApprovalManagement,
             $this->orderRepository
         );
@@ -86,16 +80,25 @@ class RejectTest extends AbstractFrontendActionTestCase
         self::assertSame($this->resultRedirect, $controller->execute());
     }
 
+    /**
+     * Rate limiting moved into OrderApprovalManagement (shared with the REST API - see its own
+     * docblock), so this controller no longer pre-checks it itself; it only needs to turn
+     * whatever LocalizedException-derived exception the service throws (including the
+     * WebapiException a rate-limited attempt now raises) into the same friendly redirect message.
+     */
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsWithErrorWhenRateLimited(): void
     {
-        $this->rateLimiter = $this->createStub(ApprovalRateLimiter::class);
-        $this->rateLimiter->method('isAllowed')->willReturn(false);
-
         $controller = $this->makeController();
         $this->request->method('getParam')->willReturnMap([['token', 'tok']]);
+        $this->orderApprovalManagement->method('rejectByToken')->willThrowException(
+            new WebapiException(
+                __('Too many attempts. Please wait a while and try again.'),
+                0,
+                WebapiException::HTTP_TOO_MANY_REQUESTS
+            )
+        );
 
-        $this->orderApprovalManagement->expects(self::never())->method('rejectByToken');
         $this->messageManager->expects(self::once())->method('addErrorMessage');
 
         self::assertSame($this->resultRedirect, $controller->execute());

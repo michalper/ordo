@@ -198,6 +198,13 @@ decision endpoints.
 | POST   | `/V1/ordo/order-approvals/:token/approve`           | `OrderApprovalManagementInterface::approveByToken`       | anonymous |
 | POST   | `/V1/ordo/order-approvals/:token/reject`            | `OrderApprovalManagementInterface::rejectByToken`        | anonymous |
 
+Both anonymous decision endpoints are rate-limited (`Model\Approval\ApprovalRateLimiter`): 10
+attempts per token+IP pair per 15-minute window, checked before the token is even looked up. A
+rate-limited call gets `HTTP 429` with `{"message": "Too many attempts. Please wait a while and
+try again."}`. Shared with the equivalent email-link controllers
+(`Controller\Approval\{Approve,Reject}`, reached via the URLs `decision-links` returns) — one
+counter per token+IP regardless of which channel is used to attempt it.
+
 ```
 GET /rest/V1/ordo/order-approvals?searchCriteria[pageSize]=3   (admin token)
 → 200 {"items":[{"entity_id":4,"order_id":8,"admin_email":"admin-approver@example.com",

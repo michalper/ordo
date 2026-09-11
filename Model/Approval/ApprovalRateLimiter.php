@@ -7,12 +7,15 @@ use Magento\Framework\App\CacheInterface;
 use Magento\Framework\Serialize\SerializerInterface;
 
 /**
- * Bespoke cache-backed attempt counter for Controller\Approval\{Approve,Reject} - both are
- * public, unauthenticated, token-only endpoints with no throttling of their own today, and
- * Magento has no built-in webapi rate-limit mechanism to turn on instead (those endpoints aren't
- * webapi.xml service contracts). Keyed by token+IP so a single leaked/guessed token can't be
- * hammered, without penalizing every other legitimate token an attacker's IP happens to also
- * guess wrong on.
+ * Bespoke cache-backed attempt counter for the order-approval decision endpoints - both the
+ * email-link controllers (Controller\Approval\{Approve,Reject}) and the REST API
+ * (`/V1/ordo/order-approvals/:token/{approve,reject}`) are public, unauthenticated, token-only,
+ * and Magento has no built-in webapi rate-limit mechanism to turn on instead. Called from
+ * Model\OrderApprovalManagement - the one place both channels share - rather than duplicated per
+ * channel; the REST API used to have no throttling at all here, since the original
+ * (now-removed) enforcement lived only in the controllers' own pre-check. Keyed by token+IP so a
+ * single leaked/guessed token can't be hammered, without penalizing every other legitimate token
+ * an attacker's IP happens to also guess wrong on.
  *
  * Not perfectly atomic (a plain cache load()-then-save(), not a DB-backed conditional UPDATE like
  * this module's other claim-before-use patterns) - a handful of truly simultaneous requests could
