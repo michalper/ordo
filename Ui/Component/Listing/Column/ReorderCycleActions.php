@@ -9,10 +9,11 @@ use Magento\Framework\View\Element\UiComponentFactory;
 use Magento\Ui\Component\Listing\Columns\Column;
 
 /**
- * A single "Send Reminder Now" row action - closes the ROADMAP.md "no manual per-customer
- * reminder trigger" gap. No edit/delete here (unlike AbstractEntityActionsColumn's shape) -
- * reorder cycle rows are computed by Cron\CalculateReorderCycle, not admin-authored, so there is
- * nothing to edit and deleting one would just be recomputed on the next cron tick.
+ * "Send Reminder Now" and "Build Cart" row actions - close the ROADMAP.md "no manual
+ * per-customer reminder trigger" and "no one-click build reorder cart action" gaps
+ * respectively. No edit/delete here (unlike AbstractEntityActionsColumn's shape) - reorder cycle
+ * rows are computed by Cron\CalculateReorderCycle, not admin-authored, so there is nothing to
+ * edit and deleting one would just be recomputed on the next cron tick.
  */
 class ReorderCycleActions extends Column
 {
@@ -46,6 +47,20 @@ class ReorderCycleActions extends Column
                     'confirm' => [
                         'title' => __('Send reorder reminder'),
                         'message' => __('Send a reorder reminder email to this customer now?'),
+                    ],
+                ],
+                'build_cart' => [
+                    'href' => $this->urlBuilder->getUrl(
+                        'ordo/reordercycle/buildcart',
+                        ['entity_id' => $entityId]
+                    ),
+                    'label' => __('Build Cart'),
+                    'post' => true,
+                    'confirm' => [
+                        'title' => __('Build reorder cart'),
+                        'message' => __(
+                            'Start a new order for this customer with this product already added?'
+                        ),
                     ],
                 ],
             ];
