@@ -26,22 +26,27 @@ class SendReminderTest extends AbstractAdminActionTestCase
 
     protected function setUp(): void
     {
-        parent::setUp();
-
         $this->reorderCycleFactory = $this->createStub(ReorderCycleFactory::class);
         $this->reorderCycleResource = $this->createStub(ReorderCycleResource::class);
         $this->customerRepository = $this->createMock(CustomerRepositoryInterface::class);
         $this->reminderSender = $this->createMock(ReorderReminderSender::class);
-
         $this->redirect = $this->createMock(Redirect::class);
         $this->redirect->method('setPath')->willReturnSelf();
-        $this->resultRedirectFactory->method('create')->willReturn($this->redirect);
     }
 
+    /**
+     * makeContext() (re)assigns $this->resultRedirectFactory to a fresh stub every call - must
+     * be called and its return value handed to the controller BEFORE configuring
+     * resultRedirectFactory, or the configuration lands on an already-discarded instance and the
+     * property is left uninitialized (a real bug found via a real CI failure, not just style).
+     */
     private function makeController(): SendReminder
     {
+        $context = $this->makeContext();
+        $this->resultRedirectFactory->method('create')->willReturn($this->redirect);
+
         return new SendReminder(
-            $this->makeContext(),
+            $context,
             $this->reorderCycleFactory,
             $this->reorderCycleResource,
             $this->customerRepository,

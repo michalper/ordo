@@ -3098,6 +3098,12 @@ parameters:
 			path: Ui/Component/Listing/Column/ReorderCycleActions.php
 
 		-
+			message: '#^Cannot access offset mixed on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Ui/Component/Listing/Column/ReorderCycleActions.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
