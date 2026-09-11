@@ -80,8 +80,6 @@ as bugs above, not repeated here)*
   actions, and WhatsAppTemplate has mass-delete — see docs/CHANGELOG.md) — those three remaining
   grids are read-only/log/diagnostic views without an "enabled" concept to toggle, so a mass
   action there would need its own new capability first, not just wiring up an existing one.
-- No `fields`/sparse-fieldset support anywhere in `API.md`.
-
 ## Scheduled (date-based) campaigns: calendar view
 
 Both the backend (`ScheduledTriggerScanner`/`DispatchScheduledCampaignTriggers`) and the admin UI
