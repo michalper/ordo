@@ -8,9 +8,12 @@ use Ordo\Automation\Model\Cron\CronRunLogger;
 use Ordo\Automation\Model\Segment\SegmentAudienceSizeRecalculator;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class RecalculateSegmentAudienceSizesTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     public function testExecuteDelegatesToRecalculatorAndLogsCount(): void
     {
         $recalculator = $this->createMock(SegmentAudienceSizeRecalculator::class);
@@ -21,6 +24,6 @@ class RecalculateSegmentAudienceSizesTest extends TestCase
             'Ordo_Automation: recalculated estimated audience size for 3 segment(s).'
         );
 
-        (new RecalculateSegmentAudienceSizes($recalculator, new CronRunLogger($logger)))->execute();
+        (new RecalculateSegmentAudienceSizes($recalculator, $this->makeCronRunLogger($logger)))->execute();
     }
 }

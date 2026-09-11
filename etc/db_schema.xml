@@ -422,6 +422,16 @@
         </constraint>
     </table>
 
+    <table name="ordo_cron_run_log" resource="default" engine="innodb" comment="Persisted mirror of every Model\Cron\CronRunLogger::logFailure()/logSummary() call - previously only ever written to var/log (Psr\Log\LoggerInterface), so whether a given cron actually ran on a given day was invisible without log-tailing.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="level" nullable="false" length="16" comment="summary or failure - see CronRunLog::LEVEL_* constants"/>
+        <column xsi:type="text" name="message" nullable="false" comment="The same fully formatted text CronRunLogger already sends to the PSR logger"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+    </table>
+
     <table name="ordo_customer_consent_log" resource="default" engine="innodb" comment="Append-only audit trail of every Model\ConsentManager::setConsent() call - unlike ordo_customer_consent (which only ever holds the current state, upserted in place), a row here is never updated once written, so who consented/opted out on which channel and when is still answerable after the current state has since changed again.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="The customer this consent change applies to"/>

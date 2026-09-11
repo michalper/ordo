@@ -25,9 +25,12 @@ use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Ordo\Automation\Model\Cron\CronRunLogger;
 use Psr\Log\LoggerInterface;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class SendSalesRepDigestTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     /**
      * @param CustomerInterface[] $customers
      */
@@ -68,7 +71,7 @@ class SendSalesRepDigestTest extends TestCase
                 $this->createStub(TransportBuilder::class),
                 $this->createStub(StoreManagerInterface::class)
             ),
-            new CronRunLogger($this->createStub(LoggerInterface::class))
+            $this->makeCronRunLogger($this->createStub(LoggerInterface::class))
         ))->execute();
     }
 
@@ -91,7 +94,7 @@ class SendSalesRepDigestTest extends TestCase
                 $this->createStub(TransportBuilder::class),
                 $this->createStub(StoreManagerInterface::class)
             ),
-            new CronRunLogger($logger)
+            $this->makeCronRunLogger($logger)
         ))->execute();
     }
 
@@ -158,7 +161,7 @@ class SendSalesRepDigestTest extends TestCase
             $tagManager,
             $customerMapBuilder,
             $this->makeEmailSender($transportBuilder, $storeManager),
-            new CronRunLogger($logger)
+            $this->makeCronRunLogger($logger)
         ))->execute();
     }
 
@@ -184,7 +187,7 @@ class SendSalesRepDigestTest extends TestCase
             $tagManager,
             $customerMapBuilder,
             $this->makeEmailSender($transportBuilder, $this->createStub(StoreManagerInterface::class)),
-            new CronRunLogger($logger)
+            $this->makeCronRunLogger($logger)
         ))->execute();
     }
 
@@ -219,7 +222,7 @@ class SendSalesRepDigestTest extends TestCase
             $tagManager,
             $customerMapBuilder,
             $this->makeEmailSender($this->createStub(TransportBuilder::class), $storeManager),
-            new CronRunLogger($logger)
+            $this->makeCronRunLogger($logger)
         ))->execute();
     }
 }

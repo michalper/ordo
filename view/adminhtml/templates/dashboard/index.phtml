@@ -332,6 +332,12 @@ $segmentNavDesc = __(
             'desc' => __('Read-only: raw delivery status of every SMS/email a campaign action sent'),
             'icon' => 'inbox',
         ],
+        [
+            'url' => $block->getUrl('ordo/cronrunlog/index'),
+            'title' => __('Cron Run Log'),
+            'desc' => __('Read-only: every summary/failure line every cron in this module has logged'),
+            'icon' => 'refresh',
+        ],
     ];
     ?>
     <?php foreach ($navGroups as $navGroup): ?>

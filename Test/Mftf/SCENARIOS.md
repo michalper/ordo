@@ -11,10 +11,10 @@ jobs — not guessed from memory. Each scenario is marked:
 
 Cross-reference: `ROADMAP.md`'s "Test coverage" section for the standing priority list this feeds.
 
-**Status: every row below is ✅ except one 🔴 (see §10) and five ⬜ (the frequency-cap structural
+**Status: every row below is ✅ except one 🔴 (see §10) and seven ⬜ (the frequency-cap structural
 case in §1d, the Segment Overlap page in §2, the WhatsApp Template Body Text preview panel in
-§15, and the two Template Test Send rows in §16 — all unit-tested but no MFTF/integration coverage
-yet).** Re-audit this against `etc/di.xml`/
+§15, the two Template Test Send rows in §16, and the two Cron Run Log rows in §17 — all
+unit-tested but no MFTF/integration coverage yet).** Re-audit this against `etc/di.xml`/
 `Controller/Adminhtml/*`/`etc/events.xml` periodically rather than trusting it at face value — add a row (⬜)
 for anything newly added before considering it done.
 
@@ -293,6 +293,13 @@ module's.
 |----------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
 | Send a test email/SMS/WhatsApp message via `Send.php`, valid-input success path per channel                     | ⬜ unit-tested (`SendTest`), no MFTF/integration yet — real provider account needed for the actual send, same reasoning as `send_sms`'s own equivalent gap |
 | Invalid destination address/phone, or an unapproved WhatsApp template, rejected without sending                  | ⬜ unit-tested (`SendTest`)                                                |
+
+## 17. Cron Run Log (`Model/Cron/CronRunLog.php`, `Controller/Adminhtml/CronRunLog/`)
+
+| Scenario                                                                                        | Status                                                                    |
+|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| `CronRunLogger::logFailure()`/`logSummary()` persist the same formatted text into `ordo_cron_run_log` | ⬜ unit-tested (`CronRunLoggerTest`), no MFTF/integration yet — no browser-observable effect for a browser-driven test to assert on beyond the read-only grid rendering rows, which is what the grid page itself would need MFTF for |
+| A DB failure persisting a log row is swallowed instead of crashing the calling cron              | ⬜ unit-tested (`CronRunLoggerTest::testLogSummarySwallowsAPersistFailureInsteadOfThrowing`) |
 
 ## Suggested next batch (highest signal per test written)
 

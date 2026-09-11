@@ -9,9 +9,12 @@ use Ordo\Automation\Cron\PrunePendingPopups;
 use Ordo\Automation\Model\Cron\CronRunLogger;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class PrunePendingPopupsTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     public function testExecuteDeletesDeliveredAndExpiredRowsAndLogs(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
@@ -26,6 +29,6 @@ class PrunePendingPopupsTest extends TestCase
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('info');
 
-        (new PrunePendingPopups($resourceConnection, new CronRunLogger($logger)))->execute();
+        (new PrunePendingPopups($resourceConnection, $this->makeCronRunLogger($logger)))->execute();
     }
 }

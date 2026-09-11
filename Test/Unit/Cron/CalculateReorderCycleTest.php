@@ -14,9 +14,12 @@ use Ordo\Automation\Model\Cron\CronRunLogger;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class CalculateReorderCycleTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     private function makeSelect(): Select
     {
         $select = $this->createStub(Select::class);
@@ -50,7 +53,7 @@ class CalculateReorderCycleTest extends TestCase
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('info')->with(self::stringContains('0 reorder cycles'));
 
-$result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, new CronRunLogger($logger)))->execute();
+$result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $this->makeCronRunLogger($logger)))->execute();
 
         self::assertSame(0, $result);
     }
@@ -87,7 +90,7 @@ $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, 
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('info')->with(self::stringContains('1 reorder cycles'));
 
-$result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, new CronRunLogger($logger)))->execute();
+$result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $this->makeCronRunLogger($logger)))->execute();
 
         self::assertSame(1, $result);
     }
@@ -116,7 +119,7 @@ $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, 
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('info')->with(self::stringContains('0 reorder cycles'));
 
-        (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, new CronRunLogger($logger)))->execute();
+        (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $this->makeCronRunLogger($logger)))->execute();
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -149,7 +152,7 @@ $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, 
 
         $logger = $this->createStub(LoggerInterface::class);
 
-        (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, new CronRunLogger($logger)))->execute();
+        (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $this->makeCronRunLogger($logger)))->execute();
     }
 
     /**
@@ -191,7 +194,7 @@ $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, 
 
         $logger = $this->createStub(LoggerInterface::class);
 
-        (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, new CronRunLogger($logger)))->execute();
+        (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $this->makeCronRunLogger($logger)))->execute();
     }
 
     /**
@@ -229,7 +232,7 @@ $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, 
         $reorderCycleResource = $this->createStub(ReorderCycleResource::class);
         $logger = $this->createStub(LoggerInterface::class);
 
-        (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, new CronRunLogger($logger)))->execute();
+        (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $this->makeCronRunLogger($logger)))->execute();
 
         self::assertNotNull($capturedCutoff, 'Expected a created_at >= ? cutoff to be applied.');
         // Roughly 730 days ago (within a minute of tolerance for test execution time) - not an
