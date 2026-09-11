@@ -11,9 +11,9 @@ jobs — not guessed from memory. Each scenario is marked:
 
 Cross-reference: `ROADMAP.md`'s "Test coverage" section for the standing priority list this feeds.
 
-**Status: every row below is ✅ except one 🔴 (see §10) and two ⬜ (the frequency-cap structural
-case in §1d, and the Segment Overlap page in §2 — both unit-tested but no MFTF/integration
-coverage yet).** Re-audit this against `etc/di.xml`/
+**Status: every row below is ✅ except one 🔴 (see §10) and three ⬜ (the frequency-cap structural
+case in §1d, the Segment Overlap page in §2, and the WhatsApp Template Body Text preview panel in
+§15 — all unit-tested but no MFTF/integration coverage yet).** Re-audit this against `etc/di.xml`/
 `Controller/Adminhtml/*`/`etc/events.xml` periodically rather than trusting it at face value — add a row (⬜)
 for anything newly added before considering it done.
 
@@ -284,6 +284,7 @@ module's.
 | `WhatsAppSignatureValidator` — real HMAC-SHA256 signature verification                                             | ✅ `WhatsAppSignatureValidatorTest` (real crypto, not a hand-faked signature) |
 | `Controller\WhatsApp\Webhook` — GET verification handshake, POST signature rejection, message/template status-update correlation | ✅ `Test/Unit/Controller/WhatsApp/WebhookTest.php` |
 | An actual template submission/approval/send against a live Meta/WhatsApp Business Account                          | See ROADMAP.md's own note — out of MFTF's scope, same reasoning as `send_sms`'s equivalent gap |
+| Body Text field's character-limit validation, live counter, and `{{N}}`-substituted preview panel                  | ⬜ unit-tested (`BodyPreviewTest`, JS `whatsapp-template-body-preview.test.js`), no MFTF yet |
 
 ## Suggested next batch (highest signal per test written)
 
