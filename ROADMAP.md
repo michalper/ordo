@@ -72,6 +72,7 @@ as bugs above, not repeated here)*
 - Product feed is still single-format (Google RSS only) — multi-store and health/history are now
   covered (see docs/CHANGELOG.md). A second feed format (beyond Google Merchant's RSS+g: namespace)
   is a bigger, separate abstraction.
+
 ### Admin platform, UX consistency & API
 
 - No bulk/mass-action on MessageLog, ReorderCycle, and Rfm's grids (Campaign, Segment,
