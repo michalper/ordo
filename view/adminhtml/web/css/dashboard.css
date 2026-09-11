@@ -40,6 +40,20 @@
 .ordo-stat-value { font-size: var(--ordo-font-display); font-weight: var(--ordo-weight-bold); line-height: 1.2; }
 .ordo-stat-label { font-size: var(--ordo-font-base); color: var(--ordo-text-muted); margin-top: 2px; }
 
+/* A drill-down card (stuck approvals / failed crons) is still a link to the actionable grid, not
+   just a number - same card look as the plain KPIs above, but visually invites a click. */
+.ordo-stat-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color .15s ease;
+}
+.ordo-stat-card-link:hover,
+.ordo-stat-card-link:focus {
+  border-color: var(--ordo-primary);
+  text-decoration: none;
+}
+
 .ordo-dashboard-nav-group { margin-bottom: 28px; }
 
 .ordo-nav-group-title {

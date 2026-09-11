@@ -36,6 +36,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Dashboard drill-down KPIs for stuck order approvals and failed cron runs**, closing the
+  admin-platform ROADMAP.md gap where neither was visible without navigating to their grids first.
+  Two new clickable cards on `ordo/dashboard/index`: "Order approvals stuck" (pending approvals
+  already past `Cron\EscalateStalePendingApprovals`'s own escalation cutoff — the exact same
+  `OrderApproval\Collection::addStalePendingFilter()` query that cron uses, so the count always
+  agrees with which rows it would act on) and "Crons failed (last 24h)" (`ordo_cron_run_log` rows
+  at `LEVEL_FAILURE` within a rolling 24-hour window — old history doesn't keep counting once
+  outside that window). Both link straight to the Order Approvals / Cron Run Log grids.
 - **Manual "Send Reminder Now" action on the Reorder Cycles grid**, closing half of the
   commerce-features ROADMAP.md gap where a reorder cycle's reminder could only ever fire from
   `Cron\SendReorderReminders`'s own lead-days/once-per-day schedule. New

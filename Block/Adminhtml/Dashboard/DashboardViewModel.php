@@ -13,10 +13,13 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\CampaignOutcomeLogger;
 use Ordo\Automation\Model\CampaignTrigger;
+use Ordo\Automation\Model\Cron\CronRunLog;
 use Ordo\Automation\Model\LoyaltyTierCalculator;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as CampaignTriggerCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Cron\CronRunLog\CollectionFactory as CronRunLogCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\CollectionFactory as FreeGiftOfferCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\OrderApproval\CollectionFactory as OrderApprovalCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory as ReorderCycleCollectionFactory;
 use Ordo\Automation\Model\TriggerOutcomeLogger;
 
@@ -34,6 +37,13 @@ class DashboardViewModel implements ArgumentInterface
     private const int COUNT_CACHE_LIFETIME = 60;
 
     private const string COUNT_CACHE_KEY_PREFIX = 'ordo_dashboard_count_';
+
+    /**
+     * How far back "N crons failed" looks - a failure from last week is no longer actionable
+     * "is something broken right now" information, just history the Cron Run Log grid itself
+     * already keeps.
+     */
+    private const int FAILED_CRON_LOOKBACK_HOURS = 24;
 
     private const array TRIGGER_LABELS = [
         CampaignTriggerInterface::TRIGGER_ORDER_PLACED => 'Order Placed',
@@ -91,7 +101,9 @@ class DashboardViewModel implements ArgumentInterface
         private readonly LoyaltyTierCalculator $loyaltyTierCalculator,
         private readonly Config $config,
         private readonly StoreManagerInterface $storeManager,
-        private readonly CacheInterface $cache
+        private readonly CacheInterface $cache,
+        private readonly OrderApprovalCollectionFactory $orderApprovalCollectionFactory,
+        private readonly CronRunLogCollectionFactory $cronRunLogCollectionFactory
     ) {
     }
 
@@ -177,6 +189,47 @@ class DashboardViewModel implements ArgumentInterface
         return $this->cachedCount(
             'free_gift_offer',
             fn (): int => $this->freeGiftOfferCollectionFactory->create()->getSize()
+        );
+    }
+
+    /**
+     * How many order approvals are stuck — already past the same escalation cutoff
+     * Cron\EscalateStalePendingApprovals itself uses, so this always agrees with whichever
+     * approvals that cron would (or already did) send a reminder for. A KPI-only count, not a
+     * grid preview — see getStuckApprovalsUrl() below for the drill-down link.
+     */
+    public function getStuckApprovalCount(): int
+    {
+        return $this->cachedCount(
+            'stuck_approval',
+            function (): int {
+                $days = $this->config->getOrderApprovalEscalationDays();
+                $cutoff = date('Y-m-d H:i:s', (int) strtotime("-{$days} days"));
+
+                return $this->orderApprovalCollectionFactory->create()
+                    ->addStalePendingFilter($cutoff)
+                    ->getSize();
+            }
+        );
+    }
+
+    /**
+     * How many cron runs logged a failure (Model\Cron\CronRunLogger::logFailure()) in the last
+     * FAILED_CRON_LOOKBACK_HOURS — "is something broken right now", not the grid's full history.
+     */
+    public function getFailedCronCount(): int
+    {
+        return $this->cachedCount(
+            'failed_cron',
+            function (): int {
+                $cutoff = date('Y-m-d H:i:s', strtotime('-' . self::FAILED_CRON_LOOKBACK_HOURS . ' hours'));
+
+                $collection = $this->cronRunLogCollectionFactory->create();
+                $collection->addFieldToFilter('level', CronRunLog::LEVEL_FAILURE);
+                $collection->addFieldToFilter('created_at', ['gteq' => $cutoff]);
+
+                return $collection->getSize();
+            }
         );
     }
 
