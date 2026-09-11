@@ -6,6 +6,7 @@ namespace Ordo\Automation\Test\Unit\Model\WhatsApp;
 use Magento\Framework\HTTP\Client\Curl;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Http\JsonApiClient;
+use Ordo\Automation\Model\RateLimit\OutboundRateLimiter;
 use Ordo\Automation\Model\WhatsApp\WhatsAppSender;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
@@ -22,8 +23,14 @@ class WhatsAppSenderTest extends TestCase
         $this->config = $this->createStub(Config::class);
         $this->config->method('getWhatsAppAccessToken')->willReturn('access-token');
         $this->config->method('getWhatsAppPhoneNumberId')->willReturn('1234567890');
+        // 0 = throttling off - see the identical note in TwilioSmsSenderTest::setUp().
+        $this->config->method('getWhatsAppMaxRequestsPerSecond')->willReturn(0);
 
-        $this->sender = new WhatsAppSender(new JsonApiClient($this->curl), $this->config);
+        $this->sender = new WhatsAppSender(
+            new JsonApiClient($this->curl),
+            $this->config,
+            $this->createStub(OutboundRateLimiter::class)
+        );
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -50,6 +57,24 @@ class WhatsAppSenderTest extends TestCase
             [['type' => 'text', 'text' => 'John'], ['type' => 'text', 'text' => 'ORD-1']],
             $capturedBody['template']['components'][0]['parameters']
         );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSendThrottlesOnTheWhatsappChannelAtTheConfiguredRate(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('getWhatsAppAccessToken')->willReturn('access-token');
+        $config->method('getWhatsAppPhoneNumberId')->willReturn('1234567890');
+        $config->method('getWhatsAppMaxRequestsPerSecond')->willReturn(7);
+
+        $rateLimiter = $this->createMock(OutboundRateLimiter::class);
+        $rateLimiter->expects(self::once())->method('throttle')->with('whatsapp', 7.0);
+        $this->sender = new WhatsAppSender(new JsonApiClient($this->curl), $config, $rateLimiter);
+
+        $this->curl->method('getStatus')->willReturn(200);
+        $this->curl->method('getBody')->willReturn(json_encode(['messages' => [['id' => 'wamid.123']]]));
+
+        $this->sender->send('+15551234567', 'order_shipped_v1', 'en_US', []);
     }
 
     #[AllowMockObjectsWithoutExpectations]

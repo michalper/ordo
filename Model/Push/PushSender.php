@@ -7,6 +7,7 @@ use Magento\Framework\HTTP\Client\Curl;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Push\Exception\SubscriptionGoneException;
 use Ordo\Automation\Model\PushSubscription;
+use Ordo\Automation\Model\RateLimit\OutboundRateLimiter;
 use RuntimeException;
 
 /**
@@ -25,7 +26,8 @@ class PushSender
         private readonly Config $config,
         private readonly VapidTokenBuilder $vapidTokenBuilder,
         private readonly WebPushCrypto $webPushCrypto,
-        private readonly PushEndpointValidator $pushEndpointValidator
+        private readonly PushEndpointValidator $pushEndpointValidator,
+        private readonly OutboundRateLimiter $rateLimiter
     ) {
     }
 
@@ -65,6 +67,8 @@ class PushSender
             $this->config->getVapidPrivateKey(),
             $this->config->getVapidSubject()
         );
+
+        $this->rateLimiter->throttle('push', (float) $this->config->getPushMaxRequestsPerSecond());
 
         $this->curl->setTimeout(self::TIMEOUT_SECONDS);
         $this->curl->setOption(CURLOPT_FOLLOWLOCATION, false);

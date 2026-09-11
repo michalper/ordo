@@ -11,6 +11,7 @@ use Ordo\Automation\Model\Push\Der;
 use Ordo\Automation\Model\Push\PushEndpointValidator;
 use Ordo\Automation\Model\Push\PushSender;
 use Ordo\Automation\Model\Push\VapidTokenBuilder;
+use Ordo\Automation\Model\RateLimit\OutboundRateLimiter;
 use Ordo\Automation\Model\Push\WebPushCrypto;
 use Ordo\Automation\Model\PushSubscription;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -32,6 +33,8 @@ class PushSenderTest extends TestCase
         $this->config->method('getVapidPublicKey')->willReturn('public-key');
         $this->config->method('getVapidPrivateKey')->willReturn('private-key');
         $this->config->method('getVapidSubject')->willReturn('mailto:ops@example.com');
+        // 0 = throttling off - see the identical note in TwilioSmsSenderTest::setUp().
+        $this->config->method('getPushMaxRequestsPerSecond')->willReturn(0);
         $this->vapidTokenBuilder = $this->createMock(VapidTokenBuilder::class);
         $this->vapidTokenBuilder->method('buildAuthorizationHeader')->willReturn('vapid t=jwt, k=public-key');
         $this->pushEndpointValidator = $this->createStub(PushEndpointValidator::class);
@@ -43,7 +46,8 @@ class PushSenderTest extends TestCase
             $this->config,
             $this->vapidTokenBuilder,
             new WebPushCrypto(new Der(), $base64Url),
-            $this->pushEndpointValidator
+            $this->pushEndpointValidator,
+            $this->createStub(OutboundRateLimiter::class)
         );
 
         $key = openssl_pkey_new(['curve_name' => 'prime256v1', 'private_key_type' => OPENSSL_KEYTYPE_EC]);
@@ -86,6 +90,32 @@ class PushSenderTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testSendThrottlesOnThePushChannelAtTheConfiguredRate(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('getVapidPublicKey')->willReturn('public-key');
+        $config->method('getVapidPrivateKey')->willReturn('private-key');
+        $config->method('getVapidSubject')->willReturn('mailto:ops@example.com');
+        $config->method('getPushMaxRequestsPerSecond')->willReturn(15);
+
+        $rateLimiter = $this->createMock(OutboundRateLimiter::class);
+        $rateLimiter->expects(self::once())->method('throttle')->with('push', 15.0);
+
+        $this->sender = new PushSender(
+            $this->curl,
+            $config,
+            $this->vapidTokenBuilder,
+            new WebPushCrypto(new Der(), new BaseSixtyFourUrl()),
+            $this->pushEndpointValidator,
+            $rateLimiter
+        );
+
+        $this->curl->method('getStatus')->willReturn(201);
+
+        $this->sender->send($this->subscription, '{"title":"Hi"}');
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testSendThrowsSubscriptionGoneOn410(): void
     {
         $this->curl->method('getStatus')->willReturn(410);
@@ -123,7 +153,8 @@ class PushSenderTest extends TestCase
             $this->config,
             $this->vapidTokenBuilder,
             new WebPushCrypto(new Der(), new BaseSixtyFourUrl()),
-            $this->pushEndpointValidator
+            $this->pushEndpointValidator,
+            $this->createStub(OutboundRateLimiter::class)
         );
 
         $this->curl->expects(self::never())->method('post');

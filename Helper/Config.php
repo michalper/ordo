@@ -68,6 +68,7 @@ class Config
     private const string XML_PATH_SMS_TWILIO_API_KEY_SID = 'ordo_automation/sms/twilio_api_key_sid';
     private const string XML_PATH_SMS_TWILIO_API_KEY_SECRET = 'ordo_automation/sms/twilio_api_key_secret';
     private const string XML_PATH_SMS_TWILIO_FROM_NUMBER = 'ordo_automation/sms/twilio_from_number';
+    private const string XML_PATH_SMS_TWILIO_MAX_PER_SECOND = 'ordo_automation/sms/twilio_max_requests_per_second';
 
     private const string XML_PATH_GOOGLE_ADS_CLIENT_ID = 'ordo_automation/ad_audience_sync/google_ads_client_id';
     private const string XML_PATH_GOOGLE_ADS_CLIENT_SECRET
@@ -94,11 +95,13 @@ class Config
     private const string XML_PATH_WHATSAPP_BUSINESS_ACCOUNT_ID = 'ordo_automation/whatsapp/business_account_id';
     private const string XML_PATH_WHATSAPP_APP_SECRET = 'ordo_automation/whatsapp/app_secret';
     private const string XML_PATH_WHATSAPP_WEBHOOK_VERIFY_TOKEN = 'ordo_automation/whatsapp/webhook_verify_token';
+    private const string XML_PATH_WHATSAPP_MAX_PER_SECOND = 'ordo_automation/whatsapp/max_requests_per_second';
 
     private const string XML_PATH_PUSH_ENABLED = 'ordo_automation/push/enabled';
     private const string XML_PATH_PUSH_VAPID_PUBLIC_KEY = 'ordo_automation/push/vapid_public_key';
     private const string XML_PATH_PUSH_VAPID_PRIVATE_KEY = 'ordo_automation/push/vapid_private_key';
     private const string XML_PATH_PUSH_VAPID_SUBJECT = 'ordo_automation/push/vapid_subject';
+    private const string XML_PATH_PUSH_MAX_PER_SECOND = 'ordo_automation/push/max_requests_per_second';
 
     private const string XML_PATH_FREQUENCY_CAP_ENABLED = 'ordo_automation/frequency_cap/enabled';
     private const string XML_PATH_FREQUENCY_CAP_MAX_MESSAGES = 'ordo_automation/frequency_cap/max_messages';
@@ -479,6 +482,16 @@ class Config
         );
     }
 
+    /**
+     * Client-side pace-setter for outbound Twilio calls (Model\RateLimit\OutboundRateLimiter) -
+     * 0 disables throttling entirely (an explicit admin choice, not "unconfigured" - see
+     * intConfig()'s own docblock for why that distinction matters).
+     */
+    public function getTwilioMaxRequestsPerSecond(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_SMS_TWILIO_MAX_PER_SECOND, 1, $storeId);
+    }
+
     public function getGoogleAdsClientId(?int $storeId = null): string
     {
         return (string) $this->scopeConfig->getValue(
@@ -614,6 +627,16 @@ class Config
         return $this->decryptedConfig(self::XML_PATH_WHATSAPP_WEBHOOK_VERIFY_TOKEN, $storeId);
     }
 
+    /**
+     * Client-side pace-setter for outbound Graph API calls (Model\RateLimit\OutboundRateLimiter)
+     * - 0 disables throttling entirely (an explicit admin choice, not "unconfigured" - see
+     * intConfig()'s own docblock for why that distinction matters).
+     */
+    public function getWhatsAppMaxRequestsPerSecond(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_WHATSAPP_MAX_PER_SECOND, 5, $storeId);
+    }
+
     public function isPushEnabled(?int $storeId = null): bool
     {
         return $this->scopeConfig->isSetFlag(
@@ -658,6 +681,16 @@ class Config
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
+    }
+
+    /**
+     * Client-side pace-setter for outbound Web Push calls (Model\RateLimit\OutboundRateLimiter) -
+     * 0 disables throttling entirely (an explicit admin choice, not "unconfigured" - see
+     * intConfig()'s own docblock for why that distinction matters).
+     */
+    public function getPushMaxRequestsPerSecond(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_PUSH_MAX_PER_SECOND, 20, $storeId);
     }
 
     /**

@@ -158,6 +158,18 @@ class ConfigTest extends TestCase
         self::assertSame(24, $this->config->getFrequencyCapWindowHours());
         self::assertSame(21, $this->config->getQuietHoursStartHour());
         self::assertSame(8, $this->config->getQuietHoursEndHour());
+        self::assertSame(1, $this->config->getTwilioMaxRequestsPerSecond());
+        self::assertSame(5, $this->config->getWhatsAppMaxRequestsPerSecond());
+        self::assertSame(20, $this->config->getPushMaxRequestsPerSecond());
+    }
+
+    public function testOutboundRateLimitGettersReturnAnExplicitZeroRatherThanFallingBackToTheDefault(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn('0');
+
+        self::assertSame(0, $this->config->getTwilioMaxRequestsPerSecond());
+        self::assertSame(0, $this->config->getWhatsAppMaxRequestsPerSecond());
+        self::assertSame(0, $this->config->getPushMaxRequestsPerSecond());
     }
 
     public function testOrderApprovalEscalationChainEmailsSplitsAndTrimsLines(): void
