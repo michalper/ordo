@@ -248,6 +248,13 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
+                                        <action name="16">
+                                            <target>${ $.parentName }.event_only_warning</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="1">
@@ -363,6 +370,13 @@
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="16">
+                                            <target>${ $.parentName }.event_only_warning</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">true</param>
                                             </params>
                                         </action>
                                     </actions>
@@ -482,6 +496,13 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
+                                        <action name="16">
+                                            <target>${ $.parentName }.event_only_warning</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">true</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="3">
@@ -594,6 +615,13 @@
                                         </action>
                                         <action name="15">
                                             <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="16">
+                                            <target>${ $.parentName }.event_only_warning</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -716,6 +744,13 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
+                                        <action name="16">
+                                            <target>${ $.parentName }.event_only_warning</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="5">
@@ -828,6 +863,13 @@
                                         </action>
                                         <action name="15">
                                             <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="16">
+                                            <target>${ $.parentName }.event_only_warning</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -950,6 +992,13 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
+                                        <action name="16">
+                                            <target>${ $.parentName }.event_only_warning</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="7">
@@ -1062,6 +1111,13 @@
                                         </action>
                                         <action name="15">
                                             <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="16">
+                                            <target>${ $.parentName }.event_only_warning</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -1184,6 +1240,13 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
+                                        <action name="16">
+                                            <target>${ $.parentName }.event_only_warning</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="9">
@@ -1296,6 +1359,13 @@
                                         </action>
                                         <action name="15">
                                             <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="16">
+                                            <target>${ $.parentName }.event_only_warning</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -1428,6 +1498,13 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
+                                        <action name="16">
+                                            <target>${ $.parentName }.event_only_warning</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="11">
@@ -1545,6 +1622,13 @@
                                                 <param name="0" xsi:type="boolean">true</param>
                                             </params>
                                         </action>
+                                        <action name="16">
+                                            <target>${ $.parentName }.event_only_warning</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="12">
@@ -1657,6 +1741,13 @@
                                         </action>
                                         <action name="15">
                                             <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="16">
+                                            <target>${ $.parentName }.event_only_warning</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -1790,6 +1881,13 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
+                                        <action name="16">
+                                            <target>${ $.parentName }.event_only_warning</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="14">
@@ -1907,6 +2005,13 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
+                                        <action name="16">
+                                            <target>${ $.parentName }.event_only_warning</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="15">
@@ -2019,6 +2124,13 @@
                                         </action>
                                         <action name="15">
                                             <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="16">
+                                            <target>${ $.parentName }.event_only_warning</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -2148,6 +2260,13 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
+                                        <action name="16">
+                                            <target>${ $.parentName }.event_only_warning</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <!--
@@ -2266,6 +2385,13 @@
                                         </action>
                                         <action name="15">
                                             <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="16">
+                                            <target>${ $.parentName }.event_only_warning</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -2497,6 +2623,30 @@
                             </settings>
                         </select>
                     </formElements>
+                </field>
+                <!--
+                    Fail-closed semantics for "Order Total At Least"/"Visitor Tag" used inside a
+                    Segment (as opposed to a Campaign trigger) are otherwise invisible: both are
+                    per-event-context conditions with no meaning for a standing set-of-customers
+                    query, so SegmentMemberResolver::resolveCondition() returns [] for them
+                    (matches nobody) rather than throwing - correct, but silent. A disabled,
+                    static-text field (shown only for these two rule blocks, same switcherConfig
+                    mechanism every other condition-specific field here already uses) surfaces
+                    that instead of letting a marketer wonder why an AND-segment using one of
+                    these always comes up empty.
+                -->
+                <field name="event_only_warning" formElement="input" sortOrder="28">
+                    <argument name="data" xsi:type="array">
+                        <item name="config" xsi:type="array">
+                            <item name="default" xsi:type="string">This condition only has an effect inside a Campaign's trigger conditions - used inside a Segment, it never matches any customer.</item>
+                        </item>
+                    </argument>
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Note</label>
+                        <visible>false</visible>
+                        <disabled>true</disabled>
+                    </settings>
                 </field>
             </container>
         </dynamicRows>

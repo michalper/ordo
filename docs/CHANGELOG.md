@@ -47,6 +47,16 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   AdAudience) still have no bulk actions — same mechanical pattern, a natural follow-up, not
   attempted here.
 
+- **A visible warning when `order_total_gte`/`visitor_tag` is used inside a Segment**, closing the
+  segmentation ROADMAP.md gap where their fail-closed semantics (correct — `Model\Segment\`
+  `SegmentMemberResolver::resolveCondition()` returns `[]`, matching nobody, since both are
+  per-event-context conditions with no meaning for a standing set-of-customers query) were
+  invisible: an AND-segment using either one silently matched nobody with no explanation. A new
+  disabled, static-text `event_only_warning` field (`ordo_segment_form.xml`, wired into every
+  switcherConfig rule the same way `segment_id`/`tier` already are) surfaces the note for a
+  top-level condition row; `segment-group-modal.js`'s `renderValueField()` renders the same
+  warning text for a nested "group" row, since those aren't backed by ui-component fields at all.
+
 - **WhatsApp Template Edit page now has a character-limit validation, live counter, and rendered
   preview for the Body Text field**, closing the communication-channels ROADMAP.md gap where a raw
   textarea with manual `{{1}}`/`{{2}}` placeholders had no feedback before a real (costly) Meta
