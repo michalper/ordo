@@ -12,9 +12,12 @@ use Ordo\Automation\Model\ResourceModel\Offer\CollectionFactory;
 use Ordo\Automation\Model\Cron\CronRunLogger;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class ExpireOverdueOffersTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     public function testExecuteMarksOffersExpired(): void
     {
         $offer = $this->createMock(Offer::class);
@@ -33,7 +36,7 @@ class ExpireOverdueOffersTest extends TestCase
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('info');
 
-        (new ExpireOverdueOffers($collectionFactory, $offerResource, new CronRunLogger($logger)))->execute();
+        (new ExpireOverdueOffers($collectionFactory, $offerResource, $this->makeCronRunLogger($logger)))->execute();
     }
 
     public function testExecuteHandlesEmptyCollection(): void
@@ -51,6 +54,6 @@ class ExpireOverdueOffersTest extends TestCase
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('info');
 
-        (new ExpireOverdueOffers($collectionFactory, $offerResource, new CronRunLogger($logger)))->execute();
+        (new ExpireOverdueOffers($collectionFactory, $offerResource, $this->makeCronRunLogger($logger)))->execute();
     }
 }

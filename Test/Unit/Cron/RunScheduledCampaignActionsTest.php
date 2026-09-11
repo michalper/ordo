@@ -13,9 +13,12 @@ use Ordo\Automation\Model\ResourceModel\Campaign\ScheduledAction\CollectionFacto
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class RunScheduledCampaignActionsTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     private ScheduledActionCollectionFactory $collectionFactory;
     private CampaignScheduledActionResource $resource;
     private CampaignDispatcher $dispatcher;
@@ -36,7 +39,7 @@ class RunScheduledCampaignActionsTest extends TestCase
             $this->resource,
             $this->dispatcher,
             $this->logger,
-            new CronRunLogger($this->logger)
+            $this->makeCronRunLogger($this->logger)
         );
     }
 

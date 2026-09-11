@@ -26,9 +26,12 @@ use Ordo\Automation\Model\Cron\CronRunLogger;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class SendWinBackEmailsTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     /**
      * @param CustomerInterface[] $customers
      */
@@ -112,7 +115,7 @@ class SendWinBackEmailsTest extends TestCase
             $emailSender,
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            new CronRunLogger($logger)
+            $this->makeCronRunLogger($logger)
         ))->execute();
     }
 
@@ -175,7 +178,7 @@ class SendWinBackEmailsTest extends TestCase
             $this->makeEmailSender($transportBuilder),
             $consentManager,
             $this->createStub(TriggerOutcomeLogger::class),
-            new CronRunLogger($this->createStub(LoggerInterface::class))
+            $this->makeCronRunLogger($this->createStub(LoggerInterface::class))
         ))->execute();
     }
 
@@ -210,7 +213,7 @@ class SendWinBackEmailsTest extends TestCase
             $this->makeEmailSender($transportBuilder),
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            new CronRunLogger($logger)
+            $this->makeCronRunLogger($logger)
         ))->execute();
     }
 
@@ -237,7 +240,7 @@ class SendWinBackEmailsTest extends TestCase
             $this->makeEmailSender($this->createStub(TransportBuilder::class)),
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            new CronRunLogger($logger)
+            $this->makeCronRunLogger($logger)
         ))->execute();
     }
 
@@ -258,7 +261,7 @@ class SendWinBackEmailsTest extends TestCase
             $emailSender,
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            new CronRunLogger($this->createStub(LoggerInterface::class))
+            $this->makeCronRunLogger($this->createStub(LoggerInterface::class))
         );
     }
 }

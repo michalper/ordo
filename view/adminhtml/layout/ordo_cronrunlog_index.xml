@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="ordo_cronrunlog_listing_intro"
+                   template="Ordo_Automation::listing_intro.phtml" before="ordo_cronrunlog_listing">
+                <arguments>
+                    <argument name="intro_text" xsi:type="string">Every summary/failure line every cron in this module has ever logged - the same "Ordo_Automation: ..." text CronRunLogger already writes to var/log, now also queryable here without log-tailing.</argument>
+                </arguments>
+            </block>
+            <uiComponent name="ordo_cronrunlog_listing"/>
+        </referenceContainer>
+    </body>
+</page>

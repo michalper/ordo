@@ -22,9 +22,12 @@ use Ordo\Automation\Model\Cron\CronRunLogger;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class SendAbandonedCartRemindersTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     private function makeSelect(): Select
     {
         $select = $this->createStub(Select::class);
@@ -142,7 +145,7 @@ class SendAbandonedCartRemindersTest extends TestCase
             $this->createStub(StateInterface::class),
             $dispatcher,
             $consentManager,
-            new CronRunLogger($this->createStub(LoggerInterface::class))
+            $this->makeCronRunLogger($this->createStub(LoggerInterface::class))
         ))->execute();
     }
 
@@ -220,7 +223,7 @@ class SendAbandonedCartRemindersTest extends TestCase
             $this->createStub(StateInterface::class),
             $dispatcher,
             $this->makeConsentManager(),
-            new CronRunLogger($logger)
+            $this->makeCronRunLogger($logger)
         ))->execute();
     }
 
@@ -263,7 +266,7 @@ class SendAbandonedCartRemindersTest extends TestCase
             $this->createStub(StateInterface::class),
             $dispatcher ?? $this->createStub(CampaignDispatcher::class),
             $this->makeConsentManager(),
-            new CronRunLogger($logger ?? $this->createStub(LoggerInterface::class))
+            $this->makeCronRunLogger($logger ?? $this->createStub(LoggerInterface::class))
         );
     }
 }

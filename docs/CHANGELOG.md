@@ -42,6 +42,17 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   every pass, alongside its existing overwrite-in-place update to `ordo_segment` itself. No
   admin trend view yet — a natural follow-up once there is real history to show.
 
+- **Persisted cron-run log + admin grid**, closing the commerce-features ROADMAP.md gap where
+  `Model\Cron\CronRunLogger` only ever wrote to `var/log` — "did today's escalation cron even
+  run" was invisible without log-tailing. New `ordo_cron_run_log` table (`Model\Cron\CronRunLog`);
+  `CronRunLogger::logFailure()`/`logSummary()` now persist the exact same formatted text they
+  already send to the PSR logger, wrapped in its own try/catch so a DB hiccup persisting this line
+  can never crash the calling cron mid-run. Deliberately no cron-name column and zero changes to
+  any of the ~20 crons that construct this class — every existing call site already passes a
+  fully descriptive message string, so the persisted row alone answers the same question the
+  var/log line always did. New read-only "Cron Run Log" admin grid (linked from the dashboard)
+  with a Level filter (`Config\Source\CronRunLogLevel`).
+
 - **Consent audit trail**, closing the commerce-features ROADMAP.md gap where `SetConsent`
   overwrote the current state with no timestamped history — what most real GDPR audits actually
   ask for ("was this customer opted in for SMS on date X"). New append-only
