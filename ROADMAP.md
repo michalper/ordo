@@ -63,9 +63,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 
 ### Communication channels (Email/SMS/WhatsApp/Push)
 
-- No template preview or test-send anywhere in admin, for any channel — merchants routinely typo
-  `{{var}}`/WhatsApp `{{1}}` placeholders and only discover it once a real customer gets the
-  broken message.
 - Every send is one synchronous, unbatched HTTP call per customer inline in the dispatch path — no
   concurrency control and no respect for provider rate limits (Twilio, Graph API, push services);
   a campaign matching thousands of customers in one tick will serially hammer the provider API or

@@ -733,3 +733,26 @@ td:has(> [data-index="group_logic"]) {
 .ordo-sku-suggest-row:hover {
     background: var(--ordo-accent-tint);
 }
+
+/*
+ * Template Test Send page's result panel (template-test-send.js) - shares this file since it's
+ * the only other admin page using these --ordo-* tokens for a simple "did it work" panel.
+ */
+.ordo-template-test-send-result {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.ordo-template-test-send-result-success {
+    background: #eefaf0;
+    border: 1px solid #a7d7ae;
+    color: #256029;
+}
+
+.ordo-template-test-send-result-error {
+    background: #fdf0ef;
+    border: 1px solid #e6a19c;
+    color: var(--ordo-danger);
+}

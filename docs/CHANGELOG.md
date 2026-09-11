@@ -41,6 +41,19 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   `SegmentAudienceSizeRecalculator::recalculateAll()` now appends one history row per segment on
   every pass, alongside its existing overwrite-in-place update to `ordo_segment` itself. No
   admin trend view yet — a natural follow-up once there is real history to show.
+- **New "Template Test Send" admin page**, closing the communication-channels ROADMAP.md gap
+  where there was no template preview or test-send anywhere in admin, for any channel — merchants
+  routinely typo `{{var}}`/WhatsApp `{{1}}` placeholders and only discovered it once a real
+  customer got the broken message. `Controller\Adminhtml\TemplateTestSend\Send` sends a real test
+  message on Email/SMS/WhatsApp to whatever address/number is typed in, deliberately **not**
+  reusing `Model\Campaign\Action\Send{Email,Sms,WhatsApp}::execute()` as-is — those gate on a real
+  customer's consent/quiet-hours/frequency-cap state, which has no meaning for an explicit,
+  admin-initiated test send. Instead it calls the same underlying provider abstractions
+  (`TransportBuilder`/`SmsSenderInterface`/`WhatsAppSender`) directly, through the same
+  `SendRetrier` for the actual network call, and returns the real caught exception's message on
+  failure so a template author can see exactly what broke. Push is intentionally unsupported: a
+  push notification has no "address" to test-send to outside a real, already-registered browser
+  subscription.
 
 - **Persisted cron-run log + admin grid**, closing the commerce-features ROADMAP.md gap where
   `Model\Cron\CronRunLogger` only ever wrote to `var/log` — "did today's escalation cron even
