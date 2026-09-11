@@ -33,6 +33,19 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **`send_sms`/`send_push` campaign actions can now include product recommendations as plain
+  text**, closing the "product recommendations are effectively email-only" gap.
+  `Model\Recommendation\ProductRecommendationRenderer` gained a `renderText()` method (one line
+  per product, `"Name - $Price"`, no HTML) alongside its existing `renderHtml()`;
+  `AddProductRecommendations` now writes both `recommended_products_html` (unchanged, for
+  `send_email`) and a
+  new `recommended_products_text` into the context. `send_sms`'s `message` and `send_push`'s
+  `body` params now substitute the literal token `{{recommended_products_text}}` with that
+  context value if present — a single, deliberately narrow token substitution, not a general
+  templating engine. `send_whatsapp` is explicitly out of scope: its "params" are positional
+  values filled into an already Meta-approved template, not free text a recommendation block could
+  substitute into.
+
 - **Time-zone-aware campaign quiet hours**, closing the campaign engine's "No time-zone-aware
   quiet hours" gap. New `ordo_timezone` customer attribute (`AddCustomerTimezoneAttribute`, an
   IANA zone string, e.g. `Europe/Warsaw`) and a `quiet_hours` admin config section

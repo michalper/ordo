@@ -85,6 +85,24 @@ class SendPushTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSubstitutesRecommendedProductsTextTokenIntoBody(): void
+    {
+        $subscription = $this->subscription('https://push.example.com/a');
+        $this->pushSubscriptionManager->method('getForCustomer')->willReturn([$subscription]);
+
+        $this->pushSender->expects(self::once())->method('send')->with(
+            $subscription,
+            self::callback(function (string $payload) {
+                $decoded = json_decode($payload, true);
+                return $decoded['body'] === 'Check out: Widget - $19.99';
+            })
+        );
+
+        $context = ['customer_id' => 42, 'recommended_products_text' => 'Check out: Widget - $19.99'];
+        $this->makeAction()->execute($context, ['title' => 'For you', 'body' => '{{recommended_products_text}}']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsErrorWhenCustomerIdMissing(): void
     {
         $this->pushSubscriptionManager->expects(self::never())->method('getForCustomer');

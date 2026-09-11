@@ -25,17 +25,20 @@ class AddProductRecommendationsTest extends TestCase
     {
         $this->productRecommender->expects(self::never())->method('getRecommendedSkus');
         $this->productRecommendationRenderer->expects(self::never())->method('renderHtml');
+        $this->productRecommendationRenderer->expects(self::never())->method('renderText');
 
         $context = [];
         $this->action->execute($context, []);
 
         self::assertArrayNotHasKey('recommended_products_html', $context);
+        self::assertArrayNotHasKey('recommended_products_text', $context);
     }
 
     public function testDoesNothingWhenCustomerIdIsZero(): void
     {
         $this->productRecommender->expects(self::never())->method('getRecommendedSkus');
         $this->productRecommendationRenderer->expects(self::never())->method('renderHtml');
+        $this->productRecommendationRenderer->expects(self::never())->method('renderText');
 
         $context = ['customer_id' => 0];
         $this->action->execute($context, []);
@@ -51,11 +54,16 @@ class AddProductRecommendationsTest extends TestCase
             ->method('renderHtml')
             ->with(['SKU-1'])
             ->willReturn('<div>html</div>');
+        $this->productRecommendationRenderer->expects(self::once())
+            ->method('renderText')
+            ->with(['SKU-1'])
+            ->willReturn('plain text');
 
         $context = ['customer_id' => 42];
         $this->action->execute($context, []);
 
         self::assertSame('<div>html</div>', $context['recommended_products_html']);
+        self::assertSame('plain text', $context['recommended_products_text']);
     }
 
     public function testUsesDefaultCountWhenCountIsNonNumericOrZero(): void
@@ -65,6 +73,7 @@ class AddProductRecommendationsTest extends TestCase
             ->with(42, 4)
             ->willReturn([]);
         $this->productRecommendationRenderer->expects(self::once())->method('renderHtml')->willReturn('');
+        $this->productRecommendationRenderer->expects(self::once())->method('renderText')->willReturn('');
 
         $context = ['customer_id' => 42];
         $this->action->execute($context, ['count' => 'not-a-number']);
@@ -77,19 +86,22 @@ class AddProductRecommendationsTest extends TestCase
             ->with(42, 8)
             ->willReturn([]);
         $this->productRecommendationRenderer->expects(self::once())->method('renderHtml')->willReturn('');
+        $this->productRecommendationRenderer->expects(self::once())->method('renderText')->willReturn('');
 
         $context = ['customer_id' => 42];
         $this->action->execute($context, ['count' => '8']);
     }
 
-    public function testSetsEmptyRecommendedProductsHtmlWhenRendererReturnsEmptyString(): void
+    public function testSetsEmptyRecommendedProductsHtmlAndTextWhenRendererReturnsEmptyStrings(): void
     {
         $this->productRecommender->expects(self::once())->method('getRecommendedSkus')->willReturn([]);
         $this->productRecommendationRenderer->expects(self::once())->method('renderHtml')->willReturn('');
+        $this->productRecommendationRenderer->expects(self::once())->method('renderText')->willReturn('');
 
         $context = ['customer_id' => 42];
         $this->action->execute($context, []);
 
         self::assertSame('', $context['recommended_products_html']);
+        self::assertSame('', $context['recommended_products_text']);
     }
 }

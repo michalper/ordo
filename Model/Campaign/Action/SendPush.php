@@ -18,8 +18,11 @@ use Throwable;
 
 /**
  * Params: {"title": "...", "body": "...", "url": "https://..."} - "url" is optional, opened by
- * push-sw.js's notificationclick handler when the browser notification is clicked. Context must
- * include "customer_id".
+ * push-sw.js's notificationclick handler when the browser notification is clicked. "body" may
+ * include the literal token "{{recommended_products_text}}", substituted with the plain-text
+ * rendering Model\Campaign\Action\AddProductRecommendations writes into the context (empty string
+ * if that action never ran, or found nothing to recommend) - not a general templating engine,
+ * this one token only, same as send_sms's own equivalent. Context must include "customer_id".
  *
  * Unlike send_sms/send_whatsapp (one phone number per customer), a customer can have any number
  * of registered browser/device subscriptions (Model\Push\PushSubscriptionManager::getForCustomer())
@@ -95,9 +98,17 @@ class SendPush implements ActionInterface
             return;
         }
 
+        // Only this one token, deliberately - not a general templating engine. See
+        // AddProductRecommendations's own docblock for why this context key exists.
+        $body = str_replace(
+            '{{recommended_products_text}}',
+            (string) ($context['recommended_products_text'] ?? ''),
+            (string) ($params['body'] ?? '')
+        );
+
         $payload = (string) json_encode([
             'title' => $title,
-            'body' => (string) ($params['body'] ?? ''),
+            'body' => $body,
             'url' => (string) ($params['url'] ?? ''),
         ]);
 

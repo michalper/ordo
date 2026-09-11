@@ -18,7 +18,11 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * Params: {"message": "SMS text"}. Context must include "customer_id" (phone resolved via the
+ * Params: {"message": "SMS text"} - "message" may include the literal token
+ * "{{recommended_products_text}}", substituted with the plain-text rendering
+ * Model\Campaign\Action\AddProductRecommendations writes into the context (empty string if that
+ * action never ran, or found nothing to recommend). Not a general templating engine - this one
+ * token only. Context must include "customer_id" (phone resolved via the
  * dedicated ordo_sms_phone customer attribute — not the core address telephone, see
  * AddCustomerSmsPhoneAttribute). Mirrors SendEmail's shape: read customer_id, resolve the
  * customer, resolve the delivery target, then hand off to a provider abstraction
@@ -120,6 +124,14 @@ class SendSms implements ActionInterface
             $this->logger->error('Ordo_Automation: send_sms action is missing "message" in params.');
             return;
         }
+
+        // Only this one token, deliberately - not a general templating engine. See
+        // AddProductRecommendations's own docblock for why this context key exists.
+        $message = str_replace(
+            '{{recommended_products_text}}',
+            (string) ($context['recommended_products_text'] ?? ''),
+            $message
+        );
 
         try {
             // OptedOutException means "this number opted out via STOP" - permanently invalid, not

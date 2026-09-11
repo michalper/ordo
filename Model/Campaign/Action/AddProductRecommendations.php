@@ -14,6 +14,12 @@ use Ordo\Automation\Model\Recommendation\ProductRecommender;
  * convention. Writes "recommended_products_html" into the context (even when it's an empty
  * string) so a later "send_email" action can render {{var recommended_products_html|raw}} — the
  * email template's own {{depend}} block handles the empty case, this action doesn't need to.
+ *
+ * Also writes "recommended_products_text" — the same recommendation, rendered as plain lines
+ * ("Name - $Price") instead of an HTML table, so a later "send_sms"/"send_push" action can
+ * substitute {{recommended_products_text}} into its own message/body param (see those actions'
+ * own docblocks). WhatsApp can't use this at all — its "params" are positional values filled into
+ * an already Meta-approved template, not free text (see SendWhatsApp's own docblock).
  */
 class AddProductRecommendations implements ActionInterface
 {
@@ -39,5 +45,6 @@ class AddProductRecommendations implements ActionInterface
 
         $skus = $this->productRecommender->getRecommendedSkus($customerId, $count);
         $context['recommended_products_html'] = $this->productRecommendationRenderer->renderHtml($skus);
+        $context['recommended_products_text'] = $this->productRecommendationRenderer->renderText($skus);
     }
 }

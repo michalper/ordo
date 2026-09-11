@@ -137,6 +137,30 @@ class SendSmsTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSubstitutesRecommendedProductsTextTokenIntoMessage(): void
+    {
+        $this->customerRepository->method('getById')->willReturnMap([[42, $this->customerWithPhone('+15551234567')]]);
+        $this->smsSender->expects(self::once())->method('send')
+            ->with('+15551234567', 'Hi! Recommended for you: Widget - $19.99')
+            ->willReturn('SM123');
+
+        $context = ['customer_id' => 42, 'recommended_products_text' => 'Recommended for you: Widget - $19.99'];
+        $this->makeAction()->execute($context, ['message' => 'Hi! {{recommended_products_text}}']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSubstitutesTheTokenWithAnEmptyStringWhenNoRecommendationRanBeforeIt(): void
+    {
+        $this->customerRepository->method('getById')->willReturnMap([[42, $this->customerWithPhone('+15551234567')]]);
+        $this->smsSender->expects(self::once())->method('send')
+            ->with('+15551234567', 'Hi! ')
+            ->willReturn('SM123');
+
+        $context = ['customer_id' => 42];
+        $this->makeAction()->execute($context, ['message' => 'Hi! {{recommended_products_text}}']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsErrorWhenCustomerIdMissing(): void
     {
         $this->customerRepository->expects(self::never())->method('getById');

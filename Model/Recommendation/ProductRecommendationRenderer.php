@@ -69,6 +69,41 @@ class ProductRecommendationRenderer
             . '</td></tr></table>';
     }
 
+    /**
+     * Plain-text equivalent of renderHtml() — for channels that can't render HTML (SMS, Push
+     * notification body; WhatsApp's own template mechanism can't accept this at all, see
+     * Model\Campaign\Action\SendWhatsApp's own docblock on why). One line per product
+     * ("Name - $Price"), heading first, blank between heading and list — no HTML/markup at all.
+     *
+     * @param string[] $skus
+     * @param string $heading Same role as renderHtml()'s own $heading param.
+     */
+    public function renderText(array $skus, string $heading = 'Recommended for you'): string
+    {
+        if ($skus === []) {
+            return '';
+        }
+
+        $lines = [];
+        foreach ($skus as $sku) {
+            try {
+                /** @var Product $product */
+                $product = $this->productRepository->get($sku);
+            } catch (NoSuchEntityException) {
+                continue;
+            }
+
+            $price = $this->pricingHelper->currency($product->getFinalPrice(), true, false);
+            $lines[] = $product->getName() . ' - ' . $price;
+        }
+
+        if ($lines === []) {
+            return '';
+        }
+
+        return $heading . "\n" . implode("\n", $lines);
+    }
+
     private function renderProductCell(Product $product): string
     {
         $name = $this->escaper->escapeHtml($product->getName());
