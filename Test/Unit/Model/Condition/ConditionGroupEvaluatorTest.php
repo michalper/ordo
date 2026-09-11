@@ -5,7 +5,9 @@ namespace Ordo\Automation\Test\Unit\Model\Condition;
 
 use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\Campaign\ConditionPool;
+use Ordo\Automation\Model\Condition\BooleanGroupCombineStrategy;
 use Ordo\Automation\Model\Condition\ConditionGroupEvaluator;
+use Ordo\Automation\Model\Condition\GroupWalker;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -28,7 +30,12 @@ class ConditionGroupEvaluatorTest extends TestCase
 
     private function makeEvaluator(array $conditions): ConditionGroupEvaluator
     {
-        return new ConditionGroupEvaluator(new ConditionPool($conditions), $this->logger);
+        return new ConditionGroupEvaluator(
+            new ConditionPool($conditions),
+            $this->logger,
+            new GroupWalker(),
+            new BooleanGroupCombineStrategy()
+        );
     }
 
     private function makeCondition(bool $satisfied): ConditionInterface

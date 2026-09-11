@@ -5,6 +5,25 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Unified `ConditionGroupEvaluator`/`SegmentMemberResolver`'s duplicated AND/OR/nested-group
+  tree-walk**, closing the campaign engine's remaining "second, independent implementation" gap
+  noted when `ConditionGroupEvaluator` itself was first extracted (see this file's own earlier
+  entry). `SegmentMemberResolver`'s `resolveList`/`resolveGroup`/`resolveOne` and
+  `ConditionGroupEvaluator`'s `evaluateList`/`evaluateGroup`/`evaluateOne` were structurally
+  identical — same AND-intersects/short-circuits, OR-unions/continues, empty-or-malformed-group-
+  always-fails-closed shape — differing only in what a single leaf condition resolves to (a bool
+  for a per-customer check vs. an `int[]` of matching customer ids for a set-level resolve). That
+  one real difference is now the only thing either class still owns: a new
+  `Model\Condition\GroupWalker` holds the shared tree-walk, driven by a new
+  `GroupCombineStrategyInterface` with two implementations (`BooleanGroupCombineStrategy`,
+  `SetGroupCombineStrategy`) that each capture exactly how their own domain combines/short-
+  circuits/empties. Pure refactor — every existing `ConditionGroupEvaluatorTest`/
+  `SegmentMemberResolverTest`/`SegmentMatcherTest`/`CampaignDispatcherTest` case still passes
+  unchanged, plus new dedicated `GroupWalkerTest`/`BooleanGroupCombineStrategyTest`/
+  `SetGroupCombineStrategyTest` coverage of the shared walk and each strategy directly.
+
 ### Added
 
 - **Admin action audit log for Campaign and Segment saves**, closing the first slice of the

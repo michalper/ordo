@@ -47,10 +47,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 - Flow canvas UX gaps that would frustrate daily use: no undo/redo, no node duplication/copy-paste,
   no inline "send test" before saving an action (palette search/filter now exists — see
   docs/CHANGELOG.md).
-- `Model\Segment\SegmentMemberResolver`'s own, separate (set-level, `int[]`-returning)
-  reimplementation of the same AND/OR/nested-group-walk shape `Model\Condition\ConditionGroupEvaluator`
-  already covers for the per-customer boolean case — a bigger unification question than that one
-  was, since its leaf resolution (aggregate/set queries) is genuinely different, not attempted yet.
 
 ### Segmentation, RFM & lead scoring (`Model/Segment/*`, `Model/Rfm/*`, `Model/ScoreRule/*`, `Model/AdAudience/*`)
 

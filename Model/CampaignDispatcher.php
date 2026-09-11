@@ -430,7 +430,7 @@ class CampaignDispatcher
      * Validates/normalizes a split action's raw `params['variants']` into a clean list of
      * {key, weight, actions} - malformed entries (missing key, non-numeric weight, missing
      * actions list) are dropped rather than crashing the whole dispatch, same fail-closed
-     * philosophy as evaluateGroup()'s own malformed-item handling above.
+     * philosophy as Model\Condition\GroupWalker's own malformed-nested-group-item handling.
      *
      * @return array<int, array{key: string, weight: float, actions: array<int|string, mixed>}>
      */

@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Model\Segment;
 
+use Ordo\Automation\Model\Condition\GroupWalker;
+use Ordo\Automation\Model\Condition\SetGroupCombineStrategy;
 use Ordo\Automation\Model\CustomerScoreManager;
 use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Model\Event\EventOccurredResolver;
@@ -65,7 +67,9 @@ class SegmentMemberResolverTest extends TestCase
             $this->segmentResource,
             $this->logger,
             $this->purchasedProductResolver,
-            $this->eventOccurredResolver
+            $this->eventOccurredResolver,
+            new GroupWalker(),
+            new SetGroupCombineStrategy()
         );
     }
 
