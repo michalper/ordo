@@ -77,6 +77,26 @@
     background: #e9ebee;
 }
 
+.ordo-flow-undo,
+.ordo-flow-redo {
+    background: #f4f5f6;
+    border-color: #dadfe3;
+    color: #41454b;
+    padding: 7px 12px !important;
+    font-size: 14px !important;
+}
+
+.ordo-flow-undo:hover:not(:disabled),
+.ordo-flow-redo:hover:not(:disabled) {
+    background: #e9ebee;
+}
+
+.ordo-flow-undo:disabled,
+.ordo-flow-redo:disabled {
+    opacity: .4;
+    cursor: default;
+}
+
 .ordo-flow-toolbar button[data-flow-action="apply"] {
     /* Brand accent violet, shared with the dashboard's --ordo-primary; #7c3aed against
        white text reaches ~5.5:1, above WCAG AA's 4.5:1 for normal text. */
@@ -354,6 +374,72 @@
 
 .ordo-flow-delete:hover {
     background: rgba(0, 0, 0, .32);
+}
+
+.ordo-flow-duplicate {
+    /* Same reset/shape reasoning as .ordo-flow-delete above, just not circular - "⧉" reads
+       better in a slightly wider pill than squeezed into a 20px circle. */
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, .18);
+    border: 0;
+    margin: 0 4px;
+    padding: 0 6px;
+    color: #fff;
+    cursor: pointer;
+    line-height: 1;
+    height: 20px;
+    min-width: 20px;
+    border-radius: 10px;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.ordo-flow-duplicate:hover {
+    background: rgba(0, 0, 0, .32);
+}
+
+.ordo-flow-test-send {
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, .18);
+    border: 0;
+    margin: 0 4px;
+    padding: 2px 8px;
+    color: #fff;
+    cursor: pointer;
+    line-height: 1.4;
+    border-radius: 10px;
+    font-size: 10px;
+    text-transform: none;
+    letter-spacing: normal;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.ordo-flow-test-send:hover {
+    background: rgba(0, 0, 0, .32);
+}
+
+.ordo-flow-test-send-result {
+    display: none;
+    margin: -4px 0 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    line-height: 1.4;
+    text-transform: none;
+    letter-spacing: normal;
+    background: rgba(255, 255, 255, .15);
+}
+
+.ordo-flow-test-send-result-success {
+    background: rgba(46, 204, 113, .25);
+}
+
+.ordo-flow-test-send-result-error {
+    background: rgba(224, 43, 39, .3);
 }
 
 .ordo-flow-type-select,

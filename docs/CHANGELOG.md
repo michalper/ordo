@@ -36,6 +36,21 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Flow canvas: undo/redo, node duplication, and an inline "Send test" button**, closing the
+  rest of the campaign-engine ROADMAP.md "Flow canvas UX" gap (palette search/filter already
+  closed it partway). Undo/redo (toolbar buttons or Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z or +Y) keeps an
+  in-memory stack of full canvas snapshots for the page's lifetime — structural edits (add/
+  remove/move a node, connect/disconnect two) push a history entry immediately, field edits are
+  debounced so typing doesn't burn one entry per keystroke; nothing here is persisted, it only
+  covers in-page edits until "Apply flow to form & Save" or a reload. A new "⧉" button next to
+  each node's delete button duplicates it — same kind/type plus every one of its own current
+  field values (not just what was last saved), landing slightly offset with no connections
+  copied. `send_email`/`send_sms`/`send_whatsapp` action nodes also get a "Send test" button that
+  posts to the same `Controller\Adminhtml\TemplateTestSend\Send` endpoint the standalone Template
+  Test Send page already uses, so a merchant can test-send a node's exact current template/
+  message/params before ever clicking Apply — `send_push`/condition/trigger nodes don't get the
+  button (no equivalent test-send exists for push, same reasoning as that controller's own
+  docblock).
 - **One-click "Build Cart" action on the Reorder Cycles grid**, closing the other half of the
   commerce-features ROADMAP.md gap "Send Reminder Now" only partly closed — an admin can now
   actually start an order for a detected reorder cycle, not just nudge the customer by email.

@@ -44,9 +44,8 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 
 ### Campaign engine (`Model/CampaignDispatcher.php`, `Model/Queue/*`, Flow canvas)
 
-- Flow canvas UX gaps that would frustrate daily use: no undo/redo, no node duplication/copy-paste,
-  no inline "send test" before saving an action (palette search/filter now exists — see
-  docs/CHANGELOG.md).
+Flow canvas UX (undo/redo, node duplication, palette search/filter, inline "send test") is now
+fully closed — see docs/CHANGELOG.md.
 
 ### Communication channels (Email/SMS/WhatsApp/Push)
 
@@ -54,13 +53,11 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
   path — no concurrency control (client-side pacing per provider now exists, see docs/CHANGELOG.md
   — that's throttling one process's own call rate, not coordinating concurrency across multiple
   queue consumers/cron processes hitting the same provider at once).
-- `SendRetrier`'s 3 in-process retries are still the only retry a per-customer send gets — once
-  those are exhausted, `Send{Email,Sms,WhatsApp,Push}` catches the failure, writes an
-  `ordo_message_log` row with `STATUS_FAILED`, and moves on; nothing ever revisits that row. (Note:
-  a *different*, adjacent gap — a `Cron\RunScheduledCampaignActions` resume itself throwing, e.g. a
-  DB error or a deleted campaign — now does get a persisted retry with backoff, see
-  docs/CHANGELOG.md; this is specifically about the per-send retry budget inside a still-successful
-  resume.)
+- `send_push`'s per-subscription sends still have no persisted retry once `SendRetrier`'s 3
+  in-process attempts are exhausted (`send_email`/`send_sms`/`send_whatsapp` now do, see
+  docs/CHANGELOG.md) — a whole-action retry would risk re-sending to subscriptions that already
+  succeeded the first time; a per-subscription retry queue would be needed to close this safely,
+  not attempted yet.
 
 ### Commerce features (free gifts, order approval, reorder cycles, GDPR, product feed, dashboard)
 
@@ -130,19 +127,6 @@ stayed invisible until now. Fix shape for all three: convert through `Store::get
 (or the equivalent already used elsewhere in the module) before comparing/emitting, and use
 `base_total_due` instead of `total_due` for the credit-limit sum.
 
-## Performance audit (2026-09-11)
-
-Fresh pass over crons/queries not already covered above:
-
-- **`ordo_cron_run_log` has no supporting index for its own hot-path query and no prune cron.**
-  `db_schema.xml` gives it only a `PRIMARY` key, while the dashboard's "crons failed (last 24h)" KPI and
-  the Cron Run Log grid both filter on `level` + `created_at` — the same shape of query that
-  `ordo_order_approval` already got a composite index for. Unlike every other append-only log/queue table
-  in the module (`ordo_notification`, `ordo_pending_popup`, `ordo_survey_prompt`, `ordo_visitor_event`,
-  each with its own `Prune*` cron), `ordo_cron_run_log` has no pruning at all — with ~22 crons logging a
-  row per run (several every 5-15 minutes), it grows unbounded and the missing index means the dashboard
-  query does a full scan that gets slower over time.
-
 ## Candidate new features
 
 Not gaps in something existing — genuinely new capabilities, proposed after checking they don't already
@@ -180,27 +164,19 @@ zasobów zewnętrznych):
    kwalifikacja do gratisu). Najwyższy priorytet mimo że dotyczy tylko sklepów z więcej niż
    jedną obsługiwaną walutą — trzeba to najpierw potwierdzić na produkcji (czy Sellina/klienci
    faktycznie używają multi-currency), bo jeśli tak, to blokuje realne transakcje już teraz.
-2. **Retry pojedynczego sendu po `SendRetrier`** — naturalne rozszerzenie istniejącego wzorca
-   dead-letter (ADR 0001, `CampaignDispatchDeadLetter`) na `ordo_message_log`; brak zależności
-   zewnętrznych, czysto techniczny dług niezawodności.
-3. **Indeks + prune cron dla `ordo_cron_run_log`** — mały, samodzielny fix (analogiczny do
-   istniejących `Prune*` cronów i indeksu na `ordo_order_approval`), zapobiega przyszłemu
-   problemowi zanim stanie się bolesny.
-4. **`fields`/sparse-fieldset w API.md** — kontraktowo mała, samodzielna zmiana API.
-5. **Bulk actions na MessageLog/ReorderCycle/Rfm** — wymaga najpierw decyzji projektowej,
+2. **`fields`/sparse-fieldset w API.md** — kontraktowo mała, samodzielna zmiana API.
+3. **Bulk actions na MessageLog/ReorderCycle/Rfm** — wymaga najpierw decyzji projektowej,
    potem implementacji.
-6. **Flow canvas UX (undo/redo, duplikacja, inline send-test)** — większy, ale samodzielny
-   front-endowy temat; wysoka wartość dla codziennego użytku.
-7. **Nowe funkcje (sekcja "Candidate new features" powyżej)** — do rozważenia razem z
+4. **Nowe funkcje (sekcja "Candidate new features" powyżej)** — do rozważenia razem z
    biznesem/produktem pod kątem priorytetu; browse-abandonment i webhook action/trigger
    wyglądają na najmniejszy koszt wejścia względem wartości.
-8. **Drugi format product feedu** — większa, osobna abstrakcja; wymaga wyboru formatu
+5. **Drugi format product feedu** — większa, osobna abstrakcja; wymaga wyboru formatu
    docelowego przed implementacją.
-9. **Kalendarz dat dla scheduled campaigns** — opcjonalny polish.
-10. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
-    poświadczeń testowych.
-11. **Recenzja natywna 10 lokalizacji** — zależna od dostępności recenzentów per język.
-12. **GitHub Wiki (PL/EN, screenshots)** — wymaga wcześniej decyzji o strukturze.
+6. **Kalendarz dat dla scheduled campaigns** — opcjonalny polish.
+7. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
+   poświadczeń testowych.
+8. **Recenzja natywna 10 lokalizacji** — zależna od dostępności recenzentów per język.
+9. **GitHub Wiki (PL/EN, screenshots)** — wymaga wcześniej decyzji o strukturze.
 
 Uwaga poza roadmapą: na branchu `feature/reorder-cycle-build-cart` jest niedokończona,
 nie-scommitowana praca nad akcją "build reorder cart" (temat sam w sobie już częściowo

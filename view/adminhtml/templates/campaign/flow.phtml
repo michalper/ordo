@@ -22,11 +22,27 @@ $applyFlowButtonLabel = __('Apply flow to form & Save');
     self-imposed gate. Removing it makes the canvas the one, single way to build a campaign,
     new or existing alike.
 -->
-<div class="ordo-flow-wrapper">
+<div class="ordo-flow-wrapper" data-flow-test-send-url="<?=
+    $escaper->escapeHtmlAttr($block->getUrl('ordo/templatetestsend/send'))
+?>">
     <div class="ordo-flow-head">
         <h2><?= $escaper->escapeHtml(__('Flow')) ?></h2>
         <p><?= $escaper->escapeHtml($flowIntro) ?></p>
         <div class="ordo-flow-toolbar">
+            <!--
+                Undo/redo a canvas edit (add/remove/duplicate a node, move it, connect/disconnect
+                two nodes, or change a field) - closes half of the ROADMAP.md "Flow canvas UX"
+                gap (no undo/redo, no node duplication). History lives only in memory for this
+                page load, same as any other in-page undo stack - it is not persisted, and is
+                unrelated to the campaign's own saved state until "Apply flow to form & Save" is
+                clicked.
+            -->
+            <button type="button" class="ordo-flow-undo" data-flow-action="undo" title="<?=
+                $escaper->escapeHtmlAttr(__('Undo'))
+            ?>" disabled>↶</button>
+            <button type="button" class="ordo-flow-redo" data-flow-action="redo" title="<?=
+                $escaper->escapeHtmlAttr(__('Redo'))
+            ?>" disabled>↷</button>
             <!--
                 Ready-made starting points for common, repeated scenarios (reported directly:
                 a merchant shouldn't have to hand-drag/wire the same trigger->action chain every
