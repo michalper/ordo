@@ -104,6 +104,23 @@ class UploadedJsonFileReaderTest extends TestCase
         unlink($path);
     }
 
+    public function testReadRejectsWhenTheUploadedFileCannotActuallyBeRead(): void
+    {
+        // A tmp_name that passed the earlier "is a non-empty string" check but doesn't exist on
+        // disk (the upload succeeded per PHP's own $_FILES bookkeeping, yet the file itself is
+        // gone by the time this runs) - File::fileGetContents() throws FileSystemException here,
+        // which must be treated the same as malformed JSON, not bubble up as an unhandled error.
+        $request = $this->createStub(Http::class);
+        $request->method('getFiles')->willReturn([
+            'tmp_name' => sys_get_temp_dir() . '/ordo_import_test_does_not_exist_' . uniqid(),
+            'error' => UPLOAD_ERR_OK,
+        ]);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('That file is not valid JSON.');
+        $this->reader->read($request, 'import_file');
+    }
+
     public function testReadRejectsARequestThatIsNotTheRealHttpImplementation(): void
     {
         $request = $this->createStub(RequestInterface::class);
