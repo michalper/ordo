@@ -162,6 +162,150 @@ class EscalateStalePendingApprovalsTest extends TestCase
     }
 
     /**
+     * When a claim that DID advance the tier (cap reached, chain has a next email) is then
+     * followed by a failed send, the rollback must restore escalation_tier as well as
+     * reminders_sent - not just reminders_sent, as a same-tier reminder's rollback does.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRollsBackEscalationTierWhenSendFailsAfterATierAdvance(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isOrderApprovalEnabled')->willReturn(true);
+        $config->method('getOrderApprovalEscalationDays')->willReturn(2);
+        $config->method('getOrderApprovalEscalationMaxRemindersPerTier')->willReturn(3);
+        $config->method('getOrderApprovalEscalationChainEmails')->willReturn(['tier1@example.com']);
+        $this->config = $config;
+
+        $approval = $this->createMock(OrderApproval::class);
+        $approval->method('getRemindersSent')->willReturn(3);
+        $approval->method('getEscalationTier')->willReturn(0);
+        $approval->method('getOrderId')->willReturn(7);
+        $setDataCalls = [];
+        $approval->method('setData')->willReturnCallback(function ($key, $value) use (&$setDataCalls) {
+            $setDataCalls[] = [$key, $value];
+        });
+
+        $collection = $this->createStub(ApprovalCollection::class);
+        $collection->method('addStalePendingFilter');
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$approval]));
+        $this->approvalCollectionFactory->method('create')->willReturn($collection);
+
+        $order = $this->createStub(Order::class);
+        $order->method('getId')->willReturn(7);
+        $order->method('getEntityId')->willReturn(7);
+        $order->method('getStore')->willThrowException(new \RuntimeException('no store'));
+
+        $orderCollection = $this->createStub(OrderCollection::class);
+        $orderCollection->method('addFieldToFilter')->willReturnSelf();
+        $orderCollection->method('getIterator')->willReturn(new \ArrayIterator([$order]));
+        $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
+
+        $this->orderApprovalResource->expects(self::exactly(2))->method('save')->with($approval);
+        $this->logger->expects(self::once())->method('error');
+
+        $this->makeCron()->execute();
+
+        self::assertSame(
+            [['escalation_tier', 1], ['reminders_sent', 1], ['reminders_sent', 3], ['escalation_tier', 0]],
+            $setDataCalls
+        );
+    }
+
+    /**
+     * claimRecipientEmail()'s own defensive null-return branches - guarding against a chain that
+     * shrank since escalation_tier/reminders_sent were set on this row - are never reached via a
+     * normal execute() pass (peekRecipientEmail's pre-filter mirrors the exact same logic, so
+     * anything claimRecipientEmail would reject is already filtered out upfront). Reached here by
+     * having the approval mock report a DIFFERENT (already-shrunk) chain position on its second
+     * read (inside the main loop / claim itself) than on its first (the pre-filter's peek read) -
+     * simulating exactly the "chain shrank since it was set" scenario both docblocks describe.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSkipsWhenClaimDisagreesWithPeekAtAWithinTierCap(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isOrderApprovalEnabled')->willReturn(true);
+        $config->method('getOrderApprovalEscalationDays')->willReturn(2);
+        $config->method('getOrderApprovalEscalationMaxRemindersPerTier')->willReturn(3);
+        // Only tier 1's email is configured - tier 2 has none.
+        $config->method('getOrderApprovalEscalationChainEmails')->willReturn(['tier1@example.com']);
+        $this->config = $config;
+
+        $approval = $this->createMock(OrderApproval::class);
+        $approval->method('getRemindersSent')->willReturn(0);
+        // 1st read: peekRecipientEmail's pre-filter (tier 1, chain has it -> passes).
+        // 2nd read: the main loop's "before claim" snapshot (still tier 1).
+        // 3rd read: claimRecipientEmail's own internal read (tier 2 - shrunk chain has no email).
+        $approval->method('getEscalationTier')->willReturnOnConsecutiveCalls(1, 1, 2);
+        $approval->method('getOrderId')->willReturn(7);
+        $approval->expects(self::never())->method('setData');
+
+        $collection = $this->createStub(ApprovalCollection::class);
+        $collection->method('addStalePendingFilter');
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$approval]));
+        $this->approvalCollectionFactory->method('create')->willReturn($collection);
+
+        $order = $this->createStub(Order::class);
+        $order->method('getEntityId')->willReturn(7);
+
+        $orderCollection = $this->createStub(OrderCollection::class);
+        $orderCollection->method('addFieldToFilter')->willReturnSelf();
+        $orderCollection->method('getIterator')->willReturn(new \ArrayIterator([$order]));
+        $this->orderCollectionFactory->expects(self::once())->method('create')->willReturn($orderCollection);
+
+        $this->orderApprovalResource->expects(self::never())->method('save');
+        $this->logger->expects(self::once())->method('info')->with(self::stringContains('0 order approval escalations'));
+
+        $this->makeCron()->execute();
+    }
+
+    /**
+     * Same defensive-mismatch scenario as above, but at the cap (remindersSent >= max) - the
+     * branch guarding against a fully-exhausted-since-set chain when advancing to a brand new
+     * next tier.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSkipsWhenClaimDisagreesWithPeekAtTheTierCap(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isOrderApprovalEnabled')->willReturn(true);
+        $config->method('getOrderApprovalEscalationDays')->willReturn(2);
+        $config->method('getOrderApprovalEscalationMaxRemindersPerTier')->willReturn(3);
+        // No chain configured at all past tier 0's own admin email.
+        $config->method('getOrderApprovalEscalationChainEmails')->willReturn([]);
+        $this->config = $config;
+
+        $approval = $this->createMock(OrderApproval::class);
+        // 1st/2nd read (peek pre-filter, then the main loop's "before claim" snapshot): tier 0,
+        // at the cap - peek falls through to `$chainEmails[$tier] ?? null`... which needs a
+        // non-empty chain to pass the pre-filter, so use tier 0 with remindersSent under cap on
+        // the first read instead, and only cross the cap on claim's own (3rd) read.
+        $approval->method('getEscalationTier')->willReturn(0);
+        $approval->method('getRemindersSent')->willReturnOnConsecutiveCalls(0, 0, 3);
+        $approval->method('getAdminEmail')->willReturn('admin@example.com');
+        $approval->method('getOrderId')->willReturn(7);
+        $approval->expects(self::never())->method('setData');
+
+        $collection = $this->createStub(ApprovalCollection::class);
+        $collection->method('addStalePendingFilter');
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$approval]));
+        $this->approvalCollectionFactory->method('create')->willReturn($collection);
+
+        $order = $this->createStub(Order::class);
+        $order->method('getEntityId')->willReturn(7);
+
+        $orderCollection = $this->createStub(OrderCollection::class);
+        $orderCollection->method('addFieldToFilter')->willReturnSelf();
+        $orderCollection->method('getIterator')->willReturn(new \ArrayIterator([$order]));
+        $this->orderCollectionFactory->expects(self::once())->method('create')->willReturn($orderCollection);
+
+        $this->orderApprovalResource->expects(self::never())->method('save');
+        $this->logger->expects(self::once())->method('info')->with(self::stringContains('0 order approval escalations'));
+
+        $this->makeCron()->execute();
+    }
+
+    /**
      * At the cap, with no further chain email configured past the current tier, the approval is
      * skipped entirely - same terminal "sits pending forever" outcome the original single-level
      * behavior had, now reached once the whole configured chain (however long) is exhausted.

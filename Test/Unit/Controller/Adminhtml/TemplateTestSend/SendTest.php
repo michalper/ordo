@@ -143,6 +143,64 @@ class SendTest extends AbstractAdminActionTestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRejectsAnEmptyMessageForSmsWithoutSending(): void
+    {
+        $context = $this->makeContext();
+        $this->request->method('getParam')->willReturnMap([
+            ['channel', null, 'sms'],
+            ['to', null, '+15551234567'],
+            ['message', '', '   '],
+        ]);
+
+        $this->smsSender->expects(self::never())->method('send');
+
+        $controller = $this->makeController($context);
+        $controller->execute();
+
+        self::assertFalse($this->lastResultData['success']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRejectsAnInvalidPhoneNumberForWhatsAppWithoutSending(): void
+    {
+        $context = $this->makeContext();
+        $this->request->method('getParam')->willReturnMap([
+            ['channel', null, 'whatsapp'],
+            ['to', null, 'not-a-phone'],
+            ['template_id', null, 3],
+            ['params', '', ''],
+        ]);
+
+        $this->whatsAppTemplateFactory->expects(self::never())->method('create');
+        $this->whatsAppSender->expects(self::never())->method('send');
+
+        $controller = $this->makeController($context);
+        $controller->execute();
+
+        self::assertFalse($this->lastResultData['success']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRejectsAMissingWhatsAppTemplateIdWithoutSending(): void
+    {
+        $context = $this->makeContext();
+        $this->request->method('getParam')->willReturnMap([
+            ['channel', null, 'whatsapp'],
+            ['to', null, '+15551234567'],
+            ['template_id', null, 0],
+            ['params', '', ''],
+        ]);
+
+        $this->whatsAppTemplateFactory->expects(self::never())->method('create');
+        $this->whatsAppSender->expects(self::never())->method('send');
+
+        $controller = $this->makeController($context);
+        $controller->execute();
+
+        self::assertFalse($this->lastResultData['success']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSendsATestWhatsAppMessageForAnApprovedTemplate(): void
     {
         $context = $this->makeContext();

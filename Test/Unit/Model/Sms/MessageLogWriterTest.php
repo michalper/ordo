@@ -125,6 +125,27 @@ class MessageLogWriterTest extends TestCase
         self::assertSame('b', $log->getVariant());
     }
 
+    public function testRecordSentSwallowsAndLogsWhenCampaignOutcomeLoggerThrows(): void
+    {
+        $log = $this->makeLog();
+        $this->messageLogFactory->expects(self::once())->method('create')->willReturn($log);
+        $this->messageLogResource->expects(self::once())->method('save')->with($log);
+
+        $campaignOutcomeLogger = $this->createStub(CampaignOutcomeLogger::class);
+        $campaignOutcomeLogger->method('logSent')->willThrowException(new \RuntimeException('db down'));
+        $this->logger->expects(self::once())->method('error')->with(self::stringContains('db down'));
+
+        $writer = new MessageLogWriter(
+            $this->messageLogFactory,
+            $this->messageLogResource,
+            $campaignOutcomeLogger,
+            $this->logger
+        );
+
+        // Must not rethrow - a failure to write the campaign-outcome row is not a failed send.
+        $writer->recordSent('email', 42, 'jane@example.com', 'msg-1', 5, 'b');
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testRecordSentWithoutCampaignIdDoesNotLogOutcome(): void
     {
