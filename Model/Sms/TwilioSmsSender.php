@@ -35,6 +35,16 @@ class TwilioSmsSender implements SmsSenderInterface
 {
     private const int OPTED_OUT_ERROR_CODE = 21610;
 
+    private ?Client $client = null;
+
+    /**
+     * @var array{0: string, 1: string, 2: string}|null the (apiKeySid, apiKeySecret, accountSid)
+     *  tuple $client was actually built with, so a config change (credential rotation) still
+     *  rebuilds the client instead of silently keeping stale credentials - this only matters for
+     *  the long-lived queue consumer process (see AGENTS.md), not a normal per-request lifecycle.
+     */
+    private ?array $clientCredentials = null;
+
     public function __construct(
         private readonly Config $config,
         private readonly CallbackUrlBuilder $callbackUrlBuilder,
@@ -44,17 +54,7 @@ class TwilioSmsSender implements SmsSenderInterface
 
     public function send(string $toPhone, string $message): string
     {
-        // Twilio's PHP SDK has no separate "forApiKey" constructor — API Key auth uses the same
-        // Client constructor as Auth Token auth, just with the API Key SID/Secret as
-        // username/password and the real Account SID passed explicitly as the third argument
-        // (see https://www.twilio.com/docs/iam/api-keys).
-        $client = new Client(
-            $this->config->getTwilioApiKeySid(),
-            $this->config->getTwilioApiKeySecret(),
-            $this->config->getTwilioAccountSid(),
-            null,
-            $this->makeHttpClient()
-        );
+        $client = $this->getClient();
 
         try {
             $twilioMessage = $client->messages->create($toPhone, [
@@ -86,6 +86,32 @@ class TwilioSmsSender implements SmsSenderInterface
         }
 
         return (string) $twilioMessage->sid;
+    }
+
+    /**
+     * Reuses one Twilio\Rest\Client instance across calls instead of constructing a new one per
+     * send() - rebuilt only if the credentials actually changed since the last call (a rotated
+     * API key/secret), not on every send.
+     *
+     * Twilio's PHP SDK has no separate "forApiKey" constructor - API Key auth uses the same
+     * Client constructor as Auth Token auth, just with the API Key SID/Secret as
+     * username/password and the real Account SID passed explicitly as the third argument
+     * (see https://www.twilio.com/docs/iam/api-keys).
+     */
+    private function getClient(): Client
+    {
+        $credentials = [
+            $this->config->getTwilioApiKeySid(),
+            $this->config->getTwilioApiKeySecret(),
+            $this->config->getTwilioAccountSid(),
+        ];
+
+        if ($this->client === null || $this->clientCredentials !== $credentials) {
+            $this->client = new Client($credentials[0], $credentials[1], $credentials[2], null, $this->makeHttpClient());
+            $this->clientCredentials = $credentials;
+        }
+
+        return $this->client;
     }
 
     /**

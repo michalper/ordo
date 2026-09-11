@@ -189,6 +189,70 @@ class TwilioSmsSenderTest extends TestCase
         self::assertNull($method->invoke($sender));
     }
 
+    /**
+     * @see \Ordo\Automation\Model\Sms\TwilioSmsSender::getClient() - makeHttpClient() (and, in
+     * production, the whole Twilio\Rest\Client construction) is only meant to happen once per
+     * distinct credential set, not once per send().
+     */
+    private function makeCountingSenderWithFakeHttpClient(TwilioHttpClient $httpClient, array &$makeHttpClientCalls): TwilioSmsSender
+    {
+        return new class ($this->config, $this->callbackUrlBuilder, $this->logger, $httpClient, $makeHttpClientCalls) extends TwilioSmsSender {
+            public function __construct(
+                Config $config,
+                CallbackUrlBuilder $callbackUrlBuilder,
+                LoggerInterface $logger,
+                private readonly TwilioHttpClient $httpClient,
+                private array &$makeHttpClientCalls
+            ) {
+                parent::__construct($config, $callbackUrlBuilder, $logger);
+            }
+
+            protected function makeHttpClient(): TwilioHttpClient
+            {
+                $this->makeHttpClientCalls[] = true;
+
+                return $this->httpClient;
+            }
+        };
+    }
+
+    public function testClientIsBuiltOnceAndReusedAcrossMultipleSendsWithTheSameCredentials(): void
+    {
+        $captured = [];
+        $httpClient = $this->makeFakeHttpClient(201, ['sid' => 'SM123abc', 'status' => 'queued'], $captured);
+        $calls = [];
+        $sender = $this->makeCountingSenderWithFakeHttpClient($httpClient, $calls);
+
+        $sender->send('+15551234567', 'first');
+        $sender->send('+15557654321', 'second');
+
+        self::assertCount(1, $calls);
+    }
+
+    public function testClientIsRebuiltWhenTheApiKeySecretChanges(): void
+    {
+        // Simulate a rotated API key secret between two sends on the SAME sender instance (e.g.
+        // an admin updated the Twilio config while the long-lived queue consumer process, see
+        // AGENTS.md, kept running) by having the stub return a different secret on each call.
+        $secret = self::API_KEY_SECRET;
+        $this->config = $this->createStub(Config::class);
+        $this->config->method('getTwilioAccountSid')->willReturn(self::ACCOUNT_SID);
+        $this->config->method('getTwilioApiKeySid')->willReturn(self::API_KEY_SID);
+        $this->config->method('getTwilioApiKeySecret')->willReturnCallback(fn () => $secret);
+        $this->config->method('getTwilioFromNumber')->willReturn(self::FROM_NUMBER);
+
+        $captured = [];
+        $httpClient = $this->makeFakeHttpClient(201, ['sid' => 'SM123abc', 'status' => 'queued'], $captured);
+        $calls = [];
+        $sender = $this->makeCountingSenderWithFakeHttpClient($httpClient, $calls);
+
+        $sender->send('+15551234567', 'first');
+        $secret = 'rotated-secret';
+        $sender->send('+15551234567', 'second');
+
+        self::assertCount(2, $calls);
+    }
+
     public function testOtherRestErrorLogsAndThrowsRuntimeException(): void
     {
         $captured = [];

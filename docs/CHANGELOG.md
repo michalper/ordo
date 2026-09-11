@@ -7,6 +7,12 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- **`Model\Sms\TwilioSmsSender` now reuses one `Twilio\Rest\Client` instance** across `send()`
+  calls instead of constructing a new one every time, rebuilding only if the API key/secret
+  actually changed since the last call (credential rotation) — matters most for the long-lived
+  queue consumer process (see AGENTS.md), which can send many messages without ever restarting.
+
+
 - **Unified `ConditionGroupEvaluator`/`SegmentMemberResolver`'s duplicated AND/OR/nested-group
   tree-walk**, closing the campaign engine's remaining "second, independent implementation" gap
   noted when `ConditionGroupEvaluator` itself was first extracted (see this file's own earlier
