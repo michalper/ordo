@@ -59,6 +59,17 @@ $applyFlowButtonLabel = __('Apply flow to form & Save');
     <div class="ordo-flow-body">
         <div class="ordo-flow-palette">
             <!--
+                Plain text input, filtered client-side (campaign-flow-editor.js) - with ~20+
+                condition/action types across the three groups (ROADMAP.md "Flow canvas UX"
+                gap), scanning past everything that doesn't match what a merchant is looking for
+                gets tedious fast. Matching auto-opens a <details> group that has a hit and hides
+                one that doesn't, so typing narrows the whole palette down to just what's
+                relevant instead of only filtering within an already-open group.
+            -->
+            <input type="search" class="ordo-flow-palette-search" placeholder="<?=
+                $escaper->escapeHtmlAttr(__('Search blocks…'))
+            ?>" aria-label="<?= $escaper->escapeHtmlAttr(__('Search palette blocks')) ?>">
+            <!--
                 <details>/<summary> instead of a plain <div> - a free, JS-free collapsible
                 section (native disclosure triangle) so the palette doesn't just grow into an
                 ever-longer flat list as this module gains more trigger/condition/action types

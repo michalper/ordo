@@ -7,6 +7,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Flow canvas palette search/filter**, closing the first of the campaign-engine ROADMAP.md
+  "Flow canvas UX" gaps — with ~20+ condition/action types across the three palette groups,
+  scanning past everything that doesn't match got tedious. A new search input above the palette
+  (`view/adminhtml/templates/campaign/flow.phtml`) filters items by label or raw type
+  (case-insensitive substring match, `paletteItemMatchesQuery()`), auto-opening a `<details>`
+  group that has a hit and hiding one that doesn't; clearing the query restores everything.
+  Undo/redo, node duplication, and inline "send test" (building on the Template Test Send
+  feature) remain open — see ROADMAP.md.
 - **Product feed: multi-store support + a new admin health grid**, closing the commerce-features
   ROADMAP.md gap where the shopping feed was single-store with no admin visibility into
   generation health. `Model\ProductFeed\GoogleMerchantFeedGenerator::generate()` now takes a
