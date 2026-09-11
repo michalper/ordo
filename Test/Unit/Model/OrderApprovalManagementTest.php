@@ -5,12 +5,15 @@ namespace Ordo\Automation\Test\Unit\Model;
 
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\HTTP\PhpEnvironment\RemoteAddress;
+use Magento\Framework\Webapi\Exception as WebapiException;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Config as OrderConfig;
 use Magento\Sales\Model\ResourceModel\Order\Collection as OrderCollection;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
 use Magento\Store\Model\Store;
+use Ordo\Automation\Model\Approval\ApprovalRateLimiter;
 use Ordo\Automation\Model\OrderApproval;
 use Ordo\Automation\Model\OrderApprovalDecisionLinks;
 use Ordo\Automation\Model\OrderApprovalDecisionLinksFactory;
@@ -29,6 +32,8 @@ class OrderApprovalManagementTest extends TestCase
     private OrderConfig $orderConfig;
     private OrderRepositoryInterface $orderRepository;
     private OrderApprovalDecisionLinksFactory $decisionLinksFactory;
+    private ApprovalRateLimiter $rateLimiter;
+    private RemoteAddress $remoteAddress;
     private OrderApprovalManagement $management;
 
     protected function setUp(): void
@@ -39,6 +44,9 @@ class OrderApprovalManagementTest extends TestCase
         $this->orderConfig = $this->createMock(OrderConfig::class);
         $this->orderRepository = $this->createMock(OrderRepositoryInterface::class);
         $this->decisionLinksFactory = $this->createStub(OrderApprovalDecisionLinksFactory::class);
+        $this->rateLimiter = $this->createStub(ApprovalRateLimiter::class);
+        $this->rateLimiter->method('isAllowed')->willReturn(true);
+        $this->remoteAddress = $this->createStub(RemoteAddress::class);
 
         $this->management = new OrderApprovalManagement(
             $this->orderApprovalFactory,
@@ -46,7 +54,9 @@ class OrderApprovalManagementTest extends TestCase
             $this->orderCollectionFactory,
             $this->orderConfig,
             $this->orderRepository,
-            $this->decisionLinksFactory
+            $this->decisionLinksFactory,
+            $this->rateLimiter,
+            $this->remoteAddress
         );
     }
 
@@ -67,6 +77,65 @@ class OrderApprovalManagementTest extends TestCase
         $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
 
         return $orderCollection;
+    }
+
+    /**
+     * Regression test: this used to be enforced only by Controller\Approval\AbstractApprovalAction's
+     * own pre-check, leaving the REST API's approveByToken()/rejectByToken() (called directly by
+     * webapi.xml, no controller in between) completely unthrottled - a real brute-force gap since
+     * both channels share the same anonymous, token-only trust model. Checked BEFORE the token
+     * lookup, so a rate-limited caller never even reveals whether the token happens to be valid.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testApproveByTokenThrows429WhenRateLimited(): void
+    {
+        $this->rateLimiter = $this->createStub(ApprovalRateLimiter::class);
+        $this->rateLimiter->method('isAllowed')->willReturn(false);
+        $this->management = new OrderApprovalManagement(
+            $this->orderApprovalFactory,
+            $this->orderApprovalResource,
+            $this->orderCollectionFactory,
+            $this->orderConfig,
+            $this->orderRepository,
+            $this->decisionLinksFactory,
+            $this->rateLimiter,
+            $this->remoteAddress
+        );
+
+        $this->orderApprovalFactory->expects(self::never())->method('create');
+
+        try {
+            $this->management->approveByToken('tok');
+            self::fail('Expected a WebapiException.');
+        } catch (WebapiException $e) {
+            self::assertSame(WebapiException::HTTP_TOO_MANY_REQUESTS, $e->getHttpCode());
+        }
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRejectByTokenThrows429WhenRateLimited(): void
+    {
+        $this->rateLimiter = $this->createStub(ApprovalRateLimiter::class);
+        $this->rateLimiter->method('isAllowed')->willReturn(false);
+        $this->management = new OrderApprovalManagement(
+            $this->orderApprovalFactory,
+            $this->orderApprovalResource,
+            $this->orderCollectionFactory,
+            $this->orderConfig,
+            $this->orderRepository,
+            $this->decisionLinksFactory,
+            $this->rateLimiter,
+            $this->remoteAddress
+        );
+
+        $this->orderApprovalFactory->expects(self::never())->method('create');
+
+        try {
+            $this->management->rejectByToken('tok');
+            self::fail('Expected a WebapiException.');
+        } catch (WebapiException $e) {
+            self::assertSame(WebapiException::HTTP_TOO_MANY_REQUESTS, $e->getHttpCode());
+        }
     }
 
     #[AllowMockObjectsWithoutExpectations]

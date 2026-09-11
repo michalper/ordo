@@ -5,6 +5,8 @@ namespace Ordo\Automation\Model;
 
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\HTTP\PhpEnvironment\RemoteAddress;
+use Magento\Framework\Webapi\Exception as WebapiException;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Config as OrderConfig;
@@ -12,6 +14,7 @@ use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollection
 use Ordo\Automation\Api\Data\OrderApprovalDecisionLinksInterface;
 use Ordo\Automation\Api\Data\OrderApprovalInterface;
 use Ordo\Automation\Api\OrderApprovalManagementInterface;
+use Ordo\Automation\Model\Approval\ApprovalRateLimiter;
 use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
 use Ordo\Automation\Setup\Patch\Data\AddPendingApprovalOrderStatus;
 
@@ -20,6 +23,12 @@ use Ordo\Automation\Setup\Patch\Data\AddPendingApprovalOrderStatus;
  * (Controller/Approval/{Approve,Reject}.php) and the REST API (webapi.xml) call into this, so
  * the business logic (token lookup, order release/cancel, approval bookkeeping) exists exactly
  * once regardless of which channel triggered it.
+ *
+ * Rate limiting (ApprovalRateLimiter) lives here rather than being duplicated per-channel - it
+ * used to be enforced only by Controller\Approval\{Approve,Reject}'s own pre-check, leaving the
+ * REST API's own `/V1/ordo/order-approvals/:token/approve`/`:token/reject` (same anonymous,
+ * token-only trust model) with no throttling at all, a real brute-force gap. Both callers now go
+ * through the same check, keyed the same way (token+IP), instead of each channel needing its own.
  */
 class OrderApprovalManagement implements OrderApprovalManagementInterface
 {
@@ -29,12 +38,15 @@ class OrderApprovalManagement implements OrderApprovalManagementInterface
         private readonly OrderCollectionFactory $orderCollectionFactory,
         private readonly OrderConfig $orderConfig,
         private readonly OrderRepositoryInterface $orderRepository,
-        private readonly OrderApprovalDecisionLinksFactory $decisionLinksFactory
+        private readonly OrderApprovalDecisionLinksFactory $decisionLinksFactory,
+        private readonly ApprovalRateLimiter $rateLimiter,
+        private readonly RemoteAddress $remoteAddress
     ) {
     }
 
     public function approveByToken(string $token): OrderApprovalInterface
     {
+        $this->enforceRateLimit($token);
         $approval = $this->loadPendingApprovalByToken($token);
 
         // Claim the decision atomically BEFORE touching the order - two concurrent requests for
@@ -58,6 +70,7 @@ class OrderApprovalManagement implements OrderApprovalManagementInterface
 
     public function rejectByToken(string $token): OrderApprovalInterface
     {
+        $this->enforceRateLimit($token);
         $approval = $this->loadPendingApprovalByToken($token);
 
         // Same claim-before-acting reasoning as approveByToken() above.
@@ -100,6 +113,26 @@ class OrderApprovalManagement implements OrderApprovalManagementInterface
         $links->setRejectUrl($baseUrl . '/ordo/approval/reject/token/' . $token);
 
         return $links;
+    }
+
+    /**
+     * @throws WebapiException HTTP 429 once this token+IP has exceeded
+     *  ApprovalRateLimiter::MAX_ATTEMPTS within its window - the same message/reasoning
+     *  Controller\Approval\AbstractApprovalAction's own (now-removed) pre-check used, but a real
+     *  HTTP status code matters here since this path is also reached directly over REST, not
+     *  just through a controller redirect.
+     */
+    private function enforceRateLimit(string $token): void
+    {
+        $ip = (string) $this->remoteAddress->getRemoteAddress();
+
+        if (!$this->rateLimiter->isAllowed($token, $ip)) {
+            throw new WebapiException(
+                __('Too many attempts. Please wait a while and try again.'),
+                0,
+                WebapiException::HTTP_TOO_MANY_REQUESTS
+            );
+        }
     }
 
     /**

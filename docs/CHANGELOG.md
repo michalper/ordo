@@ -7,6 +7,16 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **The order-approval REST API's decision endpoints had no rate limiting.**
+  `/V1/ordo/order-approvals/:token/{approve,reject}` are anonymous, token-only endpoints — the
+  same trust model the email-link controllers (`Controller\Approval\{Approve,Reject}`) use, which
+  already had a 10-attempts/15-minute limiter. That limiter used to be enforced only by the
+  controllers' own pre-check, so the REST API path (called directly by `webapi.xml`, no
+  controller involved) was reachable with zero throttling. Moved the check into
+  `Model\OrderApprovalManagement` — the one place both channels already share — so both get the
+  same protection from one call site instead of each channel needing its own. A rate-limited REST
+  call now gets a proper `HTTP 429`.
+
 - **SMS/WhatsApp delivery-status webhooks could regress an already-final message status on a
   redelivered event.** `Controller\Email\StatusCallback` already guarded against this (a
   redelivered SendGrid `delivered` event can't downgrade a message already marked
