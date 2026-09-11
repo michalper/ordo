@@ -82,6 +82,56 @@ class ScheduledTriggerStateTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testGetStatesForCampaignsReturnsEmptyArrayWithoutQueryingWhenNoCampaignIdsGiven(): void
+    {
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->expects(self::never())->method('getConnection');
+
+        $state = new ScheduledTriggerState($resourceConnection);
+
+        self::assertSame([], $state->getStatesForCampaigns([]));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetStatesForCampaignsReturnsOneRowPerCampaignTriggerPairKeyedByBoth(): void
+    {
+        $select = $this->createMock(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchAll')->willReturn([
+            [
+                'campaign_id' => 5,
+                'trigger_event' => 'scheduled_at',
+                'config_hash' => 'abc123',
+                'last_fired_at' => '2026-01-01 00:00:00',
+            ],
+            [
+                'campaign_id' => 6,
+                'trigger_event' => 'recurring_schedule',
+                'config_hash' => 'def456',
+                'last_fired_at' => null,
+            ],
+        ]);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturn('ordo_campaign_scheduled_trigger_state');
+
+        $state = new ScheduledTriggerState($resourceConnection);
+
+        self::assertSame(
+            [
+                '5:scheduled_at' => ['config_hash' => 'abc123', 'last_fired_at' => '2026-01-01 00:00:00'],
+                '6:recurring_schedule' => ['config_hash' => 'def456', 'last_fired_at' => null],
+            ],
+            $state->getStatesForCampaigns([5, 6])
+        );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testMarkFiredUpsertsAllFourColumns(): void
     {
         $connection = $this->createMock(AdapterInterface::class);

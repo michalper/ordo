@@ -41,6 +41,14 @@ class ScheduledTriggerScanner
         CampaignTriggerInterface::TRIGGER_RECURRING_SCHEDULE,
     ];
 
+    /**
+     * Lazily created once per scan() call and reused across every recurring_schedule trigger
+     * matchesCronExpression() checks - Schedule::matchCronExpression() is a pure function of its
+     * own arguments (no state carried between calls), so there's no need for cronScheduleFactory
+     * to mint a fresh instance per trigger.
+     */
+    private ?\Magento\Cron\Model\Schedule $cronSchedule = null;
+
     public function __construct(
         private readonly CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory,
         private readonly ScheduledTriggerState $scheduledTriggerState,
@@ -62,10 +70,21 @@ class ScheduledTriggerScanner
         $triggers->addTriggerEventsFilter(self::SCHEDULED_TRIGGER_EVENTS);
         $triggers->addEnabledCampaignFilter();
 
+        // One batched SELECT for every campaign this scan will look at, instead of a separate
+        // getState() query per trigger inside the loop below - this cron ticks every 5 minutes
+        // (etc/crontab.xml), so with N scheduled/recurring triggers configured that used to mean
+        // N round trips every tick.
+        $campaignIds = [];
+        foreach ($triggers as $trigger) {
+            /** @var CampaignTrigger $trigger */
+            $campaignIds[] = $trigger->getCampaignId();
+        }
+        $states = $this->scheduledTriggerState->getStatesForCampaigns($campaignIds);
+
         foreach ($triggers as $trigger) {
             /** @var CampaignTrigger $trigger */
             try {
-                if ($this->isDue($trigger, $now)) {
+                if ($this->isDue($trigger, $now, $states)) {
                     $this->fire($trigger, $now);
                     $fired++;
                 }
@@ -82,10 +101,15 @@ class ScheduledTriggerScanner
         return $fired;
     }
 
-    private function isDue(CampaignTrigger $trigger, \DateTimeImmutable $now): bool
+    /**
+     * @param array<string, array{config_hash: string, last_fired_at: string|null}> $states
+     *  preloaded via ScheduledTriggerState::getStatesForCampaigns(), keyed
+     *  "{campaign_id}:{trigger_event}"
+     */
+    private function isDue(CampaignTrigger $trigger, \DateTimeImmutable $now, array $states): bool
     {
         $configHash = hash('sha256', $trigger->getParamsJson());
-        $state = $this->scheduledTriggerState->getState($trigger->getCampaignId(), $trigger->getTriggerEvent());
+        $state = $states[$trigger->getCampaignId() . ':' . $trigger->getTriggerEvent()] ?? null;
         $alreadyFiredUnderThisConfig = $state !== null
             && $state['config_hash'] === $configHash
             && $state['last_fired_at'] !== null;
@@ -140,7 +164,7 @@ class ScheduledTriggerScanner
             return false;
         }
 
-        $schedule = $this->cronScheduleFactory->create();
+        $schedule = $this->cronSchedule ??= $this->cronScheduleFactory->create();
 
         return $schedule->matchCronExpression($parts[0], (int) $now->format('i'))
             && $schedule->matchCronExpression($parts[1], (int) $now->format('H'))

@@ -26,11 +26,17 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- **`Model\Campaign\ScheduledTriggerScanner` now batches its fire-state lookup.** `isDue()` used
+  to call `ScheduledTriggerState::getState()` once per scheduled/recurring trigger inside the scan
+  loop (one SELECT per trigger, every 5 minutes per `etc/crontab.xml`). `ScheduledTriggerState`
+  gained `getStatesForCampaigns()`, fetching every relevant campaign's state in a single query
+  up front; `matchesCronExpression()` also now reuses one `Magento\Cron\Model\Schedule` instance
+  per scan instead of creating a new one via `cronScheduleFactory` on every recurring trigger
+  checked.
 - **`Model\Sms\TwilioSmsSender` now reuses one `Twilio\Rest\Client` instance** across `send()`
   calls instead of constructing a new one every time, rebuilding only if the API key/secret
   actually changed since the last call (credential rotation) — matters most for the long-lived
   queue consumer process (see AGENTS.md), which can send many messages without ever restarting.
-
 
 - **Unified `ConditionGroupEvaluator`/`SegmentMemberResolver`'s duplicated AND/OR/nested-group
   tree-walk**, closing the campaign engine's remaining "second, independent implementation" gap
