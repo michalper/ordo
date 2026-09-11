@@ -102,3 +102,118 @@ calendar-view toggle for this, or stay a separate screen.
   shipped capability (campaigns, segments, RFM, lead scoring, free gifts, order approval, tracking/popups, reorder
   cycles, dashboard), each with a real admin-UI screenshot and PL/EN text. Needs a structure decision first —
   GitHub Wiki has no built-in i18n, so bilingual-per-page vs. a language-split page tree is a real choice.
+
+## Multi-currency correctness (audit 2026-09-11)
+
+Fresh pass specifically hunting for bugs not already covered above. Found three related, previously
+unreported currency-handling bugs — none touched by any item above, all financially relevant on any
+store with more than one allowed currency:
+
+- **Free-gift tier `min_subtotal` is compared against the quote's display-currency subtotal, not base
+  currency.** `Model/FreeGiftManagement.php` compares `Quote::getSubtotal()` (display currency) directly
+  against the admin-configured `min_subtotal` (a plain numeric field with no currency selector, implicitly
+  meant as base currency). On a store allowing multiple currencies, exchange-rate movement can push a cart
+  across the threshold in the wrong direction — granting or denying a free gift incorrectly.
+- **B2B credit-limit usage sums `sales_order.total_due` (order currency) across a customer's orders,
+  not `base_total_due`.** `Model/CreditLimitCalculator::getUsedCredit()`/`getUsedCreditForCustomers()` do
+  `SUM(total_due)`, mixing currencies if a customer has orders placed under more than one currency (e.g.
+  after a website/currency change). This number directly drives
+  `Plugin\Quote\BlockOverLimitCheckout` (hard-blocks checkout at 100%) and `Cron\SendCreditLimitAlerts` —
+  a real risk of wrongly blocking or wrongly allowing an order.
+- **The Google Merchant product feed emits base-currency prices mislabeled with the store's display
+  currency code.** `Model/ProductFeed/GoogleMerchantFeedGenerator.php` reads `getFinalPrice()` (base
+  currency, from `catalog_product_index_price`) but tags it with `$store->getCurrentCurrencyCode()`
+  (display currency) — no conversion applied. On a store where display currency ≠ base currency, every
+  price in the feed is off by the currency rate, which Google Merchant Center will flag as a landing-page
+  price mismatch.
+
+All three are single-currency-store-safe (no bug if base currency = only allowed currency), so they've
+stayed invisible until now. Fix shape for all three: convert through `Store::getBaseCurrency()->convert()`
+(or the equivalent already used elsewhere in the module) before comparing/emitting, and use
+`base_total_due` instead of `total_due` for the credit-limit sum.
+
+## Performance audit (2026-09-11)
+
+Fresh pass over crons/queries not already covered above:
+
+- **`Cron\SyncAdAudiences` calls `ConsentManager::hasConsent()` once per customer instead of the
+  existing batched `hasConsentForCustomers()`.** Every other batch cron in the module
+  (`SendReorderReminders`, `SendWinBackEmails`, `SendCreditLimitAlerts`, `SendOfferExpiryReminders`,
+  `SendAbandonedCartReminders`) already switched to the batched call specifically to avoid one query per
+  customer; `SyncAdAudiences` is the one remaining caller still doing it the old way. A 20k-customer
+  ad-audience segment does 20k separate `SELECT`s once a day per configured audience.
+- **`ordo_cron_run_log` has no supporting index for its own hot-path query and no prune cron.**
+  `db_schema.xml` gives it only a `PRIMARY` key, while the dashboard's "crons failed (last 24h)" KPI and
+  the Cron Run Log grid both filter on `level` + `created_at` — the same shape of query that
+  `ordo_order_approval` already got a composite index for. Unlike every other append-only log/queue table
+  in the module (`ordo_notification`, `ordo_pending_popup`, `ordo_survey_prompt`, `ordo_visitor_event`,
+  each with its own `Prune*` cron), `ordo_cron_run_log` has no pruning at all — with ~22 crons logging a
+  row per run (several every 5-15 minutes), it grows unbounded and the missing index means the dashboard
+  query does a full scan that gets slower over time.
+
+## Candidate new features
+
+Not gaps in something existing — genuinely new capabilities, proposed after checking they don't already
+exist in some form. Not prioritized against each other; listed for later scoping.
+
+- **Customer Lifetime Value (CLV) scoring** — a forward-looking counterpart to the existing RFM
+  (`Model/Rfm/RfmCalculator.php`), exposed as a new condition/segment criterion and dashboard KPI. Medium
+  scope, fits both B2B and B2C.
+- **Price-drop & back-in-stock alerts** — customer/visitor opt-in on PDP, a cron watching catalog
+  price/stock changes, two new trigger types through the existing `CampaignDispatcher` pipeline.
+  Medium-large scope, primarily B2C.
+- **Generic outbound webhook action + inbound webhook trigger** — a `send_webhook` action and a signed
+  `webhook_received` trigger, giving external systems (ERP/CRM/PIM) a two-way integration point beyond
+  today's provider-status-only inbound webhooks. Medium scope, higher value for B2B (ERP/CRM integration).
+- **Predictive send-time optimization** — pick each customer's historically best send hour from existing
+  `ordo_message_log` open/click data and hold the action via the existing delayed-action/resume mechanism
+  (`Cron\RunScheduledCampaignActions`) instead of a fixed delay. Medium scope, fits both.
+- **Two-way SMS/WhatsApp conversation handling** — capture inbound replies (today only delivery-status
+  callbacks are handled), with mandatory keyword-based opt-out (STOP) and a conversation view tied to the
+  customer record. Large scope (compliance-sensitive once inbound is accepted at all), fits both.
+- **Browse-abandonment campaigns** — a dedicated trigger/cron over the `product_view`/`category_view`
+  visitor events already captured by `VisitorEventLogger`, one step earlier in the funnel than the
+  existing cart-abandonment reminder. Small-medium scope, primarily B2C.
+- **Multi-touch attribution / revenue-per-campaign reporting** — correlate `ordo_message_log`
+  click-throughs to subsequent orders within a configurable window, surfaced as attributed revenue on the
+  Campaign grid/dashboard. Medium scope, fits both.
+
+## Priorytet kolejnych kroków
+
+Kolejność uwzględnia wagę (błędy finansowe > dług niezawodności > UX > tematy zależne od
+zasobów zewnętrznych):
+
+1. **Bugi walutowe (sekcja "Multi-currency correctness" powyżej)** — realny wpływ finansowy
+   (błędne blokowanie/odblokowywanie zamówień B2B, błędna cena w feedzie produktowym, błędna
+   kwalifikacja do gratisu). Najwyższy priorytet mimo że dotyczy tylko sklepów z więcej niż
+   jedną obsługiwaną walutą — trzeba to najpierw potwierdzić na produkcji (czy Sellina/klienci
+   faktycznie używają multi-currency), bo jeśli tak, to blokuje realne transakcje już teraz.
+2. **`Cron\SyncAdAudiences` — przejście na `hasConsentForCustomers()`** — mechaniczna,
+   niskoryzykowna poprawka o realnym wpływie na duże audiencje reklamowe; wzorzec już
+   istnieje w 5 innych cronach.
+3. **Retry pojedynczego sendu po `SendRetrier`** — naturalne rozszerzenie istniejącego wzorca
+   dead-letter (ADR 0001, `CampaignDispatchDeadLetter`) na `ordo_message_log`; brak zależności
+   zewnętrznych, czysto techniczny dług niezawodności.
+4. **Indeks + prune cron dla `ordo_cron_run_log`** — mały, samodzielny fix (analogiczny do
+   istniejących `Prune*` cronów i indeksu na `ordo_order_approval`), zapobiega przyszłemu
+   problemowi zanim stanie się bolesny.
+5. **`fields`/sparse-fieldset w API.md** — kontraktowo mała, samodzielna zmiana API.
+6. **Bulk actions na MessageLog/ReorderCycle/Rfm** — wymaga najpierw decyzji projektowej,
+   potem implementacji.
+7. **Flow canvas UX (undo/redo, duplikacja, inline send-test)** — większy, ale samodzielny
+   front-endowy temat; wysoka wartość dla codziennego użytku.
+8. **Nowe funkcje (sekcja "Candidate new features" powyżej)** — do rozważenia razem z
+   biznesem/produktem pod kątem priorytetu; browse-abandonment i webhook action/trigger
+   wyglądają na najmniejszy koszt wejścia względem wartości.
+9. **Drugi format product feedu** — większa, osobna abstrakcja; wymaga wyboru formatu
+   docelowego przed implementacją.
+10. **Kalendarz dat dla scheduled campaigns** — opcjonalny polish.
+11. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
+    poświadczeń testowych.
+12. **Recenzja natywna 10 lokalizacji** — zależna od dostępności recenzentów per język.
+13. **GitHub Wiki (PL/EN, screenshots)** — wymaga wcześniej decyzji o strukturze.
+
+Uwaga poza roadmapą: na branchu `feature/reorder-cycle-build-cart` jest niedokończona,
+nie-scommitowana praca nad akcją "build reorder cart" (temat sam w sobie już częściowo
+pokryty w CHANGELOGu przez manual reminder, PR #91) — do domknięcia jako osobny temat, nie
+część tej rundy porządkowej.
