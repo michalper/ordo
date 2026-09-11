@@ -8,6 +8,8 @@ use Magento\Framework\Controller\Result\Raw;
 use Magento\Framework\Controller\Result\RawFactory;
 use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\DB\Select;
+use Magento\Store\Api\Data\StoreInterface;
+use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Controller\ProductFeed\Index;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
@@ -19,6 +21,7 @@ class IndexTest extends AbstractFrontendActionTestCase
     private ResourceConnection $resourceConnection;
     private AdapterInterface $connection;
     private Config $config;
+    private StoreManagerInterface $storeManager;
     private Raw $rawResult;
 
     protected function setUp(): void
@@ -30,6 +33,11 @@ class IndexTest extends AbstractFrontendActionTestCase
         $this->resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
         $this->config = $this->createStub(Config::class);
 
+        $store = $this->createStub(StoreInterface::class);
+        $store->method('getId')->willReturn(1);
+        $this->storeManager = $this->createStub(StoreManagerInterface::class);
+        $this->storeManager->method('getStore')->willReturn($store);
+
         $this->rawResult = $this->createMock(Raw::class);
         $this->rawResult->method('setHeader')->willReturnSelf();
         $this->resultRawFactory->method('create')->willReturn($this->rawResult);
@@ -37,7 +45,13 @@ class IndexTest extends AbstractFrontendActionTestCase
 
     private function makeController(): Index
     {
-        return new Index($this->makeContext(), $this->resultRawFactory, $this->resourceConnection, $this->config);
+        return new Index(
+            $this->makeContext(),
+            $this->resultRawFactory,
+            $this->resourceConnection,
+            $this->config,
+            $this->storeManager
+        );
     }
 
     #[AllowMockObjectsWithoutExpectations]

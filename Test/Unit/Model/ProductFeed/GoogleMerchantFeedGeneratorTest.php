@@ -48,6 +48,7 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
     private function makeCollection(array $products): ProductCollection
     {
         $collection = $this->createStub(ProductCollection::class);
+        $collection->method('setStore')->willReturnSelf();
         $collection->method('addAttributeToSelect')->willReturnSelf();
         $collection->method('addAttributeToFilter')->willReturnSelf();
         $collection->method('addFinalPrice')->willReturnSelf();
@@ -89,7 +90,7 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
         $this->catalogImageHelper->method('init')->willReturnSelf();
         $this->catalogImageHelper->method('getUrl')->willReturn('https://example.test/media/catalog/product/1.jpg');
 
-        $result = $this->generator->generate();
+        $result = $this->generator->generate(1);
 
         self::assertSame(2, $result['productCount']);
         self::assertStringContainsString('<g:id>SKU1</g:id>', $result['xml']);
@@ -110,7 +111,7 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
         $this->catalogImageHelper->method('init')->willReturnSelf();
         $this->catalogImageHelper->method('getUrl')->willReturn(null);
 
-        $result = $this->generator->generate();
+        $result = $this->generator->generate(1);
 
         self::assertSame(0, $result['productCount']);
         self::assertStringNotContainsString('SKU1', $result['xml']);
@@ -127,7 +128,7 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
 
         $this->productCollectionFactory->method('create')->willReturn($this->makeCollection([$product]));
 
-        $result = $this->generator->generate();
+        $result = $this->generator->generate(1);
 
         self::assertSame(0, $result['productCount']);
     }
@@ -137,7 +138,7 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
     {
         $this->productCollectionFactory->method('create')->willReturn($this->makeCollection([]));
 
-        $result = $this->generator->generate();
+        $result = $this->generator->generate(1);
 
         self::assertSame(0, $result['productCount']);
         self::assertStringContainsString('<channel>', $result['xml']);
@@ -156,6 +157,7 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
         $pageTwoProducts = [$this->makeProduct('SKU2', 'Product Two', 'https://example.test/p2.html', 20.0, true)];
 
         $collection = $this->createMock(ProductCollection::class);
+        $collection->method('setStore')->willReturnSelf();
         $collection->method('addAttributeToSelect')->willReturnSelf();
         $collection->method('addAttributeToFilter')->willReturnSelf();
         $collection->method('addFinalPrice')->willReturnSelf();
@@ -176,7 +178,7 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
         $this->catalogImageHelper->method('init')->willReturnSelf();
         $this->catalogImageHelper->method('getUrl')->willReturn('https://example.test/media/1.jpg');
 
-        $result = $this->generator->generate();
+        $result = $this->generator->generate(1);
 
         self::assertSame(2, $result['productCount']);
         self::assertStringContainsString('<g:id>SKU1</g:id>', $result['xml']);

@@ -15,6 +15,19 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   group that has a hit and hiding one that doesn't; clearing the query restores everything.
   Undo/redo, node duplication, and inline "send test" (building on the Template Test Send
   feature) remain open — see ROADMAP.md.
+- **Product feed: multi-store support + a new admin health grid**, closing the commerce-features
+  ROADMAP.md gap where the shopping feed was single-store with no admin visibility into
+  generation health. `Model\ProductFeed\GoogleMerchantFeedGenerator::generate()` now takes a
+  `$storeId` and scopes the product collection/price/currency/base-URL/config (title,
+  description, enabled) to that store; `Cron\RefreshProductFeed` and the admin "Refresh Now"
+  action both now loop every store instead of generating once for the whole install.
+  `ordo_product_feed_cache`'s primary key widens to `(feed_code, store_id)` so each store gets its
+  own cached row, and the public feed controller now serves the current request's own store's
+  cached XML instead of always the same one. New append-only `ordo_product_feed_run_log` table
+  (`Model\ProductFeed\ProductFeedRunLog`) records every generation attempt — success/error, item
+  count, error message — per store, feeding a new read-only **Product Feed Health** admin grid
+  (`ordo/productfeed/index`, linked from the dashboard's Diagnostics section) so a generation
+  failure is no longer invisible without a raw DB query.
 - **Campaign dispatch dead letters + persistent retry for failed scheduled-action resumes**,
   closing the campaign-engine ROADMAP.md gap where `CampaignDispatchConsumer` silently dropped
   anything it couldn't process and `Cron\RunScheduledCampaignActions` left a failed resume
