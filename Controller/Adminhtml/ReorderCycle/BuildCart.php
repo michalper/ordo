@@ -57,12 +57,7 @@ class BuildCart extends Action implements HttpPostActionInterface
         try {
             $customer = $this->customerRepository->getById($cycle->getCustomerId());
             $this->reorderCartBuilder->build($cycle, $customer);
-        } catch (NoSuchEntityException $e) {
-            $this->messageManager->addErrorMessage(
-                __('Could not build the cart: %1', $e->getMessage())
-            );
-            return $resultRedirect;
-        } catch (LocalizedException $e) {
+        } catch (NoSuchEntityException|LocalizedException $e) {
             $this->messageManager->addErrorMessage(__('Could not build the cart: %1', $e->getMessage()));
             return $resultRedirect;
         }
