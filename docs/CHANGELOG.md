@@ -49,6 +49,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Segment membership history**, closing the segmentation ROADMAP.md gap where
+  `estimated_audience_size`/`audience_size_computed_at` only ever held the latest snapshot, so
+  "how has this segment grown/shrunk over the last 3 months" wasn't answerable without external
+  tracking. New append-only `ordo_segment_audience_size_history` table
+  (`Model\Segment\SegmentAudienceSizeHistory`, FK `ON DELETE CASCADE` to `ordo_segment`);
+  `SegmentAudienceSizeRecalculator::recalculateAll()` now appends one history row per segment on
+  every pass, alongside its existing overwrite-in-place update to `ordo_segment` itself. No
+  admin trend view yet — a natural follow-up once there is real history to show.
 - **New "Template Test Send" admin page**, closing the communication-channels ROADMAP.md gap
   where there was no template preview or test-send anywhere in admin, for any channel — merchants
   routinely typo `{{var}}`/WhatsApp `{{1}}` placeholders and only discovered it once a real
