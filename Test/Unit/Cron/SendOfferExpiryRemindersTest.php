@@ -32,9 +32,12 @@ use Ordo\Automation\Model\Cron\CronRunLogger;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class SendOfferExpiryRemindersTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     private function makeSelect(): Select
     {
         $select = $this->createStub(Select::class);
@@ -174,7 +177,7 @@ class SendOfferExpiryRemindersTest extends TestCase
             $this->createStub(SalesRepEmailContext::class),
             $consentManager,
             $this->createStub(TriggerOutcomeLogger::class),
-            new CronRunLogger($this->createStub(LoggerInterface::class))
+            $this->makeCronRunLogger($this->createStub(LoggerInterface::class))
         ))->execute();
     }
 
@@ -277,7 +280,7 @@ class SendOfferExpiryRemindersTest extends TestCase
             $this->createStub(SalesRepEmailContext::class),
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            new CronRunLogger($logger)
+            $this->makeCronRunLogger($logger)
         ))->execute();
     }
 
@@ -327,7 +330,7 @@ class SendOfferExpiryRemindersTest extends TestCase
             $this->createStub(SalesRepEmailContext::class),
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            new CronRunLogger($logger)
+            $this->makeCronRunLogger($logger)
         ))->execute();
     }
 
@@ -369,7 +372,7 @@ class SendOfferExpiryRemindersTest extends TestCase
             $salesRepEmailContext,
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            new CronRunLogger($logger ?? $this->createStub(LoggerInterface::class))
+            $this->makeCronRunLogger($logger ?? $this->createStub(LoggerInterface::class))
         );
     }
 }

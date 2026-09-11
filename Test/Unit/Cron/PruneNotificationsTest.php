@@ -9,9 +9,12 @@ use Ordo\Automation\Cron\PruneNotifications;
 use Ordo\Automation\Model\Cron\CronRunLogger;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class PruneNotificationsTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     public function testExecuteDeletesReadAndExpiredRowsAndLogs(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
@@ -26,6 +29,6 @@ class PruneNotificationsTest extends TestCase
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('info');
 
-        (new PruneNotifications($resourceConnection, new CronRunLogger($logger)))->execute();
+        (new PruneNotifications($resourceConnection, $this->makeCronRunLogger($logger)))->execute();
     }
 }

@@ -11,9 +11,12 @@ use Ordo\Automation\Model\ProductFeed\ProductFeedCacheWriter;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class RefreshProductFeedTest extends TestCase
 {
+    use MakesCronRunLoggerTrait;
+
     private GoogleMerchantFeedGenerator&\PHPUnit\Framework\MockObject\MockObject $generator;
     private ProductFeedCacheWriter&\PHPUnit\Framework\MockObject\MockObject $cacheWriter;
     private Config $config;
@@ -31,7 +34,7 @@ class RefreshProductFeedTest extends TestCase
             $this->generator,
             $this->cacheWriter,
             $this->config,
-            new CronRunLogger($this->createStub(LoggerInterface::class)),
+            $this->makeCronRunLogger($this->createStub(LoggerInterface::class)),
             $this->logger
         );
     }

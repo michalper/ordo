@@ -332,6 +332,12 @@ $segmentNavDesc = __(
             'desc' => __('Browse and act on pending order approvals without the original decision email'),
             'icon' => 'shield',
         ],
+        [
+            'url' => $block->getUrl('ordo/cronrunlog/index'),
+            'title' => __('Cron Run Log'),
+            'desc' => __('Read-only: every summary/failure line every cron in this module has logged'),
+            'icon' => 'refresh',
+        ],
     ];
     ?>
     <?php foreach ($navGroups as $navGroup): ?>
