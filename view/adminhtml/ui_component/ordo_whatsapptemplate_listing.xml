@@ -43,6 +43,27 @@
         </argument>
     </dataSource>
 
+    <!--
+        Mass-delete counterpart to the "ids" selectionsColumn below, which used to render
+        checkboxes that did nothing (ROADMAP.md admin-platform audit finding). No mass
+        enable/disable here - see Controller\Adminhtml\WhatsAppTemplate\MassDelete's own docblock
+        for why this entity doesn't get one in the same pass as the other four.
+    -->
+    <listingToolbar name="listing_top">
+        <massaction name="listing_massaction">
+            <action name="delete">
+                <settings>
+                    <confirm>
+                        <message translate="true">Are you sure you want to delete the selected WhatsApp template(s)?</message>
+                        <title translate="true">Delete WhatsApp templates</title>
+                    </confirm>
+                    <url path="*/*/massDelete"/>
+                    <type>delete</type>
+                    <label translate="true">Delete</label>
+                </settings>
+            </action>
+        </massaction>
+    </listingToolbar>
     <columns name="ordo_whatsapptemplate_columns">
         <selectionsColumn name="ids">
             <settings>
