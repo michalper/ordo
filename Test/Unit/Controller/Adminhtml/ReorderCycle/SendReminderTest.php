@@ -26,7 +26,7 @@ class SendReminderTest extends AbstractAdminActionTestCase
 
     protected function setUp(): void
     {
-        $this->reorderCycleFactory = $this->createStub(ReorderCycleFactory::class);
+        $this->reorderCycleFactory = $this->createMock(ReorderCycleFactory::class);
         $this->reorderCycleResource = $this->createStub(ReorderCycleResource::class);
         $this->customerRepository = $this->createMock(CustomerRepositoryInterface::class);
         $this->reminderSender = $this->createMock(ReorderReminderSender::class);
@@ -135,7 +135,7 @@ class SendReminderTest extends AbstractAdminActionTestCase
         $this->reminderSender->method('sendNow')->willThrowException(new OptedOutException('opted out'));
 
         $this->messageManager->expects(self::once())->method('addErrorMessage')
-            ->with(self::stringContains('opted out'));
+            ->with(self::callback(fn ($message) => str_contains((string) $message, 'opted out')));
 
         self::assertSame($this->redirect, $controller->execute());
     }
@@ -153,7 +153,7 @@ class SendReminderTest extends AbstractAdminActionTestCase
         $this->reminderSender->method('sendNow')->willThrowException(new \RuntimeException('smtp down'));
 
         $this->messageManager->expects(self::once())->method('addErrorMessage')
-            ->with(self::stringContains('smtp down'));
+            ->with(self::callback(fn ($message) => str_contains((string) $message, 'smtp down')));
 
         self::assertSame($this->redirect, $controller->execute());
     }
