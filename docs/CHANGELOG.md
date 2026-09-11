@@ -15,6 +15,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   real `customer_id` column. A customer's erasure/export request neither deleted nor exported
   RFM scores, trigger/campaign outcome history, push subscriptions, reorder cycle predictions,
   B2B offers, or credit-limit alert history. Added all seven to the shared list.
+- **SMS/WhatsApp delivery-status webhooks could regress an already-final message status on a
+  redelivered event.** `Controller\Email\StatusCallback` already guarded against this (a
+  redelivered SendGrid `delivered` event can't downgrade a message already marked
+  bounced/failed/opted-out), but `Controller\Sms\StatusCallback` (Twilio) and
+  `Controller\WhatsApp\Webhook` (Meta) applied every incoming status unconditionally — both
+  providers redeliver webhooks at-least-once, so both channels were exposed to the same bug.
+  Extracted the shared rank table into `Model\MessageLog\StatusDowngradeGuard` and wired it into
+  all three controllers.
 
 ### Added
 
@@ -26,6 +34,13 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- **`Model\Campaign\ScheduledTriggerScanner` now batches its fire-state lookup.** `isDue()` used
+  to call `ScheduledTriggerState::getState()` once per scheduled/recurring trigger inside the scan
+  loop (one SELECT per trigger, every 5 minutes per `etc/crontab.xml`). `ScheduledTriggerState`
+  gained `getStatesForCampaigns()`, fetching every relevant campaign's state in a single query
+  up front; `matchesCronExpression()` also now reuses one `Magento\Cron\Model\Schedule` instance
+  per scan instead of creating a new one via `cronScheduleFactory` on every recurring trigger
+  checked.
 - **`Model\Sms\TwilioSmsSender` now reuses one `Twilio\Rest\Client` instance** across `send()`
   calls instead of constructing a new one every time, rebuilding only if the API key/secret
   actually changed since the last call (credential rotation) — matters most for the long-lived

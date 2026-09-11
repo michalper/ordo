@@ -2366,21 +2366,45 @@ parameters:
 			path: Model/ResourceModel/CampaignActionRetry.php
 
 		-
-			message: '#^Cannot access offset ''config_hash'' on mixed\.$#'
+			message: '#^Cannot access offset ''campaign_id'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
 
 		-
+			message: '#^Cannot access offset ''trigger_event'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
+
+		-
+			message: '#^Cannot access offset ''config_hash'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
+
+		-
 			message: '#^Cannot access offset ''last_fired_at'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
+
+		-
+			message: '#^Binary operation "\." between mixed and '':'' results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
 			count: 1
 			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 2
+			count: 4
 			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
 
 		-

@@ -15,6 +15,7 @@ use Magento\Framework\Controller\Result\RawFactory;
 use Magento\Framework\Controller\ResultInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\MessageLog;
+use Ordo\Automation\Model\MessageLog\StatusDowngradeGuard;
 use Ordo\Automation\Model\ResourceModel\MessageLog as MessageLogResource;
 use Ordo\Automation\Model\ResourceModel\MessageLog\CollectionFactory as MessageLogCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate as WhatsAppTemplateResource;
@@ -74,6 +75,7 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
         private readonly MessageLogResource $messageLogResource,
         private readonly WhatsAppTemplateCollectionFactory $whatsAppTemplateCollectionFactory,
         private readonly WhatsAppTemplateResource $whatsAppTemplateResource,
+        private readonly StatusDowngradeGuard $statusDowngradeGuard,
         private readonly LoggerInterface $logger
     ) {
         parent::__construct($context);
@@ -189,6 +191,7 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
 
         $collection = $this->messageLogCollectionFactory->create();
         $collection->addFieldToFilter('provider_message_id', $providerMessageId);
+        /** @var MessageLog $log */
         $log = $collection->getFirstItem();
 
         if (!$log->getId()) {
@@ -196,6 +199,18 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
                 'Ordo_Automation: WhatsApp webhook status update for unknown message id "%s".',
                 $providerMessageId
             ));
+            return;
+        }
+
+        if ($this->statusDowngradeGuard->isDowngrade($log->getStatus(), $ourStatus)) {
+            $this->logger->info(sprintf(
+                'Ordo_Automation: ignored a WhatsApp webhook status downgrade for message log #%d '
+                . '(current status=%s, incoming status=%s) - likely an out-of-order redelivery.',
+                (int) $log->getId(),
+                $log->getStatus(),
+                $ourStatus
+            ));
+
             return;
         }
 

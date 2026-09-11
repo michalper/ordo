@@ -48,6 +48,41 @@ class ScheduledTriggerState
     }
 
     /**
+     * Batched counterpart of getState() - ScheduledTriggerScanner::scan() used to call getState()
+     * once per scheduled/recurring trigger in its loop (one SELECT per trigger, every 5 minutes).
+     * This fetches every state row for the given campaigns in one query instead, keyed the same
+     * way the scanner looks callers up: "{campaign_id}:{trigger_event}".
+     *
+     * @param int[] $campaignIds
+     * @return array<string, array{config_hash: string, last_fired_at: string|null}>
+     */
+    public function getStatesForCampaigns(array $campaignIds): array
+    {
+        if ($campaignIds === []) {
+            return [];
+        }
+
+        $connection = $this->resourceConnection->getConnection();
+        $select = $connection->select()
+            ->from(
+                $this->resourceConnection->getTableName(self::TABLE),
+                ['campaign_id', 'trigger_event', 'config_hash', 'last_fired_at']
+            )
+            ->where('campaign_id IN (?)', array_unique($campaignIds));
+
+        $states = [];
+        foreach ($connection->fetchAll($select) as $row) {
+            $key = $row['campaign_id'] . ':' . $row['trigger_event'];
+            $states[$key] = [
+                'config_hash' => (string) $row['config_hash'],
+                'last_fired_at' => $row['last_fired_at'] !== null ? (string) $row['last_fired_at'] : null,
+            ];
+        }
+
+        return $states;
+    }
+
+    /**
      * Upserts the fired-tracking row - INSERT ... ON DUPLICATE KEY UPDATE rather than a
      * load()-then-save() round trip, since the composite primary key already guarantees
      * uniqueness and this is only ever called right after a scan just confirmed the trigger is
