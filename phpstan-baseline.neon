@@ -172,6 +172,18 @@ parameters:
 			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
 			identifier: method.notFound
 			count: 1
+			path: Controller/Adminhtml/AdminActionLog/Index.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/AdminActionLog/Index.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
 			path: Controller/Adminhtml/Campaign/Calendar.php
 
 		-
@@ -3221,3 +3233,27 @@ parameters:
 			identifier: cast.string
 			count: 5
 			path: Model/PushSubscription.php
+
+		-
+			message: '#^Cannot call method getUserId\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/AdminActionLog/Recorder.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/AdminActionLog/Recorder.php
+
+		-
+			message: '#^Cannot call method getUserName\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/AdminActionLog/Recorder.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/AdminActionLog/Recorder.php

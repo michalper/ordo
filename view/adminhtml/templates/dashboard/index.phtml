@@ -350,6 +350,12 @@ $segmentNavDesc = __(
             'desc' => __('Read-only: every shopping feed generation attempt, per store - success/error, item count'),
             'icon' => 'inbox',
         ],
+        [
+            'url' => $block->getUrl('ordo/adminactionlog/index'),
+            'title' => __('Admin Action Log'),
+            'desc' => __('Read-only: every admin save of a Campaign or Segment - who, when, and what changed'),
+            'icon' => 'inbox',
+        ],
     ];
     ?>
     <?php foreach ($navGroups as $navGroup): ?>

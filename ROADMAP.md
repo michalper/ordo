@@ -90,8 +90,9 @@ as bugs above, not repeated here)*
 
 ### Admin platform, UX consistency & API
 
-- No audit log of admin actions anywhere — no way to answer "who changed this campaign last
-  Tuesday," despite campaigns/segments/offers directly affecting revenue and customer comms.
+- Admin action audit log now covers Campaign and Segment saves only (see docs/CHANGELOG.md) —
+  every other admin-managed entity (Free Gift Offers, WhatsApp Templates, Content Blocks, etc.)
+  is still unaudited; extend the same plugin pattern to each as a natural follow-up.
 - No bulk/mass-action on 8 of the ~10 listing grids (Campaign and Segment now have
   enable/disable/delete mass actions — see docs/CHANGELOG.md; ContentBlock, FreeGiftOffer,
   MessageLog, ReorderCycle, Rfm, ScoreRule, WhatsAppTemplate, and AdAudience still don't) —

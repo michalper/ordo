@@ -3,4 +3,14 @@
     <type name="Magento\SalesRule\Model\Rule\Action\SimpleActionOptionsProvider">
         <plugin name="ordo_add_cheapest_item_free_option" type="Ordo\Automation\Plugin\SalesRule\SimpleActionOptionsProviderPlugin"/>
     </type>
+
+    <!-- Admin action audit log - see Model\AdminActionLog\Recorder's own docblock. Admin-scoped
+         (not etc/di.xml) since these plugins depend on Magento\Backend\Model\Auth\Session, which
+         only exists in the adminhtml area. -->
+    <type name="Ordo\Automation\Model\Campaign\CampaignSaveProcessor">
+        <plugin name="ordo_admin_action_log_campaign" type="Ordo\Automation\Plugin\Campaign\CampaignSaveProcessorAuditPlugin"/>
+    </type>
+    <type name="Ordo\Automation\Model\Segment\SegmentSaveProcessor">
+        <plugin name="ordo_admin_action_log_segment" type="Ordo\Automation\Plugin\Segment\SegmentSaveProcessorAuditPlugin"/>
+    </type>
 </config>
