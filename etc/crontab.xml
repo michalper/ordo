@@ -49,6 +49,9 @@
         <job name="ordo_automation_prune_survey_prompts" instance="Ordo\Automation\Cron\PruneSurveyPrompts" method="execute">
             <schedule>40 4 * * *</schedule>
         </job>
+        <job name="ordo_automation_prune_cron_run_log" instance="Ordo\Automation\Cron\PruneCronRunLog" method="execute">
+            <schedule>45 4 * * *</schedule>
+        </job>
         <job name="ordo_automation_sync_ad_audiences" instance="Ordo\Automation\Cron\SyncAdAudiences" method="execute">
             <schedule>0 5 * * *</schedule>
         </job>

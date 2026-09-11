@@ -477,6 +477,15 @@
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
+        <!-- Covers DashboardViewModel::getFailedCronCount()'s own filter (level = 'failure' AND
+             created_at >= cutoff) and the Cron Run Log grid's column filters, same shape as
+             ordo_order_approval's ORDO_ORDER_APPROVAL_STATUS_CREATED_AT index - without it this
+             table's full-scan cost grows with every cron run ever logged (~22 crons, several
+             every 5-15 minutes). -->
+        <index referenceId="ORDO_CRON_RUN_LOG_LEVEL_CREATED_AT" indexType="btree">
+            <column name="level"/>
+            <column name="created_at"/>
+        </index>
     </table>
 
     <table name="ordo_customer_consent_log" resource="default" engine="innodb" comment="Append-only audit trail of every Model\ConsentManager::setConsent() call - unlike ordo_customer_consent (which only ever holds the current state, upserted in place), a row here is never updated once written, so who consented/opted out on which channel and when is still answerable after the current state has since changed again.">

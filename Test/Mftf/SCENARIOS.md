@@ -249,6 +249,7 @@ than retrofitted into an existing section, since neither fits §1-§9's shape.
 | `TagInactiveCustomers`       | Tags customers inactive past the configured window           | ✅ `AdminTagInactiveCustomersAndWinBackEmailTest` (same test — the two crons are tightly coupled, see its own description) |
 | `SendAbandonedCartReminders` | Also the source of the `cart_abandoned` trigger (§1a)        | ✅ `AdminSendAbandonedCartReminderAndTriggerTest`                                                                          |
 | `RetryFailedCampaignActions` | Re-attempts an `ordo_campaign_action_retry` row with backoff, deletes it on success, dead-letters it after 5 attempts | ⬜ unit-tested (`RetryFailedCampaignActionsTest`, `ActionRetryQueueTest`), no MFTF yet |
+| `PruneCronRunLog`            | Deletes `ordo_cron_run_log` rows past the 30-day retention window | ⬜ unit-tested (`PruneCronRunLogTest`), no MFTF yet — same reasoning as the other `Prune*` crons: no browser-observable effect beyond the grid no longer showing pruned rows |
 
 All four crons above only fire once a day (or, for `SendSalesRepDigest`, once a week) at a fixed
 wall-clock time (`etc/crontab.xml`) — no MFTF test can wait that out. `Test/Mftf/Helper/CronScheduleHelper.php`
