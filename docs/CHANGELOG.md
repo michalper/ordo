@@ -7,6 +7,15 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Setup Guide — a first-run checklist**, closing the admin-platform ROADMAP.md "no setup
+  wizard/guided first-run flow" gap. New read-only **Setup Guide** admin page
+  (`ordo/setup/index`, `Block\Adminhtml\Setup\SetupWizardViewModel`) sequencing the real
+  dependency order — configure a messaging channel (SMS/WhatsApp) → build a segment → build a
+  campaign — each step's "done" state computed live from real data (channel credentials set,
+  at least one segment/campaign exists) rather than a new persisted onboarding-progress table,
+  since a checklist that only ever needs "has this actually happened yet" doesn't need a
+  dismiss/skip state of its own. A dashboard banner links to it, and disappears once every step
+  is done.
 - **Rate limiting for the anonymous order-approval token endpoints**, closing the API.md gap
   where `Controller\Approval\{Approve,Reject}` were token-guarded but not throttled against
   brute-forcing a token guess. New `Model\Approval\ApprovalRateLimiter` — a bespoke cache-backed

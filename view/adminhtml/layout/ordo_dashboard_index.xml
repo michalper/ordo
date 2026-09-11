@@ -12,6 +12,14 @@
         </referenceContainer>
         <referenceContainer name="content">
             <block class="Magento\Framework\View\Element\Template"
+                   name="ordo_setup_wizard_banner"
+                   template="Ordo_Automation::dashboard/setup_wizard_banner.phtml"
+                   before="ordo_dashboard">
+                <arguments>
+                    <argument name="view_model" xsi:type="object">Ordo\Automation\Block\Adminhtml\Setup\SetupWizardViewModel</argument>
+                </arguments>
+            </block>
+            <block class="Magento\Framework\View\Element\Template"
                    name="ordo_dashboard"
                    template="Ordo_Automation::dashboard/index.phtml">
                 <arguments>

@@ -1,0 +1,42 @@
+<?php
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \Magento\Framework\Escaper $escaper */
+
+/** @var \Ordo\Automation\Block\Adminhtml\Setup\SetupWizardViewModel $viewModel */
+$viewModel = $block->getData('view_model');
+$steps = $viewModel->getSteps();
+?>
+<div class="ordo-dashboard">
+    <div class="ordo-dashboard-triggers">
+        <div class="ordo-section-head">
+            <h2><?= $escaper->escapeHtml(__('Setup Guide')) ?></h2>
+        </div>
+        <p>
+            <?= $escaper->escapeHtml(__(
+                'The real dependency order for a working campaign: configure a channel first, '
+                . 'then build a segment, then a campaign that uses it. Each step below reflects '
+                . 'whether it\'s actually been done, not just clicked through.'
+            )) ?>
+        </p>
+        <ol class="ordo-setup-wizard-steps">
+            <?php foreach ($steps as $index => $step): ?>
+                <li class="ordo-setup-wizard-step <?= $step['done'] ? 'ordo-setup-wizard-step-done' : '' ?>">
+                    <span class="ordo-badge <?= $step['done'] ? 'ordo-badge-on' : 'ordo-badge-off' ?>">
+                        <?= $step['done']
+                            ? $escaper->escapeHtml(__('Done'))
+                            : $escaper->escapeHtml(__('Step %1', $index + 1)) ?>
+                    </span>
+                    <div class="ordo-setup-wizard-step-body">
+                        <strong><?= $escaper->escapeHtml($step['title']) ?></strong>
+                        <p><?= $escaper->escapeHtml($step['desc']) ?></p>
+                        <?php if (!$step['done']): ?>
+                            <a class="ordo-btn ordo-btn-primary" href="<?= $escaper->escapeUrl($step['url']) ?>">
+                                <?= $escaper->escapeHtml(__('Go')) ?>
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </li>
+            <?php endforeach; ?>
+        </ol>
+    </div>
+</div>
