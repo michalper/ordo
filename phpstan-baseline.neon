@@ -526,6 +526,12 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
+			path: Controller/Adminhtml/ReorderCycle/BuildCart.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
 			path: Controller/Adminhtml/ReorderCycle/SendReminder.php
 
 		-

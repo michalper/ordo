@@ -36,6 +36,15 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **One-click "Build Cart" action on the Reorder Cycles grid**, closing the other half of the
+  commerce-features ROADMAP.md gap "Send Reminder Now" only partly closed — an admin can now
+  actually start an order for a detected reorder cycle, not just nudge the customer by email.
+  New `Model\ReorderCycle\ReorderCartBuilder` reuses Magento's own admin order-creation machinery
+  (`Backend\Model\Session\Quote` + `Sales\Model\AdminOrder\Create`) — the exact same session-backed
+  quote a merchant building an order by hand already goes through — rather than inventing a
+  parallel cart-building path: sets the customer and their own store on that shared admin session,
+  adds the reorder cycle's product, then redirects straight into the real "Create New Order"
+  screen with the cart already populated.
 - **Client-side rate limiting for outbound Twilio/Meta Graph API/Web Push calls.** Every send used
   to be one unbatched HTTP call with zero regard for the provider's own documented rate limit —
   a campaign or cron (`Cron\SendWinBackEmails` and friends already loop over a whole audience

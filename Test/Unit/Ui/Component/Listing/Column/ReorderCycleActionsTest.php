@@ -35,10 +35,19 @@ class ReorderCycleActionsTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testPrepareDataSourceAddsSendReminderLinkForEachRow(): void
     {
-        $urlBuilder = $this->createMock(UrlInterface::class);
-        $urlBuilder->expects(self::once())->method('getUrl')
-            ->with('ordo/reordercycle/sendreminder', ['entity_id' => 5])
-            ->willReturn('https://example.com/admin/ordo/reordercycle/sendreminder/entity_id/5/');
+        $urlBuilder = $this->createStub(UrlInterface::class);
+        $urlBuilder->method('getUrl')->willReturnMap([
+            [
+                'ordo/reordercycle/sendreminder',
+                ['entity_id' => 5],
+                'https://example.com/admin/ordo/reordercycle/sendreminder/entity_id/5/',
+            ],
+            [
+                'ordo/reordercycle/buildcart',
+                ['entity_id' => 5],
+                'https://example.com/admin/ordo/reordercycle/buildcart/entity_id/5/',
+            ],
+        ]);
 
         $column = new ReorderCycleActions($this->makeContext(), $this->createStub(UiComponentFactory::class), $urlBuilder);
         $column->setData('name', 'actions');
@@ -53,5 +62,10 @@ class ReorderCycleActionsTest extends TestCase
             $actions['send_reminder']['href']
         );
         self::assertTrue($actions['send_reminder']['post']);
+        self::assertSame(
+            'https://example.com/admin/ordo/reordercycle/buildcart/entity_id/5/',
+            $actions['build_cart']['href']
+        );
+        self::assertTrue($actions['build_cart']['post']);
     }
 }
