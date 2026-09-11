@@ -5,6 +5,17 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **SMS/WhatsApp delivery-status webhooks could regress an already-final message status on a
+  redelivered event.** `Controller\Email\StatusCallback` already guarded against this (a
+  redelivered SendGrid `delivered` event can't downgrade a message already marked
+  bounced/failed/opted-out), but `Controller\Sms\StatusCallback` (Twilio) and
+  `Controller\WhatsApp\Webhook` (Meta) applied every incoming status unconditionally — both
+  providers redeliver webhooks at-least-once, so both channels were exposed to the same bug.
+  Extracted the shared rank table into `Model\MessageLog\StatusDowngradeGuard` and wired it into
+  all three controllers.
+
 ### Added
 
 - **Setup Guide — a first-run checklist**, closing the admin-platform ROADMAP.md "no setup

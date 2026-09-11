@@ -10,6 +10,7 @@ use Magento\Framework\Controller\Result\RawFactory;
 use Ordo\Automation\Controller\WhatsApp\Webhook;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\MessageLog;
+use Ordo\Automation\Model\MessageLog\StatusDowngradeGuard;
 use Ordo\Automation\Model\ResourceModel\MessageLog as MessageLogResource;
 use Ordo\Automation\Model\ResourceModel\MessageLog\Collection as MessageLogCollection;
 use Ordo\Automation\Model\ResourceModel\MessageLog\CollectionFactory as MessageLogCollectionFactory;
@@ -79,6 +80,7 @@ class WebhookTest extends AbstractFrontendActionTestCase
             $this->messageLogResource,
             $this->whatsAppTemplateCollectionFactory,
             $this->whatsAppTemplateResource,
+            new StatusDowngradeGuard(),
             $this->logger
         );
     }
@@ -270,6 +272,40 @@ class WebhookTest extends AbstractFrontendActionTestCase
 
         self::assertSame(MessageLog::STATUS_FAILED, $log->getStatus());
         self::assertSame('131047', $log->getErrorCode());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPostWithRedeliveredEarlierStatusDoesNotRegressAnAlreadyFinalLogRow(): void
+    {
+        $controller = $this->makeController();
+        $rawBody = json_encode([
+            'entry' => [[
+                'changes' => [[
+                    'value' => [
+                        'statuses' => [
+                            ['id' => 'wamid.123', 'status' => 'sent'],
+                        ],
+                    ],
+                ]],
+            ]],
+        ]);
+        $this->request->method('isGet')->willReturn(false);
+        $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
+        $this->request->method('getContent')->willReturn($rawBody);
+
+        $log = $this->makeMessageLog(7);
+        $log->setStatus(MessageLog::STATUS_FAILED);
+        $collection = $this->createStub(MessageLogCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getFirstItem')->willReturn($log);
+        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+
+        $this->messageLogResource->expects(self::never())->method('save');
+        $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
+
+        $controller->execute();
+
+        self::assertSame(MessageLog::STATUS_FAILED, $log->getStatus());
     }
 
     #[AllowMockObjectsWithoutExpectations]

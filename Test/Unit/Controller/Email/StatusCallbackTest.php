@@ -11,6 +11,7 @@ use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Email\SendGridSignatureValidator;
 use Ordo\Automation\Model\MessageLog;
+use Ordo\Automation\Model\MessageLog\StatusDowngradeGuard;
 use Ordo\Automation\Model\MessageLogEventWriter;
 use Ordo\Automation\Model\ResourceModel\MessageLog as MessageLogResource;
 use Ordo\Automation\Model\ResourceModel\MessageLog\Collection as MessageLogCollection;
@@ -62,6 +63,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
             $this->messageLogResource,
             $this->messageLogEventWriter,
             $this->consentManager,
+            new StatusDowngradeGuard(),
             $this->logger
         );
     }
