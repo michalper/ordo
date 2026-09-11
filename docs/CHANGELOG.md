@@ -15,8 +15,18 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   (as opposed to a segment) had to hand-type `{"segment_id": "3"}`-shaped JSON for any of these
   four, with the JSON textarea silently becoming `{}` on a typo. `nps_score_at_least` needed no
   new field — it reuses the existing "threshold" input `score_at_least` already has.
+- **Mass actions on 5 more grids.** AdAudience, ContentBlock, FreeGiftOffer, and ScoreRule get
+  the same Enable/Disable/Delete mass actions Campaign and Segment already have; WhatsAppTemplate
+  gets mass-delete only (it has no plain "enabled" toggle to mass-set — see
+  `Controller\Adminhtml\WhatsAppTemplate\MassDelete`'s own docblock). All five grids' own
+  `selectionsColumn` checkboxes previously did nothing.
 
 ### Changed
+
+- **`Model\Sms\TwilioSmsSender` now reuses one `Twilio\Rest\Client` instance** across `send()`
+  calls instead of constructing a new one every time, rebuilding only if the API key/secret
+  actually changed since the last call (credential rotation) — matters most for the long-lived
+  queue consumer process (see AGENTS.md), which can send many messages without ever restarting.
 
 - **Unified `ConditionGroupEvaluator`/`SegmentMemberResolver`'s duplicated AND/OR/nested-group
   tree-walk**, closing the campaign engine's remaining "second, independent implementation" gap

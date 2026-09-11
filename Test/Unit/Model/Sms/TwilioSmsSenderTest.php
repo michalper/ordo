@@ -7,6 +7,7 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Sms\CallbackUrlBuilder;
 use Ordo\Automation\Model\Sms\OptedOutException;
 use Ordo\Automation\Model\Sms\TwilioSmsSender;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Twilio\AuthStrategy\AuthStrategy;
@@ -187,6 +188,77 @@ class TwilioSmsSenderTest extends TestCase
         $method = new \ReflectionMethod($sender, 'makeHttpClient');
 
         self::assertNull($method->invoke($sender));
+    }
+
+    /**
+     * @see \Ordo\Automation\Model\Sms\TwilioSmsSender::getClient() - makeHttpClient() (and, in
+     * production, the whole Twilio\Rest\Client construction) is only meant to happen once per
+     * distinct credential set, not once per send().
+     */
+    private function makeCountingSenderWithFakeHttpClient(TwilioHttpClient $httpClient, array &$makeHttpClientCalls): TwilioSmsSender
+    {
+        return new class ($this->config, $this->callbackUrlBuilder, $this->logger, $httpClient, $makeHttpClientCalls) extends TwilioSmsSender {
+            public function __construct(
+                Config $config,
+                CallbackUrlBuilder $callbackUrlBuilder,
+                LoggerInterface $logger,
+                private readonly TwilioHttpClient $httpClient,
+                private array &$makeHttpClientCalls
+            ) {
+                parent::__construct($config, $callbackUrlBuilder, $logger);
+            }
+
+            protected function makeHttpClient(): TwilioHttpClient
+            {
+                $this->makeHttpClientCalls[] = true;
+
+                return $this->httpClient;
+            }
+        };
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testClientIsBuiltOnceAndReusedAcrossMultipleSendsWithTheSameCredentials(): void
+    {
+        $captured = [];
+        $httpClient = $this->makeFakeHttpClient(201, ['sid' => 'SM123abc', 'status' => 'queued'], $captured);
+        $calls = [];
+        $sender = $this->makeCountingSenderWithFakeHttpClient($httpClient, $calls);
+
+        $sender->send('+15551234567', 'first');
+        $sender->send('+15557654321', 'second');
+
+        self::assertCount(1, $calls);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testClientIsRebuiltWhenTheApiKeySecretChanges(): void
+    {
+        // Simulate a rotated API key secret between two sends on the SAME sender instance (e.g.
+        // an admin updated the Twilio config while the long-lived queue consumer process, see
+        // AGENTS.md, kept running) by having the stub return a different secret on each call.
+        // A plain closure with an explicit by-reference `use` is required here, NOT an arrow
+        // function - `fn() => $secret` captures $secret BY VALUE at creation time, so mutating
+        // the outer $secret afterward would silently have no effect on what the stub returns.
+        $secret = self::API_KEY_SECRET;
+        $this->config = $this->createStub(Config::class);
+        $this->config->method('getTwilioAccountSid')->willReturn(self::ACCOUNT_SID);
+        $this->config->method('getTwilioApiKeySid')->willReturn(self::API_KEY_SID);
+        $this->config->method('getTwilioApiKeySecret')->willReturnCallback(function () use (&$secret) {
+            return $secret;
+        });
+        $this->config->method('getTwilioFromNumber')->willReturn(self::FROM_NUMBER);
+
+        $captured = [];
+        $httpClient = $this->makeFakeHttpClient(201, ['sid' => 'SM123abc', 'status' => 'queued'], $captured);
+        $calls = [];
+        $sender = $this->makeCountingSenderWithFakeHttpClient($httpClient, $calls);
+
+        $sender->send('+15551234567', 'first');
+        $secret = 'rotated-secret';
+        $sender->send('+15551234567', 'second');
+
+        self::assertCount(2, $calls);
     }
 
     public function testOtherRestErrorLogsAndThrowsRuntimeException(): void
