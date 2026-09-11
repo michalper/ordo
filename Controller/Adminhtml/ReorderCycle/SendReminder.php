@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Controller\Adminhtml\ReorderCycle;
 
-use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\App\Action\HttpPostActionInterface;
@@ -19,19 +18,16 @@ use Ordo\Automation\Model\ResourceModel\ReorderCycle as ReorderCycleResource;
  * sibling RecalculateNow, POST (not GET) since this one has a real side effect (an email sent to
  * a customer), unlike a read-only recalculation.
  */
-class SendReminder extends Action implements HttpPostActionInterface
+class SendReminder extends AbstractReorderCycleAction implements HttpPostActionInterface
 {
-    // Same resource Controller\Adminhtml\ReorderCycle\Index already gates on.
-    public const ADMIN_RESOURCE = 'Ordo_Automation::reorder_cycle';
-
     public function __construct(
         Context $context,
-        private readonly ReorderCycleFactory $reorderCycleFactory,
-        private readonly ReorderCycleResource $reorderCycleResource,
+        ReorderCycleFactory $reorderCycleFactory,
+        ReorderCycleResource $reorderCycleResource,
         private readonly CustomerRepositoryInterface $customerRepository,
         private readonly ReorderReminderSender $reminderSender
     ) {
-        parent::__construct($context);
+        parent::__construct($context, $reorderCycleFactory, $reorderCycleResource);
     }
 
     public function execute()
@@ -39,17 +35,8 @@ class SendReminder extends Action implements HttpPostActionInterface
         $resultRedirect = $this->resultRedirectFactory->create();
         $resultRedirect->setPath('ordo/reordercycle/index');
 
-        $entityId = (int) $this->getRequest()->getParam('entity_id');
-        if (!$entityId) {
-            $this->messageManager->addErrorMessage(__('Missing reorder cycle id.'));
-            return $resultRedirect;
-        }
-
-        $cycle = $this->reorderCycleFactory->create();
-        $this->reorderCycleResource->load($cycle, $entityId);
-
-        if (!$cycle->getEntityId()) {
-            $this->messageManager->addErrorMessage(__('That reorder cycle no longer exists.'));
+        $cycle = $this->loadCycleOrFail();
+        if (!$cycle instanceof \Ordo\Automation\Model\ReorderCycle) {
             return $resultRedirect;
         }
 
