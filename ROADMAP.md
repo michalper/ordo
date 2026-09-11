@@ -45,8 +45,8 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 ### Campaign engine (`Model/CampaignDispatcher.php`, `Model/Queue/*`, Flow canvas)
 
 - Flow canvas UX gaps that would frustrate daily use: no undo/redo, no node duplication/copy-paste,
-  no inline "send test" before saving an action, no search/filter across the ~20+ condition/action
-  types in the palette (`view/adminhtml/web/js/campaign-flow-editor.js`).
+  no inline "send test" before saving an action (palette search/filter now exists — see
+  docs/CHANGELOG.md).
 - `Model\Segment\SegmentMemberResolver`'s own, separate (set-level, `int[]`-returning)
   reimplementation of the same AND/OR/nested-group-walk shape `Model\Condition\ConditionGroupEvaluator`
   already covers for the per-customer boolean case — a bigger unification question than that one

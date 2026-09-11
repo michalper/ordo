@@ -7,6 +7,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Flow canvas palette search/filter**, closing the first of the campaign-engine ROADMAP.md
+  "Flow canvas UX" gaps — with ~20+ condition/action types across the three palette groups,
+  scanning past everything that doesn't match got tedious. A new search input above the palette
+  (`view/adminhtml/templates/campaign/flow.phtml`) filters items by label or raw type
+  (case-insensitive substring match, `paletteItemMatchesQuery()`), auto-opening a `<details>`
+  group that has a hit and hiding one that doesn't; clearing the query restores everything.
+  Undo/redo, node duplication, and inline "send test" (building on the Template Test Send
+  feature) remain open — see ROADMAP.md.
 - **Campaign dispatch dead letters + persistent retry for failed scheduled-action resumes**,
   closing the campaign-engine ROADMAP.md gap where `CampaignDispatchConsumer` silently dropped
   anything it couldn't process and `Cron\RunScheduledCampaignActions` left a failed resume

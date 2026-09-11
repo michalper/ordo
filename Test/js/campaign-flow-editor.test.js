@@ -59,6 +59,26 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor', function () {
         assert.deepEqual(initCampaignFlowEditor.findDisconnectedNodeIds({ 1: {}, 2: {} }, groups, 'A'), []);
     });
 
+    QUnit.test('paletteItemMatchesQuery() matches on label substring, case-insensitively', function (assert) {
+        const initCampaignFlowEditor = loadModule(MODULE_PATH);
+
+        assert.true(initCampaignFlowEditor.paletteItemMatchesQuery('Order total at least', 'order_total_gte', 'TOTAL'));
+        assert.false(initCampaignFlowEditor.paletteItemMatchesQuery('Order total at least', 'order_total_gte', 'zzz'));
+    });
+
+    QUnit.test('paletteItemMatchesQuery() matches on the raw type when the label does not', function (assert) {
+        const initCampaignFlowEditor = loadModule(MODULE_PATH);
+
+        assert.true(initCampaignFlowEditor.paletteItemMatchesQuery('Order total at least', 'order_total_gte', 'gte'));
+    });
+
+    QUnit.test('paletteItemMatchesQuery() treats a blank or whitespace-only query as matching everything', function (assert) {
+        const initCampaignFlowEditor = loadModule(MODULE_PATH);
+
+        assert.true(initCampaignFlowEditor.paletteItemMatchesQuery('Order total at least', 'order_total_gte', ''));
+        assert.true(initCampaignFlowEditor.paletteItemMatchesQuery('Order total at least', 'order_total_gte', '   '));
+    });
+
     QUnit.test('cloneSplitVariant() fills in defaults for a bare/malformed raw entry', function (assert) {
         const initCampaignFlowEditor = loadModule(MODULE_PATH);
 
