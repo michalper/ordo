@@ -29,11 +29,17 @@ $segmentNavDesc = __(
             <div class="ordo-stat-value"><?= $escaper->escapeHtml((string) $viewModel->getFreeGiftOfferCount()) ?></div>
             <div class="ordo-stat-label"><?= $escaper->escapeHtml(__('Free gift offers')) ?></div>
         </div>
-        <a class="ordo-stat-card ordo-stat-card-link" href="<?= $escaper->escapeUrl($block->getUrl('ordo/orderapproval/index')) ?>">
+        <a
+            class="ordo-stat-card ordo-stat-card-link"
+            href="<?= $escaper->escapeUrl($block->getUrl('ordo/orderapproval/index')) ?>"
+        >
             <div class="ordo-stat-value"><?= $escaper->escapeHtml((string) $viewModel->getStuckApprovalCount()) ?></div>
             <div class="ordo-stat-label"><?= $escaper->escapeHtml(__('Order approvals stuck')) ?></div>
         </a>
-        <a class="ordo-stat-card ordo-stat-card-link" href="<?= $escaper->escapeUrl($block->getUrl('ordo/cronrunlog/index')) ?>">
+        <a
+            class="ordo-stat-card ordo-stat-card-link"
+            href="<?= $escaper->escapeUrl($block->getUrl('ordo/cronrunlog/index')) ?>"
+        >
             <div class="ordo-stat-value"><?= $escaper->escapeHtml((string) $viewModel->getFailedCronCount()) ?></div>
             <div class="ordo-stat-label"><?= $escaper->escapeHtml(__('Crons failed (last 24h)')) ?></div>
         </a>
