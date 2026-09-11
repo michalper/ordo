@@ -36,6 +36,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Manual "Send Reminder Now" action on the Reorder Cycles grid**, closing half of the
+  commerce-features ROADMAP.md gap where a reorder cycle's reminder could only ever fire from
+  `Cron\SendReorderReminders`'s own lead-days/once-per-day schedule. New
+  `Model\ReorderCycle\ReorderReminderSender` reuses the same collaborators the cron already does
+  (template, `ordo_reorder_reminder_log` claim-before-send bookkeeping, consent gate,
+  `TriggerOutcomeLogger` entry) so a manual send is indistinguishable from a cron-sent one in any
+  report reading those tables afterward, and still writes the log row so the cron doesn't also
+  send a second reminder later the same day. Still open: a one-click "build reorder cart" action.
 - **Dedicated fields for the 4 campaign condition types that only ever accepted raw JSON.**
   `in_segment`/`not_in_segment` (segment picker), `loyalty_tier_at_least` (tier select), and
   `event_occurred` (event/SKU/within-days) now have the same dedicated, labeled fields in both

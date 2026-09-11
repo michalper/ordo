@@ -73,8 +73,8 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 *(the "Free Gift never applies to a cart" and "guest checkout bypasses approval" items are listed
 as bugs above, not repeated here)*
 
-- Reorder Cycle is detection-only — `Cron/CalculateReorderCycle.php` computes `next_expected_date`
-  but there's no one-click "build reorder cart" action and no manual per-customer reminder trigger.
+- No one-click "build reorder cart" action for a detected reorder cycle (manual per-customer
+  reminder trigger now exists — see docs/CHANGELOG.md).
 - Product feed is still single-format (Google RSS only) — multi-store and health/history are now
   covered (see docs/CHANGELOG.md). A second feed format (beyond Google Merchant's RSS+g: namespace)
   is a bigger, separate abstraction.
