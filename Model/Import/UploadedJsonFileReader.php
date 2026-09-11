@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Model\Import;
 
 use Magento\Framework\App\RequestInterface;
+use Magento\Framework\Filesystem\Driver\File;
 
 /**
  * Shared "read an uploaded JSON file from this POST request" step for
@@ -18,6 +19,11 @@ use Magento\Framework\App\RequestInterface;
  */
 class UploadedJsonFileReader
 {
+    public function __construct(
+        private readonly File $fileDriver
+    ) {
+    }
+
     /**
      * @return array<string, mixed>
      * @throws \InvalidArgumentException no file was posted, the upload itself failed, or its
@@ -37,9 +43,13 @@ class UploadedJsonFileReader
             throw new \InvalidArgumentException('Choose a file to import.');
         }
 
-        $contents = file_get_contents($tmpName);
-        $decoded = $contents !== false ? json_decode($contents, true) : null;
+        try {
+            $contents = $this->fileDriver->fileGetContents($tmpName);
+        } catch (\Exception) {
+            throw new \InvalidArgumentException('That file is not valid JSON.');
+        }
 
+        $decoded = json_decode($contents, true);
         if (!is_array($decoded)) {
             throw new \InvalidArgumentException('That file is not valid JSON.');
         }

@@ -15,16 +15,6 @@ use Magento\Backend\Block\Template;
  */
 class Form extends Template
 {
-    /**
-     * @param array<string, mixed> $data
-     */
-    public function __construct(
-        Template\Context $context,
-        array $data = []
-    ) {
-        parent::__construct($context, $data);
-    }
-
     public function getImportUrl(): string
     {
         return $this->getUrl($this->stringData('import_url_path'));

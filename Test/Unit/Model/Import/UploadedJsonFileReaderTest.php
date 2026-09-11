@@ -5,6 +5,7 @@ namespace Ordo\Automation\Test\Unit\Model\Import;
 
 use Magento\Framework\App\Request\Http;
 use Magento\Framework\App\RequestInterface;
+use Magento\Framework\Filesystem\Driver\File;
 use Ordo\Automation\Model\Import\UploadedJsonFileReader;
 use PHPUnit\Framework\TestCase;
 
@@ -14,7 +15,7 @@ class UploadedJsonFileReaderTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->reader = new UploadedJsonFileReader();
+        $this->reader = new UploadedJsonFileReader(new File());
     }
 
     private function makeTmpFile(string $contents): string

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Segment;
 
+use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\Campaign\ConditionPool;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition as SegmentConditionResource;
@@ -89,7 +90,7 @@ class SegmentImporter
             }
 
             $type = $row['type'];
-            if ($type !== 'group' && $this->conditionPool->get($type) === null) {
+            if ($type !== 'group' && !$this->conditionPool->get($type) instanceof ConditionInterface) {
                 continue;
             }
 

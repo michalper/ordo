@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Campaign;
 
+use Ordo\Automation\Api\Campaign\ActionInterface;
+use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\CampaignActionFactory;
 use Ordo\Automation\Model\CampaignConditionFactory;
@@ -130,7 +132,7 @@ class CampaignImporter
             }
 
             $type = $row['type'];
-            if ($type !== 'group' && $this->conditionPool->get($type) === null) {
+            if ($type !== 'group' && !$this->conditionPool->get($type) instanceof ConditionInterface) {
                 continue;
             }
 
@@ -152,7 +154,7 @@ class CampaignImporter
         $sortOrder = 0;
         foreach ($actionRows as $row) {
             if (!is_array($row) || !isset($row['type']) || !is_string($row['type'])
-                || $this->actionPool->get($row['type']) === null
+                || !$this->actionPool->get($row['type']) instanceof ActionInterface
             ) {
                 continue;
             }
