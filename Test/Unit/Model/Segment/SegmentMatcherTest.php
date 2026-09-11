@@ -5,17 +5,19 @@ namespace Ordo\Automation\Test\Unit\Model\Segment;
 
 use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\Campaign\ConditionPool;
+use Ordo\Automation\Model\Condition\BooleanGroupCombineStrategy;
 use Ordo\Automation\Model\Condition\ConditionGroupEvaluator;
+use Ordo\Automation\Model\Condition\GroupWalker;
+use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\Collection as SegmentConditionCollection;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\CollectionFactory as SegmentConditionCollectionFactory;
-use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\Segment;
 use Ordo\Automation\Model\Segment\SegmentMatcher;
 use Ordo\Automation\Model\SegmentCondition;
 use Ordo\Automation\Model\SegmentFactory;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class SegmentMatcherTest extends TestCase
 {
@@ -48,7 +50,12 @@ class SegmentMatcherTest extends TestCase
 
         $this->matcher = new SegmentMatcher(
             $this->collectionFactory,
-            new ConditionGroupEvaluator($this->conditionPool, $this->logger),
+            new ConditionGroupEvaluator(
+                $this->conditionPool,
+                $this->logger,
+                new GroupWalker(),
+                new BooleanGroupCombineStrategy()
+            ),
             $this->segmentFactory,
             $this->segmentResource
         );

@@ -18,7 +18,9 @@ use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\CampaignScheduledAction;
 use Ordo\Automation\Model\CampaignScheduledActionFactory;
 use Ordo\Automation\Model\CampaignTrigger;
+use Ordo\Automation\Model\Condition\BooleanGroupCombineStrategy;
 use Ordo\Automation\Model\Condition\ConditionGroupEvaluator;
+use Ordo\Automation\Model\Condition\GroupWalker;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\Collection as ActionCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Collection as CampaignCollection;
@@ -28,9 +30,9 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as 
 use Ordo\Automation\Model\ResourceModel\Campaign\ScheduledAction as CampaignScheduledActionResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as TriggerCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class CampaignDispatcherTest extends TestCase
 {
@@ -90,7 +92,12 @@ class CampaignDispatcherTest extends TestCase
             $this->campaignActionFactory,
             $this->campaignScheduledActionFactory,
             $this->campaignScheduledActionResource,
-            new ConditionGroupEvaluator($this->conditionPool, $this->logger),
+            new ConditionGroupEvaluator(
+                $this->conditionPool,
+                $this->logger,
+                new GroupWalker(),
+                new BooleanGroupCombineStrategy()
+            ),
             $this->actionPool,
             $this->splitVariantSelector,
             $this->campaignEntryGuard,
