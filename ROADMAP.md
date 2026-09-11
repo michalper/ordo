@@ -47,9 +47,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 - Flow canvas UX gaps that would frustrate daily use: no undo/redo, no node duplication/copy-paste,
   no inline "send test" before saving an action, no search/filter across the ~20+ condition/action
   types in the palette (`view/adminhtml/web/js/campaign-flow-editor.js`).
-- No dead-letter/retry policy for the dispatch queue — `CampaignDispatchConsumer` explicitly drops
-  a malformed message rather than requeuing it, and no alerting surfaces a broken campaign (e.g. a
-  deleted email template ID) beyond a log line.
 - `Model\Segment\SegmentMemberResolver`'s own, separate (set-level, `int[]`-returning)
   reimplementation of the same AND/OR/nested-group-walk shape `Model\Condition\ConditionGroupEvaluator`
   already covers for the per-customer boolean case — a bigger unification question than that one
@@ -67,8 +64,13 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
   concurrency control and no respect for provider rate limits (Twilio, Graph API, push services);
   a campaign matching thousands of customers in one tick will serially hammer the provider API or
   start hitting 429s with no handling for it.
-- `Cron/RunScheduledCampaignActions.php` has no persistent retry queue for a send that fails all 3
-  of `SendRetrier`'s in-process retries — "a row that failed stays failed" across cron ticks.
+- `SendRetrier`'s 3 in-process retries are still the only retry a per-customer send gets — once
+  those are exhausted, `Send{Email,Sms,WhatsApp,Push}` catches the failure, writes an
+  `ordo_message_log` row with `STATUS_FAILED`, and moves on; nothing ever revisits that row. (Note:
+  a *different*, adjacent gap — a `Cron\RunScheduledCampaignActions` resume itself throwing, e.g. a
+  DB error or a deleted campaign — now does get a persisted retry with backoff, see
+  docs/CHANGELOG.md; this is specifically about the per-send retry budget inside a still-successful
+  resume.)
 
 ### Commerce features (free gifts, order approval, reorder cycles, GDPR, product feed, dashboard)
 
