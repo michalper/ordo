@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Cron;
 
 use Ordo\Automation\Cron\RunScheduledCampaignActions;
+use Ordo\Automation\Model\Campaign\ActionRetryQueue;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\CampaignScheduledAction;
 use Ordo\Automation\Model\Cron\CronRunLogger;
@@ -23,6 +24,7 @@ class RunScheduledCampaignActionsTest extends TestCase
     private CampaignScheduledActionResource $resource;
     private CampaignDispatcher $dispatcher;
     private LoggerInterface $logger;
+    private ActionRetryQueue $actionRetryQueue;
 
     protected function setUp(): void
     {
@@ -30,6 +32,7 @@ class RunScheduledCampaignActionsTest extends TestCase
         $this->resource = $this->createMock(CampaignScheduledActionResource::class);
         $this->dispatcher = $this->createMock(CampaignDispatcher::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->actionRetryQueue = $this->createMock(ActionRetryQueue::class);
     }
 
     private function makeCron(): RunScheduledCampaignActions
@@ -39,7 +42,8 @@ class RunScheduledCampaignActionsTest extends TestCase
             $this->resource,
             $this->dispatcher,
             $this->logger,
-            $this->makeCronRunLogger($this->logger)
+            $this->makeCronRunLogger($this->logger),
+            $this->actionRetryQueue
         );
     }
 
@@ -107,6 +111,7 @@ class RunScheduledCampaignActionsTest extends TestCase
         $this->dispatcher->method('resumeScheduledAction')->willThrowException(new \RuntimeException('boom'));
 
         $this->logger->expects(self::once())->method('error');
+        $this->actionRetryQueue->expects(self::once())->method('enqueue')->with(3, 9, [], self::isInstanceOf(\RuntimeException::class));
 
         $this->makeCron()->execute();
     }

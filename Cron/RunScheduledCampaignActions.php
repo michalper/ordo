@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Cron;
 
+use Ordo\Automation\Model\Campaign\ActionRetryQueue;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\CampaignScheduledAction;
 use Ordo\Automation\Model\Cron\CronRunLogger;
@@ -15,8 +16,11 @@ use Psr\Log\LoggerInterface;
  * etc/db_schema.xml's ordo_campaign_scheduled_action comment) once their run_at has passed.
  *
  * executed_at is claimed (set) BEFORE resuming, not after — an action's own execute() could
- * throw, and this must never re-run a row just because it failed once. A row that failed stays
- * marked executed and stays failed; there's no retry queue for this yet (see ROADMAP).
+ * throw, and this must never re-run a row just because it failed once. The scheduled-action row
+ * itself stays marked executed either way; a failure instead enqueues a separate persisted retry
+ * (Model\Campaign\ActionRetryQueue, ordo_campaign_action_retry) that Cron\RetryFailedCampaignActions
+ * re-attempts with backoff, closing the "a row that failed stays failed" gap this class used to
+ * have.
  *
  * The claim itself is a single atomic conditional UPDATE (ResourceModel\Campaign\ScheduledAction
  * ::claim(), "... WHERE executed_at IS NULL"), not a load()-then-save() — two overlapping cron
@@ -39,7 +43,8 @@ class RunScheduledCampaignActions
         private readonly CampaignScheduledActionResource $campaignScheduledActionResource,
         private readonly CampaignDispatcher $campaignDispatcher,
         private readonly LoggerInterface $logger,
-        private readonly CronRunLogger $cronRunLogger
+        private readonly CronRunLogger $cronRunLogger,
+        private readonly ActionRetryQueue $actionRetryQueue
     ) {
     }
 
@@ -97,6 +102,12 @@ class RunScheduledCampaignActions
                     (int) $scheduled->getEntityId(),
                     $scheduled->getCampaignId()
                 ),
+                $e
+            );
+            $this->actionRetryQueue->enqueue(
+                $scheduled->getCampaignId(),
+                $scheduled->getResumeActionId(),
+                $scheduled->getContext(),
                 $e
             );
         }

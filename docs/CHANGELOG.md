@@ -7,6 +7,26 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Campaign dispatch dead letters + persistent retry for failed scheduled-action resumes**,
+  closing the campaign-engine ROADMAP.md gap where `CampaignDispatchConsumer` silently dropped
+  anything it couldn't process and `Cron\RunScheduledCampaignActions` left a failed resume
+  "marked executed and stayed failed" forever.
+  - `CampaignDispatchConsumer::execute()` now catches an undecodable message or an exception
+    `CampaignDispatcher::dispatch()` itself didn't already swallow, and persists it to a new
+    `ordo_campaign_dispatch_dead_letter` table (trigger_event/raw message/error) instead of
+    letting it propagate uncaught and vanish with only a framework-level error log. Nothing
+    auto-reprocesses these yet — they exist so a broken dispatch is visible instead of silent.
+  - `Cron\RunScheduledCampaignActions` now enqueues a persisted retry (new `Model\Campaign\
+    ActionRetryQueue`, `ordo_campaign_action_retry` table) the first time a given resume fails,
+    instead of only logging it. New `Cron\RetryFailedCampaignActions` (every 10 minutes)
+    re-attempts due rows with exponential backoff (5min/10min/20min/... capped at 120min),
+    claimed via the same atomic-conditional-UPDATE pattern `ResourceModel\Campaign\
+    ScheduledAction::claim()` already uses, adapted for a row that gets retried more than once.
+    A row still failing after 5 attempts is left in place as a permanent dead letter rather than
+    retried forever. Note: this covers `resumeScheduledAction()` itself throwing (e.g. a DB
+    error) — it does not yet cover a send that exhausts `SendRetrier`'s own 3 in-process
+    retries, since that failure is already caught and logged to `ordo_message_log` before it
+    would ever reach this cron; see ROADMAP.md.
 - **Order approval escalation is now multi-level instead of a flat, single-recipient reminder
   loop.** `Cron/EscalateStalePendingApprovals.php` previously re-reminded the same
   customer-assigned `admin_email` up to a hardcoded `MAX_ESCALATIONS = 3` times and then left the

@@ -11,10 +11,11 @@ jobs — not guessed from memory. Each scenario is marked:
 
 Cross-reference: `ROADMAP.md`'s "Test coverage" section for the standing priority list this feeds.
 
-**Status: every row below is ✅ except one 🔴 (see §10) and seven ⬜ (the frequency-cap structural
-case in §1d, the Segment Overlap page in §2, the WhatsApp Template Body Text preview panel in
-§15, the two Template Test Send rows in §16, and the two Cron Run Log rows in §17 — all
-unit-tested but no MFTF/integration coverage yet).** Re-audit this against `etc/di.xml`/
+**Status: every row below is ✅ except one 🔴 (see §10) and ten ⬜ (the frequency-cap structural
+case and the dispatch dead-letter row in §1d, the `RetryFailedCampaignActions` row in §11, the
+Segment Overlap page in §2, the WhatsApp Template Body Text preview panel in §15, the two
+Template Test Send rows in §16, and the two Cron Run Log rows in §17 — all unit-tested but no
+MFTF/integration coverage yet).** Re-audit this against `etc/di.xml`/
 `Controller/Adminhtml/*`/`etc/events.xml` periodically rather than trusting it at face value — add a row (⬜)
 for anything newly added before considering it done.
 
@@ -104,6 +105,7 @@ cases separately from the type-by-type ones.
 | Campaign deleted — grid no longer lists it, dispatch no longer matches its old triggers                       | ✅ `AdminDeleteCampaignStopsDispatchTest`                   |
 | Unknown/removed condition or action type on a campaign (fails closed, logs, doesn't crash the whole dispatch) | ✅ `AdminCampaignUnknownActionTypeFailsClosedTest`          |
 | Cross-channel frequency cap (`Model\Campaign\FrequencyCapManager`, opt-in, disabled by default) — a customer over the configured per-window contact-volume cap is skipped by `send_email`/`send_sms`/`send_whatsapp`/`send_push` alike and recorded `suppressed` in `ordo_message_log`, not sent | ⬜ unit-tested (`FrequencyCapManagerTest`, each `Send*Test`'s own `...SuppressedWhenFrequencyCapReached` case), no MFTF/integration test against a real multi-channel dispatch yet |
+| `CampaignDispatchConsumer` dead-letters an undecodable message or an uncaught `dispatch()` exception into `ordo_campaign_dispatch_dead_letter` instead of losing it | ⬜ unit-tested (`CampaignDispatchConsumerTest`), no MFTF/integration coverage of a real queue consumer yet |
 
 ## 2. Segments (`Model/Segment.php`, `Controller/Adminhtml/Segment/`)
 
@@ -239,6 +241,7 @@ than retrofitted into an existing section, since neither fits §1-§9's shape.
 | `SendWinBackEmails`          | Emails customers `TagInactiveCustomers` tagged inactive      | ✅ `AdminTagInactiveCustomersAndWinBackEmailTest`                                                                          |
 | `TagInactiveCustomers`       | Tags customers inactive past the configured window           | ✅ `AdminTagInactiveCustomersAndWinBackEmailTest` (same test — the two crons are tightly coupled, see its own description) |
 | `SendAbandonedCartReminders` | Also the source of the `cart_abandoned` trigger (§1a)        | ✅ `AdminSendAbandonedCartReminderAndTriggerTest`                                                                          |
+| `RetryFailedCampaignActions` | Re-attempts an `ordo_campaign_action_retry` row with backoff, deletes it on success, dead-letters it after 5 attempts | ⬜ unit-tested (`RetryFailedCampaignActionsTest`, `ActionRetryQueueTest`), no MFTF yet |
 
 All four crons above only fire once a day (or, for `SendSalesRepDigest`, once a week) at a fixed
 wall-clock time (`etc/crontab.xml`) — no MFTF test can wait that out. `Test/Mftf/Helper/CronScheduleHelper.php`
