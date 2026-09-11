@@ -52,6 +52,33 @@ QUnit.module('Ordo_Automation/js/segment-group-modal', function () {
         assert.strictEqual($wrap.find('textarea').val(), '');
     });
 
+    QUnit.test('renderValueField() shows a fail-closed warning for order_total_gte inside a group', function (assert) {
+        const api = loadModule(MODULE_PATH);
+        const $wrap = global.$('<div></div>');
+
+        api.renderValueField($wrap, 'order_total_gte', { amount: '50' });
+
+        assert.strictEqual($wrap.find('.ordo-group-event-only-warning').length, 1);
+    });
+
+    QUnit.test('renderValueField() shows a fail-closed warning for visitor_tag inside a group', function (assert) {
+        const api = loadModule(MODULE_PATH);
+        const $wrap = global.$('<div></div>');
+
+        api.renderValueField($wrap, 'visitor_tag', { tag: 'vip' });
+
+        assert.strictEqual($wrap.find('.ordo-group-event-only-warning').length, 1);
+    });
+
+    QUnit.test('renderValueField() shows no warning for a type that has an effect inside a segment', function (assert) {
+        const api = loadModule(MODULE_PATH);
+        const $wrap = global.$('<div></div>');
+
+        api.renderValueField($wrap, 'score_at_least', { threshold: '999' });
+
+        assert.strictEqual($wrap.find('.ordo-group-event-only-warning').length, 0);
+    });
+
     QUnit.test('renderValueField() renders a select cloning options from the outer form\'s dedicated select', function (assert) {
         const api = loadModule(
             MODULE_PATH,

@@ -63,9 +63,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 - Group condition editor's JSON fallback (for `in_segment`, `loyalty_tier_at_least`,
   `nps_score_at_least`) silently becomes `{}` on malformed JSON with no validation feedback — a
   non-technical marketer gets a condition that quietly matches nothing.
-- Fail-closed semantics for event-only conditions (`order_total_gte`, `visitor_tag`) used inside a
-  Segment are invisible to the admin — they silently zero out an AND-segment with no UI
-  explanation that these condition types only make sense in Campaign trigger context.
 
 ### Communication channels (Email/SMS/WhatsApp/Push)
 

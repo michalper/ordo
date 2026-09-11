@@ -532,6 +532,19 @@ td:has(> [data-index="group_logic"]) {
     margin-top: 2px;
 }
 
+/*
+ * order_total_gte/visitor_tag inside a nested "group" row - same fail-closed gap
+ * ordo_segment_form.xml's own switcherConfig-driven "event_only_warning" field surfaces for a
+ * top-level row (see that field's own comment), just rendered by JS here since nested group
+ * rows aren't backed by ui-component fields at all.
+ */
+.ordo-group-event-only-warning {
+    color: var(--ordo-muted);
+    font-size: 11px;
+    font-style: italic;
+    margin-top: 4px;
+}
+
 .ordo-group-row-delete {
     background: none;
     border: 1px solid var(--ordo-border);

@@ -39,6 +39,15 @@ define([
     // Model\Segment\SegmentSaveProcessor::DEDICATED_PARAM_FIELDS / ordo_segment_form.xml's own
     // switcherConfig exactly, just expressed as a JS lookup instead of 6 separate declarative
     // fields (a group's own list isn't a declarative dynamicRows at all, see file docblock).
+    /**
+     * SegmentMemberResolver::resolveCondition() returns [] (matches nobody) for these two -
+     * they're per-event-context conditions with no meaning for a standing set-of-customers query,
+     * correct only inside a Campaign's own trigger conditions. Correct but silent otherwise - see
+     * the warning renderValueField() appends below for why a nested "group" row needs the same
+     * notice ordo_segment_form.xml's own switcherConfig already surfaces for a top-level row.
+     */
+    var EVENT_ONLY_TYPES = ['order_total_gte', 'visitor_tag'];
+
     var VALUE_FIELD_BY_TYPE = {
         tag: {key: 'tag', label: 'Tag'},
         order_total_gte: {key: 'amount', label: 'Amount'},
@@ -132,6 +141,15 @@ define([
                 .val(Object.keys(existingParams).length ? JSON.stringify(existingParams) : '')
                 .appendTo($valueWrap);
             $valueWrap.data('valueKey', null);
+        }
+
+        if (EVENT_ONLY_TYPES.indexOf(type) !== -1) {
+            $('<p class="ordo-group-event-only-warning"></p>')
+                .text(
+                    'This condition only has an effect inside a Campaign\'s trigger conditions - used '
+                    + 'inside a Segment, it never matches any customer.'
+                )
+                .appendTo($valueWrap);
         }
     }
 
