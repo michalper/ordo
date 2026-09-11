@@ -18,11 +18,14 @@ use Ordo\Automation\Model\CampaignCondition;
 use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
 use Ordo\Automation\Model\ContentBlock;
+use Ordo\Automation\Model\LoyaltyTierCalculator;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as ConditionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\ContentBlock\CollectionFactory as ContentBlockCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Segment\CollectionFactory as SegmentCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate\CollectionFactory as WhatsAppTemplateCollectionFactory;
+use Ordo\Automation\Model\Segment;
 use Ordo\Automation\Model\WhatsAppTemplate;
 
 /**
@@ -55,6 +58,8 @@ class Flow extends Template
         private readonly TypeLabels $typeLabels,
         private readonly ContentBlockCollectionFactory $contentBlockCollectionFactory,
         private readonly WhatsAppTemplateCollectionFactory $whatsAppTemplateCollectionFactory,
+        private readonly SegmentCollectionFactory $segmentCollectionFactory,
+        private readonly LoyaltyTierCalculator $loyaltyTierCalculator,
         array $data = [],
         ?JsonHelper $jsonHelper = null,
         ?DirectoryHelper $directoryHelper = null
@@ -193,6 +198,57 @@ class Flow extends Template
     }
 
     /**
+     * entity_id => name for every segment — options for the in_segment/not_in_segment
+     * condition's segment_id field. Lists ALL segments, not just enabled ones, same reasoning as
+     * Model\Config\Source\SegmentOptions (which this duplicates rather than reuses - see
+     * getWhatsAppTemplateOptions()'s own docblock for why).
+     *
+     * @return array<int, string>
+     */
+    public function getSegmentOptions(): array
+    {
+        $options = [];
+        foreach ($this->segmentCollectionFactory->create() as $segment) {
+            /** @var Segment $segment */
+            $options[(int) $segment->getEntityId()] = $segment->getName();
+        }
+
+        return $options;
+    }
+
+    /**
+     * tier => human-readable label - options for the loyalty_tier_at_least condition's tier
+     * field. Duplicates Model\Config\Source\LoyaltyTier rather than reusing it, same reasoning
+     * as getWhatsAppTemplateOptions()'s own docblock.
+     *
+     * @return array<string, string>
+     */
+    public function getLoyaltyTierOptions(): array
+    {
+        $options = [];
+        foreach ($this->loyaltyTierCalculator->getAllTiers() as $tier) {
+            $options[$tier] = $this->loyaltyTierCalculator->getTierLabel($tier);
+        }
+
+        return $options;
+    }
+
+    /**
+     * event_type => human-readable label - options for the event_occurred condition's event_type
+     * field. Duplicates Model\Config\Source\EventType rather than reusing it, same reasoning as
+     * getWhatsAppTemplateOptions()'s own docblock.
+     *
+     * @return array<string, string>
+     */
+    public function getEventTypeOptions(): array
+    {
+        return [
+            'cart_add' => (string) __('Added to Cart'),
+            'wishlist_add' => (string) __('Added to Wishlist'),
+        ];
+    }
+
+    /**
      * Which of Save.php's DEDICATED_PARAM_FIELDS applies to each known condition/action type —
      * the same mapping ordo_campaign_form.xml's switcherConfig encodes for the native dynamicRows
      * form, duplicated here (not read from the XML) so the flow canvas can render the same
@@ -234,6 +290,37 @@ class Flow extends Template
                 'order_total_gte' => [['name' => 'amount', 'label' => (string) __('Minimum order total')]],
                 'visitor_tag' => [['name' => 'tag', 'label' => (string) __('Tag')]],
                 'score_at_least' => [['name' => 'threshold', 'label' => (string) __('Minimum score')]],
+                'in_segment' => [
+                    [
+                        'name' => 'segment_id',
+                        'label' => (string) __('Segment'),
+                        'options' => $this->getSegmentOptions(),
+                    ],
+                ],
+                'not_in_segment' => [
+                    [
+                        'name' => 'segment_id',
+                        'label' => (string) __('Segment'),
+                        'options' => $this->getSegmentOptions(),
+                    ],
+                ],
+                'loyalty_tier_at_least' => [
+                    [
+                        'name' => 'tier',
+                        'label' => (string) __('Minimum tier'),
+                        'options' => $this->getLoyaltyTierOptions(),
+                    ],
+                ],
+                'nps_score_at_least' => [['name' => 'threshold', 'label' => (string) __('Minimum NPS score')]],
+                'event_occurred' => [
+                    [
+                        'name' => 'event_type',
+                        'label' => (string) __('Event'),
+                        'options' => $this->getEventTypeOptions(),
+                    ],
+                    ['name' => 'event_key', 'label' => (string) __('SKU (optional)')],
+                    ['name' => 'within_days', 'label' => (string) __('Within days')],
+                ],
             ],
             'action' => [
                 'add_tag' => [['name' => 'tag', 'label' => (string) __('Tag')]],

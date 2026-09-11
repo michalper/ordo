@@ -5,6 +5,17 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- **Dedicated fields for the 4 campaign condition types that only ever accepted raw JSON.**
+  `in_segment`/`not_in_segment` (segment picker), `loyalty_tier_at_least` (tier select), and
+  `event_occurred` (event/SKU/within-days) now have the same dedicated, labeled fields in both
+  `ordo_campaign_form.xml` and the Flow canvas (`Block\Adminhtml\Campaign\Edit\Flow`) that
+  `ordo_segment_form.xml` already had for these types — previously a marketer building a campaign
+  (as opposed to a segment) had to hand-type `{"segment_id": "3"}`-shaped JSON for any of these
+  four, with the JSON textarea silently becoming `{}` on a typo. `nps_score_at_least` needed no
+  new field — it reuses the existing "threshold" input `score_at_least` already has.
+
 ### Changed
 
 - **Unified `ConditionGroupEvaluator`/`SegmentMemberResolver`'s duplicated AND/OR/nested-group
