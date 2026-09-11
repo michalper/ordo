@@ -69,6 +69,15 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **New Order Approvals admin grid**, closing the commerce-features ROADMAP.md gap where the only
+  way to browse/act on a pending order approval was the original decision email or the REST API —
+  an admin who lost that email had no in-backend fallback. New read-only `ordo_order_approval`
+  grid (reusing the existing `Model\ResourceModel\OrderApproval` repository/collection, already
+  built for the REST API); a new `Ui\Component\Listing\Column\OrderApprovalActions` renders the
+  same Approve/Reject links the original email carries for a still-pending row, by delegating to
+  `OrderApprovalManagementInterface::getDecisionLinksById()` — the same service a headless client
+  already uses for this — rather than re-deriving the token URL shape. New dedicated
+  `Ordo_Automation::order_approval` ACL resource.
 - **Campaign and Segment export**, closing half of the admin-platform ROADMAP.md gap where the
   only export capability anywhere in the module was GDPR customer-data export — nothing let a
   merchant back up a campaign/segment definition or move it between environments.
