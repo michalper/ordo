@@ -286,3 +286,65 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor', function () {
         });
     });
 });
+
+/**
+ * testSendChannelForActionType()/buildTestSendPayload() back the inline "Send test" button on
+ * send_email/send_sms/send_whatsapp action nodes - pure top-level helpers, same testing
+ * convention as unionNodeOutputConnections()/paletteItemMatchesQuery() above.
+ */
+QUnit.module('Ordo_Automation/js/campaign-flow-editor inline test-send', function () {
+    QUnit.test('testSendChannelForActionType() maps every testable action type to its channel', function (assert) {
+        const initCampaignFlowEditor = loadModule(MODULE_PATH);
+
+        assert.strictEqual(initCampaignFlowEditor.testSendChannelForActionType('send_email'), 'email');
+        assert.strictEqual(initCampaignFlowEditor.testSendChannelForActionType('send_sms'), 'sms');
+        assert.strictEqual(initCampaignFlowEditor.testSendChannelForActionType('send_whatsapp'), 'whatsapp');
+    });
+
+    QUnit.test('testSendChannelForActionType() returns null for a non-testable/unknown action type', function (assert) {
+        const initCampaignFlowEditor = loadModule(MODULE_PATH);
+
+        assert.strictEqual(initCampaignFlowEditor.testSendChannelForActionType('send_push'), null);
+        assert.strictEqual(initCampaignFlowEditor.testSendChannelForActionType('add_tag'), null);
+        assert.strictEqual(initCampaignFlowEditor.testSendChannelForActionType(''), null);
+    });
+
+    QUnit.test('buildTestSendPayload() builds an email/sms payload from the "message" field', function (assert) {
+        const initCampaignFlowEditor = loadModule(MODULE_PATH);
+
+        assert.deepEqual(
+            initCampaignFlowEditor.buildTestSendPayload('email', 'jan@example.com', { message: 'Hello' }),
+            { channel: 'email', to: 'jan@example.com', message: 'Hello' }
+        );
+        assert.deepEqual(
+            initCampaignFlowEditor.buildTestSendPayload('sms', '+15551234567', { message: 'Hi' }),
+            { channel: 'sms', to: '+15551234567', message: 'Hi' }
+        );
+    });
+
+    QUnit.test('buildTestSendPayload() builds a whatsapp payload from template_id/params, not message', function (assert) {
+        const initCampaignFlowEditor = loadModule(MODULE_PATH);
+
+        assert.deepEqual(
+            initCampaignFlowEditor.buildTestSendPayload(
+                'whatsapp',
+                '+15551234567',
+                { template_id: '3', params: 'John,ORD-1', message: 'ignored' }
+            ),
+            { channel: 'whatsapp', to: '+15551234567', template_id: '3', params: 'John,ORD-1' }
+        );
+    });
+
+    QUnit.test('buildTestSendPayload() defaults missing fields to an empty string', function (assert) {
+        const initCampaignFlowEditor = loadModule(MODULE_PATH);
+
+        assert.deepEqual(
+            initCampaignFlowEditor.buildTestSendPayload('email', 'jan@example.com', {}),
+            { channel: 'email', to: 'jan@example.com', message: '' }
+        );
+        assert.deepEqual(
+            initCampaignFlowEditor.buildTestSendPayload('whatsapp', '+15551234567', {}),
+            { channel: 'whatsapp', to: '+15551234567', template_id: '', params: '' }
+        );
+    });
+});

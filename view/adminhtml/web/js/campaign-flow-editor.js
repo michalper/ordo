@@ -8,6 +8,13 @@
  * it to the SAME provider component the native dynamicRows form already submits through — this
  * module never talks to ordo/campaign/save itself, it only fills in provider.data.conditions/
  * actions before calling the provider's own, unmodified save().
+ *
+ * Also covers the rest of ROADMAP.md's "Flow canvas UX" gap: in-memory undo/redo (Ctrl/Cmd+Z,
+ * Ctrl/Cmd+Shift+Z or +Y, or the toolbar buttons - see the history/pushHistory()/undo()/redo()
+ * block below), per-node duplication (the ⧉ button next to delete - see duplicateNode()), and an
+ * inline "Send test" button on send_email/send_sms/send_whatsapp action nodes that posts to the
+ * same Controller\Adminhtml\TemplateTestSend\Send.php endpoint the standalone Template Test Send
+ * page already uses (see sendInlineTest()).
  */
 /**
  * Union all of one node's outgoing connections into the shared connectivity groups -
@@ -120,6 +127,48 @@ function paletteItemMatchesQuery(label, type, query) {
 
     return (label || '').toLowerCase().includes(trimmed)
         || (type || '').toLowerCase().includes(trimmed);
+}
+
+/**
+ * The action types an inline "Send test" button on a Flow canvas action node can test-send
+ * through - the same three channels Controller\Adminhtml\TemplateTestSend\Send.php supports
+ * (push excluded there too - see that controller's own docblock: there's no "address" a push
+ * notification could test-send to). Maps a node's own action type to the `channel` param that
+ * controller expects.
+ *
+ * @param {String} actionType
+ * @return {String|null}
+ */
+function testSendChannelForActionType(actionType) {
+    var channels = { send_email: 'email', send_sms: 'sms', send_whatsapp: 'whatsapp' };
+
+    return channels[actionType] || null;
+}
+
+/**
+ * Builds the POST body for one inline test-send, from a node's own current field values -
+ * mirrors exactly what Controller\Adminhtml\TemplateTestSend\Send.php reads per channel
+ * (see its sendTestEmail()/sendTestSms()/sendTestWhatsApp()). Pulled out as a pure function (no
+ * DOM/fetch) so the channel-to-payload-shape mapping is independently testable, same reasoning
+ * as paletteItemMatchesQuery() above.
+ *
+ * @param {String} channel 'email' | 'sms' | 'whatsapp'
+ * @param {String} to
+ * @param {Object<String, String>} fieldValues node's own data-field values, e.g. {message: '...'}
+ *   or {template_id: '...', params: '...'}
+ * @return {Object<String, String>}
+ */
+function buildTestSendPayload(channel, to, fieldValues) {
+    var payload = { channel: channel, to: to };
+
+    if (channel === 'whatsapp') {
+        payload.template_id = fieldValues.template_id || '';
+        payload.params = fieldValues.params || '';
+    } else {
+        payload.message = fieldValues.message || '';
+    }
+
+    return payload;
 }
 
 /**
@@ -439,6 +488,95 @@ define([
             }());
 
             /**
+             * In-memory undo/redo history for this page load - a stack of full editor.export()
+             * snapshots plus a pointer, closing the other half of the ROADMAP.md "Flow canvas
+             * UX" gap (node duplication is the other half - see duplicateNode() below). Not
+             * persisted anywhere and unrelated to the campaign's own saved state; it only tracks
+             * in-canvas edits until the page is reloaded, same as a text editor's own undo stack.
+             */
+            var history = [],
+                historyIndex = -1,
+                HISTORY_LIMIT = 50,
+                isRestoringHistory = false,
+                historyDebounceTimer = null;
+
+            function updateHistoryButtons() {
+                var $wrapper = $(container).closest('.ordo-flow-wrapper');
+
+                $wrapper.find('[data-flow-action="undo"]').prop('disabled', historyIndex <= 0);
+                $wrapper.find('[data-flow-action="redo"]').prop('disabled', historyIndex >= history.length - 1);
+            }
+
+            /**
+             * Pushes the current graph state as a new history entry, discarding any "future"
+             * entries past the current pointer (the same rule every text editor's undo stack
+             * follows: making a new edit after undoing forecloses the redo branch that was
+             * undone away from). A no-op change (snapshot identical to the last one pushed)
+             * is skipped so e.g. clicking into a field and back out without changing it doesn't
+             * burn an undo step.
+             */
+            function pushHistory() {
+                var snapshot;
+
+                if (isRestoringHistory) {
+                    return;
+                }
+
+                snapshot = JSON.stringify(editor.export());
+                if (historyIndex >= 0 && history[historyIndex] === snapshot) {
+                    return;
+                }
+
+                history = history.slice(0, historyIndex + 1);
+                history.push(snapshot);
+                if (history.length > HISTORY_LIMIT) {
+                    history.shift();
+                }
+                historyIndex = history.length - 1;
+                updateHistoryButtons();
+            }
+
+            /**
+             * Debounces rapid successive changes (typing into a field) into a single history
+             * entry per pause, rather than one per keystroke - Drawflow's own structural events
+             * (node added/removed/moved, connection made/broken) are comparatively rare and are
+             * pushed immediately instead (see the editor.on(...) wiring below).
+             */
+            function scheduleHistoryPush() {
+                if (isRestoringHistory) {
+                    return;
+                }
+                clearTimeout(historyDebounceTimer);
+                historyDebounceTimer = setTimeout(pushHistory, 400);
+            }
+
+            function restoreHistorySnapshot(snapshot) {
+                isRestoringHistory = true;
+                editor.import(JSON.parse(snapshot));
+                $(container).find('[data-kind]').each(function () {
+                    bindNode($(this), $(this).attr('data-kind'));
+                });
+                isRestoringHistory = false;
+                updateHistoryButtons();
+            }
+
+            function undo() {
+                if (historyIndex <= 0) {
+                    return;
+                }
+                historyIndex--;
+                restoreHistorySnapshot(history[historyIndex]);
+            }
+
+            function redo() {
+                if (historyIndex >= history.length - 1) {
+                    return;
+                }
+                historyIndex++;
+                restoreHistorySnapshot(history[historyIndex]);
+            }
+
+            /**
              * @param {String} kind 'condition' | 'action'
              * @param {String} type
              * @return {Array} field descriptors: [{name, label}]
@@ -567,11 +705,24 @@ define([
             }
 
             /**
+             * Shows/hides a node's own "Send test" button per its current type -
+             * testSendChannelForActionType() decides which action types are testable at all
+             * (only send_email/send_sms/send_whatsapp); every other kind/type just hides it.
+             *
+             * @param {jQuery} $node
+             * @param {String} type
+             */
+            function updateTestSendButtonVisibility($node, type) {
+                $node.find('.ordo-flow-test-send').toggle(testSendChannelForActionType(type) !== null);
+            }
+
+            /**
              * @param {jQuery} $node
              * @param {String} kind
              */
             function bindNode($node, kind) {
-                var initialParams = {};
+                var initialParams = {},
+                    initialType = $node.find('.ordo-flow-type-select').val();
 
                 try {
                     initialParams = JSON.parse($node.attr('data-params') || '{}');
@@ -579,10 +730,12 @@ define([
                     initialParams = {};
                 }
 
-                renderFields($node, kind, $node.find('.ordo-flow-type-select').val(), initialParams);
+                renderFields($node, kind, initialType, initialParams);
+                updateTestSendButtonVisibility($node, initialType);
 
                 $node.find('.ordo-flow-type-select').on('change', function () {
                     renderFields($node, kind, $(this).val(), {});
+                    updateTestSendButtonVisibility($node, $(this).val());
                 });
             }
 
@@ -595,6 +748,25 @@ define([
 
                 bindNode($node, $node.attr('data-kind'));
             });
+
+            // Structural edits push a history entry right away; field edits are debounced (see
+            // scheduleHistoryPush()'s own docblock) since Drawflow's own events only cover
+            // structure (nodes/connections), never a plain <input>/<select> value change.
+            editor.on('nodeCreated', scheduleHistoryPush);
+            editor.on('nodeRemoved', scheduleHistoryPush);
+            editor.on('nodeMoved', scheduleHistoryPush);
+            editor.on('connectionCreated', scheduleHistoryPush);
+            editor.on('connectionRemoved', scheduleHistoryPush);
+            $(container).on(
+                'change input',
+                '.ordo-flow-field-input, .ordo-flow-type-select, .ordo-flow-params-textarea',
+                scheduleHistoryPush
+            );
+
+            // Baseline entry so the very first undo has something to go back to, and so
+            // updateHistoryButtons() starts both buttons correctly disabled (nothing to undo/redo
+            // yet) rather than leaving them enabled with an empty history array.
+            pushHistory();
 
             var KIND_LABELS = { trigger: 'Trigger', condition: 'Condition', action: 'Action' },
                 KIND_TYPE_LISTS = { trigger: 'triggers', condition: 'conditions', action: 'actions' };
@@ -623,6 +795,16 @@ define([
                     delayHtml = kind === 'action'
                         ? '<label class="ordo-flow-field-label">Delay (minutes)</label>' +
                             '<input type="text" class="ordo-flow-field-input" data-field="delay_minutes" value="0">'
+                        : '',
+                    // Only action nodes can ever be test-sent (testSendChannelForActionType()
+                    // decides per-type whether this particular action is one of the three
+                    // testable channels) - rendered unconditionally here and shown/hidden per the
+                    // node's current type by updateTestSendButtonVisibility(), same two-step
+                    // pattern renderFields() itself uses for per-type markup.
+                    testSendHtml = kind === 'action'
+                        ? '<button type="button" class="ordo-flow-test-send" title="' +
+                            escapeHtml('Send a test message using this node’s current fields') +
+                            '">' + escapeHtml('Send test') + '</button>'
                         : '';
 
                 // `data-kind` (not a class) is what collectRows() below matches on — Drawflow
@@ -634,6 +816,8 @@ define([
                 // renderFields() just leaves it empty for a trigger type with no params.
                 return '<div class="ordo-flow-node" data-kind="' + kind + '" data-params="{}">' +
                     '<div class="ordo-flow-node-head"><span>' + label + '</span>' +
+                    testSendHtml +
+                    '<button type="button" class="ordo-flow-duplicate" title="Duplicate">&#10697;</button>' +
                     '<button type="button" class="ordo-flow-delete" title="Remove">&times;</button></div>' +
                     '<select class="ordo-flow-type-select">' + optionsHtml + '</select>' +
                     delayHtml +
@@ -683,6 +867,100 @@ define([
                 bindNode($(container).find('#node-' + nodeId).find('[data-kind]'), kind);
 
                 return nodeId;
+            }
+
+            /**
+             * Duplicates one node: reads its current kind/type plus every one of its own
+             * data-field values (whatever the merchant has typed so far, not just what was last
+             * saved), then adds a brand-new node of the same kind/type slightly offset from the
+             * original and applies those same field values onto it - the same
+             * applyBuildChainNodeFields() helper window.ordoFlowTestHook.buildChain() already
+             * uses to seed a fresh node's fields. Deliberately does not copy the original's
+             * connections - a duplicate starts unwired, same as any node dragged fresh from the
+             * palette, since guessing which of the original's wires the merchant wants repeated
+             * would be as likely to surprise as to help.
+             *
+             * Known limitation: a `variant_list`-typed field (currently only split's own
+             * "variants") owns its own hidden input and never re-reads external programmatic
+             * changes to it (see renderVariantEditor()'s own docblock) - duplicating a split
+             * action carries over every field except its variants, which start empty on the copy.
+             *
+             * @param {String} nodeElId the DOM id, e.g. "node-3"
+             */
+            function duplicateNode(nodeElId) {
+                var $original = $(container).find('#' + nodeElId),
+                    $originalInner = $original.find('[data-kind]'),
+                    kind = $originalInner.attr('data-kind'),
+                    type = $originalInner.find('.ordo-flow-type-select').val(),
+                    bareId = nodeElId.replace(/^node-/, ''),
+                    exportedNode = editor.export().drawflow.Home.data[bareId],
+                    posX = (exportedNode ? exportedNode.pos_x : 0) + 40,
+                    posY = (exportedNode ? exportedNode.pos_y : 0) + 40,
+                    fields = {},
+                    newNodeId;
+
+                if (!kind || !type) {
+                    return;
+                }
+
+                $originalInner.find('[data-field]').each(function () {
+                    fields[$(this).attr('data-field')] = $(this).val();
+                });
+
+                newNodeId = addNode(kind, type, posX, posY);
+                applyBuildChainNodeFields($(container).find('#node-' + newNodeId), fields);
+            }
+
+            /**
+             * Posts one inline test-send to Controller\Adminhtml\TemplateTestSend\Send.php (the
+             * same endpoint/contract the standalone Template Test Send page already uses - see
+             * template-test-send.js's own submit()) and renders the {success, message} result
+             * just under the node that triggered it. Plain fetch(), same idiom as
+             * template-test-send.js/segment-overlap.js elsewhere in this module.
+             *
+             * @param {jQuery} $button
+             * @param {Object<String, String>} payload
+             */
+            function sendInlineTest($button, payload) {
+                var testSendUrl = $(container).closest('.ordo-flow-wrapper').attr('data-flow-test-send-url'),
+                    $node = $button.closest('.ordo-flow-node'),
+                    $result = $node.find('.ordo-flow-test-send-result');
+
+                if (!$result.length) {
+                    $result = $('<div class="ordo-flow-test-send-result"></div>')
+                        .insertAfter($node.find('.ordo-flow-node-head'));
+                }
+
+                $button.prop('disabled', true);
+                $result.hide();
+
+                fetch(testSendUrl, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams(payload).toString()
+                })
+                    .then(function (response) {
+                        return response.ok ? response.json() : null;
+                    })
+                    .then(function (data) {
+                        var success = Boolean(data?.success),
+                            message = data?.message ? data.message : 'The test send failed.';
+
+                        $result.text(message)
+                            .toggleClass('ordo-flow-test-send-result-success', success)
+                            .toggleClass('ordo-flow-test-send-result-error', !success)
+                            .show();
+                    })
+                    .catch(function () {
+                        $result.text('The test send failed.')
+                            .removeClass('ordo-flow-test-send-result-success')
+                            .addClass('ordo-flow-test-send-result-error')
+                            .show();
+                    })
+                    .finally(function () {
+                        $button.prop('disabled', false);
+                    });
             }
 
             /**
@@ -906,6 +1184,46 @@ define([
                 if (nodeId) {
                     editor.removeNodeId(nodeId);
                 }
+            });
+
+            $(container).on('click', '.ordo-flow-duplicate', function () {
+                var nodeEl = $(this).closest('[id^="node-"]'),
+                    nodeId = nodeEl.attr('id');
+
+                if (nodeId) {
+                    duplicateNode(nodeId);
+                }
+            });
+
+            $(container).on('click', '.ordo-flow-test-send', function () {
+                var $button = $(this),
+                    $node = $button.closest('[data-kind]'),
+                    type = $node.find('.ordo-flow-type-select').val(),
+                    channel = testSendChannelForActionType(type),
+                    to,
+                    fieldValues = {};
+
+                if (!channel) {
+                    return;
+                }
+
+                // window.prompt() is deliberately the whole "who to send it to" UI here - this
+                // is a one-off, admin-initiated test send with no persisted state of its own
+                // (unlike the standalone Template Test Send page's own <input>), so a full modal
+                // for one text field would be more chrome than the task warrants.
+                to = window.prompt(channel === 'whatsapp' || channel === 'sms'
+                    ? 'Send a test message to (E.164 phone number, e.g. +15551234567):'
+                    : 'Send a test email to:');
+
+                if (!to) {
+                    return;
+                }
+
+                $node.find('[data-field]').each(function () {
+                    fieldValues[$(this).attr('data-field')] = $(this).val();
+                });
+
+                sendInlineTest($button, buildTestSendPayload(channel, to, fieldValues));
             });
 
             // Palette search: filters items by label/type substring match and auto-opens/hides
@@ -1248,6 +1566,37 @@ define([
                 $wrapper.find('.ordo-flow-error').hide();
             }
 
+            $(container).closest('.ordo-flow-wrapper').on('click', '[data-flow-action="undo"]', function () {
+                undo();
+            });
+
+            $(container).closest('.ordo-flow-wrapper').on('click', '[data-flow-action="redo"]', function () {
+                redo();
+            });
+
+            // Ctrl/Cmd+Z (undo) and Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y (redo) - scoped to keydowns
+            // that originate inside this Flow canvas wrapper (not document-wide), so this never
+            // hijacks a merchant's browser-native undo while editing an unrelated text field
+            // elsewhere on the same admin page.
+            $(document).on('keydown', function (event) {
+                if (!$(event.target).closest('.ordo-flow-wrapper').is($(container).closest('.ordo-flow-wrapper'))) {
+                    return;
+                }
+
+                var isCtrlOrCmd = event.ctrlKey || event.metaKey;
+                if (!isCtrlOrCmd) {
+                    return;
+                }
+
+                if (event.key === 'z' && !event.shiftKey) {
+                    event.preventDefault();
+                    undo();
+                } else if ((event.key === 'z' && event.shiftKey) || event.key === 'y') {
+                    event.preventDefault();
+                    redo();
+                }
+            });
+
             $(container).closest('.ordo-flow-wrapper').on('click', '[data-flow-action="apply"]', function () {
                 var $button = $(this),
                     $wrapper = $button.closest('.ordo-flow-wrapper'),
@@ -1295,6 +1644,8 @@ define([
     initCampaignFlowEditor.buildSplitVariantActionTypeOptionsHtml = buildSplitVariantActionTypeOptionsHtml;
     initCampaignFlowEditor.renderVariantEditor = renderVariantEditor;
     initCampaignFlowEditor.paletteItemMatchesQuery = paletteItemMatchesQuery;
+    initCampaignFlowEditor.testSendChannelForActionType = testSendChannelForActionType;
+    initCampaignFlowEditor.buildTestSendPayload = buildTestSendPayload;
 
     return initCampaignFlowEditor;
 });

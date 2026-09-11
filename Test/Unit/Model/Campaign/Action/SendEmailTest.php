@@ -14,6 +14,7 @@ use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Model\Campaign\Action\SendEmail;
 use Ordo\Automation\Model\Campaign\Action\SendRetrier;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
+use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
@@ -36,6 +37,7 @@ class SendEmailTest extends TestCase
     private MessageIdGenerator $messageIdGenerator;
     private PendingMessageIdHolder&\PHPUnit\Framework\MockObject\MockObject $pendingMessageIdHolder;
     private MessageLogWriter&\PHPUnit\Framework\MockObject\MockObject $messageLogWriter;
+    private MessageSendRetryQueue&\PHPUnit\Framework\MockObject\MockObject $messageSendRetryQueue;
     private LoggerInterface $logger;
     private StoreInterface $store;
 
@@ -55,6 +57,7 @@ class SendEmailTest extends TestCase
         $this->messageIdGenerator->method('generate')->willReturn('abc123@example.com');
         $this->pendingMessageIdHolder = $this->createMock(PendingMessageIdHolder::class);
         $this->messageLogWriter = $this->createMock(MessageLogWriter::class);
+        $this->messageSendRetryQueue = $this->createMock(MessageSendRetryQueue::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->store = $this->createStub(StoreInterface::class);
@@ -76,6 +79,7 @@ class SendEmailTest extends TestCase
             $this->pendingMessageIdHolder,
             $this->messageLogWriter,
             new SendRetrier(1),
+            $this->messageSendRetryQueue,
             $this->logger
         );
     }
@@ -274,8 +278,40 @@ class SendEmailTest extends TestCase
         $this->messageLogWriter->expects(self::once())->method('recordFailed')
             ->with('email', 42, 'jan@example.com');
         $this->messageLogWriter->expects(self::never())->method('recordSent');
+        $this->messageSendRetryQueue->expects(self::once())->method('enqueue')
+            ->with('send_email', self::isArray(), ['template' => 'ordo_campaign_generic'], self::isInstanceOf(\RuntimeException::class));
 
         $context = ['customer_id' => 42];
+        $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
+    }
+
+    /**
+     * Regression test for the persisted-retry fix: Cron\RetryFailedMessageSends sets
+     * MessageSendRetryQueue::RETRY_CONTEXT_FLAG in the context before re-running this action - if
+     * that retry also fails, the exception must propagate (not be swallowed and re-enqueued
+     * again) so the retry cron's own try/catch can apply backoff/dead-letter bookkeeping.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRethrowsOnRetryAttemptInsteadOfEnqueuingAgain(): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getFirstname')->willReturn('Jan');
+        $customer->method('getEmail')->willReturn('jan@example.com');
+        $this->customerRepository->method('getById')->willReturn($customer);
+
+        $this->transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
+        $this->transportBuilder->method('setTemplateOptions')->willReturnSelf();
+        $this->transportBuilder->method('setTemplateVars')->willReturnSelf();
+        $this->transportBuilder->method('setFromByScope')->willReturnSelf();
+        $this->transportBuilder->method('addTo')->willReturnSelf();
+        $this->transportBuilder->method('getTransport')->willThrowException(new \RuntimeException('smtp down'));
+
+        $this->messageSendRetryQueue->expects(self::never())->method('enqueue');
+
+        $context = ['customer_id' => 42, MessageSendRetryQueue::RETRY_CONTEXT_FLAG => true];
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('smtp down');
         $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
     }
 }

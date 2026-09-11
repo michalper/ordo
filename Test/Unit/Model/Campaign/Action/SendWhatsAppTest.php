@@ -12,6 +12,7 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign\Action\SendRetrier;
 use Ordo\Automation\Model\Campaign\Action\SendWhatsApp;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
+use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
@@ -35,6 +36,7 @@ class SendWhatsAppTest extends TestCase
     private ConsentManager $consentManager;
     private QuietHoursGate $quietHoursGate;
     private FrequencyCapGate $frequencyCapGate;
+    private MessageSendRetryQueue&\PHPUnit\Framework\MockObject\MockObject $messageSendRetryQueue;
     private LoggerInterface $logger;
 
     protected function setUp(): void
@@ -52,6 +54,7 @@ class SendWhatsAppTest extends TestCase
         $this->quietHoursGate->method('allows')->willReturn(true);
         $this->frequencyCapGate = $this->createStub(FrequencyCapGate::class);
         $this->frequencyCapGate->method('allows')->willReturn(true);
+        $this->messageSendRetryQueue = $this->createMock(MessageSendRetryQueue::class);
         $this->logger = $this->createMock(LoggerInterface::class);
     }
 
@@ -68,6 +71,7 @@ class SendWhatsAppTest extends TestCase
             $this->quietHoursGate,
             $this->frequencyCapGate,
             new SendRetrier(1),
+            $this->messageSendRetryQueue,
             $this->logger
         );
     }
@@ -315,11 +319,34 @@ class SendWhatsAppTest extends TestCase
         $this->logger->expects(self::once())->method('error');
         $this->messageLogWriter->expects(self::once())->method('recordFailed')
             ->with('whatsapp', 42, '+15551234567');
+        $this->messageSendRetryQueue->expects(self::once())->method('enqueue')
+            ->with('send_whatsapp', self::isArray(), ['template_id' => '3'], self::isInstanceOf(\RuntimeException::class));
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['template_id' => '3']);
 
         self::assertTrue(true, 'execute() must not rethrow');
+    }
+
+    /**
+     * Regression test for the persisted-retry fix: on a retry attempt (MessageSendRetryQueue::
+     * RETRY_CONTEXT_FLAG set), a failure must propagate instead of being swallowed and
+     * re-enqueued again, so Cron\RetryFailedMessageSends can apply backoff/dead-letter
+     * bookkeeping.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRethrowsOnRetryAttemptInsteadOfEnqueuingAgain(): void
+    {
+        $this->stubApprovedTemplate();
+        $this->customerRepository->method('getById')->willReturn($this->customerWithPhone('+15551234567'));
+        $this->whatsAppSender->method('send')->willThrowException(new \RuntimeException('meta api down'));
+        $this->messageSendRetryQueue->expects(self::never())->method('enqueue');
+
+        $context = ['customer_id' => 42, MessageSendRetryQueue::RETRY_CONTEXT_FLAG => true];
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('meta api down');
+        $this->makeAction()->execute($context, ['template_id' => '3']);
     }
 
     /**

@@ -32,6 +32,12 @@ use Throwable;
  * Checks ConsentManager::hasConsent() before sending, same as send_email/send_sms/send_whatsapp.
  * Also checks FrequencyCapGate::allows() right after (opt-in, cross-channel), once per
  * customer before fanning out to their registered subscriptions.
+ *
+ * Deliberately NOT wired into Model\Campaign\MessageSendRetryQueue, unlike
+ * Send{Email,Sms,WhatsApp} - this action fans out to every one of a customer's subscriptions per
+ * execute() call, so a persisted retry that re-runs the whole action would risk re-sending to
+ * subscriptions that already succeeded the first time. A per-subscription retry queue would be
+ * needed to close this gap safely; not attempted here.
  */
 class SendPush implements ActionInterface
 {

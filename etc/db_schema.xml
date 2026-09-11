@@ -325,6 +325,23 @@
             <column name="attempts"/>
         </index>
     </table>
+    <table name="ordo_message_send_retry" resource="default" engine="innodb" comment="A send_email/send_sms/send_whatsapp campaign action whose SendRetrier in-process retries (3 attempts) were all exhausted - previously Send{Email,Sms,WhatsApp} just wrote an ordo_message_log STATUS_FAILED row and moved on, nothing ever revisited it. This is the persisted retry queue for that gap, same shape as ordo_campaign_action_retry: one row per exhausted send, re-attempted with exponential backoff (Model\Campaign\MessageSendRetryQueue) by Cron\RetryFailedMessageSends by simply re-running the whole action (Model\Campaign\ActionPool::get($action_type)->execute()) against the same context+params, until either it succeeds (row deleted) or attempts reaches the configured max, at which point it's left in place as a dead letter for manual investigation. send_push is deliberately excluded - it fans out to every one of a customer's subscriptions per execute() call, so re-running it whole would risk re-sending to subscriptions that already succeeded the first time.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="action_type" nullable="false" length="32" comment="ActionPool key to re-invoke, e.g. send_email/send_sms/send_whatsapp"/>
+        <column xsi:type="text" name="context" nullable="false" comment="JSON-encoded dispatch context, copied at the moment the send's retries were exhausted"/>
+        <column xsi:type="text" name="params" nullable="false" comment="JSON-encoded action params (template/message/etc.), copied at the same moment"/>
+        <column xsi:type="smallint" name="attempts" unsigned="true" nullable="false" default="0" comment="How many times this has been retried so far - a row stops being selected once this reaches Cron\RetryFailedMessageSends::MAX_ATTEMPTS, becoming a permanent dead letter"/>
+        <column xsi:type="text" name="last_error" nullable="true" comment="The most recent failure's exception message"/>
+        <column xsi:type="datetime" name="next_retry_at" nullable="false" comment="Earliest time this row is eligible to be retried again - bumped forward as the claim itself (see ResourceModel\MessageSendRetry::claim()), then corrected to the real backoff delay once the retry's own outcome is known"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="ORDO_MESSAGE_SEND_RETRY_NEXT_RETRY_AT_ATTEMPTS" indexType="btree">
+            <column name="next_retry_at"/>
+            <column name="attempts"/>
+        </index>
+    </table>
     <table name="ordo_campaign_dispatch_dead_letter" resource="default" engine="innodb" comment="A CampaignDispatchConsumer::execute() call that threw an exception it couldn't recover from (malformed message, or an exception CampaignDispatcher::dispatch() itself didn't already swallow internally) - previously this propagated uncaught to the message-queue framework and was lost with only a framework-level error log, no persisted record and no way to inspect what the message actually contained. Append-only, insert-only: nothing in this module currently re-processes these rows automatically, they exist purely so a broken/malformed dispatch is visible instead of silently dropped.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="trigger_event" nullable="true" length="64" comment="The trigger_event the message claimed, if the message could be decoded far enough to read it"/>
@@ -477,6 +494,15 @@
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
+        <!-- Covers DashboardViewModel::getFailedCronCount()'s own filter (level = 'failure' AND
+             created_at >= cutoff) and the Cron Run Log grid's column filters, same shape as
+             ordo_order_approval's ORDO_ORDER_APPROVAL_STATUS_CREATED_AT index - without it this
+             table's full-scan cost grows with every cron run ever logged (~22 crons, several
+             every 5-15 minutes). -->
+        <index referenceId="ORDO_CRON_RUN_LOG_LEVEL_CREATED_AT" indexType="btree">
+            <column name="level"/>
+            <column name="created_at"/>
+        </index>
     </table>
 
     <table name="ordo_customer_consent_log" resource="default" engine="innodb" comment="Append-only audit trail of every Model\ConsentManager::setConsent() call - unlike ordo_customer_consent (which only ever holds the current state, upserted in place), a row here is never updated once written, so who consented/opted out on which channel and when is still answerable after the current state has since changed again.">
