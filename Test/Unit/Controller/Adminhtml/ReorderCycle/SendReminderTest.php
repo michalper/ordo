@@ -26,6 +26,8 @@ class SendReminderTest extends AbstractAdminActionTestCase
 
     protected function setUp(): void
     {
+        parent::setUp();
+
         $this->reorderCycleFactory = $this->createStub(ReorderCycleFactory::class);
         $this->reorderCycleResource = $this->createStub(ReorderCycleResource::class);
         $this->customerRepository = $this->createMock(CustomerRepositoryInterface::class);
