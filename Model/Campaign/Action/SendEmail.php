@@ -10,6 +10,7 @@ use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
+use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
@@ -42,6 +43,7 @@ use Psr\Log\LoggerInterface;
 class SendEmail implements ActionInterface
 {
     private const string CHANNEL = 'email';
+    private const string ACTION_TYPE = 'send_email';
     private const string XML_PATH_EMAIL_SENDER = 'general';
 
     public function __construct(
@@ -56,6 +58,7 @@ class SendEmail implements ActionInterface
         private readonly PendingMessageIdHolder $pendingMessageIdHolder,
         private readonly MessageLogWriter $messageLogWriter,
         private readonly SendRetrier $sendRetrier,
+        private readonly MessageSendRetryQueue $messageSendRetryQueue,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -148,6 +151,15 @@ class SendEmail implements ActionInterface
                 $campaignId,
                 $variant
             );
+
+            // A retry that fails again must be visible to Cron\RetryFailedMessageSends as a
+            // failure (see MessageSendRetryQueue::RETRY_CONTEXT_FLAG's own docblock) - rethrow
+            // instead of enqueuing a second, redundant retry row. Only the original dispatch path
+            // enqueues, so a failed send is never dropped without at least one persisted retry.
+            if (!empty($context[MessageSendRetryQueue::RETRY_CONTEXT_FLAG])) {
+                throw $e;
+            }
+            $this->messageSendRetryQueue->enqueue(self::ACTION_TYPE, $context, $params, $e);
         } finally {
             $this->pendingMessageIdHolder->consume();
             $this->inlineTranslation->resume();

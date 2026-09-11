@@ -40,6 +40,9 @@
         <job name="ordo_automation_retry_failed_campaign_actions" instance="Ordo\Automation\Cron\RetryFailedCampaignActions" method="execute">
             <schedule>*/10 * * * *</schedule>
         </job>
+        <job name="ordo_automation_retry_failed_message_sends" instance="Ordo\Automation\Cron\RetryFailedMessageSends" method="execute">
+            <schedule>*/10 * * * *</schedule>
+        </job>
         <job name="ordo_automation_prune_pending_popups" instance="Ordo\Automation\Cron\PrunePendingPopups" method="execute">
             <schedule>30 4 * * *</schedule>
         </job>

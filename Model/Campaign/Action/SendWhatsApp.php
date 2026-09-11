@@ -7,6 +7,7 @@ use Magento\Customer\Api\CustomerRepositoryInterface;
 use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
+use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
@@ -38,6 +39,7 @@ use Throwable;
 class SendWhatsApp implements ActionInterface
 {
     private const string CHANNEL = 'whatsapp';
+    private const string ACTION_TYPE = 'send_whatsapp';
 
     /**
      * Same E.164 sanity check send_sms uses — see that class's own constant for the reasoning.
@@ -55,6 +57,7 @@ class SendWhatsApp implements ActionInterface
         private readonly QuietHoursGate $quietHoursGate,
         private readonly FrequencyCapGate $frequencyCapGate,
         private readonly SendRetrier $sendRetrier,
+        private readonly MessageSendRetryQueue $messageSendRetryQueue,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -171,6 +174,13 @@ class SendWhatsApp implements ActionInterface
                 $e->getMessage()
             ));
             $this->messageLogWriter->recordFailed(self::CHANNEL, $customerId, $phone, $campaignId, $variant);
+
+            // See SendEmail's identical block / MessageSendRetryQueue::RETRY_CONTEXT_FLAG's own
+            // docblock for why this rethrows on a retry attempt instead of enqueuing again.
+            if (!empty($context[MessageSendRetryQueue::RETRY_CONTEXT_FLAG])) {
+                throw $e;
+            }
+            $this->messageSendRetryQueue->enqueue(self::ACTION_TYPE, $context, $params, $e);
         }
     }
 

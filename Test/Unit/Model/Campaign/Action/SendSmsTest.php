@@ -11,6 +11,7 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign\Action\SendRetrier;
 use Ordo\Automation\Model\Campaign\Action\SendSms;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
+use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
@@ -30,6 +31,7 @@ class SendSmsTest extends TestCase
     private ConsentManager $consentManager;
     private QuietHoursGate $quietHoursGate;
     private FrequencyCapGate $frequencyCapGate;
+    private MessageSendRetryQueue&\PHPUnit\Framework\MockObject\MockObject $messageSendRetryQueue;
     private LoggerInterface $logger;
 
     protected function setUp(): void
@@ -44,6 +46,7 @@ class SendSmsTest extends TestCase
         $this->quietHoursGate->method('allows')->willReturn(true);
         $this->frequencyCapGate = $this->createStub(FrequencyCapGate::class);
         $this->frequencyCapGate->method('allows')->willReturn(true);
+        $this->messageSendRetryQueue = $this->createMock(MessageSendRetryQueue::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->config->method('isSmsEnabled')->willReturn(true);
@@ -60,6 +63,7 @@ class SendSmsTest extends TestCase
             $this->quietHoursGate,
             $this->frequencyCapGate,
             new SendRetrier(1),
+            $this->messageSendRetryQueue,
             $this->logger
         );
     }
@@ -283,11 +287,33 @@ class SendSmsTest extends TestCase
             ->willThrowException(new \RuntimeException('twilio down'));
         $this->logger->expects(self::once())->method('error');
         $this->messageLogWriter->expects(self::once())->method('recordFailed')->with('sms', 42, '+15551234567');
+        $this->messageSendRetryQueue->expects(self::once())->method('enqueue')
+            ->with('send_sms', self::isArray(), ['message' => 'hello'], self::isInstanceOf(\RuntimeException::class));
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['message' => 'hello']);
 
         self::assertTrue(true, 'execute() must not rethrow');
+    }
+
+    /**
+     * Regression test for the persisted-retry fix: on a retry attempt (MessageSendRetryQueue::
+     * RETRY_CONTEXT_FLAG set), a failure must propagate instead of being swallowed and
+     * re-enqueued again, so Cron\RetryFailedMessageSends can apply backoff/dead-letter
+     * bookkeeping.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRethrowsOnRetryAttemptInsteadOfEnqueuingAgain(): void
+    {
+        $this->customerRepository->method('getById')->willReturn($this->customerWithPhone('+15551234567'));
+        $this->smsSender->method('send')->willThrowException(new \RuntimeException('twilio down'));
+        $this->messageSendRetryQueue->expects(self::never())->method('enqueue');
+
+        $context = ['customer_id' => 42, MessageSendRetryQueue::RETRY_CONTEXT_FLAG => true];
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('twilio down');
+        $this->makeAction()->execute($context, ['message' => 'hello']);
     }
 
     /**
