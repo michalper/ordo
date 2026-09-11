@@ -256,7 +256,7 @@ class Flow extends Template
      * what JSON is. A type not listed here (a custom condition/action a store added) still works
      * via the JSON fallback field every node also has.
      *
-     * @return array<string, array<string, array<int, array<string, string|array<int, string>>>>>
+     * @return array<string, array<string, array<int, array<string, string|array<int|string, string>>>>>
      */
     public function getFieldsConfig(): array
     {
