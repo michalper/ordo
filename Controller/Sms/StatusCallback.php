@@ -11,6 +11,8 @@ use Magento\Framework\App\Request\InvalidRequestException;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\MessageLog;
+use Ordo\Automation\Model\MessageLog\StatusDowngradeGuard;
 use Ordo\Automation\Model\ResourceModel\MessageLog as MessageLogResource;
 use Ordo\Automation\Model\ResourceModel\MessageLog\CollectionFactory as MessageLogCollectionFactory;
 use Ordo\Automation\Model\Sms\CallbackUrlBuilder;
@@ -34,6 +36,7 @@ class StatusCallback extends Action implements HttpPostActionInterface, CsrfAwar
         private readonly CallbackUrlBuilder $callbackUrlBuilder,
         private readonly MessageLogCollectionFactory $messageLogCollectionFactory,
         private readonly MessageLogResource $messageLogResource,
+        private readonly StatusDowngradeGuard $statusDowngradeGuard,
         private readonly LoggerInterface $logger
     ) {
         parent::__construct($context);
@@ -67,6 +70,7 @@ class StatusCallback extends Action implements HttpPostActionInterface, CsrfAwar
 
         $collection = $this->messageLogCollectionFactory->create();
         $collection->addFieldToFilter('provider_message_id', $messageSid);
+        /** @var MessageLog $log */
         $log = $collection->getFirstItem();
 
         if (!$log->getId()) {
@@ -76,6 +80,18 @@ class StatusCallback extends Action implements HttpPostActionInterface, CsrfAwar
             $this->logger->info(sprintf(
                 'Ordo_Automation: SMS status callback for unknown MessageSid "%s" (status=%s).',
                 $messageSid,
+                $status
+            ));
+
+            return $result->setData(['ok' => true]);
+        }
+
+        if ($this->statusDowngradeGuard->isDowngrade($log->getStatus(), $status)) {
+            $this->logger->info(sprintf(
+                'Ordo_Automation: ignored a Twilio status callback downgrade for message log #%d '
+                . '(current status=%s, incoming status=%s) - likely an out-of-order redelivery.',
+                (int) $log->getId(),
+                $log->getStatus(),
                 $status
             ));
 

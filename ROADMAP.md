@@ -121,13 +121,6 @@ new. Two are real bugs worth fixing soon; the rest are minor cleanups/optimizati
   None of these are erased or exported on a customer's GDPR request — a compliance gap, not just
   a code-quality one.
 
-### Optimizations
-
-- `Model/Campaign/ScheduledTriggerScanner::isDue()` issues one `ScheduledTriggerState::getState()`
-  SELECT per trigger inside its scan loop instead of one batched query for every
-  (campaign_id, trigger_event) pair up front. A natural prerequisite if the calendar view below
-  ever gets built (same triggers, same lookup).
-
 ### Documentation drift
 
 - `API.md`'s Order Approvals section doesn't mention the order-approval token rate limiter

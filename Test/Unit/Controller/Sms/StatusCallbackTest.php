@@ -8,6 +8,7 @@ use Magento\Framework\Controller\Result\JsonFactory;
 use Ordo\Automation\Controller\Sms\StatusCallback;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\MessageLog;
+use Ordo\Automation\Model\MessageLog\StatusDowngradeGuard;
 use Ordo\Automation\Model\ResourceModel\MessageLog as MessageLogResource;
 use Ordo\Automation\Model\ResourceModel\MessageLog\Collection as MessageLogCollection;
 use Ordo\Automation\Model\ResourceModel\MessageLog\CollectionFactory as MessageLogCollectionFactory;
@@ -64,6 +65,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
             $this->callbackUrlBuilder,
             $this->messageLogCollectionFactory,
             $this->messageLogResource,
+            new StatusDowngradeGuard(),
             $this->logger
         );
     }
@@ -165,6 +167,33 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
 
         self::assertSame('undelivered', $log->getStatus());
         self::assertSame('30003', $log->getErrorCode());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRedeliveredEarlierStatusDoesNotRegressAnAlreadyFinalLogRow(): void
+    {
+        $controller = $this->makeController();
+        // A redelivered "sent" callback arriving after "failed" already landed must not regress
+        // the log row — same webhook-redelivery-ordering hazard Controller\Email\StatusCallback
+        // already guards against.
+        $postParams = ['MessageSid' => 'SM123', 'MessageStatus' => 'sent'];
+        $this->request->method('getHeader')
+            ->willReturnMap([['X-Twilio-Signature', $this->validSignatureFor($postParams)]]);
+        $this->request->method('getPostValue')->willReturn($postParams);
+
+        $log = $this->makeMessageLog(7);
+        $log->setStatus('failed');
+        $collection = $this->createStub(MessageLogCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getFirstItem')->willReturn($log);
+        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+
+        $this->messageLogResource->expects(self::never())->method('save');
+        $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
+
+        $controller->execute();
+
+        self::assertSame('failed', $log->getStatus());
     }
 
     #[AllowMockObjectsWithoutExpectations]
