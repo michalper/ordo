@@ -69,9 +69,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 - No template preview or test-send anywhere in admin, for any channel — merchants routinely typo
   `{{var}}`/WhatsApp `{{1}}` placeholders and only discover it once a real customer gets the
   broken message.
-- Product recommendations are effectively email-only — `AddProductRecommendations` only renders
-  HTML; SMS/WhatsApp/Push actions have no plain-text equivalent, even though the underlying
-  `ProductRecommender` data would support it.
 - Every send is one synchronous, unbatched HTTP call per customer inline in the dispatch path — no
   concurrency control and no respect for provider rate limits (Twilio, Graph API, push services);
   a campaign matching thousands of customers in one tick will serially hammer the provider API or

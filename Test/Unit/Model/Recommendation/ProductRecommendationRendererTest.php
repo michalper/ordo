@@ -90,4 +90,74 @@ class ProductRecommendationRendererTest extends TestCase
         self::assertStringContainsString('New Arrivals', $html);
         self::assertStringNotContainsString('Recommended for you', $html);
     }
+
+    public function testRenderTextReturnsEmptyStringForEmptySkuList(): void
+    {
+        $productRepository = $this->createMock(ProductRepositoryInterface::class);
+        $productRepository->expects(self::never())->method('get');
+        $this->productRepository = $productRepository;
+
+        self::assertSame('', $this->makeRenderer()->renderText([]));
+    }
+
+    public function testRenderTextReturnsEmptyStringWhenEveryProductFailsToResolve(): void
+    {
+        $this->productRepository->method('get')->willThrowException(
+            new NoSuchEntityException(__('No such product'))
+        );
+
+        self::assertSame('', $this->makeRenderer()->renderText(['SKU-1', 'SKU-2']));
+    }
+
+    public function testRenderTextSkipsUnresolvableSkusAndRendersOneLinePerProduct(): void
+    {
+        $widget = $this->createStub(Product::class);
+        $widget->method('getName')->willReturn('Widget');
+        $widget->method('getFinalPrice')->willReturn(19.99);
+
+        $gadget = $this->createStub(Product::class);
+        $gadget->method('getName')->willReturn('Gadget');
+        $gadget->method('getFinalPrice')->willReturn(9.5);
+
+        $this->productRepository->method('get')->willReturnCallback(
+            fn (string $sku) => match ($sku) {
+                'SKU-1' => $widget,
+                'SKU-3' => $gadget,
+                default => throw new NoSuchEntityException(__('No such product')),
+            }
+        );
+
+        $text = $this->makeRenderer()->renderText(['SKU-1', 'MISSING-SKU', 'SKU-3']);
+
+        self::assertSame("Recommended for you\nWidget - \$19.99\nGadget - \$9.50", $text);
+    }
+
+    public function testRenderTextUsesCustomHeadingWhenProvided(): void
+    {
+        $product = $this->createStub(Product::class);
+        $product->method('getName')->willReturn('Widget');
+        $product->method('getFinalPrice')->willReturn(19.99);
+
+        $this->productRepository->method('get')->willReturn($product);
+
+        $text = $this->makeRenderer()->renderText(['SKU-1'], 'New Arrivals');
+
+        self::assertStringStartsWith('New Arrivals' . "\n", $text);
+        self::assertStringNotContainsString('Recommended for you', $text);
+    }
+
+    public function testRenderTextContainsNoHtmlMarkup(): void
+    {
+        $product = $this->createStub(Product::class);
+        $product->method('getName')->willReturn('<b>Widget</b> & Co');
+        $product->method('getFinalPrice')->willReturn(19.99);
+
+        $this->productRepository->method('get')->willReturn($product);
+
+        $text = $this->makeRenderer()->renderText(['SKU-1']);
+
+        self::assertStringContainsString('<b>Widget</b> & Co', $text);
+        self::assertStringNotContainsString('<table', $text);
+        self::assertStringNotContainsString('&lt;', $text);
+    }
 }
