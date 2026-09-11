@@ -176,6 +176,15 @@
     overflow-y: auto;
 }
 
+.ordo-flow-palette-search {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px 8px;
+    border: 1px solid #e6e9ec;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
 /* <details>/<summary> palette groups: colored to match that kind's own Flow-canvas node color
    (Trigger magenta / Condition blue / Action violet, see the node color rules further down)
    so a dragged item's color identity carries straight onto the canvas, and each group is
