@@ -46,7 +46,7 @@ define([
      * the warning renderValueField() appends below for why a nested "group" row needs the same
      * notice ordo_segment_form.xml's own switcherConfig already surfaces for a top-level row.
      */
-    var EVENT_ONLY_TYPES = ['order_total_gte', 'visitor_tag'];
+    var EVENT_ONLY_TYPES = new Set(['order_total_gte', 'visitor_tag']);
 
     var VALUE_FIELD_BY_TYPE = {
         tag: {key: 'tag', label: 'Tag'},
@@ -143,7 +143,7 @@ define([
             $valueWrap.data('valueKey', null);
         }
 
-        if (EVENT_ONLY_TYPES.includes(type)) {
+        if (EVENT_ONLY_TYPES.has(type)) {
             $('<p class="ordo-group-event-only-warning"></p>')
                 .text(
                     'This condition only has an effect inside a Campaign\'s trigger conditions - used '
