@@ -77,6 +77,7 @@
                 <item name="ordo_adaudience_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\AdAudience\Grid\Collection</item>
                 <item name="ordo_whatsapptemplate_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\WhatsAppTemplate\Grid\Collection</item>
                 <item name="ordo_cronrunlog_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Cron\CronRunLog\Grid\Collection</item>
+                <item name="ordo_productfeedrunlog_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\ProductFeedRunLog\Grid\Collection</item>
             </argument>
         </arguments>
     </type>
@@ -85,6 +86,13 @@
         <arguments>
             <argument name="mainTable" xsi:type="string">ordo_cron_run_log</argument>
             <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\Cron\CronRunLog</argument>
+        </arguments>
+    </type>
+
+    <type name="Ordo\Automation\Model\ResourceModel\ProductFeedRunLog\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">ordo_product_feed_run_log</argument>
+            <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\ProductFeedRunLog</argument>
         </arguments>
     </type>
 

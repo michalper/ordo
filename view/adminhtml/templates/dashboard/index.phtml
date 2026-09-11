@@ -338,6 +338,12 @@ $segmentNavDesc = __(
             'desc' => __('Read-only: every summary/failure line every cron in this module has logged'),
             'icon' => 'refresh',
         ],
+        [
+            'url' => $block->getUrl('ordo/productfeed/index'),
+            'title' => __('Product Feed Health'),
+            'desc' => __('Read-only: every shopping feed generation attempt, per store - success/error, item count'),
+            'icon' => 'inbox',
+        ],
     ];
     ?>
     <?php foreach ($navGroups as $navGroup): ?>

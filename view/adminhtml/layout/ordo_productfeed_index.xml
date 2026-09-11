@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="ordo_productfeed_listing_intro"
+                   template="Ordo_Automation::listing_intro.phtml" before="ordo_productfeedrunlog_listing">
+                <arguments>
+                    <argument name="intro_text" xsi:type="string">Every shopping-feed generation attempt (Cron\RefreshProductFeed and the admin "Refresh Now" action), one row per store per attempt - success/error, item count, and the error message if it failed.</argument>
+                </arguments>
+            </block>
+            <uiComponent name="ordo_productfeedrunlog_listing"/>
+        </referenceContainer>
+    </body>
+</page>
