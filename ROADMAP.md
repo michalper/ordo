@@ -73,9 +73,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 *(the "Free Gift never applies to a cart" and "guest checkout bypasses approval" items are listed
 as bugs above, not repeated here)*
 
-- GDPR erasure/export hand-maintain two independent table lists with no single source of truth —
-  the same "quietly goes stale" pattern already bit `SetConsent`'s channel list once (since fixed);
-  a new customer-keyed table can silently be omitted from erasure.
 - Reorder Cycle is detection-only — `Cron/CalculateReorderCycle.php` computes `next_expected_date`
   but there's no one-click "build reorder cart" action and no manual per-customer reminder trigger.
 - Product feed is still single-format (Google RSS only) — multi-store and health/history are now
@@ -123,9 +120,9 @@ new. Two are real bugs worth fixing soon; the rest are minor cleanups/optimizati
 
 ### Documentation drift
 
-- `VERIFICATION.md`'s manual checklist has no steps for anything shipped since 2026-09-10 (admin
-  action audit log, Order Approvals grid, Campaign/Segment export, product feed health grid,
-  dead-letter/retry, multi-tier escalation).
+- `API.md`'s Order Approvals section doesn't mention the order-approval token rate limiter
+  (`Model/Approval/ApprovalRateLimiter.php`, 10 attempts/15 min) even though docs/CHANGELOG.md
+  already lists that gap as closed.
 
 ## Scheduled (date-based) campaigns: calendar view
 

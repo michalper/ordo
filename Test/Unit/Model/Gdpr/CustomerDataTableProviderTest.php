@@ -15,11 +15,11 @@ class CustomerDataTableProviderTest extends TestCase
         $this->provider = new CustomerDataTableProvider();
     }
 
-    public function testGetTablesReturnsAllNineCustomerKeyedTables(): void
+    public function testGetTablesReturnsAllSixteenCustomerKeyedTables(): void
     {
         $tables = $this->provider->getTables();
 
-        self::assertCount(9, $tables);
+        self::assertCount(16, $tables);
         self::assertContains('ordo_customer_consent', $tables);
         self::assertContains('ordo_customer_consent_log', $tables);
         self::assertContains('ordo_customer_tag', $tables);
@@ -29,6 +29,13 @@ class CustomerDataTableProviderTest extends TestCase
         self::assertContains('ordo_survey_prompt', $tables);
         self::assertContains('ordo_pending_popup', $tables);
         self::assertContains('ordo_message_log', $tables);
+        self::assertContains('ordo_customer_rfm_score', $tables);
+        self::assertContains('ordo_trigger_outcome_log', $tables);
+        self::assertContains('ordo_campaign_outcome_log', $tables);
+        self::assertContains('ordo_push_subscription', $tables);
+        self::assertContains('ordo_reorder_cycle', $tables);
+        self::assertContains('ordo_offer', $tables);
+        self::assertContains('ordo_credit_limit_alert_log', $tables);
         self::assertNotContains('ordo_visitor_event', $tables);
     }
 
@@ -46,6 +53,13 @@ class CustomerDataTableProviderTest extends TestCase
             'ordo_survey_prompt' => 'survey_responses',
             'ordo_pending_popup' => 'pending_popups',
             'ordo_message_log' => 'message_log',
+            'ordo_customer_rfm_score' => 'rfm_score',
+            'ordo_trigger_outcome_log' => 'trigger_outcome_log',
+            'ordo_campaign_outcome_log' => 'campaign_outcome_log',
+            'ordo_push_subscription' => 'push_subscriptions',
+            'ordo_reorder_cycle' => 'reorder_cycles',
+            'ordo_offer' => 'offers',
+            'ordo_credit_limit_alert_log' => 'credit_limit_alert_log',
         ], $map);
     }
 

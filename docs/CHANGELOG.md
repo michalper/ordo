@@ -17,6 +17,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   same protection from one call site instead of each channel needing its own. A rate-limited REST
   call now gets a proper `HTTP 429`.
 
+- **GDPR erasure/export silently missed seven customer-keyed tables.**
+  `Model\Gdpr\CustomerDataTableProvider` — introduced to be the single source of truth for both
+  the eraser and the exporter — was itself missing `ordo_customer_rfm_score`,
+  `ordo_trigger_outcome_log`, `ordo_campaign_outcome_log`, `ordo_push_subscription`,
+  `ordo_reorder_cycle`, `ordo_offer`, and `ordo_credit_limit_alert_log`, all of which carry a
+  real `customer_id` column. A customer's erasure/export request neither deleted nor exported
+  RFM scores, trigger/campaign outcome history, push subscriptions, reorder cycle predictions,
+  B2B offers, or credit-limit alert history. Added all seven to the shared list.
 - **SMS/WhatsApp delivery-status webhooks could regress an already-final message status on a
   redelivered event.** `Controller\Email\StatusCallback` already guarded against this (a
   redelivered SendGrid `delivered` event can't downgrade a message already marked
@@ -28,6 +36,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Dedicated fields for the 4 campaign condition types that only ever accepted raw JSON.**
+  `in_segment`/`not_in_segment` (segment picker), `loyalty_tier_at_least` (tier select), and
+  `event_occurred` (event/SKU/within-days) now have the same dedicated, labeled fields in both
+  `ordo_campaign_form.xml` and the Flow canvas (`Block\Adminhtml\Campaign\Edit\Flow`) that
+  `ordo_segment_form.xml` already had for these types — previously a marketer building a campaign
+  (as opposed to a segment) had to hand-type `{"segment_id": "3"}`-shaped JSON for any of these
+  four, with the JSON textarea silently becoming `{}` on a typo. `nps_score_at_least` needed no
+  new field — it reuses the existing "threshold" input `score_at_least` already has.
 - **Mass actions on 5 more grids.** AdAudience, ContentBlock, FreeGiftOffer, and ScoreRule get
   the same Enable/Disable/Delete mass actions Campaign and Segment already have; WhatsAppTemplate
   gets mass-delete only (it has no plain "enabled" toggle to mass-set — see

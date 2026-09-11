@@ -430,6 +430,72 @@ class CampaignSaveProcessorTest extends TestCase
         ]);
     }
 
+    /**
+     * Regression test, same reasoning as testProcessPersistsRfmConditionFields above:
+     * in_segment/not_in_segment (segment_id), loyalty_tier_at_least (tier), and event_occurred
+     * (event_type/event_key/within_days) all now render dedicated fields
+     * (ordo_campaign_form.xml's conditions switcherConfig, added alongside
+     * Block\Adminhtml\Campaign\Edit\Flow::getFieldsConfig()'s own entries for the same types),
+     * so every one of these must be in DEDICATED_PARAM_FIELDS or it's posted but silently
+     * dropped. nps_score_at_least needs no entry of its own here - it reuses the existing
+     * "threshold" field ('threshold' has been in DEDICATED_PARAM_FIELDS since score_at_least
+     * got its own dedicated field).
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessPersistsInSegmentLoyaltyTierAndEventOccurredConditionFields(): void
+    {
+        $processor = $this->makeProcessor();
+
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(1);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
+        $this->actionCollectionFactory->method('create')->willReturn($this->emptyActionCollection());
+
+        $inSegmentCondition = $this->createMock(CampaignCondition::class);
+        $inSegmentCondition->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => json_decode($data['params'], true) === ['segment_id' => '3']
+        ));
+
+        $loyaltyCondition = $this->createMock(CampaignCondition::class);
+        $loyaltyCondition->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => json_decode($data['params'], true) === ['tier' => 'gold']
+        ));
+
+        $eventCondition = $this->createMock(CampaignCondition::class);
+        $eventCondition->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => json_decode($data['params'], true) === [
+                'event_type' => 'cart_add',
+                'event_key' => '24-MB01',
+                'within_days' => '14',
+            ]
+        ));
+
+        $this->campaignConditionFactory->method('create')->willReturnOnConsecutiveCalls(
+            $inSegmentCondition,
+            $loyaltyCondition,
+            $eventCondition
+        );
+        $this->conditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+        $this->campaignConditionResource->expects(self::exactly(3))->method('save');
+
+        $processor->process([
+            'conditions' => ['conditions' => [
+                ['type' => 'in_segment', 'segment_id' => '3', 'params_json' => ''],
+                ['type' => 'loyalty_tier_at_least', 'tier' => 'gold', 'params_json' => ''],
+                [
+                    'type' => 'event_occurred',
+                    'event_type' => 'cart_add',
+                    'event_key' => '24-MB01',
+                    'within_days' => '14',
+                    'params_json' => '',
+                ],
+            ]],
+            'actions' => ['actions' => []],
+        ]);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testProcessDefaultsDelayMinutesToZeroWhenAbsent(): void
     {

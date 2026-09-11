@@ -17,6 +17,8 @@ use Ordo\Automation\Model\CampaignCondition;
 use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
 use Ordo\Automation\Model\ContentBlock;
+use Ordo\Automation\Model\LoyaltyTierCalculator;
+use Ordo\Automation\Model\Segment;
 use Ordo\Automation\Model\WhatsAppTemplate;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\Collection as ActionCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
@@ -26,6 +28,8 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as TriggerCo
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\ContentBlock\Collection as ContentBlockCollection;
 use Ordo\Automation\Model\ResourceModel\ContentBlock\CollectionFactory as ContentBlockCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Segment\Collection as SegmentCollection;
+use Ordo\Automation\Model\ResourceModel\Segment\CollectionFactory as SegmentCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate\Collection as WhatsAppTemplateCollection;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate\CollectionFactory as WhatsAppTemplateCollectionFactory;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -42,6 +46,8 @@ class FlowTest extends TestCase
     private ActionPool $actionPool;
     private ContentBlockCollectionFactory $contentBlockCollectionFactory;
     private WhatsAppTemplateCollectionFactory $whatsAppTemplateCollectionFactory;
+    private SegmentCollectionFactory $segmentCollectionFactory;
+    private LoyaltyTierCalculator $loyaltyTierCalculator;
 
     protected function setUp(): void
     {
@@ -59,6 +65,12 @@ class FlowTest extends TestCase
         $whatsAppTemplateCollection->method('addApprovedFilter')->willReturnSelf();
         $whatsAppTemplateCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->whatsAppTemplateCollectionFactory->method('create')->willReturn($whatsAppTemplateCollection);
+        $this->segmentCollectionFactory = $this->createStub(SegmentCollectionFactory::class);
+        $segmentCollection = $this->createStub(SegmentCollection::class);
+        $segmentCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
+        $this->segmentCollectionFactory->method('create')->willReturn($segmentCollection);
+        $this->loyaltyTierCalculator = $this->createStub(LoyaltyTierCalculator::class);
+        $this->loyaltyTierCalculator->method('getAllTiers')->willReturn([]);
         $this->triggerEventSource = $this->createStub(TriggerEvent::class);
         $this->triggerEventSource->method('toOptionArray')->willReturn([
             ['value' => 'order_placed', 'label' => __('Order Placed')],
@@ -90,6 +102,8 @@ class FlowTest extends TestCase
             new TypeLabels(),
             $this->contentBlockCollectionFactory,
             $this->whatsAppTemplateCollectionFactory,
+            $this->segmentCollectionFactory,
+            $this->loyaltyTierCalculator,
             [],
             $this->createStub(JsonHelper::class),
             $this->createStub(DirectoryHelper::class)
@@ -509,6 +523,61 @@ class FlowTest extends TestCase
         self::assertSame('title', $config[0]['name']);
         self::assertSame('body', $config[1]['name']);
         self::assertSame('url', $config[2]['name']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetSegmentOptionsMapsEntityIdToName(): void
+    {
+        $segment = $this->createStub(Segment::class);
+        $segment->method('getEntityId')->willReturn(9);
+        $segment->method('getName')->willReturn('VIP customers');
+
+        $segmentCollection = $this->createStub(SegmentCollection::class);
+        $segmentCollection->method('getIterator')->willReturn(new \ArrayIterator([$segment]));
+        $this->segmentCollectionFactory = $this->createStub(SegmentCollectionFactory::class);
+        $this->segmentCollectionFactory->method('create')->willReturn($segmentCollection);
+
+        self::assertSame([9 => 'VIP customers'], $this->makeBlock()->getSegmentOptions());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetLoyaltyTierOptionsMapsTierToLabel(): void
+    {
+        $this->loyaltyTierCalculator = $this->createStub(LoyaltyTierCalculator::class);
+        $this->loyaltyTierCalculator->method('getAllTiers')->willReturn(['bronze', 'gold']);
+        $this->loyaltyTierCalculator->method('getTierLabel')->willReturnMap([
+            ['bronze', 'Bronze'],
+            ['gold', 'Gold'],
+        ]);
+
+        self::assertSame(
+            ['bronze' => 'Bronze', 'gold' => 'Gold'],
+            $this->makeBlock()->getLoyaltyTierOptions()
+        );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetFieldsConfigListsInSegmentNotInSegmentLoyaltyTierNpsAndEventOccurredFields(): void
+    {
+        $segment = $this->createStub(Segment::class);
+        $segment->method('getEntityId')->willReturn(9);
+        $segment->method('getName')->willReturn('VIP customers');
+        $segmentCollection = $this->createStub(SegmentCollection::class);
+        $segmentCollection->method('getIterator')->willReturn(new \ArrayIterator([$segment]));
+        $this->segmentCollectionFactory = $this->createStub(SegmentCollectionFactory::class);
+        $this->segmentCollectionFactory->method('create')->willReturn($segmentCollection);
+
+        $config = $this->makeBlock()->getFieldsConfig()['condition'];
+
+        self::assertSame('segment_id', $config['in_segment'][0]['name']);
+        self::assertSame([9 => 'VIP customers'], $config['in_segment'][0]['options']);
+        self::assertSame('segment_id', $config['not_in_segment'][0]['name']);
+        self::assertSame('tier', $config['loyalty_tier_at_least'][0]['name']);
+        self::assertSame('threshold', $config['nps_score_at_least'][0]['name']);
+        self::assertSame(
+            ['event_type', 'event_key', 'within_days'],
+            array_column($config['event_occurred'], 'name')
+        );
     }
 
     #[AllowMockObjectsWithoutExpectations]

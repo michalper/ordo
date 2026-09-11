@@ -739,8 +739,8 @@ parameters:
 			path: Controller/Sms/StatusCallback.php
 
 		-
-			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:save\(\) expects Magento\\Framework\\Model\\AbstractModel, Magento\\Framework\\DataObject given\.$#'
-			identifier: argument.type
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
 			count: 1
 			path: Controller/Sms/StatusCallback.php
 
@@ -3181,9 +3181,15 @@ parameters:
 			path: Controller/WhatsApp/Webhook.php
 
 		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/WhatsApp/Webhook.php
+
+		-
 			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:save\(\) expects Magento\\Framework\\Model\\AbstractModel, Magento\\Framework\\DataObject given\.$#'
 			identifier: argument.type
-			count: 2
+			count: 1
 			path: Controller/WhatsApp/Webhook.php
 
 		-

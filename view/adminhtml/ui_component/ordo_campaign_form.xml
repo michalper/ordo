@@ -211,6 +211,41 @@
                                             <param name="0" xsi:type="boolean">false</param>
                                         </params>
                                     </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.segment_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.event_type</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.event_key</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="12">
+                                            <target>${ $.parentName }.within_days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="1">
@@ -272,6 +307,41 @@
                                             <param name="0" xsi:type="boolean">false</param>
                                         </params>
                                     </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.segment_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.event_type</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.event_key</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="12">
+                                            <target>${ $.parentName }.within_days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <!-- Reuses the same "tag" field as the "tag" rule above — the
@@ -338,6 +408,41 @@
                                             <param name="0" xsi:type="boolean">false</param>
                                         </params>
                                     </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.segment_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.event_type</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.event_key</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="12">
+                                            <target>${ $.parentName }.within_days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="3">
@@ -399,6 +504,41 @@
                                             <param name="0" xsi:type="boolean">false</param>
                                         </params>
                                     </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.segment_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.event_type</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.event_key</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="12">
+                                            <target>${ $.parentName }.within_days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <!-- RFM-based conditions (§3/§4 in SCENARIOS.md) — recency in
@@ -470,6 +610,41 @@
                                             <param name="0" xsi:type="boolean">false</param>
                                         </params>
                                     </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.segment_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.event_type</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.event_key</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="12">
+                                            <target>${ $.parentName }.within_days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="5">
@@ -531,6 +706,41 @@
                                             <param name="0" xsi:type="boolean">false</param>
                                         </params>
                                     </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.segment_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.event_type</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.event_key</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="12">
+                                            <target>${ $.parentName }.within_days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <!-- Reuses "amount" (same param key and same "minimum total"
@@ -597,6 +807,41 @@
                                             <param name="0" xsi:type="boolean">false</param>
                                         </params>
                                     </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.segment_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.event_type</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.event_key</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="12">
+                                            <target>${ $.parentName }.within_days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <!-- The three percentile-relative RFM conditions share one
@@ -663,6 +908,41 @@
                                             <param name="0" xsi:type="boolean">false</param>
                                         </params>
                                     </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.segment_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.event_type</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.event_key</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="12">
+                                            <target>${ $.parentName }.within_days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="8">
@@ -724,6 +1004,41 @@
                                             <param name="0" xsi:type="boolean">false</param>
                                         </params>
                                     </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.segment_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.event_type</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.event_key</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="12">
+                                            <target>${ $.parentName }.within_days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="9">
@@ -785,6 +1100,41 @@
                                             <param name="0" xsi:type="boolean">false</param>
                                         </params>
                                     </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.segment_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.event_type</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.event_key</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="12">
+                                            <target>${ $.parentName }.within_days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="10">
@@ -846,6 +1196,41 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.segment_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.event_type</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.event_key</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="12">
+                                            <target>${ $.parentName }.within_days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="11">
@@ -902,6 +1287,536 @@
                                         </action>
                                         <action name="7">
                                             <target>${ $.parentName }.category_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">true</param>
+                                            </params>
+                                        </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.segment_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.event_type</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.event_key</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="12">
+                                            <target>${ $.parentName }.within_days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                    </actions>
+                                </rule>
+                                <!--
+                                    "In Segment"/"Not In Segment"/"Loyalty Tier At Least"/
+                                    "NPS Score At Least"/"Event Occurred" - the 5 remaining
+                                    condition types that previously had no dedicated field, closing
+                                    the gap between this form and ordo_segment_form.xml, which has
+                                    had dedicated fields for these same 5 types for a while. Each
+                                    rule below hides every OTHER field (switcherConfig has no
+                                    "else" semantics, same reasoning as the rules above) and shows
+                                    only what its own type needs.
+                                -->
+                                <rule name="12">
+                                    <value>in_segment</value>
+                                    <actions>
+                                        <action name="0">
+                                            <target>${ $.parentName }.tag</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="1">
+                                            <target>${ $.parentName }.amount</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="2">
+                                            <target>${ $.parentName }.threshold</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="3">
+                                            <target>${ $.parentName }.days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="4">
+                                            <target>${ $.parentName }.count</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="5">
+                                            <target>${ $.parentName }.percentile</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="6">
+                                            <target>${ $.parentName }.sku</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="7">
+                                            <target>${ $.parentName }.category_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.segment_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">true</param>
+                                            </params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.event_type</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.event_key</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="12">
+                                            <target>${ $.parentName }.within_days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                    </actions>
+                                </rule>
+                                <!-- Same params shape (segment_id) as in_segment above - see
+                                     Model\Campaign\Condition\NotInSegment's own docblock. -->
+                                <rule name="13">
+                                    <value>not_in_segment</value>
+                                    <actions>
+                                        <action name="0">
+                                            <target>${ $.parentName }.tag</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="1">
+                                            <target>${ $.parentName }.amount</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="2">
+                                            <target>${ $.parentName }.threshold</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="3">
+                                            <target>${ $.parentName }.days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="4">
+                                            <target>${ $.parentName }.count</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="5">
+                                            <target>${ $.parentName }.percentile</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="6">
+                                            <target>${ $.parentName }.sku</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="7">
+                                            <target>${ $.parentName }.category_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.segment_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">true</param>
+                                            </params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.event_type</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.event_key</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="12">
+                                            <target>${ $.parentName }.within_days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                    </actions>
+                                </rule>
+                                <rule name="14">
+                                    <value>loyalty_tier_at_least</value>
+                                    <actions>
+                                        <action name="0">
+                                            <target>${ $.parentName }.tag</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="1">
+                                            <target>${ $.parentName }.amount</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="2">
+                                            <target>${ $.parentName }.threshold</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="3">
+                                            <target>${ $.parentName }.days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="4">
+                                            <target>${ $.parentName }.count</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="5">
+                                            <target>${ $.parentName }.percentile</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="6">
+                                            <target>${ $.parentName }.sku</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="7">
+                                            <target>${ $.parentName }.category_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.segment_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">true</param>
+                                            </params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.event_type</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.event_key</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="12">
+                                            <target>${ $.parentName }.within_days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                    </actions>
+                                </rule>
+                                <!-- Reuses the same "threshold" field score_at_least already uses
+                                     - see Model\Campaign\Condition\NpsScoreAtLeast's own docblock
+                                     for why (same dedicated field, no new one needed). -->
+                                <rule name="15">
+                                    <value>nps_score_at_least</value>
+                                    <actions>
+                                        <action name="0">
+                                            <target>${ $.parentName }.tag</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="1">
+                                            <target>${ $.parentName }.amount</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="2">
+                                            <target>${ $.parentName }.threshold</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">true</param>
+                                            </params>
+                                        </action>
+                                        <action name="3">
+                                            <target>${ $.parentName }.days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="4">
+                                            <target>${ $.parentName }.count</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="5">
+                                            <target>${ $.parentName }.percentile</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="6">
+                                            <target>${ $.parentName }.sku</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="7">
+                                            <target>${ $.parentName }.category_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.segment_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.event_type</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.event_key</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="12">
+                                            <target>${ $.parentName }.within_days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                    </actions>
+                                </rule>
+                                <rule name="16">
+                                    <value>event_occurred</value>
+                                    <actions>
+                                        <action name="0">
+                                            <target>${ $.parentName }.tag</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="1">
+                                            <target>${ $.parentName }.amount</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="2">
+                                            <target>${ $.parentName }.threshold</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="3">
+                                            <target>${ $.parentName }.days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="4">
+                                            <target>${ $.parentName }.count</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="5">
+                                            <target>${ $.parentName }.percentile</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="6">
+                                            <target>${ $.parentName }.sku</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="7">
+                                            <target>${ $.parentName }.category_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.segment_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.event_type</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">true</param>
+                                            </params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.event_key</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">true</param>
+                                            </params>
+                                        </action>
+                                        <action name="12">
+                                            <target>${ $.parentName }.within_days</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">true</param>
@@ -1019,6 +1934,90 @@
                             </settings>
                         </select>
                     </formElements>
+                </field>
+                <!--
+                    "segment_id" pairs with the "In Segment"/"Not In Segment" condition types
+                    (Model\Campaign\Condition\InSegment/NotInSegment) - mirrors
+                    ordo_segment_form.xml's own segment_id field, reusing the same
+                    Config\Source\SegmentOptions source - previously the only way to fill this in
+                    was the raw params_json textarea ({"segment_id": "3"}).
+                -->
+                <field name="segment_id" formElement="select" sortOrder="23">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Segment</label>
+                        <visible>false</visible>
+                    </settings>
+                    <formElements>
+                        <select>
+                            <settings>
+                                <options class="Ordo\Automation\Model\Config\Source\SegmentOptions"/>
+                            </settings>
+                        </select>
+                    </formElements>
+                </field>
+                <!--
+                    "tier" pairs with the "Loyalty Tier At Least" condition type
+                    (Model\Campaign\Condition\LoyaltyTierAtLeast) - mirrors
+                    ordo_segment_form.xml's own tier field.
+                -->
+                <field name="tier" formElement="select" sortOrder="24">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Minimum tier</label>
+                        <visible>false</visible>
+                    </settings>
+                    <formElements>
+                        <select>
+                            <settings>
+                                <options class="Ordo\Automation\Model\Config\Source\LoyaltyTier"/>
+                            </settings>
+                        </select>
+                    </formElements>
+                </field>
+                <!--
+                    The three fields for the "event_occurred" condition type
+                    (Model\Campaign\Condition\EventOccurred) - mirrors ordo_segment_form.xml's own
+                    event_type/event_key/within_days fields. "nps_score_at_least" needs no new
+                    field of its own - it reuses the existing "threshold" field above, same as
+                    ordo_segment_form.xml already does.
+                -->
+                <field name="event_type" formElement="select" sortOrder="25">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Event</label>
+                        <visible>false</visible>
+                    </settings>
+                    <formElements>
+                        <select>
+                            <settings>
+                                <options class="Ordo\Automation\Model\Config\Source\EventType"/>
+                            </settings>
+                        </select>
+                    </formElements>
+                </field>
+                <field name="event_key" formElement="input" sortOrder="26">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">SKU (optional)</label>
+                        <notice translate="true">Leave blank to match any product.</notice>
+                        <visible>false</visible>
+                    </settings>
+                </field>
+                <field name="within_days" formElement="input" sortOrder="27">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Within days</label>
+                        <notice translate="true">
+                            Must be at or below the tracking event retention window (Stores &gt;
+                            Configuration &gt; Ordo Automation &gt; Tracking) or older matching
+                            events will already have been pruned.
+                        </notice>
+                        <visible>false</visible>
+                        <validation>
+                            <rule name="validate-digits" xsi:type="boolean">true</rule>
+                        </validation>
+                    </settings>
                 </field>
             </container>
         </dynamicRows>
