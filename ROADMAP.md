@@ -77,9 +77,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 *(the "Free Gift never applies to a cart" and "guest checkout bypasses approval" items are listed
 as bugs above, not repeated here)*
 
-- GDPR erasure/export hand-maintain two independent table lists with no single source of truth —
-  the same "quietly goes stale" pattern already bit `SetConsent`'s channel list once (since fixed);
-  a new customer-keyed table can silently be omitted from erasure.
 - Reorder Cycle is detection-only — `Cron/CalculateReorderCycle.php` computes `next_expected_date`
   but there's no one-click "build reorder cart" action and no manual per-customer reminder trigger.
 - Product feed is still single-format (Google RSS only) — multi-store and health/history are now

@@ -5,6 +5,17 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **GDPR erasure/export silently missed seven customer-keyed tables.**
+  `Model\Gdpr\CustomerDataTableProvider` — introduced to be the single source of truth for both
+  the eraser and the exporter — was itself missing `ordo_customer_rfm_score`,
+  `ordo_trigger_outcome_log`, `ordo_campaign_outcome_log`, `ordo_push_subscription`,
+  `ordo_reorder_cycle`, `ordo_offer`, and `ordo_credit_limit_alert_log`, all of which carry a
+  real `customer_id` column. A customer's erasure/export request neither deleted nor exported
+  RFM scores, trigger/campaign outcome history, push subscriptions, reorder cycle predictions,
+  B2B offers, or credit-limit alert history. Added all seven to the shared list.
+
 ### Added
 
 - **Setup Guide — a first-run checklist**, closing the admin-platform ROADMAP.md "no setup

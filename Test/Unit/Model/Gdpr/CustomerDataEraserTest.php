@@ -14,7 +14,7 @@ class CustomerDataEraserTest extends TestCase
     public function testEraseDeletesFromEveryTableFilteredByCustomerId(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
-        $connection->expects(self::exactly(9))->method('delete')
+        $connection->expects(self::exactly(16))->method('delete')
             ->with(self::callback('is_string'), ['customer_id = ?' => 42])
             ->willReturn(1);
 
@@ -32,6 +32,13 @@ class CustomerDataEraserTest extends TestCase
         self::assertArrayHasKey('ordo_survey_prompt', $result);
         self::assertArrayHasKey('ordo_pending_popup', $result);
         self::assertArrayHasKey('ordo_message_log', $result);
+        self::assertArrayHasKey('ordo_customer_rfm_score', $result);
+        self::assertArrayHasKey('ordo_trigger_outcome_log', $result);
+        self::assertArrayHasKey('ordo_campaign_outcome_log', $result);
+        self::assertArrayHasKey('ordo_push_subscription', $result);
+        self::assertArrayHasKey('ordo_reorder_cycle', $result);
+        self::assertArrayHasKey('ordo_offer', $result);
+        self::assertArrayHasKey('ordo_credit_limit_alert_log', $result);
         self::assertSame(1, $result['ordo_customer_tag']);
     }
 }

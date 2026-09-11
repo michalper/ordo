@@ -22,7 +22,7 @@ class CustomerDataExporterTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($select);
-        $connection->expects(self::exactly(9))->method('fetchAll')->with($select)->willReturn([['row' => 1]]);
+        $connection->expects(self::exactly(16))->method('fetchAll')->with($select)->willReturn([['row' => 1]]);
 
         $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -40,6 +40,13 @@ class CustomerDataExporterTest extends TestCase
         self::assertArrayHasKey('survey_responses', $result);
         self::assertArrayHasKey('pending_popups', $result);
         self::assertArrayHasKey('message_log', $result);
+        self::assertArrayHasKey('rfm_score', $result);
+        self::assertArrayHasKey('trigger_outcome_log', $result);
+        self::assertArrayHasKey('campaign_outcome_log', $result);
+        self::assertArrayHasKey('push_subscriptions', $result);
+        self::assertArrayHasKey('reorder_cycles', $result);
+        self::assertArrayHasKey('offers', $result);
+        self::assertArrayHasKey('credit_limit_alert_log', $result);
         self::assertSame([['row' => 1]], $result['tags']);
     }
 }
