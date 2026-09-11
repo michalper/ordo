@@ -11,9 +11,14 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Collection as CampaignCollectio
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as CampaignTriggerCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as CampaignTriggerCollectionFactory;
+use Ordo\Automation\Model\Cron\CronRunLog;
+use Ordo\Automation\Model\ResourceModel\Cron\CronRunLog\Collection as CronRunLogCollection;
+use Ordo\Automation\Model\ResourceModel\Cron\CronRunLog\CollectionFactory as CronRunLogCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\Collection as FreeGiftOfferCollection;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\CollectionFactory as FreeGiftOfferCollectionFactory;
 use Ordo\Automation\Model\LoyaltyTierCalculator;
+use Ordo\Automation\Model\ResourceModel\OrderApproval\Collection as OrderApprovalCollection;
+use Ordo\Automation\Model\ResourceModel\OrderApproval\CollectionFactory as OrderApprovalCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\Collection as ReorderCycleCollection;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory as ReorderCycleCollectionFactory;
 use Ordo\Automation\Model\TriggerOutcomeLogger;
@@ -37,7 +42,9 @@ class DashboardViewModelTest extends TestCase
         ?LoyaltyTierCalculator $loyaltyTierCalculator = null,
         ?Config $config = null,
         ?StoreManagerInterface $storeManager = null,
-        ?CacheInterface $cache = null
+        ?CacheInterface $cache = null,
+        ?OrderApprovalCollectionFactory $orderApprovalCollectionFactory = null,
+        ?CronRunLogCollectionFactory $cronRunLogCollectionFactory = null
     ): DashboardViewModel {
         $pricingHelper ??= $this->createStub(PricingHelper::class);
         $pricingHelper->method('currency')->willReturnCallback(
@@ -58,7 +65,9 @@ class DashboardViewModelTest extends TestCase
             $loyaltyTierCalculator ?? $this->createStub(LoyaltyTierCalculator::class),
             $config ?? $this->createStub(Config::class),
             $storeManager ?? $this->createStub(StoreManagerInterface::class),
-            $cache
+            $cache,
+            $orderApprovalCollectionFactory ?? $this->createStub(OrderApprovalCollectionFactory::class),
+            $cronRunLogCollectionFactory ?? $this->createStub(CronRunLogCollectionFactory::class)
         );
     }
 
@@ -465,5 +474,51 @@ class DashboardViewModelTest extends TestCase
         $storeManager->method('getStore')->willThrowException(new \RuntimeException('no store'));
 
         self::assertSame('', $this->makeViewModel(storeManager: $storeManager)->getShoppingFeedUrl());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetStuckApprovalCountUsesTheSameCutoffAsTheEscalationCron(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('getOrderApprovalEscalationDays')->willReturn(2);
+
+        $collection = $this->createMock(OrderApprovalCollection::class);
+        $collection->expects(self::once())->method('addStalePendingFilter')->willReturnSelf();
+        $collection->method('getSize')->willReturn(3);
+
+        $orderApprovalCollectionFactory = $this->createStub(OrderApprovalCollectionFactory::class);
+        $orderApprovalCollectionFactory->method('create')->willReturn($collection);
+
+        self::assertSame(
+            3,
+            $this->makeViewModel(
+                config: $config,
+                orderApprovalCollectionFactory: $orderApprovalCollectionFactory
+            )->getStuckApprovalCount()
+        );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetFailedCronCountFiltersToFailureLevelWithinTheLookbackWindow(): void
+    {
+        $filters = [];
+        $collection = $this->createMock(CronRunLogCollection::class);
+        $collection->method('addFieldToFilter')->willReturnCallback(
+            function (string $field, $condition) use (&$filters, $collection) {
+                $filters[$field] = $condition;
+                return $collection;
+            }
+        );
+        $collection->method('getSize')->willReturn(2);
+
+        $cronRunLogCollectionFactory = $this->createStub(CronRunLogCollectionFactory::class);
+        $cronRunLogCollectionFactory->method('create')->willReturn($collection);
+
+        self::assertSame(
+            2,
+            $this->makeViewModel(cronRunLogCollectionFactory: $cronRunLogCollectionFactory)->getFailedCronCount()
+        );
+        self::assertSame(CronRunLog::LEVEL_FAILURE, $filters['level']);
+        self::assertArrayHasKey('gteq', $filters['created_at']);
     }
 }
