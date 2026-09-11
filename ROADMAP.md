@@ -83,9 +83,6 @@ as bugs above, not repeated here)*
 
 ### Admin platform, UX consistency & API
 
-- Admin action audit log now covers Campaign and Segment saves only (see docs/CHANGELOG.md) —
-  every other admin-managed entity (Free Gift Offers, WhatsApp Templates, Content Blocks, etc.)
-  is still unaudited; extend the same plugin pattern to each as a natural follow-up.
 - No bulk/mass-action on MessageLog, ReorderCycle, and Rfm's grids (Campaign, Segment,
   ContentBlock, FreeGiftOffer, ScoreRule, and AdAudience now have enable/disable/delete mass
   actions, and WhatsAppTemplate has mass-delete — see docs/CHANGELOG.md) — those three remaining

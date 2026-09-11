@@ -10,13 +10,13 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Shared write path for the admin action audit log (ordo_admin_action_log) - used by
- * Plugin\Campaign\CampaignSaveProcessorAuditPlugin and Plugin\Segment\SegmentSaveProcessorAuditPlugin,
- * kept as one class rather than duplicating the admin-session/persistence logic in each plugin.
- *
- * Scoped to Campaign/Segment saves only for now (ROADMAP.md "admin action audit log" - narrowed
- * to the two highest-value entities first, same "start narrow, extend mechanically later"
- * pattern as the mass-action work before it); every other admin-managed entity's save is not yet
- * audited.
+ * Plugin\Campaign\CampaignSaveProcessorAuditPlugin, Plugin\Segment\SegmentSaveProcessorAuditPlugin,
+ * and the five Plugin\{ContentBlock,FreeGiftOffer,ScoreRule,AdAudience,WhatsAppTemplate}\
+ * *ResourceAuditPlugin classes, kept as one class rather than duplicating the admin-session/
+ * persistence logic in each plugin. Originally scoped to Campaign/Segment saves only (ROADMAP.md
+ * "admin action audit log" - narrowed to the two highest-value entities first, same "start
+ * narrow, extend mechanically later" pattern as the mass-action work before it); now extended to
+ * every other admin-managed entity that has a save action.
  */
 class Recorder
 {
@@ -26,6 +26,22 @@ class Recorder
         private readonly AdminActionLogResource $adminActionLogResource,
         private readonly LoggerInterface $logger
     ) {
+    }
+
+    /**
+     * True when there's an actual logged-in admin behind the current request - lets a
+     * resource-model-level audit plugin (see Plugin\AdAudience\AdAudienceResourceAuditPlugin and
+     * its siblings) skip recording entirely for a system/cron-driven save (e.g.
+     * Cron\SyncAdAudiences updating last_sync_status) that happens to go through the same
+     * ResourceModel::save() a real admin Save action also uses. Deliberately NOT used inside
+     * record() itself - Campaign/Segment's own plugins are wired to a save PROCESSOR only ever
+     * invoked from an actual admin controller, so they have no such background-save ambiguity
+     * to guard against, and record() already has its own well-tested "no user" behavior
+     * (adminUserId/adminUsername null, still recorded) that changing here would break.
+     */
+    public function hasLoggedInAdmin(): bool
+    {
+        return $this->authSession->getUser() !== null;
     }
 
     /**

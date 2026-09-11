@@ -39,6 +39,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   gets mass-delete only (it has no plain "enabled" toggle to mass-set — see
   `Controller\Adminhtml\WhatsAppTemplate\MassDelete`'s own docblock). All five grids' own
   `selectionsColumn` checkboxes previously did nothing.
+- **Admin action audit log now covers 5 more entities.** ContentBlock, FreeGiftOffer, ScoreRule,
+  AdAudience, and WhatsAppTemplate saves are now recorded the same way Campaign/Segment saves
+  already were. These five have no extracted SaveProcessor class, so each gets its own
+  `Plugin\*\*ResourceAuditPlugin` around the entity's own `ResourceModel::save()` instead of a
+  SaveProcessor-level plugin. `Model\AdminActionLog\Recorder` gained `hasLoggedInAdmin()` so the
+  AdAudience plugin can skip recording `Cron\SyncAdAudiences`'s own periodic
+  `last_sync_status` update — that save goes through the same resource with no admin session
+  behind it, and would otherwise show up in the audit log misattributed as an admin action.
 
 ### Changed
 

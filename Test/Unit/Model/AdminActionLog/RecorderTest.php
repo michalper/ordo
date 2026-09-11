@@ -76,6 +76,33 @@ class RecorderTest extends TestCase
         $recorder->record('campaign', 9, AdminActionLog::ACTION_CREATE, null);
     }
 
+    public function testHasLoggedInAdminIsTrueWhenAUserIsLoggedIn(): void
+    {
+        $user = new UserTestDouble()->setTestUserId(5)->setTestUserName('jdoe');
+        $authSession = new BackendAuthSessionTestDouble()->setTestUser($user);
+
+        $recorder = new Recorder(
+            $authSession,
+            $this->createStub(AdminActionLogFactory::class),
+            $this->createStub(AdminActionLogResource::class),
+            $this->createStub(LoggerInterface::class)
+        );
+
+        self::assertTrue($recorder->hasLoggedInAdmin());
+    }
+
+    public function testHasLoggedInAdminIsFalseWithNoUser(): void
+    {
+        $recorder = new Recorder(
+            new BackendAuthSessionTestDouble(),
+            $this->createStub(AdminActionLogFactory::class),
+            $this->createStub(AdminActionLogResource::class),
+            $this->createStub(LoggerInterface::class)
+        );
+
+        self::assertFalse($recorder->hasLoggedInAdmin());
+    }
+
     public function testDiffFieldsReturnsOnlyChangedFields(): void
     {
         $entity = $this->createStub(AbstractModel::class);
