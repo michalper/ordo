@@ -5,9 +5,11 @@ namespace Ordo\Automation\Test\Unit\Controller\Approval;
 
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\HTTP\PhpEnvironment\RemoteAddress;
 use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Ordo\Automation\Controller\Approval\Reject;
+use Ordo\Automation\Model\Approval\ApprovalRateLimiter;
 use Ordo\Automation\Model\OrderApproval;
 use Ordo\Automation\Model\OrderApprovalManagement;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
@@ -17,16 +19,25 @@ class RejectTest extends AbstractFrontendActionTestCase
 {
     private OrderApprovalManagement $orderApprovalManagement;
     private OrderRepositoryInterface $orderRepository;
+    private ApprovalRateLimiter $rateLimiter;
 
     protected function setUp(): void
     {
         $this->orderApprovalManagement = $this->createMock(OrderApprovalManagement::class);
         $this->orderRepository = $this->createMock(OrderRepositoryInterface::class);
+        $this->rateLimiter = $this->createStub(ApprovalRateLimiter::class);
+        $this->rateLimiter->method('isAllowed')->willReturn(true);
     }
 
     private function makeController(): Reject
     {
-        return new Reject($this->makeContext(), $this->orderApprovalManagement, $this->orderRepository);
+        return new Reject(
+            $this->makeContext(),
+            $this->rateLimiter,
+            $this->createStub(RemoteAddress::class),
+            $this->orderApprovalManagement,
+            $this->orderRepository
+        );
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -71,6 +82,21 @@ class RejectTest extends AbstractFrontendActionTestCase
         $this->orderRepository->method('get')->willReturnMap([[7, $order]]);
 
         $this->messageManager->expects(self::once())->method('addSuccessMessage');
+
+        self::assertSame($this->resultRedirect, $controller->execute());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRedirectsWithErrorWhenRateLimited(): void
+    {
+        $this->rateLimiter = $this->createStub(ApprovalRateLimiter::class);
+        $this->rateLimiter->method('isAllowed')->willReturn(false);
+
+        $controller = $this->makeController();
+        $this->request->method('getParam')->willReturnMap([['token', 'tok']]);
+
+        $this->orderApprovalManagement->expects(self::never())->method('rejectByToken');
+        $this->messageManager->expects(self::once())->method('addErrorMessage');
 
         self::assertSame($this->resultRedirect, $controller->execute());
     }

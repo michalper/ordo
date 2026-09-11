@@ -49,6 +49,12 @@ parameters:
 			path: Block/Adminhtml/Dashboard/DashboardViewModel.php
 
 		-
+			message: '#^Strict comparison using \!\=\= between string and false will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: Model/Approval/ApprovalRateLimiter.php
+
+		-
 			message: '#^Unreachable statement \- code above always terminates\.$#'
 			identifier: deadCode.unreachable
 			count: 1
