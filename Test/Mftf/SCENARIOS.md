@@ -11,11 +11,11 @@ jobs — not guessed from memory. Each scenario is marked:
 
 Cross-reference: `ROADMAP.md`'s "Test coverage" section for the standing priority list this feeds.
 
-**Status: every row below is ✅ except one 🔴 (see §10) and nine ⬜ (the frequency-cap structural
-case in §1d, the Campaign export row in §1d, the Segment Overlap page and Segment export row in
-§2, the WhatsApp Template Body Text preview panel in §15, the two Template Test Send rows in
-§16, and the two Cron Run Log rows in §17 — all unit-tested but no MFTF/integration coverage
-yet).** Re-audit this against `etc/di.xml`/
+**Status: every row below is ✅ except one 🔴 (see §10) and ten ⬜ (the frequency-cap structural
+case in §1d, the Campaign export row in §1d, the Approval rate-limit row in §6, the Segment
+Overlap page and Segment export row in §2, the WhatsApp Template Body Text preview panel in §15,
+the two Template Test Send rows in §16, and the two Cron Run Log rows in §17 — all unit-tested
+but no MFTF/integration coverage yet).** Re-audit this against `etc/di.xml`/
 `Controller/Adminhtml/*`/`etc/events.xml` periodically rather than trusting it at face value — add a row (⬜)
 for anything newly added before considering it done.
 
@@ -176,6 +176,7 @@ through. `Controller/Offer/*` (self-extend,
 | `Cron\EscalateStalePendingApprovals` — a pending approval past its SLA gets escalated                                                | ✅ `AdminEscalateStalePendingApprovalTest`              |
 | Order under spend limit — never held at all (negative case)                                                                          | ✅ `AdminOrderUnderSpendLimitNotHeldTest`               |
 | Customer with no spend limit / no approval admin email configured — never held                                                       | ✅ `AdminOrderNeverHeldWithoutSpendLimitConfiguredTest` |
+| `Approve`/`Reject` rate-limited past `ApprovalRateLimiter::MAX_ATTEMPTS` for a given token+IP within the window — redirects home with an error instead of looking up the token | ⬜ unit-tested (`ApprovalRateLimiterTest`, `ApproveTest`/`RejectTest`), no MFTF yet |
 
 ## 7. Tracking & popups (`view/frontend/web/js/tracker.js`, `Controller/Track/`)
 

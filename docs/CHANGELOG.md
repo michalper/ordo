@@ -7,6 +7,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Rate limiting for the anonymous order-approval token endpoints**, closing the API.md gap
+  where `Controller\Approval\{Approve,Reject}` were token-guarded but not throttled against
+  brute-forcing a token guess. New `Model\Approval\ApprovalRateLimiter` — a bespoke cache-backed
+  attempt counter keyed by token+IP (10 attempts per 15-minute window; Magento has no built-in
+  webapi rate-limit mechanism to turn on instead, since these aren't `webapi.xml` service
+  contracts) — checked first thing in both actions via a new shared
+  `AbstractApprovalAction::enforceRateLimit()`, redirecting home with an error message instead of
+  looking up the token at all once the cap is hit.
 - **Order approval escalation is now multi-level instead of a flat, single-recipient reminder
   loop.** `Cron/EscalateStalePendingApprovals.php` previously re-reminded the same
   customer-assigned `admin_email` up to a hardcoded `MAX_ESCALATIONS = 3` times and then left the
