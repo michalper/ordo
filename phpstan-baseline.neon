@@ -2876,6 +2876,36 @@ parameters:
 			path: Plugin/SalesRule/SimpleActionOptionsProviderPlugin.php
 
 		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Plugin/AdAudience/AdAudienceResourceAuditPlugin.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Plugin/ContentBlock/ContentBlockResourceAuditPlugin.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Plugin/FreeGiftOffer/FreeGiftOfferResourceAuditPlugin.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Plugin/ScoreRule/ScoreRuleResourceAuditPlugin.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Plugin/WhatsAppTemplate/WhatsAppTemplateResourceAuditPlugin.php
+
+		-
 			message: '#^Use service contracts to persist entities in favour of Magento\\Eav\\Model\\Entity\\Attribute\\AbstractAttribute\:\:save\(\) method$#'
 			identifier: bitExpertMagento.abstractModelUseServiceContract
 			count: 1

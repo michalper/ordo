@@ -13,4 +13,23 @@
     <type name="Ordo\Automation\Model\Segment\SegmentSaveProcessor">
         <plugin name="ordo_admin_action_log_segment" type="Ordo\Automation\Plugin\Segment\SegmentSaveProcessorAuditPlugin"/>
     </type>
+
+    <!-- These five entities have no extracted SaveProcessor (unlike Campaign/Segment above), so
+         each plugin targets its own ResourceModel::save() instead - see
+         Plugin\ContentBlock\ContentBlockResourceAuditPlugin's own docblock. -->
+    <type name="Ordo\Automation\Model\ResourceModel\ContentBlock">
+        <plugin name="ordo_admin_action_log_content_block" type="Ordo\Automation\Plugin\ContentBlock\ContentBlockResourceAuditPlugin"/>
+    </type>
+    <type name="Ordo\Automation\Model\ResourceModel\FreeGiftOffer">
+        <plugin name="ordo_admin_action_log_free_gift_offer" type="Ordo\Automation\Plugin\FreeGiftOffer\FreeGiftOfferResourceAuditPlugin"/>
+    </type>
+    <type name="Ordo\Automation\Model\ResourceModel\ScoreRule">
+        <plugin name="ordo_admin_action_log_score_rule" type="Ordo\Automation\Plugin\ScoreRule\ScoreRuleResourceAuditPlugin"/>
+    </type>
+    <type name="Ordo\Automation\Model\ResourceModel\AdAudience">
+        <plugin name="ordo_admin_action_log_ad_audience" type="Ordo\Automation\Plugin\AdAudience\AdAudienceResourceAuditPlugin"/>
+    </type>
+    <type name="Ordo\Automation\Model\ResourceModel\WhatsAppTemplate">
+        <plugin name="ordo_admin_action_log_whatsapp_template" type="Ordo\Automation\Plugin\WhatsAppTemplate\WhatsAppTemplateResourceAuditPlugin"/>
+    </type>
 </config>
