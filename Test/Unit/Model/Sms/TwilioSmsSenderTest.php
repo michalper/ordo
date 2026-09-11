@@ -7,6 +7,7 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Sms\CallbackUrlBuilder;
 use Ordo\Automation\Model\Sms\OptedOutException;
 use Ordo\Automation\Model\Sms\TwilioSmsSender;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Twilio\AuthStrategy\AuthStrategy;
