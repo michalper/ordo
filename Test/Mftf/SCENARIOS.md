@@ -11,13 +11,13 @@ jobs — not guessed from memory. Each scenario is marked:
 
 Cross-reference: `ROADMAP.md`'s "Test coverage" section for the standing priority list this feeds.
 
-**Status: every row below is ✅ except one 🔴 (see §10) and twenty-one ⬜ (the frequency-cap
+**Status: every row below is ✅ except one 🔴 (see §10) and twenty-three ⬜ (the frequency-cap
 structural case, the Campaign export row, and the dispatch dead-letter row in §1d, the
 `RetryFailedCampaignActions` row in §11, the Approval rate-limit row and the Order Approvals grid
 in §6, the Segment Overlap page and Segment export row in §2, the WhatsApp Template Body Text
 preview panel in §15, the two Template Test Send rows in §16, the two Cron Run Log rows in §17,
-the four Product feed rows in §18, and the three Admin Action Log rows in §19 — all unit-tested
-but no
+the four Product feed rows in §18, the three Admin Action Log rows in §19, and the two Setup
+Guide rows in §20 — all unit-tested but no
 MFTF/integration coverage yet).** Re-audit this against `etc/di.xml`/
 `Controller/Adminhtml/*`/`etc/events.xml` periodically rather than trusting it at face value — add a row (⬜)
 for anything newly added before considering it done.
@@ -327,6 +327,13 @@ module's.
 | Saving a new Campaign/Segment records a `create` row with no changes diff                                        | ⬜ unit-tested (`CampaignSaveProcessorAuditPluginTest`, `SegmentSaveProcessorAuditPluginTest`), no MFTF yet |
 | Saving an existing Campaign/Segment records an `update` row with the changed top-level fields diffed             | ⬜ unit-tested (same as above), no MFTF yet                                |
 | Admin Action Log grid (`ordo/adminactionlog/index`) renders logged rows                                         | ⬜ unit-tested (`Controller\Adminhtml\AdminActionLog\IndexTest`), no MFTF yet |
+
+## 20. Setup Guide (`Block/Adminhtml/Setup/SetupWizardViewModel.php`, `Controller/Adminhtml/Setup/`)
+
+| Scenario                                                                                                       | Status                                                                    |
+|------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| Each step's "done" state reflects real data (channel credentials, at least one segment/campaign) not just a click | ⬜ unit-tested (`SetupWizardViewModelTest`), no MFTF yet                  |
+| Dashboard banner links to the Setup Guide and disappears once every step is done                                | ⬜ unit-tested (`SetupWizardViewModelTest::testIsCompleteOnlyWhenEveryStepIsDone`), no MFTF yet |
 
 ## Suggested next batch (highest signal per test written)
 

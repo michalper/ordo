@@ -100,10 +100,6 @@ as bugs above, not repeated here)*
 - No **import** for campaigns or segments yet (export now exists — see docs/CHANGELOG.md) — a
   merchant can back up or move a definition's JSON out of an environment, but there's no way to
   bring it back in; that's still a manual conversation with support/engineering.
-- No setup wizard/guided first-run flow across the module — per-grid empty-state CTAs exist, but
-  nothing walks a fresh install through the real dependency order (configure a channel → build a
-  segment → build a campaign); an admin can build a `send_sms` action before ever configuring
-  Twilio credentials and only discovers the gap when sends silently fail.
 - No `fields`/sparse-fieldset support anywhere in `API.md`.
 
 ## Scheduled (date-based) campaigns: calendar view
