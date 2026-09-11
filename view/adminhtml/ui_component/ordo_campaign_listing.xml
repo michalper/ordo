@@ -21,6 +21,11 @@
                 <class>primary</class>
                 <label translate="true">Add New Campaign</label>
             </button>
+            <button name="import">
+                <url path="*/*/importform"/>
+                <class>secondary</class>
+                <label translate="true">Import Campaign</label>
+            </button>
         </buttons>
     </settings>
 

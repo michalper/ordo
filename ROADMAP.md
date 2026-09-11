@@ -80,9 +80,6 @@ as bugs above, not repeated here)*
   actions, and WhatsAppTemplate has mass-delete — see docs/CHANGELOG.md) — those three remaining
   grids are read-only/log/diagnostic views without an "enabled" concept to toggle, so a mass
   action there would need its own new capability first, not just wiring up an existing one.
-- No **import** for campaigns or segments yet (export now exists — see docs/CHANGELOG.md) — a
-  merchant can back up or move a definition's JSON out of an environment, but there's no way to
-  bring it back in; that's still a manual conversation with support/engineering.
 - No `fields`/sparse-fieldset support anywhere in `API.md`.
 
 ## Scheduled (date-based) campaigns: calendar view
