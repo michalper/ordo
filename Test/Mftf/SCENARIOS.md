@@ -11,8 +11,9 @@ jobs — not guessed from memory. Each scenario is marked:
 
 Cross-reference: `ROADMAP.md`'s "Test coverage" section for the standing priority list this feeds.
 
-**Status: every row below is ✅ except one 🔴 (see §10) and one ⬜ (the frequency-cap structural
-case in §1d, unit-tested but no MFTF/integration coverage yet).** Re-audit this against `etc/di.xml`/
+**Status: every row below is ✅ except one 🔴 (see §10) and two ⬜ (the frequency-cap structural
+case in §1d, and the Segment Overlap page in §2 — both unit-tested but no MFTF/integration
+coverage yet).** Re-audit this against `etc/di.xml`/
 `Controller/Adminhtml/*`/`etc/events.xml` periodically rather than trusting it at face value — add a row (⬜)
 for anything newly added before considering it done.
 
@@ -115,6 +116,7 @@ cases separately from the type-by-type ones.
 | Bulk action on a segment's current members — add points                                                                             | ✅ `AdminSegmentBulkActionAddPointsTest`            |
 | Segment edited, condition changed, membership re-evaluates differently                                                              | ✅ `AdminEditSegmentConditionChangesMembershipTest` |
 | Segment deleted                                                                                                                     | ✅ `AdminDeleteSegmentTest`                         |
+| Segment Overlap page (`ordo/segment/overlap`) — pick two segments, see size/intersection/unique counts                             | ⬜ (unit-tested: `OverlapTest`/`OverlapComputeTest`/JS `segment-overlap.test.js`) |
 
 ## 3. RFM (`Model/Rfm/`, `Cron/RecomputeRfmScores.php`, `ordo/rfm/index`)
 

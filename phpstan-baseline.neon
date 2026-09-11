@@ -571,6 +571,24 @@ parameters:
 			path: Controller/Adminhtml/Segment/NewAction.php
 
 		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/Segment/Overlap.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/Segment/Overlap.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Controller/Adminhtml/Segment/OverlapCompute.php
+
+		-
 			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getPostValue\(\)\.$#'
 			identifier: method.notFound
 			count: 1
