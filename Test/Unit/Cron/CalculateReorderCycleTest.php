@@ -95,6 +95,52 @@ $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, 
         self::assertSame(1, $result);
     }
 
+    /**
+     * An odd number of intervals takes the middle element directly rather than averaging two -
+     * the existing pattern-detected test above only ever produces an even count (2 intervals from
+     * 3 orders), so the ternary's other branch needs its own dedicated case.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteUsesTheMiddleIntervalDirectlyForAnOddIntervalCount(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-01-01 00:00:00'],
+            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-01-11 00:00:00'],
+            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-01-21 00:00:00'],
+            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-01-31 00:00:00'],
+        ]);
+        $connection->method('fetchOne')->willReturn(false);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $model = $this->createMock(ReorderCycle::class);
+        $setData = [];
+        $model->method('setData')->willReturnCallback(function (array $data) use (&$setData, $model) {
+            $setData = $data;
+            return $model;
+        });
+
+        $reorderCycleFactory = $this->createStub(ReorderCycleFactory::class);
+        $reorderCycleFactory->method('create')->willReturn($model);
+
+        $reorderCycleResource = $this->createMock(ReorderCycleResource::class);
+        $reorderCycleResource->method('getConnection')->willReturn($connection);
+        $reorderCycleResource->method('getMainTable')->willReturn('ordo_reorder_cycle');
+        $reorderCycleResource->expects(self::once())->method('save')->with($model);
+
+        $logger = $this->createStub(LoggerInterface::class);
+
+        $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $this->makeCronRunLogger($logger)))->execute();
+
+        self::assertSame(1, $result);
+        // Three 10-day intervals - the middle one directly (10), not an average of two.
+        self::assertSame(10, $setData['avg_interval_days']);
+    }
+
     public function testExecuteSkipsSameDayRepeatPurchases(): void
     {
         $connection = $this->createMock(AdapterInterface::class);

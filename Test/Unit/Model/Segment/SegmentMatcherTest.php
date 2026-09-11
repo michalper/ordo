@@ -295,4 +295,19 @@ class SegmentMatcherTest extends TestCase
 
         self::assertTrue($this->matcher->isCustomerInSegment(3, 42));
     }
+
+    /**
+     * asStringKeyedArray()'s own non-array guard is unreachable through isCustomerInSegment()
+     * itself - SegmentCondition::getParams() is declared to always return array, so no mock
+     * respecting that contract can feed it anything else. Exercised directly via reflection
+     * instead, the same normalization GroupWalker's own copy of this helper already has a direct
+     * test for.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAsStringKeyedArrayReturnsEmptyForANonArrayValue(): void
+    {
+        $method = new \ReflectionMethod(SegmentMatcher::class, 'asStringKeyedArray');
+
+        self::assertSame([], $method->invoke($this->matcher, 'not-an-array'));
+    }
 }

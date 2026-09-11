@@ -87,6 +87,36 @@ class CampaignRepositoryTest extends TestCase
         self::assertSame($campaign, $this->repository->save($campaign));
     }
 
+    /**
+     * A campaign whose entity id is still null even after save() (a resource stub that doesn't
+     * actually assign one, standing in for whatever pathological real case might leave a
+     * just-created campaign without an id) must not query trigger events for a null campaign id -
+     * old and new are both treated as the empty set rather than crashing.
+     */
+    public function testSaveSkipsTriggerEventLookupWhenEntityIdStaysNull(): void
+    {
+        $campaign = $this->createStub(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(null);
+        $this->resource->expects(self::once())->method('save')->with($campaign);
+
+        $this->campaignTriggerCollectionFactory = $this->createMock(CampaignTriggerCollectionFactory::class);
+        $this->campaignTriggerCollectionFactory->expects(self::never())->method('create');
+
+        $this->repository = new CampaignRepository(
+            $this->resource,
+            $this->campaignFactory,
+            $this->collectionFactory,
+            $this->searchResultsFactory,
+            $this->collectionProcessor,
+            $this->cache,
+            $this->campaignTriggerCollectionFactory
+        );
+
+        $this->cache->expects(self::never())->method('clean');
+
+        self::assertSame($campaign, $this->repository->save($campaign));
+    }
+
     public function testSaveCleansTagsForOldAndNewTriggerEvents(): void
     {
         $campaign = $this->createStub(Campaign::class);
