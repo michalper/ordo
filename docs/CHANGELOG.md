@@ -5,6 +5,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- **Mass actions on 5 more grids.** AdAudience, ContentBlock, FreeGiftOffer, and ScoreRule get
+  the same Enable/Disable/Delete mass actions Campaign and Segment already have; WhatsAppTemplate
+  gets mass-delete only (it has no plain "enabled" toggle to mass-set — see
+  `Controller\Adminhtml\WhatsAppTemplate\MassDelete`'s own docblock). All five grids' own
+  `selectionsColumn` checkboxes previously did nothing.
+
 ### Changed
 
 - **Unified `ConditionGroupEvaluator`/`SegmentMemberResolver`'s duplicated AND/OR/nested-group

@@ -43,6 +43,40 @@
         </argument>
     </dataSource>
 
+    <!--
+        Mass-action counterpart to the "ids" selectionsColumn below, which used to render
+        checkboxes that did nothing (ROADMAP.md admin-platform audit finding). Same pattern as
+        ordo_campaign_listing.xml's own listingToolbar.
+    -->
+    <listingToolbar name="listing_top">
+        <massaction name="listing_massaction">
+            <action name="enable">
+                <settings>
+                    <url path="*/*/massEnable"/>
+                    <type>enable</type>
+                    <label translate="true">Enable</label>
+                </settings>
+            </action>
+            <action name="disable">
+                <settings>
+                    <url path="*/*/massDisable"/>
+                    <type>disable</type>
+                    <label translate="true">Disable</label>
+                </settings>
+            </action>
+            <action name="delete">
+                <settings>
+                    <confirm>
+                        <message translate="true">Are you sure you want to delete the selected score rule(s)?</message>
+                        <title translate="true">Delete score rules</title>
+                    </confirm>
+                    <url path="*/*/massDelete"/>
+                    <type>delete</type>
+                    <label translate="true">Delete</label>
+                </settings>
+            </action>
+        </massaction>
+    </listingToolbar>
     <columns name="ordo_scorerule_columns">
         <selectionsColumn name="ids">
             <settings>
