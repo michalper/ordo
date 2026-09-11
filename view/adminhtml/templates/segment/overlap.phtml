@@ -1,0 +1,55 @@
+<?php
+/** @var \Ordo\Automation\Block\Adminhtml\Segment\Overlap $block */
+/** @var \Magento\Framework\Escaper $escaper */
+?>
+<div class="admin__fieldset-wrapper ordo-segment-overlap" data-overlap-compute-url="<?= $escaper->escapeUrl($block->getOverlapComputeUrl()) ?>">
+    <div class="admin__fieldset-wrapper-title">
+        <strong><?= $escaper->escapeHtml(__('Segment Overlap')) ?></strong>
+    </div>
+    <div class="admin__fieldset-wrapper-content">
+        <p>
+            <?= $escaper->escapeHtml(
+                __('Pick two segments to see how many customers currently match both — useful for'
+                    . ' avoiding message fatigue from campaigns that unknowingly target the same people.')
+            ) ?>
+        </p>
+        <div class="admin__field">
+            <label class="admin__field-label" for="ordo-overlap-segment-a"><?= $escaper->escapeHtml(__('Segment A')) ?></label>
+            <div class="admin__field-control">
+                <select id="ordo-overlap-segment-a" class="admin__control-select" data-overlap-segment="a">
+                    <option value=""><?= $escaper->escapeHtml(__('-- Select --')) ?></option>
+                    <?php foreach ($block->getSegmentOptions() as $option): ?>
+                        <option value="<?= (int) $option['value'] ?>"><?= $escaper->escapeHtml((string) $option['label']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </div>
+        <div class="admin__field">
+            <label class="admin__field-label" for="ordo-overlap-segment-b"><?= $escaper->escapeHtml(__('Segment B')) ?></label>
+            <div class="admin__field-control">
+                <select id="ordo-overlap-segment-b" class="admin__control-select" data-overlap-segment="b">
+                    <option value=""><?= $escaper->escapeHtml(__('-- Select --')) ?></option>
+                    <?php foreach ($block->getSegmentOptions() as $option): ?>
+                        <option value="<?= (int) $option['value'] ?>"><?= $escaper->escapeHtml((string) $option['label']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </div>
+        <button type="button" class="action-primary" data-overlap-compute>
+            <span><?= $escaper->escapeHtml(__('Compare')) ?></span>
+        </button>
+        <div class="ordo-segment-overlap-result" data-overlap-result style="display: none">
+            <ul>
+                <li><?= $escaper->escapeHtml(__('Segment A size:')) ?> <span data-overlap-size-a></span></li>
+                <li><?= $escaper->escapeHtml(__('Segment B size:')) ?> <span data-overlap-size-b></span></li>
+                <li><?= $escaper->escapeHtml(__('In both (intersection):')) ?> <span data-overlap-intersection></span></li>
+                <li><?= $escaper->escapeHtml(__('Only in Segment A:')) ?> <span data-overlap-unique-a></span></li>
+                <li><?= $escaper->escapeHtml(__('Only in Segment B:')) ?> <span data-overlap-unique-b></span></li>
+            </ul>
+        </div>
+        <div class="ordo-segment-overlap-error" data-overlap-error style="display: none"></div>
+    </div>
+</div>
+<script>
+require(['Ordo_Automation/js/segment-overlap']);
+</script>
