@@ -21,6 +21,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   module to read `Magento\Backend\Model\Auth\Session`. New read-only **Admin Action Log** admin
   grid (`ordo/adminactionlog/index`), linked from the dashboard's Diagnostics section. Every other
   admin-managed entity remains unaudited for now — see ROADMAP.md.
+- **Rate limiting for the anonymous order-approval token endpoints**, closing the API.md gap
+  where `Controller\Approval\{Approve,Reject}` were token-guarded but not throttled against
+  brute-forcing a token guess. New `Model\Approval\ApprovalRateLimiter` — a bespoke cache-backed
+  attempt counter keyed by token+IP (10 attempts per 15-minute window; Magento has no built-in
+  webapi rate-limit mechanism to turn on instead, since these aren't `webapi.xml` service
+  contracts) — checked first thing in both actions via a new shared
+  `AbstractApprovalAction::enforceRateLimit()`, redirecting home with an error message instead of
+  looking up the token at all once the cap is hit.
 - **Flow canvas palette search/filter**, closing the first of the campaign-engine ROADMAP.md
   "Flow canvas UX" gaps — with ~20+ condition/action types across the three palette groups,
   scanning past everything that doesn't match got tedious. A new search input above the palette

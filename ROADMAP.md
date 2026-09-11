@@ -104,9 +104,7 @@ as bugs above, not repeated here)*
   nothing walks a fresh install through the real dependency order (configure a channel → build a
   segment → build a campaign); an admin can build a `send_sms` action before ever configuring
   Twilio credentials and only discovers the gap when sends silently fail.
-- No `fields`/sparse-fieldset support and no documented rate limiting anywhere in `API.md`; the
-  anonymous order-approval endpoints (`.../approve`, `.../reject`) are token-guarded but not
-  rate-limited against brute-forcing a token guess.
+- No `fields`/sparse-fieldset support anywhere in `API.md`.
 
 ## Scheduled (date-based) campaigns: calendar view
 
