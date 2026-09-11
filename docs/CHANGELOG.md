@@ -84,6 +84,21 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   AdAudience plugin can skip recording `Cron\SyncAdAudiences`'s own periodic
   `last_sync_status` update — that save goes through the same resource with no admin session
   behind it, and would otherwise show up in the audit log misattributed as an admin action.
+- **`fields` sparse-fieldset support for this module's REST list/read endpoints**, closing the
+  API-docs ROADMAP.md gap. Magento core has shipped the parsing/filtering logic for this since
+  ~2015 (`Magento\Framework\Webapi\Rest\Response\FieldsFilter`), but in this Magento version
+  nothing actually calls it — no core plugin, controller, or `di.xml` wiring references
+  `FieldsFilter` anywhere outside its own class and unit test, confirmed by grepping the full
+  installed `vendor/magento` tree. So `?fields=...` was silently ignored on every
+  `webapi.xml`-backed endpoint, this module's included, not just undocumented. New
+  `Plugin\Webapi\SparseFieldsetPlugin`, an `afterProcess` plugin on
+  `Magento\Framework\Webapi\ServiceOutputProcessor` scoped to `etc/webapi_rest/di.xml` (so
+  SOAP/GraphQL/async requests are untouched) and to this module's own `Ordo\Automation\Api\*`
+  service interfaces (not applied globally, to keep the blast radius limited to what's actually
+  documented) — the same `afterProcess`-on-`ServiceOutputProcessor` pattern
+  `Magento\Sales\Plugin\Webapi\OrderResponseNullKeysPlugin` already uses in core. Reuses core's
+  own `FieldsFilter` rather than reimplementing the bracket/comma parsing. See `API.md` for a
+  worked example against `GET /V1/ordo/campaigns`.
 
 ### Changed
 

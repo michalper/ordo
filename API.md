@@ -42,6 +42,22 @@ POST /rest/V1/ordo/campaigns
 A campaign's trigger event (s) are no longer a field on the campaign itself — see
 "Campaign triggers" below. A campaign with no trigger rows never fires; add at least one.
 
+### Sparse fieldsets (`fields`)
+
+Every `getList`/read endpoint in this module supports Magento's standard `fields` query param
+(`Magento\Framework\Webapi\Rest\Response\FieldsFilter`) to trim the response down to only the
+fields you need — same bracket/comma dot-notation Magento's own core APIs use:
+
+```
+GET /rest/V1/ordo/campaigns?fields=items[entity_id,name]
+→ 200 {"items":[{"entity_id":10,"name":"Win-back"},{"entity_id":11,"name":"VIP welcome"}]}
+```
+
+A single `getById`-style response (no `items` wrapper) is filtered the same way — omit the
+`items[...]` wrapper and list the top-level fields directly, e.g.
+`?fields=entity_id,name`. An invalid or unrecognized field name is silently dropped, not an
+error — the same behavior Magento core's own `fields` filter has everywhere else it's wired up.
+
 ## Campaign triggers
 
 The event (s) that start a campaign — a campaign can have more than one (e.g. both
