@@ -10,7 +10,11 @@ namespace Ordo\Automation\Model\Gdpr;
  * that already bit SetConsent's channel list once (see that class's own fix history in
  * docs/CHANGELOG.md). A table added to one list but not the other would silently mean either an
  * erasure that misses data (compliance risk) or an export that's incomplete - both now read from
- * here instead.
+ * here instead. Went stale once already, in exactly the way its own doc warns about: a follow-up
+ * audit found this list was still missing ordo_customer_rfm_score, ordo_trigger_outcome_log,
+ * ordo_campaign_outcome_log, ordo_push_subscription, ordo_reorder_cycle, ordo_offer and
+ * ordo_credit_limit_alert_log — all seven do carry a real customer_id column per db_schema.xml,
+ * so both erasure and export were silently incomplete until this fix.
  *
  * ordo_visitor_event is deliberately NOT included - it is keyed by visitor_id, an anonymous
  * browser-cookie identifier this module never links back to a customer_id by design (see
@@ -35,6 +39,13 @@ class CustomerDataTableProvider
         'ordo_survey_prompt' => 'survey_responses',
         'ordo_pending_popup' => 'pending_popups',
         'ordo_message_log' => 'message_log',
+        'ordo_customer_rfm_score' => 'rfm_score',
+        'ordo_trigger_outcome_log' => 'trigger_outcome_log',
+        'ordo_campaign_outcome_log' => 'campaign_outcome_log',
+        'ordo_push_subscription' => 'push_subscriptions',
+        'ordo_reorder_cycle' => 'reorder_cycles',
+        'ordo_offer' => 'offers',
+        'ordo_credit_limit_alert_log' => 'credit_limit_alert_log',
     ];
 
     /**
