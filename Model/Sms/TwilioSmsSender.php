@@ -106,7 +106,7 @@ class TwilioSmsSender implements SmsSenderInterface
             $this->config->getTwilioAccountSid(),
         ];
 
-        if ($this->client === null || $this->clientCredentials !== $credentials) {
+        if (!$this->client instanceof Client || $this->clientCredentials !== $credentials) {
             $this->client = new Client($credentials[0], $credentials[1], $credentials[2], null, $this->makeHttpClient());
             $this->clientCredentials = $credentials;
         }

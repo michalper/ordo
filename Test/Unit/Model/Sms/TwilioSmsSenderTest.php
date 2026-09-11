@@ -216,6 +216,7 @@ class TwilioSmsSenderTest extends TestCase
         };
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testClientIsBuiltOnceAndReusedAcrossMultipleSendsWithTheSameCredentials(): void
     {
         $captured = [];
@@ -229,16 +230,22 @@ class TwilioSmsSenderTest extends TestCase
         self::assertCount(1, $calls);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testClientIsRebuiltWhenTheApiKeySecretChanges(): void
     {
         // Simulate a rotated API key secret between two sends on the SAME sender instance (e.g.
         // an admin updated the Twilio config while the long-lived queue consumer process, see
         // AGENTS.md, kept running) by having the stub return a different secret on each call.
+        // A plain closure with an explicit by-reference `use` is required here, NOT an arrow
+        // function - `fn() => $secret` captures $secret BY VALUE at creation time, so mutating
+        // the outer $secret afterward would silently have no effect on what the stub returns.
         $secret = self::API_KEY_SECRET;
         $this->config = $this->createStub(Config::class);
         $this->config->method('getTwilioAccountSid')->willReturn(self::ACCOUNT_SID);
         $this->config->method('getTwilioApiKeySid')->willReturn(self::API_KEY_SID);
-        $this->config->method('getTwilioApiKeySecret')->willReturnCallback(fn () => $secret);
+        $this->config->method('getTwilioApiKeySecret')->willReturnCallback(function () use (&$secret) {
+            return $secret;
+        });
         $this->config->method('getTwilioFromNumber')->willReturn(self::FROM_NUMBER);
 
         $captured = [];
