@@ -106,8 +106,10 @@ as bugs above, not repeated here)*
 
 - No audit log of admin actions anywhere — no way to answer "who changed this campaign last
   Tuesday," despite campaigns/segments/offers directly affecting revenue and customer comms.
-- No bulk/mass-action on any of the ~10 listing grids (`grep` across every `*_listing.xml` finds
-  zero `massaction` blocks) — enabling/disabling/deleting is strictly one row at a time everywhere.
+- No bulk/mass-action on 8 of the ~10 listing grids (Campaign and Segment now have
+  enable/disable/delete mass actions — see docs/CHANGELOG.md; ContentBlock, FreeGiftOffer,
+  MessageLog, ReorderCycle, Rfm, ScoreRule, WhatsAppTemplate, and AdAudience still don't) —
+  enabling/disabling/deleting is strictly one row at a time on those.
 - No export/import for campaigns or segments — the only export capability in the whole module is
   GDPR customer-data export; nothing lets a merchant move a campaign/segment definition between
   dev/staging/prod or back it up before a risky edit.

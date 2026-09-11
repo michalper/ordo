@@ -46,6 +46,20 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   values filled into an already Meta-approved template, not free text a recommendation block could
   substitute into.
 
+- **Campaign and Segment grids gained enable/disable/delete bulk actions**, closing the
+  admin-platform ROADMAP.md gap where every listing's `selectionsColumn` checkboxes rendered but
+  did nothing. New `<massaction>` block in `ordo_campaign_listing.xml`/`ordo_segment_listing.xml`
+  wired to 3 new controllers per entity (`MassEnable`/`MassDisable`/`MassDelete`), each using the
+  standard `Magento\Ui\Component\MassAction\Filter` + that entity's own CRUD collection (not the
+  Grid collection used for display) — same pattern Magento core's own mass-action controllers use.
+  Campaign's persist through `CampaignRepositoryInterface` (a real service contract, so its own
+  per-trigger-event cache invalidation runs exactly as it does for a single save/delete); Segment
+  has no repository yet, so its 3 controllers go through `SegmentResource` directly, the same way
+  the existing single-segment `Save`/`Delete` controllers already do. The other 8 listing grids
+  (ContentBlock, FreeGiftOffer, MessageLog, ReorderCycle, Rfm, ScoreRule, WhatsAppTemplate,
+  AdAudience) still have no bulk actions — same mechanical pattern, a natural follow-up, not
+  attempted here.
+
 - **A visible warning when `order_total_gte`/`visitor_tag` is used inside a Segment**, closing the
   segmentation ROADMAP.md gap where their fail-closed semantics (correct — `Model\Segment\`
   `SegmentMemberResolver::resolveCondition()` returns `[]`, matching nobody, since both are
