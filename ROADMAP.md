@@ -122,10 +122,6 @@ new. Two are real bugs worth fixing soon; the rest are minor cleanups/optimizati
 
 ### Optimizations
 
-- `Model/Campaign/ScheduledTriggerScanner::isDue()` issues one `ScheduledTriggerState::getState()`
-  SELECT per trigger inside its scan loop instead of one batched query for every
-  (campaign_id, trigger_event) pair up front. A natural prerequisite if the calendar view below
-  ever gets built (same triggers, same lookup).
 - `Infra/Sms/TwilioSmsSender.php` constructs a new Twilio `Client` on every `send()` call instead
   of reusing one instance.
 

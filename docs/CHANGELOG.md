@@ -7,6 +7,15 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- **`Model\Campaign\ScheduledTriggerScanner` now batches its fire-state lookup.** `isDue()` used
+  to call `ScheduledTriggerState::getState()` once per scheduled/recurring trigger inside the scan
+  loop (one SELECT per trigger, every 5 minutes per `etc/crontab.xml`). `ScheduledTriggerState`
+  gained `getStatesForCampaigns()`, fetching every relevant campaign's state in a single query
+  up front; `matchesCronExpression()` also now reuses one `Magento\Cron\Model\Schedule` instance
+  per scan instead of creating a new one via `cronScheduleFactory` on every recurring trigger
+  checked.
+
+
 - **Unified `ConditionGroupEvaluator`/`SegmentMemberResolver`'s duplicated AND/OR/nested-group
   tree-walk**, closing the campaign engine's remaining "second, independent implementation" gap
   noted when `ConditionGroupEvaluator` itself was first extracted (see this file's own earlier
