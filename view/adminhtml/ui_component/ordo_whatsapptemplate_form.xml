@@ -105,9 +105,10 @@
             <settings>
                 <dataType>text</dataType>
                 <label translate="true">Body Text</label>
-                <notice translate="true">Use {{1}}, {{2}}, ... for placeholders filled positionally by the send_whatsapp campaign action's own "params" field at send time.</notice>
+                <notice translate="true">Use {{1}}, {{2}}, ... for placeholders filled positionally by the send_whatsapp campaign action's own "params" field at send time. Max 1024 characters, matching Meta's own WhatsApp template body limit.</notice>
                 <validation>
                     <rule name="required-entry" xsi:type="boolean">true</rule>
+                    <rule name="max_text_length" xsi:type="number">1024</rule>
                 </validation>
             </settings>
         </field>

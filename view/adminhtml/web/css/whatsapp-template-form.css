@@ -1,0 +1,18 @@
+/*
+ * WhatsApp Template Edit page's live preview panel (whatsapp-template-body-preview.js) - the
+ * "over the character limit" state reuses this module's shared color tokens (_tokens.css)
+ * rather than a one-off hex.
+ */
+.ordo-whatsapp-body-preview-count-over {
+    color: var(--ordo-color-accent-dark);
+    font-weight: 600;
+}
+
+.ordo-whatsapp-body-preview-text {
+    white-space: pre-wrap;
+    border: 1px solid var(--ordo-color-border);
+    border-radius: 4px;
+    padding: 10px 12px;
+    background: #fff;
+    color: var(--ordo-color-ink);
+}

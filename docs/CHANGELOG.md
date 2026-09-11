@@ -33,6 +33,16 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **WhatsApp Template Edit page now has a character-limit validation, live counter, and rendered
+  preview for the Body Text field**, closing the communication-channels ROADMAP.md gap where a raw
+  textarea with manual `{{1}}`/`{{2}}` placeholders had no feedback before a real (costly) Meta
+  review submission. The field's UI-component validation gained a `max_text_length` rule (1024
+  characters, matching Meta's own documented WhatsApp template body limit —
+  `Block\Adminhtml\WhatsAppTemplate\BodyPreview::BODY_MAX_LENGTH`), and a new sibling panel
+  (`whatsapp-template-body-preview.js`) shows a live `n / 1024 characters` counter (flagged once
+  over the limit) plus the body text with every `{{N}}` placeholder substituted for a generic
+  `[Sample value N]`, updated on every keystroke.
+
 - **Time-zone-aware campaign quiet hours**, closing the campaign engine's "No time-zone-aware
   quiet hours" gap. New `ordo_timezone` customer attribute (`AddCustomerTimezoneAttribute`, an
   IANA zone string, e.g. `Europe/Warsaw`) and a `quiet_hours` admin config section
