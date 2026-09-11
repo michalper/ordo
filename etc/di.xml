@@ -79,6 +79,7 @@
                 <item name="ordo_orderapproval_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\OrderApproval\Grid\Collection</item>
                 <item name="ordo_cronrunlog_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Cron\CronRunLog\Grid\Collection</item>
                 <item name="ordo_productfeedrunlog_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\ProductFeedRunLog\Grid\Collection</item>
+                <item name="ordo_adminactionlog_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\AdminActionLog\Grid\Collection</item>
             </argument>
         </arguments>
     </type>
@@ -101,6 +102,13 @@
         <arguments>
             <argument name="mainTable" xsi:type="string">ordo_product_feed_run_log</argument>
             <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\ProductFeedRunLog</argument>
+        </arguments>
+    </type>
+
+    <type name="Ordo\Automation\Model\ResourceModel\AdminActionLog\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">ordo_admin_action_log</argument>
+            <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\AdminActionLog</argument>
         </arguments>
     </type>
 
