@@ -98,6 +98,51 @@ as bugs above, not repeated here)*
   bring it back in; that's still a manual conversation with support/engineering.
 - No `fields`/sparse-fieldset support anywhere in `API.md`.
 
+## Follow-up audit (2026-09-11)
+
+Second pass over the same five domains, checking what the 2026-09-10 audit closed and what's
+new. Two are real bugs worth fixing soon; the rest are minor cleanups/optimizations.
+
+### Bugs
+
+- **SMS/WhatsApp status webhooks can regress a message's logged status.** Email's webhook
+  (`Controller/Email/StatusCallback.php`) was hardened with a rank-based precedence guard so a
+  redelivered `delivered` event can't downgrade an already-`FAILED`/later status — but
+  `Controller/Sms/StatusCallback.php` and `Controller/WhatsApp/Webhook.php` still call
+  `$log->setStatus($status)` unconditionally. Twilio and Meta both have at-least-once webhook
+  delivery, so both channels are exposed to the exact bug Email already fixed; same guard needs
+  porting over.
+- **GDPR erasure/export table list is already stale.** `Model/Gdpr/CustomerDataTableProvider.php`
+  (the single source of truth introduced to close the "two hand-maintained lists" gap above) is
+  missing several tables that do carry a real `customer_id` per `etc/db_schema.xml`:
+  `ordo_customer_rfm_score`, `ordo_trigger_outcome_log`, `ordo_campaign_outcome_log`,
+  `ordo_push_subscription`, `ordo_reorder_cycle`, `ordo_offer`, `ordo_credit_limit_alert_log`.
+  None of these are erased or exported on a customer's GDPR request — a compliance gap, not just
+  a code-quality one.
+
+### Optimizations
+
+- `Model/Campaign/ScheduledTriggerScanner::isDue()` issues one `ScheduledTriggerState::getState()`
+  SELECT per trigger inside its scan loop instead of one batched query for every
+  (campaign_id, trigger_event) pair up front. A natural prerequisite if the calendar view below
+  ever gets built (same triggers, same lookup).
+- `Infra/Sms/TwilioSmsSender.php` constructs a new Twilio `Client` on every `send()` call instead
+  of reusing one instance.
+
+### Documentation drift
+
+- `API.md`'s Order Approvals section doesn't mention the order-approval token rate limiter
+  (`Model/Approval/ApprovalRateLimiter.php`, 10 attempts/15 min) even though docs/CHANGELOG.md
+  already lists that gap as closed.
+- `VERIFICATION.md`'s manual checklist has no steps for anything shipped since 2026-09-10 (admin
+  action audit log, Order Approvals grid, Campaign/Segment export, product feed health grid,
+  dead-letter/retry, multi-tier escalation).
+- Five listing grids (`ordo_adaudience_listing.xml`, `ordo_contentblock_listing.xml`,
+  `ordo_free_gift_offer_listing.xml`, `ordo_scorerule_listing.xml`,
+  `ordo_whatsapptemplate_listing.xml`) render row-selection checkboxes (`<selectionsColumn>`)
+  with no `<massaction>` behind them — worse than simply lacking mass actions (already tracked
+  above), these are checkboxes that visibly do nothing.
+
 ## Scheduled (date-based) campaigns: calendar view
 
 Both the backend (`ScheduledTriggerScanner`/`DispatchScheduledCampaignTriggers`) and the admin UI
