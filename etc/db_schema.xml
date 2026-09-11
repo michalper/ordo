@@ -663,13 +663,34 @@
                     referenceTable="ordo_content_block" referenceColumn="entity_id" onDelete="CASCADE"/>
     </table>
 
-    <table name="ordo_product_feed_cache" resource="default" engine="innodb" comment="Last successfully generated shopping feed XML, refreshed by Cron\RefreshProductFeed - Controller\ProductFeed\Index serves this cached row on every public request, never generating on demand. One row per feed_code (only google_merchant today, kept per-code rather than a singleton row so a second feed format can be added without a schema change).">
+    <table name="ordo_product_feed_cache" resource="default" engine="innodb" comment="Last successfully generated shopping feed XML, refreshed by Cron\RefreshProductFeed - Controller\ProductFeed\Index serves this cached row on every public request, never generating on demand. One row per (feed_code, store_id) - only google_merchant today, kept per-code rather than a singleton row so a second feed format can be added without a schema change; store_id lets each store's own price/currency/base-URL scope get its own cached feed instead of one store's generation silently overwriting another's.">
         <column xsi:type="varchar" name="feed_code" nullable="false" length="32" comment="google_merchant today"/>
+        <column xsi:type="int" name="store_id" padding="5" unsigned="true" nullable="false" comment="core_store.store_id"/>
         <column xsi:type="text" name="xml" nullable="false" comment="The full, ready-to-serve feed XML"/>
         <column xsi:type="int" name="product_count" padding="10" unsigned="true" nullable="false" default="0" comment="How many items the last successful generation produced"/>
         <column xsi:type="timestamp" name="generated_at" nullable="false" default="CURRENT_TIMESTAMP" comment="When this feed was last successfully generated"/>
         <column xsi:type="varchar" name="generation_error" nullable="true" length="255" comment="Last generation error message, kept for admin diagnostics even though stale xml is still served"/>
-        <constraint xsi:type="primary" referenceId="PRIMARY"><column name="feed_code"/></constraint>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="feed_code"/>
+            <column name="store_id"/>
+        </constraint>
+    </table>
+    <table name="ordo_product_feed_run_log" resource="default" engine="innodb" comment="Append-only history of every ordo_product_feed_cache write (Model\ProductFeed\ProductFeedCacheWriter), one row per (feed_code, store_id) generation attempt - the feed cache table above only ever holds the LATEST attempt per store, so a transient failure that was later retried successfully left no trace; this is what the new admin health grid reads to answer 'has this store's feed generation actually been failing lately, and when did it last succeed'.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="feed_code" nullable="false" length="32" comment="google_merchant today"/>
+        <column xsi:type="int" name="store_id" padding="5" unsigned="true" nullable="false" comment="core_store.store_id"/>
+        <column xsi:type="varchar" name="status" nullable="false" length="16" comment="success or error - see ProductFeedRunLog::STATUS_* constants"/>
+        <column xsi:type="int" name="product_count" padding="10" unsigned="true" nullable="false" default="0" comment="0 for a failed attempt"/>
+        <column xsi:type="varchar" name="message" nullable="true" length="255" comment="The generation error message, null on success"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="ORDO_PRODUCT_FEED_RUN_LOG_FEED_CODE_STORE_ID_CREATED_AT" indexType="btree">
+            <column name="feed_code"/>
+            <column name="store_id"/>
+            <column name="created_at"/>
+        </index>
     </table>
 
     <table name="ordo_message_log" resource="default" engine="innodb" comment="One row per individual outbound message a campaign action dispatched — deliberately channel-generic so sms/email/whatsapp all share the same table/webhook shape instead of a one-off design per channel">

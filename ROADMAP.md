@@ -82,9 +82,9 @@ as bugs above, not repeated here)*
   a new customer-keyed table can silently be omitted from erasure.
 - Reorder Cycle is detection-only — `Cron/CalculateReorderCycle.php` computes `next_expected_date`
   but there's no one-click "build reorder cart" action and no manual per-customer reminder trigger.
-- Product feed is single-format (Google RSS only), single-store, with no admin grid for feed
-  health/history — a generation failure only sets an error flag nobody can see without knowing to
-  look.
+- Product feed is still single-format (Google RSS only) — multi-store and health/history are now
+  covered (see docs/CHANGELOG.md). A second feed format (beyond Google Merchant's RSS+g: namespace)
+  is a bigger, separate abstraction.
 - Dashboard has no drill-down for "N approvals stuck" / "N crons failed" — the KPIs shown aren't
   actionable.
 

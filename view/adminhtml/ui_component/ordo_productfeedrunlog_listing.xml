@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">ordo_productfeedrunlog_listing.ordo_productfeedrunlog_listing_data_source</item>
+        </item>
+    </argument>
+    <settings>
+        <spinner>ordo_productfeedrunlog_columns</spinner>
+        <deps>
+            <dep>ordo_productfeedrunlog_listing.ordo_productfeedrunlog_listing_data_source</dep>
+        </deps>
+        <buttons>
+            <button name="refresh_now">
+                <url path="ordo/productfeed/refreshnow"/>
+                <class>primary</class>
+                <label translate="true">Refresh Now</label>
+            </button>
+            <button name="back_to_dashboard">
+                <url path="ordo/dashboard/index"/>
+                <class>back</class>
+                <label translate="true">Back to Dashboard</label>
+            </button>
+        </buttons>
+    </settings>
+
+    <dataSource name="ordo_productfeedrunlog_listing_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider</argument>
+            <argument name="name" xsi:type="string">ordo_productfeedrunlog_listing_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">entity_id</argument>
+            <argument name="requestFieldName" xsi:type="string">entity_id</argument>
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="update_url" xsi:type="url" path="mui/index/render"/>
+                </item>
+            </argument>
+        </argument>
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/grid/provider</item>
+            </item>
+        </argument>
+    </dataSource>
+
+    <columns name="ordo_productfeedrunlog_columns">
+        <column name="entity_id">
+            <settings>
+                <filter>text</filter>
+                <sorting>desc</sorting>
+                <label translate="true">ID</label>
+            </settings>
+        </column>
+        <column name="feed_code">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Feed</label>
+            </settings>
+        </column>
+        <column name="store_id" class="Magento\Store\Ui\Component\Listing\Column\Store">
+            <settings>
+                <filter>select</filter>
+                <label translate="true">Store</label>
+            </settings>
+        </column>
+        <column name="status" component="Magento_Ui/js/grid/columns/select">
+            <settings>
+                <filter>select</filter>
+                <options class="Ordo\Automation\Model\Config\Source\ProductFeedRunLogStatus"/>
+                <dataType>select</dataType>
+                <label translate="true">Status</label>
+            </settings>
+        </column>
+        <column name="product_count">
+            <settings>
+                <filter>textRange</filter>
+                <dataType>number</dataType>
+                <label translate="true">Product Count</label>
+            </settings>
+        </column>
+        <column name="message">
+            <settings>
+                <filter>text</filter>
+                <sortable>false</sortable>
+                <label translate="true">Message</label>
+            </settings>
+        </column>
+        <column name="created_at" class="Magento\Ui\Component\Listing\Columns\Date">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Created</label>
+            </settings>
+        </column>
+    </columns>
+</listing>
