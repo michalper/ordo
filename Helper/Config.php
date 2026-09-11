@@ -33,6 +33,10 @@ class Config
 
     private const string XML_PATH_APPROVAL_ENABLED = 'ordo_automation/order_approval/enabled';
     private const string XML_PATH_APPROVAL_ESCALATION_DAYS = 'ordo_automation/order_approval/escalation_days';
+    private const string XML_PATH_APPROVAL_ESCALATION_MAX_REMINDERS_PER_TIER
+        = 'ordo_automation/order_approval/escalation_max_reminders_per_tier';
+    private const string XML_PATH_APPROVAL_ESCALATION_CHAIN_EMAILS
+        = 'ordo_automation/order_approval/escalation_chain_emails';
 
     private const string XML_PATH_SALES_REP_DIGEST_ENABLED = 'ordo_automation/sales_rep/digest_enabled';
 
@@ -266,6 +270,29 @@ class Config
     public function getOrderApprovalEscalationDays(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_APPROVAL_ESCALATION_DAYS, 2, $storeId);
+    }
+
+    public function getOrderApprovalEscalationMaxRemindersPerTier(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_APPROVAL_ESCALATION_MAX_REMINDERS_PER_TIER, 3, $storeId);
+    }
+
+    /**
+     * @return string[] Tier 1, 2, 3, ... recipient emails in order — index 0 is tier 1 (the first
+     *   escalation past the original customer-assigned admin, itself tier 0). Empty when
+     *   unconfigured, matching the previous behavior of re-reminding the same recipient forever.
+     */
+    public function getOrderApprovalEscalationChainEmails(?int $storeId = null): array
+    {
+        $raw = (string) $this->scopeConfig->getValue(
+            self::XML_PATH_APPROVAL_ESCALATION_CHAIN_EMAILS,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+
+        $emails = array_filter(array_map('trim', preg_split('/[\r\n]+/', $raw) ?: []));
+
+        return array_values($emails);
     }
 
     public function isSalesRepDigestEnabled(?int $storeId = null): bool

@@ -5,6 +5,22 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- **Order approval escalation is now multi-level instead of a flat, single-recipient reminder
+  loop.** `Cron/EscalateStalePendingApprovals.php` previously re-reminded the same
+  customer-assigned `admin_email` up to a hardcoded `MAX_ESCALATIONS = 3` times and then left the
+  order pending forever with no further action. It now supports a configurable escalation chain
+  (Stores > Configuration > Ordo Automation > Order Approval): **Reminders to send before
+  escalating to the next tier** (`getOrderApprovalEscalationMaxRemindersPerTier()`, default 3,
+  replacing the old constant) and **Escalation chain** (`getOrderApprovalEscalationChainEmails()`,
+  one email per line, empty by default). Once the current tier's reminder cap is reached, the next
+  reminder goes to the first configured chain email instead (tier 1), then the second (tier 2), and
+  so on; a new `escalation_tier` column on `ordo_order_approval` (smallint, default 0) tracks this,
+  resetting `reminders_sent` to 0/1 each time it advances. Leaving the chain unconfigured keeps the
+  exact original behavior — indefinite reminders to the same recipient, no schema/config change
+  required for existing installs to see no difference.
+
 ### Changed
 
 - **Centralized the admin CSS color tokens duplicated across `dashboard.css`, `segment-form.css`,

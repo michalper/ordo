@@ -801,7 +801,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 13
+			count: 14
 			path: Helper/Config.php
 
 		-
@@ -2026,7 +2026,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 3
+			count: 4
 			path: Model/OrderApproval.php
 
 		-

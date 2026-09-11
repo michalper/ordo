@@ -10,6 +10,7 @@ interface OrderApprovalInterface
     public const ADMIN_EMAIL = 'admin_email';
     public const STATUS = 'status';
     public const REMINDERS_SENT = 'reminders_sent';
+    public const ESCALATION_TIER = 'escalation_tier';
     public const CREATED_AT = 'created_at';
     public const DECIDED_AT = 'decided_at';
 
@@ -41,6 +42,11 @@ interface OrderApprovalInterface
      * @return int
      */
     public function getRemindersSent(): int;
+
+    /**
+     * @return int
+     */
+    public function getEscalationTier(): int;
 
     /**
      * @return string|null
