@@ -9,7 +9,8 @@ use Magento\Framework\Data\OptionSourceInterface;
  * The OUTER (top-level) condition Type dropdown on ordo_segment_form.xml only - adds a synthetic
  * "Group" option on top of everything ConditionType already lists, so an admin can nest a
  * sub-list of conditions with its own independent AND/OR (see ordo_segment_form.xml's
- * group_logic/group_conditions fields and Model\Segment\SegmentMatcher::evaluateGroup()).
+ * group_logic/group_conditions fields and Model\Condition\GroupWalker, the shared tree-walk
+ * both SegmentMatcher and Model\Segment\SegmentMemberResolver delegate to).
  *
  * 'group' is deliberately NOT registered in ConditionPool - the matcher/resolver/dispatcher code
  * all special-case `$spec['type'] === 'group'` BEFORE ever calling ConditionPool::get(), so

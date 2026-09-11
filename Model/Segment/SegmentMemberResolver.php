@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Segment;
 
+use Ordo\Automation\Model\Condition\GroupWalker;
+use Ordo\Automation\Model\Condition\SetGroupCombineStrategy;
 use Ordo\Automation\Model\CustomerScoreManager;
 use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Model\Event\EventOccurredResolver;
@@ -26,12 +28,17 @@ use Psr\Log\LoggerInterface;
  *    the union rather than zeroing out the segment/group — same as SegmentMatcher treating an
  *    unsatisfied condition as "keep checking the rest" under OR, not "fail the whole thing".
  *  - a row whose type is the reserved 'group' pseudo-type recurses into its own
- *    {"logic": ..., "conditions": [...]} the same way SegmentMatcher::evaluateGroup() does —
- *    see that class's docblock for why this needs no schema change and isn't reachable via the
- *    admin UI yet.
+ *    {"logic": ..., "conditions": [...]} the same way SegmentMatcher does.
  *  - order_total_gte / visitor_tag are per-event-context conditions with no meaning for a
  *    standing set of customers; SegmentMatcher's own context (['customer_id' => $x]) already
  *    never satisfies them, so at the set level they match nobody too.
+ *
+ * The AND/OR/nested-group tree-walk itself (previously this class's own resolveList()/
+ * resolveGroup()/resolveOne(), duplicated near-verbatim from Model\Condition\
+ * ConditionGroupEvaluator's equivalent per-customer boolean walk) now lives in the shared
+ * Model\Condition\GroupWalker, driven here by Model\Condition\SetGroupCombineStrategy - this
+ * class supplies only what's genuinely specific to the set domain: the leaf resolver below
+ * (resolveCondition() and everything it calls) and that one combine strategy.
  */
 class SegmentMemberResolver
 {
@@ -63,7 +70,9 @@ class SegmentMemberResolver
         private readonly SegmentResource $segmentResource,
         private readonly LoggerInterface $logger,
         private readonly PurchasedProductResolver $purchasedProductResolver,
-        private readonly EventOccurredResolver $eventOccurredResolver
+        private readonly EventOccurredResolver $eventOccurredResolver,
+        private readonly GroupWalker $groupWalker,
+        private readonly SetGroupCombineStrategy $combineStrategy
     ) {
     }
 
@@ -99,105 +108,14 @@ class SegmentMemberResolver
             $specs[] = ['type' => $conditionRow->getType(), 'params' => $conditionRow->getParams()];
         }
 
-        return $this->resolveList($specs, $segment->getConditionLogic(), $visitedSegmentIds);
-    }
+        $result = $this->groupWalker->walk(
+            $specs,
+            $segment->getConditionLogic(),
+            fn (array $spec): array => $this->resolveCondition($spec['type'], $spec['params'], $visitedSegmentIds),
+            $this->combineStrategy
+        );
 
-    /**
-     * @param array<int, array{type: string, params: array<string, mixed>}> $specs
-     * @param int[] $visitedSegmentIds
-     * @return int[]
-     */
-    private function resolveList(array $specs, string $logic, array $visitedSegmentIds): array
-    {
-        if ($logic === 'any') {
-            $result = [];
-            foreach ($specs as $spec) {
-                $result += array_flip($this->resolveOne($spec, $visitedSegmentIds));
-            }
-            return array_keys($result);
-        }
-
-        $result = null;
-        foreach ($specs as $spec) {
-            $matchingIds = $this->resolveOne($spec, $visitedSegmentIds);
-
-            if ($matchingIds === []) {
-                return [];
-            }
-
-            $result = $result === null ? $matchingIds : array_intersect($result, $matchingIds);
-
-            if ($result === []) {
-                return [];
-            }
-        }
-
-        return array_values($result ?? []);
-    }
-
-    /**
-     * @param array{type: string, params: array<string, mixed>} $spec
-     * @param int[] $visitedSegmentIds
-     * @return int[]
-     */
-    private function resolveOne(array $spec, array $visitedSegmentIds): array
-    {
-        if ($spec['type'] === 'group') {
-            return $this->resolveGroup($spec['params'], $visitedSegmentIds);
-        }
-
-        return $this->resolveCondition($spec['type'], $spec['params'], $visitedSegmentIds);
-    }
-
-    /**
-     * @param array<string, mixed> $groupParams
-     * @param int[] $visitedSegmentIds
-     * @return int[]
-     */
-    private function resolveGroup(array $groupParams, array $visitedSegmentIds): array
-    {
-        $nestedLogic = ($groupParams['logic'] ?? 'all') === 'any' ? 'any' : 'all';
-        $nested = $groupParams['conditions'] ?? null;
-
-        if (!is_array($nested) || $nested === []) {
-            return [];
-        }
-
-        $specs = [];
-        foreach ($nested as $item) {
-            if (!is_array($item) || !isset($item['type']) || !is_string($item['type'])) {
-                continue;
-            }
-            $specs[] = ['type' => $item['type'], 'params' => $this->asStringKeyedArray($item['params'] ?? [])];
-        }
-
-        if ($specs === []) {
-            return [];
-        }
-
-        return $this->resolveList($specs, $nestedLogic, $visitedSegmentIds);
-    }
-
-    /**
-     * Same normalization as Model\Segment\SegmentMatcher::asStringKeyedArray() - a decoded-JSON
-     * 'group' params blob's nested "conditions" entries aren't guaranteed to be string-keyed
-     * maps the way a real SegmentCondition row's getParams() already is.
-     *
-     * @return array<string, mixed>
-     */
-    private function asStringKeyedArray(mixed $value): array
-    {
-        if (!is_array($value)) {
-            return [];
-        }
-
-        $result = [];
-        foreach ($value as $key => $item) {
-            if (is_string($key)) {
-                $result[$key] = $item;
-            }
-        }
-
+        /** @var int[] $result */
         return $result;
     }
 
