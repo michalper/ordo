@@ -101,6 +101,28 @@ function buildSplitVariantActionTypeOptionsHtml(actionTypes, actionLabels, selec
 }
 
 /**
+ * Whether one palette item (its visible label text and its data-flow-type) matches a search
+ * query - case-insensitive substring match against either, since a merchant might type either
+ * the human label ("Order total at least") or remember the raw type ("order_total_gte"). A
+ * blank/whitespace-only query matches everything (the "no filter active" state).
+ *
+ * @param {String} label
+ * @param {String} type
+ * @param {String} query
+ * @return {Boolean}
+ */
+function paletteItemMatchesQuery(label, type, query) {
+    var trimmed = (query || '').trim().toLowerCase();
+
+    if (trimmed === '') {
+        return true;
+    }
+
+    return (label || '').toLowerCase().indexOf(trimmed) !== -1
+        || (type || '').toLowerCase().indexOf(trimmed) !== -1;
+}
+
+/**
  * Applies one buildChain() node's `fields` onto its own data-field inputs - pulled out of
  * buildChain()'s per-node forEach() (itself inside window.ordoFlowTestHook's own function, inside
  * the build() IIFE) purely to keep that callback's nesting depth within the linter's limit, same
@@ -846,6 +868,39 @@ define([
                 }
             });
 
+            // Palette search: filters items by label/type substring match and auto-opens/hides
+            // each <details> group based on whether it has a hit, so typing narrows the whole
+            // palette down instead of only filtering within a group the merchant already had
+            // open. Clearing the query (empty string) shows every item/group again.
+            $(document).on('input', '.ordo-flow-palette-search', function () {
+                var query = $(this).val(),
+                    hasQuery = query.trim() !== '',
+                    $groups = $(this).closest('.ordo-flow-palette').find('.ordo-flow-palette-group');
+
+                $groups.each(function () {
+                    var $group = $(this),
+                        groupHasMatch = false;
+
+                    $group.find('.ordo-flow-palette-item').each(function () {
+                        var $item = $(this),
+                            matches = paletteItemMatchesQuery(
+                                $item.text(),
+                                $item.attr('data-flow-type'),
+                                query
+                            );
+
+                        $item.toggle(matches);
+                        groupHasMatch = groupHasMatch || matches;
+                    });
+
+                    if (hasQuery) {
+                        $group.prop('open', groupHasMatch).toggle(groupHasMatch);
+                    } else {
+                        $group.show();
+                    }
+                });
+            });
+
             // Palette drag-and-drop: each chip in the sidebar (flow.phtml) carries the exact
             // kind/type to create, set as the drag payload on dragstart. The canvas itself must
             // preventDefault() on dragover for a drop to be allowed to fire at all (native HTML5
@@ -1218,6 +1273,7 @@ define([
     initCampaignFlowEditor.cloneSplitVariant = cloneSplitVariant;
     initCampaignFlowEditor.buildSplitVariantActionTypeOptionsHtml = buildSplitVariantActionTypeOptionsHtml;
     initCampaignFlowEditor.renderVariantEditor = renderVariantEditor;
+    initCampaignFlowEditor.paletteItemMatchesQuery = paletteItemMatchesQuery;
 
     return initCampaignFlowEditor;
 });
