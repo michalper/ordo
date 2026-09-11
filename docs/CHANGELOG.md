@@ -33,6 +33,20 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Campaign and Segment grids gained enable/disable/delete bulk actions**, closing the
+  admin-platform ROADMAP.md gap where every listing's `selectionsColumn` checkboxes rendered but
+  did nothing. New `<massaction>` block in `ordo_campaign_listing.xml`/`ordo_segment_listing.xml`
+  wired to 3 new controllers per entity (`MassEnable`/`MassDisable`/`MassDelete`), each using the
+  standard `Magento\Ui\Component\MassAction\Filter` + that entity's own CRUD collection (not the
+  Grid collection used for display) — same pattern Magento core's own mass-action controllers use.
+  Campaign's persist through `CampaignRepositoryInterface` (a real service contract, so its own
+  per-trigger-event cache invalidation runs exactly as it does for a single save/delete); Segment
+  has no repository yet, so its 3 controllers go through `SegmentResource` directly, the same way
+  the existing single-segment `Save`/`Delete` controllers already do. The other 8 listing grids
+  (ContentBlock, FreeGiftOffer, MessageLog, ReorderCycle, Rfm, ScoreRule, WhatsAppTemplate,
+  AdAudience) still have no bulk actions — same mechanical pattern, a natural follow-up, not
+  attempted here.
+
 - **New Segment Overlap admin page**, closing the segmentation ROADMAP.md gap where there was no
   way to see "how many customers are in both Segment A and B" — useful for avoiding message
   fatigue from campaigns that unknowingly target overlapping audiences. A new

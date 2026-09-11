@@ -43,6 +43,43 @@
         </argument>
     </dataSource>
 
+    <!--
+        Mass-action counterpart to the "ids" selectionsColumn below, which used to render
+        checkboxes that did nothing (ROADMAP.md "No column filtering on any grid"'s sibling
+        finding: "no bulk actions on grids either"). Only a <massaction> here, deliberately - this
+        listing declared no <listingToolbar> before this change and evidently has no visible
+        filter/search/paging panel today either; adding one wholesale is a separate, un-asked-for
+        UI change, so this stays scoped to exactly what the grid's own checkboxes now do.
+    -->
+    <listingToolbar name="listing_top">
+        <massaction name="listing_massaction">
+            <action name="enable">
+                <settings>
+                    <url path="*/*/massEnable"/>
+                    <type>enable</type>
+                    <label translate="true">Enable</label>
+                </settings>
+            </action>
+            <action name="disable">
+                <settings>
+                    <url path="*/*/massDisable"/>
+                    <type>disable</type>
+                    <label translate="true">Disable</label>
+                </settings>
+            </action>
+            <action name="delete">
+                <settings>
+                    <confirm>
+                        <message translate="true">Are you sure you want to delete the selected campaign(s)?</message>
+                        <title translate="true">Delete campaigns</title>
+                    </confirm>
+                    <url path="*/*/massDelete"/>
+                    <type>delete</type>
+                    <label translate="true">Delete</label>
+                </settings>
+            </action>
+        </massaction>
+    </listingToolbar>
     <columns name="ordo_campaign_columns">
         <selectionsColumn name="ids">
             <settings>
