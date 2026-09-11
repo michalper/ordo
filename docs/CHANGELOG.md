@@ -33,6 +33,16 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **A visible warning when `order_total_gte`/`visitor_tag` is used inside a Segment**, closing the
+  segmentation ROADMAP.md gap where their fail-closed semantics (correct — `Model\Segment\`
+  `SegmentMemberResolver::resolveCondition()` returns `[]`, matching nobody, since both are
+  per-event-context conditions with no meaning for a standing set-of-customers query) were
+  invisible: an AND-segment using either one silently matched nobody with no explanation. A new
+  disabled, static-text `event_only_warning` field (`ordo_segment_form.xml`, wired into every
+  switcherConfig rule the same way `segment_id`/`tier` already are) surfaces the note for a
+  top-level condition row; `segment-group-modal.js`'s `renderValueField()` renders the same
+  warning text for a nested "group" row, since those aren't backed by ui-component fields at all.
+
 - **Time-zone-aware campaign quiet hours**, closing the campaign engine's "No time-zone-aware
   quiet hours" gap. New `ordo_timezone` customer attribute (`AddCustomerTimezoneAttribute`, an
   IANA zone string, e.g. `Europe/Warsaw`) and a `quiet_hours` admin config section
