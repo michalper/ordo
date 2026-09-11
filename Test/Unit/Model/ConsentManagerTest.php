@@ -7,9 +7,12 @@ use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\CustomerConsent;
 use Ordo\Automation\Model\CustomerConsentFactory;
+use Ordo\Automation\Model\CustomerConsentLog;
+use Ordo\Automation\Model\CustomerConsentLogFactory;
 use Ordo\Automation\Model\ResourceModel\CustomerConsent as CustomerConsentResource;
 use Ordo\Automation\Model\ResourceModel\CustomerConsent\Collection as CustomerConsentCollection;
 use Ordo\Automation\Model\ResourceModel\CustomerConsent\CollectionFactory as CustomerConsentCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\CustomerConsentLog as CustomerConsentLogResource;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
@@ -18,6 +21,8 @@ class ConsentManagerTest extends TestCase
     private CustomerConsentCollectionFactory&\PHPUnit\Framework\MockObject\MockObject $collectionFactory;
     private CustomerConsentFactory&\PHPUnit\Framework\MockObject\MockObject $consentFactory;
     private CustomerConsentResource&\PHPUnit\Framework\MockObject\MockObject $consentResource;
+    private CustomerConsentLogFactory&\PHPUnit\Framework\MockObject\MockObject $consentLogFactory;
+    private CustomerConsentLogResource&\PHPUnit\Framework\MockObject\MockObject $consentLogResource;
     private ConsentManager $manager;
 
     protected function setUp(): void
@@ -25,7 +30,16 @@ class ConsentManagerTest extends TestCase
         $this->collectionFactory = $this->createMock(CustomerConsentCollectionFactory::class);
         $this->consentFactory = $this->createMock(CustomerConsentFactory::class);
         $this->consentResource = $this->createMock(CustomerConsentResource::class);
-        $this->manager = new ConsentManager($this->collectionFactory, $this->consentFactory, $this->consentResource);
+        $this->consentLogFactory = $this->createMock(CustomerConsentLogFactory::class);
+        $this->consentLogResource = $this->createMock(CustomerConsentLogResource::class);
+        $this->consentLogFactory->method('create')->willReturn($this->createStub(CustomerConsentLog::class));
+        $this->manager = new ConsentManager(
+            $this->collectionFactory,
+            $this->consentFactory,
+            $this->consentResource,
+            $this->consentLogFactory,
+            $this->consentLogResource
+        );
     }
 
     private function makeCollection(?CustomerConsent $consent): CustomerConsentCollection
@@ -89,6 +103,54 @@ class ConsentManagerTest extends TestCase
         $this->consentResource->expects(self::once())->method('save')->with($newConsent);
 
         $this->manager->setConsent(42, ConsentChannel::Sms, false, 'admin');
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSetConsentAlwaysAppendsALogRowRegardlessOfWhetherTheCurrentStateRowIsNewOrExisting(): void
+    {
+        $existing = $this->createStub(CustomerConsent::class);
+        $existing->method('getId')->willReturn(5);
+        $this->collectionFactory->method('create')->willReturn($this->makeCollection($existing));
+
+        $logEntry = $this->createMock(CustomerConsentLog::class);
+        $logEntry->expects(self::once())->method('setCustomerId')->with(42);
+        $logEntry->expects(self::once())->method('setChannel')->with(ConsentChannel::Sms->value);
+        $logEntry->expects(self::once())->method('setConsented')->with(true);
+        $logEntry->expects(self::once())->method('setSource')->with('unsubscribe_link');
+        $this->consentLogFactory = $this->createMock(CustomerConsentLogFactory::class);
+        $this->consentLogFactory->method('create')->willReturn($logEntry);
+        $this->manager = new ConsentManager(
+            $this->collectionFactory,
+            $this->consentFactory,
+            $this->consentResource,
+            $this->consentLogFactory,
+            $this->consentLogResource
+        );
+
+        $this->consentLogResource->expects(self::once())->method('save')->with($logEntry);
+
+        $this->manager->setConsent(42, ConsentChannel::Sms, true, 'unsubscribe_link');
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSetConsentNeverWritesALogRowBeforeTheStateRowItselfIsSaved(): void
+    {
+        $noRow = $this->createStub(CustomerConsent::class);
+        $noRow->method('getId')->willReturn(null);
+        $this->collectionFactory->method('create')->willReturn($this->makeCollection($noRow));
+        $this->consentFactory->method('create')->willReturn($this->createStub(CustomerConsent::class));
+
+        $callOrder = [];
+        $this->consentResource->method('save')->willReturnCallback(function () use (&$callOrder) {
+            $callOrder[] = 'state';
+        });
+        $this->consentLogResource->method('save')->willReturnCallback(function () use (&$callOrder) {
+            $callOrder[] = 'log';
+        });
+
+        $this->manager->setConsent(42, ConsentChannel::Sms, false, 'admin');
+
+        self::assertSame(['state', 'log'], $callOrder);
     }
 
     #[AllowMockObjectsWithoutExpectations]
