@@ -119,6 +119,8 @@ class Config
     private const string XML_PATH_PUSH_VAPID_SUBJECT = 'ordo_automation/push/vapid_subject';
     private const string XML_PATH_PUSH_MAX_PER_SECOND = 'ordo_automation/push/max_requests_per_second';
 
+    private const string XML_PATH_ATTRIBUTION_WINDOW_DAYS = 'ordo_automation/attribution/window_days';
+
     private const string XML_PATH_FREQUENCY_CAP_ENABLED = 'ordo_automation/frequency_cap/enabled';
     private const string XML_PATH_FREQUENCY_CAP_MAX_MESSAGES = 'ordo_automation/frequency_cap/max_messages';
     private const string XML_PATH_FREQUENCY_CAP_WINDOW_HOURS = 'ordo_automation/frequency_cap/window_hours';
@@ -800,6 +802,19 @@ class Config
      * Opt-in (default off) - see Model\Campaign\FrequencyCapManager's own docblock for why this
      * shouldn't suddenly start suppressing sends for an install that never asked for it.
      */
+    /**
+     * How many days before an order to look back for a customer's campaign click-throughs when
+     * computing multi-touch revenue attribution (Model\Campaign\AttributionCalculator). Default
+     * of 14 mirrors the "reasonable purchase-consideration window" used elsewhere in retail
+     * attribution tooling - long enough to catch most B2B/B2C consideration cycles this module's
+     * own campaigns target (reorder/offer/cart reminders), short enough that a stale click from
+     * months ago doesn't get credited for an unrelated later order.
+     */
+    public function getAttributionWindowDays(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_ATTRIBUTION_WINDOW_DAYS, 14, $storeId);
+    }
+
     public function isFrequencyCapEnabled(?int $storeId = null): bool
     {
         return $this->scopeConfig->isSetFlag(

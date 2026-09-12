@@ -805,6 +805,27 @@
         </index>
     </table>
 
+    <table name="ordo_campaign_attribution" resource="default" engine="innodb" comment="Multi-touch revenue attribution split for a placed order across every campaign click-through (ordo_message_log_event TYPE_CLICKED row) recorded for that customer within the configurable attribution window (Helper\Config::getAttributionWindowDays()). Additive to, not a replacement for, ordo_campaign_outcome_log's existing first-plausible-match single-touch conversion tracking (see that tables own comment) - this table answers a different question, how much of an orders revenue should each touched campaign be credited with, using equal-weight linear attribution across every distinct campaign touched (Model\Campaign\AttributionCalculator - see its own docblock for why linear was chosen over first/last-touch/time-decay). Recomputed idempotently by Cron\ComputeCampaignAttribution, one row per order_id+campaign_id pair.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="order_id" padding="10" unsigned="true" nullable="false" comment="sales_order.entity_id this attribution split belongs to"/>
+        <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id credited with a share of this order - no FK, same reasoning as ordo_message_log.campaign_id: a historical attribution row must survive the campaign it references being deleted"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID the order and every attributed touch belong to"/>
+        <column xsi:type="decimal" name="attributed_revenue" scale="4" precision="20" unsigned="false" nullable="false" comment="This campaigns equal share of the orders grand_total - order grand_total divided by the number of distinct campaigns touched within the attribution window"/>
+        <column xsi:type="smallint" name="touch_count" unsigned="true" nullable="false" default="1" comment="How many distinct campaigns (including this one) shared credit for the order, i.e. the divisor attributed_revenue was computed with"/>
+        <column xsi:type="timestamp" name="computed_at" nullable="false" default="CURRENT_TIMESTAMP" comment="When this split was (re)computed"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY"><column name="entity_id"/></constraint>
+        <constraint xsi:type="unique" referenceId="ORDO_CAMPAIGN_ATTRIBUTION_ORDER_ID_CAMPAIGN_ID">
+            <column name="order_id"/>
+            <column name="campaign_id"/>
+        </constraint>
+        <index referenceId="ORDO_CAMPAIGN_ATTRIBUTION_CAMPAIGN_ID" indexType="btree">
+            <column name="campaign_id"/>
+        </index>
+        <index referenceId="ORDO_CAMPAIGN_ATTRIBUTION_CUSTOMER_ID" indexType="btree">
+            <column name="customer_id"/>
+        </index>
+    </table>
+
     <table name="ordo_whatsapp_template" resource="default" engine="innodb" comment="A WhatsApp message template - the WhatsApp Business Platform only allows sending a free-form message inside a 24-hour customer-service window; anything outside that window (which is most campaign sends) must use a pre-approved template registered with Meta via Model/WhatsApp/WhatsAppTemplateClient, tracked here through its own approval lifecycle before the send_whatsapp campaign action is allowed to use it">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="name" nullable="false" length="255" comment="Admin-facing name"/>
