@@ -161,19 +161,18 @@ zasobów zewnętrznych):
    kwalifikacja do gratisu). Najwyższy priorytet mimo że dotyczy tylko sklepów z więcej niż
    jedną obsługiwaną walutą — trzeba to najpierw potwierdzić na produkcji (czy Sellina/klienci
    faktycznie używają multi-currency), bo jeśli tak, to blokuje realne transakcje już teraz.
-2. **`fields`/sparse-fieldset w API.md** — kontraktowo mała, samodzielna zmiana API.
-3. **Bulk actions na MessageLog/ReorderCycle/Rfm** — wymaga najpierw decyzji projektowej,
+2. **Bulk actions na MessageLog/ReorderCycle/Rfm** — wymaga najpierw decyzji projektowej,
    potem implementacji.
-4. **Nowe funkcje (sekcja "Candidate new features" powyżej)** — do rozważenia razem z
+3. **Nowe funkcje (sekcja "Candidate new features" powyżej)** — do rozważenia razem z
    biznesem/produktem pod kątem priorytetu; webhook action/trigger wygląda na najmniejszy koszt
    wejścia względem wartości.
-5. **Drugi format product feedu** — większa, osobna abstrakcja; wymaga wyboru formatu
+4. **Drugi format product feedu** — większa, osobna abstrakcja; wymaga wyboru formatu
    docelowego przed implementacją.
-6. **Kalendarz dat dla scheduled campaigns** — opcjonalny polish.
-7. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
+5. **Kalendarz dat dla scheduled campaigns** — opcjonalny polish.
+6. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
    poświadczeń testowych.
-8. **Recenzja natywna 10 lokalizacji** — zależna od dostępności recenzentów per język.
-9. **GitHub Wiki (PL/EN, screenshots)** — wymaga wcześniej decyzji o strukturze.
+7. **Recenzja natywna 10 lokalizacji** — zależna od dostępności recenzentów per język.
+8. **GitHub Wiki (PL/EN, screenshots)** — wymaga wcześniej decyzji o strukturze.
 
 Uwaga poza roadmapą: na branchu `feature/reorder-cycle-build-cart` jest niedokończona,
 nie-scommitowana praca nad akcją "build reorder cart" (temat sam w sobie już częściowo
