@@ -38,7 +38,32 @@
         </argument>
     </dataSource>
 
+    <!--
+        Mass-delete counterpart to the "ids" selectionsColumn below, which used to render
+        checkboxes that did nothing (ROADMAP.md admin-platform audit finding). No per-row delete
+        column change here - see Controller\Adminhtml\ReorderCycle\MassDelete's own docblock.
+    -->
+    <listingToolbar name="listing_top">
+        <massaction name="listing_massaction">
+            <action name="delete">
+                <settings>
+                    <confirm>
+                        <message translate="true">Are you sure you want to delete the selected reorder cycle(s)?</message>
+                        <title translate="true">Delete reorder cycles</title>
+                    </confirm>
+                    <url path="*/*/massDelete"/>
+                    <type>delete</type>
+                    <label translate="true">Delete</label>
+                </settings>
+            </action>
+        </massaction>
+    </listingToolbar>
     <columns name="ordo_reorder_cycle_columns">
+        <selectionsColumn name="ids">
+            <settings>
+                <indexField>entity_id</indexField>
+            </settings>
+        </selectionsColumn>
         <column name="entity_id">
             <settings>
                 <filter>text</filter>

@@ -309,6 +309,29 @@ class RfmCalculator
     }
 
     /**
+     * Drops the precomputed rows for the given customers from ordo_customer_rfm_score —
+     * Controller\Adminhtml\Rfm\MassDelete's "mass action" for a grid whose own rows (customer
+     * plus a live sales_order aggregate, see Model\ResourceModel\Rfm\Grid\Collection's docblock)
+     * have no stored primary entity to delete. Deleting the cached row for a customer is this
+     * grid's real equivalent of a mass-delete: getPercentileRanks() falls back to computing that
+     * customer live (same as before Cron\RecomputeRfmScores first ran), and the next scheduled
+     * recompute repopulates it — nothing that was actually storing state gets removed.
+     *
+     * @param int[] $customerIds
+     */
+    public function resetScoresForCustomers(array $customerIds): int
+    {
+        if ($customerIds === []) {
+            return 0;
+        }
+
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('ordo_customer_rfm_score');
+
+        return (int) $connection->delete($table, ['customer_id IN (?)' => $customerIds]);
+    }
+
+    /**
      * "555" (best on all three) down to "111" (worst) — the standard RFM-notation score, read
      * from the same precomputed table getPercentileRanks() falls back to live computation for.
      * Returns null for a customer with no stored (or, if the table's empty, no computable) row —

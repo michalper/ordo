@@ -1017,4 +1017,26 @@ class RfmCalculatorTest extends TestCase
         self::assertArrayHasKey(1, $aggregates);
         self::assertArrayHasKey(5001, $aggregates);
     }
+
+    public function testResetScoresForCustomersDeletesTheGivenCustomerIdsFromTheCacheTable(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::once())->method('delete')
+            ->with('ordo_customer_rfm_score', ['customer_id IN (?)' => [5, 9]])
+            ->willReturn(2);
+
+        $calculator = $this->makeCalculator($connection);
+
+        self::assertSame(2, $calculator->resetScoresForCustomers([5, 9]));
+    }
+
+    public function testResetScoresForCustomersIsANoOpForAnEmptyList(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::never())->method('delete');
+
+        $calculator = $this->makeCalculator($connection);
+
+        self::assertSame(0, $calculator->resetScoresForCustomers([]));
+    }
 }
