@@ -152,4 +152,18 @@ class ReceiveTest extends AbstractFrontendActionTestCase
 
         $controller->execute();
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testCreateCsrfValidationExceptionReturnsNull(): void
+    {
+        $controller = $this->makeController();
+        self::assertNull($controller->createCsrfValidationException($this->request));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testValidateForCsrfReturnsTrue(): void
+    {
+        $controller = $this->makeController();
+        self::assertTrue($controller->validateForCsrf($this->request));
+    }
 }
