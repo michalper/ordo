@@ -679,6 +679,15 @@
             <column name="customer_id"/>
         </constraint>
     </table>
+
+    <table name="ordo_customer_clv_score" resource="default" engine="innodb" comment="Precomputed projected Customer Lifetime Value per customer, refreshed by Cron\RecomputeClvScores instead of ClvCalculator::getClvScores() scanning the whole customer base on every campaign dispatch or segment resolve">
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
+        <column xsi:type="decimal" name="clv_score" scale="4" precision="20" unsigned="false" nullable="false" comment="Projected lifetime value: average order value times annualized purchase frequency times the configured projection window"/>
+        <column xsi:type="timestamp" name="computed_at" nullable="false" default="CURRENT_TIMESTAMP" comment="When Cron\RecomputeClvScores last wrote this row"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="customer_id"/>
+        </constraint>
+    </table>
     <table name="ordo_content_block" resource="default" engine="innodb" comment="A reusable, admin-authored piece of email content — static HTML snippet, RSS-newsletter feed, or product listing feed — resolvable by a campaigns add_dynamic_content action so the same block can be reused across many campaigns">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="identifier" nullable="false" length="64" comment="Unique machine identifier"/>

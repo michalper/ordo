@@ -68,6 +68,7 @@ cases separately from the type-by-type ones.
 | `recency_percentile_at_least`         | `{percentile}` (RFM, needs `Cron\RecomputeRfmScores` to have run) | ✅ `AdminRecencyPercentileConditionTest`                                                               |
 | `order_frequency_percentile_at_least` | `{percentile}` (RFM)                                              | ✅ `AdminOrderFrequencyPercentileConditionTest`                                                        |
 | `monetary_percentile_at_least`        | `{percentile}` (RFM)                                              | ✅ `AdminMonetaryPercentileConditionTest`                                                              |
+| `clv_at_least`                        | `{amount}` (CLV, needs `Cron\RecomputeClvScores` — reads live, not the cached table) | ⬜ unit-tested (`ClvAtLeastTest`, `ClvCalculatorTest`), no MFTF yet                        |
 | `in_segment`                          | `{segment_id}`                                                    | ✅ `AdminCampaignInSegmentConditionTest`                                                               |
 | `loyalty_tier_at_least`               | `{tier}` (bronze/silver/gold, no dedicated field yet — via Params JSON) | ✅ `AdminLoyaltyTierAtLeastConditionTest`                                                        |
 | `nps_score_at_least`                  | `{threshold}` (same dedicated "threshold" field as `score_at_least`)    | ✅ `AdminCampaignNpsSurveyActionTest` (customer_id only — no visitor_id path)                     |
@@ -256,6 +257,7 @@ than retrofitted into an existing section, since neither fits §1-§9's shape.
 | `SendBrowseAbandonmentReminders` | Also the source of the `browse_abandoned` trigger (§1a) — no reminder email of its own, dispatch-only | ⬜ unit-tested (`SendBrowseAbandonmentRemindersTest`), no MFTF yet |
 | `RetryFailedCampaignActions` | Re-attempts an `ordo_campaign_action_retry` row with backoff, deletes it on success, dead-letters it after 5 attempts | ⬜ unit-tested (`RetryFailedCampaignActionsTest`, `ActionRetryQueueTest`), no MFTF yet |
 | `RetryFailedMessageSends`    | Re-attempts an `ordo_message_send_retry` row (exhausted send_email/send_sms/send_whatsapp) with backoff, deletes it on success, dead-letters it after 5 attempts | ⬜ unit-tested (`RetryFailedMessageSendsTest`, `MessageSendRetryQueueTest`), no MFTF yet - same shape as `RetryFailedCampaignActions` above |
+| `RecomputeClvScores`         | Refreshes `ordo_customer_clv_score` (CLV projections), mirrors `RecomputeRfmScores`     | ⬜ unit-tested (`RecomputeClvScoresTest`, `ClvCalculatorTest`), no MFTF yet                                                                 |
 | `PruneCronRunLog`            | Deletes `ordo_cron_run_log` rows past the 30-day retention window | ⬜ unit-tested (`PruneCronRunLogTest`), no MFTF yet — same reasoning as the other `Prune*` crons: no browser-observable effect beyond the grid no longer showing pruned rows |
 
 All four crons above only fire once a day (or, for `SendSalesRepDigest`, once a week) at a fixed

@@ -1246,6 +1246,12 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
+			path: Model/Campaign/Condition/ClvAtLeast.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
 			path: Model/Campaign/Condition/MonetaryTotalAtLeast.php
 
 		-
@@ -2520,6 +2526,24 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Model/ResourceModel/Segment/Condition/Collection.php
+
+		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 4
+			path: Model/Clv/ClvCalculator.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 5
+			path: Model/Clv/ClvCalculator.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Model/Clv/ClvCalculator.php
 
 		-
 			message: '#^Cannot cast mixed to float\.$#'

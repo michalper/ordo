@@ -7,6 +7,19 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Customer Lifetime Value (CLV) scoring (ROADMAP.md "Candidate new features")** — a
+  forward-looking counterpart to the existing RFM (`Model\Rfm\RfmCalculator`):
+  - `Model\Clv\ClvCalculator` projects each customer's future value with the standard, explainable
+    CLV formula (average order value x annualized purchase frequency x a projection window),
+    derived from `sales_order` the same way `RfmCalculator` derives its own inputs, cached/stored
+    the same way (a time-bounded in-memory cache in front of a precomputed table).
+  - `Cron\RecomputeClvScores` refreshes the new `ordo_customer_clv_score` table nightly, mirroring
+    `Cron\RecomputeRfmScores`.
+  - New `clv_at_least` campaign/segment condition (`Model\Campaign\Condition\ClvAtLeast`) matches
+    on projected CLV, the forward-looking counterpart to `monetary_total_at_least`.
+  - New "Average projected CLV" dashboard KPI tile.
+  - New "Customer Lifetime Value (CLV)" admin config group (Stores > Configuration > Ordo
+    Automation) for the projection window (years) and minimum tenure floor (months).
 - **Generic outbound webhook action + inbound webhook trigger (ROADMAP.md "Candidate new
   features")** — a two-way, signed integration point for external systems (ERP/CRM/PIM), beyond
   today's provider-status-only inbound webhooks:

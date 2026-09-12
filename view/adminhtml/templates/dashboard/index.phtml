@@ -43,6 +43,12 @@ $segmentNavDesc = __(
             <div class="ordo-stat-value"><?= $escaper->escapeHtml((string) $viewModel->getFailedCronCount()) ?></div>
             <div class="ordo-stat-label"><?= $escaper->escapeHtml(__('Crons failed (last 24h)')) ?></div>
         </a>
+        <div class="ordo-stat-card">
+            <div class="ordo-stat-value"><?=
+                $escaper->escapeHtml($viewModel->formatCurrency($viewModel->getAverageClvScore()))
+            ?></div>
+            <div class="ordo-stat-label"><?= $escaper->escapeHtml(__('Average projected CLV')) ?></div>
+        </div>
         <?php $funnelSummary = $viewModel->getCampaignFunnelSummary(); ?>
         <div class="ordo-stat-card">
             <div class="ordo-stat-value"><?=

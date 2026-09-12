@@ -13,6 +13,7 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\CampaignOutcomeLogger;
 use Ordo\Automation\Model\CampaignTrigger;
+use Ordo\Automation\Model\Clv\ClvCalculator;
 use Ordo\Automation\Model\Cron\CronRunLog;
 use Ordo\Automation\Model\LoyaltyTierCalculator;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
@@ -103,8 +104,21 @@ class DashboardViewModel implements ArgumentInterface
         private readonly StoreManagerInterface $storeManager,
         private readonly CacheInterface $cache,
         private readonly OrderApprovalCollectionFactory $orderApprovalCollectionFactory,
-        private readonly CronRunLogCollectionFactory $cronRunLogCollectionFactory
+        private readonly CronRunLogCollectionFactory $cronRunLogCollectionFactory,
+        private readonly ClvCalculator $clvCalculator
     ) {
+    }
+
+    /**
+     * Average projected CLV across the customer base — the dashboard's forward-looking
+     * counterpart to the funnel summary's already-happened revenue numbers. No extra caching
+     * layer here (unlike the count KPIs below): ClvCalculator::getClvScores() already carries its
+     * own short-TTL in-memory cache plus Cron\RecomputeClvScores's precomputed table, and this is
+     * called at most once per dashboard render.
+     */
+    public function getAverageClvScore(): float
+    {
+        return $this->clvCalculator->getAverageClvScore();
     }
 
     public function isShoppingFeedEnabled(): bool

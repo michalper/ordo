@@ -128,6 +128,20 @@
                 </field>
             </group>
 
+            <group id="clv" translate="label" type="text" sortOrder="55" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Customer Lifetime Value (CLV)</label>
+                <field id="projection_years" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Projection window (years)</label>
+                    <comment>How many years of a customer's annualized purchase run rate (average order value x orders/year) to project forward when computing CLV. A longer window suits B2B accounts kept for years; a shorter one suits fast-turnover B2C categories.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                </field>
+                <field id="min_tenure_months" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Minimum tenure floor (months)</label>
+                    <comment>Floor applied to a customer's tenure (time since first order) before annualizing their purchase frequency, so a customer's very first order doesn't get annualized into an unrealistically high run rate.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                </field>
+            </group>
+
             <group id="order_approval" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Order Approval Workflow</label>
                 <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">

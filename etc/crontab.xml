@@ -67,6 +67,9 @@
         <job name="ordo_automation_recompute_rfm_scores" instance="Ordo\Automation\Cron\RecomputeRfmScores" method="execute">
             <schedule>0 1 * * *</schedule>
         </job>
+        <job name="ordo_automation_recompute_clv_scores" instance="Ordo\Automation\Cron\RecomputeClvScores" method="execute">
+            <schedule>15 1 * * *</schedule>
+        </job>
         <job name="ordo_automation_refresh_rss_content_blocks" instance="Ordo\Automation\Cron\RefreshRssContentBlocks" method="execute">
             <schedule>*/30 * * * *</schedule>
         </job>
