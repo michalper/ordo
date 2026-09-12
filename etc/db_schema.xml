@@ -47,6 +47,20 @@
         </index>
     </table>
 
+    <table name="ordo_browse_abandoned_reminder_log" resource="default" engine="innodb" comment="Log of dispatched browse_abandoned triggers, to cap reminders per customer/product">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
+        <column xsi:type="varchar" name="event_key" nullable="false" length="255" comment="ordo_visitor_event.event_key that was viewed, e.g. the SKU"/>
+        <column xsi:type="timestamp" name="sent_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Sent At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="ORDO_BROWSE_ABANDONED_LOG_CUSTOMER_ID_EVENT_KEY" indexType="btree">
+            <column name="customer_id"/>
+            <column name="event_key"/>
+        </index>
+    </table>
+
     <table name="ordo_offer" resource="default" engine="innodb" comment="B2B offer/quote with an expiration date — the entity Magento Open Source does not have natively">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>

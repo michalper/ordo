@@ -11,8 +11,9 @@ jobs — not guessed from memory. Each scenario is marked:
 
 Cross-reference: `ROADMAP.md`'s "Test coverage" section for the standing priority list this feeds.
 
-**Status: every row below is ✅ except one 🔴 (see §10) and twenty-three ⬜ (the frequency-cap
+**Status: every row below is ✅ except one 🔴 (see §10) and twenty-five ⬜ (the frequency-cap
 structural case, the Campaign export row, and the dispatch dead-letter row in §1d, the
+`browse_abandoned` trigger row in §1a and the `SendBrowseAbandonmentReminders` row in §11, the
 `RetryFailedCampaignActions` row in §11, the Approval rate-limit row and the Order Approvals grid
 in §6, the Segment Overlap page and Segment export row in §2, the WhatsApp Template Body Text
 preview panel in §15, the two Template Test Send rows in §16, the two Cron Run Log rows in §17,
@@ -49,6 +50,7 @@ cases separately from the type-by-type ones.
 | `customer_registered`     | `Observer/DispatchCustomerRegisteredCampaigns.php`                         | ✅ `AdminCampaignCustomerRegisteredTriggerTest`   |
 | `tag_added`               | `Observer/DispatchTagAddedCampaigns.php` (`ordo_customer_tag_added`)       | ✅ `AdminCampaignTagAddedTriggerTest`             |
 | `cart_abandoned`          | `Cron/SendAbandonedCartReminders.php`'s own dispatch, not a live observer  | ✅ `AdminSendAbandonedCartReminderAndTriggerTest` |
+| `browse_abandoned`        | `Cron/SendBrowseAbandonmentReminders.php`'s own dispatch, not a live observer | ⬜ unit-tested (`SendBrowseAbandonmentRemindersTest`), no MFTF yet |
 | `visitor_tag_added`       | `Observer/DispatchVisitorTagAddedCampaigns.php` (`ordo_visitor_tag_added`) | ✅ `AdminCampaignVisitorTagConditionTest`         |
 | `score_threshold_crossed` | `Observer/DispatchScoreThresholdCampaigns.php` (lead scoring, see §4)      | ✅ `AdminScoreThresholdCampaignTest`              |
 
@@ -248,6 +250,7 @@ than retrofitted into an existing section, since neither fits §1-§9's shape.
 | `SendWinBackEmails`          | Emails customers `TagInactiveCustomers` tagged inactive      | ✅ `AdminTagInactiveCustomersAndWinBackEmailTest`                                                                          |
 | `TagInactiveCustomers`       | Tags customers inactive past the configured window           | ✅ `AdminTagInactiveCustomersAndWinBackEmailTest` (same test — the two crons are tightly coupled, see its own description) |
 | `SendAbandonedCartReminders` | Also the source of the `cart_abandoned` trigger (§1a)        | ✅ `AdminSendAbandonedCartReminderAndTriggerTest`                                                                          |
+| `SendBrowseAbandonmentReminders` | Also the source of the `browse_abandoned` trigger (§1a) — no reminder email of its own, dispatch-only | ⬜ unit-tested (`SendBrowseAbandonmentRemindersTest`), no MFTF yet |
 | `RetryFailedCampaignActions` | Re-attempts an `ordo_campaign_action_retry` row with backoff, deletes it on success, dead-letters it after 5 attempts | ⬜ unit-tested (`RetryFailedCampaignActionsTest`, `ActionRetryQueueTest`), no MFTF yet |
 | `RetryFailedMessageSends`    | Re-attempts an `ordo_message_send_retry` row (exhausted send_email/send_sms/send_whatsapp) with backoff, deletes it on success, dead-letters it after 5 attempts | ⬜ unit-tested (`RetryFailedMessageSendsTest`, `MessageSendRetryQueueTest`), no MFTF yet - same shape as `RetryFailedCampaignActions` above |
 | `PruneCronRunLog`            | Deletes `ordo_cron_run_log` rows past the 30-day retention window | ⬜ unit-tested (`PruneCronRunLogTest`), no MFTF yet — same reasoning as the other `Prune*` crons: no browser-observable effect beyond the grid no longer showing pruned rows |

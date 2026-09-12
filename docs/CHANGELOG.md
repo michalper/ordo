@@ -36,6 +36,23 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Browse-abandonment campaigns**, a new `browse_abandoned` trigger one step earlier in the funnel
+  than the existing `cart_abandoned` reminder. `Cron\SendBrowseAbandonmentReminders` scans the
+  short-lived `ordo_visitor_event` table (already populated by `VisitorEventLogger`/`Controller\
+  Track\Event` for `product_view` events) for registered customers (`customer_id` set) who viewed
+  a product at least `delay_minutes` ago (new `Helper\Config::getBrowseAbandonmentDelayMinutes()`,
+  default 60) and placed no order since that view, then dispatches `browse_abandoned` for each —
+  capped per customer/product via a new `ordo_browse_abandoned_reminder_log` table, claimed
+  before dispatch and rolled back on failure the same way `SendAbandonedCartReminders` claims its
+  own log row before sending. Unlike `cart_abandoned`, this cron has no built-in reminder email of
+  its own — there's no cart/order entity to summarize into a fixed template, so a store wires
+  whatever action it wants onto the trigger via the campaign builder. New `Ordo\Automation\Api\
+  Data\CampaignTriggerInterface::TRIGGER_BROWSE_ABANDONED` constant and a
+  `Model\Config\Source\TriggerEvent` option make it selectable in the campaign trigger dropdown;
+  new "Browse Abandonment" group in `Stores > Configuration > Ordo Automation` exposes
+  enabled/delay_minutes/max_reminders. Scoped to `product_view` only, not `category_view` — see
+  the cron's own docblock for why.
+
 - **Flow canvas: undo/redo, node duplication, and an inline "Send test" button**, closing the
   rest of the campaign-engine ROADMAP.md "Flow canvas UX" gap (palette search/filter already
   closed it partway). Undo/redo (toolbar buttons or Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z or +Y) keeps an

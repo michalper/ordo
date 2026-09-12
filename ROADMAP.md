@@ -147,9 +147,6 @@ exist in some form. Not prioritized against each other; listed for later scoping
 - **Two-way SMS/WhatsApp conversation handling** — capture inbound replies (today only delivery-status
   callbacks are handled), with mandatory keyword-based opt-out (STOP) and a conversation view tied to the
   customer record. Large scope (compliance-sensitive once inbound is accepted at all), fits both.
-- **Browse-abandonment campaigns** — a dedicated trigger/cron over the `product_view`/`category_view`
-  visitor events already captured by `VisitorEventLogger`, one step earlier in the funnel than the
-  existing cart-abandonment reminder. Small-medium scope, primarily B2C.
 - **Multi-touch attribution / revenue-per-campaign reporting** — correlate `ordo_message_log`
   click-throughs to subsequent orders within a configurable window, surfaced as attributed revenue on the
   Campaign grid/dashboard. Medium scope, fits both.
@@ -168,8 +165,8 @@ zasobów zewnętrznych):
 3. **Bulk actions na MessageLog/ReorderCycle/Rfm** — wymaga najpierw decyzji projektowej,
    potem implementacji.
 4. **Nowe funkcje (sekcja "Candidate new features" powyżej)** — do rozważenia razem z
-   biznesem/produktem pod kątem priorytetu; browse-abandonment i webhook action/trigger
-   wyglądają na najmniejszy koszt wejścia względem wartości.
+   biznesem/produktem pod kątem priorytetu; webhook action/trigger wygląda na najmniejszy koszt
+   wejścia względem wartości.
 5. **Drugi format product feedu** — większa, osobna abstrakcja; wymaga wyboru formatu
    docelowego przed implementacją.
 6. **Kalendarz dat dla scheduled campaigns** — opcjonalny polish.

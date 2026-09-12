@@ -20,6 +20,15 @@ interface CampaignTriggerInterface
     public const TRIGGER_CUSTOMER_REGISTERED = 'customer_registered';
     public const TRIGGER_TAG_ADDED = 'tag_added';
     public const TRIGGER_CART_ABANDONED = 'cart_abandoned';
+
+    /**
+     * One step earlier in the funnel than TRIGGER_CART_ABANDONED - fires from
+     * Cron\SendBrowseAbandonmentReminders for a registered customer who viewed a product
+     * (`ordo_visitor_event` rows with event_type `product_view`) but placed no order since, see
+     * that cron's own docblock.
+     */
+    public const TRIGGER_BROWSE_ABANDONED = 'browse_abandoned';
+
     public const TRIGGER_VISITOR_TAG_ADDED = 'visitor_tag_added';
     public const TRIGGER_SCORE_THRESHOLD_CROSSED = 'score_threshold_crossed';
 

@@ -877,6 +877,12 @@ parameters:
 			path: Cron/SendAbandonedCartReminders.php
 
 		-
+			message: '#^Parameter \#1 \$sql of method Magento\\Framework\\DB\\Adapter\\AdapterInterface\:\:fetchAll\(\) expects Magento\\Framework\\DB\\Select\|string, Zend_Db_Select given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Cron/SendBrowseAbandonmentReminders.php
+
+		-
 			message: '#^Parameter \#1 \$sql of method Magento\\Framework\\DB\\Adapter\\AdapterInterface\:\:fetchCol\(\) expects Magento\\Framework\\DB\\Select\|string, Zend_Db_Select given\.$#'
 			identifier: argument.type
 			count: 1
