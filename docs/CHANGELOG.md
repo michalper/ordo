@@ -7,6 +7,24 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Three multi-currency correctness bugs (ROADMAP.md "Multi-currency correctness" audit),
+  all financially relevant on any store with more than one allowed currency:**
+  - `Model\FreeGiftManagement` compared the admin-configured, implicitly-base-currency
+    `min_subtotal` tier threshold against `Quote::getSubtotal()` (display currency) instead of
+    `Quote::getBaseSubtotal()` (base currency) — on a store allowing multiple currencies,
+    exchange-rate movement could push a cart across the threshold in the wrong direction,
+    granting or denying a free gift incorrectly. Now compares against the base-currency subtotal.
+  - `Model\CreditLimitCalculator::getUsedCredit()`/`getUsedCreditForCustomers()` summed
+    `sales_order.total_due` (order currency), mixing currencies if a customer had orders placed
+    under more than one currency — a real risk of `Plugin\Quote\BlockOverLimitCheckout` wrongly
+    blocking/allowing checkout and `Cron\SendCreditLimitAlerts` firing on a wrong number. Both
+    now sum `base_total_due` instead.
+  - `Model\ProductFeed\GoogleMerchantFeedGenerator` read `getFinalPrice()` (base currency, from
+    `catalog_product_index_price`) but tagged it with the store's display currency code with no
+    conversion — on a store where display currency != base currency, every price in the feed was
+    off by the currency rate, which Google Merchant Center flags as a landing-page price
+    mismatch. Now converts through `Store::getBaseCurrency()->convert()` before emitting.
+
 - **The order-approval REST API's decision endpoints had no rate limiting.**
   `/V1/ordo/order-approvals/:token/{approve,reject}` are anonymous, token-only endpoints — the
   same trust model the email-link controllers (`Controller\Approval\{Approve,Reject}`) use, which

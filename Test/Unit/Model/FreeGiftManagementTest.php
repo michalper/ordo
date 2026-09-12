@@ -142,18 +142,26 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         return $product;
     }
 
-    private function quote(float $subtotal, int $id = 42, int $customerId = 0, int $storeId = 1): Quote
-    {
-        // getSubtotal()/getCustomerId() are magic (__call via AbstractModel), not real declared
-        // methods on Quote — PHPUnit 12 removed addMethods(), the only way to stub those, with
-        // no replacement (a mock's own generated __call() shadows Quote's, so stubbing getData()
-        // doesn't route through it either). QuoteTestDouble gives them a real, declared,
-        // therefore-mockable implementation instead.
+    private function quote(
+        float $baseSubtotal,
+        int $id = 42,
+        int $customerId = 0,
+        int $storeId = 1,
+        ?float $displaySubtotal = null
+    ): Quote {
+        // getSubtotal()/getBaseSubtotal()/getCustomerId() are magic (__call via AbstractModel),
+        // not real declared methods on Quote — PHPUnit 12 removed addMethods(), the only way to
+        // stub those, with no replacement (a mock's own generated __call() shadows Quote's, so
+        // stubbing getData() doesn't route through it either). QuoteTestDouble gives them a real,
+        // declared, therefore-mockable implementation instead.
         $quote = $this->getMockBuilder(QuoteTestDouble::class)
             ->onlyMethods(['getId', 'getStoreId', 'collectTotals', 'addProduct', 'removeItem'])
             ->getMock();
         $quote->method('getId')->willReturn($id);
-        $quote->setTestSubtotal($subtotal);
+        $quote->setTestBaseSubtotal($baseSubtotal);
+        // Defaults to the same value as base subtotal when a test doesn't care about display
+        // currency diverging from base currency; tests asserting the fix pass a different value.
+        $quote->setTestSubtotal($displaySubtotal ?? $baseSubtotal);
         $quote->setTestCustomerId($customerId);
         $quote->method('getStoreId')->willReturn($storeId);
         return $quote;
@@ -315,6 +323,29 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         self::assertSame(101, $giftItem->getQuoteItemId());
         self::assertSame(1, $giftItem->getOfferId());
         self::assertSame('SKU-A', $giftItem->getSku());
+    }
+
+    /**
+     * Regression test: min_subtotal is a plain numeric field with no currency selector - meant
+     * as base currency - so eligibility must be computed from the quote's base-currency subtotal,
+     * not the display-currency one. A display subtotal above the tier but a base subtotal below
+     * it must NOT earn the tier (and vice versa).
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetEligibilityUsesBaseSubtotalNotDisplayCurrencySubtotal(): void
+    {
+        $this->stubOffersAndTiers([1], [$this->tier(1, 100.0, 1)]);
+        $this->stubProducts([$this->product(1, 'SKU-A')]);
+        $this->stubGiftItems([]);
+
+        // Display-currency subtotal (e.g. EUR) is above the tier, base-currency (e.g. USD) is not.
+        $quote = $this->quote(baseSubtotal: 50.0, displaySubtotal: 150.0);
+        $this->cartRepository->method('get')->willReturn($quote);
+
+        $eligibility = $this->management->getEligibility(7);
+
+        self::assertSame(0, $eligibility->getEarnedSlots());
+        self::assertSame([], $eligibility->getEligibleSkus());
     }
 
     #[AllowMockObjectsWithoutExpectations]
