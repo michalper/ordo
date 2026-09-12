@@ -2249,6 +2249,12 @@ parameters:
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
 			count: 1
+			path: Model/ProductFeed/MetaCatalogFeedGenerator.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
 			path: Model/Queue/CampaignDispatchConsumer.php
 
 		-

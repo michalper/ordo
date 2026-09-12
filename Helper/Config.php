@@ -92,6 +92,10 @@ class Config
     private const string XML_PATH_SHOPPING_FEED_TITLE = 'ordo_automation/shopping_feed/title';
     private const string XML_PATH_SHOPPING_FEED_DESCRIPTION = 'ordo_automation/shopping_feed/description';
 
+    private const string XML_PATH_META_CATALOG_FEED_ENABLED = 'ordo_automation/meta_catalog_feed/enabled';
+    private const string XML_PATH_META_CATALOG_FEED_DEFAULT_BRAND
+        = 'ordo_automation/meta_catalog_feed/default_brand';
+
     private const string XML_PATH_EMAIL_SENDGRID_WEBHOOK_VERIFICATION_KEY
         = 'ordo_automation/email/sendgrid_webhook_verification_key';
 
@@ -592,6 +596,28 @@ class Config
     {
         return (string) $this->scopeConfig->getValue(
             self::XML_PATH_SHOPPING_FEED_DESCRIPTION,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function isMetaCatalogFeedEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_META_CATALOG_FEED_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Fallback "brand" column value (Meta Catalog requires one per item) for a product with no
+     * manufacturer attribute value of its own.
+     */
+    public function getMetaCatalogFeedDefaultBrand(?int $storeId = null): string
+    {
+        return (string) $this->scopeConfig->getValue(
+            self::XML_PATH_META_CATALOG_FEED_DEFAULT_BRAND,
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
