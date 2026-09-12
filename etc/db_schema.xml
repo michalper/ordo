@@ -147,7 +147,7 @@
         </index>
     </table>
 
-    <table name="ordo_segment_audience_size_history" resource="default" engine="innodb" comment="Append-only snapshot history for ordo_segment.estimated_audience_size - one row per Model\Segment\SegmentAudienceSizeRecalculator pass, per segment. Closes the 'how has this segment grown/shrunk over the last 3 months' gap, where ordo_segment itself only ever holds the latest snapshot.">
+    <table name="ordo_segment_audience_size_history" resource="default" engine="innodb" comment="Append-only snapshot history for ordo_segment.estimated_audience_size - one row per Model\Segment\SegmentAudienceSizeRecalculator pass, per segment. Closes the how-has-this-segment-grown-or-shrunk-over-the-last-3-months gap, where ordo_segment itself only ever holds the latest snapshot.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="segment_id" padding="10" unsigned="true" nullable="false" comment="ordo_segment.entity_id"/>
         <column xsi:type="int" name="audience_size" padding="10" unsigned="true" nullable="false" comment="Matching-customer count as of this snapshot"/>
@@ -319,7 +319,7 @@
             <column name="executed_at"/>
         </index>
     </table>
-    <table name="ordo_campaign_action_retry" resource="default" engine="innodb" comment="A resumeScheduledAction() call that failed (Cron\RunScheduledCampaignActions) - previously just logged and abandoned, the row stayed marked executed and stayed failed forever. This is the persisted retry queue for that: one row per failed resume, re-attempted with exponential backoff (Model\Campaign\ActionRetryQueue) by Cron\RetryFailedCampaignActions until either it succeeds (row deleted) or attempts reaches the configured max, at which point it's left in place as a dead letter for manual investigation.">
+    <table name="ordo_campaign_action_retry" resource="default" engine="innodb" comment="A resumeScheduledAction() call that failed (Cron\RunScheduledCampaignActions) - previously just logged and abandoned, the row stayed marked executed and stayed failed forever. This is the persisted retry queue for that: one row per failed resume, re-attempted with exponential backoff (Model\Campaign\ActionRetryQueue) by Cron\RetryFailedCampaignActions until either it succeeds (row deleted) or attempts reaches the configured max, at which point it is left in place as a dead letter for manual investigation.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id"/>
         <column xsi:type="int" name="resume_action_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign_action.entity_id - same meaning as ordo_campaign_scheduled_action.resume_action_id"/>
@@ -339,7 +339,7 @@
             <column name="attempts"/>
         </index>
     </table>
-    <table name="ordo_message_send_retry" resource="default" engine="innodb" comment="A send_email/send_sms/send_whatsapp campaign action whose SendRetrier in-process retries (3 attempts) were all exhausted - previously Send{Email,Sms,WhatsApp} just wrote an ordo_message_log STATUS_FAILED row and moved on, nothing ever revisited it. This is the persisted retry queue for that gap, same shape as ordo_campaign_action_retry: one row per exhausted send, re-attempted with exponential backoff (Model\Campaign\MessageSendRetryQueue) by Cron\RetryFailedMessageSends by simply re-running the whole action (Model\Campaign\ActionPool::get($action_type)->execute()) against the same context+params, until either it succeeds (row deleted) or attempts reaches the configured max, at which point it's left in place as a dead letter for manual investigation. send_push is deliberately excluded - it fans out to every one of a customer's subscriptions per execute() call, so re-running it whole would risk re-sending to subscriptions that already succeeded the first time.">
+    <table name="ordo_message_send_retry" resource="default" engine="innodb" comment="A send_email/send_sms/send_whatsapp campaign action whose SendRetrier in-process retries (3 attempts) were all exhausted - previously Send{Email,Sms,WhatsApp} just wrote an ordo_message_log STATUS_FAILED row and moved on, nothing ever revisited it. This is the persisted retry queue for that gap, same shape as ordo_campaign_action_retry: one row per exhausted send, re-attempted with exponential backoff (Model\Campaign\MessageSendRetryQueue) by Cron\RetryFailedMessageSends by simply re-running the whole action (Model\Campaign\ActionPool::get($action_type)-execute()) against the same context+params, until either it succeeds (row deleted) or attempts reaches the configured max, at which point it is left in place as a dead letter for manual investigation. send_push is deliberately excluded - it fans out to every one of a customers subscriptions per execute() call, so re-running it whole would risk re-sending to subscriptions that already succeeded the first time.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="action_type" nullable="false" length="32" comment="ActionPool key to re-invoke, e.g. send_email/send_sms/send_whatsapp"/>
         <column xsi:type="text" name="context" nullable="false" comment="JSON-encoded dispatch context, copied at the moment the send's retries were exhausted"/>
@@ -356,7 +356,7 @@
             <column name="attempts"/>
         </index>
     </table>
-    <table name="ordo_campaign_dispatch_dead_letter" resource="default" engine="innodb" comment="A CampaignDispatchConsumer::execute() call that threw an exception it couldn't recover from (malformed message, or an exception CampaignDispatcher::dispatch() itself didn't already swallow internally) - previously this propagated uncaught to the message-queue framework and was lost with only a framework-level error log, no persisted record and no way to inspect what the message actually contained. Append-only, insert-only: nothing in this module currently re-processes these rows automatically, they exist purely so a broken/malformed dispatch is visible instead of silently dropped.">
+    <table name="ordo_campaign_dispatch_dead_letter" resource="default" engine="innodb" comment="A CampaignDispatchConsumer::execute() call that threw an exception it couldnt recover from (malformed message, or an exception CampaignDispatcher::dispatch() itself didnt already swallow internally) - previously this propagated uncaught to the message-queue framework and was lost with only a framework-level error log, no persisted record and no way to inspect what the message actually contained. Append-only, insert-only: nothing in this module currently re-processes these rows automatically, they exist purely so a broken/malformed dispatch is visible instead of silently dropped.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="trigger_event" nullable="true" length="64" comment="The trigger_event the message claimed, if the message could be decoded far enough to read it"/>
         <column xsi:type="text" name="message" nullable="false" comment="The raw, still-serialized message body exactly as received, so the original payload is never lost even if it couldn't be decoded at all"/>
@@ -605,7 +605,7 @@
         </constraint>
     </table>
 
-    <table name="ordo_trigger_outcome_log" resource="default" engine="innodb" comment="Sent/response stats for the 5 cron-driven triggers (reorder reminder, offer expiry, credit limit alert, order approval, win-back) — additive to each trigger's own narrow dedup log table, purely for dashboard observability">
+    <table name="ordo_trigger_outcome_log" resource="default" engine="innodb" comment="Sent/response stats for the 5 cron-driven triggers (reorder reminder, offer expiry, credit limit alert, order approval, win-back) — additive to each triggers own narrow dedup log table, purely for dashboard observability">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="trigger_type" nullable="false" length="32" comment="reorder_reminder|offer_expiry|credit_limit_alert|order_approval|win_back"/>
         <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
@@ -642,7 +642,7 @@
         </index>
     </table>
 
-    <table name="ordo_score_rule" resource="default" engine="innodb" comment="Declarative demographic-attribute lead scoring rule — if a customer's attribute value matches, points are awarded (or subtracted) toward their lead score">
+    <table name="ordo_score_rule" resource="default" engine="innodb" comment="Declarative demographic-attribute lead scoring rule — if a customers attribute value matches, points are awarded (or subtracted) toward their lead score">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="attribute_code" nullable="false" length="64" comment="Customer attribute code, e.g. group_id, website_id, email, store_id, or any EAV custom attribute code"/>
         <column xsi:type="varchar" name="operator" nullable="false" length="32" comment="Comparison operator: equals, not_equals, contains"/>
@@ -657,7 +657,7 @@
         </constraint>
     </table>
 
-    <table name="ordo_customer_demographic_score" resource="default" engine="innodb" comment="Current sum of matching ordo_score_rule points per customer, tracked separately from ordo_customer_score so a rule change's delta can be computed and applied additively instead of re-summing every rule on every save">
+    <table name="ordo_customer_demographic_score" resource="default" engine="innodb" comment="Current sum of matching ordo_score_rule points per customer, tracked separately from ordo_customer_score so a rule changes delta can be computed and applied additively instead of re-summing every rule on every save">
         <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
         <column xsi:type="int" name="score" unsigned="false" nullable="false" default="0" comment="Current sum of matching demographic scoring rule points"/>
         <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
@@ -679,7 +679,7 @@
             <column name="customer_id"/>
         </constraint>
     </table>
-    <table name="ordo_content_block" resource="default" engine="innodb" comment="A reusable, admin-authored piece of email content — static HTML snippet, RSS-newsletter feed, or product listing feed — resolvable by a campaign's add_dynamic_content action so the same block can be reused across many campaigns">
+    <table name="ordo_content_block" resource="default" engine="innodb" comment="A reusable, admin-authored piece of email content — static HTML snippet, RSS-newsletter feed, or product listing feed — resolvable by a campaigns add_dynamic_content action so the same block can be reused across many campaigns">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="identifier" nullable="false" length="64" comment="Unique machine identifier"/>
         <column xsi:type="varchar" name="name" nullable="false" length="255" comment="Admin-facing display name"/>
@@ -703,7 +703,7 @@
                     referenceTable="ordo_content_block" referenceColumn="entity_id" onDelete="CASCADE"/>
     </table>
 
-    <table name="ordo_product_feed_cache" resource="default" engine="innodb" comment="Last successfully generated shopping feed XML, refreshed by Cron\RefreshProductFeed - Controller\ProductFeed\Index serves this cached row on every public request, never generating on demand. One row per (feed_code, store_id) - only google_merchant today, kept per-code rather than a singleton row so a second feed format can be added without a schema change; store_id lets each store's own price/currency/base-URL scope get its own cached feed instead of one store's generation silently overwriting another's.">
+    <table name="ordo_product_feed_cache" resource="default" engine="innodb" comment="Last successfully generated shopping feed XML, refreshed by Cron\RefreshProductFeed - Controller\ProductFeed\Index serves this cached row on every public request, never generating on demand. One row per (feed_code, store_id) - only google_merchant today, kept per-code rather than a singleton row so a second feed format can be added without a schema change; store_id lets each stores own price/currency/base-URL scope get its own cached feed instead of one stores generation silently overwriting another one.">
         <column xsi:type="varchar" name="feed_code" nullable="false" length="32" comment="google_merchant today"/>
         <column xsi:type="int" name="store_id" padding="5" unsigned="true" nullable="false" comment="core_store.store_id"/>
         <column xsi:type="text" name="xml" nullable="false" comment="The full, ready-to-serve feed XML"/>
@@ -715,7 +715,7 @@
             <column name="store_id"/>
         </constraint>
     </table>
-    <table name="ordo_product_feed_run_log" resource="default" engine="innodb" comment="Append-only history of every ordo_product_feed_cache write (Model\ProductFeed\ProductFeedCacheWriter), one row per (feed_code, store_id) generation attempt - the feed cache table above only ever holds the LATEST attempt per store, so a transient failure that was later retried successfully left no trace; this is what the new admin health grid reads to answer 'has this store's feed generation actually been failing lately, and when did it last succeed'.">
+    <table name="ordo_product_feed_run_log" resource="default" engine="innodb" comment="Append-only history of every ordo_product_feed_cache write (Model\ProductFeed\ProductFeedCacheWriter), one row per (feed_code, store_id) generation attempt - the feed cache table above only ever holds the LATEST attempt per store, so a transient failure that was later retried successfully left no trace; this is what the new admin health grid reads to answer whether a given stores feed generation has actually been failing lately, and when it last succeeded.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="feed_code" nullable="false" length="32" comment="google_merchant today"/>
         <column xsi:type="int" name="store_id" padding="5" unsigned="true" nullable="false" comment="core_store.store_id"/>
@@ -786,7 +786,7 @@
         </index>
     </table>
 
-    <table name="ordo_campaign_outcome_log" resource="default" engine="innodb" comment="Sent/converted stats per campaign (and split-test variant) — the campaign-scoped counterpart of ordo_trigger_outcome_log, same first-plausible-match attribution philosophy (Observer\RecordCampaignOutcome sets acted_at/order_id once the customer places an order, not exact/billing-grade attribution). Additive to ordo_message_log, which already records the send itself; this table exists purely to answer 'did this campaign convert.'">
+    <table name="ordo_campaign_outcome_log" resource="default" engine="innodb" comment="Sent/converted stats per campaign (and split-test variant) — the campaign-scoped counterpart of ordo_trigger_outcome_log, same first-plausible-match attribution philosophy (Observer\RecordCampaignOutcome sets acted_at/order_id once the customer places an order, not exact/billing-grade attribution). Additive to ordo_message_log, which already records the send itself; this table exists purely to answer did this campaign convert.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id"/>
         <column xsi:type="varchar" name="variant" nullable="true" length="32" comment="Split-test variant key, if this send was inside a split action — null otherwise"/>
@@ -830,7 +830,7 @@
         </index>
     </table>
 
-    <table name="ordo_push_subscription" resource="default" engine="innodb" comment="A single browser/device's Web Push subscription (RFC 8030/8291) - one row per endpoint, since a customer commonly has more than one (phone + laptop). Keyed by customer_id OR visitor_id, same anonymous-then-stitched shape as ordo_visitor_tag/ordo_pending_popup - a visitor can grant notification permission before ever logging in.">
+    <table name="ordo_push_subscription" resource="default" engine="innodb" comment="A single browser/devices Web Push subscription (RFC 8030/8291) - one row per endpoint, since a customer commonly has more than one (phone + laptop). Keyed by customer_id OR visitor_id, same anonymous-then-stitched shape as ordo_visitor_tag/ordo_pending_popup - a visitor can grant notification permission before ever logging in.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="true" comment="Set once identity stitching links this subscription's visitor_id to a logged-in customer, or immediately if the browser was already logged in when it subscribed"/>
         <column xsi:type="varchar" name="visitor_id" nullable="true" length="64" comment="Anonymous first-party cookie value, matches ordo_visitor_event.visitor_id - at least one of customer_id/visitor_id is always set"/>

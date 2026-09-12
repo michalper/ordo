@@ -77,13 +77,11 @@ Dwa osobne ekrany, mimo podobnych nazw:
 (`RunScheduledCampaignActions` — łańcuchowanie opóźnień w minutach,
 `DispatchScheduledCampaignTriggers` — `scheduled_at`/`recurring_schedule`).
 
-> 📷 Zrzut samej kanwy Flow (edycja kampanii) **nie został wykonany** — otwarcie
-> `ordo/campaign/edit` w testowym środowisku kończy się błędem `LogicException: Circular
-> dependency: Ordo\Automation\Model\Campaign\ActionPool depends on
-> Ordo\Automation\Model\CampaignDispatcher and vice versa`. To problem środowiska/DI, nie tej
-> zmiany dokumentacyjnej (poza zakresem tego zadania — tylko dokumentacja, bez zmian PHP). Do
-> uzupełnienia: zrzut ekranu `admin/ordo/campaign/edit/entity_id/<id>` po naprawieniu tego
-> problemu w środowisku testowym.
+![Kanwa Flow — kampania "[Demo] Cart Abandonment Recovery" z węzłem triggera "Cart Abandoned" połączonym z akcją "Send Email"](images/flow-canvas.png)
+
+Kanwa Flow (`admin/ordo/campaign/edit/entity_id/<id>`) — trigger po lewej, węzły akcji po prawej,
+połączenia rysowane jako krzywe między nimi; paleta bloków (Triggers/Conditions/Actions) po lewej
+stronie kanwy.
 
 ---
 
@@ -162,16 +160,10 @@ Two separate screens, despite similar names:
 (`RunScheduledCampaignActions` — delay-minutes chaining, `DispatchScheduledCampaignTriggers` —
 `scheduled_at`/`recurring_schedule`).
 
-> 📷 A screenshot of the Flow canvas itself (campaign edit) was **not captured** — opening
-> `ordo/campaign/edit` in the test environment currently throws `LogicException: Circular
-> dependency: Ordo\Automation\Model\Campaign\ActionPool depends on
-> Ordo\Automation\Model\CampaignDispatcher and vice versa`. This is an environment/DI issue, not a
-> consequence of this documentation change (out of scope here — docs-only task, no PHP changes).
-> To do: capture `admin/ordo/campaign/edit/entity_id/<id>` once that's fixed in the test
-> environment.
+![Flow canvas — the "[Demo] Cart Abandonment Recovery" campaign with a "Cart Abandoned" trigger node connected to a "Send Email" action node](images/flow-canvas.png)
+
+The Flow canvas (`admin/ordo/campaign/edit/entity_id/<id>`) — trigger on the left, action nodes
+on the right, connections drawn as curves between them; the block palette (Triggers/Conditions/
+Actions) sits to the left of the canvas.
 
 ---
-
-*Note: since this canvas issue is a real environment defect independent of this documentation
-pass, it may be worth its own ROADMAP.md entry or GitHub issue if it reproduces outside this one
-sandbox.*

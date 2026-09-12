@@ -43,9 +43,10 @@ polem tekstowym tagu i polem liczbowym punktów, wysyłający do
 Osobne narzędzie `ordo/segment/overlap` (`Controller/Adminhtml/Segment/Overlap.php` +
 `OverlapCompute.php`) pokazuje, ilu klientów należy jednocześnie do wybranych segmentów.
 
-> 📷 Zrzut ekranu formularza edycji segmentu (z widocznymi warunkami i grupą zagnieżdżoną) —
-> do uzupełnienia: `admin/ordo/segment/edit/entity_id/<id>`, np. dla segmentu demo "[Demo] Nested
-> Group: Tag AND (Score OR Big Spender)".
+![Formularz edycji segmentu "[Demo] High Value Customers" z widocznym warunkiem "Monetary Total At Least"](images/segment-edit-form.png)
+
+Formularz edycji segmentu (`admin/ordo/segment/edit/entity_id/<id>`) — pole Name, przełącznik
+Enabled, i lista warunków ("Segment matches: All conditions (AND)").
 
 ---
 
@@ -89,6 +90,7 @@ tag text input, and a points number input, posting to
 A separate tool at `ordo/segment/overlap` (`Controller/Adminhtml/Segment/Overlap.php` +
 `OverlapCompute.php`) shows how many customers belong to several chosen segments at once.
 
-> 📷 A screenshot of the segment edit form (showing conditions and a nested group) is still
-> needed — to do: `admin/ordo/segment/edit/entity_id/<id>`, e.g. for the demo segment "[Demo]
-> Nested Group: Tag AND (Score OR Big Spender)".
+![Segment edit form for "[Demo] High Value Customers", showing the "Monetary Total At Least" condition](images/segment-edit-form.png)
+
+The segment edit form (`admin/ordo/segment/edit/entity_id/<id>`) — Name field, Enabled toggle,
+and the conditions list ("Segment matches: All conditions (AND)").
