@@ -328,6 +328,7 @@ class ScheduledTriggerScannerTest extends TestCase
      * recurring_schedule trigger across a visible month — it must ignore the minute/hour fields
      * entirely (a day either matches the day/month/weekday fields or it doesn't).
      */
+    #[AllowMockObjectsWithoutExpectations]
     public function testMatchesCronExpressionDateIgnoresMinuteAndHourFields(): void
     {
         $cronSchedule = $this->createStub(CronSchedule::class);
@@ -339,6 +340,7 @@ class ScheduledTriggerScannerTest extends TestCase
         self::assertTrue($this->makeScanner()->matchesCronExpressionDate('30 14 * * *', $date));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testMatchesCronExpressionDateReturnsFalseWhenDayMonthOrWeekdayDoesNotMatch(): void
     {
         $cronSchedule = $this->createStub(CronSchedule::class);
@@ -350,6 +352,7 @@ class ScheduledTriggerScannerTest extends TestCase
         self::assertFalse($this->makeScanner()->matchesCronExpressionDate('0 8 * * 1', $date));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testMatchesCronExpressionDateReturnsFalseForAMalformedExpression(): void
     {
         self::assertFalse($this->makeScanner()->matchesCronExpressionDate('not a cron expression', new \DateTimeImmutable('now')));
