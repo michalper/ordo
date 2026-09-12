@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Cron;
 
+use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Model\Campaign\ActionPool;
 use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
 use Ordo\Automation\Model\Cron\CronRunLogger;
@@ -74,7 +75,7 @@ class RetryFailedMessageSends
         }
 
         $action = $this->actionPool->get($retry->getActionType());
-        if ($action === null) {
+        if (!$action instanceof ActionInterface) {
             // Action type no longer registered (module config changed since this row was
             // enqueued) - nothing sane to retry, leave it as a dead letter immediately.
             $exhausted++;
