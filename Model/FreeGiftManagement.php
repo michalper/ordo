@@ -150,7 +150,11 @@ class FreeGiftManagement implements FreeGiftManagementInterface
             return [];
         }
 
-        $subtotal = (float) $quote->getSubtotal();
+        // Tier min_subtotal is a plain numeric field with no currency selector - implicitly
+        // base currency - so it must be compared against the quote's base-currency subtotal,
+        // not the display-currency one, or exchange-rate movement on a multi-currency store can
+        // push a cart across the threshold in the wrong direction.
+        $subtotal = (float) $quote->getBaseSubtotal();
         $offers = $this->offerCollectionFactory->create()->addEnabledFilter();
         $offerIds = array_map('intval', $offers->getAllIds());
         if (!$offerIds) {
@@ -212,7 +216,7 @@ class FreeGiftManagement implements FreeGiftManagementInterface
         $activeOfferIds = $this->activeOfferIds($quote);
         $earned = 0;
         if ($activeOfferIds) {
-            $subtotal = (float) $quote->getSubtotal();
+            $subtotal = (float) $quote->getBaseSubtotal();
             foreach ($this->tierCollectionFactory->create()->addOffersFilter($activeOfferIds) as $tier) {
                 if ($tier->getMinSubtotal() <= $subtotal) {
                     $earned += $tier->getGiftSlots();

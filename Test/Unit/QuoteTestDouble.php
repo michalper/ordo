@@ -18,6 +18,7 @@ use Magento\Quote\Model\Quote;
 class QuoteTestDouble extends Quote
 {
     private ?float $testSubtotal = null;
+    private ?float $testBaseSubtotal = null;
     private ?int $testCustomerId = null;
 
     public function __construct()
@@ -36,6 +37,17 @@ class QuoteTestDouble extends Quote
     public function getSubtotal(): ?float
     {
         return $this->testSubtotal;
+    }
+
+    public function setTestBaseSubtotal(float $baseSubtotal): self
+    {
+        $this->testBaseSubtotal = $baseSubtotal;
+        return $this;
+    }
+
+    public function getBaseSubtotal(): ?float
+    {
+        return $this->testBaseSubtotal;
     }
 
     public function setTestCustomerId(int $customerId): self
