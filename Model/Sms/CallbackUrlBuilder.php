@@ -32,4 +32,19 @@ class CallbackUrlBuilder
 
         return $baseUrl . '/ordo/sms/statuscallback';
     }
+
+    /**
+     * Twilio requires a separate webhook URL for inbound message delivery ("A Message Comes In"
+     * on the phone number's own configuration) from the per-send statusCallback URL above - Twilio
+     * has no way to route an inbound SMS to a per-send URL the way it does status callbacks, since
+     * an inbound message isn't a reply to any specific API call. This is the URL an admin
+     * configures once, directly in the Twilio Console, against the sending phone number - see
+     * Controller\Sms\Reply's own docblock.
+     */
+    public function getSmsReplyUrl(): string
+    {
+        $baseUrl = rtrim((string) $this->storeManager->getStore()->getBaseUrl(UrlInterface::URL_TYPE_WEB, true), '/');
+
+        return $baseUrl . '/ordo/sms/reply';
+    }
 }

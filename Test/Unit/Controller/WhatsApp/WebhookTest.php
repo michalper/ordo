@@ -9,6 +9,8 @@ use Magento\Framework\Controller\Result\Raw;
 use Magento\Framework\Controller\Result\RawFactory;
 use Ordo\Automation\Controller\WhatsApp\Webhook;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\ConsentChannel;
+use Ordo\Automation\Model\Conversation\InboundMessageProcessor;
 use Ordo\Automation\Model\MessageLog;
 use Ordo\Automation\Model\MessageLog\StatusDowngradeGuard;
 use Ordo\Automation\Model\ResourceModel\MessageLog as MessageLogResource;
@@ -40,6 +42,7 @@ class WebhookTest extends AbstractFrontendActionTestCase
     private MessageLogResource&\PHPUnit\Framework\MockObject\MockObject $messageLogResource;
     private WhatsAppTemplateCollectionFactory $whatsAppTemplateCollectionFactory;
     private WhatsAppTemplateResource&\PHPUnit\Framework\MockObject\MockObject $whatsAppTemplateResource;
+    private InboundMessageProcessor&\PHPUnit\Framework\MockObject\MockObject $inboundMessageProcessor;
     private LoggerInterface $logger;
     private Raw $rawResult;
     private Json $jsonResult;
@@ -55,6 +58,7 @@ class WebhookTest extends AbstractFrontendActionTestCase
         $this->messageLogResource = $this->createMock(MessageLogResource::class);
         $this->whatsAppTemplateCollectionFactory = $this->createMock(WhatsAppTemplateCollectionFactory::class);
         $this->whatsAppTemplateResource = $this->createMock(WhatsAppTemplateResource::class);
+        $this->inboundMessageProcessor = $this->createMock(InboundMessageProcessor::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->rawResult = $this->createMock(Raw::class);
@@ -81,6 +85,7 @@ class WebhookTest extends AbstractFrontendActionTestCase
             $this->whatsAppTemplateCollectionFactory,
             $this->whatsAppTemplateResource,
             new StatusDowngradeGuard(),
+            $this->inboundMessageProcessor,
             $this->logger
         );
     }
@@ -483,6 +488,56 @@ class WebhookTest extends AbstractFrontendActionTestCase
         $this->request->method('getContent')->willReturn($rawBody);
 
         $this->whatsAppTemplateCollectionFactory->expects(self::never())->method('create');
+
+        $controller->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPostWithInboundTextMessageDelegatesToInboundMessageProcessor(): void
+    {
+        $controller = $this->makeController();
+        $rawBody = json_encode([
+            'entry' => [[
+                'changes' => [[
+                    'value' => [
+                        'messages' => [
+                            ['id' => 'wamid.456', 'from' => '15551234567', 'text' => ['body' => 'Thanks!']],
+                        ],
+                    ],
+                ]],
+            ]],
+        ]);
+        $this->request->method('isGet')->willReturn(false);
+        $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
+        $this->request->method('getContent')->willReturn($rawBody);
+
+        $this->inboundMessageProcessor->expects(self::once())->method('process')
+            ->with(ConsentChannel::WhatsApp, '15551234567', 'Thanks!', 'wamid.456');
+        $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
+
+        $controller->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPostWithInboundMessageMissingFromIsSkipped(): void
+    {
+        $controller = $this->makeController();
+        $rawBody = json_encode([
+            'entry' => [[
+                'changes' => [[
+                    'value' => [
+                        'messages' => [
+                            ['id' => 'wamid.456', 'text' => ['body' => 'Thanks!']],
+                        ],
+                    ],
+                ]],
+            ]],
+        ]);
+        $this->request->method('isGet')->willReturn(false);
+        $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
+        $this->request->method('getContent')->willReturn($rawBody);
+
+        $this->inboundMessageProcessor->expects(self::never())->method('process');
 
         $controller->execute();
     }

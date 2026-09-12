@@ -1,12 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 1
-			path: Model/Campaign/CustomerTimezoneResolver.php
-
-		-
 			message: '#^Cannot access an offset on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 2
@@ -55,12 +49,6 @@ parameters:
 			path: Block/Adminhtml/Dashboard/DashboardViewModel.php
 
 		-
-			message: '#^Strict comparison using \!\=\= between string and false will always evaluate to true\.$#'
-			identifier: notIdentical.alwaysTrue
-			count: 1
-			path: Model/Approval/ApprovalRateLimiter.php
-
-		-
 			message: '#^Unreachable statement \- code above always terminates\.$#'
 			identifier: deadCode.unreachable
 			count: 1
@@ -89,6 +77,24 @@ parameters:
 			identifier: cast.string
 			count: 1
 			path: Block/Frontend/ContentBlock/Render.php
+
+		-
+			message: '#^Cannot access offset ''d'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Console/Command/GenerateVapidKeysCommand.php
+
+		-
+			message: '#^Cannot access offset ''x'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Console/Command/GenerateVapidKeysCommand.php
+
+		-
+			message: '#^Cannot access offset ''y'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Console/Command/GenerateVapidKeysCommand.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -160,42 +166,6 @@ parameters:
 			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: Controller/Adminhtml/CronRunLog/Index.php
-
-		-
-			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Adminhtml/CronRunLog/Index.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/ProductFeed/Index.php
-
-		-
-			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Adminhtml/ProductFeed/Index.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Setup/Index.php
-
-		-
-			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Adminhtml/Setup/Index.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
 			path: Controller/Adminhtml/AdminActionLog/Index.php
 
 		-
@@ -223,6 +193,24 @@ parameters:
 			path: Controller/Adminhtml/Campaign/Delete.php
 
 		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/Campaign/Edit.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Adminhtml/Campaign/Edit.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/Campaign/Edit.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
@@ -239,36 +227,6 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/Campaign/ImportForm.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Segment/ImportForm.php
-
-		-
-			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Adminhtml/Segment/ImportForm.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Campaign/Edit.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Controller/Adminhtml/Campaign/Edit.php
-
-		-
-			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Adminhtml/Campaign/Edit.php
 
 		-
 			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
@@ -394,6 +352,30 @@ parameters:
 			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
 			identifier: method.notFound
 			count: 1
+			path: Controller/Adminhtml/ConversationMessage/Index.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/ConversationMessage/Index.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/CronRunLog/Index.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/CronRunLog/Index.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
 			path: Controller/Adminhtml/Dashboard/Index.php
 
 		-
@@ -508,18 +490,6 @@ parameters:
 			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: Controller/Adminhtml/OrderApproval/Index.php
-
-		-
-			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Adminhtml/OrderApproval/Index.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
 			path: Controller/Adminhtml/MessageLog/Index.php
 
 		-
@@ -532,19 +502,43 @@ parameters:
 			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: Controller/Adminhtml/ReorderCycle/Index.php
+			path: Controller/Adminhtml/OrderApproval/Index.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
-			path: Controller/Adminhtml/ReorderCycle/Index.php
+			path: Controller/Adminhtml/OrderApproval/Index.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/ProductFeed/Index.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/ProductFeed/Index.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
 			path: Controller/Adminhtml/ReorderCycle/AbstractReorderCycleAction.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/ReorderCycle/Index.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/ReorderCycle/Index.php
 
 		-
 			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
@@ -649,12 +643,6 @@ parameters:
 			path: Controller/Adminhtml/Segment/Delete.php
 
 		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Controller/Adminhtml/Segment/Export.php
-
-		-
 			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -671,6 +659,24 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/Segment/Edit.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Adminhtml/Segment/Export.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/Segment/ImportForm.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/Segment/ImportForm.php
 
 		-
 			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
@@ -715,6 +721,30 @@ parameters:
 			path: Controller/Adminhtml/Segment/OverlapCompute.php
 
 		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getPostValue\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/Segment/Save.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Adminhtml/Segment/Save.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/Setup/Index.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/Setup/Index.php
+
+		-
 			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -727,6 +757,12 @@ parameters:
 			path: Controller/Adminhtml/TemplateTestSend/Index.php
 
 		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Adminhtml/TemplateTestSend/Send.php
+
+		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
 			count: 7
@@ -736,19 +772,103 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
-			path: Controller/Adminhtml/TemplateTestSend/Send.php
+			path: Controller/Adminhtml/WhatsAppTemplate/Delete.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getPostValue\(\)\.$#'
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: Controller/Adminhtml/Segment/Save.php
+			path: Controller/Adminhtml/WhatsAppTemplate/Edit.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
-			path: Controller/Adminhtml/Segment/Save.php
+			path: Controller/Adminhtml/WhatsAppTemplate/Edit.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/WhatsAppTemplate/Edit.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/WhatsAppTemplate/Index.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/WhatsAppTemplate/Index.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Controller\\Adminhtml\\WhatsAppTemplate\\NewAction\:\:execute\(\) should return Magento\\Framework\\App\\ResponseInterface\|Magento\\Framework\\Controller\\ResultInterface but returns null\.$#'
+			identifier: return.type
+			count: 1
+			path: Controller/Adminhtml/WhatsAppTemplate/NewAction.php
+
+		-
+			message: '#^Result of method Magento\\Backend\\App\\AbstractAction\:\:_forward\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: Controller/Adminhtml/WhatsAppTemplate/NewAction.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Adminhtml/WhatsAppTemplate/RefreshStatus.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getPostValue\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/WhatsAppTemplate/Save.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Adminhtml/WhatsAppTemplate/Save.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 6
+			path: Controller/Adminhtml/WhatsAppTemplate/Save.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Adminhtml/WhatsAppTemplate/SubmitForReview.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getContent\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Email/StatusCallback.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getHeader\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: Controller/Email/StatusCallback.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 3
+			path: Controller/Email/StatusCallback.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 7
+			path: Controller/Email/StatusCallback.php
 
 		-
 			message: '#^Parameter \#1 \$loginUrl of method Magento\\Customer\\Model\\Session\:\:authenticate\(\) expects bool\|null, string given\.$#'
@@ -772,6 +892,24 @@ parameters:
 			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getHeader\(\)\.$#'
 			identifier: method.notFound
 			count: 1
+			path: Controller/Sms/Reply.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getPostValue\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Sms/Reply.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 4
+			path: Controller/Sms/Reply.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getHeader\(\)\.$#'
+			identifier: method.notFound
+			count: 1
 			path: Controller/Sms/StatusCallback.php
 
 		-
@@ -781,40 +919,16 @@ parameters:
 			path: Controller/Sms/StatusCallback.php
 
 		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Sms/StatusCallback.php
+
+		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
 			count: 4
 			path: Controller/Sms/StatusCallback.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Controller/Sms/StatusCallback.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getHeader\(\)\.$#'
-			identifier: method.notFound
-			count: 2
-			path: Controller/Email/StatusCallback.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getContent\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Email/StatusCallback.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 3
-			path: Controller/Email/StatusCallback.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 7
-			path: Controller/Email/StatusCallback.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -835,6 +949,18 @@ parameters:
 			path: Controller/Track/Popup.php
 
 		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getHeader\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: Controller/Track/RegisterPushSubscription.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getHttpHost\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: Controller/Track/RegisterPushSubscription.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
@@ -845,6 +971,60 @@ parameters:
 			identifier: cast.int
 			count: 2
 			path: Controller/Track/Survey.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getContent\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Webhook/Receive.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getHeader\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Webhook/Receive.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Controller/Webhook/Receive.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getContent\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/WhatsApp/Webhook.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getHeader\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/WhatsApp/Webhook.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:isGet\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/WhatsApp/Webhook.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/WhatsApp/Webhook.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 14
+			path: Controller/WhatsApp/Webhook.php
+
+		-
+			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:save\(\) expects Magento\\Framework\\Model\\AbstractModel, Magento\\Framework\\DataObject given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/WhatsApp/Webhook.php
 
 		-
 			message: '#^Use service contracts to persist entities in favour of Ordo\\Automation\\Model\\ReorderCycle\:\:load\(\) method$#'
@@ -997,10 +1177,34 @@ parameters:
 			path: Model/AdAudience/GoogleOAuthTokenProvider.php
 
 		-
-			message: '#^Parameter \#1 \$name of method Magento\\Framework\\HTTP\\Client\\Curl\:\:setOption\(\) expects string, int given\.$#'
-			identifier: argument.type
+			message: '#^Cannot call method getUserId\(\) on mixed\.$#'
+			identifier: method.nonObject
 			count: 1
-			path: Model/Http/JsonApiClient.php
+			path: Model/AdminActionLog/Recorder.php
+
+		-
+			message: '#^Cannot call method getUserName\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/AdminActionLog/Recorder.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/AdminActionLog/Recorder.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/AdminActionLog/Recorder.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and false will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: Model/Approval/ApprovalRateLimiter.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -1042,6 +1246,18 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
+			path: Model/Campaign/Action/ContextTargetResolver.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Model/Campaign/Action/ContextTargetResolver.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
 			path: Model/Campaign/Action/GenerateCoupon.php
 
 		-
@@ -1065,26 +1281,26 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 1
-			path: Model/Campaign/Action/ContextTargetResolver.php
+			count: 3
+			path: Model/Campaign/Action/SendEmail.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 2
-			path: Model/Campaign/Action/ContextTargetResolver.php
+			count: 3
+			path: Model/Campaign/Action/SendEmail.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 3
-			path: Model/Campaign/Action/SendEmail.php
+			path: Model/Campaign/Action/SendPush.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 3
-			path: Model/Campaign/Action/SendEmail.php
+			count: 5
+			path: Model/Campaign/Action/SendPush.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -1097,6 +1313,30 @@ parameters:
 			identifier: cast.string
 			count: 4
 			path: Model/Campaign/Action/SendSms.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Campaign/Action/SendWebhook.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Model/Campaign/Action/SendWebhook.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 4
+			path: Model/Campaign/Action/SendWhatsApp.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
+			path: Model/Campaign/Action/SendWhatsApp.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
@@ -1156,25 +1396,7 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
-			path: Model/Campaign/Condition/HasTag.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 1
-			path: Model/Campaign/Condition/HasTag.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 1
-			path: Model/Campaign/Condition/PurchasedSku.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/Event/EventOccurredResolver.php
+			path: Model/Campaign/Condition/EventOccurred.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
@@ -1186,31 +1408,13 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
-			path: Model/Campaign/Condition/EventOccurred.php
+			path: Model/Campaign/Condition/HasTag.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 3
-			path: Model/Segment/SegmentMemberResolver.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
 			count: 1
-			path: Model/Segment/SegmentMemberResolver.php
-
-		-
-			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''intval'' given\.$#'
-			identifier: argument.type
-			count: 4
-			path: Model/Purchase/PurchasedProductResolver.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/Config/Source/Category.php
+			path: Model/Campaign/Condition/HasTag.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -1223,18 +1427,6 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Model/Campaign/Condition/InSegment.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/Campaign/Condition/NotInSegment.php
-
-		-
-			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''intval'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model/Campaign/Condition/NotInSegment.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -1247,6 +1439,18 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Model/Campaign/Condition/MonetaryTotalAtLeast.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Campaign/Condition/NotInSegment.php
+
+		-
+			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''intval'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Campaign/Condition/NotInSegment.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -1267,6 +1471,12 @@ parameters:
 			path: Model/Campaign/Condition/OrderTotalAtLeast.php
 
 		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/Campaign/Condition/PurchasedSku.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
@@ -1283,6 +1493,12 @@ parameters:
 			identifier: cast.string
 			count: 2
 			path: Model/Campaign/Condition/VisitorHasTag.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/Campaign/CustomerTimezoneResolver.php
 
 		-
 			message: '#^Cannot call method getDelayMinutes\(\) on mixed\.$#'
@@ -1345,6 +1561,12 @@ parameters:
 			path: Model/Campaign/DataProvider.php
 
 		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Model/Campaign/ScheduledTriggerScanner.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
@@ -1367,6 +1589,24 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Model/CampaignActionRepository.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 3
+			path: Model/CampaignActionRetry.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
+			path: Model/CampaignActionRetry.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\CampaignActionRetry\:\:getContext\(\) should return array\<string, mixed\> but returns array\<mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/CampaignActionRetry.php
 
 		-
 			message: '#^Parameter \#1 \$items of method Ordo\\Automation\\Api\\Data\\CampaignConditionSearchResultsInterface\:\:setItems\(\) expects array\<Ordo\\Automation\\Api\\Data\\CampaignConditionInterface\>, array\<Magento\\Framework\\DataObject\> given\.$#'
@@ -1404,7 +1644,6 @@ parameters:
 			count: 4
 			path: Model/CampaignDispatcher.php
 
-
 		-
 			message: '#^Method Ordo\\Automation\\Model\\CampaignDispatcher\:\:campaignIdsForTrigger\(\) should return array\<int, string\> but returns array\|bool\|float\|int\|string\|null\.$#'
 			identifier: return.type
@@ -1424,19 +1663,7 @@ parameters:
 			path: Model/CampaignDispatcher.php
 
 		-
-			message: '#^Parameter \#2 \$conditions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:conditionsSatisfied\(\) expects array\<Ordo\\Automation\\Model\\CampaignCondition\>, array\<int, Ordo\\Automation\\Model\\CampaignAction\|Ordo\\Automation\\Model\\CampaignCondition\> given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model/CampaignDispatcher.php
-
-		-
 			message: '#^Parameter \#2 \$actions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:runActionsFrom\(\) expects array\<Ordo\\Automation\\Model\\CampaignAction\>, array\<int, Ordo\\Automation\\Model\\CampaignAction\|Ordo\\Automation\\Model\\CampaignCondition\> given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model/CampaignDispatcher.php
-
-		-
-			message: '#^Parameter \#2 \$conditions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:conditionsSatisfied\(\) expects array\<Ordo\\Automation\\Model\\CampaignCondition\>, list\<mixed\> given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Model/CampaignDispatcher.php
@@ -1445,6 +1672,18 @@ parameters:
 			message: '#^Parameter \#2 \$actions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:runActionsFrom\(\) expects array\<Ordo\\Automation\\Model\\CampaignAction\>, list\<mixed\> given\.$#'
 			identifier: argument.type
 			count: 2
+			path: Model/CampaignDispatcher.php
+
+		-
+			message: '#^Parameter \#2 \$conditions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:conditionsSatisfied\(\) expects array\<Ordo\\Automation\\Model\\CampaignCondition\>, array\<int, Ordo\\Automation\\Model\\CampaignAction\|Ordo\\Automation\\Model\\CampaignCondition\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/CampaignDispatcher.php
+
+		-
+			message: '#^Parameter \#2 \$conditions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:conditionsSatisfied\(\) expects array\<Ordo\\Automation\\Model\\CampaignCondition\>, list\<mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
 			path: Model/CampaignDispatcher.php
 
 		-
@@ -1516,24 +1755,6 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 3
-			path: Model/CampaignActionRetry.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 3
-			path: Model/CampaignActionRetry.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\CampaignActionRetry\:\:getContext\(\) should return array\<string, mixed\> but returns array\<mixed\>\.$#'
-			identifier: return.type
-			count: 1
-			path: Model/CampaignActionRetry.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
 			count: 2
 			path: Model/CampaignTrigger.php
 
@@ -1566,6 +1787,12 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: Model/Config/Source/ActionType.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Config/Source/Category.php
 
 		-
 			message: '#^Cannot call method getAttributeCode\(\) on mixed\.$#'
@@ -1712,6 +1939,30 @@ parameters:
 			path: Model/ContentBlock/RuleProductLister.php
 
 		-
+			message: '#^Method Ordo\\Automation\\Model\\Conversation\\InboundMessageProcessor\:\:resolveCustomerId\(\) should return int\|null but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/Conversation/InboundMessageProcessor.php
+
+		-
+			message: '#^Parameter \#2 \$direction of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:setOrder\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Conversation/InboundMessageProcessor.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/ConversationMessage.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 4
+			path: Model/ConversationMessage.php
+
+		-
 			message: '#^Cannot cast mixed to float\.$#'
 			identifier: cast.double
 			count: 2
@@ -1782,6 +2033,12 @@ parameters:
 			identifier: argument.type
 			count: 2
 			path: Model/CustomerTagManager.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Event/EventOccurredResolver.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -2072,6 +2329,12 @@ parameters:
 			path: Model/FreeGiftSelection.php
 
 		-
+			message: '#^Parameter \#1 \$name of method Magento\\Framework\\HTTP\\Client\\Curl\:\:setOption\(\) expects string, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Http/JsonApiClient.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 2
@@ -2087,6 +2350,12 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
+			path: Model/MessageLogEvent.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
 			path: Model/MessageLogEvent.php
 
 		-
@@ -2106,12 +2375,6 @@ parameters:
 			identifier: return.type
 			count: 1
 			path: Model/MessageSendRetry.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 2
-			path: Model/MessageLogEvent.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -2252,6 +2515,60 @@ parameters:
 			path: Model/ProductFeed/MetaCatalogFeedGenerator.php
 
 		-
+			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''intval'' given\.$#'
+			identifier: argument.type
+			count: 4
+			path: Model/Purchase/PurchasedProductResolver.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Model/Push/PushSender.php
+
+		-
+			message: '#^Parameter \#1 \$name of method Magento\\Framework\\HTTP\\Client\\Curl\:\:setOption\(\) expects string, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Push/PushSender.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Model/Push/PushSubscriptionManager.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/Push/VapidTokenBuilder.php
+
+		-
+			message: '#^Cannot access offset ''x'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/Push/WebPushCrypto.php
+
+		-
+			message: '#^Cannot access offset ''y'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/Push/WebPushCrypto.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/PushSubscription.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 5
+			path: Model/PushSubscription.php
+
+		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
 			count: 1
@@ -2348,10 +2665,88 @@ parameters:
 			path: Model/ResourceModel/Campaign/Condition/Collection.php
 
 		-
+			message: '#^Cannot call method quoteInto\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/ResourceModel/Campaign/ScheduledAction.php
+
+		-
+			message: '#^Cannot call method update\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/ResourceModel/Campaign/ScheduledAction.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/ResourceModel/Campaign/ScheduledAction.php
+
+		-
+			message: '#^Binary operation "\." between mixed and ''\:'' results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
+
+		-
+			message: '#^Cannot access offset ''campaign_id'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
+
+		-
+			message: '#^Cannot access offset ''config_hash'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
+
+		-
+			message: '#^Cannot access offset ''last_fired_at'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
+
+		-
+			message: '#^Cannot access offset ''trigger_event'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 4
+			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
+
+		-
 			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, int given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Model/ResourceModel/Campaign/Trigger/Collection.php
+
+		-
+			message: '#^Cannot call method quoteInto\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: Model/ResourceModel/CampaignActionRetry.php
+
+		-
+			message: '#^Cannot call method update\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/ResourceModel/CampaignActionRetry.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/ResourceModel/CampaignActionRetry.php
 
 		-
 			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, int given\.$#'
@@ -2372,7 +2767,43 @@ parameters:
 			path: Model/ResourceModel/FreeGiftOfferTier/Collection.php
 
 		-
+			message: '#^Cannot call method quoteInto\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: Model/ResourceModel/MessageSendRetry.php
+
+		-
+			message: '#^Cannot call method update\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/ResourceModel/MessageSendRetry.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/ResourceModel/MessageSendRetry.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Model/ResourceModel/OrderApproval.php
+
+		-
 			message: '#^Cannot call method fetchOne\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/ResourceModel/OrderApproval.php
+
+		-
+			message: '#^Cannot call method quote\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/ResourceModel/OrderApproval.php
+
+		-
+			message: '#^Cannot call method quoteInto\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
 			identifier: method.nonObject
 			count: 1
 			path: Model/ResourceModel/OrderApproval.php
@@ -2388,126 +2819,6 @@ parameters:
 			identifier: method.nonObject
 			count: 1
 			path: Model/ResourceModel/OrderApproval.php
-
-		-
-			message: '#^Cannot call method quoteInto\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Model/ResourceModel/OrderApproval.php
-
-		-
-			message: '#^Cannot call method quote\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Model/ResourceModel/OrderApproval.php
-
-		-
-			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: Model/ResourceModel/OrderApproval.php
-
-		-
-			message: '#^Cannot call method update\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Model/ResourceModel/Campaign/ScheduledAction.php
-
-		-
-			message: '#^Cannot call method quoteInto\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Model/ResourceModel/Campaign/ScheduledAction.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/ResourceModel/Campaign/ScheduledAction.php
-
-		-
-			message: '#^Cannot call method update\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Model/ResourceModel/CampaignActionRetry.php
-
-		-
-			message: '#^Cannot call method quoteInto\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
-			identifier: method.nonObject
-			count: 2
-			path: Model/ResourceModel/CampaignActionRetry.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/ResourceModel/CampaignActionRetry.php
-
-		-
-			message: '#^Cannot call method update\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Model/ResourceModel/MessageSendRetry.php
-
-		-
-			message: '#^Cannot call method quoteInto\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
-			identifier: method.nonObject
-			count: 2
-			path: Model/ResourceModel/MessageSendRetry.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/ResourceModel/MessageSendRetry.php
-
-		-
-			message: '#^Cannot access offset ''campaign_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
-
-		-
-			message: '#^Cannot access offset ''trigger_event'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
-
-		-
-			message: '#^Cannot access offset ''config_hash'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
-
-		-
-			message: '#^Cannot access offset ''last_fired_at'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
-
-		-
-			message: '#^Binary operation "\." between mixed and '':'' results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
-
-		-
-			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 4
-			path: Model/ResourceModel/Campaign/ScheduledTriggerState.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 2
-			path: Model/Campaign/ScheduledTriggerScanner.php
 
 		-
 			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, int given\.$#'
@@ -2666,9 +2977,9 @@ parameters:
 			path: Model/Segment/DataProvider.php
 
 		-
-			message: '#^Method Ordo\\Automation\\Model\\Segment\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\.$#'
-			identifier: return.type
-			count: 1
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
 			path: Model/Segment/DataProvider.php
 
 		-
@@ -2678,9 +2989,9 @@ parameters:
 			path: Model/Segment/DataProvider.php
 
 		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 2
+			message: '#^Method Ordo\\Automation\\Model\\Segment\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\.$#'
+			identifier: return.type
+			count: 1
 			path: Model/Segment/DataProvider.php
 
 		-
@@ -2718,6 +3029,18 @@ parameters:
 			identifier: cast.string
 			count: 1
 			path: Model/Segment/SegmentMatcher.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Segment/SegmentMemberResolver.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
+			path: Model/Segment/SegmentMemberResolver.php
 
 		-
 			message: '#^Cannot access offset ''conditions'' on mixed\.$#'
@@ -2784,6 +3107,60 @@ parameters:
 			identifier: return.type
 			count: 1
 			path: Model/VisitorTagManager.php
+
+		-
+			message: '#^Cannot access offset ''id'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/WhatsApp/WhatsAppSender.php
+
+		-
+			message: '#^Cannot access offset 0 on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/WhatsApp/WhatsAppSender.php
+
+		-
+			message: '#^Parameter \#1 \$name of method Magento\\Framework\\HTTP\\Client\\Curl\:\:setOption\(\) expects string, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/WhatsApp/WhatsAppTemplateClient.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/WhatsAppTemplate.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 9
+			path: Model/WhatsAppTemplate.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Model/WhatsAppTemplate/DataProvider.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\WhatsAppTemplate\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/WhatsAppTemplate/DataProvider.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\WhatsAppTemplate\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\<int, mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/WhatsAppTemplate/DataProvider.php
+
+		-
+			message: '#^Property Ordo\\Automation\\Model\\WhatsAppTemplate\\DataProvider\:\:\$loadedData type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Model/WhatsAppTemplate/DataProvider.php
 
 		-
 			message: '#^Cannot call method getId\(\) on mixed\.$#'
@@ -2957,24 +3334,6 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
-			path: Plugin/Quote/BlockOverLimitCheckout.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Plugin\\SalesRule\\SimpleActionOptionsProviderPlugin\:\:afterToOptionArray\(\) has parameter \$result with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Plugin/SalesRule/SimpleActionOptionsProviderPlugin.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Plugin\\SalesRule\\SimpleActionOptionsProviderPlugin\:\:afterToOptionArray\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Plugin/SalesRule/SimpleActionOptionsProviderPlugin.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
 			path: Plugin/AdAudience/AdAudienceResourceAuditPlugin.php
 
 		-
@@ -2988,6 +3347,24 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Plugin/FreeGiftOffer/FreeGiftOfferResourceAuditPlugin.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Plugin/Quote/BlockOverLimitCheckout.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Plugin\\SalesRule\\SimpleActionOptionsProviderPlugin\:\:afterToOptionArray\(\) has parameter \$result with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Plugin/SalesRule/SimpleActionOptionsProviderPlugin.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Plugin\\SalesRule\\SimpleActionOptionsProviderPlugin\:\:afterToOptionArray\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Plugin/SalesRule/SimpleActionOptionsProviderPlugin.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -3140,6 +3517,36 @@ parameters:
 			path: Ui/Component/Listing/Column/OrderApprovalActions.php
 
 		-
+			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
+			identifier: foreach.nonIterable
+			count: 1
+			path: Ui/Component/Listing/Column/ReorderCycleActions.php
+
+		-
+			message: '#^Cannot access offset ''entity_id'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Ui/Component/Listing/Column/ReorderCycleActions.php
+
+		-
+			message: '#^Cannot access offset ''items'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Ui/Component/Listing/Column/ReorderCycleActions.php
+
+		-
+			message: '#^Cannot access offset mixed on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Ui/Component/Listing/Column/ReorderCycleActions.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Ui/Component/Listing/Column/ReorderCycleActions.php
+
+		-
 			message: '#^Method Ordo\\Automation\\Ui\\Component\\Listing\\Column\\ReorderCycleActions\:\:__construct\(\) has parameter \$components with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -3162,356 +3569,3 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: Ui/Component/Listing/Column/ReorderCycleActions.php
-
-		-
-			message: '#^Cannot access offset ''items'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Ui/Component/Listing/Column/ReorderCycleActions.php
-
-		-
-			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
-			identifier: foreach.nonIterable
-			count: 1
-			path: Ui/Component/Listing/Column/ReorderCycleActions.php
-
-		-
-			message: '#^Cannot access offset ''entity_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Ui/Component/Listing/Column/ReorderCycleActions.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Ui/Component/Listing/Column/ReorderCycleActions.php
-
-		-
-			message: '#^Cannot access offset mixed on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Ui/Component/Listing/Column/ReorderCycleActions.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Controller/Adminhtml/WhatsAppTemplate/Delete.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Controller/Adminhtml/WhatsAppTemplate/Edit.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/WhatsAppTemplate/Edit.php
-
-		-
-			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Adminhtml/WhatsAppTemplate/Edit.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/WhatsAppTemplate/Index.php
-
-		-
-			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Adminhtml/WhatsAppTemplate/Index.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Controller\\Adminhtml\\WhatsAppTemplate\\NewAction\:\:execute\(\) should return Magento\\Framework\\App\\ResponseInterface\|Magento\\Framework\\Controller\\ResultInterface but returns null\.$#'
-			identifier: return.type
-			count: 1
-			path: Controller/Adminhtml/WhatsAppTemplate/NewAction.php
-
-		-
-			message: '#^Result of method Magento\\Backend\\App\\AbstractAction\:\:_forward\(\) \(void\) is used\.$#'
-			identifier: method.void
-			count: 1
-			path: Controller/Adminhtml/WhatsAppTemplate/NewAction.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Controller/Adminhtml/WhatsAppTemplate/RefreshStatus.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getPostValue\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/WhatsAppTemplate/Save.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Controller/Adminhtml/WhatsAppTemplate/Save.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 6
-			path: Controller/Adminhtml/WhatsAppTemplate/Save.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Controller/Adminhtml/WhatsAppTemplate/SubmitForReview.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 4
-			path: Model/Campaign/Action/SendWhatsApp.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 3
-			path: Model/Campaign/Action/SendWhatsApp.php
-
-		-
-			message: '#^Cannot access offset ''id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Model/WhatsApp/WhatsAppSender.php
-
-		-
-			message: '#^Cannot access offset 0 on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Model/WhatsApp/WhatsAppSender.php
-
-		-
-			message: '#^Parameter \#1 \$name of method Magento\\Framework\\HTTP\\Client\\Curl\:\:setOption\(\) expects string, int given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model/WhatsApp/WhatsAppTemplateClient.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/WhatsAppTemplate.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 9
-			path: Model/WhatsAppTemplate.php
-
-		-
-			message: '#^Property Ordo\\Automation\\Model\\WhatsAppTemplate\\DataProvider\:\:\$loadedData type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Model/WhatsAppTemplate/DataProvider.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\WhatsAppTemplate\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\.$#'
-			identifier: return.type
-			count: 1
-			path: Model/WhatsAppTemplate/DataProvider.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 2
-			path: Model/WhatsAppTemplate/DataProvider.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\WhatsAppTemplate\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\<int, mixed\>\.$#'
-			identifier: return.type
-			count: 1
-			path: Model/WhatsAppTemplate/DataProvider.php
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getHeader\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Webhook/Receive.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getContent\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Webhook/Receive.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 2
-			path: Controller/Webhook/Receive.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 2
-			path: Model/Campaign/Action/SendWebhook.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/Campaign/Action/SendWebhook.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:isGet\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/WhatsApp/Webhook.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getHeader\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/WhatsApp/Webhook.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getContent\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/WhatsApp/Webhook.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 11
-			path: Controller/WhatsApp/Webhook.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Controller/WhatsApp/Webhook.php
-
-		-
-			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:save\(\) expects Magento\\Framework\\Model\\AbstractModel, Magento\\Framework\\DataObject given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/WhatsApp/Webhook.php
-
-		-
-			message: '#^Cannot access offset ''x'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Console/Command/GenerateVapidKeysCommand.php
-
-		-
-			message: '#^Cannot access offset ''y'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Console/Command/GenerateVapidKeysCommand.php
-
-		-
-			message: '#^Cannot access offset ''d'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Console/Command/GenerateVapidKeysCommand.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 3
-			path: Model/Campaign/Action/SendPush.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 5
-			path: Model/Campaign/Action/SendPush.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 2
-			path: Model/Push/PushSender.php
-
-		-
-			message: '#^Parameter \#1 \$name of method Magento\\Framework\\HTTP\\Client\\Curl\:\:setOption\(\) expects string, int given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model/Push/PushSender.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 1
-			path: Model/Push/VapidTokenBuilder.php
-
-		-
-			message: '#^Cannot access offset ''x'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Model/Push/WebPushCrypto.php
-
-		-
-			message: '#^Cannot access offset ''y'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Model/Push/WebPushCrypto.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getHeader\(\)\.$#'
-			identifier: method.notFound
-			count: 2
-			path: Controller/Track/RegisterPushSubscription.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getHttpHost\(\)\.$#'
-			identifier: method.notFound
-			count: 2
-			path: Controller/Track/RegisterPushSubscription.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 2
-			path: Model/Push/PushSubscriptionManager.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/PushSubscription.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 5
-			path: Model/PushSubscription.php
-
-		-
-			message: '#^Cannot call method getUserId\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Model/AdminActionLog/Recorder.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/AdminActionLog/Recorder.php
-
-		-
-			message: '#^Cannot call method getUserName\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Model/AdminActionLog/Recorder.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 1
-			path: Model/AdminActionLog/Recorder.php

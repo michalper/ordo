@@ -353,6 +353,12 @@ $segmentNavDesc = __(
             'icon' => 'inbox',
         ],
         [
+            'url' => $block->getUrl('ordo/conversationmessage/index'),
+            'title' => __('Conversations'),
+            'desc' => __('Read-only: inbound SMS/WhatsApp replies per customer, including STOP-keyword opt-outs'),
+            'icon' => 'inbox',
+        ],
+        [
             'url' => $block->getUrl('ordo/orderapproval/index'),
             'title' => __('Order Approvals'),
             'desc' => __('Browse and act on pending order approvals without the original decision email'),

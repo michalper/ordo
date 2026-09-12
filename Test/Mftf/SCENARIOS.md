@@ -362,8 +362,20 @@ module's.
 | `/ordo/webhook/receive` rejects a missing/invalid signature with 401 without dispatching                        | ⬜ unit-tested (`Controller\Webhook\ReceiveTest`), no MFTF yet             |
 | `WebhookSignatureValidator` HMAC-SHA256 sign/verify round-trip, tampered body and forged signature rejected      | ⬜ unit-tested (`WebhookSignatureValidatorTest`), no MFTF yet             |
 
+## 23. Two-way SMS/WhatsApp conversations (`Model/Conversation/InboundMessageProcessor.php`, `Controller/Sms/Reply.php`, `Controller/WhatsApp/Webhook.php`, `Controller/Adminhtml/ConversationMessage/Index.php`)
+
+| Scenario                                                                                                       | Status                                                                    |
+|------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| `Controller\Sms\Reply` — X-Twilio-Signature rejection, valid signature delegates to `InboundMessageProcessor`, missing `From` returns invalid_payload | ⬜ unit-tested (`ReplyTest`), no MFTF yet |
+| `Controller\WhatsApp\Webhook` — inbound `messages` array entries are parsed and delegated to `InboundMessageProcessor` alongside the existing `statuses` handling | ⬜ unit-tested (`WebhookTest`), no MFTF yet |
+| `InboundMessageProcessor` — a STOP/UNSUBSCRIBE/CANCEL/END/QUIT reply (any case) revokes consent through `ConsentManager::setConsent()` for the resolved customer and channel — the compliance-critical path | ⬜ unit-tested (`InboundMessageProcessorTest`, one case per keyword and per channel), no MFTF yet |
+| `InboundMessageProcessor` — a STOP-keyword reply from an unresolvable phone number does NOT call `ConsentManager` but logs an error for manual follow-up | ⬜ unit-tested (`InboundMessageProcessorTest`), no MFTF yet |
+| `InboundMessageProcessor` — every inbound reply (STOP-keyword or not) is stored in `ordo_conversation_message` regardless of outcome | ⬜ unit-tested (`InboundMessageProcessorTest`), no MFTF yet |
+| "Conversations" admin grid (`ordo/conversationmessage/index`) renders `ordo_conversation_message` rows filterable by Customer | ⬜ not covered — no MFTF yet, real webhook delivery needed to seed data, same reasoning as `send_sms`'s own equivalent gap |
+
 ## Suggested next batch (highest signal per test written)
 
 Empty — every scenario this list ever tracked is now ✅ (see the sections above), except section 22 (Webhook
-action/trigger), added alongside the feature itself and not yet backed by MFTF. Re-populate further when a new
-gap is found (a newly added trigger/condition/action/controller/cron, or a re-audit catching something missed).
+action/trigger) and section 23 (Two-way SMS/WhatsApp conversations), added alongside their own features and not
+yet backed by MFTF. Re-populate further when a new gap is found (a newly added trigger/condition/action/
+controller/cron, or a re-audit catching something missed).
