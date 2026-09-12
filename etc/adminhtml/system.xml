@@ -338,6 +338,19 @@
                     <depends><field id="enabled">1</field></depends>
                 </field>
             </group>
+            <group id="meta_catalog_feed" translate="label" type="text" sortOrder="135" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Meta Catalog Feed</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Meta Catalog CSV feed</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Publishes a public, unauthenticated Meta (Facebook/Instagram) Commerce Manager-compatible CSV feed at "/ordo/productfeed/metacatalog", refreshed every 6 hours by the same Cron\RefreshProductFeed that already refreshes the Google Merchant feed above. Unrelated to the Meta Custom Audiences integration under "Ad Audience Sync" — that pushes hashed customer emails to Meta's API, this is a file Meta's own crawler polls.</comment>
+                </field>
+                <field id="default_brand" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Default Brand</label>
+                    <comment>Meta requires a "brand" value per catalog item. This module has no per-product brand/manufacturer mapping, so every item in this feed uses this single store-wide value; a product is skipped from the feed entirely if this is left blank.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="email" translate="label" type="text" sortOrder="140" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Email Delivery Tracking (SendGrid)</label>
                 <field id="sendgrid_webhook_verification_key" translate="label comment" type="obscure" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">

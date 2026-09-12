@@ -44,6 +44,15 @@
         </arguments>
     </type>
 
+    <type name="Ordo\Automation\Model\ProductFeed\FeedGeneratorPool">
+        <arguments>
+            <argument name="generators" xsi:type="array">
+                <item name="google_merchant" xsi:type="object">Ordo\Automation\Model\ProductFeed\GoogleMerchantFeedGenerator</item>
+                <item name="meta_catalog" xsi:type="object">Ordo\Automation\Model\ProductFeed\MetaCatalogFeedGenerator</item>
+            </argument>
+        </arguments>
+    </type>
+
     <!-- Dedicated SearchResults types so the WebAPI output processor knows what's inside each
          list endpoint's "items" array (the generic SearchResultsInterface can't express this —
          see Api/Data/CampaignSearchResultsInterface.php for why). Bound to a trivial concrete

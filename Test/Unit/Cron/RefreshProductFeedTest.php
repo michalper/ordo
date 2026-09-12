@@ -5,9 +5,9 @@ namespace Ordo\Automation\Test\Unit\Cron;
 
 use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\StoreManagerInterface;
+use Ordo\Automation\Api\ProductFeed\FeedGeneratorInterface;
 use Ordo\Automation\Cron\RefreshProductFeed;
-use Ordo\Automation\Helper\Config;
-use Ordo\Automation\Model\ProductFeed\GoogleMerchantFeedGenerator;
+use Ordo\Automation\Model\ProductFeed\FeedGeneratorPool;
 use Ordo\Automation\Model\ProductFeed\ProductFeedCacheWriter;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
@@ -18,18 +18,17 @@ class RefreshProductFeedTest extends TestCase
 {
     use MakesCronRunLoggerTrait;
 
-    private GoogleMerchantFeedGenerator&\PHPUnit\Framework\MockObject\MockObject $generator;
+    private FeedGeneratorInterface&\PHPUnit\Framework\MockObject\MockObject $generator;
     private ProductFeedCacheWriter&\PHPUnit\Framework\MockObject\MockObject $cacheWriter;
-    private Config $config;
     private StoreManagerInterface $storeManager;
     private LoggerInterface&\PHPUnit\Framework\MockObject\MockObject $logger;
     private RefreshProductFeed $cron;
 
     protected function setUp(): void
     {
-        $this->generator = $this->createMock(GoogleMerchantFeedGenerator::class);
+        $this->generator = $this->createMock(FeedGeneratorInterface::class);
+        $this->generator->method('getFeedCode')->willReturn('google_merchant');
         $this->cacheWriter = $this->createMock(ProductFeedCacheWriter::class);
-        $this->config = $this->createStub(Config::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $storeOne = $this->createStub(StoreInterface::class);
@@ -37,10 +36,11 @@ class RefreshProductFeedTest extends TestCase
         $this->storeManager = $this->createStub(StoreManagerInterface::class);
         $this->storeManager->method('getStores')->willReturn([$storeOne]);
 
+        $pool = new FeedGeneratorPool(['google_merchant' => $this->generator]);
+
         $this->cron = new RefreshProductFeed(
-            $this->generator,
+            $pool,
             $this->cacheWriter,
-            $this->config,
             $this->storeManager,
             $this->makeCronRunLogger($this->createStub(LoggerInterface::class)),
             $this->logger
@@ -50,7 +50,7 @@ class RefreshProductFeedTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsStoreWhenDisabled(): void
     {
-        $this->config->method('isShoppingFeedEnabled')->willReturn(false);
+        $this->generator->method('isEnabled')->willReturn(false);
         $this->generator->expects(self::never())->method('generate');
 
         $this->cron->execute();
@@ -59,10 +59,11 @@ class RefreshProductFeedTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteGeneratesAndWritesSuccessPerStore(): void
     {
-        $this->config->method('isShoppingFeedEnabled')->willReturn(true);
-        $this->generator->method('generate')->willReturn(['xml' => '<rss></rss>', 'productCount' => 5]);
+        $this->generator->method('isEnabled')->willReturn(true);
+        $this->generator->method('generate')->willReturn(['content' => '<rss></rss>', 'productCount' => 5]);
 
-        $this->cacheWriter->expects(self::once())->method('writeSuccess')->with(1, '<rss></rss>', 5);
+        $this->cacheWriter->expects(self::once())->method('writeSuccess')
+            ->with('google_merchant', 1, '<rss></rss>', 5);
         $this->cacheWriter->expects(self::never())->method('writeError');
 
         $this->cron->execute();
@@ -71,10 +72,10 @@ class RefreshProductFeedTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteWritesErrorWhenGenerationThrows(): void
     {
-        $this->config->method('isShoppingFeedEnabled')->willReturn(true);
+        $this->generator->method('isEnabled')->willReturn(true);
         $this->generator->method('generate')->willThrowException(new \RuntimeException('db down'));
 
-        $this->cacheWriter->expects(self::once())->method('writeError')->with(1, 'db down');
+        $this->cacheWriter->expects(self::once())->method('writeError')->with('google_merchant', 1, 'db down');
         $this->logger->expects(self::once())->method('error');
 
         $this->cron->execute();

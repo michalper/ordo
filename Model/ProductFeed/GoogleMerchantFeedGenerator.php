@@ -8,6 +8,7 @@ use Magento\Catalog\Model\Product\Visibility;
 use Magento\Catalog\Model\ResourceModel\Product\Collection as ProductCollection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Magento\Store\Model\StoreManagerInterface;
+use Ordo\Automation\Api\ProductFeed\FeedGeneratorInterface;
 use Ordo\Automation\Helper\Config;
 
 /**
@@ -22,8 +23,10 @@ use Ordo\Automation\Helper\Config;
  *
  * @see https://support.google.com/merchants/answer/7052112 (feed spec)
  */
-class GoogleMerchantFeedGenerator
+class GoogleMerchantFeedGenerator implements FeedGeneratorInterface
 {
+    public const string FEED_CODE = 'google_merchant';
+
     /**
      * Bounds how many product models the collection materializes in memory at once - without
      * this, generate() loaded the WHOLE catalog collection (every enabled, visible product, with
@@ -41,12 +44,27 @@ class GoogleMerchantFeedGenerator
     ) {
     }
 
+    public function getFeedCode(): string
+    {
+        return self::FEED_CODE;
+    }
+
+    public function getContentType(): string
+    {
+        return 'application/xml; charset=UTF-8';
+    }
+
+    public function isEnabled(int $storeId): bool
+    {
+        return $this->config->isShoppingFeedEnabled($storeId);
+    }
+
     /**
      * @param int $storeId Which store's price/currency/base-URL scope (and
      *   Config::getShoppingFeedTitle()/getShoppingFeedDescription() store-scoped config) to
      *   generate the feed for — see Cron\RefreshProductFeed, which now calls this once per
      *   store instead of once for the whole install.
-     * @return array{xml: string, productCount: int}
+     * @return array{content: string, productCount: int}
      */
     public function generate(int $storeId): array
     {
@@ -72,7 +90,7 @@ class GoogleMerchantFeedGenerator
             . implode('', $items)
             . '</channel></rss>';
 
-        return ['xml' => $xml, 'productCount' => count($items)];
+        return ['content' => $xml, 'productCount' => count($items)];
     }
 
     /**

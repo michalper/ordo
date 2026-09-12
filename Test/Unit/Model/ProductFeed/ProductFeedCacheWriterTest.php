@@ -40,7 +40,17 @@ class ProductFeedCacheWriterTest extends TestCase
             ->with(self::stringContains('ON DUPLICATE KEY UPDATE'), ['google_merchant', 1, '<rss></rss>', 3]);
         $this->runLogResource->expects(self::once())->method('save');
 
-        $this->writer->writeSuccess(1, '<rss></rss>', 3);
+        $this->writer->writeSuccess('google_merchant', 1, '<rss></rss>', 3);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testWriteSuccessUpsertsForADifferentFeedCode(): void
+    {
+        $this->connection->expects(self::once())->method('query')
+            ->with(self::stringContains('ON DUPLICATE KEY UPDATE'), ['meta_catalog', 1, 'id,title', 3]);
+        $this->runLogResource->expects(self::once())->method('save');
+
+        $this->writer->writeSuccess('meta_catalog', 1, 'id,title', 3);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -50,7 +60,7 @@ class ProductFeedCacheWriterTest extends TestCase
             ->with(self::stringContains('ON DUPLICATE KEY UPDATE'), ['google_merchant', 1, 'boom']);
         $this->runLogResource->expects(self::once())->method('save');
 
-        $this->writer->writeError(1, 'boom');
+        $this->writer->writeError('google_merchant', 1, 'boom');
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -61,7 +71,7 @@ class ProductFeedCacheWriterTest extends TestCase
         $this->connection->expects(self::once())->method('query')
             ->with(self::anything(), self::callback(fn (array $params) => strlen($params[2]) === 255));
 
-        $this->writer->writeError(1, $longMessage);
+        $this->writer->writeError('google_merchant', 1, $longMessage);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -71,7 +81,7 @@ class ProductFeedCacheWriterTest extends TestCase
         $this->runLogResource->method('save')->willThrowException(new \RuntimeException('db down'));
 
         // Must not throw - a DB hiccup persisting the history row can't crash the caller.
-        $this->writer->writeSuccess(1, '<rss></rss>', 3);
+        $this->writer->writeSuccess('google_merchant', 1, '<rss></rss>', 3);
 
         self::assertTrue(true);
     }

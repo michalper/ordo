@@ -5,6 +5,25 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- **Second product feed format: Meta Catalog (CSV).** Alongside the existing Google Merchant
+  Center RSS+g: feed, a store can now publish a Meta (Facebook/Instagram) Commerce Manager CSV
+  feed at `/ordo/productfeed/metacatalog`, refreshed on the same schedule and with the same
+  multi-store/health-history support already shipped for the Google feed. Introduced
+  `Api\ProductFeed\FeedGeneratorInterface` (implemented by both `GoogleMerchantFeedGenerator` and
+  the new `MetaCatalogFeedGenerator`) and `Model\ProductFeed\FeedGeneratorPool` — the same
+  interface-plus-pool shape `Api\AdAudience\SyncClientInterface`/`SyncClientPool` already use —
+  so `Cron\RefreshProductFeed` and `Controller\Adminhtml\ProductFeed\RefreshNow` generate and
+  cache every registered format without knowing which formats exist. New config group "Meta
+  Catalog Feed" (`ordo_automation/meta_catalog_feed/{enabled,default_brand}`) — a default brand
+  is required per Meta's feed spec, and this module has no per-product brand attribute mapping,
+  so a product is skipped from the feed entirely when none is configured. `MetaCatalogFeedGenerator`
+  converts the base price to the store's display currency (`Store::getBaseCurrency()->convert()`)
+  before writing it, rather than tagging the unconverted base price with the display currency
+  code — the correct behavior from the start, unlike the pre-existing bug in the Google feed
+  (tracked separately in ROADMAP.md's "Multi-currency correctness" section).
+
 ### Fixed
 
 - **The order-approval REST API's decision endpoints had no rate limiting.**

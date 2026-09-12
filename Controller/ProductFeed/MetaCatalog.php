@@ -7,20 +7,20 @@ use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Controller\Result\RawFactory;
 use Magento\Store\Model\StoreManagerInterface;
-use Ordo\Automation\Model\ProductFeed\GoogleMerchantFeedGenerator;
+use Ordo\Automation\Model\ProductFeed\MetaCatalogFeedGenerator;
 
 /**
- * Serves the Google Merchant Center feed at "/ordo/productfeed/index" — see
- * AbstractFeedAction for the shared serving logic every feed format route uses.
+ * Serves the Meta Catalog CSV feed at "/ordo/productfeed/metacatalog" — see AbstractFeedAction
+ * for the shared serving logic every feed format route uses.
  */
-class Index extends AbstractFeedAction
+class MetaCatalog extends AbstractFeedAction
 {
     public function __construct(
         Context $context,
         RawFactory $resultRawFactory,
         ResourceConnection $resourceConnection,
         StoreManagerInterface $storeManager,
-        GoogleMerchantFeedGenerator $feedGenerator
+        MetaCatalogFeedGenerator $feedGenerator
     ) {
         parent::__construct($context, $resultRawFactory, $resourceConnection, $storeManager, $feedGenerator);
     }
