@@ -2066,6 +2066,24 @@ parameters:
 			path: Model/MessageLogEvent.php
 
 		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/MessageSendRetry.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 5
+			path: Model/MessageSendRetry.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\MessageSendRetry\:\:decodeJson\(\) should return array\<string, mixed\> but returns array\<mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/MessageSendRetry.php
+
+		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
 			count: 2
@@ -2394,6 +2412,24 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Model/ResourceModel/CampaignActionRetry.php
+
+		-
+			message: '#^Cannot call method update\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/ResourceModel/MessageSendRetry.php
+
+		-
+			message: '#^Cannot call method quoteInto\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: Model/ResourceModel/MessageSendRetry.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/ResourceModel/MessageSendRetry.php
 
 		-
 			message: '#^Cannot access offset ''campaign_id'' on mixed\.$#'
