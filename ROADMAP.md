@@ -94,9 +94,6 @@ exist in some form. Not prioritized against each other; listed for later scoping
 - **Price-drop & back-in-stock alerts** — customer/visitor opt-in on PDP, a cron watching catalog
   price/stock changes, two new trigger types through the existing `CampaignDispatcher` pipeline.
   Medium-large scope, primarily B2C.
-- **Generic outbound webhook action + inbound webhook trigger** — a `send_webhook` action and a signed
-  `webhook_received` trigger, giving external systems (ERP/CRM/PIM) a two-way integration point beyond
-  today's provider-status-only inbound webhooks. Medium scope, higher value for B2B (ERP/CRM integration).
 - **Predictive send-time optimization** — pick each customer's historically best send hour from existing
   `ordo_message_log` open/click data and hold the action via the existing delayed-action/resume mechanism
   (`Cron\RunScheduledCampaignActions`) instead of a fixed delay. Medium scope, fits both.
@@ -113,8 +110,7 @@ Kolejność uwzględnia wagę (błędy finansowe > dług niezawodności > UX > t
 zasobów zewnętrznych):
 
 1. **Nowe funkcje (sekcja "Candidate new features" powyżej)** — do rozważenia razem z
-   biznesem/produktem pod kątem priorytetu; webhook action/trigger wygląda na najmniejszy koszt
-   wejścia względem wartości.
+   biznesem/produktem pod kątem priorytetu.
 2. **Drugi format product feedu** — większa, osobna abstrakcja; wymaga wyboru formatu
    docelowego przed implementacją.
 3. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych

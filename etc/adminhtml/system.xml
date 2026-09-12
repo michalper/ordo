@@ -433,6 +433,37 @@
                 </field>
             </group>
 
+            <group id="webhook" translate="label" type="text" sortOrder="165" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Webhooks (generic ERP/CRM/PIM integration)</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Master switch for the "Send Webhook" campaign action and the "webhook_received" trigger (inbound endpoint "/ordo/webhook/receive").</comment>
+                </field>
+                <field id="outbound_url" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Outbound URL</label>
+                    <comment>Where the "Send Webhook" campaign action POSTs its JSON payload, e.g. an ERP/CRM/PIM's own inbound endpoint.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="outbound_secret" translate="label comment" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Outbound Signing Secret</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment>Signs every "Send Webhook" outbound POST body with HMAC-SHA256, sent as the "X-Ordo-Signature" header in the form "sha256=&lt;hex digest&gt;" - the receiver verifies it the same way this module verifies inbound signatures.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="inbound_secret" translate="label comment" type="obscure" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Inbound Signing Secret</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment>Verifies the "X-Ordo-Signature" header (HMAC-SHA256 over the raw body, same scheme as the outbound signing above) on every call to "/ordo/webhook/receive" before it is trusted to dispatch the "webhook_received" campaign trigger.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="max_requests_per_second" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Max Requests Per Second</label>
+                    <comment>Paces outbound "Send Webhook" calls so a campaign/cron reaching many customers in one tick doesn't hammer the configured endpoint. 0 disables throttling entirely.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
+
             <group id="frequency_cap" translate="label" type="text" sortOrder="170" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Frequency Cap (cross-channel)</label>
                 <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">

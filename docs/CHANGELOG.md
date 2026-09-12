@@ -5,6 +5,31 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- **Generic outbound webhook action + inbound webhook trigger (ROADMAP.md "Candidate new
+  features")** — a two-way, signed integration point for external systems (ERP/CRM/PIM), beyond
+  today's provider-status-only inbound webhooks:
+  - `Model\Campaign\Action\SendWebhook` (`send_webhook` action) POSTs a JSON payload built from
+    the campaign/trigger context to an admin-configured URL, signed with HMAC-SHA256 over the raw
+    body via `Model\Webhook\WebhookSignatureValidator` and sent as the `X-Ordo-Signature` header
+    (`sha256=<hex digest>`, the same shape Meta's `X-Hub-Signature-256` uses). Reuses
+    `Model\Http\JsonApiClient`, `Model\RateLimit\OutboundRateLimiter`, `SendRetrier`, and
+    `MessageSendRetryQueue` — the same HTTP/retry/rate-limit plumbing every other outbound action
+    already uses.
+  - `Controller\Webhook\Receive` (`/ordo/webhook/receive`) verifies the same `X-Ordo-Signature`
+    header against a store-configured secret before trusting the payload (401 on mismatch, same
+    signature-first pattern as `Controller\WhatsApp\Webhook`/`Controller\Sms\StatusCallback`),
+    then dispatches the new `webhook_received` campaign trigger
+    (`CampaignTriggerInterface::TRIGGER_WEBHOOK_RECEIVED`) with the payload as context.
+  - New "Webhooks" admin config group (Stores > Configuration > Ordo Automation) for the outbound
+    URL, outbound signing secret, inbound signing secret, and a Max Requests Per Second throttle.
+  - Deferred for a later pass: multiple simultaneous webhook endpoints/secrets per store (this cut
+    ships one outbound URL/secret pair and one inbound secret per store scope), and routing the
+    inbound dispatch through the existing async queue (`Model\Queue\CampaignDispatchConsumer`)
+    rather than calling `CampaignDispatcher::dispatch()` synchronously inline — the same
+    direct-call shape `Cron\SendAbandonedCartReminders` already uses.
+
 ### Fixed
 
 - **Three multi-currency correctness bugs (ROADMAP.md "Multi-currency correctness" audit),

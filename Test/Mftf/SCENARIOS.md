@@ -351,7 +351,19 @@ module's.
 | A `recurring_schedule` trigger is expanded across every matching day in the visible month                        | ⬜ unit-tested (`CampaignScheduleCalendarViewModelTest`), no MFTF yet     |
 | Month navigation (prev/next) reads/writes the `month` GET param and steps by exactly one month                  | ⬜ unit-tested (`CampaignScheduleCalendarViewModelTest`), no MFTF yet     |
 
+## 22. Webhook action/trigger (`Model/Campaign/Action/SendWebhook.php`, `Controller/Webhook/Receive.php`, `Model/Webhook/WebhookSignatureValidator.php`)
+
+| Scenario                                                                                                       | Status                                                                    |
+|------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| `send_webhook` action POSTs a signed JSON payload to the configured outbound URL                                 | ⬜ unit-tested (`SendWebhookTest`), no MFTF yet                            |
+| `send_webhook` action is skipped when webhooks are disabled, or no outbound URL/secret is configured             | ⬜ unit-tested (`SendWebhookTest`), no MFTF yet                            |
+| `send_webhook` action enqueues a retry (and rethrows on a retry attempt) on send failure, same as other channels | ⬜ unit-tested (`SendWebhookTest`), no MFTF yet                            |
+| `/ordo/webhook/receive` accepts a valid `X-Ordo-Signature` and dispatches the `webhook_received` trigger         | ⬜ unit-tested (`Controller\Webhook\ReceiveTest`), no MFTF yet             |
+| `/ordo/webhook/receive` rejects a missing/invalid signature with 401 without dispatching                        | ⬜ unit-tested (`Controller\Webhook\ReceiveTest`), no MFTF yet             |
+| `WebhookSignatureValidator` HMAC-SHA256 sign/verify round-trip, tampered body and forged signature rejected      | ⬜ unit-tested (`WebhookSignatureValidatorTest`), no MFTF yet             |
+
 ## Suggested next batch (highest signal per test written)
 
-Empty — every scenario this list ever tracked is now ✅ (see the sections above). Re-populate this when a new
+Empty — every scenario this list ever tracked is now ✅ (see the sections above), except section 22 (Webhook
+action/trigger), added alongside the feature itself and not yet backed by MFTF. Re-populate further when a new
 gap is found (a newly added trigger/condition/action/controller/cron, or a re-audit catching something missed).
