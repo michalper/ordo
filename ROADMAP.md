@@ -68,13 +68,6 @@ as bugs above, not repeated here)*
   covered (see docs/CHANGELOG.md). A second feed format (beyond Google Merchant's RSS+g: namespace)
   is a bigger, separate abstraction.
 
-### Admin platform, UX consistency & API
-
-- No bulk/mass-action on MessageLog, ReorderCycle, and Rfm's grids (Campaign, Segment,
-  ContentBlock, FreeGiftOffer, ScoreRule, and AdAudience now have enable/disable/delete mass
-  actions, and WhatsAppTemplate has mass-delete — see docs/CHANGELOG.md) — those three remaining
-  grids are read-only/log/diagnostic views without an "enabled" concept to toggle, so a mass
-  action there would need its own new capability first, not just wiring up an existing one.
 ## Scheduled (date-based) campaigns: calendar view
 
 Both the backend (`ScheduledTriggerScanner`/`DispatchScheduledCampaignTriggers`) and the admin UI
@@ -165,18 +158,16 @@ zasobów zewnętrznych):
    jedną obsługiwaną walutą — trzeba to najpierw potwierdzić na produkcji (czy Sellina/klienci
    faktycznie używają multi-currency), bo jeśli tak, to blokuje realne transakcje już teraz.
 2. **`fields`/sparse-fieldset w API.md** — kontraktowo mała, samodzielna zmiana API.
-3. **Bulk actions na MessageLog/ReorderCycle/Rfm** — wymaga najpierw decyzji projektowej,
-   potem implementacji.
-4. **Nowe funkcje (sekcja "Candidate new features" powyżej)** — do rozważenia razem z
+3. **Nowe funkcje (sekcja "Candidate new features" powyżej)** — do rozważenia razem z
    biznesem/produktem pod kątem priorytetu; browse-abandonment i webhook action/trigger
    wyglądają na najmniejszy koszt wejścia względem wartości.
-5. **Drugi format product feedu** — większa, osobna abstrakcja; wymaga wyboru formatu
+4. **Drugi format product feedu** — większa, osobna abstrakcja; wymaga wyboru formatu
    docelowego przed implementacją.
-6. **Kalendarz dat dla scheduled campaigns** — opcjonalny polish.
-7. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
+5. **Kalendarz dat dla scheduled campaigns** — opcjonalny polish.
+6. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
    poświadczeń testowych.
-8. **Recenzja natywna 10 lokalizacji** — zależna od dostępności recenzentów per język.
-9. **GitHub Wiki (PL/EN, screenshots)** — wymaga wcześniej decyzji o strukturze.
+7. **Recenzja natywna 10 lokalizacji** — zależna od dostępności recenzentów per język.
+8. **GitHub Wiki (PL/EN, screenshots)** — wymaga wcześniej decyzji o strukturze.
 
 Uwaga poza roadmapą: na branchu `feature/reorder-cycle-build-cart` jest niedokończona,
 nie-scommitowana praca nad akcją "build reorder cart" (temat sam w sobie już częściowo

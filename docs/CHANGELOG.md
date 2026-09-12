@@ -36,6 +36,23 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Mass actions on the last three grids without one: MessageLog, ReorderCycle, and Rfm**,
+  closing the admin-platform ROADMAP.md gap noting these were the only grids left with
+  checkboxes that did nothing. MessageLog and ReorderCycle get plain mass-delete
+  (`Controller\Adminhtml\MessageLog\MassDelete`, `Controller\Adminhtml\ReorderCycle\MassDelete`) —
+  both are computed/logged rows with nothing else to bulk-toggle, same reasoning
+  `Controller\Adminhtml\WhatsAppTemplate\MassDelete` already used for its own mass-delete-only
+  scope. Rfm is different: its grid has no stored entity of its own to delete at all — it's
+  `customer_entity` live-joined to a `sales_order` aggregate (see
+  `Model\ResourceModel\Rfm\Grid\Collection`'s docblock) — so deleting the listed rows would mean
+  deleting customers. What it does have that's actually deletable is
+  `ordo_customer_rfm_score`, the precomputed percentile/quintile cache
+  `Cron\RecomputeRfmScores` maintains for the same customer ids; its mass action
+  (`Controller\Adminhtml\Rfm\MassDelete`, backed by a new
+  `Model\Rfm\RfmCalculator::resetScoresForCustomers()`) clears the selected customers' cached
+  rows instead — the grid's real equivalent of "mass-delete", since `getPercentileRanks()`
+  already falls back to computing a customer live and the next scheduled recompute repopulates
+  the row regardless.
 - **Flow canvas: undo/redo, node duplication, and an inline "Send test" button**, closing the
   rest of the campaign-engine ROADMAP.md "Flow canvas UX" gap (palette search/filter already
   closed it partway). Undo/redo (toolbar buttons or Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z or +Y) keeps an
