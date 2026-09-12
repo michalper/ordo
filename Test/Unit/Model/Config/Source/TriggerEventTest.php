@@ -24,6 +24,7 @@ class TriggerEventTest extends TestCase
                 CampaignTriggerInterface::TRIGGER_SCORE_THRESHOLD_CROSSED,
                 CampaignTriggerInterface::TRIGGER_SCHEDULED_AT,
                 CampaignTriggerInterface::TRIGGER_RECURRING_SCHEDULE,
+                CampaignTriggerInterface::TRIGGER_WEBHOOK_RECEIVED,
             ],
             $values
         );

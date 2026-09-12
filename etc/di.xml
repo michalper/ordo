@@ -274,6 +274,7 @@
                 <item name="nps_survey" xsi:type="object">Ordo\Automation\Model\Campaign\Action\NpsSurvey</item>
                 <item name="send_whatsapp" xsi:type="object">Ordo\Automation\Model\Campaign\Action\SendWhatsApp</item>
                 <item name="send_push" xsi:type="object">Ordo\Automation\Model\Campaign\Action\SendPush</item>
+                <item name="send_webhook" xsi:type="object">Ordo\Automation\Model\Campaign\Action\SendWebhook</item>
             </argument>
         </arguments>
     </type>

@@ -44,6 +44,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isNotificationEnabled());
         self::assertTrue($this->config->isNpsSurveyEnabled());
         self::assertTrue($this->config->isShoppingFeedEnabled());
+        self::assertTrue($this->config->isWebhookEnabled());
         self::assertTrue($this->config->isFreeGiftEnabled());
         self::assertTrue($this->config->isCreditLimitCheckoutBlockEnabled());
         self::assertTrue($this->config->isLeadScoringEnabled());
@@ -164,6 +165,7 @@ class ConfigTest extends TestCase
         self::assertSame(1, $this->config->getTwilioMaxRequestsPerSecond());
         self::assertSame(5, $this->config->getWhatsAppMaxRequestsPerSecond());
         self::assertSame(20, $this->config->getPushMaxRequestsPerSecond());
+        self::assertSame(5, $this->config->getWebhookMaxRequestsPerSecond());
     }
 
     public function testOutboundRateLimitGettersReturnAnExplicitZeroRatherThanFallingBackToTheDefault(): void
@@ -173,6 +175,32 @@ class ConfigTest extends TestCase
         self::assertSame(0, $this->config->getTwilioMaxRequestsPerSecond());
         self::assertSame(0, $this->config->getWhatsAppMaxRequestsPerSecond());
         self::assertSame(0, $this->config->getPushMaxRequestsPerSecond());
+        self::assertSame(0, $this->config->getWebhookMaxRequestsPerSecond());
+    }
+
+    public function testWebhookOutboundUrlReturnsTheConfiguredValue(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn('https://erp.example.test/ordo-webhook');
+
+        self::assertSame('https://erp.example.test/ordo-webhook', $this->config->getWebhookOutboundUrl());
+    }
+
+    public function testWebhookOutboundUrlIsEmptyWhenUnconfigured(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn(null);
+
+        self::assertSame('', $this->config->getWebhookOutboundUrl());
+    }
+
+    public function testWebhookSecretsDecryptTheirConfiguredValue(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_automation/webhook/outbound_secret', 'store', null, 'webhook-outbound-secret'],
+            ['ordo_automation/webhook/inbound_secret', 'store', null, 'webhook-inbound-secret'],
+        ]);
+
+        self::assertSame('webhook-outbound-secret', $this->config->getWebhookOutboundSecret());
+        self::assertSame('webhook-inbound-secret', $this->config->getWebhookInboundSecret());
     }
 
     public function testOrderApprovalEscalationChainEmailsSplitsAndTrimsLines(): void

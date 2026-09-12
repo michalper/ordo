@@ -49,6 +49,7 @@ interface CampaignTriggerInterface
      * whose minute field isn't a multiple of 5 will never match a scan and so will never fire.
      */
     public const TRIGGER_RECURRING_SCHEDULE = 'recurring_schedule';
+    public const TRIGGER_WEBHOOK_RECEIVED = 'webhook_received';
 
     /**
      * @return int|null

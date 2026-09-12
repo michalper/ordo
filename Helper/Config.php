@@ -107,6 +107,12 @@ class Config
     private const string XML_PATH_WHATSAPP_WEBHOOK_VERIFY_TOKEN = 'ordo_automation/whatsapp/webhook_verify_token';
     private const string XML_PATH_WHATSAPP_MAX_PER_SECOND = 'ordo_automation/whatsapp/max_requests_per_second';
 
+    private const string XML_PATH_WEBHOOK_ENABLED = 'ordo_automation/webhook/enabled';
+    private const string XML_PATH_WEBHOOK_OUTBOUND_URL = 'ordo_automation/webhook/outbound_url';
+    private const string XML_PATH_WEBHOOK_OUTBOUND_SECRET = 'ordo_automation/webhook/outbound_secret';
+    private const string XML_PATH_WEBHOOK_INBOUND_SECRET = 'ordo_automation/webhook/inbound_secret';
+    private const string XML_PATH_WEBHOOK_MAX_PER_SECOND = 'ordo_automation/webhook/max_requests_per_second';
+
     private const string XML_PATH_PUSH_ENABLED = 'ordo_automation/push/enabled';
     private const string XML_PATH_PUSH_VAPID_PUBLIC_KEY = 'ordo_automation/push/vapid_public_key';
     private const string XML_PATH_PUSH_VAPID_PRIVATE_KEY = 'ordo_automation/push/vapid_private_key';
@@ -686,6 +692,52 @@ class Config
     public function getWhatsAppMaxRequestsPerSecond(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_WHATSAPP_MAX_PER_SECOND, 5, $storeId);
+    }
+
+    public function isWebhookEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_WEBHOOK_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getWebhookOutboundUrl(?int $storeId = null): string
+    {
+        return (string) $this->scopeConfig->getValue(
+            self::XML_PATH_WEBHOOK_OUTBOUND_URL,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Signs every Model\Campaign\Action\SendWebhook outbound POST body (HMAC-SHA256, "X-Ordo-Signature"
+     * header) so the receiving ERP/CRM/PIM can verify the call really came from this store.
+     */
+    public function getWebhookOutboundSecret(?int $storeId = null): string
+    {
+        return $this->decryptedConfig(self::XML_PATH_WEBHOOK_OUTBOUND_SECRET, $storeId);
+    }
+
+    /**
+     * Verifies Controller\Webhook\Receive's incoming "X-Ordo-Signature" header before its payload
+     * is trusted to dispatch the "webhook_received" campaign trigger.
+     */
+    public function getWebhookInboundSecret(?int $storeId = null): string
+    {
+        return $this->decryptedConfig(self::XML_PATH_WEBHOOK_INBOUND_SECRET, $storeId);
+    }
+
+    /**
+     * Client-side pace-setter for outbound webhook calls (Model\RateLimit\OutboundRateLimiter) -
+     * 0 disables throttling entirely (an explicit admin choice, not "unconfigured" - see
+     * intConfig()'s own docblock for why that distinction matters).
+     */
+    public function getWebhookMaxRequestsPerSecond(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_WEBHOOK_MAX_PER_SECOND, 5, $storeId);
     }
 
     public function isPushEnabled(?int $storeId = null): bool

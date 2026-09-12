@@ -35,6 +35,10 @@ class TriggerEvent implements OptionSourceInterface
                 'value' => CampaignTriggerInterface::TRIGGER_RECURRING_SCHEDULE,
                 'label' => __('Recurring Schedule'),
             ],
+            [
+                'value' => CampaignTriggerInterface::TRIGGER_WEBHOOK_RECEIVED,
+                'label' => __('Webhook Received (signed, from an external system)'),
+            ],
         ];
     }
 }

@@ -716,7 +716,6 @@ class RfmCalculatorTest extends TestCase
         $calculator = $this->makeCalculator($connection, $now);
 
         $cachedAtProperty = new \ReflectionProperty($calculator, 'percentileRanksCachedAt');
-        $cachedAtProperty->setAccessible(true);
         $cachedAtProperty->setValue($calculator, $now);
         // percentileRanksCache is deliberately left null/unset.
 
