@@ -144,7 +144,7 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
 
         $result = $this->generator->generate(1);
 
-        self::assertStringContainsString('<g:price>90.00 EUR</g:price>', $result['xml']);
+        self::assertStringContainsString('<g:price>90.00 EUR</g:price>', $result['content']);
     }
 
     #[AllowMockObjectsWithoutExpectations]
