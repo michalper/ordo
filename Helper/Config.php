@@ -37,6 +37,9 @@ class Config
     private const string XML_PATH_LIFECYCLE_ENABLED = 'ordo_automation/lifecycle/enabled';
     private const string XML_PATH_LIFECYCLE_WIN_BACK_INACTIVE_DAYS = 'ordo_automation/lifecycle/win_back_inactive_days';
 
+    private const string XML_PATH_CLV_PROJECTION_YEARS = 'ordo_automation/clv/projection_years';
+    private const string XML_PATH_CLV_MIN_TENURE_MONTHS = 'ordo_automation/clv/min_tenure_months';
+
     private const string XML_PATH_APPROVAL_ENABLED = 'ordo_automation/order_approval/enabled';
     private const string XML_PATH_APPROVAL_ESCALATION_DAYS = 'ordo_automation/order_approval/escalation_days';
     private const string XML_PATH_APPROVAL_ESCALATION_MAX_REMINDERS_PER_TIER
@@ -849,5 +852,28 @@ class Config
     public function getQuietHoursEndHour(?int $storeId = null): int
     {
         return max(0, min(23, $this->intConfig(self::XML_PATH_QUIET_HOURS_END_HOUR, 8, $storeId)));
+    }
+
+    /**
+     * How many years of a customer's annualized purchase run rate ClvCalculator projects
+     * forward — the "lifespan estimate" of the AOV x frequency x lifespan CLV formula. Defaults
+     * to 3, a middle-of-the-road horizon that works reasonably for both a B2C store (repeat
+     * purchase categories) and a B2B account (multi-year relationships), without this module
+     * guessing at either.
+     */
+    public function getClvProjectionYears(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_CLV_PROJECTION_YEARS, 3, $storeId);
+    }
+
+    /**
+     * Floor on the tenure (time since first order) ClvCalculator annualizes a customer's
+     * purchase frequency against, in months. Without a floor, a customer whose first-ever order
+     * was yesterday would annualize to an absurd, near-infinite run rate off a near-zero tenure
+     * denominator. Defaults to 1 month.
+     */
+    public function getClvMinTenureMonths(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_CLV_MIN_TENURE_MONTHS, 1, $storeId);
     }
 }

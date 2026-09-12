@@ -146,6 +146,8 @@ class ConfigTest extends TestCase
         self::assertSame(80, $this->config->getCreditLimitWarningThreshold());
         self::assertSame(7, $this->config->getCreditLimitAlertCooldownDays());
         self::assertSame(90, $this->config->getWinBackInactiveDays());
+        self::assertSame(3, $this->config->getClvProjectionYears());
+        self::assertSame(1, $this->config->getClvMinTenureMonths());
         self::assertSame(2, $this->config->getOrderApprovalEscalationDays());
         self::assertSame(3, $this->config->getOrderApprovalEscalationMaxRemindersPerTier());
         self::assertSame(7, $this->config->getTrackingRetentionDays());

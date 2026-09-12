@@ -7,6 +7,7 @@ use Ordo\Automation\Api\Data\CampaignTriggerInterface;
 use Ordo\Automation\Block\Adminhtml\Dashboard\DashboardViewModel;
 use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\CampaignOutcomeLogger;
+use Ordo\Automation\Model\Clv\ClvCalculator;
 use Ordo\Automation\Model\ResourceModel\Campaign\Collection as CampaignCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as CampaignTriggerCollection;
@@ -44,7 +45,8 @@ class DashboardViewModelTest extends TestCase
         ?StoreManagerInterface $storeManager = null,
         ?CacheInterface $cache = null,
         ?OrderApprovalCollectionFactory $orderApprovalCollectionFactory = null,
-        ?CronRunLogCollectionFactory $cronRunLogCollectionFactory = null
+        ?CronRunLogCollectionFactory $cronRunLogCollectionFactory = null,
+        ?ClvCalculator $clvCalculator = null
     ): DashboardViewModel {
         $pricingHelper ??= $this->createStub(PricingHelper::class);
         $pricingHelper->method('currency')->willReturnCallback(
@@ -67,7 +69,8 @@ class DashboardViewModelTest extends TestCase
             $storeManager ?? $this->createStub(StoreManagerInterface::class),
             $cache,
             $orderApprovalCollectionFactory ?? $this->createStub(OrderApprovalCollectionFactory::class),
-            $cronRunLogCollectionFactory ?? $this->createStub(CronRunLogCollectionFactory::class)
+            $cronRunLogCollectionFactory ?? $this->createStub(CronRunLogCollectionFactory::class),
+            $clvCalculator ?? $this->createStub(ClvCalculator::class)
         );
     }
 
@@ -520,5 +523,13 @@ class DashboardViewModelTest extends TestCase
         );
         self::assertSame(CronRunLog::LEVEL_FAILURE, $filters['level']);
         self::assertArrayHasKey('gteq', $filters['created_at']);
+    }
+
+    public function testGetAverageClvScoreDelegatesToClvCalculator(): void
+    {
+        $clvCalculator = $this->createMock(ClvCalculator::class);
+        $clvCalculator->expects(self::once())->method('getAverageClvScore')->willReturn(1234.5);
+
+        self::assertSame(1234.5, $this->makeViewModel(clvCalculator: $clvCalculator)->getAverageClvScore());
     }
 }

@@ -88,9 +88,6 @@ as bugs above, not repeated here)*
 Not gaps in something existing — genuinely new capabilities, proposed after checking they don't already
 exist in some form. Not prioritized against each other; listed for later scoping.
 
-- **Customer Lifetime Value (CLV) scoring** — a forward-looking counterpart to the existing RFM
-  (`Model/Rfm/RfmCalculator.php`), exposed as a new condition/segment criterion and dashboard KPI. Medium
-  scope, fits both B2B and B2C.
 - **Price-drop & back-in-stock alerts** — customer/visitor opt-in on PDP, a cron watching catalog
   price/stock changes, two new trigger types through the existing `CampaignDispatcher` pipeline.
   Medium-large scope, primarily B2C.
