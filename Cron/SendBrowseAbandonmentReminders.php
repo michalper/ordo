@@ -7,6 +7,7 @@ use Magento\Framework\App\ResourceConnection;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\Cron\CronRunLogger;
+use Ordo\Automation\Model\Cron\ReminderLogStore;
 
 /**
  * One step earlier in the funnel than Cron\SendAbandonedCartReminders: finds registered
@@ -36,11 +37,14 @@ use Ordo\Automation\Model\Cron\CronRunLogger;
  */
 class SendBrowseAbandonmentReminders
 {
+    private const string LOG_TABLE = 'ordo_browse_abandoned_reminder_log';
+
     public function __construct(
         private readonly Config $config,
         private readonly ResourceConnection $resourceConnection,
         private readonly CampaignDispatcher $campaignDispatcher,
-        private readonly CronRunLogger $cronRunLogger
+        private readonly CronRunLogger $cronRunLogger,
+        private readonly ReminderLogStore $reminderLogStore
     ) {
     }
 
@@ -88,9 +92,14 @@ class SendBrowseAbandonmentReminders
             // Claim (log) BEFORE dispatching, not after - a crash between a successful dispatch
             // and the log write must never cause a duplicate trigger on the next tick. If the
             // dispatch itself then fails, the claim is rolled back so this row is retried next
-            // run - same reasoning as SendAbandonedCartReminders::deleteReminderLog().
-            $reminderLogRow = $this->buildReminderLogRow((int) $row['customer_id'], (string) $row['event_key']);
-            $this->logReminderSent($reminderLogRow);
+            // run - see ReminderLogStore::deleteMatching()'s docblock for the full reasoning,
+            // shared with every other reminder cron in this module.
+            $reminderLogRow = [
+                'customer_id' => (int) $row['customer_id'],
+                'event_key' => (string) $row['event_key'],
+                'sent_at' => date('Y-m-d H:i:s'),
+            ];
+            $this->reminderLogStore->insert(self::LOG_TABLE, $reminderLogRow);
 
             try {
                 $this->campaignDispatcher->dispatch('browse_abandoned', [
@@ -99,7 +108,7 @@ class SendBrowseAbandonmentReminders
                 ]);
                 $dispatched++;
             } catch (\Throwable $e) {
-                $this->deleteReminderLog($reminderLogRow);
+                $this->reminderLogStore->deleteMatching(self::LOG_TABLE, $reminderLogRow);
                 $this->cronRunLogger->logFailure(
                     sprintf(
                         'dispatch browse_abandoned trigger for customer #%d / %s',
@@ -112,49 +121,5 @@ class SendBrowseAbandonmentReminders
         }
 
         $this->cronRunLogger->logSummary(sprintf('dispatched %d browse abandonment triggers', $dispatched));
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function buildReminderLogRow(int $customerId, string $eventKey): array
-    {
-        return [
-            'customer_id' => $customerId,
-            'event_key' => $eventKey,
-            'sent_at' => date('Y-m-d H:i:s'),
-        ];
-    }
-
-    /**
-     * @param array<string, mixed> $row
-     */
-    private function logReminderSent(array $row): void
-    {
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('ordo_browse_abandoned_reminder_log');
-
-        $connection->insert($table, $row);
-    }
-
-    /**
-     * Rolls back a claim row from logReminderSent() when the dispatch it claimed then fails - see
-     * SendAbandonedCartReminders::deleteReminderLog()'s own docblock for the same reasoning
-     * applied there (deletes by matching the exact row just inserted, not by a captured
-     * entity_id/lastInsertId()).
-     *
-     * @param array<string, mixed> $row the exact same array just passed to logReminderSent()
-     */
-    private function deleteReminderLog(array $row): void
-    {
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('ordo_browse_abandoned_reminder_log');
-
-        $where = [];
-        foreach ($row as $column => $value) {
-            $where[] = $connection->quoteInto($connection->quoteIdentifier($column) . ' = ?', $value);
-        }
-
-        $connection->delete($table, implode(' AND ', $where));
     }
 }

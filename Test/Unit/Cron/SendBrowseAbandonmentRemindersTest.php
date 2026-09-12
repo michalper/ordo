@@ -10,6 +10,7 @@ use Ordo\Automation\Cron\SendBrowseAbandonmentReminders;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\Cron\CronRunLogger;
+use Ordo\Automation\Model\Cron\ReminderLogStore;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -148,7 +149,8 @@ class SendBrowseAbandonmentRemindersTest extends TestCase
             $config,
             $resourceConnection,
             $dispatcher ?? $this->createStub(CampaignDispatcher::class),
-            $this->makeCronRunLogger($logger ?? $this->createStub(LoggerInterface::class))
+            $this->makeCronRunLogger($logger ?? $this->createStub(LoggerInterface::class)),
+            new ReminderLogStore($resourceConnection)
         );
     }
 }
