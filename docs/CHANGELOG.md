@@ -7,6 +7,27 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Multi-touch attribution / revenue-per-campaign reporting (ROADMAP.md "Candidate new
+  features")** — a new reporting layer, additive to the existing single-touch
+  `ordo_campaign_outcome_log` (`Model\CampaignOutcomeLogger`'s first-plausible-match conversion
+  tracking, which is unchanged and still used for whatever depends on it today):
+  - New `ordo_campaign_attribution` table (one row per order_id+campaign_id) holds an equal-weight
+    linear attribution split of an order's revenue across every distinct campaign the customer
+    clicked through (`ordo_message_log_event` `TYPE_CLICKED`, joined via `ordo_message_log` for
+    `campaign_id`) within a configurable lookback window — see `Model\Campaign\AttributionCalculator`'s
+    docblock for why linear (equal-weight) was chosen over first-touch/last-touch/time-decay.
+  - `Cron\ComputeCampaignAttribution` recomputes it idempotently every hour for orders placed
+    within the window, the same "cron recomputes an aggregate table" shape as
+    `Cron\RecomputeRfmScores`.
+  - New "Multi-Touch Campaign Attribution" admin config group (Stores > Configuration > Ordo
+    Automation) for the attribution window in days (default 14, via `Helper\Config::getAttributionWindowDays()`).
+  - New "Attributed Revenue" column on the Campaign grid (`Ui\Component\Listing\Column\
+    CampaignAttributedRevenue`), reading `AttributionCalculator::getAttributedRevenueForCampaigns()`
+    in one bulk query per grid page rather than one query per row.
+  - Deferred: a dashboard KPI tile (shipped as a Campaign grid column only for this pass) and a
+    real-time/inline observer on order placement (a cron pass over recent orders was chosen
+    instead, since attribution for an order depends on the customer's whole recent
+    click-through history rather than anything available at the moment the order is placed).
 - **Generic outbound webhook action + inbound webhook trigger (ROADMAP.md "Candidate new
   features")** — a two-way, signed integration point for external systems (ERP/CRM/PIM), beyond
   today's provider-status-only inbound webhooks:

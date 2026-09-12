@@ -100,10 +100,6 @@ exist in some form. Not prioritized against each other; listed for later scoping
 - **Two-way SMS/WhatsApp conversation handling** — capture inbound replies (today only delivery-status
   callbacks are handled), with mandatory keyword-based opt-out (STOP) and a conversation view tied to the
   customer record. Large scope (compliance-sensitive once inbound is accepted at all), fits both.
-- **Multi-touch attribution / revenue-per-campaign reporting** — correlate `ordo_message_log`
-  click-throughs to subsequent orders within a configurable window, surfaced as attributed revenue on the
-  Campaign grid/dashboard. Medium scope, fits both.
-
 ## Priorytet kolejnych kroków
 
 Kolejność uwzględnia wagę (błędy finansowe > dług niezawodności > UX > tematy zależne od
