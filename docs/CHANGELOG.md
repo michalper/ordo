@@ -66,6 +66,22 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   so the new calendar only makes sense scoped to that subset. Each day cell links straight
   through to its campaign's edit page; cross-linked from both the Dashboard and the Timeline
   page.
+- **Browse-abandonment campaigns**, a new `browse_abandoned` trigger one step earlier in the funnel
+  than the existing `cart_abandoned` reminder. `Cron\SendBrowseAbandonmentReminders` scans the
+  short-lived `ordo_visitor_event` table (already populated by `VisitorEventLogger`/`Controller\
+  Track\Event` for `product_view` events) for registered customers (`customer_id` set) who viewed
+  a product at least `delay_minutes` ago (new `Helper\Config::getBrowseAbandonmentDelayMinutes()`,
+  default 60) and placed no order since that view, then dispatches `browse_abandoned` for each —
+  capped per customer/product via a new `ordo_browse_abandoned_reminder_log` table, claimed
+  before dispatch and rolled back on failure the same way `SendAbandonedCartReminders` claims its
+  own log row before sending. Unlike `cart_abandoned`, this cron has no built-in reminder email of
+  its own — there's no cart/order entity to summarize into a fixed template, so a store wires
+  whatever action it wants onto the trigger via the campaign builder. New `Ordo\Automation\Api\
+  Data\CampaignTriggerInterface::TRIGGER_BROWSE_ABANDONED` constant and a
+  `Model\Config\Source\TriggerEvent` option make it selectable in the campaign trigger dropdown;
+  new "Browse Abandonment" group in `Stores > Configuration > Ordo Automation` exposes
+  enabled/delay_minutes/max_reminders. Scoped to `product_view` only, not `category_view` — see
+  the cron's own docblock for why.
 
 - **Mass actions on the last three grids without one: MessageLog, ReorderCycle, and Rfm**,
   closing the admin-platform ROADMAP.md gap noting these were the only grids left with
