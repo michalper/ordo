@@ -321,4 +321,40 @@ class ScheduledTriggerScannerTest extends TestCase
 
         self::assertSame(1, $this->makeScanner()->scan());
     }
+
+    /**
+     * matchesCronExpressionDate() is the date-only half reused by
+     * Block\Adminhtml\Campaign\ScheduleCalendar\CampaignScheduleCalendarViewModel to expand a
+     * recurring_schedule trigger across a visible month — it must ignore the minute/hour fields
+     * entirely (a day either matches the day/month/weekday fields or it doesn't).
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testMatchesCronExpressionDateIgnoresMinuteAndHourFields(): void
+    {
+        $cronSchedule = $this->createStub(CronSchedule::class);
+        $cronSchedule->method('matchCronExpression')->willReturn(true);
+        $this->cronScheduleFactory->method('create')->willReturn($cronSchedule);
+
+        $date = new \DateTimeImmutable('2026-11-30 00:00:00', new \DateTimeZone('UTC'));
+
+        self::assertTrue($this->makeScanner()->matchesCronExpressionDate('30 14 * * *', $date));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testMatchesCronExpressionDateReturnsFalseWhenDayMonthOrWeekdayDoesNotMatch(): void
+    {
+        $cronSchedule = $this->createStub(CronSchedule::class);
+        $cronSchedule->method('matchCronExpression')->willReturn(false);
+        $this->cronScheduleFactory->method('create')->willReturn($cronSchedule);
+
+        $date = new \DateTimeImmutable('2026-11-30 00:00:00', new \DateTimeZone('UTC'));
+
+        self::assertFalse($this->makeScanner()->matchesCronExpressionDate('0 8 * * 1', $date));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testMatchesCronExpressionDateReturnsFalseForAMalformedExpression(): void
+    {
+        self::assertFalse($this->makeScanner()->matchesCronExpressionDate('not a cron expression', new \DateTimeImmutable('now')));
+    }
 }

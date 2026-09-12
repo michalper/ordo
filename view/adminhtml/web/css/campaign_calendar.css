@@ -1,3 +1,9 @@
+.ordo-section-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .ordo-calendar-intro {
   color: var(--ordo-text-muted);
   font-size: var(--ordo-font-base);

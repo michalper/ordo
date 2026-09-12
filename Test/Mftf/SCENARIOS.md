@@ -11,14 +11,14 @@ jobs — not guessed from memory. Each scenario is marked:
 
 Cross-reference: `ROADMAP.md`'s "Test coverage" section for the standing priority list this feeds.
 
-**Status: every row below is ✅ except one 🔴 (see §10) and twenty-five ⬜ (the frequency-cap
+**Status: every row below is ✅ except one 🔴 (see §10) and twenty-six ⬜ (the frequency-cap
 structural case, the Campaign export row, and the dispatch dead-letter row in §1d, the
 `browse_abandoned` trigger row in §1a and the `SendBrowseAbandonmentReminders` row in §11, the
 `RetryFailedCampaignActions` row in §11, the Approval rate-limit row and the Order Approvals grid
 in §6, the Segment Overlap page and Segment export row in §2, the WhatsApp Template Body Text
 preview panel in §15, the two Template Test Send rows in §16, the two Cron Run Log rows in §17,
-the four Product feed rows in §18, the three Admin Action Log rows in §19, and the two Setup
-Guide rows in §20 — all unit-tested but no
+the four Product feed rows in §18, the three Admin Action Log rows in §19, the two Setup
+Guide rows in §20, and the three Scheduled Campaign Calendar rows in §21 — all unit-tested but no
 MFTF/integration coverage yet).** Re-audit this against `etc/di.xml`/
 `Controller/Adminhtml/*`/`etc/events.xml` periodically rather than trusting it at face value — add a row (⬜)
 for anything newly added before considering it done.
@@ -342,6 +342,14 @@ module's.
 |------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
 | Each step's "done" state reflects real data (channel credentials, at least one segment/campaign) not just a click | ⬜ unit-tested (`SetupWizardViewModelTest`), no MFTF yet                  |
 | Dashboard banner links to the Setup Guide and disappears once every step is done                                | ⬜ unit-tested (`SetupWizardViewModelTest::testIsCompleteOnlyWhenEveryStepIsDone`), no MFTF yet |
+
+## 21. Scheduled Campaign Calendar (`Block/Adminhtml/Campaign/ScheduleCalendar/CampaignScheduleCalendarViewModel.php`, `Controller/Adminhtml/Campaign/ScheduleCalendar.php`)
+
+| Scenario                                                                                                       | Status                                                                    |
+|------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| A `scheduled_at` trigger is plotted on its own day, marked "past" or "upcoming" relative to now                  | ⬜ unit-tested (`CampaignScheduleCalendarViewModelTest`), no MFTF yet     |
+| A `recurring_schedule` trigger is expanded across every matching day in the visible month                        | ⬜ unit-tested (`CampaignScheduleCalendarViewModelTest`), no MFTF yet     |
+| Month navigation (prev/next) reads/writes the `month` GET param and steps by exactly one month                  | ⬜ unit-tested (`CampaignScheduleCalendarViewModelTest`), no MFTF yet     |
 
 ## Suggested next batch (highest signal per test written)
 

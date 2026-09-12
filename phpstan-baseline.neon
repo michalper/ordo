@@ -37,6 +37,12 @@ parameters:
 			path: Block/Adminhtml/Campaign/Edit/Flow.php
 
 		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
+			path: Block/Adminhtml/Campaign/ScheduleCalendar/CampaignScheduleCalendarViewModel.php
+
+		-
 			message: '#^Constant Ordo\\Automation\\Block\\Adminhtml\\Dashboard\\DashboardViewModel\:\:COUNT_CACHE_LIFETIME is unused\.$#'
 			identifier: classConstant.unused
 			count: 1
@@ -299,6 +305,18 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Controller/Adminhtml/Campaign/Save.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/Campaign/ScheduleCalendar.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/Campaign/ScheduleCalendar.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
