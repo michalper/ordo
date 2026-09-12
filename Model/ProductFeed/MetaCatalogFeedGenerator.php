@@ -3,10 +3,6 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\ProductFeed;
 
-use Magento\Catalog\Helper\Image as CatalogImageHelper;
-use Magento\Catalog\Model\Product\Visibility;
-use Magento\Catalog\Model\ResourceModel\Product\Collection as ProductCollection;
-use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Api\ProductFeed\FeedGeneratorInterface;
 use Ordo\Automation\Helper\Config;
@@ -31,16 +27,12 @@ class MetaCatalogFeedGenerator implements FeedGeneratorInterface
 {
     public const string FEED_CODE = 'meta_catalog';
 
-    /** @see GoogleMerchantFeedGenerator::PAGE_SIZE */
-    private const int PAGE_SIZE = 500;
-
     private const array CSV_HEADER = [
         'id', 'title', 'description', 'availability', 'condition', 'price', 'link', 'image_link', 'brand',
     ];
 
     public function __construct(
-        private readonly ProductCollectionFactory $productCollectionFactory,
-        private readonly CatalogImageHelper $catalogImageHelper,
+        private readonly CatalogFeedProductFetcher $productFetcher,
         private readonly StoreManagerInterface $storeManager,
         private readonly Config $config
     ) {
@@ -77,7 +69,7 @@ class MetaCatalogFeedGenerator implements FeedGeneratorInterface
         $defaultBrand = $this->config->getMetaCatalogFeedDefaultBrand($storeId);
 
         $rows = [];
-        foreach ($this->fetchProductsByPage($storeId) as $product) {
+        foreach ($this->productFetcher->fetchByPage($storeId) as $product) {
             $row = $this->renderRow($product, $baseCurrency, $currencyCode, $defaultBrand);
             if ($row !== null) {
                 $rows[] = $row;
@@ -90,53 +82,6 @@ class MetaCatalogFeedGenerator implements FeedGeneratorInterface
         }
 
         return ['content' => implode("\r\n", $lines) . "\r\n", 'productCount' => count($rows)];
-    }
-
-    /**
-     * @return \Generator<int, \Magento\Catalog\Model\Product>
-     * @see GoogleMerchantFeedGenerator::fetchProductsByPage() same paging rationale.
-     */
-    private function fetchProductsByPage(int $storeId): \Generator
-    {
-        $collection = $this->makeCollection($storeId);
-        $collection->setPageSize(self::PAGE_SIZE);
-
-        $page = 1;
-        do {
-            $collection->setCurPage($page);
-            $collection->load();
-
-            foreach ($collection as $product) {
-                /** @var \Magento\Catalog\Model\Product $product */
-                yield $product;
-            }
-
-            $lastPage = $collection->getLastPageNumber();
-            $collection->clear();
-            $page++;
-        } while ($page <= $lastPage);
-    }
-
-    private function makeCollection(int $storeId): ProductCollection
-    {
-        $collection = $this->productCollectionFactory->create();
-        $collection->setStore($storeId);
-        $collection->addAttributeToSelect(['name', 'description', 'price']);
-        $collection->addAttributeToFilter('status', ['eq' => 1]);
-        $collection->addAttributeToFilter('visibility', [
-            'in' => [Visibility::VISIBILITY_BOTH, Visibility::VISIBILITY_IN_CATALOG, Visibility::VISIBILITY_IN_SEARCH],
-        ]);
-        $collection->addFinalPrice();
-        $collection->joinField(
-            'is_in_stock',
-            'cataloginventory_stock_item',
-            'is_in_stock',
-            'product_id=entity_id',
-            null,
-            'left'
-        );
-
-        return $collection;
     }
 
     /**
@@ -157,7 +102,7 @@ class MetaCatalogFeedGenerator implements FeedGeneratorInterface
             return null;
         }
 
-        $imageUrl = $this->getImageUrl($product);
+        $imageUrl = $this->productFetcher->getImageUrl($product);
         if ($imageUrl === null) {
             return null;
         }
@@ -192,12 +137,6 @@ class MetaCatalogFeedGenerator implements FeedGeneratorInterface
             $imageUrl,
             $defaultBrand,
         ];
-    }
-
-    private function getImageUrl(\Magento\Catalog\Model\Product $product): ?string
-    {
-        $url = $this->catalogImageHelper->init($product, 'product_page_image_large')->getUrl();
-        return $url !== '' ? $url : null;
     }
 
     /**

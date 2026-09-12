@@ -11,6 +11,7 @@ use Magento\Directory\Model\Currency;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\ProductFeed\CatalogFeedProductFetcher;
 use Ordo\Automation\Model\ProductFeed\GoogleMerchantFeedGenerator;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
@@ -45,8 +46,7 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
         $this->config->method('getShoppingFeedDescription')->willReturn('Feed description');
 
         $this->generator = new GoogleMerchantFeedGenerator(
-            $this->productCollectionFactory,
-            $this->catalogImageHelper,
+            new CatalogFeedProductFetcher($this->productCollectionFactory, $this->catalogImageHelper),
             $this->storeManager,
             $this->config
         );
@@ -131,8 +131,7 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
         $this->storeManager->method('getStore')->willReturn($store);
 
         $this->generator = new GoogleMerchantFeedGenerator(
-            $this->productCollectionFactory,
-            $this->catalogImageHelper,
+            new CatalogFeedProductFetcher($this->productCollectionFactory, $this->catalogImageHelper),
             $this->storeManager,
             $this->config
         );

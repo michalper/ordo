@@ -11,6 +11,7 @@ use Magento\Directory\Model\Currency;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\ProductFeed\CatalogFeedProductFetcher;
 use Ordo\Automation\Model\ProductFeed\MetaCatalogFeedGenerator;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
@@ -41,8 +42,7 @@ class MetaCatalogFeedGeneratorTest extends TestCase
         $this->config->method('getMetaCatalogFeedDefaultBrand')->willReturn('Acme');
 
         $this->generator = new MetaCatalogFeedGenerator(
-            $this->productCollectionFactory,
-            $this->catalogImageHelper,
+            new CatalogFeedProductFetcher($this->productCollectionFactory, $this->catalogImageHelper),
             $this->storeManager,
             $this->config
         );
@@ -96,8 +96,7 @@ class MetaCatalogFeedGeneratorTest extends TestCase
         $config->expects(self::once())->method('isMetaCatalogFeedEnabled')->with(1)->willReturn(true);
 
         $generator = new MetaCatalogFeedGenerator(
-            $this->productCollectionFactory,
-            $this->catalogImageHelper,
+            new CatalogFeedProductFetcher($this->productCollectionFactory, $this->catalogImageHelper),
             $this->storeManager,
             $config
         );
@@ -179,8 +178,7 @@ class MetaCatalogFeedGeneratorTest extends TestCase
         $config->method('getMetaCatalogFeedDefaultBrand')->willReturn('');
 
         $generator = new MetaCatalogFeedGenerator(
-            $this->productCollectionFactory,
-            $this->catalogImageHelper,
+            new CatalogFeedProductFetcher($this->productCollectionFactory, $this->catalogImageHelper),
             $this->storeManager,
             $config
         );
