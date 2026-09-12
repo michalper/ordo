@@ -12,40 +12,36 @@ use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ProductFeed\CatalogFeedProductFetcher;
-use Ordo\Automation\Model\ProductFeed\GoogleMerchantFeedGenerator;
+use Ordo\Automation\Model\ProductFeed\MetaCatalogFeedGenerator;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
-class GoogleMerchantFeedGeneratorTest extends TestCase
+class MetaCatalogFeedGeneratorTest extends TestCase
 {
     private ProductCollectionFactory&\PHPUnit\Framework\MockObject\MockObject $productCollectionFactory;
     private CatalogImageHelper&\PHPUnit\Framework\MockObject\MockObject $catalogImageHelper;
     private StoreManagerInterface $storeManager;
+    private Currency&\PHPUnit\Framework\MockObject\MockObject $baseCurrency;
     private Config $config;
-    private GoogleMerchantFeedGenerator $generator;
+    private MetaCatalogFeedGenerator $generator;
 
     protected function setUp(): void
     {
         $this->productCollectionFactory = $this->createMock(ProductCollectionFactory::class);
         $this->catalogImageHelper = $this->createMock(CatalogImageHelper::class);
 
-        $baseCurrency = $this->createStub(Currency::class);
-        // Identity conversion by default (base currency == display currency) - the dedicated
-        // currency-conversion regression test below stubs a real rate instead.
-        $baseCurrency->method('convert')->willReturnCallback(fn (float $price) => $price);
+        $this->baseCurrency = $this->createMock(Currency::class);
 
         $store = $this->createStub(Store::class);
         $store->method('getCurrentCurrencyCode')->willReturn('USD');
-        $store->method('getBaseUrl')->willReturn('https://example.test/');
-        $store->method('getBaseCurrency')->willReturn($baseCurrency);
+        $store->method('getBaseCurrency')->willReturn($this->baseCurrency);
         $this->storeManager = $this->createStub(StoreManagerInterface::class);
         $this->storeManager->method('getStore')->willReturn($store);
 
         $this->config = $this->createStub(Config::class);
-        $this->config->method('getShoppingFeedTitle')->willReturn('My Store Feed');
-        $this->config->method('getShoppingFeedDescription')->willReturn('Feed description');
+        $this->config->method('getMetaCatalogFeedDefaultBrand')->willReturn('Acme');
 
-        $this->generator = new GoogleMerchantFeedGenerator(
+        $this->generator = new MetaCatalogFeedGenerator(
             new CatalogFeedProductFetcher($this->productCollectionFactory, $this->catalogImageHelper),
             $this->storeManager,
             $this->config
@@ -87,7 +83,29 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
-    public function testGenerateRendersAValidItemForEachInStockAndOutOfStockProduct(): void
+    public function testGetFeedCodeAndContentType(): void
+    {
+        self::assertSame('meta_catalog', $this->generator->getFeedCode());
+        self::assertSame('text/csv; charset=UTF-8', $this->generator->getContentType());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testIsEnabledDelegatesToConfig(): void
+    {
+        $config = $this->createMock(Config::class);
+        $config->expects(self::once())->method('isMetaCatalogFeedEnabled')->with(1)->willReturn(true);
+
+        $generator = new MetaCatalogFeedGenerator(
+            new CatalogFeedProductFetcher($this->productCollectionFactory, $this->catalogImageHelper),
+            $this->storeManager,
+            $config
+        );
+
+        self::assertTrue($generator->isEnabled(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGenerateRendersACsvRowForEachInStockAndOutOfStockProduct(): void
     {
         $inStockProduct = $this->makeProduct('SKU1', 'Product One', 'https://example.test/product-one.html', 19.99, true);
         $outOfStockProduct = $this->makeProduct('SKU2', 'Product Two', 'https://example.test/product-two.html', 29.5, false);
@@ -96,54 +114,30 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
             ->willReturn($this->makeCollection([$inStockProduct, $outOfStockProduct]));
         $this->catalogImageHelper->method('init')->willReturnSelf();
         $this->catalogImageHelper->method('getUrl')->willReturn('https://example.test/media/catalog/product/1.jpg');
+        $this->baseCurrency->method('convert')->willReturnCallback(static fn (float $price): float => $price);
 
         $result = $this->generator->generate(1);
 
         self::assertSame(2, $result['productCount']);
-        self::assertStringContainsString('<g:id>SKU1</g:id>', $result['content']);
-        self::assertStringContainsString('<g:price>19.99 USD</g:price>', $result['content']);
-        self::assertStringContainsString('<g:availability>in stock</g:availability>', $result['content']);
-        self::assertStringContainsString('<g:id>SKU2</g:id>', $result['content']);
-        self::assertStringContainsString('<g:availability>out of stock</g:availability>', $result['content']);
-        self::assertStringContainsString('<title>My Store Feed</title>', $result['content']);
-        self::assertStringContainsString('xmlns:g="http://base.google.com/ns/1.0"', $result['content']);
+        self::assertStringStartsWith('id,title,description,availability,condition,price,link,image_link,brand', $result['content']);
+        self::assertStringContainsString('SKU1,Product One,A great product,in stock,new,19.99 USD,https://example.test/product-one.html,https://example.test/media/catalog/product/1.jpg,Acme', $result['content']);
+        self::assertStringContainsString('SKU2,Product Two,A great product,out of stock,new,29.50 USD', $result['content']);
     }
 
-    /**
-     * Regression test: getFinalPrice() is base currency (catalog_product_index_price), so it
-     * must be converted through the store's base->current currency rate before being tagged
-     * with the display currency code - not emitted unconverted alongside the display currency
-     * code, which would silently mislabel the price on any store where display != base currency.
-     */
     #[AllowMockObjectsWithoutExpectations]
-    public function testGenerateConvertsBasePriceToDisplayCurrencyBeforeEmitting(): void
+    public function testGenerateConvertsBasePriceToDisplayCurrency(): void
     {
-        $baseCurrency = $this->createStub(Currency::class);
-        $baseCurrency->method('convert')->willReturnCallback(
-            fn (float $price, string $toCurrency) => $toCurrency === 'EUR' ? $price * 0.9 : $price
-        );
+        $product = $this->makeProduct('SKU1', 'Product One', 'https://example.test/product-one.html', 10.0, true);
 
-        $store = $this->createStub(Store::class);
-        $store->method('getCurrentCurrencyCode')->willReturn('EUR');
-        $store->method('getBaseUrl')->willReturn('https://example.test/');
-        $store->method('getBaseCurrency')->willReturn($baseCurrency);
-        $this->storeManager = $this->createStub(StoreManagerInterface::class);
-        $this->storeManager->method('getStore')->willReturn($store);
-
-        $this->generator = new GoogleMerchantFeedGenerator(
-            new CatalogFeedProductFetcher($this->productCollectionFactory, $this->catalogImageHelper),
-            $this->storeManager,
-            $this->config
-        );
-
-        $product = $this->makeProduct('SKU1', 'Product One', 'https://example.test/product-one.html', 100.0, true);
         $this->productCollectionFactory->method('create')->willReturn($this->makeCollection([$product]));
         $this->catalogImageHelper->method('init')->willReturnSelf();
         $this->catalogImageHelper->method('getUrl')->willReturn('https://example.test/media/1.jpg');
 
+        $this->baseCurrency->expects(self::once())->method('convert')->with(10.0, 'USD')->willReturn(23.5);
+
         $result = $this->generator->generate(1);
 
-        self::assertStringContainsString('<g:price>90.00 EUR</g:price>', $result['content']);
+        self::assertStringContainsString('23.50 USD', $result['content']);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -178,21 +172,62 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
-    public function testGenerateReturnsEmptyFeedWhenNoProducts(): void
+    public function testGenerateSkipsAllProductsWhenNoDefaultBrandConfigured(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('getMetaCatalogFeedDefaultBrand')->willReturn('');
+
+        $generator = new MetaCatalogFeedGenerator(
+            new CatalogFeedProductFetcher($this->productCollectionFactory, $this->catalogImageHelper),
+            $this->storeManager,
+            $config
+        );
+
+        $product = $this->makeProduct('SKU1', 'Product One', 'https://example.test/product-one.html', 19.99, true);
+        $this->productCollectionFactory->method('create')->willReturn($this->makeCollection([$product]));
+        $this->catalogImageHelper->method('init')->willReturnSelf();
+        $this->catalogImageHelper->method('getUrl')->willReturn('https://example.test/media/1.jpg');
+
+        $result = $generator->generate(1);
+
+        self::assertSame(0, $result['productCount']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGenerateReturnsHeaderOnlyRowWhenNoProducts(): void
     {
         $this->productCollectionFactory->method('create')->willReturn($this->makeCollection([]));
 
         $result = $this->generator->generate(1);
 
         self::assertSame(0, $result['productCount']);
-        self::assertStringContainsString('<channel>', $result['content']);
+        self::assertSame("id,title,description,availability,condition,price,link,image_link,brand\r\n", $result['content']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGenerateEscapesFieldsContainingCommasOrQuotes(): void
+    {
+        $product = $this->makeProduct(
+            'SKU1',
+            'Product, "One"',
+            'https://example.test/product-one.html',
+            19.99,
+            true
+        );
+
+        $this->productCollectionFactory->method('create')->willReturn($this->makeCollection([$product]));
+        $this->catalogImageHelper->method('init')->willReturnSelf();
+        $this->catalogImageHelper->method('getUrl')->willReturn('https://example.test/media/1.jpg');
+        $this->baseCurrency->method('convert')->willReturnCallback(static fn (float $price): float => $price);
+
+        $result = $this->generator->generate(1);
+
+        self::assertStringContainsString('"Product, ""One"""', $result['content']);
     }
 
     /**
-     * Regression test for the ROADMAP.md Tier 4 "unbounded ... single-pass memory build" gap:
-     * generate() used to load the whole catalog collection in one shot - now it pages through it,
-     * setCurPage()-ing and clear()-ing the SAME collection object across pages rather than loading
-     * everything at once.
+     * Regression test mirroring GoogleMerchantFeedGeneratorTest's own: generate() must page
+     * through the catalog rather than load it all in one shot.
      */
     #[AllowMockObjectsWithoutExpectations]
     public function testGeneratePagesThroughMultiplePagesOfTheSameCollection(): void
@@ -221,11 +256,12 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
         $this->productCollectionFactory->expects(self::once())->method('create')->willReturn($collection);
         $this->catalogImageHelper->method('init')->willReturnSelf();
         $this->catalogImageHelper->method('getUrl')->willReturn('https://example.test/media/1.jpg');
+        $this->baseCurrency->method('convert')->willReturnCallback(static fn (float $price): float => $price);
 
         $result = $this->generator->generate(1);
 
         self::assertSame(2, $result['productCount']);
-        self::assertStringContainsString('<g:id>SKU1</g:id>', $result['content']);
-        self::assertStringContainsString('<g:id>SKU2</g:id>', $result['content']);
+        self::assertStringContainsString('SKU1', $result['content']);
+        self::assertStringContainsString('SKU2', $result['content']);
     }
 }
