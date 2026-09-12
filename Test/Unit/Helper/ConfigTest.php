@@ -33,6 +33,7 @@ class ConfigTest extends TestCase
 
         self::assertTrue($this->config->isReorderReminderEnabled());
         self::assertTrue($this->config->isAbandonedCartEnabled());
+        self::assertTrue($this->config->isBrowseAbandonmentEnabled());
         self::assertTrue($this->config->isOfferReminderEnabled());
         self::assertTrue($this->config->isCreditLimitAlertEnabled());
         self::assertTrue($this->config->isLifecycleEmailsEnabled());
@@ -136,6 +137,8 @@ class ConfigTest extends TestCase
         self::assertSame(2, $this->config->getReorderLeadDays());
         self::assertSame(120, $this->config->getAbandonedCartDelayMinutes());
         self::assertSame(1, $this->config->getAbandonedCartMaxReminders());
+        self::assertSame(60, $this->config->getBrowseAbandonmentDelayMinutes());
+        self::assertSame(1, $this->config->getBrowseAbandonmentMaxReminders());
         self::assertSame(2, $this->config->getOfferLeadDays());
         self::assertSame(1, $this->config->getOfferMaxSelfExtensions());
         self::assertSame(7, $this->config->getOfferSelfExtensionDays());
