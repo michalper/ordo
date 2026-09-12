@@ -10,17 +10,17 @@ use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\DB\Select;
 use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\StoreManagerInterface;
-use Ordo\Automation\Controller\ProductFeed\Index;
-use Ordo\Automation\Model\ProductFeed\GoogleMerchantFeedGenerator;
+use Ordo\Automation\Controller\ProductFeed\MetaCatalog;
+use Ordo\Automation\Model\ProductFeed\MetaCatalogFeedGenerator;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
-class IndexTest extends AbstractFrontendActionTestCase
+class MetaCatalogTest extends AbstractFrontendActionTestCase
 {
     private RawFactory $resultRawFactory;
     private ResourceConnection $resourceConnection;
     private AdapterInterface $connection;
-    private GoogleMerchantFeedGenerator&\PHPUnit\Framework\MockObject\MockObject $generator;
+    private MetaCatalogFeedGenerator&\PHPUnit\Framework\MockObject\MockObject $generator;
     private StoreManagerInterface $storeManager;
     private Raw $rawResult;
 
@@ -32,9 +32,9 @@ class IndexTest extends AbstractFrontendActionTestCase
         $this->resourceConnection->method('getConnection')->willReturn($this->connection);
         $this->resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        $this->generator = $this->createMock(GoogleMerchantFeedGenerator::class);
-        $this->generator->method('getFeedCode')->willReturn('google_merchant');
-        $this->generator->method('getContentType')->willReturn('application/xml; charset=UTF-8');
+        $this->generator = $this->createMock(MetaCatalogFeedGenerator::class);
+        $this->generator->method('getFeedCode')->willReturn('meta_catalog');
+        $this->generator->method('getContentType')->willReturn('text/csv; charset=UTF-8');
 
         $store = $this->createStub(StoreInterface::class);
         $store->method('getId')->willReturn(1);
@@ -46,9 +46,9 @@ class IndexTest extends AbstractFrontendActionTestCase
         $this->resultRawFactory->method('create')->willReturn($this->rawResult);
     }
 
-    private function makeController(): Index
+    private function makeController(): MetaCatalog
     {
-        return new Index(
+        return new MetaCatalog(
             $this->makeContext(),
             $this->resultRawFactory,
             $this->resourceConnection,
@@ -85,17 +85,17 @@ class IndexTest extends AbstractFrontendActionTestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
-    public function testExecuteServesCachedXmlWhenFeedEnabledAndCached(): void
+    public function testExecuteServesCachedCsvWhenFeedEnabledAndCached(): void
     {
         $this->generator->method('isEnabled')->willReturn(true);
         $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
         $this->connection->method('select')->willReturn($select);
-        $this->connection->method('fetchOne')->willReturn('<rss><channel/></rss>');
+        $this->connection->method('fetchOne')->willReturn("id,title\r\nSKU1,Product One\r\n");
 
         $this->rawResult->expects(self::never())->method('setHttpResponseCode');
-        $this->rawResult->expects(self::once())->method('setContents')->with('<rss><channel/></rss>');
+        $this->rawResult->expects(self::once())->method('setContents')->with("id,title\r\nSKU1,Product One\r\n");
 
         self::assertSame($this->rawResult, $this->makeController()->execute());
     }

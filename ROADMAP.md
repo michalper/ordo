@@ -64,10 +64,6 @@ fully closed — see docs/CHANGELOG.md.
 *(the "Free Gift never applies to a cart" and "guest checkout bypasses approval" items are listed
 as bugs above, not repeated here)*
 
-- Product feed is still single-format (Google RSS only) — multi-store and health/history are now
-  covered (see docs/CHANGELOG.md). A second feed format (beyond Google Merchant's RSS+g: namespace)
-  is a bigger, separate abstraction.
-
 ## Localization
 
 - **Native-speaker review of the 10 machine-translated locales** (`de_DE`, `fr_FR`, `es_ES`, `it_IT`, `pt_BR`,
@@ -122,12 +118,10 @@ zasobów zewnętrznych):
 1. **Nowe funkcje (sekcja "Candidate new features" powyżej)** — do rozważenia razem z
    biznesem/produktem pod kątem priorytetu; webhook action/trigger wygląda na najmniejszy koszt
    wejścia względem wartości.
-2. **Drugi format product feedu** — większa, osobna abstrakcja; wymaga wyboru formatu
-   docelowego przed implementacją.
-3. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
+2. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
    poświadczeń testowych.
-4. **Recenzja natywna 10 lokalizacji** — zależna od dostępności recenzentów per język.
-5. **GitHub Wiki (PL/EN, screenshots)** — struktura ustalona, treść wszystkich 8 stron
+3. **Recenzja natywna 10 lokalizacji** — zależna od dostępności recenzentów per język.
+4. **GitHub Wiki (PL/EN, screenshots)** — struktura ustalona, treść wszystkich 8 stron
    naszkicowana w `docs/wiki/`; zostały zrzuty ekranu kanwy Flow i formularza segmentu oraz
    recenzja natywna tekstu PL.
 
