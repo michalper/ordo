@@ -53,6 +53,20 @@
         </arguments>
     </type>
 
+    <!-- Pins each feed-format controller to its own generator - AbstractFeedAction's constructor
+         takes the shared FeedGeneratorInterface, so without this override the object manager
+         would have nothing to resolve it to. -->
+    <type name="Ordo\Automation\Controller\ProductFeed\Index">
+        <arguments>
+            <argument name="feedGenerator" xsi:type="object">Ordo\Automation\Model\ProductFeed\GoogleMerchantFeedGenerator</argument>
+        </arguments>
+    </type>
+    <type name="Ordo\Automation\Controller\ProductFeed\MetaCatalog">
+        <arguments>
+            <argument name="feedGenerator" xsi:type="object">Ordo\Automation\Model\ProductFeed\MetaCatalogFeedGenerator</argument>
+        </arguments>
+    </type>
+
     <!-- Dedicated SearchResults types so the WebAPI output processor knows what's inside each
          list endpoint's "items" array (the generic SearchResultsInterface can't express this —
          see Api/Data/CampaignSearchResultsInterface.php for why). Bound to a trivial concrete

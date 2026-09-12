@@ -3,25 +3,11 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Controller\ProductFeed;
 
-use Magento\Framework\App\Action\Context;
-use Magento\Framework\App\ResourceConnection;
-use Magento\Framework\Controller\Result\RawFactory;
-use Magento\Store\Model\StoreManagerInterface;
-use Ordo\Automation\Model\ProductFeed\GoogleMerchantFeedGenerator;
-
 /**
  * Serves the Google Merchant Center feed at "/ordo/productfeed/index" — see
- * AbstractFeedAction for the shared serving logic every feed format route uses.
+ * AbstractFeedAction for the shared serving logic every feed format route uses, and di.xml
+ * for how this class gets wired to GoogleMerchantFeedGenerator specifically.
  */
 class Index extends AbstractFeedAction
 {
-    public function __construct(
-        Context $context,
-        RawFactory $resultRawFactory,
-        ResourceConnection $resourceConnection,
-        StoreManagerInterface $storeManager,
-        GoogleMerchantFeedGenerator $feedGenerator
-    ) {
-        parent::__construct($context, $resultRawFactory, $resourceConnection, $storeManager, $feedGenerator);
-    }
 }
