@@ -1,0 +1,80 @@
+<?php
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \Magento\Framework\Escaper $escaper */
+
+/** @var \Ordo\Automation\Block\Adminhtml\Campaign\ScheduleCalendar\CampaignScheduleCalendarViewModel $viewModel */
+$viewModel = $block->getData('view_model');
+$days = $viewModel->getCalendarDays();
+$weekdayLabels = [__('Sun'), __('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri'), __('Sat')];
+?>
+<div class="ordo-page-toolbar">
+    <a class="ordo-toolbar-back-link" href="<?= $escaper->escapeUrl($block->getUrl('ordo/campaign/calendar')) ?>">
+        <?= $escaper->escapeHtml(__('← Back to Campaign Action Timeline')) ?>
+    </a>
+</div>
+<div class="ordo-dashboard ordo-schedule-calendar">
+    <div class="ordo-section-head">
+        <h2><?= $escaper->escapeHtml(__('Scheduled Campaign Calendar')) ?></h2>
+        <a class="ordo-btn ordo-btn-hero" href="<?= $escaper->escapeUrl($block->getUrl('ordo/campaign/new')) ?>">
+            <?= $escaper->escapeHtml(__('+ New Campaign')) ?>
+        </a>
+    </div>
+    <p class="ordo-calendar-intro">
+        <?= $escaper->escapeHtml(__(
+            'Every enabled campaign\'s "Scheduled Date/Time" or "Recurring Schedule" trigger, '
+            . 'plotted on the day it will (or did) fire — event-based triggers (order placed, '
+            . 'tag added, ...) have no fixed date and so don\'t appear here; see '
+            . '"Campaign Action Timeline" for those.'
+        )) ?>
+    </p>
+
+    <div class="ordo-schedule-calendar-nav">
+        <a class="ordo-btn" href="<?= $escaper->escapeUrl($block->getUrl('ordo/campaign/schedulecalendar', ['month' => $viewModel->getPrevMonthParam()])) ?>">
+            <?= $escaper->escapeHtml(__('← Previous month')) ?>
+        </a>
+        <h3><?= $escaper->escapeHtml($viewModel->getVisibleMonthLabel()) ?></h3>
+        <a class="ordo-btn" href="<?= $escaper->escapeUrl($block->getUrl('ordo/campaign/schedulecalendar', ['month' => $viewModel->getNextMonthParam()])) ?>">
+            <?= $escaper->escapeHtml(__('Next month →')) ?>
+        </a>
+    </div>
+
+    <div class="ordo-schedule-calendar-grid">
+        <?php foreach ($weekdayLabels as $weekdayLabel): ?>
+            <div class="ordo-schedule-calendar-weekday"><?= $escaper->escapeHtml($weekdayLabel) ?></div>
+        <?php endforeach; ?>
+
+        <?php foreach ($days as $day): ?>
+            <?php
+            $dayClasses = ['ordo-schedule-calendar-day'];
+            $dayClasses[] = $day['inCurrentMonth'] ? 'ordo-schedule-calendar-day-in-month' : 'ordo-schedule-calendar-day-out-month';
+            if ($day['isToday']) {
+                $dayClasses[] = 'ordo-schedule-calendar-day-today';
+            }
+            ?>
+            <div class="<?= $escaper->escapeHtmlAttr(implode(' ', $dayClasses)) ?>">
+                <span class="ordo-schedule-calendar-day-number"><?= $escaper->escapeHtml($day['date']->format('j')) ?></span>
+                <?php if (!empty($day['entries'])): ?>
+                    <ul class="ordo-schedule-calendar-entries">
+                        <?php foreach ($day['entries'] as $entry): ?>
+                            <li class="ordo-schedule-calendar-entry ordo-schedule-calendar-entry-<?= $escaper->escapeHtmlAttr($entry['status']) ?>">
+                                <a href="<?= $escaper->escapeUrl($block->getUrl('ordo/campaign/edit', ['entity_id' => $entry['campaign_id']])) ?>"
+                                   title="<?= $escaper->escapeHtmlAttr($entry['campaign_name']) ?>">
+                                    <?= $escaper->escapeHtml($entry['campaign_name']) ?>
+                                </a>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </div>
+        <?php endforeach; ?>
+    </div>
+
+    <div class="ordo-schedule-calendar-legend">
+        <span class="ordo-schedule-calendar-legend-item ordo-schedule-calendar-entry-past">
+            <?= $escaper->escapeHtml(__('Already fired')) ?>
+        </span>
+        <span class="ordo-schedule-calendar-legend-item ordo-schedule-calendar-entry-upcoming">
+            <?= $escaper->escapeHtml(__('Upcoming')) ?>
+        </span>
+    </div>
+</div>

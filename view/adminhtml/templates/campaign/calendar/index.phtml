@@ -14,9 +14,14 @@ $campaigns = $viewModel->getCampaigns();
 <div class="ordo-dashboard ordo-campaign-calendar">
     <div class="ordo-section-head">
         <h2><?= $escaper->escapeHtml(__('Campaign Action Timeline')) ?></h2>
-        <a class="ordo-btn ordo-btn-hero" href="<?= $escaper->escapeUrl($block->getUrl('ordo/campaign/new')) ?>">
-            <?= $escaper->escapeHtml(__('+ New Campaign')) ?>
-        </a>
+        <div class="ordo-section-head-actions">
+            <a class="ordo-btn" href="<?= $escaper->escapeUrl($block->getUrl('ordo/campaign/schedulecalendar')) ?>">
+                <?= $escaper->escapeHtml(__('View Scheduled Campaign Calendar →')) ?>
+            </a>
+            <a class="ordo-btn ordo-btn-hero" href="<?= $escaper->escapeUrl($block->getUrl('ordo/campaign/new')) ?>">
+                <?= $escaper->escapeHtml(__('+ New Campaign')) ?>
+            </a>
+        </div>
     </div>
     <p class="ordo-calendar-intro">
         <?= $escaper->escapeHtml(__(

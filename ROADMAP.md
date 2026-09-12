@@ -64,14 +64,6 @@ fully closed — see docs/CHANGELOG.md.
 *(the "Free Gift never applies to a cart" and "guest checkout bypasses approval" items are listed
 as bugs above, not repeated here)*
 
-## Scheduled (date-based) campaigns: calendar view
-
-Both the backend (`ScheduledTriggerScanner`/`DispatchScheduledCampaignTriggers`) and the admin UI
-to configure `scheduled_at`/`recurring_schedule` triggers are done — see docs/CHANGELOG.md. What's
-left is optional polish: an actual date-grid calendar view plotting when each scheduled campaign
-will (or did) fire. Worth revisiting whether "Campaign Action Timeline" should grow a
-calendar-view toggle for this, or stay a separate screen.
-
 ## Localization
 
 - **Native-speaker review of the 10 machine-translated locales** (`de_DE`, `fr_FR`, `es_ES`, `it_IT`, `pt_BR`,
@@ -119,11 +111,10 @@ zasobów zewnętrznych):
 1. **Nowe funkcje (sekcja "Candidate new features" powyżej)** — do rozważenia razem z
    biznesem/produktem pod kątem priorytetu; webhook action/trigger wygląda na najmniejszy koszt
    wejścia względem wartości.
-2. **Kalendarz dat dla scheduled campaigns** — opcjonalny polish.
-3. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
+2. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
    poświadczeń testowych.
-4. **Recenzja natywna 10 lokalizacji** — zależna od dostępności recenzentów per język.
-5. **GitHub Wiki (PL/EN, screenshots)** — wymaga wcześniej decyzji o strukturze.
+3. **Recenzja natywna 10 lokalizacji** — zależna od dostępności recenzentów per język.
+4. **GitHub Wiki (PL/EN, screenshots)** — wymaga wcześniej decyzji o strukturze.
 
 Uwaga poza roadmapą: na branchu `feature/reorder-cycle-build-cart` jest niedokończona,
 nie-scommitowana praca nad akcją "build reorder cart" (temat sam w sobie już częściowo
