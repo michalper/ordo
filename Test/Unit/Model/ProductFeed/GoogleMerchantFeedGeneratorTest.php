@@ -7,6 +7,7 @@ use Magento\Catalog\Helper\Image as CatalogImageHelper;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ResourceModel\Product\Collection as ProductCollection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
+use Magento\Directory\Model\Currency;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Helper\Config;
@@ -27,9 +28,15 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
         $this->productCollectionFactory = $this->createMock(ProductCollectionFactory::class);
         $this->catalogImageHelper = $this->createMock(CatalogImageHelper::class);
 
+        $baseCurrency = $this->createStub(Currency::class);
+        // Identity conversion by default (base currency == display currency) - the dedicated
+        // currency-conversion regression test below stubs a real rate instead.
+        $baseCurrency->method('convert')->willReturnCallback(fn (float $price) => $price);
+
         $store = $this->createStub(Store::class);
         $store->method('getCurrentCurrencyCode')->willReturn('USD');
         $store->method('getBaseUrl')->willReturn('https://example.test/');
+        $store->method('getBaseCurrency')->willReturn($baseCurrency);
         $this->storeManager = $this->createStub(StoreManagerInterface::class);
         $this->storeManager->method('getStore')->willReturn($store);
 
@@ -100,6 +107,44 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
         self::assertStringContainsString('<g:availability>out of stock</g:availability>', $result['xml']);
         self::assertStringContainsString('<title>My Store Feed</title>', $result['xml']);
         self::assertStringContainsString('xmlns:g="http://base.google.com/ns/1.0"', $result['xml']);
+    }
+
+    /**
+     * Regression test: getFinalPrice() is base currency (catalog_product_index_price), so it
+     * must be converted through the store's base->current currency rate before being tagged
+     * with the display currency code - not emitted unconverted alongside the display currency
+     * code, which would silently mislabel the price on any store where display != base currency.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGenerateConvertsBasePriceToDisplayCurrencyBeforeEmitting(): void
+    {
+        $baseCurrency = $this->createStub(Currency::class);
+        $baseCurrency->method('convert')->willReturnCallback(
+            fn (float $price, string $toCurrency) => $toCurrency === 'EUR' ? $price * 0.9 : $price
+        );
+
+        $store = $this->createStub(Store::class);
+        $store->method('getCurrentCurrencyCode')->willReturn('EUR');
+        $store->method('getBaseUrl')->willReturn('https://example.test/');
+        $store->method('getBaseCurrency')->willReturn($baseCurrency);
+        $this->storeManager = $this->createStub(StoreManagerInterface::class);
+        $this->storeManager->method('getStore')->willReturn($store);
+
+        $this->generator = new GoogleMerchantFeedGenerator(
+            $this->productCollectionFactory,
+            $this->catalogImageHelper,
+            $this->storeManager,
+            $this->config
+        );
+
+        $product = $this->makeProduct('SKU1', 'Product One', 'https://example.test/product-one.html', 100.0, true);
+        $this->productCollectionFactory->method('create')->willReturn($this->makeCollection([$product]));
+        $this->catalogImageHelper->method('init')->willReturnSelf();
+        $this->catalogImageHelper->method('getUrl')->willReturn('https://example.test/media/1.jpg');
+
+        $result = $this->generator->generate(1);
+
+        self::assertStringContainsString('<g:price>90.00 EUR</g:price>', $result['xml']);
     }
 
     #[AllowMockObjectsWithoutExpectations]

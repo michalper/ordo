@@ -9,9 +9,12 @@ use Magento\Framework\App\ResourceConnection;
 use Ordo\Automation\Setup\Patch\Data\AddCustomerCreditLimitAttribute;
 
 /**
- * "Used" credit is the sum of sales_order.total_due across the customer's non-canceled orders —
- * i.e. what's been ordered but not yet fully invoiced/paid. No separate ledger to keep in sync;
- * it's derived straight from order data every time it's asked for.
+ * "Used" credit is the sum of sales_order.base_total_due across the customer's non-canceled
+ * orders — i.e. what's been ordered but not yet fully invoiced/paid. base_total_due (not
+ * total_due) is used deliberately: a customer can have orders placed under more than one currency
+ * (e.g. after a website/currency change), and summing the order-currency total_due would mix
+ * currencies into one meaningless number. No separate ledger to keep in sync; it's derived
+ * straight from order data every time it's asked for.
  */
 class CreditLimitCalculator
 {
@@ -45,7 +48,7 @@ class CreditLimitCalculator
 
         $used = $connection->fetchOne(
             $connection->select()
-                ->from($orderTable, 'SUM(total_due)')
+                ->from($orderTable, 'SUM(base_total_due)')
                 ->where('customer_id = ?', $customerId)
                 ->where('state NOT IN (?)', ['canceled', 'closed'])
         );
@@ -73,7 +76,7 @@ class CreditLimitCalculator
 
         $rows = $connection->fetchPairs(
             $connection->select()
-                ->from($orderTable, ['customer_id', 'SUM(total_due)'])
+                ->from($orderTable, ['customer_id', 'SUM(base_total_due)'])
                 ->where('customer_id IN (?)', $customerIds)
                 ->where('state NOT IN (?)', ['canceled', 'closed'])
                 ->group('customer_id')

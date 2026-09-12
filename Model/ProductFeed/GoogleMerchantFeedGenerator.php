@@ -55,10 +55,11 @@ class GoogleMerchantFeedGenerator
          *  currency-formatting code throughout Magento. */
         $store = $this->storeManager->getStore($storeId);
         $currencyCode = $store->getCurrentCurrencyCode();
+        $baseCurrency = $store->getBaseCurrency();
 
         $items = [];
         foreach ($this->fetchProductsByPage($storeId) as $product) {
-            $item = $this->renderItem($product, $currencyCode);
+            $item = $this->renderItem($product, $baseCurrency, $currencyCode);
             if ($item !== null) {
                 $items[] = $item;
             }
@@ -128,8 +129,11 @@ class GoogleMerchantFeedGenerator
         return $collection;
     }
 
-    private function renderItem(\Magento\Catalog\Model\Product $product, string $currencyCode): ?string
-    {
+    private function renderItem(
+        \Magento\Catalog\Model\Product $product,
+        \Magento\Directory\Model\Currency $baseCurrency,
+        string $currencyCode
+    ): ?string {
         $sku = (string) $product->getSku();
         $name = (string) $product->getName();
         $url = (string) $product->getProductUrl();
@@ -146,7 +150,11 @@ class GoogleMerchantFeedGenerator
 
         $description = (string) $product->getData('description');
         $inStock = (bool) $product->getData('is_in_stock');
-        $priceValue = number_format((float) $price, 2, '.', '');
+        // getFinalPrice() is base currency (from catalog_product_index_price) - it must be
+        // converted to the store's current (display) currency before being tagged with
+        // $currencyCode, or every price is off by the currency rate on a store where display
+        // currency != base currency.
+        $priceValue = number_format((float) $baseCurrency->convert($price, $currencyCode), 2, '.', '');
 
         return '<item>'
             . '<g:id>' . $this->escape($sku) . '</g:id>'
