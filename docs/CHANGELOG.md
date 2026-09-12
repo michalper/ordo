@@ -36,6 +36,19 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Scheduled Campaign Calendar** (`ordo/campaign/schedulecalendar`), closing ROADMAP.md's
+  "Scheduled (date-based) campaigns: calendar view" item — a real month-grid calendar plotting
+  which day each enabled campaign's `scheduled_at`/`recurring_schedule` trigger fires (or fired),
+  reusing `Model\Campaign\ScheduledTriggerScanner`'s own cron-expression matching (new public
+  `matchesCronExpressionDate()`) to expand a recurring schedule across the visible month instead
+  of re-implementing recurrence rules. Kept as its own screen rather than a view-toggle on
+  "Campaign Action Timeline" (`ordo/campaign/calendar`): that page has no view-switching
+  mechanism and was deliberately renamed away from calendar/date framing since most campaigns
+  fire on customer events, not fixed dates — only scheduled/recurring ones have real fire dates,
+  so the new calendar only makes sense scoped to that subset. Each day cell links straight
+  through to its campaign's edit page; cross-linked from both the Dashboard and the Timeline
+  page.
+
 - **Flow canvas: undo/redo, node duplication, and an inline "Send test" button**, closing the
   rest of the campaign-engine ROADMAP.md "Flow canvas UX" gap (palette search/filter already
   closed it partway). Undo/redo (toolbar buttons or Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z or +Y) keeps an

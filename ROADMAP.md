@@ -75,14 +75,6 @@ as bugs above, not repeated here)*
   actions, and WhatsAppTemplate has mass-delete — see docs/CHANGELOG.md) — those three remaining
   grids are read-only/log/diagnostic views without an "enabled" concept to toggle, so a mass
   action there would need its own new capability first, not just wiring up an existing one.
-## Scheduled (date-based) campaigns: calendar view
-
-Both the backend (`ScheduledTriggerScanner`/`DispatchScheduledCampaignTriggers`) and the admin UI
-to configure `scheduled_at`/`recurring_schedule` triggers are done — see docs/CHANGELOG.md. What's
-left is optional polish: an actual date-grid calendar view plotting when each scheduled campaign
-will (or did) fire. Worth revisiting whether "Campaign Action Timeline" should grow a
-calendar-view toggle for this, or stay a separate screen.
-
 ## Localization
 
 - **Native-speaker review of the 10 machine-translated locales** (`de_DE`, `fr_FR`, `es_ES`, `it_IT`, `pt_BR`,
@@ -172,11 +164,10 @@ zasobów zewnętrznych):
    wyglądają na najmniejszy koszt wejścia względem wartości.
 5. **Drugi format product feedu** — większa, osobna abstrakcja; wymaga wyboru formatu
    docelowego przed implementacją.
-6. **Kalendarz dat dla scheduled campaigns** — opcjonalny polish.
-7. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
+6. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
    poświadczeń testowych.
-8. **Recenzja natywna 10 lokalizacji** — zależna od dostępności recenzentów per język.
-9. **GitHub Wiki (PL/EN, screenshots)** — wymaga wcześniej decyzji o strukturze.
+7. **Recenzja natywna 10 lokalizacji** — zależna od dostępności recenzentów per język.
+8. **GitHub Wiki (PL/EN, screenshots)** — wymaga wcześniej decyzji o strukturze.
 
 Uwaga poza roadmapą: na branchu `feature/reorder-cycle-build-cart` jest niedokończona,
 nie-scommitowana praca nad akcją "build reorder cart" (temat sam w sobie już częściowo

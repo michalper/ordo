@@ -158,9 +158,9 @@ class ScheduledTriggerScanner
 
     private function matchesCronExpression(string $cronExpression, \DateTimeImmutable $now): bool
     {
-        $parts = preg_split('/\s+/', trim($cronExpression));
+        $parts = $this->splitCronExpression($cronExpression);
 
-        if (!is_array($parts) || count($parts) !== 5) {
+        if ($parts === null) {
             return false;
         }
 
@@ -168,12 +168,44 @@ class ScheduledTriggerScanner
 
         return $schedule->matchCronExpression($parts[0], (int) $now->format('i'))
             && $schedule->matchCronExpression($parts[1], (int) $now->format('H'))
-            && $schedule->matchCronExpression($parts[2], (int) $now->format('d'))
-            && $schedule->matchCronExpression($parts[3], (int) $now->format('m'))
+            && $this->matchesCronExpressionDate($cronExpression, $now);
+    }
+
+    /**
+     * Date-only half of matchesCronExpression() above (day/month/weekday, ignoring the
+     * minute/hour fields) — reused by Block\Adminhtml\Campaign\ScheduleCalendar\
+     * CampaignScheduleCalendarViewModel to plot which days in a visible month a
+     * recurring_schedule trigger falls on, without re-implementing cron-expression matching.
+     * Deliberately public: the calendar cares about which DAYS a schedule lands on, not whether
+     * this exact minute is due.
+     */
+    public function matchesCronExpressionDate(string $cronExpression, \DateTimeImmutable $date): bool
+    {
+        $parts = $this->splitCronExpression($cronExpression);
+
+        if ($parts === null) {
+            return false;
+        }
+
+        $schedule = $this->cronSchedule ??= $this->cronScheduleFactory->create();
+
+        return $schedule->matchCronExpression($parts[2], (int) $date->format('d'))
+            && $schedule->matchCronExpression($parts[3], (int) $date->format('m'))
             // 'w' (0=Sunday..6=Saturday), matching Magento\Cron\Model\Schedule::trySchedule()'s
             // own weekday format for the exact same matchCronExpression() calls - not 'N'
             // (1=Monday..7=Sunday), which would silently misread every weekday field.
-            && $schedule->matchCronExpression($parts[4], (int) $now->format('w'));
+            && $schedule->matchCronExpression($parts[4], (int) $date->format('w'));
+    }
+
+    /**
+     * @return string[]|null Exactly 5 whitespace-separated cron fields, or null if
+     *  $cronExpression isn't shaped like one.
+     */
+    private function splitCronExpression(string $cronExpression): ?array
+    {
+        $parts = preg_split('/\s+/', trim($cronExpression));
+
+        return is_array($parts) && count($parts) === 5 ? $parts : null;
     }
 
     private function parseDateTime(string $value): ?\DateTimeImmutable
