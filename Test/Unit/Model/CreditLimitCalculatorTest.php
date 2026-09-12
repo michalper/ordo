@@ -77,6 +77,60 @@ class CreditLimitCalculatorTest extends TestCase
         self::assertSame(1250.5, $calculator->getUsedCredit(42));
     }
 
+    /**
+     * Regression test: a customer can have orders placed under more than one currency (e.g.
+     * after a website/currency change) - summing order-currency total_due across those orders
+     * would mix currencies into one meaningless number, so the query must sum base_total_due.
+     */
+    public function testGetUsedCreditSumsBaseTotalDueNotOrderCurrencyTotalDue(): void
+    {
+        $select = $this->createMock(Select::class);
+        $select->expects(self::once())
+            ->method('from')
+            ->with('sales_order', 'SUM(base_total_due)')
+            ->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchOne')->willReturn('1250.50');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $calculator = new CreditLimitCalculator($resourceConnection, $this->createStub(CustomerRepositoryInterface::class));
+
+        self::assertSame(1250.5, $calculator->getUsedCredit(42));
+    }
+
+    /**
+     * Same regression as testGetUsedCreditSumsBaseTotalDueNotOrderCurrencyTotalDue(), for the
+     * batched getUsedCreditForCustomers() variant.
+     */
+    public function testGetUsedCreditForCustomersSumsBaseTotalDueNotOrderCurrencyTotalDue(): void
+    {
+        $select = $this->createMock(Select::class);
+        $select->expects(self::once())
+            ->method('from')
+            ->with('sales_order', ['customer_id', 'SUM(base_total_due)'])
+            ->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchPairs')->willReturn(['5' => '850.5']);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $calculator = new CreditLimitCalculator($resourceConnection, $this->createStub(CustomerRepositoryInterface::class));
+
+        self::assertSame([5 => 850.5], $calculator->getUsedCreditForCustomers([5]));
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testGetUtilizationPercentReturnsZeroWhenNoLimit(): void
     {
