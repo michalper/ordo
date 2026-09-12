@@ -7,6 +7,37 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Two-way SMS/WhatsApp conversation handling (ROADMAP.md "Candidate new features")** —
+  captures inbound replies instead of only the delivery-status callbacks handled until now, with
+  a MANDATORY, non-configurable STOP-keyword opt-out — this is the compliance-critical piece of
+  this change and cannot be disabled by config:
+  - New `ordo_conversation_message` table records every inbound SMS/WhatsApp reply, best-effort
+    matched to a `customer_id` by looking up the phone number against a prior `ordo_message_log`
+    send (same "identity may not be known yet" shape used elsewhere in this module).
+  - `Model\Conversation\InboundMessageProcessor` is the single funnel both providers' inbound
+    replies pass through, so the STOP-keyword handling can't drift between Twilio and Meta.
+    `Model\Conversation\StopKeywordDetector` matches STOP/UNSUBSCRIBE/CANCEL/END/QUIT
+    case-insensitively against the whole trimmed message body; a match immediately revokes
+    consent through the exact same `Model\ConsentManager` every other channel already checks
+    before sending (not a new parallel opt-out mechanism), and both the revocation and the
+    (rare) case where the customer couldn't be resolved are logged for audit.
+  - New `Controller\Sms\Reply` (`/ordo/sms/reply`) is a separate, X-Twilio-Signature-verified
+    webhook URL for inbound SMS — Twilio requires its own webhook config ("A Message Comes In")
+    distinct from the per-send `statusCallback` URL `Controller\Sms\StatusCallback` already
+    handles.
+  - `Controller\WhatsApp\Webhook` now also parses the `messages` array Meta's Cloud API sends
+    inbound replies in, alongside the `statuses`/`message_template_status_update` arrays it
+    already handled — Meta carries both in the same payload/URL, so no new controller was
+    needed there.
+  - New read-only "Conversations" admin grid (`Controller\Adminhtml\ConversationMessage\Index`,
+    linked from the module Dashboard) is the conversation view tied to the customer record,
+    filterable by Customer — the smallest coherent way to ship this given the module has no
+    existing extension point on the core customer edit page to hang a tab off of.
+  - Deferred for a later pass: a customer-edit-page tab/block (no existing extension point to
+    build on yet — the plain grid above covers the same need for now), and non-text WhatsApp
+    reply types (media/location/interactive) — every inbound message is still captured and
+    STOP-checked regardless of type, only the stored body defaults to empty for anything but
+    plain text.
 - **Generic outbound webhook action + inbound webhook trigger (ROADMAP.md "Candidate new
   features")** — a two-way, signed integration point for external systems (ERP/CRM/PIM), beyond
   today's provider-status-only inbound webhooks:

@@ -97,9 +97,6 @@ exist in some form. Not prioritized against each other; listed for later scoping
 - **Predictive send-time optimization** — pick each customer's historically best send hour from existing
   `ordo_message_log` open/click data and hold the action via the existing delayed-action/resume mechanism
   (`Cron\RunScheduledCampaignActions`) instead of a fixed delay. Medium scope, fits both.
-- **Two-way SMS/WhatsApp conversation handling** — capture inbound replies (today only delivery-status
-  callbacks are handled), with mandatory keyword-based opt-out (STOP) and a conversation view tied to the
-  customer record. Large scope (compliance-sensitive once inbound is accepted at all), fits both.
 - **Multi-touch attribution / revenue-per-campaign reporting** — correlate `ordo_message_log`
   click-throughs to subsequent orders within a configurable window, surfaced as attributed revenue on the
   Campaign grid/dashboard. Medium scope, fits both.

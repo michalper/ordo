@@ -786,6 +786,24 @@
         </index>
     </table>
 
+    <table name="ordo_conversation_message" resource="default" engine="innodb" comment="One row per inbound SMS/WhatsApp reply captured by Controller/Sms/Reply or Controller/WhatsApp/Webhook - the two-way counterpart to ordo_message_log, which only ever records what this module sent out. customer_id is nullable and best-effort resolved by matching from_address against a prior ordo_message_log.to_address, the same identity may not be known yet shape used elsewhere in this module - a reply can arrive from a number this store never recorded a customer against. is_stop_keyword flags a message that matched a STOP-style keyword and triggered an immediate Model/ConsentManager consent revocation - see Model/Conversation/StopKeywordDetector for the exact keyword list">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="channel" nullable="false" length="16" comment="sms or whatsapp"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="true" comment="Matched customer_id, if one could be resolved from from_address"/>
+        <column xsi:type="varchar" name="from_address" nullable="false" length="255" comment="Phone number the reply arrived from"/>
+        <column xsi:type="text" name="body" nullable="false" comment="Raw message body as sent by the customer"/>
+        <column xsi:type="varchar" name="provider_message_id" nullable="true" length="64" comment="The providers own message ID (Twilio MessageSid or Metas WhatsApp message id), where available"/>
+        <column xsi:type="boolean" name="is_stop_keyword" nullable="false" default="0" comment="True if this message body matched a STOP-style keyword and triggered a consent revocation"/>
+        <column xsi:type="timestamp" name="received_at" nullable="false" default="CURRENT_TIMESTAMP" comment="When this module received the reply"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY"><column name="entity_id"/></constraint>
+        <index referenceId="ORDO_CONVERSATION_MESSAGE_CUSTOMER_ID" indexType="btree">
+            <column name="customer_id"/>
+        </index>
+        <index referenceId="ORDO_CONVERSATION_MESSAGE_FROM_ADDRESS" indexType="btree">
+            <column name="from_address"/>
+        </index>
+    </table>
+
     <table name="ordo_campaign_outcome_log" resource="default" engine="innodb" comment="Sent/converted stats per campaign (and split-test variant) — the campaign-scoped counterpart of ordo_trigger_outcome_log, same first-plausible-match attribution philosophy (Observer\RecordCampaignOutcome sets acted_at/order_id once the customer places an order, not exact/billing-grade attribution). Additive to ordo_message_log, which already records the send itself; this table exists purely to answer did this campaign convert.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id"/>
