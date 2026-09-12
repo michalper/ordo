@@ -43,7 +43,33 @@
         select-list alias over a joined aggregate (or a NTILE window function), which MySQL
         allows in ORDER BY but not in WHERE — so those columns are sortable but carry no filter.
     -->
+    <!--
+        "Reset Cached RFM Score" mass action, not a delete of the listed rows themselves - this
+        grid has no stored entity of its own to delete (see Model\ResourceModel\Rfm\Grid\
+        Collection's own docblock). See Controller\Adminhtml\Rfm\MassDelete's docblock for what
+        it actually clears (ordo_customer_rfm_score) and why that's the right equivalent here.
+    -->
+    <listingToolbar name="listing_top">
+        <massaction name="listing_massaction">
+            <action name="delete">
+                <settings>
+                    <confirm>
+                        <message translate="true">Reset the cached RFM score for the selected customer(s)? It will be recomputed on the next scheduled run (or live in the meantime).</message>
+                        <title translate="true">Reset cached RFM score</title>
+                    </confirm>
+                    <url path="*/*/massDelete"/>
+                    <type>delete</type>
+                    <label translate="true">Reset Cached Score</label>
+                </settings>
+            </action>
+        </massaction>
+    </listingToolbar>
     <columns name="ordo_rfm_columns">
+        <selectionsColumn name="ids">
+            <settings>
+                <indexField>entity_id</indexField>
+            </settings>
+        </selectionsColumn>
         <column name="entity_id">
             <settings>
                 <filter>text</filter>
