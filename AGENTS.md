@@ -67,6 +67,20 @@ composer cs-check  # same thing CI runs — zero output = clean
 vendor/bin/phpcs   # separate check, because phpcbf doesn't fix 100% of its own violations
 ```
 
+## `db_schema.xml` table comments — no apostrophes, ever
+
+Magento's declarative schema installer emits every `<table comment="...">` inside a
+single-quoted `COMMENT='...'` clause without escaping it. An apostrophe in a table-level comment
+(`"a customer's..."`, `"...it's left in place..."`, or even a stray quotation mark used as `'...'`)
+breaks the generated SQL with a syntax error — but **only** the first time that specific table's
+`ALTER TABLE`/`CREATE TABLE` actually runs against a real database, which for a table that already
+exists (an `ALTER` adding/changing a column) can be long after the comment was originally written
+and merged, since a fresh CI install's `CREATE TABLE` may quote it differently than an incremental
+`ALTER TABLE ... COMMENT='...'` against a pre-existing table does. CI's single fresh install per
+run does not reliably catch this. Column-level comments (`<column comment="...">`) are unaffected
+— they're double-quoted in the generated SQL. Before adding or editing a `<table comment="...">`,
+grep it for `'` and reword around it (drop the apostrophe, don't try to escape it).
+
 ## PRs auto-merge once CI is green
 
 `main` has branch protection with required status checks: `unit-tests`, `static-analysis`, `rector`, `coding-standard`, `php-coverage`, `js-coverage`, `sonar`, `mutation-testing` (gated at `minMsi`/`minCoveredMsi` 70 in `infection.json5`, a couple points under the measured ~70.2% baseline). Repo settings have `allow_auto_merge` and `delete_branch_on_merge` both on.

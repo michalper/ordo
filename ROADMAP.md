@@ -78,13 +78,10 @@ as bugs above, not repeated here)*
   see `docs/wiki/README.md` for the reasoning) and all 8 capability pages plus a Home/`_Sidebar` drafted in
   `docs/wiki/` — content verified against the actual `Controller`/`Block`/`Model`/`Ui` classes and
   `view/adminhtml/ui_component/*.xml`, not invented. Real screenshots (from a running Magento 2.4.9 admin instance)
-  are embedded for the dashboard, campaigns grid, segments grid, RFM report, score rules grid, free gift offers grid
-  + tier-editing form, order approvals grid, reorder cycles grid, and the tracking configuration screen. Still
-  needed: the campaign builder's Flow/Drawflow canvas screenshot (blocked by a pre-existing DI error in the test
-  environment — `Controller/Adminhtml/Campaign/Edit` currently throws a circular-dependency `LogicException`,
-  unrelated to this doc pass), the segment edit form screenshot, and native PL review of all the drafted text
-  (same caveat as the machine-translated locale CSVs above). Not yet copied into the real GitHub Wiki
-  (`github.com/michalper/ordo.wiki`) — `docs/wiki/` is staging content for manual review first.
+  are embedded for every page, including the campaign builder's Flow canvas and the segment edit form (both were
+  blocked by the `ActionPool`/`CampaignDispatcher` circular-dependency bug above — now fixed). Still needed: native
+  PL review of all the drafted text (same caveat as the machine-translated locale CSVs above). Not yet copied into
+  the real GitHub Wiki (`github.com/michalper/ordo.wiki`) — `docs/wiki/` is staging content for manual review first.
 
 ## Candidate new features
 
@@ -117,9 +114,9 @@ zasobów zewnętrznych):
 2. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
    poświadczeń testowych.
 3. **Recenzja natywna 10 lokalizacji** — zależna od dostępności recenzentów per język.
-4. **GitHub Wiki (PL/EN, screenshots)** — struktura ustalona, treść wszystkich 8 stron
-   naszkicowana w `docs/wiki/`; zostały zrzuty ekranu kanwy Flow i formularza segmentu oraz
-   recenzja natywna tekstu PL.
+4. **GitHub Wiki (PL/EN, screenshots)** — struktura ustalona, treść wszystkich 8 stron i
+   wszystkie zrzuty ekranu (włącznie z kanwą Flow i formularzem segmentu) gotowe w
+   `docs/wiki/`; została tylko recenzja natywna tekstu PL i wklejenie do prawdziwego wiki.
 
 Uwaga poza roadmapą: na branchu `feature/reorder-cycle-build-cart` jest niedokończona,
 nie-scommitowana praca nad akcją "build reorder cart" (temat sam w sobie już częściowo

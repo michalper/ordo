@@ -48,6 +48,31 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Every real page load of the campaign builder (Flow canvas, `ordo/campaign/edit`) threw a
+  circular-dependency error.** `Model\Campaign\ActionPool`'s array argument constructs every
+  registered action eagerly (`etc/di.xml`) — one of those, any `Send*` action, takes
+  `Model\Campaign\QuietHoursGate`, which itself took `CampaignDispatcher` directly, and
+  `CampaignDispatcher` takes `ActionPool`: a genuine constructor cycle in the concrete class graph
+  (`ActionPool -> Send* -> QuietHoursGate -> CampaignDispatcher -> ActionPool`). Mock-based unit
+  tests never caught this, since a mock never actually walks the real object graph — it only
+  surfaced the moment something constructed `ActionPool` for real, i.e. every single admin
+  request to the campaign editor. Fixed by wiring `QuietHoursGate`'s `campaignDispatcher` argument
+  to `CampaignDispatcher\Proxy` in `etc/di.xml`, the same break-the-cycle-with-a-Proxy pattern
+  already used for `SegmentMatcher`/`ConditionGroupEvaluator` right above it. Added
+  `Test/Integration/ActionPoolDependencyGraphTest.php` (real `ObjectManager`, no mocks) as a
+  regression guard, since this exact class of bug is invisible to every other test in this suite.
+- **`setup:upgrade` failed on a fresh/incremental install with a MySQL syntax error** on any table
+  whose `db_schema.xml` comment contained an apostrophe — the declarative schema installer emits
+  that comment inside a single-quoted `COMMENT='...'` clause without escaping it. Eleven table
+  comments across this module had one (mostly plain possessives — "customer's", "campaign's",
+  etc.), most dating back well before this session; this had evidently never been exercised by
+  CI (which only ever does a single fresh install per run, and apparently none of the affected
+  ALTER paths triggered there) but reliably broke `setup:upgrade` against any database that
+  already had these tables from an earlier install. Reworded all eleven to drop the apostrophe
+  without changing meaning, and documented "no apostrophe in `db_schema.xml` table comments" as
+  a hard rule in `AGENTS.md` so it stops being tribal knowledge someone has to rediscover the
+  hard way.
+
 - **Three multi-currency correctness bugs (ROADMAP.md "Multi-currency correctness" audit),
   all financially relevant on any store with more than one allowed currency:**
   - `Model\FreeGiftManagement` compared the admin-configured, implicitly-base-currency

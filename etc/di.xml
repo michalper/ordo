@@ -259,6 +259,22 @@
         </arguments>
     </type>
 
+    <!--
+        ActionPool -> SendEmail (or any other Send* action - SendSms/SendWhatsApp/SendPush all
+        take QuietHoursGate too) -> QuietHoursGate -> CampaignDispatcher -> ActionPool would
+        otherwise be a genuine constructor cycle, same shape as ConditionGroupEvaluator's above
+        (ActionPool's array argument instantiates every action, including SendEmail, eagerly at
+        construction time). Breaking it with a Proxy here means QuietHoursGate gets a lazy
+        stand-in that only actually builds the real CampaignDispatcher the first time allows()
+        calls ->deferActionUntil(), by which point ActionPool itself has already finished
+        constructing.
+    -->
+    <type name="Ordo\Automation\Model\Campaign\QuietHoursGate">
+        <arguments>
+            <argument name="campaignDispatcher" xsi:type="object">Ordo\Automation\Model\CampaignDispatcher\Proxy</argument>
+        </arguments>
+    </type>
+
     <type name="Ordo\Automation\Model\Campaign\ActionPool">
         <arguments>
             <argument name="actions" xsi:type="array">
