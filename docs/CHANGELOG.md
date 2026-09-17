@@ -7,6 +7,26 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Price-drop & back-in-stock alerts (ROADMAP.md "Candidate new features")** — a customer or
+  visitor can opt in on a product's page to be notified when its price drops or it comes back in
+  stock, without needing to check back manually:
+  - New `ordo_price_watch_subscription` table, keyed by nullable `customer_id`/`visitor_id`
+    (same anonymous-then-stitched identity shape as `ordo_push_subscription`) plus `product_id`
+    and `watch_type` (`price_drop`|`back_in_stock`), tracking the last known price/stock so a
+    scan only fires on an actual change, not every tick.
+  - `Model\PriceWatch\PriceWatchSubscriptionManager` registers a watch idempotently (by identity +
+    product + watch type) via `Controller\Track\RegisterPriceWatch` — same CSRF/identity trust
+    model as `Controller\Track\RegisterPushSubscription`, factored into a shared
+    `Model\Track\VisitorIdentityResolver` both controllers now use.
+  - `Cron\ScanPriceDropAlerts`/`Cron\ScanBackInStockAlerts` (new `Cron\AbstractPriceWatchScanCron`
+    base class for the shared claim/dispatch mechanics) detect a real price decrease or a
+    false→true stock transition for a known customer and dispatch two new campaign triggers,
+    `price_drop`/`back_in_stock` (`Api\Data\CampaignTriggerInterface`). A guest (visitor-only)
+    watch still gets its baseline refreshed but never dispatches a campaign, since campaign
+    conditions in this module assume a `customer_id`.
+  - New "Price-Drop & Back-In-Stock Alerts" admin config group (Stores > Configuration > Ordo
+    Automation).
+
 - **Predictive send-time optimization (ROADMAP.md "Candidate new features")** — `send_email`
   campaign actions can now opt in (`"use_optimal_send_time": true` in that action's own `params`
   JSON, default off — no behavior change for existing campaigns) to defer to each customer's own
@@ -142,6 +162,26 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   (tracked separately in ROADMAP.md's "Multi-currency correctness" section).
 
 ### Fixed
+
+- **`etc/db_schema_whitelist.json` was missing from the repo entirely**, despite `etc/db_schema.xml`
+  defining dozens of tables — declarative schema has no way to persist a table/column without a
+  matching whitelist entry, so on a fresh install `setup:upgrade` silently created none of this
+  module's tables. Generated against a real Magento 2.4.9 instance
+  (`bin/magento setup:db-declaration:generate-whitelist`) and verified live: a clean `setup:upgrade`
+  now creates all of this module's tables, confirmed by counting rows in
+  `information_schema.tables`.
+
+- **GDPR export/erasure (`Model\Gdpr\CustomerDataTableProvider`) was missing 8 of the 24 tables
+  that carry a `customer_id` column.** The class's own docblock already documented going stale
+  once before; a full re-check against `etc/db_schema.xml` found it had gone stale again —
+  `ordo_browse_abandoned_reminder_log`, `ordo_campaign_attribution`,
+  `ordo_campaign_scheduled_action`, `ordo_conversation_message`, `ordo_customer_clv_score`,
+  `ordo_price_watch_subscription`, `ordo_push_send_retry`, and, most seriously,
+  `ordo_visitor_event` — this class used to correctly document that table as visitor-id-only, but
+  `Observer\StitchVisitorIdentity` had since added a nullable `customer_id` column to it, silently
+  making that reasoning wrong. A customer's browsing history, once linked to their account, was
+  neither erased nor exported by a GDPR data-subject request. Added all 8 tables; the class's
+  docblock no longer asserts the list is permanently complete without saying to re-verify it.
 
 - **No concurrency control across processes for outbound provider calls (ROADMAP.md
   "Communication channels").** `Model\RateLimit\OutboundRateLimiter` (spaces consecutive
