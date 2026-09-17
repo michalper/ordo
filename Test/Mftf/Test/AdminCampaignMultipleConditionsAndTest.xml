@@ -42,7 +42,7 @@
              (view/adminhtml/web/js/campaign-flow-editor.js's applyBuildChainNodeFields()), and a
              tag condition node renders the dedicated "tag" input, not a "params_json" textarea -
              so passing fields: {params_json: '...'} was a silent no-op, the tag input stayed
-             empty, and HasTag::isSatisfied() always returned false. -->
+             empty, and HasTag::isSatisfied() always returned false.
 
              Created BEFORE Campaign A below, deliberately — CampaignDispatcher::dispatch() runs
              every campaign matched to one trigger in a single foreach, in ascending campaign id

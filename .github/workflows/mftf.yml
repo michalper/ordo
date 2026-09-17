@@ -5,8 +5,8 @@ name: MFTF
 # Framework) test runner. This is deliberately NOT wired to run on every push/PR like ci.yml:
 # a from-scratch Magento install plus browser automation takes tens of minutes and the site
 # under test lives entirely inside this one job (no separate deploy), so cost/runtime don't
-# scale the way a unit-test job does. Trigger manually (Actions tab -> MFTF -> Run workflow) or
-# on a schedule once this is proven stable.
+# scale the way a unit-test job does. Runs nightly on a schedule (now that the pipeline has had
+# its first fully green matrix) plus on demand (Actions tab -> MFTF -> Run workflow).
 #
 # Split into a matrix by functional area (the strategy.matrix.group below — see each test's own
 # <group> annotation in Test/Mftf/Test/*.xml) after the pipeline's first fully green run
@@ -22,6 +22,10 @@ name: MFTF
 # in ci.yml for how to get them.
 
 on:
+  schedule:
+    # Nightly, once this pipeline is proven stable — see the block comment above for why this
+    # isn't wired to push/PR. 03:00 UTC: off-peak for both the runner queue and this team.
+    - cron: "0 3 * * *"
   workflow_dispatch:
     inputs:
       test_filter:
