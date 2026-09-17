@@ -1,0 +1,878 @@
+{
+    "ordo_reorder_cycle": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "sku": true,
+            "avg_interval_days": true,
+            "last_order_date": true,
+            "next_expected_date": true,
+            "orders_considered": true,
+            "updated_at": true
+        },
+        "index": {
+            "ORDO_REORDER_CYCLE_NEXT_EXPECTED_DATE": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_REORDER_CYCLE_CUSTOMER_ID_SKU": true
+        }
+    },
+    "ordo_reorder_reminder_log": {
+        "column": {
+            "entity_id": true,
+            "reorder_cycle_id": true,
+            "sent_at": true,
+            "reacted": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "FK_81323CAD956D3BECA1A6D90546569A0E": true
+        }
+    },
+    "ordo_abandoned_cart_reminder_log": {
+        "column": {
+            "entity_id": true,
+            "quote_id": true,
+            "sent_at": true
+        },
+        "index": {
+            "ORDO_ABANDONED_CART_REMINDER_LOG_QUOTE_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_browse_abandoned_reminder_log": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "event_key": true,
+            "sent_at": true
+        },
+        "index": {
+            "ORDO_BROWSE_ABANDONED_REMINDER_LOG_CUSTOMER_ID_EVENT_KEY": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_offer": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "reference": true,
+            "status": true,
+            "total": true,
+            "currency_code": true,
+            "expires_at": true,
+            "extension_count": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "index": {
+            "ORDO_OFFER_STATUS_EXPIRES_AT": true,
+            "ORDO_OFFER_CUSTOMER_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_OFFER_REFERENCE": true
+        }
+    },
+    "ordo_offer_reminder_log": {
+        "column": {
+            "entity_id": true,
+            "offer_id": true,
+            "reminder_type": true,
+            "sent_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_OFFER_REMINDER_LOG_OFFER_ID_ORDO_OFFER_ENTITY_ID": true
+        }
+    },
+    "ordo_credit_limit_alert_log": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "threshold_percent": true,
+            "utilization_percent": true,
+            "sent_at": true
+        },
+        "index": {
+            "ORDO_CREDIT_LIMIT_ALERT_LOG_CUSTOMER_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_segment": {
+        "column": {
+            "entity_id": true,
+            "name": true,
+            "enabled": true,
+            "condition_logic": true,
+            "estimated_audience_size": true,
+            "audience_size_computed_at": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_segment_condition": {
+        "column": {
+            "entity_id": true,
+            "segment_id": true,
+            "type": true,
+            "params": true,
+            "sort_order": true
+        },
+        "index": {
+            "ORDO_SEGMENT_CONDITION_SEGMENT_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_SEGMENT_CONDITION_SEGMENT_ID_ORDO_SEGMENT_ENTITY_ID": true
+        }
+    },
+    "ordo_segment_audience_size_history": {
+        "column": {
+            "entity_id": true,
+            "segment_id": true,
+            "audience_size": true,
+            "computed_at": true
+        },
+        "index": {
+            "ORDO_SEGMENT_AUDIENCE_SIZE_HISTORY_SEGMENT_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "FK_44E2ED1A4560F31585F8B65BAEBD7488": true
+        }
+    },
+    "ordo_customer_score": {
+        "column": {
+            "customer_id": true,
+            "score": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_customer_tag": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "tag": true,
+            "added_at": true
+        },
+        "index": {
+            "ORDO_CUSTOMER_TAG_TAG": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_CUSTOMER_TAG_CUSTOMER_ID_TAG": true
+        }
+    },
+    "ordo_order_approval": {
+        "column": {
+            "entity_id": true,
+            "order_id": true,
+            "admin_email": true,
+            "token": true,
+            "status": true,
+            "reminders_sent": true,
+            "escalation_tier": true,
+            "created_at": true,
+            "decided_at": true
+        },
+        "index": {
+            "ORDO_ORDER_APPROVAL_STATUS": true,
+            "ORDO_ORDER_APPROVAL_STATUS_CREATED_AT": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_ORDER_APPROVAL_ORDER_ID": true,
+            "ORDO_ORDER_APPROVAL_TOKEN": true
+        }
+    },
+    "ordo_campaign": {
+        "column": {
+            "entity_id": true,
+            "name": true,
+            "trigger_event": true,
+            "enabled": true,
+            "condition_logic": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "index": {
+            "ORDO_CAMPAIGN_ENABLED": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_campaign_trigger": {
+        "column": {
+            "entity_id": true,
+            "campaign_id": true,
+            "trigger_event": true,
+            "params": true
+        },
+        "index": {
+            "ORDO_CAMPAIGN_TRIGGER_TRIGGER_EVENT": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_CAMPAIGN_TRIGGER_CAMPAIGN_ID_ORDO_CAMPAIGN_ENTITY_ID": true,
+            "ORDO_CAMPAIGN_TRIGGER_CAMPAIGN_ID_TRIGGER_EVENT": true
+        }
+    },
+    "ordo_campaign_condition": {
+        "column": {
+            "entity_id": true,
+            "campaign_id": true,
+            "type": true,
+            "params": true,
+            "sort_order": true
+        },
+        "index": {
+            "ORDO_CAMPAIGN_CONDITION_CAMPAIGN_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_CAMPAIGN_CONDITION_CAMPAIGN_ID_ORDO_CAMPAIGN_ENTITY_ID": true
+        }
+    },
+    "ordo_campaign_action": {
+        "column": {
+            "entity_id": true,
+            "campaign_id": true,
+            "type": true,
+            "params": true,
+            "sort_order": true,
+            "delay_minutes": true
+        },
+        "index": {
+            "ORDO_CAMPAIGN_ACTION_CAMPAIGN_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_CAMPAIGN_ACTION_CAMPAIGN_ID_ORDO_CAMPAIGN_ENTITY_ID": true
+        }
+    },
+    "ordo_campaign_scheduled_action": {
+        "column": {
+            "entity_id": true,
+            "campaign_id": true,
+            "resume_action_id": true,
+            "customer_id": true,
+            "context": true,
+            "run_at": true,
+            "executed_at": true,
+            "created_at": true
+        },
+        "index": {
+            "ORDO_CAMPAIGN_SCHEDULED_ACTION_RUN_AT_EXECUTED_AT": true,
+            "ORDO_CAMPAIGN_SCHEDULED_ACTION_CAMPAIGN_ID_CSTR_ID_EXECUTED_AT": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_CAMPAIGN_SCHEDULED_ACTION_CAMPAIGN_ID_ORDO_CAMPAIGN_ENTT_ID": true,
+            "FK_D8BA36B3F198161E44F37141ED84319F": true
+        }
+    },
+    "ordo_campaign_action_retry": {
+        "column": {
+            "entity_id": true,
+            "campaign_id": true,
+            "resume_action_id": true,
+            "context": true,
+            "attempts": true,
+            "last_error": true,
+            "next_retry_at": true,
+            "created_at": true
+        },
+        "index": {
+            "ORDO_CAMPAIGN_ACTION_RETRY_NEXT_RETRY_AT_ATTEMPTS": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_CAMPAIGN_ACTION_RETRY_CAMPAIGN_ID_ORDO_CAMPAIGN_ENTITY_ID": true
+        }
+    },
+    "ordo_message_send_retry": {
+        "column": {
+            "entity_id": true,
+            "action_type": true,
+            "context": true,
+            "params": true,
+            "attempts": true,
+            "last_error": true,
+            "next_retry_at": true,
+            "created_at": true
+        },
+        "index": {
+            "ORDO_MESSAGE_SEND_RETRY_NEXT_RETRY_AT_ATTEMPTS": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_push_send_retry": {
+        "column": {
+            "entity_id": true,
+            "subscription_id": true,
+            "customer_id": true,
+            "campaign_id": true,
+            "variant": true,
+            "payload": true,
+            "attempts": true,
+            "last_error": true,
+            "next_retry_at": true,
+            "created_at": true
+        },
+        "index": {
+            "ORDO_PUSH_SEND_RETRY_NEXT_RETRY_AT_ATTEMPTS": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_campaign_dispatch_dead_letter": {
+        "column": {
+            "entity_id": true,
+            "trigger_event": true,
+            "message": true,
+            "error": true,
+            "created_at": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_campaign_scheduled_trigger_state": {
+        "column": {
+            "campaign_id": true,
+            "trigger_event": true,
+            "config_hash": true,
+            "last_fired_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "FK_3E66788F82EE296BCA6B6A7292176AB3": true
+        }
+    },
+    "ordo_visitor_event": {
+        "column": {
+            "entity_id": true,
+            "visitor_id": true,
+            "customer_id": true,
+            "event_type": true,
+            "event_key": true,
+            "created_at": true
+        },
+        "index": {
+            "ORDO_VISITOR_EVENT_VISITOR_ID": true,
+            "ORDO_VISITOR_EVENT_CUSTOMER_ID": true,
+            "ORDO_VISITOR_EVENT_CREATED_AT": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_visitor_tag": {
+        "column": {
+            "entity_id": true,
+            "visitor_id": true,
+            "tag": true,
+            "added_at": true
+        },
+        "index": {
+            "ORDO_VISITOR_TAG_TAG": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_VISITOR_TAG_VISITOR_ID_TAG": true
+        }
+    },
+    "ordo_pending_popup": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "visitor_id": true,
+            "headline": true,
+            "body": true,
+            "cta_label": true,
+            "cta_url": true,
+            "created_at": true,
+            "delivered_at": true,
+            "expires_at": true
+        },
+        "index": {
+            "ORDO_PENDING_POPUP_CUSTOMER_ID": true,
+            "ORDO_PENDING_POPUP_VISITOR_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_notification": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "visitor_id": true,
+            "headline": true,
+            "body": true,
+            "cta_label": true,
+            "cta_url": true,
+            "created_at": true,
+            "read_at": true,
+            "expires_at": true
+        },
+        "index": {
+            "ORDO_NOTIFICATION_CUSTOMER_ID": true,
+            "ORDO_NOTIFICATION_VISITOR_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_survey_prompt": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "visitor_id": true,
+            "question": true,
+            "created_at": true,
+            "delivered_at": true,
+            "score": true,
+            "responded_at": true,
+            "expires_at": true
+        },
+        "index": {
+            "ORDO_SURVEY_PROMPT_CUSTOMER_ID": true,
+            "ORDO_SURVEY_PROMPT_VISITOR_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_customer_consent": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "channel": true,
+            "consented": true,
+            "source": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_CUSTOMER_CONSENT_CUSTOMER_ID_CHANNEL": true
+        }
+    },
+    "ordo_cron_run_log": {
+        "column": {
+            "entity_id": true,
+            "level": true,
+            "message": true,
+            "created_at": true
+        },
+        "index": {
+            "ORDO_CRON_RUN_LOG_LEVEL_CREATED_AT": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_customer_consent_log": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "channel": true,
+            "consented": true,
+            "source": true,
+            "created_at": true
+        },
+        "index": {
+            "ORDO_CUSTOMER_CONSENT_LOG_CUSTOMER_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_ad_audience": {
+        "column": {
+            "entity_id": true,
+            "name": true,
+            "segment_id": true,
+            "platform": true,
+            "external_audience_id": true,
+            "enabled": true,
+            "last_synced_at": true,
+            "last_sync_status": true,
+            "last_sync_message": true,
+            "created_at": true
+        },
+        "index": {
+            "ORDO_AD_AUDIENCE_SEGMENT_ID": true,
+            "ORDO_AD_AUDIENCE_ENABLED": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_free_gift_offer": {
+        "column": {
+            "entity_id": true,
+            "name": true,
+            "enabled": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "index": {
+            "ORDO_FREE_GIFT_OFFER_ENABLED": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_free_gift_offer_tier": {
+        "column": {
+            "entity_id": true,
+            "offer_id": true,
+            "min_subtotal": true,
+            "gift_slots": true
+        },
+        "index": {
+            "ORDO_FREE_GIFT_OFFER_TIER_OFFER_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_FREE_GIFT_OFFER_TIER_OFFER_ID_ORDO_FREE_GIFT_OFFER_ENTT_ID": true
+        }
+    },
+    "ordo_free_gift_offer_product": {
+        "column": {
+            "entity_id": true,
+            "offer_id": true,
+            "sku": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_FREE_GIFT_OFFER_PRD_OFFER_ID_ORDO_FREE_GIFT_OFFER_ENTT_ID": true,
+            "ORDO_FREE_GIFT_OFFER_PRODUCT_OFFER_ID_SKU": true
+        }
+    },
+    "ordo_trigger_outcome_log": {
+        "column": {
+            "entity_id": true,
+            "trigger_type": true,
+            "customer_id": true,
+            "sent_at": true,
+            "acted_at": true,
+            "order_id": true
+        },
+        "index": {
+            "ORDO_TRIGGER_OUTCOME_LOG_TRIGGER_TYPE_CUSTOMER_ID": true,
+            "ORDO_TRIGGER_OUTCOME_LOG_CUSTOMER_ID_ACTED_AT": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_quote_gift_item": {
+        "column": {
+            "entity_id": true,
+            "quote_id": true,
+            "quote_item_id": true,
+            "offer_id": true,
+            "sku": true
+        },
+        "index": {
+            "ORDO_QUOTE_GIFT_ITEM_QUOTE_ID": true,
+            "ORDO_QUOTE_GIFT_ITEM_QUOTE_ITEM_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_score_rule": {
+        "column": {
+            "entity_id": true,
+            "attribute_code": true,
+            "operator": true,
+            "value": true,
+            "points": true,
+            "enabled": true,
+            "sort_order": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_customer_demographic_score": {
+        "column": {
+            "customer_id": true,
+            "score": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_customer_rfm_score": {
+        "column": {
+            "customer_id": true,
+            "recency_percentile": true,
+            "frequency_percentile": true,
+            "monetary_percentile": true,
+            "recency_quintile": true,
+            "frequency_quintile": true,
+            "monetary_quintile": true,
+            "computed_at": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_customer_clv_score": {
+        "column": {
+            "customer_id": true,
+            "clv_score": true,
+            "computed_at": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_content_block": {
+        "column": {
+            "entity_id": true,
+            "identifier": true,
+            "name": true,
+            "type": true,
+            "config": true,
+            "enabled": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_CONTENT_BLOCK_IDENTIFIER": true
+        }
+    },
+    "ordo_content_block_rss_cache": {
+        "column": {
+            "content_block_id": true,
+            "rendered_html": true,
+            "fetched_at": true,
+            "fetch_error": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "FK_F7D66F533C7CAD4DC520A68B65585BDC": true
+        }
+    },
+    "ordo_product_feed_cache": {
+        "column": {
+            "feed_code": true,
+            "store_id": true,
+            "xml": true,
+            "product_count": true,
+            "generated_at": true,
+            "generation_error": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_product_feed_run_log": {
+        "column": {
+            "entity_id": true,
+            "feed_code": true,
+            "store_id": true,
+            "status": true,
+            "product_count": true,
+            "message": true,
+            "created_at": true
+        },
+        "index": {
+            "ORDO_PRODUCT_FEED_RUN_LOG_FEED_CODE_STORE_ID_CREATED_AT": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_admin_action_log": {
+        "column": {
+            "entity_id": true,
+            "entity_type": true,
+            "target_entity_id": true,
+            "action": true,
+            "admin_user_id": true,
+            "admin_username": true,
+            "changes_json": true,
+            "created_at": true
+        },
+        "index": {
+            "ORDO_ADMIN_ACTION_LOG_ENTITY_TYPE_TARGET_ENTITY_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_message_log": {
+        "column": {
+            "entity_id": true,
+            "channel": true,
+            "customer_id": true,
+            "to_address": true,
+            "provider_message_id": true,
+            "status": true,
+            "error_code": true,
+            "sent_at": true,
+            "updated_at": true,
+            "campaign_id": true,
+            "variant": true
+        },
+        "index": {
+            "ORDO_MESSAGE_LOG_CAMPAIGN_ID_VARIANT": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_MESSAGE_LOG_PROVIDER_MESSAGE_ID": true
+        }
+    },
+    "ordo_message_log_event": {
+        "column": {
+            "entity_id": true,
+            "message_log_id": true,
+            "event_type": true,
+            "url": true,
+            "created_at": true
+        },
+        "index": {
+            "ORDO_MESSAGE_LOG_EVENT_MESSAGE_LOG_ID_EVENT_TYPE": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_MESSAGE_LOG_EVENT_MESSAGE_LOG_ID_ORDO_MESSAGE_LOG_ENTITY_ID": true
+        }
+    },
+    "ordo_conversation_message": {
+        "column": {
+            "entity_id": true,
+            "channel": true,
+            "customer_id": true,
+            "from_address": true,
+            "body": true,
+            "provider_message_id": true,
+            "is_stop_keyword": true,
+            "received_at": true
+        },
+        "index": {
+            "ORDO_CONVERSATION_MESSAGE_CUSTOMER_ID": true,
+            "ORDO_CONVERSATION_MESSAGE_FROM_ADDRESS": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_campaign_outcome_log": {
+        "column": {
+            "entity_id": true,
+            "campaign_id": true,
+            "variant": true,
+            "customer_id": true,
+            "sent_at": true,
+            "acted_at": true,
+            "order_id": true
+        },
+        "index": {
+            "ORDO_CAMPAIGN_OUTCOME_LOG_CAMPAIGN_ID_VARIANT": true,
+            "ORDO_CAMPAIGN_OUTCOME_LOG_CUSTOMER_ID_ACTED_AT": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_campaign_attribution": {
+        "column": {
+            "entity_id": true,
+            "order_id": true,
+            "campaign_id": true,
+            "customer_id": true,
+            "attributed_revenue": true,
+            "touch_count": true,
+            "computed_at": true
+        },
+        "index": {
+            "ORDO_CAMPAIGN_ATTRIBUTION_CAMPAIGN_ID": true,
+            "ORDO_CAMPAIGN_ATTRIBUTION_CUSTOMER_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_CAMPAIGN_ATTRIBUTION_ORDER_ID_CAMPAIGN_ID": true
+        }
+    },
+    "ordo_whatsapp_template": {
+        "column": {
+            "entity_id": true,
+            "name": true,
+            "meta_template_name": true,
+            "category": true,
+            "language": true,
+            "body_text": true,
+            "meta_template_id": true,
+            "status": true,
+            "rejection_reason": true,
+            "submitted_at": true,
+            "created_at": true
+        },
+        "index": {
+            "ORDO_WHATSAPP_TEMPLATE_STATUS": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_WHATSAPP_TEMPLATE_META_TEMPLATE_NAME": true
+        }
+    },
+    "ordo_push_subscription": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "visitor_id": true,
+            "endpoint": true,
+            "endpoint_hash": true,
+            "p256dh_key": true,
+            "auth_key": true,
+            "created_at": true,
+            "last_seen_at": true
+        },
+        "index": {
+            "ORDO_PUSH_SUBSCRIPTION_CUSTOMER_ID": true,
+            "ORDO_PUSH_SUBSCRIPTION_VISITOR_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_PUSH_SUBSCRIPTION_ENDPOINT_HASH": true
+        }
+    },
+    "ordo_provider_rate_limit": {
+        "column": {
+            "channel": true,
+            "next_available_at_micros": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    }
+}
