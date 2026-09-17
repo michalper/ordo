@@ -7,6 +7,7 @@ use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\Event;
 use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\Stdlib\CookieManagerInterface;
+use Ordo\Automation\Model\PriceWatch\PriceWatchSubscriptionManager;
 use Ordo\Automation\Model\Push\PushSubscriptionManager;
 use Ordo\Automation\Model\VisitorEventLogger;
 use Ordo\Automation\Observer\StitchVisitorIdentity;
@@ -35,7 +36,15 @@ class StitchVisitorIdentityTest extends TestCase
         $pushSubscriptionManager = $this->createMock(PushSubscriptionManager::class);
         $pushSubscriptionManager->expects(self::once())->method('attributeVisitorToCustomer')->with('v1', 42);
 
-        (new StitchVisitorIdentity($cookieManager, $eventLogger, $pushSubscriptionManager))->execute($observer);
+        $priceWatchSubscriptionManager = $this->createMock(PriceWatchSubscriptionManager::class);
+        $priceWatchSubscriptionManager->expects(self::once())->method('attributeVisitorToCustomer')->with('v1', 42);
+
+        (new StitchVisitorIdentity(
+            $cookieManager,
+            $eventLogger,
+            $pushSubscriptionManager,
+            $priceWatchSubscriptionManager
+        ))->execute($observer);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -52,7 +61,15 @@ class StitchVisitorIdentityTest extends TestCase
         $pushSubscriptionManager = $this->createMock(PushSubscriptionManager::class);
         $pushSubscriptionManager->expects(self::never())->method('attributeVisitorToCustomer');
 
-        (new StitchVisitorIdentity($cookieManager, $eventLogger, $pushSubscriptionManager))->execute($observer);
+        $priceWatchSubscriptionManager = $this->createMock(PriceWatchSubscriptionManager::class);
+        $priceWatchSubscriptionManager->expects(self::never())->method('attributeVisitorToCustomer');
+
+        (new StitchVisitorIdentity(
+            $cookieManager,
+            $eventLogger,
+            $pushSubscriptionManager,
+            $priceWatchSubscriptionManager
+        ))->execute($observer);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -72,6 +89,14 @@ class StitchVisitorIdentityTest extends TestCase
         $pushSubscriptionManager = $this->createMock(PushSubscriptionManager::class);
         $pushSubscriptionManager->expects(self::never())->method('attributeVisitorToCustomer');
 
-        (new StitchVisitorIdentity($cookieManager, $eventLogger, $pushSubscriptionManager))->execute($observer);
+        $priceWatchSubscriptionManager = $this->createMock(PriceWatchSubscriptionManager::class);
+        $priceWatchSubscriptionManager->expects(self::never())->method('attributeVisitorToCustomer');
+
+        (new StitchVisitorIdentity(
+            $cookieManager,
+            $eventLogger,
+            $pushSubscriptionManager,
+            $priceWatchSubscriptionManager
+        ))->execute($observer);
     }
 }

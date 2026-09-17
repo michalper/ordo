@@ -52,14 +52,6 @@ fully closed — see docs/CHANGELOG.md.
 *(the "Free Gift never applies to a cart" and "guest checkout bypasses approval" items are listed
 as bugs above, not repeated here)*
 
-## Localization
-
-- **Native-speaker review of the 10 machine-translated locales** (`de_DE`, `fr_FR`, `es_ES`, `it_IT`, `pt_BR`,
-  `zh_Hans_CN`, `ja_JP`, `ru_RU`, `uk_UA`, `nl_NL`) — shipped as a machine-translated first pass (see
-  docs/CHANGELOG.md),
-  not yet signed off by a human reviewer per locale. Highest priority: launch-blocking strings (error messages,
-  delete confirmations) over descriptive/help text.
-
 ## Documentation
 
 - **GitHub Wiki covering every feature, bilingual PL/EN, with screenshots.** Structure decided (bilingual-per-page,
@@ -76,9 +68,10 @@ as bugs above, not repeated here)*
 Not gaps in something existing — genuinely new capabilities, proposed after checking they don't already
 exist in some form. Not prioritized against each other; listed for later scoping.
 
-- **Price-drop & back-in-stock alerts** *(in progress)* — customer/visitor opt-in on PDP, a cron watching catalog
-  price/stock changes, two new trigger types through the existing `CampaignDispatcher` pipeline.
-  Medium-large scope, primarily B2C.
+- **Predictive send-time optimization** *(in progress)* — pick each customer's historically best send hour from
+  existing `ordo_message_log`/`ordo_message_log_event` open/click data and hold the action via the existing
+  `CampaignDispatcher::deferActionUntil()`/`Cron\RunScheduledCampaignActions` resume mechanism instead of a fixed
+  delay. Medium scope, fits both.
 - **Cross-channel fallback for cart abandonment** — if the abandoned-cart email goes unopened for N hours,
   fall back to SMS/WhatsApp instead of adding another email step; reuses the existing `send_sms`/`send_whatsapp`
   actions and `ordo_message_log` open data. Small-medium scope, B2C.
@@ -101,7 +94,6 @@ zasobów zewnętrznych):
    biznesem/produktem pod kątem priorytetu.
 2. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
    poświadczeń testowych.
-3. **Recenzja natywna 10 lokalizacji** — zależna od dostępności recenzentów per język.
-4. **GitHub Wiki (PL/EN, screenshots)** — struktura ustalona, treść wszystkich 8 stron i
+3. **GitHub Wiki (PL/EN, screenshots)** — struktura ustalona, treść wszystkich 8 stron i
    wszystkie zrzuty ekranu (włącznie z kanwą Flow i formularzem segmentu) gotowe w
    `docs/wiki/`; została tylko recenzja natywna tekstu PL i wklejenie do prawdziwego wiki.

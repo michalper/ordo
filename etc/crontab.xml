@@ -85,5 +85,11 @@
         <job name="ordo_automation_dispatch_scheduled_campaign_triggers" instance="Ordo\Automation\Cron\DispatchScheduledCampaignTriggers" method="execute">
             <schedule>*/5 * * * *</schedule>
         </job>
+        <job name="ordo_automation_scan_price_drop_alerts" instance="Ordo\Automation\Cron\ScanPriceDropAlerts" method="execute">
+            <schedule>*/15 * * * *</schedule>
+        </job>
+        <job name="ordo_automation_scan_back_in_stock_alerts" instance="Ordo\Automation\Cron\ScanBackInStockAlerts" method="execute">
+            <schedule>*/15 * * * *</schedule>
+        </job>
     </group>
 </config>

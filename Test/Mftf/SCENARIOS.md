@@ -377,9 +377,26 @@ module's.
 | `InboundMessageProcessor` — every inbound reply (STOP-keyword or not) is stored in `ordo_conversation_message` regardless of outcome | ⬜ unit-tested (`InboundMessageProcessorTest`), no MFTF yet |
 | "Conversations" admin grid (`ordo/conversationmessage/index`) renders `ordo_conversation_message` rows filterable by Customer | ⬜ not covered — no MFTF yet, real webhook delivery needed to seed data, same reasoning as `send_sms`'s own equivalent gap |
 
+## 24. Price-drop & back-in-stock alerts (`Model/PriceWatch/`, `Controller/Track/RegisterPriceWatch.php`, `Cron/ScanPriceDropAlerts.php`, `Cron/ScanBackInStockAlerts.php`)
+
+| Scenario                                                                                                       | Status                                                                    |
+|------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| `/ordo/track/registerpricewatch` registers a customer/visitor watch, validates `product_id`/`watch_type`, rejects an unknown product | ⬜ unit-tested (`RegisterPriceWatchTest`), no MFTF yet |
+| `PriceWatchSubscriptionManager::register()` is idempotent by identity + product + watch_type, refreshes the captured price/stock and clears `notified_at` on re-registration | ⬜ unit-tested (`PriceWatchSubscriptionManagerTest`), no MFTF yet |
+| `ScanPriceDropAlerts`/`ScanBackInStockAlerts` dispatch their trigger only on a real price decrease / false→true stock transition for a known customer, always refresh the row, never dispatch for a guest, and roll back the claim on a failed dispatch | ⬜ unit-tested (`ScanPriceDropAlertsTest`, `ScanBackInStockAlertsTest`), no MFTF yet |
+
+## 25. Predictive send-time optimization (`Model/Campaign/SendTimeOptimizer.php`, `Model/Campaign/SendTimeOptimizationGate.php`, `Model/Campaign/Action/SendEmail.php`)
+
+| Scenario                                                                                                       | Status                                                                    |
+|------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| `SendTimeOptimizer` returns `null` (no optimization) below the minimum sample size, and returns the histogram-mode hour once enough `ordo_message_log_event` data exists for a customer | ⬜ unit-tested (`SendTimeOptimizerTest`), no MFTF yet |
+| `SendTimeOptimizationGate` defers `send_email` via `CampaignDispatcher::deferActionUntil()` to the computed optimal hour when the feature is opted in via the action's `params` JSON and the hour differs meaningfully from now, otherwise proceeds immediately | ⬜ unit-tested (`SendTimeOptimizationGateTest`), no MFTF yet |
+| A deferred send still passes back through `QuietHoursGate` on resume, so an optimal-hour prediction landing inside the customer's quiet hours self-corrects rather than sending anyway | ⬜ unit-tested (via `SendEmailTest`'s gate-ordering coverage), no MFTF yet |
+
 ## Suggested next batch (highest signal per test written)
 
 Empty — every scenario this list ever tracked is now ✅ (see the sections above), except section 22 (Webhook
-action/trigger) and section 23 (Two-way SMS/WhatsApp conversations), added alongside their own features and not
-yet backed by MFTF. Re-populate further when a new gap is found (a newly added trigger/condition/action/
+action/trigger), section 23 (Two-way SMS/WhatsApp conversations), section 24 (Price-drop & back-in-stock
+alerts), and section 25 (Predictive send-time optimization), added alongside their own features and not yet
+backed by MFTF. Re-populate further when a new gap is found (a newly added trigger/condition/action/
 controller/cron, or a re-audit catching something missed).

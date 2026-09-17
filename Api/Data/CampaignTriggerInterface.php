@@ -52,6 +52,20 @@ interface CampaignTriggerInterface
     public const TRIGGER_WEBHOOK_RECEIVED = 'webhook_received';
 
     /**
+     * Fires from Cron\ScanPriceDropAlerts for an ordo_price_watch_subscription row whose
+     * watch_type is `price_drop` once the product's current price drops below its
+     * last_known_price - see that cron's own docblock.
+     */
+    public const TRIGGER_PRICE_DROP = 'price_drop';
+
+    /**
+     * Fires from Cron\ScanBackInStockAlerts for an ordo_price_watch_subscription row whose
+     * watch_type is `back_in_stock` once the product transitions from out-of-stock to
+     * in-stock - see that cron's own docblock.
+     */
+    public const TRIGGER_BACK_IN_STOCK = 'back_in_stock';
+
+    /**
      * @return int|null
      */
     public function getEntityId(): ?int;

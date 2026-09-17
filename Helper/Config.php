@@ -122,6 +122,9 @@ class Config
     private const string XML_PATH_PUSH_VAPID_SUBJECT = 'ordo_automation/push/vapid_subject';
     private const string XML_PATH_PUSH_MAX_PER_SECOND = 'ordo_automation/push/max_requests_per_second';
 
+    private const string XML_PATH_PRICE_WATCH_ENABLED = 'ordo_automation/price_watch/enabled';
+    private const string XML_PATH_PRICE_WATCH_SCAN_BATCH_SIZE = 'ordo_automation/price_watch/scan_batch_size';
+
     private const string XML_PATH_ATTRIBUTION_WINDOW_DAYS = 'ordo_automation/attribution/window_days';
 
     private const string XML_PATH_FREQUENCY_CAP_ENABLED = 'ordo_automation/frequency_cap/enabled';
@@ -214,6 +217,20 @@ class Config
     public function getAbandonedCartMaxReminders(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_CART_MAX_REMINDERS, 1, $storeId);
+    }
+
+    public function isPriceWatchEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_PRICE_WATCH_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getPriceWatchScanBatchSize(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_PRICE_WATCH_SCAN_BATCH_SIZE, 200, $storeId);
     }
 
     public function isBrowseAbandonmentEnabled(?int $storeId = null): bool

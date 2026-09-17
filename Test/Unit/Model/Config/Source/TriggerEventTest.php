@@ -25,6 +25,8 @@ class TriggerEventTest extends TestCase
                 CampaignTriggerInterface::TRIGGER_SCHEDULED_AT,
                 CampaignTriggerInterface::TRIGGER_RECURRING_SCHEDULE,
                 CampaignTriggerInterface::TRIGGER_WEBHOOK_RECEIVED,
+                CampaignTriggerInterface::TRIGGER_PRICE_DROP,
+                CampaignTriggerInterface::TRIGGER_BACK_IN_STOCK,
             ],
             $values
         );

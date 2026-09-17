@@ -44,6 +44,8 @@ strukturalnie nie widzą.
   cyklem zatwierdzania szablonów w adminie i webhookiem statusu dostarczenia.
 - Powiadomienia Web Push — akcja kampanii `send_push` dostarczająca prawdziwe powiadomienia przeglądarki/systemu
   (RFC 8291/8292, bez SDK dostawcy), na każde urządzenie, z którego klient się zasubskrybował.
+- Alerty o spadku ceny / powrocie do sprzedaży — klient lub gość obserwuje produkt z poziomu strony produktu,
+  dwa cykliczne zadania cron wysyłają triggery kampanii `price_drop`/`back_in_stock` przy pierwszej realnej zmianie.
 
 **Wspólny fundament**
 
