@@ -14,6 +14,8 @@ use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Controller\Result\RawFactory;
 use Magento\Framework\Controller\ResultInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\ConsentChannel;
+use Ordo\Automation\Model\Conversation\InboundMessageProcessor;
 use Ordo\Automation\Model\MessageLog;
 use Ordo\Automation\Model\MessageLog\StatusDowngradeGuard;
 use Ordo\Automation\Model\ResourceModel\MessageLog as MessageLogResource;
@@ -35,10 +37,16 @@ use Psr\Log\LoggerInterface;
  *    configured token, otherwise 403.
  *  - POST is a real event delivery, signature-verified via X-Hub-Signature-256 before anything
  *    else (same trust-boundary-first pattern as every other webhook controller in this module) -
- *    carries either message delivery-status updates ("statuses", correlated to ordo_message_log
- *    by provider_message_id, same role Twilio's Sid/SendGrid's smtp-id play for their own
- *    channels) or template approval-status updates ("message_template_status_update", correlated
- *    to ordo_whatsapp_template by Meta's own template id).
+ *    carries message delivery-status updates ("statuses", correlated to ordo_message_log by
+ *    provider_message_id, same role Twilio's Sid/SendGrid's smtp-id play for their own channels),
+ *    template approval-status updates ("message_template_status_update", correlated to
+ *    ordo_whatsapp_template by Meta's own template id), AND inbound customer replies ("messages")
+ *    - unlike Twilio, Meta's Cloud API webhook contract carries both statuses and inbound
+ *    messages in the very same payload shape/URL, so (unlike Controller\Sms\Reply) this needed no
+ *    separate controller/URL to add reply capture to. Every "messages" entry is funneled through
+ *    Model\Conversation\InboundMessageProcessor, the same shared collaborator Controller\Sms\
+ *    Reply uses, so the mandatory STOP-keyword consent revocation can't drift between the two
+ *    providers.
  *
  * @see https://developers.facebook.com/docs/graph-api/webhooks/getting-started
  * @see https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/notification-payload-examples
@@ -76,6 +84,7 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
         private readonly WhatsAppTemplateCollectionFactory $whatsAppTemplateCollectionFactory,
         private readonly WhatsAppTemplateResource $whatsAppTemplateResource,
         private readonly StatusDowngradeGuard $statusDowngradeGuard,
+        private readonly InboundMessageProcessor $inboundMessageProcessor,
         private readonly LoggerInterface $logger
     ) {
         parent::__construct($context);
@@ -162,10 +171,39 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
             }
         }
 
+        foreach ($this->toArray($value['messages'] ?? null) as $message) {
+            if (is_array($message)) {
+                $this->processInboundMessage($message);
+            }
+        }
+
         $templateUpdate = $change['field'] ?? null;
         if ($templateUpdate === 'message_template_status_update') {
             $this->processTemplateStatus($value);
         }
+    }
+
+    /**
+     * One entry of Meta's own "messages" array - see
+     * https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/components#messages.
+     * Only the "text" message type is captured (body.text.body) - media/location/interactive
+     * reply types are out of scope for this pass (see ROADMAP.md/CHANGELOG.md), but every message
+     * still reaches here regardless of type so a STOP reply is never missed just because it also
+     * carried, say, a button-reply payload alongside its text.
+     *
+     * @param array<mixed> $message
+     */
+    private function processInboundMessage(array $message): void
+    {
+        $from = (string) ($message['from'] ?? '');
+        $providerMessageId = isset($message['id']) ? (string) $message['id'] : null;
+        $body = (string) ($this->toArray($message['text'] ?? null)['body'] ?? '');
+
+        if ($from === '') {
+            return;
+        }
+
+        $this->inboundMessageProcessor->process(ConsentChannel::WhatsApp, $from, $body, $providerMessageId);
     }
 
     /**

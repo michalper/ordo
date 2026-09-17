@@ -98,7 +98,7 @@ class SendReminderTest extends AbstractAdminActionTestCase
 
         $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getEmail')->willReturn('jane@example.com');
-        $this->customerRepository->method('getById')->with(7)->willReturn($customer);
+        $this->customerRepository->expects(self::once())->method('getById')->with(7)->willReturn($customer);
 
         $this->reminderSender->expects(self::once())->method('sendNow')->with($cycle, $customer);
         $this->messageManager->expects(self::once())->method('addSuccessMessage');

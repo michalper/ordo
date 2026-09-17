@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <css src="Ordo_Automation::css/_tokens.css"/>
+        <css src="Ordo_Automation::css/dashboard.css"/>
+    </head>
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="ordo_conversationmessage_listing_intro"
+                   template="Ordo_Automation::listing_intro.phtml" before="ordo_conversationmessage_listing">
+                <arguments>
+                    <argument name="intro_text" xsi:type="string">Inbound SMS/WhatsApp replies captured against a customer — filter by Customer to see one customer's conversation. A row flagged Stop Keyword revoked that customer's consent for the channel automatically.</argument>
+                </arguments>
+            </block>
+            <uiComponent name="ordo_conversationmessage_listing"/>
+        </referenceContainer>
+    </body>
+</page>

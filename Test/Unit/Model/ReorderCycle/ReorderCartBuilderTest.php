@@ -69,7 +69,7 @@ class ReorderCartBuilderTest extends TestCase
         $cycle = $this->makeCycle('SKU-1');
         $product = $this->createStub(ProductInterface::class);
         $product->method('getId')->willReturn(42);
-        $this->productRepository->method('get')->with('SKU-1')->willReturn($product);
+        $this->productRepository->expects(self::once())->method('get')->with('SKU-1')->willReturn($product);
 
         $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getId')->willReturn(7);

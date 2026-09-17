@@ -65,7 +65,7 @@ class SparseFieldsetPluginTest extends TestCase
     public function testNoFieldsParamReturnsUnfilteredResultEvenIfFilterYieldsEmptyArray(): void
     {
         $input = ['items' => [['entity_id' => 1, 'name' => 'Campaign']], 'total_count' => 1];
-        $this->fieldsFilter->method('filter')->with($input)->willReturn([]);
+        $this->fieldsFilter->expects(self::once())->method('filter')->with($input)->willReturn([]);
         $this->request->method('getParam')->willReturn(null);
 
         $result = $this->plugin->afterProcess(
@@ -82,7 +82,7 @@ class SparseFieldsetPluginTest extends TestCase
     public function testUsableFieldsParamAppliesFilterEvenWhenResultBecomesEmpty(): void
     {
         $input = ['items' => [['entity_id' => 1, 'name' => 'Campaign']], 'total_count' => 1];
-        $this->fieldsFilter->method('filter')->with($input)->willReturn([]);
+        $this->fieldsFilter->expects(self::once())->method('filter')->with($input)->willReturn([]);
         $this->request->method('getParam')->willReturn('nonexistent_field');
 
         $result = $this->plugin->afterProcess(
@@ -100,7 +100,7 @@ class SparseFieldsetPluginTest extends TestCase
     {
         $input = ['items' => [['entity_id' => 1, 'name' => 'Campaign', 'enabled' => true]], 'total_count' => 1];
         $filtered = ['items' => [['entity_id' => 1, 'name' => 'Campaign']]];
-        $this->fieldsFilter->method('filter')->with($input)->willReturn($filtered);
+        $this->fieldsFilter->expects(self::once())->method('filter')->with($input)->willReturn($filtered);
         $this->request->method('getParam')->willReturn('items[entity_id,name]');
 
         $result = $this->plugin->afterProcess(
@@ -117,7 +117,7 @@ class SparseFieldsetPluginTest extends TestCase
     public function testEmptyStringFieldsParamDoesNotCountAsUsable(): void
     {
         $input = ['items' => [['entity_id' => 1]]];
-        $this->fieldsFilter->method('filter')->with($input)->willReturn([]);
+        $this->fieldsFilter->expects(self::once())->method('filter')->with($input)->willReturn([]);
         $this->request->method('getParam')->willReturn('');
 
         $result = $this->plugin->afterProcess(

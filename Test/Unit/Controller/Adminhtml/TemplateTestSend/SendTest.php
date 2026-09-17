@@ -76,7 +76,7 @@ class SendTest extends AbstractAdminActionTestCase
         $this->transportBuilder->method('setTemplateOptions')->willReturnSelf();
         $this->transportBuilder->method('setTemplateVars')->willReturnSelf();
         $this->transportBuilder->method('setFromByScope')->willReturnSelf();
-        $this->transportBuilder->method('addTo')->with('test@example.com')->willReturnSelf();
+        $this->transportBuilder->expects(self::once())->method('addTo')->with('test@example.com')->willReturnSelf();
         $this->transportBuilder->method('getTransport')->willReturn($transport);
 
         $controller = $this->makeController($context);
