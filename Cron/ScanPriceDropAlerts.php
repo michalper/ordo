@@ -3,13 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Cron;
 
-use Magento\Catalog\Api\ProductRepositoryInterface;
-use Magento\Framework\App\ResourceConnection;
-use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Catalog\Api\Data\ProductInterface;
 use Ordo\Automation\Api\Data\CampaignTriggerInterface;
-use Ordo\Automation\Helper\Config;
-use Ordo\Automation\Model\CampaignDispatcher;
-use Ordo\Automation\Model\Cron\CronRunLogger;
 use Ordo\Automation\Model\PriceWatch\PriceWatchSubscription;
 
 /**
@@ -31,137 +26,49 @@ use Ordo\Automation\Model\PriceWatch\PriceWatchSubscription;
  * TODO: a guest-facing notification path (e.g. a captured email address, sent directly rather
  * than through the campaign engine) is a real gap, scoped out of this PR by deliberate decision.
  *
- * @phpstan-type PriceWatchRow array{
- *     entity_id: int|string,
- *     customer_id: int|string|null,
- *     product_id: int|string,
- *     last_known_price: string|float|null
- * }
+ * The shared scan/claim/dispatch mechanics (batching, crash-safe claim-before-dispatch, guest
+ * exclusion, logging) live in AbstractPriceWatchScanCron — this class only supplies the
+ * price-specific comparison.
  */
-class ScanPriceDropAlerts
+class ScanPriceDropAlerts extends AbstractPriceWatchScanCron
 {
-    private const string TABLE = 'ordo_price_watch_subscription';
-
-    public function __construct(
-        private readonly Config $config,
-        private readonly ResourceConnection $resourceConnection,
-        private readonly ProductRepositoryInterface $productRepository,
-        private readonly CampaignDispatcher $campaignDispatcher,
-        private readonly CronRunLogger $cronRunLogger
-    ) {
+    protected function watchType(): string
+    {
+        return PriceWatchSubscription::WATCH_TYPE_PRICE_DROP;
     }
 
-    public function execute(): void
+    protected function snapshotColumn(): string
     {
-        if (!$this->config->isPriceWatchEnabled()) {
-            return;
-        }
-
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName(self::TABLE);
-        $batchSize = $this->config->getPriceWatchScanBatchSize();
-
-        $select = $connection->select()
-            ->from($table, ['entity_id', 'customer_id', 'product_id', 'last_known_price'])
-            ->where('watch_type = ?', PriceWatchSubscription::WATCH_TYPE_PRICE_DROP)
-            ->where('notified_at IS NULL')
-            ->order('entity_id ASC')
-            ->limit($batchSize);
-
-        /** @var array<int, PriceWatchRow> $rows */
-        $rows = $connection->fetchAll($select);
-
-        $dispatched = 0;
-        foreach ($rows as $row) {
-            try {
-                if ($this->processRow($row)) {
-                    $dispatched++;
-                }
-            } catch (\Throwable $e) {
-                $this->cronRunLogger->logFailure(
-                    sprintf('scan price watch subscription #%d', (int) $row['entity_id']),
-                    $e
-                );
-            }
-        }
-
-        $this->cronRunLogger->logSummary(sprintf('dispatched %d price drop triggers', $dispatched));
+        return 'last_known_price';
     }
 
-    /**
-     * @param PriceWatchRow $row
-     * @return bool whether a price_drop campaign trigger was actually dispatched for this row
-     */
-    private function processRow(array $row): bool
+    protected function triggerCode(): string
     {
-        $entityId = (int) $row['entity_id'];
-        $productId = (int) $row['product_id'];
-        $oldPrice = $row['last_known_price'] !== null ? (float) $row['last_known_price'] : null;
-
-        try {
-            $product = $this->productRepository->getById($productId);
-        } catch (NoSuchEntityException) {
-            // Product deleted since this watch was registered - nothing left to compare against.
-            return false;
-        }
-
-        $newPrice = (float) $product->getFinalPrice();
-        $isRealDrop = $oldPrice !== null && $newPrice < $oldPrice;
-        $customerId = !empty($row['customer_id']) ? (int) $row['customer_id'] : null;
-
-        if ($isRealDrop && $customerId !== null) {
-            // Claim (set notified_at) BEFORE dispatching, not after - a crash between a
-            // successful dispatch and the claim write must never cause a duplicate trigger on
-            // the next tick. If the dispatch itself then fails, the claim is rolled back so this
-            // row is retried next run - same pattern as every other reminder cron in this module.
-            $this->claim($entityId, $newPrice);
-
-            try {
-                $this->campaignDispatcher->dispatch(CampaignTriggerInterface::TRIGGER_PRICE_DROP, [
-                    'customer_id' => $customerId,
-                    'product_id' => $productId,
-                    'old_price' => $oldPrice,
-                    'new_price' => $newPrice,
-                ]);
-            } catch (\Throwable $e) {
-                $this->unclaim($entityId);
-                throw $e;
-            }
-
-            return true;
-        }
-
-        // No real drop yet, or a guest watch - just refresh last_known_price so the next scan
-        // compares against the product's current price, never dispatching for a guest.
-        $this->updatePrice($entityId, $newPrice);
-        return false;
+        return CampaignTriggerInterface::TRIGGER_PRICE_DROP;
     }
 
-    private function claim(int $entityId, float $newPrice): void
+    protected function triggerLabel(): string
     {
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName(self::TABLE);
-
-        $connection->update(
-            $table,
-            ['last_known_price' => $newPrice, 'notified_at' => date('Y-m-d H:i:s')],
-            ['entity_id = ?' => $entityId]
-        );
+        return 'price drop';
     }
 
-    private function unclaim(int $entityId): void
+    protected function readCurrentValue(ProductInterface $product): mixed
     {
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName(self::TABLE);
-
-        $connection->update($table, ['notified_at' => null], ['entity_id = ?' => $entityId]);
+        return (float) $product->getFinalPrice();
     }
 
-    private function updatePrice(int $entityId, float $newPrice): void
+    protected function isNotifiableChange(mixed $oldValue, mixed $newValue): bool
     {
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName(self::TABLE);
+        $oldPrice = $oldValue !== null ? (float) $oldValue : null;
 
-        $connection->update($table, ['last_known_price' => $newPrice], ['entity_id = ?' => $entityId]);
+        return $oldPrice !== null && $newValue < $oldPrice;
+    }
+
+    protected function triggerPayload(mixed $oldValue, mixed $newValue): array
+    {
+        return [
+            'old_price' => $oldValue !== null ? (float) $oldValue : null,
+            'new_price' => $newValue,
+        ];
     }
 }

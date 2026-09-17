@@ -11,6 +11,7 @@ use Ordo\Automation\Controller\Track\RegisterPushSubscription;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Push\PushEndpointValidator;
 use Ordo\Automation\Model\Push\PushSubscriptionManager;
+use Ordo\Automation\Model\Track\VisitorIdentityResolver;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
@@ -47,8 +48,7 @@ class RegisterPushSubscriptionTest extends AbstractFrontendActionTestCase
             $this->resultJsonFactory,
             $this->pushSubscriptionManager,
             $this->pushEndpointValidator,
-            $this->customerSession,
-            $this->cookieManager,
+            new VisitorIdentityResolver($this->customerSession, $this->cookieManager),
             $this->config
         );
     }

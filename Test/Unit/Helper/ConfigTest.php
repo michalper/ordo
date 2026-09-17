@@ -54,6 +54,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isFrequencyCapEnabled());
         self::assertTrue($this->config->isQuietHoursEnabled());
         self::assertTrue($this->config->isMetaCatalogFeedEnabled());
+        self::assertTrue($this->config->isPriceWatchEnabled());
     }
 
     public function testPushGettersDelegateToScopeConfig(): void
@@ -172,6 +173,7 @@ class ConfigTest extends TestCase
         self::assertSame(5, $this->config->getWhatsAppMaxRequestsPerSecond());
         self::assertSame(20, $this->config->getPushMaxRequestsPerSecond());
         self::assertSame(5, $this->config->getWebhookMaxRequestsPerSecond());
+        self::assertSame(200, $this->config->getPriceWatchScanBatchSize());
     }
 
     public function testOutboundRateLimitGettersReturnAnExplicitZeroRatherThanFallingBackToTheDefault(): void

@@ -13,6 +13,7 @@ use Ordo\Automation\Controller\Track\RegisterPriceWatch;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\PriceWatch\PriceWatchSubscription;
 use Ordo\Automation\Model\PriceWatch\PriceWatchSubscriptionManager;
+use Ordo\Automation\Model\Track\VisitorIdentityResolver;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
@@ -48,8 +49,7 @@ class RegisterPriceWatchTest extends AbstractFrontendActionTestCase
             $this->resultJsonFactory,
             $this->priceWatchSubscriptionManager,
             $this->productRepository,
-            $this->customerSession,
-            $this->cookieManager,
+            new VisitorIdentityResolver($this->customerSession, $this->cookieManager),
             $this->config
         );
     }

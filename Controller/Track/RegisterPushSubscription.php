@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Controller\Track;
 
-use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
@@ -11,10 +10,10 @@ use Magento\Framework\App\CsrfAwareActionInterface;
 use Magento\Framework\App\Request\InvalidRequestException;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Controller\Result\JsonFactory;
-use Magento\Framework\Stdlib\CookieManagerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Push\PushEndpointValidator;
 use Ordo\Automation\Model\Push\PushSubscriptionManager;
+use Ordo\Automation\Model\Track\VisitorIdentityResolver;
 
 /**
  * Public, unauthenticated endpoint tracker.js posts to once the visitor grants notification
@@ -34,15 +33,12 @@ use Ordo\Automation\Model\Push\PushSubscriptionManager;
  */
 class RegisterPushSubscription extends Action implements HttpPostActionInterface, CsrfAwareActionInterface
 {
-    private const string VISITOR_ID_COOKIE = 'ordo_visitor_id';
-
     public function __construct(
         Context $context,
         private readonly JsonFactory $resultJsonFactory,
         private readonly PushSubscriptionManager $pushSubscriptionManager,
         private readonly PushEndpointValidator $pushEndpointValidator,
-        private readonly CustomerSession $customerSession,
-        private readonly CookieManagerInterface $cookieManager,
+        private readonly VisitorIdentityResolver $visitorIdentityResolver,
         private readonly Config $config
     ) {
         parent::__construct($context);
@@ -62,9 +58,9 @@ class RegisterPushSubscription extends Action implements HttpPostActionInterface
         $p256dh = is_string($p256dh) ? trim($p256dh) : '';
         $auth = $this->getRequest()->getParam('auth');
         $auth = is_string($auth) ? trim($auth) : '';
-        $visitorId = (string) ($this->cookieManager->getCookie(self::VISITOR_ID_COOKIE) ?? '');
+        $visitorId = $this->visitorIdentityResolver->resolveVisitorId();
+        $hasNoIdentity = $this->visitorIdentityResolver->hasNoIdentity($visitorId);
 
-        $hasNoIdentity = $visitorId === '' && !$this->customerSession->isLoggedIn();
         if ($endpoint === '' || $p256dh === '' || $auth === '' || $hasNoIdentity) {
             return $result->setData(['ok' => false, 'reason' => 'invalid_payload']);
         }
@@ -73,7 +69,7 @@ class RegisterPushSubscription extends Action implements HttpPostActionInterface
             return $result->setData(['ok' => false, 'reason' => 'invalid_endpoint']);
         }
 
-        $customerId = $this->customerSession->isLoggedIn() ? (int) $this->customerSession->getCustomerId() : null;
+        $customerId = $this->visitorIdentityResolver->resolveCustomerId();
 
         $this->pushSubscriptionManager->register($endpoint, $p256dh, $auth, $customerId, $visitorId ?: null);
 
@@ -87,24 +83,6 @@ class RegisterPushSubscription extends Action implements HttpPostActionInterface
 
     public function validateForCsrf(RequestInterface $request): ?bool
     {
-        if (!$this->customerSession->isLoggedIn()) {
-            return true;
-        }
-
-        $origin = $request->getHeader('Origin');
-        // No Magento core alternative parses a URL into its component parts.
-        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
-        $originHost = is_string($origin) ? parse_url($origin, PHP_URL_HOST) : false;
-        if (is_string($originHost)) {
-            return $originHost === $request->getHttpHost();
-        }
-
-        // Some browsers omit Origin on a same-origin fetch() in certain configurations - fall
-        // back to Referer rather than failing every logged-in browser outright.
-        $referer = $request->getHeader('Referer');
-        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
-        $refererHost = is_string($referer) ? parse_url($referer, PHP_URL_HOST) : false;
-
-        return is_string($refererHost) && $refererHost === $request->getHttpHost();
+        return $this->visitorIdentityResolver->validateForCsrf($request);
     }
 }
