@@ -15,6 +15,8 @@ use Ordo\Automation\Model\ResourceModel\PushSendRetry as PushSendRetryResource;
  */
 class PushSendRetry extends AbstractModel
 {
+    use RetryRecordFieldsTrait;
+
     public const ENTITY_ID = 'entity_id';
     public const SUBSCRIPTION_ID = 'subscription_id';
     public const CUSTOMER_ID = 'customer_id';
@@ -84,40 +86,6 @@ class PushSendRetry extends AbstractModel
     public function setPayload(string $payload): self
     {
         $this->setData(self::PAYLOAD, $payload);
-        return $this;
-    }
-
-    public function getAttempts(): int
-    {
-        return (int) $this->getData(self::ATTEMPTS);
-    }
-
-    public function setAttempts(int $attempts): self
-    {
-        $this->setData(self::ATTEMPTS, $attempts);
-        return $this;
-    }
-
-    public function getLastError(): ?string
-    {
-        $value = $this->getData(self::LAST_ERROR);
-        return $value === null ? null : (string) $value;
-    }
-
-    public function setLastError(?string $lastError): self
-    {
-        $this->setData(self::LAST_ERROR, $lastError);
-        return $this;
-    }
-
-    public function getNextRetryAt(): string
-    {
-        return (string) $this->getData(self::NEXT_RETRY_AT);
-    }
-
-    public function setNextRetryAt(string $nextRetryAt): self
-    {
-        $this->setData(self::NEXT_RETRY_AT, $nextRetryAt);
         return $this;
     }
 }

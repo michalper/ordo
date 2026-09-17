@@ -49,7 +49,7 @@ class PushSubscriptionSender
         // ordo_message_log.to_address is varchar(255) (sized for phone numbers/emails); some
         // push services' endpoint URLs run longer, so this truncates purely for logging - the
         // real, full endpoint used to send always comes straight from the subscription row.
-        $endpoint = substr((string) $subscription->getEndpoint(), 0, 255);
+        $endpoint = substr($subscription->getEndpoint(), 0, 255);
 
         try {
             // A dead/gone subscription (SubscriptionGoneException) is permanently invalid -

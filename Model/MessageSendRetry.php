@@ -16,6 +16,8 @@ use Ordo\Automation\Model\ResourceModel\MessageSendRetry as MessageSendRetryReso
  */
 class MessageSendRetry extends AbstractModel
 {
+    use RetryRecordFieldsTrait;
+
     public const ENTITY_ID = 'entity_id';
     public const ACTION_TYPE = 'action_type';
     public const CONTEXT = 'context';
@@ -71,40 +73,6 @@ class MessageSendRetry extends AbstractModel
     public function setParams(array $params): self
     {
         $this->setData(self::PARAMS, (string) json_encode($params));
-        return $this;
-    }
-
-    public function getAttempts(): int
-    {
-        return (int) $this->getData(self::ATTEMPTS);
-    }
-
-    public function setAttempts(int $attempts): self
-    {
-        $this->setData(self::ATTEMPTS, $attempts);
-        return $this;
-    }
-
-    public function getLastError(): ?string
-    {
-        $value = $this->getData(self::LAST_ERROR);
-        return $value === null ? null : (string) $value;
-    }
-
-    public function setLastError(?string $lastError): self
-    {
-        $this->setData(self::LAST_ERROR, $lastError);
-        return $this;
-    }
-
-    public function getNextRetryAt(): string
-    {
-        return (string) $this->getData(self::NEXT_RETRY_AT);
-    }
-
-    public function setNextRetryAt(string $nextRetryAt): self
-    {
-        $this->setData(self::NEXT_RETRY_AT, $nextRetryAt);
         return $this;
     }
 
