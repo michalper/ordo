@@ -359,44 +359,51 @@ module's.
 
 | Scenario                                                                                                       | Status                                                                    |
 |------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
-| `send_webhook` action POSTs a signed JSON payload to the configured outbound URL                                 | ⬜ unit-tested (`SendWebhookTest`), no MFTF yet                            |
+| `send_webhook` action POSTs a signed JSON payload to the configured outbound URL                                 | 🔶 unit-tested (`SendWebhookTest`) + manually live-verified 2026-09-17 (outbound call, configured to point at this store's own `/ordo/webhook/receive`, actually reached it and was signature-accepted — see nginx access log evidence), no automated MFTF yet |
 | `send_webhook` action is skipped when webhooks are disabled, or no outbound URL/secret is configured             | ⬜ unit-tested (`SendWebhookTest`), no MFTF yet                            |
 | `send_webhook` action enqueues a retry (and rethrows on a retry attempt) on send failure, same as other channels | ⬜ unit-tested (`SendWebhookTest`), no MFTF yet                            |
-| `/ordo/webhook/receive` accepts a valid `X-Ordo-Signature` and dispatches the `webhook_received` trigger         | ⬜ unit-tested (`Controller\Webhook\ReceiveTest`), no MFTF yet             |
-| `/ordo/webhook/receive` rejects a missing/invalid signature with 401 without dispatching                        | ⬜ unit-tested (`Controller\Webhook\ReceiveTest`), no MFTF yet             |
+| `/ordo/webhook/receive` accepts a valid `X-Ordo-Signature` and dispatches the `webhook_received` trigger         | 🔶 unit-tested (`Controller\Webhook\ReceiveTest`) + manually live-verified 2026-09-17 (real HMAC-SHA256 signed POST against a live instance, confirmed dispatch reached a real campaign's action), no automated MFTF yet |
+| `/ordo/webhook/receive` rejects a missing/invalid signature with 401 without dispatching                        | 🔶 unit-tested (`Controller\Webhook\ReceiveTest`) + manually live-verified 2026-09-17 (real 401 response to a forged signature), no automated MFTF yet |
 | `WebhookSignatureValidator` HMAC-SHA256 sign/verify round-trip, tampered body and forged signature rejected      | ⬜ unit-tested (`WebhookSignatureValidatorTest`), no MFTF yet             |
 
 ## 23. Two-way SMS/WhatsApp conversations (`Model/Conversation/InboundMessageProcessor.php`, `Controller/Sms/Reply.php`, `Controller/WhatsApp/Webhook.php`, `Controller/Adminhtml/ConversationMessage/Index.php`)
 
 | Scenario                                                                                                       | Status                                                                    |
 |------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
-| `Controller\Sms\Reply` — X-Twilio-Signature rejection, valid signature delegates to `InboundMessageProcessor`, missing `From` returns invalid_payload | ⬜ unit-tested (`ReplyTest`), no MFTF yet |
+| `Controller\Sms\Reply` — X-Twilio-Signature rejection, valid signature delegates to `InboundMessageProcessor`, missing `From` returns invalid_payload | 🔶 unit-tested (`ReplyTest`) + manually live-verified 2026-09-17 (real Twilio-algorithm HMAC-SHA1 signature computed and posted against a live instance; forged signature correctly got a real 403), no automated MFTF yet |
 | `Controller\WhatsApp\Webhook` — inbound `messages` array entries are parsed and delegated to `InboundMessageProcessor` alongside the existing `statuses` handling | ⬜ unit-tested (`WebhookTest`), no MFTF yet |
-| `InboundMessageProcessor` — a STOP/UNSUBSCRIBE/CANCEL/END/QUIT reply (any case) revokes consent through `ConsentManager::setConsent()` for the resolved customer and channel — the compliance-critical path | ⬜ unit-tested (`InboundMessageProcessorTest`, one case per keyword and per channel), no MFTF yet |
-| `InboundMessageProcessor` — a STOP-keyword reply from an unresolvable phone number does NOT call `ConsentManager` but logs an error for manual follow-up | ⬜ unit-tested (`InboundMessageProcessorTest`), no MFTF yet |
-| `InboundMessageProcessor` — every inbound reply (STOP-keyword or not) is stored in `ordo_conversation_message` regardless of outcome | ⬜ unit-tested (`InboundMessageProcessorTest`), no MFTF yet |
+| `InboundMessageProcessor` — a STOP/UNSUBSCRIBE/CANCEL/END/QUIT reply (any case) revokes consent through `ConsentManager::setConsent()` for the resolved customer and channel — the compliance-critical path | 🔶 unit-tested (`InboundMessageProcessorTest`, one case per keyword and per channel) + manually live-verified 2026-09-17 for the SMS/STOP case (real signed POST against a live instance; `ordo_customer_consent`/`ordo_customer_consent_log` rows confirmed written with `source=stop_keyword`), no automated MFTF yet |
+| `InboundMessageProcessor` — a STOP-keyword reply from an unresolvable phone number does NOT call `ConsentManager` but logs an error for manual follow-up | 🔶 unit-tested (`InboundMessageProcessorTest`) + manually live-verified 2026-09-17 (real request from an unseeded phone number; confirmed no consent row was written and the documented error was actually logged), no automated MFTF yet |
+| `InboundMessageProcessor` — every inbound reply (STOP-keyword or not) is stored in `ordo_conversation_message` regardless of outcome | 🔶 unit-tested (`InboundMessageProcessorTest`) + manually live-verified 2026-09-17 (both the resolved and the unresolvable-number replies above were confirmed persisted), no automated MFTF yet |
 | "Conversations" admin grid (`ordo/conversationmessage/index`) renders `ordo_conversation_message` rows filterable by Customer | ⬜ not covered — no MFTF yet, real webhook delivery needed to seed data, same reasoning as `send_sms`'s own equivalent gap |
 
 ## 24. Price-drop & back-in-stock alerts (`Model/PriceWatch/`, `Controller/Track/RegisterPriceWatch.php`, `Cron/ScanPriceDropAlerts.php`, `Cron/ScanBackInStockAlerts.php`)
 
 | Scenario                                                                                                       | Status                                                                    |
 |------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
-| `/ordo/track/registerpricewatch` registers a customer/visitor watch, validates `product_id`/`watch_type`, rejects an unknown product | ⬜ unit-tested (`RegisterPriceWatchTest`), no MFTF yet |
+| `/ordo/track/registerpricewatch` registers a customer/visitor watch, validates `product_id`/`watch_type`, rejects an unknown product | 🔶 unit-tested (`RegisterPriceWatchTest`) + manually live-verified 2026-09-17 (real POST against a live instance, row confirmed in `ordo_price_watch_subscription`), no automated MFTF yet |
 | `PriceWatchSubscriptionManager::register()` is idempotent by identity + product + watch_type, refreshes the captured price/stock and clears `notified_at` on re-registration | ⬜ unit-tested (`PriceWatchSubscriptionManagerTest`), no MFTF yet |
-| `ScanPriceDropAlerts`/`ScanBackInStockAlerts` dispatch their trigger only on a real price decrease / false→true stock transition for a known customer, always refresh the row, never dispatch for a guest, and roll back the claim on a failed dispatch | ⬜ unit-tested (`ScanPriceDropAlertsTest`, `ScanBackInStockAlertsTest`), no MFTF yet |
+| `ScanPriceDropAlerts`/`ScanBackInStockAlerts` dispatch their trigger only on a real price decrease / false→true stock transition for a known customer, always refresh the row, never dispatch for a guest, and roll back the claim on a failed dispatch | 🔶 unit-tested (`ScanPriceDropAlertsTest`, `ScanBackInStockAlertsTest`) + manually live-verified 2026-09-17 (real price drop on a live instance detected by the real cron, claimed via `notified_at`, dispatched a real campaign whose `send_email` action actually delivered mail — confirmed in MailHog), no automated MFTF yet |
 
 ## 25. Predictive send-time optimization (`Model/Campaign/SendTimeOptimizer.php`, `Model/Campaign/SendTimeOptimizationGate.php`, `Model/Campaign/Action/SendEmail.php`)
 
 | Scenario                                                                                                       | Status                                                                    |
 |------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
-| `SendTimeOptimizer` returns `null` (no optimization) below the minimum sample size, and returns the histogram-mode hour once enough `ordo_message_log_event` data exists for a customer | ⬜ unit-tested (`SendTimeOptimizerTest`), no MFTF yet |
-| `SendTimeOptimizationGate` defers `send_email` via `CampaignDispatcher::deferActionUntil()` to the computed optimal hour when the feature is opted in via the action's `params` JSON and the hour differs meaningfully from now, otherwise proceeds immediately | ⬜ unit-tested (`SendTimeOptimizationGateTest`), no MFTF yet |
-| A deferred send still passes back through `QuietHoursGate` on resume, so an optimal-hour prediction landing inside the customer's quiet hours self-corrects rather than sending anyway | ⬜ unit-tested (via `SendEmailTest`'s gate-ordering coverage), no MFTF yet |
+| `SendTimeOptimizer` returns `null` (no optimization) below the minimum sample size, and returns the histogram-mode hour once enough `ordo_message_log_event` data exists for a customer | 🔶 unit-tested (`SendTimeOptimizerTest`) + manually live-verified 2026-09-17 (real seeded open/click history on a live instance, correctly resolved the customer's real timezone and picked the histogram-mode hour over a minority outlier), no automated MFTF yet |
+| `SendTimeOptimizationGate` defers `send_email` via `CampaignDispatcher::deferActionUntil()` to the computed optimal hour when the feature is opted in via the action's `params` JSON and the hour differs meaningfully from now, otherwise proceeds immediately | 🔶 unit-tested (`SendTimeOptimizationGateTest`) + manually live-verified 2026-09-17 (real dispatch against a live instance: deferred to the correct future UTC timestamp when the predicted hour hadn't arrived yet, and sent an actual, real email — confirmed in MailHog — once the predicted hour matched the current one), no automated MFTF yet |
+| A deferred send still passes back through `QuietHoursGate` on resume, so an optimal-hour prediction landing inside the customer's quiet hours self-corrects rather than sending anyway | 🔶 unit-tested (via `SendEmailTest`'s gate-ordering coverage) + manually live-verified 2026-09-17 (resuming a deferred action before its target hour correctly re-deferred rather than sending early, confirming the resume-time re-check), no automated MFTF yet |
 
 ## Suggested next batch (highest signal per test written)
 
 Empty — every scenario this list ever tracked is now ✅ (see the sections above), except section 22 (Webhook
 action/trigger), section 23 (Two-way SMS/WhatsApp conversations), section 24 (Price-drop & back-in-stock
 alerts), and section 25 (Predictive send-time optimization), added alongside their own features and not yet
-backed by MFTF. Re-populate further when a new gap is found (a newly added trigger/condition/action/
-controller/cron, or a re-audit catching something missed).
+backed by MFTF. Most rows in these four sections (🔶) were manually live-verified on 2026-09-17 against a
+real Magento instance (`ordo_test_php`/`ordo_test_db`) — real HTTP calls, real cron runs, real database rows,
+a real email actually delivered to MailHog for the price-drop/back-in-stock and predictive-send-time cases —
+after MFTF itself was found to have been silently broken (no run since 2026-09-10, ~week-long gap) and one
+real bug was found and fixed this way (unescaped table-comment apostrophes breaking `setup:upgrade` on a
+fresh install). 🔶 is real evidence but not automated regression coverage — a future code change could
+reintroduce the same bug with nothing to catch it. Still needs an actual MFTF test per row to close that gap
+for good. Re-populate further when a new gap is found (a newly added trigger/condition/action/controller/
+cron, or a re-audit catching something missed).
