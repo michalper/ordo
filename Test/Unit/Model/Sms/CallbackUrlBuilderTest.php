@@ -41,4 +41,24 @@ class CallbackUrlBuilderTest extends TestCase
             $builder->getSmsStatusCallbackUrl()
         );
     }
+
+    public function testAppendsReplyPathToBaseUrl(): void
+    {
+        $builder = $this->makeBuilder('https://example.com');
+
+        self::assertSame(
+            'https://example.com/ordo/sms/reply',
+            $builder->getSmsReplyUrl()
+        );
+    }
+
+    public function testStripsTrailingSlashFromBaseUrlForReplyUrl(): void
+    {
+        $builder = $this->makeBuilder('https://example.com/');
+
+        self::assertSame(
+            'https://example.com/ordo/sms/reply',
+            $builder->getSmsReplyUrl()
+        );
+    }
 }
