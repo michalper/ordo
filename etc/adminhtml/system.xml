@@ -477,6 +477,15 @@
                 </field>
             </group>
 
+            <group id="attribution" translate="label" type="text" sortOrder="165" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Multi-Touch Campaign Attribution</label>
+                <field id="window_days" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Attribution window (days)</label>
+                    <comment>How many days before an order Cron\ComputeCampaignAttribution looks back for campaign click-throughs (ordo_message_log_event) by the same customer. Every distinct campaign touched within this window shares equal credit for the order's revenue - see Model\Campaign\AttributionCalculator's own docblock. This is separate from, and additive to, the existing single-touch ordo_campaign_outcome_log conversion tracking.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                </field>
+            </group>
+
             <group id="frequency_cap" translate="label" type="text" sortOrder="170" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Frequency Cap (cross-channel)</label>
                 <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">

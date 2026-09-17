@@ -123,6 +123,17 @@
                 <label translate="true">Enabled</label>
             </settings>
         </column>
+        <!-- Multi-touch attribution reporting layer, additive to ordo_campaign_outcome_log's
+             existing single-touch conversion tracking - see Model/Campaign/AttributionCalculator's
+             docblock for the attribution model and Ui/Component/Listing/Column/
+             CampaignAttributedRevenue for why this differs from any conversion-based revenue. -->
+        <column name="attributed_revenue" class="Ordo\Automation\Ui\Component\Listing\Column\CampaignAttributedRevenue">
+            <settings>
+                <sortable>false</sortable>
+                <filter>false</filter>
+                <label translate="true">Attributed Revenue</label>
+            </settings>
+        </column>
         <column name="created_at" class="Magento\Ui\Component\Listing\Columns\Date">
             <settings>
                 <filter>dateRange</filter>
