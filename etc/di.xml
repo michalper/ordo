@@ -284,6 +284,17 @@
         </arguments>
     </type>
 
+    <!--
+        Same constructor-cycle shape as QuietHoursGate above (ActionPool -> SendEmail ->
+        SendTimeOptimizationGate -> CampaignDispatcher -> ActionPool) - same Proxy fix, for the
+        same reason.
+    -->
+    <type name="Ordo\Automation\Model\Campaign\SendTimeOptimizationGate">
+        <arguments>
+            <argument name="campaignDispatcher" xsi:type="object">Ordo\Automation\Model\CampaignDispatcher\Proxy</argument>
+        </arguments>
+    </type>
+
     <type name="Ordo\Automation\Model\Campaign\ActionPool">
         <arguments>
             <argument name="actions" xsi:type="array">

@@ -7,6 +7,18 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Predictive send-time optimization (ROADMAP.md "Candidate new features")** — `send_email`
+  campaign actions can now opt in (`"use_optimal_send_time": true` in that action's own `params`
+  JSON, default off — no behavior change for existing campaigns) to defer to each customer's own
+  historically-best email open/click hour instead of sending immediately.
+  - `Model\Campaign\SendTimeOptimizer` — histogram over `ordo_message_log_event`/`ordo_message_log`
+    (`channel = 'email'` only — the only channel with open/click timestamps), bucketed into the
+    customer's local hour via the existing `CustomerTimezoneResolver`; returns `null` (don't
+    optimize) below a minimum sample size.
+  - `Model\Campaign\SendTimeOptimizationGate` — same "defer via
+    `CampaignDispatcher::deferActionUntil()`" shape as `QuietHoursGate`, checked before it in
+    `Action\SendEmail` so a resumed attempt still re-checks quiet hours.
+
 - **Persisted per-subscription retry for send_push (ROADMAP.md "Communication channels")** —
   closes the last remaining gap in `SendRetrier`-exhausted sends: `send_email`/`send_sms`/
   `send_whatsapp` already got a persisted retry queue, `send_push` was deliberately excluded

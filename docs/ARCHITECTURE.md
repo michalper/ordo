@@ -55,6 +55,23 @@ Directory/class map for anyone working on the code. Not shipped documentation fo
 - `view/adminhtml/ui_component/` — `ordo_campaign_listing/form`, `ordo_reorder_cycle_listing`,
   `ordo_free_gift_offer_listing/form`
 
+## Send-time optimization
+
+- `Model/Campaign/SendTimeOptimizer.php` — histogram of a customer's own past email
+  opens/clicks (`ordo_message_log_event` joined to `ordo_message_log`, `channel = 'email'` only —
+  the only channel with open/click timestamps, via `Controller/Email/StatusCallback`'s SendGrid
+  webhook) bucketed into their local hour (`Model/Campaign/CustomerTimezoneResolver`); returns the
+  hour with the most events, or `null` below a minimum sample size (never delays a send for lack
+  of data)
+- `Model/Campaign/SendTimeOptimizationGate.php` — same "check, defer via
+  `CampaignDispatcher::deferActionUntil()`, return false" shape as `QuietHoursGate`; opt-in per
+  action via `"use_optimal_send_time": true` in that action's `params` JSON (same place
+  `send_email` already stores `template`/`message` — no new `ordo_campaign_action` column), so
+  existing campaigns are unaffected by default. Checked before `QuietHoursGate` in
+  `Action/SendEmail`; a resumed attempt re-checks both gates, so a predicted hour landing inside
+  quiet hours self-corrects via `QuietHoursGate`'s own re-defer rather than needing any
+  coordination between the two
+
 ## Segmentation
 
 - `Model/Segment.php`, `Model/SegmentCondition.php` — a segment's own condition rows (flat list,

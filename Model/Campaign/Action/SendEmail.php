@@ -12,6 +12,7 @@ use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
 use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
+use Ordo\Automation\Model\Campaign\SendTimeOptimizationGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Email\MessageIdGenerator;
@@ -29,6 +30,11 @@ use Psr\Log\LoggerInterface;
  * silently skips this action (not an error; skipping is the intended behavior). Also checks
  * FrequencyCapGate::allows() (opt-in, cross-channel) right after — a customer over the
  * configured contact-volume cap is skipped and recorded as suppressed, not sent.
+ *
+ * "use_optimal_send_time" (bool, default false) in `params` opts this specific action into
+ * SendTimeOptimizationGate — deferring to the customer's own historically-best email open/click
+ * hour instead of sending right now. Checked before QuietHoursGate (see that gate's own docblock
+ * for why no extra coordination is needed between the two).
  *
  * Writes to the same channel-generic ordo_message_log SendSms already writes to (see that
  * table's own db_schema.xml comment) — a per-send Message-ID header is queued via
@@ -52,6 +58,7 @@ class SendEmail implements ActionInterface
         private readonly StoreManagerInterface $storeManager,
         private readonly StateInterface $inlineTranslation,
         private readonly ConsentManager $consentManager,
+        private readonly SendTimeOptimizationGate $sendTimeOptimizationGate,
         private readonly QuietHoursGate $quietHoursGate,
         private readonly FrequencyCapGate $frequencyCapGate,
         private readonly MessageIdGenerator $messageIdGenerator,
@@ -86,6 +93,17 @@ class SendEmail implements ActionInterface
         }
 
         $actionId = (int) ($context['ordo_action_id'] ?? 0);
+        $useOptimalSendTime = (bool) ($params['use_optimal_send_time'] ?? false);
+        if (!$this->sendTimeOptimizationGate->allows(
+            $customerId,
+            $campaignId ?? 0,
+            $actionId,
+            $context,
+            $useOptimalSendTime
+        )) {
+            return;
+        }
+
         if (!$this->quietHoursGate->allows($customerId, $campaignId ?? 0, $actionId, $context)) {
             return;
         }

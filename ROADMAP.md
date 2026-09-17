@@ -86,10 +86,6 @@ exist in some form. Not prioritized against each other; listed for later scoping
 - **Price-drop & back-in-stock alerts** — customer/visitor opt-in on PDP, a cron watching catalog
   price/stock changes, two new trigger types through the existing `CampaignDispatcher` pipeline.
   Medium-large scope, primarily B2C.
-- **Predictive send-time optimization** — pick each customer's historically best send hour from existing
-  `ordo_message_log` open/click data and hold the action via the existing delayed-action/resume mechanism
-  (`Cron\RunScheduledCampaignActions`) instead of a fixed delay. Medium scope, fits both.
-
 ## Priorytet kolejnych kroków
 
 Kolejność uwzględnia wagę (błędy finansowe > dług niezawodności > UX > tematy zależne od

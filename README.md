@@ -49,6 +49,8 @@ Covers both classic B2C lifecycle automation and the B2B triggers most external 
 - Sales-rep signature on automated emails; a weekly digest groups inactive customers by rep.
 - Campaign engine — a "when X happens and Y is true, do Z" rule engine, with conditions/actions as
   `di.xml`-registered plug-ins and a full REST service contract.
+- Predictive send-time optimization — opt-in per `send_email` action, defers to each customer's own
+  historically-best email open/click hour (email-only: the only channel with open/click data).
 - On-site behavior tracking — a dependency-free JS snippet turning page/product/category views into campaign-engine
   tags.
 - Admin UI — dashboard, campaign builder (editable [Drawflow](https://github.com/jerosoler/Drawflow) trigger(s) →
