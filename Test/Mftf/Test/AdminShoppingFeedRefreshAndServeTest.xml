@@ -23,10 +23,13 @@
         </after>
 
         <!-- Step 1: the real, on-demand admin refresh - synchronous, unlike Cron\RefreshProductFeed's
-             own 6-hour schedule. -->
+             own 6-hour schedule. Controller/Adminhtml/ProductFeed/RefreshNow.php's actual success
+             message (confirmed via a real CI run) is "Product feeds refreshed for %1 store/format
+             combination(s): %2 product(s) total.", not "Shopping feed refreshed" - this test's own
+             assertion text had simply drifted from the controller's, a plain copy mismatch. -->
         <amOnPage url="admin/ordo/productfeed/refreshnow" stepKey="clickRefreshNow"/>
         <waitForPageLoad stepKey="waitForRefresh"/>
-        <see selector=".message-success" userInput="Shopping feed refreshed" stepKey="seeRefreshSuccessMessage"/>
+        <see selector=".message-success" userInput="Product feeds refreshed for" stepKey="seeRefreshSuccessMessage"/>
 
         <!-- Step 2: the real, public feed URL - the actual proof this test exists for. A real
              catalog product's SKU and name must appear in the served XML, not just that the

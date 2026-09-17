@@ -85,6 +85,12 @@
              only admin-UI path to CustomerTagManager::addTag() outside a campaign action itself. -->
         <amOnPage url="admin/ordo/segment/edit/entity_id/{$grabSegmentId}" stepKey="goToSegmentEditPage"/>
         <waitForPageLoad stepKey="waitForSegmentEditPage"/>
+        <!-- The bulk-actions panel is a collapsed-by-default <details> (BulkActions.phtml) - its
+             contents aren't visible to Selenium until the <summary> is clicked open, same step
+             AdminSegmentBulkActionAddTagTest.xml/AdminSegmentBulkActionAddPointsTest.xml already
+             use. Missing here caused waitForElementVisible to time out after 60s waiting for a
+             select that was actually present in the DOM but hidden inside the closed panel. -->
+        <click selector=".ordo-bulk-actions-panel summary" stepKey="expandBulkActionsPanel"/>
         <waitForElementVisible selector="#ordo-segment-bulk-action-type" stepKey="waitForBulkActionForm"/>
         <selectOption selector="#ordo-segment-bulk-action-type" userInput="add_tag" stepKey="selectAddTagAction"/>
         <fillField selector="#ordo-segment-bulk-tag" userInput="triggered-tag" stepKey="fillBulkTag"/>
