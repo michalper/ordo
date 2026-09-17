@@ -65,10 +65,6 @@ as bugs above, not repeated here)*
 Not gaps in something existing — genuinely new capabilities, proposed after checking they don't already
 exist in some form. Not prioritized against each other; listed for later scoping.
 
-- **Predictive send-time optimization** *(in progress)* — pick each customer's historically best send hour from
-  existing `ordo_message_log`/`ordo_message_log_event` open/click data and hold the action via the existing
-  `CampaignDispatcher::deferActionUntil()`/`Cron\RunScheduledCampaignActions` resume mechanism instead of a fixed
-  delay. Medium scope, fits both.
 - **Cross-channel fallback for cart abandonment** — if the abandoned-cart email goes unopened for N hours,
   fall back to SMS/WhatsApp instead of adding another email step; reuses the existing `send_sms`/`send_whatsapp`
   actions and `ordo_message_log` open data. Small-medium scope, B2C.
@@ -79,8 +75,16 @@ exist in some form. Not prioritized against each other; listed for later scoping
   granular consent per channel (email/SMS/WhatsApp/push), a common compliance requirement for multi-channel
   automation. Medium scope, shared foundation.
 - **A/B testing for campaign variants** — split traffic on a campaign action (e.g. two email variants) and
-  auto-pick a winner from `ordo_message_log` CTR data; pairs naturally with predictive send-time optimization
-  above. Medium-large scope, shared foundation.
+  auto-pick a winner from `ordo_message_log` CTR data; pairs naturally with predictive send-time optimization.
+  Medium-large scope, shared foundation.
+- **Local LLM (Ollama) content generation** — a `generate_ai_content` campaign action (or an extension of the
+  existing `Add Dynamic Content` action) that calls a self-hosted Ollama instance to personalize email subject/
+  body per customer from context already in the dispatch (tags, RFM/CLV, order history) — no data leaves the
+  store, consistent with this module's own "no external MA subscription" positioning. Same fail-soft posture as
+  every other send action (`Model/Ai/OllamaClient.php` mirroring `Model/Http/JsonApiClient.php`'s shape): a
+  timeout or unreachable Ollama falls back to static content rather than blocking the send, and outbound calls
+  go through the existing `OutboundRateLimiter` so a queue burst can't flood a local instance. Medium scope,
+  shared foundation.
 
 ## Priorytet kolejnych kroków
 
