@@ -29,7 +29,7 @@ class FrequencyCapGateTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testAllowsReturnsTrueAndTouchesNothingElseWhenUnderTheCap(): void
     {
-        $this->frequencyCapManager->method('hasCapacity')->with(42)->willReturn(true);
+        $this->frequencyCapManager->expects(self::once())->method('hasCapacity')->with(42)->willReturn(true);
 
         $this->logger->expects(self::never())->method('info');
         $this->messageLogWriter->expects(self::never())->method('recordSuppressed');
@@ -39,7 +39,7 @@ class FrequencyCapGateTest extends TestCase
 
     public function testAllowsReturnsFalseLogsAndRecordsSuppressedWhenOverTheCap(): void
     {
-        $this->frequencyCapManager->method('hasCapacity')->with(42)->willReturn(false);
+        $this->frequencyCapManager->expects(self::once())->method('hasCapacity')->with(42)->willReturn(false);
 
         $this->logger->expects(self::once())->method('info')->with(self::stringContains('send_sms'));
         $this->messageLogWriter->expects(self::once())->method('recordSuppressed')
@@ -51,7 +51,7 @@ class FrequencyCapGateTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testAllowsPassesCampaignIdAndVariantThroughToRecordSuppressed(): void
     {
-        $this->frequencyCapManager->method('hasCapacity')->with(42)->willReturn(false);
+        $this->frequencyCapManager->expects(self::once())->method('hasCapacity')->with(42)->willReturn(false);
 
         $this->messageLogWriter->expects(self::once())->method('recordSuppressed')
             ->with('sms', 42, '+15551234567', 5, 'b');

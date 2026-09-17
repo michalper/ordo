@@ -66,7 +66,7 @@ class ReorderReminderSenderTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testSendNowThrowsOptedOutExceptionWithoutClaimingOrSendingWhenNoConsent(): void
     {
-        $this->consentManager->method('hasConsent')->with(7, ConsentChannel::Email)->willReturn(false);
+        $this->consentManager->expects(self::once())->method('hasConsent')->with(7, ConsentChannel::Email)->willReturn(false);
 
         $this->reminderLogStore->expects(self::never())->method('insert');
         $this->emailSender->expects(self::never())->method('send');

@@ -171,7 +171,7 @@ class DashboardViewModelTest extends TestCase
         $campaignCollectionFactory->method('create')->willReturn($collection);
 
         $cache = $this->createMock(CacheInterface::class);
-        $cache->method('load')->with('ordo_dashboard_count_total_campaign')->willReturn('9');
+        $cache->expects(self::once())->method('load')->with('ordo_dashboard_count_total_campaign')->willReturn('9');
         $cache->expects(self::never())->method('save');
 
         $viewModel = $this->makeViewModel($campaignCollectionFactory, cache: $cache);
@@ -188,7 +188,7 @@ class DashboardViewModelTest extends TestCase
         $campaignCollectionFactory->method('create')->willReturn($collection);
 
         $cache = $this->createMock(CacheInterface::class);
-        $cache->method('load')->with('ordo_dashboard_count_total_campaign')->willReturn(false);
+        $cache->expects(self::once())->method('load')->with('ordo_dashboard_count_total_campaign')->willReturn(false);
         $cache->expects(self::once())->method('save')->with('3', 'ordo_dashboard_count_total_campaign', [], 60);
 
         $viewModel = $this->makeViewModel($campaignCollectionFactory, cache: $cache);

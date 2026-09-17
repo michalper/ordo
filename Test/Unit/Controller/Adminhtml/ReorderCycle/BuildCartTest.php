@@ -95,7 +95,7 @@ class BuildCartTest extends AbstractAdminActionTestCase
         $this->reorderCycleFactory->method('create')->willReturn($cycle);
 
         $customer = $this->createStub(CustomerInterface::class);
-        $this->customerRepository->method('getById')->with(7)->willReturn($customer);
+        $this->customerRepository->expects(self::once())->method('getById')->with(7)->willReturn($customer);
 
         $this->reorderCartBuilder->expects(self::once())->method('build')->with($cycle, $customer);
         $this->messageManager->expects(self::once())->method('addSuccessMessage');
