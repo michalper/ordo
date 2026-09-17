@@ -51,9 +51,8 @@ class SendTimeOptimizer
 
         $histogram = array_fill(0, 24, 0);
         foreach ($eventTimestamps as $timestampUtc) {
-            $localHour = (int) (new \DateTimeImmutable($timestampUtc, new \DateTimeZone('UTC')))
-                ->setTimezone($timezone)
-                ->format('G');
+            $dateTime = new \DateTimeImmutable($timestampUtc, new \DateTimeZone('UTC'));
+            $localHour = (int) $dateTime->setTimezone($timezone)->format('G');
             $histogram[$localHour]++;
         }
 
@@ -90,6 +89,6 @@ class SendTimeOptimizer
                 ->where('ml.customer_id = ?', $customerId)
         );
 
-        return array_map('strval', $rows);
+        return array_map(static fn ($value): string => (string)$value, $rows);
     }
 }
