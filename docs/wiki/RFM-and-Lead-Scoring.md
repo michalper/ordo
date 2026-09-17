@@ -2,96 +2,72 @@
 
 # Polski
 
-# RFM i lead scoring
+# RFM i punktacja leadów
 
-## Raport RFM
+## Raport RFM — kto jest Twoim najlepszym klientem
 
-**Ordo Automation → Dashboard → Raport RFM** (`ordo/rfm/index`, `Controller/Adminhtml/Rfm/
-Index.php`, własny, dedykowany zasób ACL `Ordo_Automation::rfm`, niezależny od uprawnień do
-segmentów). Siatka pokazuje status Recency/Frequency/Monetary dla każdego klienta, który złożył
-co najmniej jedno zamówienie — kolumny R/F/M Quintile rankingują klientów od 1 (najniższy) do 5
-(najwyższy) względem siebie nawzajem, plus kolumna "Qualifies For" pokazująca, do których
-segmentów bieżący status klienta go kwalifikuje.
+RFM to trzy wymiary, po których ranking klientów: **R**ecency (jak niedawno kupował), **F**requency
+(jak często kupuje) i **M**onetary (ile wydaje). Każdy klient dostaje ranking 1-5 w każdym z tych
+trzech wymiarów, porównując go z resztą Twoich klientów — 5 zawsze oznacza "najlepszy". Klient
+5/5/5 kupił niedawno, kupuje często i wydaje najwięcej — to Twój najcenniejszy odbiorca.
 
 ![Raport RFM](images/rfm-report.png)
 
-Kalkulator: `Model/Rfm/RfmCalculator.php` — `getRecencyDays`, `getFrequency`,
-`getMonetaryTotal`, `getPercentileRanks()` (wzór percentyla udokumentowany w kodzie: `liczba
-klientów z metryką ≤ metryka(c) / N * 100`, odwrócony dla recency, żeby 100 zawsze oznaczało
-"najlepszy"). Wyniki cache'owane w ramach żądania plus TTL (`PERCENTILE_CACHE_TTL_SECONDS`).
-Nocny cron `Cron/RecomputeRfmScores.php` odświeża dane zasilające trzy warunki segmentowe RFM
-(`recency_percentile_at_least`, `order_frequency_percentile_at_least`,
-`monetary_percentile_at_least`).
+Kolumna "Kwalifikuje się do" pokazuje, do jakich segmentów dany klient aktualnie pasuje na
+podstawie tego rankingu. Dane odświeżają się automatycznie co noc, więc ranking zawsze odzwierciedla
+najświeższe zachowanie klientów.
 
-`MassDelete.php` na tym ekranie **nie usuwa klientów** — resetuje cache'owane wiersze
-`ordo_customer_rfm_score` przez `RfmCalculator::resetScoresForCustomers()`; kolejny przebieg
-crona odtwarza je od nowa.
+Jeśli klient nagle przestanie kupować (np. był 5/5/5, a teraz jego Recency spadnie), to świetny
+sygnał do kampanii win-back, zanim odejdzie na dobre.
 
-## Lead scoring — reguły punktacji
+## Punktacja leadów (Reguły punktacji)
 
-**Ordo Automation → Dashboard → Reguły punktacji** (`ordo/scorerule/index`, kontrolery
-`Controller/Adminhtml/ScoreRule/*` dziedziczące po `AbstractScoreRuleAction`, zasób ACL
-`Ordo_Automation::score_rules`).
+Osobny mechanizm: przypisujesz punkty do konkretnych cech klienta (np. "klient z grupy Hurtownicy
+= +80 punktów"). Wszystkie pasujące reguły sumują się w jeden, bieżący wynik klienta. Gdy wynik
+przekroczy ustawiony próg, może automatycznie odpalić kampanię (np. powiadomienie dla handlowca
+o gorącym leadzie).
 
 ![Siatka reguł punktacji](images/score-rules-grid.png)
 
-Formularz (`view/adminhtml/ui_component/ordo_scorerule_form.xml`): Atrybut, Operator, Wartość,
-Punkty, Kolejność sortowania, Włączona (źródło operatorów:
-`Model/Config/Source/ScoreRuleOperator.php`). Modele: `Model/ScoreRule.php`,
-`Model/ScoreRule/ScoreRuleEvaluator.php` — dopasowuje standardowe gettery `CustomerInterface`
-(np. `group_id`) oraz własne atrybuty EAV; `Model/CustomerScoreManager.php` trzyma bieżący stan
-wyniku. Obserwatory: `EvaluateCustomerScoreRules.php` przelicza wynik przy istotnych zdarzeniach
-klienta; `DispatchScoreThresholdCampaigns.php` wyzwala trigger kampanii
-`score_threshold_crossed`.
+Każda reguła to: atrybut klienta, operator (równa się / nie równa się / zawiera), wartość, i ile
+punktów przyznać przy dopasowaniu. Punkty mogą być też ujemne, jeśli chcesz coś odejmować.
 
-Konfiguracja: **Stores → Configuration → Ordo Automation → Lead Scoring** (grupa
-`lead_scoring`) — `enabled`, `score_threshold`, `loyalty_silver_threshold`,
-`loyalty_gold_threshold`.
+Konfiguracja progu, oraz progów dla poziomów lojalności (Silver/Gold), znajduje się w **Sklepy →
+Konfiguracja → Ordo Automation → Lead Scoring**.
 
 ---
 
 # English
 
-# RFM and Lead Scoring
+# RFM & Lead Scoring
 
-## RFM Report
+## RFM Report — who your best customers are
 
-**Ordo Automation → Dashboard → RFM Report** (`ordo/rfm/index`, `Controller/Adminhtml/Rfm/
-Index.php`, its own dedicated ACL resource `Ordo_Automation::rfm`, independent of the segments
-permission). The grid shows Recency/Frequency/Monetary standing for every customer who has placed
-at least one order — R/F/M Quintile columns rank customers 1 (lowest) to 5 (highest) against each
-other, plus a "Qualifies For" column showing which segments a customer's current standing puts
-them in.
+RFM ranks customers along three dimensions: **R**ecency (how recently they ordered), **F**requency
+(how often they order), and **M**onetary (how much they spend). Every customer gets a 1-5 rank in
+each dimension, relative to the rest of your customers — 5 always means "best." A 5/5/5 customer
+ordered recently, orders often, and spends the most — your most valuable customer.
 
 ![RFM Report](images/rfm-report.png)
 
-Calculator: `Model/Rfm/RfmCalculator.php` — `getRecencyDays`, `getFrequency`,
-`getMonetaryTotal`, `getPercentileRanks()` (percentile formula documented in code:
-`count(customers with metric ≤ metric(c)) / N * 100`, inverted for recency so 100 is always
-"best"). Cached in-request plus a TTL constant (`PERCENTILE_CACHE_TTL_SECONDS`). A nightly cron
-(`Cron/RecomputeRfmScores.php`) refreshes the data feeding the three RFM segment condition types
-(`recency_percentile_at_least`, `order_frequency_percentile_at_least`,
-`monetary_percentile_at_least`).
+The "Qualifies For" column shows which segments a customer currently matches based on this
+ranking. Data refreshes automatically overnight, so the ranking always reflects the freshest
+customer behavior.
 
-`MassDelete.php` on this screen does **not** delete customers — it resets cached
-`ordo_customer_rfm_score` rows via `RfmCalculator::resetScoresForCustomers()`; the next cron
-recompute repopulates them.
+If a customer suddenly stops ordering (say they were 5/5/5 and their Recency rank drops), that's a
+great signal for a win-back campaign before they're gone for good.
 
-## Lead scoring — Score Rules
+## Lead Scoring (Score Rules)
 
-**Ordo Automation → Dashboard → Score Rules** (`ordo/scorerule/index`, controllers
-`Controller/Adminhtml/ScoreRule/*` extending `AbstractScoreRuleAction`, ACL resource
-`Ordo_Automation::score_rules`).
+A separate mechanism: you assign points to specific customer traits (e.g. "customer in the
+Wholesale group = +80 points"). Every matching rule adds up into one running score per customer.
+Once a score crosses a configured threshold, it can automatically fire a campaign (e.g. notifying
+a sales rep about a hot lead).
 
 ![Score Rules grid](images/score-rules-grid.png)
 
-Form (`view/adminhtml/ui_component/ordo_scorerule_form.xml`): Attribute, Operator, Value, Points,
-Sort Order, Enabled (operator source: `Model/Config/Source/ScoreRuleOperator.php`). Models:
-`Model/ScoreRule.php`, `Model/ScoreRule/ScoreRuleEvaluator.php` — matches core
-`CustomerInterface` getters (e.g. `group_id`) plus EAV custom attributes;
-`Model/CustomerScoreManager.php` holds the running score state. Observers:
-`EvaluateCustomerScoreRules.php` recomputes on relevant customer events;
-`DispatchScoreThresholdCampaigns.php` fires the `score_threshold_crossed` campaign trigger.
+Each rule is: a customer attribute, an operator (equals / not equals / contains), a value, and how
+many points to award on a match. Points can also be negative if you want to subtract.
 
-Config: **Stores → Configuration → Ordo Automation → Lead Scoring** (`lead_scoring` group) —
-`enabled`, `score_threshold`, `loyalty_silver_threshold`, `loyalty_gold_threshold`.
+The threshold, along with the thresholds for loyalty tiers (Silver/Gold), lives under **Stores →
+Configuration → Ordo Automation → Lead Scoring**.

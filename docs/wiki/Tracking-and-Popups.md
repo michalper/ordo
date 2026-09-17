@@ -2,57 +2,44 @@
 
 # Polski
 
-# Śledzenie zachowań on-site i popupy
+# Śledzenie zachowań i popupy
 
-## Snippet śledzący
+Niewielki skrypt na Twojej witrynie zauważa, co klienci oglądają — jakie produkty, jakie
+kategorie, w co klikają — i zamienia to w tagi, których możesz użyć w segmentach i kampaniach.
+Nic nie trzeba instalować osobno, wystarczy włączyć w konfiguracji.
 
-Punkt końcowy: `Controller/Track/Event.php` (publiczny, zwolniony z CSRF).
-`Model/VisitorEventLogger.php` zapisuje `ordo_visitor_event` i wyzwala
-`Model/VisitorAggregator.php` (surowe zdarzenia → tagi `ordo_customer_tag` przy przekroczeniu
-progu), gdy tożsamość jest już znana.
+## Automatyczne tagowanie po zachowaniu
 
-Snippet: `view/frontend/web/js/tracker.js` — bez zależności, zwykły tag `<script>`, cookie
-`ordo_visitor_id` (365 dni). Zawsze wysyła `page_view` przy ładowaniu; wysyłanie
-`product_view`/`category_view`/kliknięć elementów wymaga, żeby motyw wywołał
-`window.ordoTrack(eventType, eventKey)` (brak automatycznego wykrywania typu strony).
+Gdy klient obejrzy ten sam produkt (albo kliknie w ten sam element) określoną liczbę razy, dostaje
+automatyczny tag — np. "obejrzał produkt X 3 razy, ale nie kupił". Ten tag możesz potem użyć jako
+warunek w kampanii, np. do wysłania przypomnienia albo rabatu.
 
-## Popupy — prawdziwa funkcja, nie tylko śledzenie
+Progi (ile wyświetleń/kliknięć wystarczy) ustawiasz w konfiguracji.
 
-Akcja kampanii `popup` (etykieta "Show Popup", klasa `Model/Campaign/Action/ShowPopup.php`) nie
-wypycha niczego synchronicznie — kolejkuje wiersz w `ordo_pending_popup`
-(`Model/PendingPopup.php`), a `tracker.js` odpytuje `Controller/Track/Popup.php`
-(`POPUP_ENDPOINT = /ordo/track/popup`), żeby pobrać i wyrenderować popup (element
-`ordo-popup-banner`). Parametry: `{"headline","body","cta_label","cta_url"}`. Ograniczone
-częstotliwością (cichy brak działania, jeśli cel już otrzymał popup w skonfigurowanym oknie).
+## Popupy, powiadomienia i ankiety — jako akcje kampanii
 
-Powiązane, oparte na tym samym mechanizmie odpytywania:
+To nie jest osobny system popupów — to trzy dodatkowe akcje dostępne w kreatorze kampanii (patrz
+[Kampanie](Campaigns)):
 
-- **Trwałe powiadomienia** — akcja `notify`, `/ordo/track/notification` +
-  `/ordo/track/dismissnotification`. W przeciwieństwie do popupu (jednorazowy), baner
-  niemodalny, widoczny na kolejnych stronach aż klient go odrzuci lub wygaśnie.
-- **Ankieta NPS/satysfakcji** — akcja `nps_survey`, `/ordo/track/survey` +
-  `/ordo/track/submitsurveyresponse`. Jedno pytanie 0–10.
+- **Popup** — jednorazowe okienko na stronie, np. "Wróć do koszyka i skończ zamówienie".
+- **Trwałe powiadomienie** — w odróżnieniu od popupu, zostaje widoczne na kolejnych stronach,
+  dopóki klient go nie zamknie albo nie wygaśnie.
+- **Ankieta NPS/satysfakcji** — proste pytanie z oceną 0-10, np. po zamówieniu.
 
-Wszystkie trzy sprzątane przez dedykowane crony: `PrunePendingPopups`, `PruneNotifications`,
-`PruneSurveyPrompts`, `PruneVisitorEvents`.
+Każda z tych akcji ma własny limit częstotliwości, żeby nie zasypać tego samego klienta kilkoma
+popupami naraz.
 
 ## Konfiguracja
 
-**Stores → Configuration → Ordo Automation → On-Site Behavior Tracking** (grupa `tracking`):
-`enabled` (kontroluje, czy snippet `tracker.js` w ogóle się renderuje — `view/frontend/layout/
-default.xml` dodaje blok tylko przy włączonej opcji — i czy endpoint `/ordo/track/event` w ogóle
-coś zapisuje), `view_threshold` (tag po tylu wyświetleniach tego samego produktu),
-`click_threshold` (tag po tylu kliknięciach śledzonego elementu), `retention_days` (usuwaj surowe
-zdarzenia starsze niż tyle dni — tylko surowe zdarzenia są czyszczone, wyprowadzone z nich tagi
-zostają na stałe), `popup_enabled`, `popup_poll_interval_seconds`, `popup_frequency_cap_hours`,
-`notification_enabled`, `notification_poll_interval_seconds`, `nps_survey_enabled`,
-`nps_survey_poll_interval_seconds`.
-
 ![Konfiguracja śledzenia on-site](images/tracking-config.png)
 
-Powyższy zrzut to rzeczywisty ekran konfiguracji (domyślny zakres): śledzenie włączone, popupy /
-powiadomienia / ankieta NPS domyślnie wyłączone, z opisami pól widocznymi pod każdym polem —
-dokładnie tak, jak je odczytano z `system.xml`.
+**Sklepy → Konfiguracja → Ordo Automation → On-Site Behavior Tracking**:
+- **Włączone** — główny przełącznik śledzenia; bez niego nic się nie zbiera.
+- **Próg wyświetleń** — ile razy trzeba obejrzeć ten sam produkt, żeby dostać tag.
+- **Próg kliknięć** — analogicznie dla kliknięć.
+- **Retencja danych** — po ilu dniach usuwać surowe zdarzenia (same tagi, już wyliczone, zostają
+  na stałe — czyszczone są tylko surowe logi zdarzeń, dla oszczędności miejsca).
+- Osobne przełączniki i interwały odpytywania dla popupów, powiadomień i ankiety NPS.
 
 ---
 
@@ -60,51 +47,39 @@ dokładnie tak, jak je odczytano z `system.xml`.
 
 # On-Site Behavior Tracking and Popups
 
-## Tracking snippet
+A small script on your storefront notices what customers browse — which products, which
+categories, what they click — and turns that into tags you can use in segments and campaigns.
+Nothing extra to install, just turn it on in configuration.
 
-Endpoint: `Controller/Track/Event.php` (public, CSRF-exempt). `Model/VisitorEventLogger.php`
-writes `ordo_visitor_event` and triggers `Model/VisitorAggregator.php` (raw events → threshold-
-crossing `ordo_customer_tag` tags) once identity is known.
+## Automatic tagging from behavior
 
-Snippet: `view/frontend/web/js/tracker.js` — dependency-free, a plain `<script>` tag, cookie
-`ordo_visitor_id` (365 days). Always fires `page_view` on load; firing
-`product_view`/`category_view`/element clicks requires the theme to call
-`window.ordoTrack(eventType, eventKey)` (no automatic page-type detection).
+When a customer views the same product (or clicks the same element) a set number of times, they
+get an automatic tag — e.g. "viewed product X 3 times without buying." You can then use that tag
+as a campaign condition, say to send a reminder or a discount.
 
-## Popups — a real feature, not just tracking
+The thresholds (how many views/clicks are enough) are set in configuration.
 
-Campaign action `popup` (label "Show Popup", class `Model/Campaign/Action/ShowPopup.php`) doesn't
-push anything synchronously — it queues a row in `ordo_pending_popup`
-(`Model/PendingPopup.php`), and `tracker.js` polls `Controller/Track/Popup.php`
-(`POPUP_ENDPOINT = /ordo/track/popup`) to fetch and render it (`ordo-popup-banner` element).
-Params: `{"headline","body","cta_label","cta_url"}`. Frequency-capped (silent no-op if the target
-already got a popup within the configured window).
+## Popups, notifications, and surveys — as campaign actions
 
-Related, built on the same polling mechanism:
+This isn't a separate popup system — it's three extra actions available in the campaign builder
+(see [Campaigns](Campaigns)):
 
-- **Persistent notifications** — the `notify` action, `/ordo/track/notification` +
-  `/ordo/track/dismissnotification`. Unlike "Show Popup" (one-shot), a non-modal banner stays
-  visible across page loads until the visitor/customer dismisses it or it expires.
-- **NPS/satisfaction survey** — the `nps_survey` action, `/ordo/track/survey` +
-  `/ordo/track/submitsurveyresponse`. A single 0–10 question.
+- **Popup** — a one-time on-page banner, e.g. "Come back and finish your order."
+- **Persistent notification** — unlike a popup, this stays visible across page loads until the
+  customer dismisses it or it expires.
+- **NPS/satisfaction survey** — a simple 0-10 rating question, e.g. after an order.
 
-All three are pruned by dedicated crons: `PrunePendingPopups`, `PruneNotifications`,
-`PruneSurveyPrompts`, `PruneVisitorEvents`.
+Each of these has its own frequency cap, so the same customer isn't flooded with several popups at
+once.
 
 ## Configuration
 
-**Stores → Configuration → Ordo Automation → On-Site Behavior Tracking** (`tracking` group):
-`enabled` (controls whether the `tracker.js` snippet renders at all —
-`view/frontend/layout/default.xml` only adds the block when enabled — and whether the
-`/ordo/track/event` endpoint stores anything it receives), `view_threshold` (tag a customer after
-this many views of the same item), `click_threshold` (tag after this many clicks on the same
-tracked element), `retention_days` (delete raw events older than this many days — only raw events
-are pruned, tags already derived from them stay permanently), `popup_enabled`,
-`popup_poll_interval_seconds`, `popup_frequency_cap_hours`, `notification_enabled`,
-`notification_poll_interval_seconds`, `nps_survey_enabled`, `nps_survey_poll_interval_seconds`.
-
 ![On-site tracking configuration](images/tracking-config.png)
 
-The screenshot above is the real configuration screen (default scope): tracking enabled, popups /
-notifications / NPS survey off by default, with field descriptions visible under each field —
-exactly as read from `system.xml`.
+**Stores → Configuration → Ordo Automation → On-Site Behavior Tracking**:
+- **Enabled** — the master tracking switch; nothing is collected without it.
+- **View threshold** — how many views of the same product earn a tag.
+- **Click threshold** — same idea, for clicks.
+- **Data retention** — after how many days raw events are deleted (the tags already derived from
+  them stay permanently — only the raw event log is cleaned up, to save space).
+- Separate on/off switches and polling intervals for popups, notifications, and the NPS survey.

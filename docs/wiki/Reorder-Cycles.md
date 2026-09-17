@@ -4,46 +4,37 @@
 
 # Cykle ponownych zakupów
 
-**Ordo Automation → Dashboard → Reorder Cycles** (`ordo/reordercycle/index`,
-`Controller/Adminhtml/ReorderCycle/Index.php`, własny, dedykowany zasób ACL
-`Ordo_Automation::reorder_cycle`, niezależny od zasobu kampanii). Ekran jest w kodzie wprost
-opisany jako **diagnostyka tylko do odczytu** — nie da się edytować ani usunąć samego wykrycia
-wzorca, jedynie zbiorczo usunąć wiersze siatki oraz wywołać dwie akcje wierszowe.
+Ta funkcja obserwuje historię zamówień klienta i sama wykrywa, że kupuje dany produkt regularnie —
+np. co 30 dni zamawia ten sam odżywczy suplement. Gdy zbliża się przewidywana data kolejnego
+zamówienia, klient dostaje przypomnienie, zanim sam sobie o tym przypomni (albo kupi u
+konkurencji).
+
+To ekran wyłącznie do podglądu — nie edytujesz tu ręcznie wykrytych wzorców, tylko widzisz co
+system ustalił i możesz zareagować.
 
 ## Siatka
 
-Kolumny (`view/adminhtml/ui_component/ordo_reorder_cycle_listing.xml`): ID, Customer, Email,
-Product, SKU, Avg. Interval (days), Last Order, Next Expected, Orders Considered, Reminders Sent,
-Last Reminder Sent, Reordered?, Last Recalculated. Przycisk paska narzędzi: "Back to Dashboard".
-
 ![Siatka cykli ponownych zakupów](images/reorder-cycles-grid.png)
 
-Powyższy zrzut pokazuje rzeczywisty wykryty wzorzec: średni odstęp 10 dni, 3 wzięte pod uwagę
-zamówienia, 1 wysłane przypomnienie, jeszcze bez ponownego zakupu.
+Dla każdego klienta i produktu widzisz: średni odstęp między zamówieniami (w dniach), datę
+ostatniego zamówienia, przewidywaną datę następnego, ile zamówień system wziął pod uwagę przy
+wyliczeniu, i czy przypomnienie już zostało wysłane oraz czy klient faktycznie zamówił ponownie.
 
-## Akcje wierszowe
+Przykład z prawdziwych danych: klient zamawiający co 10 dni, na podstawie 3 poprzednich zamówień,
+z jednym wysłanym przypomnieniem, jeszcze bez ponownego zakupu.
 
-`Ui/Component/Listing/Column/ReorderCycleActions.php` dodaje dwie akcje z oknem potwierdzenia:
+## Co możesz zrobić z poziomu siatki
 
-- **Send Reminder Now** (`send_reminder`) — kontroler
-  `Controller/Adminhtml/ReorderCycle/SendReminder.php`.
-- **Build Cart** (`build_cart`) — kontroler `Controller/Adminhtml/ReorderCycle/BuildCart.php`,
-  używa `Model/ReorderCycle/ReorderCartBuilder.php`, który ponownie wykorzystuje standardowe
-  `Backend\Model\Session\Quote` + `Sales\Model\AdminOrder\Create` Magento (ta sama ścieżka, którą
-  przechodzi sprzedawca budujący zamówienie ręcznie) — ustawia klienta/sklep na współdzielonej
-  sesji admina, dodaje produkt reorder i przekierowuje do prawdziwego ekranu "Create New Order"
-  już wypełnionego danymi.
+- **Wyślij przypomnienie teraz** — nie czekasz na automatyczny harmonogram, wysyłasz od ręki.
+- **Zbuduj koszyk** — jednym kliknięciem tworzysz dla tego klienta gotowe zamówienie z produktem,
+  który zwykle kupuje, i przechodzisz od razu do ekranu tworzenia zamówienia w jego imieniu
+  (przydatne dla obsługi klienta/handlowców przy zamówieniach telefonicznych).
 
-Osobno: `Controller/Adminhtml/ReorderCycle/RecalculateNow.php`.
+## Konfiguracja
 
-## Wykrywanie i przypomnienia
-
-Wykrywanie: `Cron/CalculateReorderCycle.php`, zasila `Model/ReorderCycle.php`. Wysyłka
-przypomnień: `Cron/SendReorderReminders.php`.
-
-Konfiguracja: **Stores → Configuration → Ordo Automation → Reorder Reminder** (grupa `reorder`)
-— `enabled`, `min_orders` (minimalna liczba zamówień do wykrycia wzorca), `lead_days` (wyślij
-przypomnienie tyle dni przed oczekiwaną datą).
+**Sklepy → Konfiguracja → Ordo Automation → Reorder Reminder**: minimalna liczba zamówień
+potrzebna, żeby system w ogóle rozpoznał wzorzec, oraz ile dni przed przewidywaną datą wysłać
+przypomnienie.
 
 ---
 
@@ -51,42 +42,34 @@ przypomnienie tyle dni przed oczekiwaną datą).
 
 # Reorder Cycles
 
-**Ordo Automation → Dashboard → Reorder Cycles** (`ordo/reordercycle/index`,
-`Controller/Adminhtml/ReorderCycle/Index.php`, its own dedicated ACL resource
-`Ordo_Automation::reorder_cycle`, independent of the campaigns resource). The screen is
-explicitly documented in code as a **read-only diagnostic** — no editing or deleting the
-underlying detection itself, only a mass "Delete" on the grid rows and two row actions.
+This feature watches a customer's order history and detects on its own that they buy a given
+product on a regular schedule — e.g. reordering the same supplement every 30 days. As the
+predicted next-order date approaches, the customer gets a reminder before they think to reorder
+themselves (or buy from a competitor instead).
+
+This screen is read-only — you don't manually edit the detected pattern, you see what the system
+found and can act on it.
 
 ## Grid
 
-Columns (`view/adminhtml/ui_component/ordo_reorder_cycle_listing.xml`): ID, Customer, Email,
-Product, SKU, Avg. Interval (days), Last Order, Next Expected, Orders Considered, Reminders Sent,
-Last Reminder Sent, Reordered?, Last Recalculated. Toolbar button: "Back to Dashboard".
-
 ![Reorder Cycles grid](images/reorder-cycles-grid.png)
 
-The screenshot above shows a real detected pattern: 10-day average interval, 3 orders considered,
-1 reminder sent, not yet reordered.
+For each customer and product you see: the average interval between orders (in days), the date of
+their last order, the predicted next date, how many past orders the system used to calculate this,
+and whether a reminder has already been sent and whether the customer actually reordered.
 
-## Row actions
+Example from real data: a customer reordering every 10 days, based on their 3 most recent orders,
+with one reminder already sent and no reorder yet.
 
-`Ui/Component/Listing/Column/ReorderCycleActions.php` adds two confirm-dialog actions:
+## What you can do from the grid
 
-- **Send Reminder Now** (`send_reminder`) — controller
-  `Controller/Adminhtml/ReorderCycle/SendReminder.php`.
-- **Build Cart** (`build_cart`) — controller `Controller/Adminhtml/ReorderCycle/BuildCart.php`,
-  using `Model/ReorderCycle/ReorderCartBuilder.php`, which reuses Magento's own
-  `Backend\Model\Session\Quote` + `Sales\Model\AdminOrder\Create` (the same path a merchant takes
-  building an order by hand) — sets customer/store on the shared admin session, adds the reorder
-  product, and redirects into the real "Create New Order" screen already populated.
+- **Send Reminder Now** — skip the automatic schedule and send one immediately.
+- **Build Cart** — one click creates a ready-made order for this customer with the product they
+  usually buy, and takes you straight to the order-creation screen on their behalf (handy for
+  customer service or sales reps handling phone orders).
 
-Separately: `Controller/Adminhtml/ReorderCycle/RecalculateNow.php`.
+## Configuration
 
-## Detection and reminders
-
-Detection: `Cron/CalculateReorderCycle.php` populates `Model/ReorderCycle.php`. Reminder sending:
-`Cron/SendReorderReminders.php`.
-
-Config: **Stores → Configuration → Ordo Automation → Reorder Reminder** (`reorder` group) —
-`enabled`, `min_orders` (minimum orders to detect a pattern), `lead_days` (send N days before
-expected date).
+**Stores → Configuration → Ordo Automation → Reorder Reminder**: the minimum number of orders
+needed before the system will recognize a pattern at all, and how many days before the predicted
+date to send the reminder.

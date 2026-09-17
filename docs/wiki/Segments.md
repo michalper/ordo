@@ -4,49 +4,32 @@
 
 # Segmenty
 
-**Ordo Automation → Dashboard → Segmenty** (`ordo/segment/index`, kontrolery
-`Controller/Adminhtml/Segment/*` dziedziczące po `AbstractSegmentAction`, zasób ACL
-`Ordo_Automation::segments`). Segment to zapisany, wielokrotnego użytku zestaw warunków klienta
-(status RFM, tagi, historia zamówień i więcej) — kampania odwołuje się do segmentu przez warunek
-"W segmencie" zamiast odtwarzać tę samą logikę w każdej kampanii, która jej potrzebuje.
+Segment to zapisany, wielokrotnego użytku zestaw warunków opisujących grupę klientów — np. "VIP-i,
+którzy wydali ponad 1000 zł" albo "klienci, którzy nie kupowali od 60 dni". Zamiast odtwarzać te
+same warunki w każdej kampanii, tworzysz segment raz i podpinasz go przez warunek "W segmencie".
 
-## Siatka i formularz
-
-Kolumny siatki: ID, Nazwa, Włączony, Data utworzenia, Szacowana wielkość odbiorców
-(`ordo_segment_listing.xml`).
+## Lista i formularz
 
 ![Siatka segmentów](images/segments-grid.png)
 
-Formularz (`view/adminhtml/ui_component/ordo_segment_form.xml`): Nazwa, Włączony, nadrzędny
-selektor logiki "Segment pasuje" (wszystkie/którykolwiek), dynamiczna lista "Warunki" z polami
-zależnymi od typu: Tag, minimalna suma zamówienia, minimalny wynik punktowy, maksymalna liczba dni
-od ostatniego zamówienia, minimalna liczba zamówień, minimalny percentyl (0–100), zapasowe pole
-"Parametry (JSON)", plus zagnieżdżony podformularz grupy (logika grupy + warunki grupy jako JSON)
-oraz pola specyficzne dla warunku SKU/Kategoria, Zdarzenie/SKU/"w ciągu dni", Segment (w/nie w),
-Minimalny poziom.
-
-Model przechowywania: `Model/Segment.php`, `Model/SegmentCondition.php` — płaskie wiersze
-łączone przez AND, plus zarezerwowany wiersz pseudo-typu `'group'` trzymający własny blob
-`{"logic":"all"|"any","conditions":[...]}` (tylko jeden poziom zagnieżdżenia).
-`Model/Segment/SegmentSaveProcessor.php` zapisuje przez usunięcie i ponowne wstawienie wierszy.
-Dopasowywanie: `Model/Segment/SegmentMemberResolver.php` + `Model/Segment/SegmentMatcher.php`.
-
-## Akcje zbiorcze na bieżących członkach
-
-Na stronie edycji segmentu, poniżej warunków: prosty formularz HTML (nie ui_component,
-`Block/Adminhtml/Segment/BulkActions.php`) z selektorem typu akcji (dodaj tag / dodaj punkty),
-polem tekstowym tagu i polem liczbowym punktów, wysyłający do
-`Controller/Adminhtml/Segment/BulkAction.php`.
-
-## Nakładanie się segmentów
-
-Osobne narzędzie `ordo/segment/overlap` (`Controller/Adminhtml/Segment/Overlap.php` +
-`OverlapCompute.php`) pokazuje, ilu klientów należy jednocześnie do wybranych segmentów.
+W formularzu ustawiasz nazwę, czy segment jest aktywny, i logikę dopasowania: **wszystkie warunki
+muszą być spełnione** albo **wystarczy jeden**. Warunki są takie same jak w kampaniach (tag,
+minimalna suma zamówień, wynik punktowy, dni od ostatniego zamówienia, przynależność do innego
+segmentu, zakupiony produkt/kategoria i więcej) — możesz też zagnieżdżać grupy warunków jedna
+w drugiej dla bardziej złożonej logiki.
 
 ![Formularz edycji segmentu "[Demo] High Value Customers" z widocznym warunkiem "Monetary Total At Least"](images/segment-edit-form.png)
 
-Formularz edycji segmentu (`admin/ordo/segment/edit/entity_id/<id>`) — pole Name, przełącznik
-Enabled, i lista warunków ("Segment matches: All conditions (AND)").
+## Akcje zbiorcze
+
+Na stronie edycji segmentu, poniżej warunków, możesz od razu wykonać coś na wszystkich obecnych
+członkach segmentu: dodać im tag albo dodać punkty — bez konieczności tworzenia osobnej kampanii.
+
+## Nakładanie się segmentów
+
+Osobne narzędzie, w którym wybierasz dwa segmenty i sprawdzasz, ilu klientów należy jednocześnie
+do obu — przydatne, żeby nie wysyłać tej samej promocji dwa razy do tych samych osób z różnych
+kampanii.
 
 ---
 
@@ -54,43 +37,29 @@ Enabled, i lista warunków ("Segment matches: All conditions (AND)").
 
 # Segments
 
-**Ordo Automation → Dashboard → Segments** (`ordo/segment/index`, controllers
-`Controller/Adminhtml/Segment/*` extending `AbstractSegmentAction`, ACL resource
-`Ordo_Automation::segments`). A segment is a saved, reusable set of customer conditions (RFM
-standing, tags, order history, and more) — a campaign references a segment via the "In Segment"
-condition instead of rebuilding the same logic for every campaign that needs it.
+A segment is a saved, reusable set of conditions describing a group of customers — e.g. "VIPs who
+spent over $1000" or "customers who haven't ordered in 60 days." Instead of rebuilding the same
+conditions in every campaign, you build the segment once and reference it via the "In Segment"
+condition.
 
-## Grid and form
-
-Grid columns: ID, Name, Enabled, Created, Estimated Audience Size (`ordo_segment_listing.xml`).
+## List and form
 
 ![Segments grid](images/segments-grid.png)
 
-Form (`view/adminhtml/ui_component/ordo_segment_form.xml`): Name, Enabled, a top-level "Segment
-matches" logic selector (all/any), a dynamic-rows "Conditions" list with per-type fields: Tag,
-minimum order total, minimum score, recency days at most, order count at least, percentile at
-least (0–100), a fallback "Params (JSON)" field, plus a nested-group sub-form (group logic + group
-conditions as JSON) and condition-specific fields for SKU/Category, Event/SKU/"within days",
-Segment (in/not-in), Minimum tier.
-
-Persistence: `Model/Segment.php`, `Model/SegmentCondition.php` — flat, AND-joined rows, plus a
-reserved `'group'` pseudo-type row holding its own `{"logic":"all"|"any","conditions":[...]}` blob
-(one level of nesting only). `Model/Segment/SegmentSaveProcessor.php` persists by delete-and-
-reinsert. Matching: `Model/Segment/SegmentMemberResolver.php` + `Model/Segment/SegmentMatcher.php`.
-
-## Bulk actions on current members
-
-On the segment edit page, below the conditions: a plain HTML form (not a ui_component,
-`Block/Adminhtml/Segment/BulkActions.php`) with an action-type select (add tag / add points), a
-tag text input, and a points number input, posting to
-`Controller/Adminhtml/Segment/BulkAction.php`.
-
-## Segment overlap
-
-A separate tool at `ordo/segment/overlap` (`Controller/Adminhtml/Segment/Overlap.php` +
-`OverlapCompute.php`) shows how many customers belong to several chosen segments at once.
+In the form you set the name, whether the segment is active, and the matching logic: **all
+conditions must match** or **any one is enough**. Conditions are the same ones available in
+campaigns (tag, minimum order total, score, days since last order, membership in another segment,
+purchased product/category, and more) — you can also nest groups of conditions inside each other
+for more complex logic.
 
 ![Segment edit form for "[Demo] High Value Customers", showing the "Monetary Total At Least" condition](images/segment-edit-form.png)
 
-The segment edit form (`admin/ordo/segment/edit/entity_id/<id>`) — Name field, Enabled toggle,
-and the conditions list ("Segment matches: All conditions (AND)").
+## Bulk actions
+
+On the segment edit page, below the conditions, you can act on every current member right away:
+add them a tag or add points — no need to build a separate campaign just for that.
+
+## Segment overlap
+
+A separate tool where you pick two segments and see how many customers belong to both at once —
+useful for avoiding sending the same promotion twice to the same people from different campaigns.

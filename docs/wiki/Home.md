@@ -2,56 +2,60 @@
 
 # Polski
 
-# Ordo Automation — Wiki
+# Ordo Automation — przewodnik
 
-Marketing automation działający wewnątrz zwykłego Magento Open Source — bez licencji Adobe
-Commerce B2B, bez zewnętrznej subskrypcji MA. Wyzwalacze liczone są z danych, które Magento już
-ma (zamówienia, koszyki, klienci), albo z niewielkiego, własnego modelu danych dołożonego obok.
+Ordo Automation to system automatyzacji marketingu wbudowany bezpośrednio w Twój sklep — bez
+dodatkowej licencji, bez osobnej subskrypcji. Wysyła e-maile, SMS-y i WhatsApp na podstawie tego,
+co klient faktycznie robi w sklepie: porzuca koszyk, przegląda produkt, składa zamówienie, milknie
+na jakiś czas.
 
-Ta wiki opisuje każdą wysłaną funkcję modułu — jak wygląda w panelu administracyjnym, jak
-faktycznie działa (zweryfikowane w kodzie), i gdzie ją skonfigurować.
+Ten poradnik wyjaśnia, do czego służy każda funkcja, jak ją włączyć i jakiego efektu się
+spodziewać — bez żadnego żargonu programistycznego.
 
 ## Strony
 
-- [Dashboard](Dashboard) — ekran startowy modułu, karty nawigacyjne, statystyki.
-- [Kampanie](Campaigns) — silnik reguł trigger → warunki → akcje, kanwa Flow.
-- [Segmenty](Segments) — zapisane, wielokrotnego użytku warunki klienta.
-- [RFM i lead scoring](RFM-and-Lead-Scoring) — raport Recency/Frequency/Monetary i punktacja leadów.
-- [Gratisy](Free-Gifts) — progi wartości koszyka z kaskadowymi gratisami.
-- [Akceptacja zamówień](Order-Approval) — wstrzymywanie zamówień powyżej limitu wydatków.
-- [Śledzenie i popupy](Tracking-and-Popups) — śledzenie zachowań on-site, popupy, powiadomienia, NPS.
-- [Cykle ponownych zakupów](Reorder-Cycles) — wykrywanie wzorców zakupowych i przypomnienia.
+- [Dashboard](Dashboard) — ekran startowy: statystyki, skróty do wszystkiego.
+- [Kampanie](Campaigns) — reguły "gdy X, zrób Y" i wizualny kreator (Flow).
+- [Segmenty](Segments) — zapisane grupy klientów do wielokrotnego użytku.
+- [RFM i punktacja leadów](RFM-and-Lead-Scoring) — kto jest Twoim najlepszym klientem i dlaczego.
+- [Gratisy](Free-Gifts) — automatyczne prezenty po przekroczeniu progu koszyka.
+- [Akceptacja zamówień](Order-Approval) — kontrola dużych zamówień B2B.
+- [Śledzenie i popupy](Tracking-and-Popups) — co klient ogląda i jak to wykorzystać.
+- [Cykle ponownych zakupów](Reorder-Cycles) — przypomnienia "czas zamówić znowu".
 
-Więcej: [README.md](https://github.com/michalper/ordo/blob/main/README.md) (instalacja, pełna
-lista funkcji), [ROADMAP.md](https://github.com/michalper/ordo/blob/main/ROADMAP.md) (co jeszcze
-otwarte), [docs/CHANGELOG.md](https://github.com/michalper/ordo/blob/main/docs/CHANGELOG.md)
-(historia zmian).
+## Zanim zaczniesz
+
+Prawie każda funkcja ma własny przełącznik w **Sklepy → Konfiguracja → Ordo Automation** — jest
+domyślnie wyłączona, dopóki jej nie włączysz. Jeśli coś "nie działa", pierwsze co sprawdź to
+właśnie ten przełącznik.
 
 ---
 
 # English
 
-# Ordo Automation — Wiki
+# Ordo Automation — guide
 
-Marketing automation that runs inside stock Magento Open Source — no Adobe Commerce B2B license,
-no external MA subscription. Triggers are computed from data Magento already has (orders, carts,
-customers), or from a small first-party data model added alongside it.
+Ordo Automation is marketing automation built directly into your store — no extra license, no
+separate subscription. It sends emails, SMS, and WhatsApp messages based on what a customer
+actually does in your store: abandons a cart, views a product, places an order, goes quiet for a
+while.
 
-This wiki documents every shipped capability of the module — what it looks like in the admin,
-what it actually does (verified against the code), and where to configure it.
+This guide explains what each feature is for, how to turn it on, and what result to expect — no
+developer jargon.
 
 ## Pages
 
-- [Dashboard](Dashboard) — the module's home screen, nav cards, stats.
-- [Campaigns](Campaigns) — the trigger → conditions → actions rule engine, the Flow canvas.
-- [Segments](Segments) — saved, reusable customer conditions.
-- [RFM & Lead Scoring](RFM-and-Lead-Scoring) — the Recency/Frequency/Monetary report and lead scoring.
-- [Free Gifts](Free-Gifts) — cascading cart-subtotal gift tiers.
-- [Order Approval](Order-Approval) — holding orders above a spend limit for admin decision.
-- [Tracking & Popups](Tracking-and-Popups) — on-site behavior tracking, popups, notifications, NPS.
-- [Reorder Cycles](Reorder-Cycles) — purchase-pattern detection and reminders.
+- [Dashboard](Dashboard) — the home screen: stats and shortcuts to everything.
+- [Campaigns](Campaigns) — "when X happens, do Y" rules and the visual Flow builder.
+- [Segments](Segments) — saved, reusable customer groups.
+- [RFM & Lead Scoring](RFM-and-Lead-Scoring) — who your best customers are, and why.
+- [Free Gifts](Free-Gifts) — automatic gifts once a cart crosses a spending threshold.
+- [Order Approval](Order-Approval) — control over large B2B orders.
+- [Tracking & Popups](Tracking-and-Popups) — what customers browse, and how to use it.
+- [Reorder Cycles](Reorder-Cycles) — "time to reorder" reminders.
 
-More: [README.md](https://github.com/michalper/ordo/blob/main/README.md) (install, full feature
-list), [ROADMAP.md](https://github.com/michalper/ordo/blob/main/ROADMAP.md) (what's still open),
-[docs/CHANGELOG.md](https://github.com/michalper/ordo/blob/main/docs/CHANGELOG.md) (implementation
-history).
+## Before you start
+
+Almost every feature has its own on/off switch under **Stores → Configuration → Ordo
+Automation** — it's off by default until you turn it on. If something "isn't working," check that
+switch first.

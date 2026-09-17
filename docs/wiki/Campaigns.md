@@ -4,84 +4,79 @@
 
 # Kampanie
 
-**Ordo Automation → Dashboard → Kampanie** (`ordo/campaign/index`, kontrolery
-`Controller/Adminhtml/Campaign/*` dziedziczące po `AbstractCampaignAction`, zasób ACL
-`Ordo_Automation::campaigns`). Kampania to reguła "gdy zdarzy się X i Y jest prawdą, zrób Z":
-trigger(y) → warunki → akcje.
+Kampania to reguła w stylu **"gdy zdarzy się X, i jeśli spełniony jest warunek Y, zrób Z"**.
+Przykład: gdy klient porzuci koszyk (X), a wartość koszyka wynosi co najmniej 100 zł (Y), wyślij
+mu e-mail z przypomnieniem po godzinie (Z).
 
-## Siatka kampanii
-
-Kolumny: ID, Nazwa, Triggery, Włączona, Data utworzenia (`view/adminhtml/ui_component/
-ordo_campaign_listing.xml`). Przyciski paska narzędzi: "Back to Dashboard", "Add New Campaign",
-"Import Campaign". Akcje masowe: włącz/wyłącz/usuń.
+## Lista kampanii
 
 ![Siatka kampanii](images/campaigns-grid.png)
 
-## Triggery
+Widzisz tu wszystkie swoje kampanie, czy są włączone, i jakie mają wyzwalacze. Możesz je masowo
+włączać/wyłączać/usuwać, a przyciskiem u góry — zaimportować gotową kampanię.
 
-Typy wyzwalaczy (`Model/Config/Source/TriggerEvent.php`): złożenie zamówienia, rejestracja
-klienta, dodanie tagu, porzucony koszyk, porzucone przeglądanie, dodanie tagu odwiedzającemu
-(anonimowo), przekroczenie progu punktacji, zaplanowana data/godzina, harmonogram cykliczny.
-Kampania może mieć więcej niż jeden trigger — każdy wpada do tego samego łańcucha
-warunków/akcji (alternatywne punkty startu, nie osobne scenariusze).
+## Co może wyzwolić kampanię
 
-## Kanwa Flow (Drawflow)
+- Klient złożył zamówienie
+- Klient się zarejestrował
+- Klientowi dodano tag (ręcznie albo automatycznie przez inną funkcję)
+- Klient porzucił koszyk
+- Klient przeglądał produkt, ale nic nie kupił
+- Anonimowy odwiedzający dostał tag (np. na podstawie zachowania na stronie)
+- Wynik punktowy klienta przekroczył próg
+- Konkretna data/godzina, albo harmonogram cykliczny (np. co poniedziałek)
+- Sygnał z zewnętrznego systemu (ERP/CRM), jeśli macie taką integrację
+- Cena obserwowanego produktu spadła, albo produkt wrócił na stan
 
-Edycja kampanii (`ordo/campaign/edit`) renderuje graficzną kanwę opartą na
-[Drawflow](https://github.com/jerosoler/Drawflow) — `Block/Adminhtml/Campaign/Edit/Flow.php`
-buduje graf trigger/warunek/akcja po stronie serwera z wierszy `CampaignTrigger`/
-`CampaignCondition`/`CampaignAction`; `view/adminhtml/web/js/campaign-flow-editor.js` obsługuje
-kanwę po stronie klienta. Przycisk "Apply flow to form" zapisuje zmiany z kanwy do tych samych pól
-`triggers`/`conditions`/`actions`, których używa standardowy formularz dynamicznych wierszy —
-kanwa Flow nigdy nie komunikuje się z backendem bezpośrednio, zapis idzie przez natywny zapis
-formularza.
+Jedna kampania może mieć kilka wyzwalaczy naraz — każdy z nich prowadzi do tego samego zestawu
+warunków i akcji.
 
-Typy warunków (`Model/Campaign/TypeLabels.php`): tag, minimalna suma zamówienia, tag
-odwiedzającego, minimalny wynik punktowy, maksymalna liczba dni od ostatniego zamówienia,
-minimalna częstotliwość zamówień, minimalna suma wydatków, trzy warunki percentylowe RFM,
-w segmencie / nie w segmencie, minimalny poziom lojalności, minimalny wynik NPS, zakupiony SKU,
-zakupiona kategoria, wystąpienie zdarzenia.
+## Kreator wizualny (Flow)
 
-Typy akcji: dodaj tag, wyślij e-mail, wygeneruj kupon, popup, dodaj punkty, dodaj rekomendacje
-produktowe, dodaj treść dynamiczną, wyślij SMS, powiadom, ankieta NPS, wyślij WhatsApp, wyślij
-push, podział (test A/B).
-
-**Ostatnie usprawnienia UX kanwy Flow** (patrz `docs/CHANGELOG.md`):
-
-- **Undo/redo** — przyciski na pasku narzędzi lub Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z/+Y. Stos migawek
-  kanwy trzymany tylko w pamięci na czas życia strony (nie zapisywany trwale); edycje struktury
-  zapisują wpis od razu, edycje pól — z debounce.
-- **Duplikowanie węzła** — przycisk "⧉" obok przycisku usuwania każdego węzła; kopiuje rodzaj/typ
-  i wszystkie bieżące wartości pól, ląduje z przesunięciem, bez kopiowania połączeń.
-- **Wewnętrzny "Wyślij test"** — przycisk tylko na węzłach akcji `send_email`/`send_sms`/
-  `send_whatsapp` (nie na `send_push`, warunkach ani triggerach); wysyła żądanie do tego samego
-  endpointu (`Controller/Adminhtml/TemplateTestSend/Send.php`), z którego korzysta samodzielna
-  strona Template Test Send.
-
-## Kalendarze
-
-Dwa osobne ekrany, mimo podobnych nazw:
-
-- **Oś czasu akcji kampanii** (`ordo/campaign/calendar`, `Controller/Adminhtml/Campaign/
-  Calendar.php`) — mimo starej nazwy klasy/URL (zachowanej dla zgodności z zakładkami), pokazuje
-  względne przesunięcia czasowe trigger→akcja (np. "+1440 min"), nie konkretne daty.
-- **Zaplanowany kalendarz kampanii** (`ordo/campaign/schedulecalendar`,
-  `Controller/Adminhtml/Campaign/ScheduleCalendar.php`) — prawdziwa siatka miesięczna, tylko dla
-  triggerów typu `scheduled_at`/`recurring_schedule`.
-
-## Silnik dyspozytora
-
-`Model/CampaignDispatcher.php`, zasilany przez obserwatory (`DispatchOrderPlacedCampaigns`,
-`DispatchCustomerRegisteredCampaigns`, `DispatchTagAddedCampaigns`,
-`DispatchVisitorTagAddedCampaigns`, `DispatchScoreThresholdCampaigns`) oraz crony
-(`RunScheduledCampaignActions` — łańcuchowanie opóźnień w minutach,
-`DispatchScheduledCampaignTriggers` — `scheduled_at`/`recurring_schedule`).
+Edycja kampanii otwiera graficzną kanwę: bloki wyzwalaczy, warunków i akcji, które przeciągasz z
+palety po lewej i łączysz liniami. Zasada jest prosta: **każdy wyzwalacz musi prowadzić aż do
+jakiejś akcji** — jeśli zostawisz coś niepodłączone, kanwa podświetli to na czerwono i nie pozwoli
+zapisać, dopóki nie poprawisz.
 
 ![Kanwa Flow — kampania "[Demo] Cart Abandonment Recovery" z węzłem triggera "Cart Abandoned" połączonym z akcją "Send Email"](images/flow-canvas.png)
 
-Kanwa Flow (`admin/ordo/campaign/edit/entity_id/<id>`) — trigger po lewej, węzły akcji po prawej,
-połączenia rysowane jako krzywe między nimi; paleta bloków (Triggers/Conditions/Actions) po lewej
-stronie kanwy.
+Kilka przydatnych funkcji kanwy:
+- **Cofnij/ponów** (Ctrl+Z / Ctrl+Shift+Z) — jeśli coś przypadkiem przesuniesz albo usuniesz.
+- **Duplikowanie bloku** — kopiuje ustawienia bez kopiowania połączeń, przydatne przy podobnych
+  wariantach.
+- **Wyślij test** — na blokach e-mail/SMS/WhatsApp możesz od razu wysłać testową wiadomość do
+  siebie, zanim uruchomisz kampanię na prawdziwych klientach.
+
+### Warunki, które możesz ustawić
+
+Np.: klient ma konkretny tag, suma jego zamówień przekracza kwotę, jego wynik punktowy jest
+wystarczająco wysoki, minęło (albo nie minęło) tyle dni od ostatniego zamówienia, klient jest
+w top N% pod względem wydatków/częstotliwości zamówień, klient należy (albo nie należy) do danego
+segmentu, klient kupił konkretny produkt/kategorię. Warunki można łączyć: "wszystkie muszą być
+spełnione" (AND) albo "wystarczy jeden" (OR) — a nawet zagnieżdżać grupy jedno w drugim (np. "ma
+tag VIP ORAZ (wynik ≥ 999 LUB wydał ≥ 1000 zł)").
+
+### Akcje, które może wykonać kampania
+
+Dodaj tag, wyślij e-mail (opcjonalnie o najlepszej porze dla danego klienta — patrz niżej),
+wygeneruj kupon, pokaż popup na stronie, dodaj punkty lojalnościowe, dodaj rekomendacje
+produktowe, wstaw dynamiczną treść do maila, wyślij SMS, wyślij trwałe powiadomienie na stronie,
+wyślij ankietę NPS, wyślij WhatsApp, wyślij powiadomienie push, podziel ruch na dwa warianty (test
+A/B), albo wywołaj zewnętrzny system przez webhook.
+
+### Wysyłka o najlepszej porze dla klienta
+
+Przy akcji "Wyślij e-mail" możesz włączyć opcję wysyłki o optymalnej porze — system sprawdza,
+o której godzinie dany klient najczęściej otwiera/klika w Twoje maile (na podstawie jego własnej
+historii) i czeka z wysyłką do tej pory, zamiast wysyłać od razu. Potrzeba minimum kilku
+zarejestrowanych otwarć/kliknięć tego klienta, żeby to zadziałało — jeśli danych jest za mało,
+e-mail po prostu idzie od razu, tak jak dotychczas.
+
+## Kalendarze
+
+Dwa osobne widoki: **Oś czasu akcji kampanii** pokazuje względne opóźnienia (np. "60 minut po
+triggerze"), a **Zaplanowany kalendarz kampanii** to prawdziwa siatka miesięczna dla kampanii
+uruchamianych o konkretnej dacie/cyklicznie.
 
 ---
 
@@ -89,81 +84,76 @@ stronie kanwy.
 
 # Campaigns
 
-**Ordo Automation → Dashboard → Campaigns** (`ordo/campaign/index`, controllers
-`Controller/Adminhtml/Campaign/*` extending `AbstractCampaignAction`, ACL resource
-`Ordo_Automation::campaigns`). A campaign is a "when X happens and Y is true, do Z" rule:
-trigger(s) → conditions → actions.
+A campaign is a rule shaped like **"when X happens, and condition Y is true, do Z."** Example:
+when a customer abandons their cart (X), and the cart is worth at least $100 (Y), send them a
+reminder email an hour later (Z).
 
-## Campaign grid
-
-Columns: ID, Name, Triggers, Enabled, Created (`view/adminhtml/ui_component/
-ordo_campaign_listing.xml`). Toolbar buttons: "Back to Dashboard", "Add New Campaign", "Import
-Campaign". Mass actions: enable/disable/delete.
+## Campaign list
 
 ![Campaigns grid](images/campaigns-grid.png)
 
-## Triggers
+You'll see every campaign here, whether it's enabled, and its trigger(s). You can bulk enable/
+disable/delete them, and the button at the top lets you import a ready-made campaign.
 
-Trigger types (`Model/Config/Source/TriggerEvent.php`): Order Placed, Customer Registered, Tag
-Added, Cart Abandoned, Browse Abandoned, Visitor Tag Added (anonymous), Score Threshold Crossed,
-Scheduled Date/Time, Recurring Schedule. A campaign can have more than one trigger — every trigger
-fans into the same conditions/actions chain (alternative starting points, not separate scenarios).
+## What can trigger a campaign
 
-## Flow canvas (Drawflow)
+- Customer placed an order
+- Customer registered
+- Customer got a tag (added manually, or automatically by another feature)
+- Customer abandoned a cart
+- Customer browsed a product but never ordered
+- An anonymous visitor got a tag (e.g. based on on-site behavior)
+- A customer's score crossed a threshold
+- A specific date/time, or a recurring schedule (e.g. every Monday)
+- A signal from an external system (ERP/CRM), if you have that integration set up
+- A watched product's price dropped, or it came back in stock
 
-Editing a campaign (`ordo/campaign/edit`) renders a graphical canvas built on
-[Drawflow](https://github.com/jerosoler/Drawflow) — `Block/Adminhtml/Campaign/Edit/Flow.php`
-builds the trigger/condition/action graph server-side from `CampaignTrigger`/
-`CampaignCondition`/`CampaignAction` rows; `view/adminhtml/web/js/campaign-flow-editor.js` drives
-the client-side canvas. Its "Apply flow to form" button writes canvas edits into the same
-`triggers`/`conditions`/`actions` fields the standard dynamic-rows form already uses — the Flow
-canvas never talks to the backend directly, saving goes through the form's native save.
+One campaign can have several triggers at once — every one of them leads into the same shared
+conditions and actions.
 
-Condition types (`Model/Campaign/TypeLabels.php`): tag, minimum order total, visitor tag, minimum
-score, recency days at most, order frequency at least, monetary total at least, the three RFM
-percentile conditions, in segment/not in segment, minimum loyalty tier, minimum NPS score,
-purchased SKU, purchased category, event occurred.
+## Visual builder (Flow)
 
-Action types: add tag, send email, generate coupon, popup, add points, add product
-recommendations, add dynamic content, send SMS, notify, NPS survey, send WhatsApp, send push,
-split (A/B test).
-
-**Recent Flow canvas UX additions** (see `docs/CHANGELOG.md`):
-
-- **Undo/redo** — toolbar buttons or Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z/+Y. An in-memory canvas-snapshot
-  stack for the page's lifetime only (not persisted); structural edits push a history entry
-  immediately, field edits are debounced.
-- **Node duplication** — a "⧉" button next to each node's delete button; copies kind/type and all
-  current field values, lands offset, no connections copied.
-- **Inline "Send test"** — a button on `send_email`/`send_sms`/`send_whatsapp` action nodes only
-  (not `send_push`, conditions, or triggers); posts to
-  `Controller/Adminhtml/TemplateTestSend/Send.php`, the same endpoint the standalone Template
-  Test Send page uses.
-
-## Calendars
-
-Two separate screens, despite similar names:
-
-- **Campaign Action Timeline** (`ordo/campaign/calendar`,
-  `Controller/Adminhtml/Campaign/Calendar.php`) — despite the older class/URL name (kept for
-  bookmark compatibility), shows relative trigger→action delay offsets (e.g. "+1440 min"), not
-  dates.
-- **Scheduled Campaign Calendar** (`ordo/campaign/schedulecalendar`,
-  `Controller/Adminhtml/Campaign/ScheduleCalendar.php`) — a real month-grid, only for
-  `scheduled_at`/`recurring_schedule` triggers.
-
-## Dispatch engine
-
-`Model/CampaignDispatcher.php`, fed by observers (`DispatchOrderPlacedCampaigns`,
-`DispatchCustomerRegisteredCampaigns`, `DispatchTagAddedCampaigns`,
-`DispatchVisitorTagAddedCampaigns`, `DispatchScoreThresholdCampaigns`) and crons
-(`RunScheduledCampaignActions` — delay-minutes chaining, `DispatchScheduledCampaignTriggers` —
-`scheduled_at`/`recurring_schedule`).
+Editing a campaign opens a graphical canvas: trigger, condition, and action blocks you drag from
+the palette on the left and connect with lines. The rule is simple: **every trigger must lead all
+the way to an action** — if you leave something disconnected, the canvas highlights it in red and
+won't let you save until you fix it.
 
 ![Flow canvas — the "[Demo] Cart Abandonment Recovery" campaign with a "Cart Abandoned" trigger node connected to a "Send Email" action node](images/flow-canvas.png)
 
-The Flow canvas (`admin/ordo/campaign/edit/entity_id/<id>`) — trigger on the left, action nodes
-on the right, connections drawn as curves between them; the block palette (Triggers/Conditions/
-Actions) sits to the left of the canvas.
+A few useful canvas features:
+- **Undo/redo** (Ctrl+Z / Ctrl+Shift+Z) — if you accidentally move or delete something.
+- **Duplicate block** — copies the settings without copying its connections, handy for similar
+  variants.
+- **Send test** — on email/SMS/WhatsApp blocks, you can fire off a real test message to yourself
+  before running the campaign on real customers.
 
----
+### Conditions you can set
+
+For example: the customer has a specific tag, their total order value exceeds an amount, their
+score is high enough, a number of days has (or hasn't) passed since their last order, they're in
+the top N% by spend/order frequency, they're in (or not in) a given segment, or they've bought a
+specific product/category. Conditions can be combined: "all must match" (AND) or "any one is
+enough" (OR) — and you can even nest groups inside each other (e.g. "has tag VIP AND (score ≥ 999
+OR spent ≥ $1000)").
+
+### Actions a campaign can take
+
+Add a tag, send an email (optionally at the best time for that specific customer — see below),
+generate a coupon, show a popup on the site, add loyalty points, add product recommendations,
+insert dynamic content into an email, send an SMS, send a persistent on-site notification, send an
+NPS survey, send a WhatsApp message, send a push notification, split traffic into two variants
+(A/B test), or call an external system via a webhook.
+
+### Sending at the customer's best time
+
+On the "Send Email" action you can turn on optimal send-time delivery — the system checks what
+hour this specific customer usually opens/clicks your emails (from their own history) and waits
+to send until that hour, instead of sending right away. It needs a handful of that customer's own
+past opens/clicks to work — if there isn't enough data yet, the email just goes out immediately,
+same as before.
+
+## Calendars
+
+Two separate views: the **Campaign Action Timeline** shows relative delays (e.g. "60 minutes after
+the trigger"), and the **Scheduled Campaign Calendar** is a real month-grid for campaigns that run
+on a specific date or recurring schedule.

@@ -4,43 +4,28 @@
 
 # Gratisy przy przekroczeniu progu koszyka
 
-**Ordo Automation → Dashboard → Oferty gratisów** (`ordo/freegiftoffer/index`, kontrolery
-`Controller/Adminhtml/FreeGiftOffer/*` dziedziczące po `AbstractFreeGiftOfferAction`, zasób ACL
-`Ordo_Automation::free_gifts`). Przykład: wydaj 50 zł i dostań gratis A, wydaj 100 zł i dostań
-gratis A i B — stosowane automatycznie przy kasie, gdy suma koszyka przekroczy próg danego
-poziomu.
+Klasyczna promocja "wydaj X, dostań gratis" — w pełni automatyczna, bez kuponów do wpisywania.
+Przykład: wydaj 100 zł i dostań gratis A, wydaj 200 zł i dostań gratis A oraz B. Gratis pojawia
+się w koszyku automatycznie, w cenie 0 zł, gdy tylko suma koszyka przekroczy próg.
 
 ![Siatka ofert gratisów](images/free-gift-offers-grid.png)
 
-## Formularz oferty
+## Jak to skonfigurować
 
-Sekcja "Ogólne": Nazwa, Włączona. Sekcja **"Poziomy"** (dynamiczna lista), opisana w interfejsie
-jako *"Poziomy kaskadowe — każdy poziom, który suma koszyka osiąga, DODAJE swoje sloty gratisów,
-kumulatywnie"* — pola: Minimalna suma koszyka, Sloty gratisów dodawane przez ten poziom. Sekcja
-**"Produkty"**, opisana jako *"Pula gratisów — SKU, spośród których klient może wybrać po
-zakwalifikowaniu"* — pole: SKU (z przyciskiem wyboru z katalogu).
+W formularzu oferty ustawiasz:
+- **Poziomy** — im wyższy próg wartości koszyka, tym więcej "slotów" na gratisy klient odblokowuje.
+  Poziomy się sumują: przekroczenie wyższego progu nie zabiera gratisów z niższego, dolicza kolejne.
+- **Pula produktów** — lista SKU, spośród których klient może wybrać, gdy się zakwalifikuje.
 
 ![Edycja oferty gratisu — poziomy kaskadowe](images/free-gift-offer-edit.png)
 
-Powyższy zrzut pokazuje rzeczywistą ofertę demo "[Demo] Spend & Save": poziom 1 przy 100 (1 slot
-gratisu), poziom 2 przy 200 (2 sloty gratisów), oraz jedną pozycję w puli produktów.
+Przykład z rzeczywistej oferty demo: poziom 1 przy 100 zł daje 1 gratis, poziom 2 przy 200 zł daje
+kolejny (czyli w sumie 2 gratisy przy koszyku za 200 zł+).
 
-## Potwierdzone zachowanie kumulacji poziomów
+Jeśli klient usunie coś z koszyka i spadnie poniżej progu, gratis, do którego już się nie
+kwalifikuje, jest automatycznie usuwany — nie trzeba pilnować tego ręcznie.
 
-Modele: `Model/FreeGiftOffer.php` / `FreeGiftOfferTier.php` / `FreeGiftOfferProduct.php`,
-`Model/FreeGiftManagement.php` (logika wyboru po stronie REST), `Model/QuoteGiftItem.php`
-(oznacza, który wiersz koszyka pochodzi z której oferty).
-
-Zweryfikowane w kodzie (`FreeGiftManagement::computeEligibility()`): metoda iteruje przez każdy
-poziom każdej aktywnej oferty i dodaje `tier->getGiftSlots()` dla każdego poziomu, którego
-`min_subtotal <= suma bazowa koszyka` — czyli przekroczenie poziomu 2 nadal liczy również sloty
-poziomu 1. `remaining = max(0, earned - used)`.
-
-`Observer/TrimExcessFreeGifts.php` usuwa gratisy, które przestały się kwalifikować, jeśli suma
-koszyka spadnie z powrotem poniżej poziomu.
-
-Konfiguracja: **Stores → Configuration → Ordo Automation → Free Gift Above Threshold** (grupa
-`free_gift`) — tylko `enabled`.
+Włączasz to w **Sklepy → Konfiguracja → Ordo Automation → Free Gift Above Threshold**.
 
 ---
 
@@ -48,39 +33,25 @@ Konfiguracja: **Stores → Configuration → Ordo Automation → Free Gift Above
 
 # Free Gift Above Cart Threshold
 
-**Ordo Automation → Dashboard → Free Gift Offers** (`ordo/freegiftoffer/index`, controllers
-`Controller/Adminhtml/FreeGiftOffer/*` extending `AbstractFreeGiftOfferAction`, ACL resource
-`Ordo_Automation::free_gifts`). Example: spend $50 and get gift A, spend $100 and get gift A and
-B — applied automatically at checkout once a customer's cart subtotal crosses a tier threshold.
+The classic "spend $X, get a free gift" promotion — fully automatic, no coupon codes to type in.
+Example: spend $100 and get gift A, spend $200 and get gift A and B. The gift is added to the cart
+automatically, priced at $0, as soon as the cart total crosses the threshold.
 
 ![Free Gift Offers grid](images/free-gift-offers-grid.png)
 
-## Offer form
+## How to set it up
 
-"General" section: Name, Enabled. **"Tiers"** section (dynamic rows), labeled in the UI as
-*"Cascading tiers — every tier the cart subtotal reaches ADDS its gift slots, cumulative"* —
-fields: Minimum cart subtotal, Gift slots this tier adds. **"Products"** section, labeled
-*"Gift pool — SKUs a customer may pick from once eligible"* — field: SKU (with a
-choose-from-catalog picker).
+In the offer form you set:
+- **Tiers** — the higher the cart-value threshold, the more gift "slots" a customer unlocks.
+  Tiers stack: crossing a higher threshold doesn't remove the lower tier's gifts, it adds more.
+- **Product pool** — the list of SKUs a customer can pick from once they qualify.
 
 ![Free gift offer edit — cascading tiers](images/free-gift-offer-edit.png)
 
-The screenshot above shows the real demo offer "[Demo] Spend & Save": tier 1 at 100 (1 gift
-slot), tier 2 at 200 (2 gift slots), and one product-pool entry.
+Example from a real demo offer: tier 1 at $100 grants 1 gift, tier 2 at $200 grants another (so 2
+gifts total once the cart reaches $200+).
 
-## Confirmed cumulative-tier behavior
+If a customer removes something and the cart drops back below a threshold, a gift they no longer
+qualify for is automatically removed — nothing to police manually.
 
-Models: `Model/FreeGiftOffer.php` / `FreeGiftOfferTier.php` / `FreeGiftOfferProduct.php`,
-`Model/FreeGiftManagement.php` (the REST-facing selection logic), `Model/QuoteGiftItem.php`
-(marks which quote item came from which offer).
-
-Confirmed in code (`FreeGiftManagement::computeEligibility()`): it iterates every tier of every
-active offer and adds `tier->getGiftSlots()` for each tier whose `min_subtotal <= cart base
-subtotal` — so crossing tier 2 also still counts tier 1's slots. `remaining = max(0, earned -
-used)`.
-
-`Observer/TrimExcessFreeGifts.php` removes gifts that no longer qualify if the subtotal drops
-back below a tier.
-
-Config: **Stores → Configuration → Ordo Automation → Free Gift Above Threshold** (`free_gift`
-group) — just `enabled`.
+Turn this on under **Stores → Configuration → Ordo Automation → Free Gift Above Threshold**.
