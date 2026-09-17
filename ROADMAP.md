@@ -47,13 +47,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 Flow canvas UX (undo/redo, node duplication, palette search/filter, inline "send test") is now
 fully closed — see docs/CHANGELOG.md.
 
-### Communication channels (Email/SMS/WhatsApp/Push)
-
-- Every send is still one synchronous, unbatched HTTP call per customer inline in the dispatch
-  path — no concurrency control (client-side pacing per provider now exists, see docs/CHANGELOG.md
-  — that's throttling one process's own call rate, not coordinating concurrency across multiple
-  queue consumers/cron processes hitting the same provider at once).
-
 ### Commerce features (free gifts, order approval, reorder cycles, GDPR, product feed, dashboard)
 
 *(the "Free Gift never applies to a cart" and "guest checkout bypasses approval" items are listed

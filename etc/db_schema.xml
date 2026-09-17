@@ -921,4 +921,12 @@
         </index>
     </table>
 
+    <table name="ordo_provider_rate_limit" resource="default" engine="innodb" comment="One row per outbound provider channel (twilio/whatsapp/push/webhook - Model\RateLimit\OutboundRateLimiter's own $channel argument), replacing that classes previous CacheInterface-backed pacing - the cache version was a read-then-write race across processes (its own old docblock admitted a handful of truly concurrent callers could each read the same pre-update last-call time and under-throttle briefly). This table exists purely so Model\RateLimit\ProviderRateLimitStore::claim() can space out calls to the same provider with a single atomic INSERT..ON DUPLICATE KEY UPDATE, genuinely enforcing the configured interval across every queue consumer/cron process, not just within one.">
+        <column xsi:type="varchar" name="channel" nullable="false" length="32" comment="Rate-limit channel key - a natural key, no entity_id needed since this isnt a domain entity, just one shared counter row per channel"/>
+        <column xsi:type="bigint" name="next_available_at_micros" unsigned="true" nullable="false" comment="Unix microtime (microtime(true) * 1_000_000) at/after which the next call on this channel may proceed - not a datetime(6) column, to avoid MySQL fractional-seconds/engine-version portability quirks for a value this module only ever compares to its own PHP-computed microtime"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="channel"/>
+        </constraint>
+    </table>
+
 </schema>
