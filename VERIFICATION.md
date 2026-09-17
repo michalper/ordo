@@ -13,7 +13,7 @@ same thing by hand.
 
 ```bash
 composer config repositories.ordo-automation path /absolute/path/to/mma
-composer require ordo/module-automation:@dev
+composer require michalper/ordo:@dev
 bin/magento module:enable Ordo_Automation
 bin/magento setup:upgrade
 bin/magento setup:di:compile
@@ -25,7 +25,7 @@ bin/magento cache:flush
 - [ ] Admin panel loads, no white screen / 500
 
 Note: requires a Composer path repository with `"options": {"symlink": false}` — resync
-(`rm -rf vendor/ordo/module-automation && composer update ordo/module-automation`) after
+(`rm -rf vendor/michalper/ordo && composer update michalper/ordo`) after
 every local edit.
 
 ## 2. Static checks

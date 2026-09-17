@@ -37,7 +37,7 @@ ORDO_API_TEST_APPROVAL_ENTITY_ID=...   # OrderApprovalApiTest only
 ```
 
 ```bash
-vendor/bin/phpunit vendor/ordo/module-automation/Test/Api --bootstrap vendor/autoload.php
+vendor/bin/phpunit vendor/michalper/ordo/Test/Api --bootstrap vendor/autoload.php
 ```
 
 Without the environment variables set, tests `markTestSkipped()` rather than failing — they need a real,

@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Magento 2 module `ordo/module-automation` (marketing automation for Ordo/Sellina): a campaign-scenario builder (triggers → conditions → actions) with a Drawflow-based flow editor.
+Magento 2 module `michalper/ordo` (marketing automation for Ordo/Sellina): a campaign-scenario builder (triggers → conditions → actions) with a Drawflow-based flow editor.
 
 ## Directory structure (contract)
 
@@ -19,11 +19,11 @@ This directory is a standalone module repo — there's no `vendor/` here, so tes
   - `magento/` — a full Magento Open Source 2.4.7 install.
   - This directory (`mma`) is mounted into the php container as `/var/www/mma`.
 
-**Important pitfall:** the module is wired into Magento via a composer path repository with `"options": {"symlink": false}` — meaning Composer **copies** files into `vendor/ordo/module-automation` instead of symlinking. **Changes to files in this repo aren't visible in the test environment until you refresh the copy via `composer update`.**
+**Important pitfall:** the module is wired into Magento via a composer path repository with `"options": {"symlink": false}` — meaning Composer **copies** files into `vendor/michalper/ordo` instead of symlinking. **Changes to files in this repo aren't visible in the test environment until you refresh the copy via `composer update`.**
 
-**Second pitfall:** the module's version is hard-pinned in its `composer.json` (`"version": "1.0.0"`), so plain `composer update ordo/module-automation` sometimes returns "Nothing to modify in lock file" and **doesn't** recopy the new files, because Composer doesn't see a version change. If tests still see the old code after `composer update`, force a reinstall:
+The module's `composer.json` no longer pins a `"version"` (versioning is via git tags only, per the maintainer's own instruction) — a path repository without a fixed version derives one from git automatically, so `composer update michalper/ordo` picks up file changes reliably. If tests still somehow see stale code after `composer update`, force a reinstall:
 ```bash
-docker compose exec php sh -c "rm -rf vendor/ordo/module-automation && composer update ordo/module-automation"
+docker compose exec php sh -c "rm -rf vendor/michalper/ordo && composer update michalper/ordo"
 ```
 
 ### Commands
@@ -35,10 +35,10 @@ cd /Users/michalper/Projects/magento-ordo-test
 docker compose up -d
 
 # after EVERY change to files in mma — refresh the copy in vendor/
-docker compose exec php composer update ordo/module-automation
+docker compose exec php composer update michalper/ordo
 
 # run this module's unit tests
-docker compose exec php vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist vendor/ordo/module-automation/Test/Unit
+docker compose exec php vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist vendor/michalper/ordo/Test/Unit
 
 # or the whole Magento unit test suite (the module is included in it automatically)
 docker compose exec php vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist
@@ -129,14 +129,14 @@ Three files, different scope:
 ```bash
 cd /Users/michalper/Projects/magento-ordo-test
 docker compose up -d
-docker compose exec php sh -c "rm -rf vendor/ordo/module-automation && composer update ordo/module-automation"
+docker compose exec php sh -c "rm -rf vendor/michalper/ordo && composer update michalper/ordo"
 
 # stop the persistent consumers while running integration tests
 docker compose exec php supervisorctl stop consumer-campaign-dispatch consumer-visitor-aggregate
 
 # from the Magento directory (not the module!) — requires --bootstrap app/bootstrap.php, otherwise BP doesn't exist
 docker compose exec php vendor/bin/phpunit --bootstrap app/bootstrap.php \
-    vendor/ordo/module-automation/Test/Integration
+    vendor/michalper/ordo/Test/Integration
 
 # start them back up after the tests
 docker compose exec php supervisorctl start consumer-campaign-dispatch consumer-visitor-aggregate

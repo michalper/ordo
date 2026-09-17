@@ -65,7 +65,7 @@ Każda funkcja ma własny przełącznik w **Stores → Configuration → Ordo Au
 ## Instalacja
 
 ```bash
-composer require ordo/module-automation
+composer require michalper/ordo
 bin/magento module:enable Ordo_Automation
 bin/magento setup:upgrade
 bin/magento cache:flush

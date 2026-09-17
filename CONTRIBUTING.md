@@ -1,6 +1,6 @@
 # Contributing to Ordo Automation
 
-Thanks for considering a contribution. This is a Magento 2 module (`ordo/module-automation`) — this repo holds
+Thanks for considering a contribution. This is a Magento 2 module (`michalper/ordo`) — this repo holds
 only the module's own source, not a full Magento installation, so tests can't be run directly from here.
 
 ## Setting up a dev environment
@@ -16,13 +16,13 @@ You need a real Magento 2 Open Source install with this module required via a Co
 }
 ```
 
-Then `composer require ordo/module-automation:@dev`, `bin/magento module:enable Ordo_Automation`, and
+Then `composer require michalper/ordo:@dev`, `bin/magento module:enable Ordo_Automation`, and
 `bin/magento setup:upgrade`.
 
-**Note:** with `"symlink": false`, Composer *copies* files into `vendor/ordo/module-automation` — changes here
-aren't visible in your test environment until you re-run `composer update ordo/module-automation`. The module's
+**Note:** with `"symlink": false`, Composer *copies* files into `vendor/michalper/ordo` — changes here
+aren't visible in your test environment until you re-run `composer update michalper/ordo`. The module's
 own `composer.json` pins `"version": "1.0.0"`, so if Composer reports "Nothing to modify in lock file" after a
-change, force a reinstall: `rm -rf vendor/ordo/module-automation && composer update ordo/module-automation`.
+change, force a reinstall: `rm -rf vendor/michalper/ordo && composer update michalper/ordo`.
 
 ## Code style and static analysis
 
@@ -43,12 +43,12 @@ Four layers, each with a different scope and a different way to run it:
 
 - **`Test/Unit/`** — no live Magento needed beyond the framework classes on Composer. Run:
   ```bash
-  vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist vendor/ordo/module-automation/Test/Unit
+  vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist vendor/michalper/ordo/Test/Unit
   ```
 - **`Test/Integration/`** — real object manager, real dev database, no mocked `ScopeConfigInterface`. Requires a
   working `app/etc/env.php`. Run with `--bootstrap app/bootstrap.php` from the Magento root:
   ```bash
-  vendor/bin/phpunit --bootstrap app/bootstrap.php vendor/ordo/module-automation/Test/Integration
+  vendor/bin/phpunit --bootstrap app/bootstrap.php vendor/michalper/ordo/Test/Integration
   ```
 - **`Test/Api/`** — `webapi_rest` calls against the module's REST surface, same real-instance requirement as
   `Test/Integration/`.

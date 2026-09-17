@@ -171,7 +171,7 @@ jobs:
         # `composer update <pkg> --with-dependencies` invocation SonarCloud's githubactions:S8546
         # flags as not lock-enforcing. Scoped to just this one package so the rest of Magento
         # 2.4.9's own lock file stays pinned/predictable.
-        run: composer require ordo/module-automation:@dev --no-interaction --no-progress
+        run: composer require michalper/ordo:@dev --no-interaction --no-progress
 
       - name: Install Magento
         working-directory: magento

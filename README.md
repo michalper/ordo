@@ -64,7 +64,7 @@ Every feature has its own config toggle under **Stores → Configuration → Ord
 ## Install
 
 ```bash
-composer require ordo/module-automation
+composer require michalper/ordo
 bin/magento module:enable Ordo_Automation
 bin/magento setup:upgrade
 bin/magento cache:flush
