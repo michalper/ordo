@@ -874,5 +874,28 @@
         "constraint": {
             "PRIMARY": true
         }
+    },
+    "ordo_price_watch_subscription": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "visitor_id": true,
+            "product_id": true,
+            "watch_type": true,
+            "last_known_price": true,
+            "last_known_in_stock": true,
+            "created_at": true,
+            "notified_at": true
+        },
+        "index": {
+            "ORDO_PRICE_WATCH_SUBSCRIPTION_PRODUCT_ID": true,
+            "ORDO_PRICE_WATCH_SUBSCRIPTION_CUSTOMER_ID": true,
+            "ORDO_PRICE_WATCH_SUBSCRIPTION_VISITOR_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_PRICE_WATCH_SUBSCRIPTION_CUSTOMER_ID_PRODUCT_ID_WATCH_TYPE": true,
+            "ORDO_PRICE_WATCH_SUBSCRIPTION_VISITOR_ID_PRODUCT_ID_WATCH_TYPE": true
+        }
     }
 }
