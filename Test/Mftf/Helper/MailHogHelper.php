@@ -84,19 +84,45 @@ class MailHogHelper extends Helper
      * $toAddress — same MailHog lookup/decoding as grabLinkFromLatestEmail(), for campaigns'
      * send_email action, which (unlike the order-approval email) has no link to click through,
      * just template-rendered text ({{var customer_name}}, {{var message}}, ...) to verify.
+     *
+     * Polls for up to $timeoutSeconds instead of a single fetch — confirmed via real CI runs
+     * (RFM condition tests: recency/monetary/order-frequency) that a single fixed <wait> before
+     * this check is not reliable: sales_order_place_after's publish() commits asynchronously
+     * relative to the checkout redirect the test's own action group waits for, and how long that
+     * takes to become visible to queue:consumers:start varies with runner load, not a constant.
+     * A caller that has JUST placed the order and drained the queue can still race this, so this
+     * itself retries rather than asking every call site to guess a large-enough fixed delay.
      */
-    public function seeTextInLatestEmail(string $expectedText, string $toAddress, string $mailhogUrl = 'http://127.0.0.1:8025'): void
-    {
-        $item = $this->fetchMessages($toAddress, 1, $mailhogUrl)[0] ?? null;
-        if ($item === null) {
+    public function seeTextInLatestEmail(
+        string $expectedText,
+        string $toAddress,
+        string $mailhogUrl = 'http://127.0.0.1:8025',
+        int $timeoutSeconds = 20
+    ): void {
+        $deadline = microtime(true) + $timeoutSeconds;
+        $lastBody = null;
+        $sawAnyMessage = false;
+
+        do {
+            $item = $this->fetchMessages($toAddress, 1, $mailhogUrl)[0] ?? null;
+            if ($item !== null) {
+                $sawAnyMessage = true;
+                $lastBody = $this->decodeBody($item);
+                if (str_contains($lastBody, $expectedText)) {
+                    return;
+                }
+            }
+            usleep(500000);
+        } while (microtime(true) < $deadline);
+
+        if (!$sawAnyMessage) {
             throw new \RuntimeException("MailHog has no messages sent to \"{$toAddress}\".");
         }
 
-        if (!str_contains($this->decodeBody($item), $expectedText)) {
-            throw new \RuntimeException(
-                "Text \"{$expectedText}\" not found in the latest MailHog message sent to \"{$toAddress}\"."
-            );
-        }
+        throw new \RuntimeException(
+            "Text \"{$expectedText}\" not found in the latest MailHog message sent to \"{$toAddress}\" "
+            . "after waiting {$timeoutSeconds}s."
+        );
     }
 
     /**
