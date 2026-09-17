@@ -952,6 +952,24 @@ parameters:
 			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getHeader\(\)\.$#'
 			identifier: method.notFound
 			count: 2
+			path: Controller/Track/RegisterPriceWatch.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getHttpHost\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: Controller/Track/RegisterPriceWatch.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Track/RegisterPriceWatch.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getHeader\(\)\.$#'
+			identifier: method.notFound
+			count: 2
 			path: Controller/Track/RegisterPushSubscription.php
 
 		-
@@ -1055,6 +1073,30 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Cron/RunScheduledCampaignActions.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Catalog\\Api\\Data\\ProductInterface\:\:isSalable\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Cron/ScanBackInStockAlerts.php
+
+		-
+			message: '#^Parameter \#2 \$newInStock of method Ordo\\Automation\\Cron\\ScanBackInStockAlerts\:\:updateStock\(\) expects bool, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Cron/ScanBackInStockAlerts.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Catalog\\Api\\Data\\ProductInterface\:\:getFinalPrice\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Cron/ScanPriceDropAlerts.php
+
+		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 1
+			path: Cron/ScanPriceDropAlerts.php
 
 		-
 			message: '#^Parameter \#1 \$sql of method Magento\\Framework\\DB\\Adapter\\AdapterInterface\:\:fetchAll\(\) expects Magento\\Framework\\DB\\Select\|string, Zend_Db_Select given\.$#'
@@ -1396,6 +1438,12 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
+			path: Model/Campaign/Condition/ClvAtLeast.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
 			path: Model/Campaign/Condition/EventOccurred.php
 
 		-
@@ -1433,12 +1481,6 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Model/Campaign/Condition/LoyaltyTierAtLeast.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/Campaign/Condition/ClvAtLeast.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -1787,6 +1829,24 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Model/CampaignTriggerRepository.php
+
+		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 4
+			path: Model/Clv/ClvCalculator.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 5
+			path: Model/Clv/ClvCalculator.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Model/Clv/ClvCalculator.php
 
 		-
 			message: '#^Method Ordo\\Automation\\Model\\Config\\Source\\ActionType\:\:toOptionArray\(\) return type has no value type specified in iterable type array\.$#'
@@ -2509,6 +2569,24 @@ parameters:
 			path: Model/PendingPopup.php
 
 		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 1
+			path: Model/PriceWatch/PriceWatchSubscription.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Model/PriceWatch/PriceWatchSubscription.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
+			path: Model/PriceWatch/PriceWatchSubscription.php
+
+		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
 			count: 1
@@ -2545,6 +2623,12 @@ parameters:
 			path: Model/Push/PushSubscriptionManager.php
 
 		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Push/PushSubscriptionSender.php
+
+		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
 			count: 1
@@ -2561,6 +2645,18 @@ parameters:
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: Model/Push/WebPushCrypto.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 4
+			path: Model/PushSendRetry.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 4
+			path: Model/PushSendRetry.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -2827,6 +2923,24 @@ parameters:
 			path: Model/ResourceModel/OrderApproval.php
 
 		-
+			message: '#^Cannot call method quoteInto\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: Model/ResourceModel/PushSendRetry.php
+
+		-
+			message: '#^Cannot call method update\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/ResourceModel/PushSendRetry.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/ResourceModel/PushSendRetry.php
+
+		-
 			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, int given\.$#'
 			identifier: argument.type
 			count: 1
@@ -2837,24 +2951,6 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Model/ResourceModel/Segment/Condition/Collection.php
-
-		-
-			message: '#^Cannot cast mixed to float\.$#'
-			identifier: cast.double
-			count: 4
-			path: Model/Clv/ClvCalculator.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 5
-			path: Model/Clv/ClvCalculator.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 2
-			path: Model/Clv/ClvCalculator.php
 
 		-
 			message: '#^Cannot cast mixed to float\.$#'
@@ -3303,13 +3399,13 @@ parameters:
 		-
 			message: '#^Cannot call method getId\(\) on mixed\.$#'
 			identifier: method.nonObject
-			count: 3
+			count: 4
 			path: Observer/StitchVisitorIdentity.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 2
+			count: 3
 			path: Observer/StitchVisitorIdentity.php
 
 		-
@@ -3541,13 +3637,13 @@ parameters:
 			path: Ui/Component/Listing/Column/CampaignAttributedRevenue.php
 
 		-
-			message: '#^Parameter \#2 \$array of function array_map expects array, mixed given\.$#'
+			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, Closure\(array\)\: int given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Ui/Component/Listing/Column/CampaignAttributedRevenue.php
 
 		-
-			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\): mixed\)\|null, Closure\(array\): int given\.$#'
+			message: '#^Parameter \#2 \$array of function array_map expects array, mixed given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Ui/Component/Listing/Column/CampaignAttributedRevenue.php
@@ -3665,39 +3761,3 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: Ui/Component/Listing/Column/ReorderCycleActions.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/Push/PushSubscriptionSender.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 4
-			path: Model/PushSendRetry.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 4
-			path: Model/PushSendRetry.php
-
-		-
-			message: '#^Cannot call method quoteInto\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
-			identifier: method.nonObject
-			count: 2
-			path: Model/ResourceModel/PushSendRetry.php
-
-		-
-			message: '#^Cannot call method update\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Model/ResourceModel/PushSendRetry.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/ResourceModel/PushSendRetry.php

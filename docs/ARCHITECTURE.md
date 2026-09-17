@@ -111,6 +111,23 @@ Directory/class map for anyone working on the code. Not shipped documentation fo
   every send
 - `Controller/Adminhtml/WhatsAppTemplate/` — admin CRUD + approval lifecycle actions
 
+## Price-drop & back-in-stock alerts
+
+- `ordo_price_watch_subscription` table — one row per customer/visitor watch on a single product
+  (`watch_type` `price_drop`|`back_in_stock`), keyed by customer_id OR visitor_id, same
+  anonymous-then-stitched shape as `ordo_push_subscription`
+- `Model/PriceWatch/PriceWatchSubscription.php`, `Model/PriceWatch/PriceWatchSubscriptionManager.php`
+  — CRUD, idempotent by identity + product_id + watch_type, capturing the product's current
+  price/stock state at registration time
+- `Controller/Track/RegisterPriceWatch.php` — public endpoint a PDP "Notify me" button posts to
+  (`window.ordoSubscribeToPriceWatch()` in `view/frontend/web/js/tracker.js`)
+- `Cron/ScanPriceDropAlerts.php`, `Cron/ScanBackInStockAlerts.php` — batched scan crons dispatching
+  the `price_drop`/`back_in_stock` campaign triggers the first time a watched product's price
+  drops or its stock status transitions false→true relative to the row's own last-known state;
+  claim-before-dispatch (`notified_at`) same as every other reminder cron in this module. Guest
+  watches are refreshed every run but never dispatch — no guest-facing notification path yet
+  (deliberate scope decision, see this PR)
+
 ## GDPR
 
 - `Model/Gdpr/CustomerDataExporter.php`, `Model/Gdpr/CustomerDataEraser.php` — per-customer data

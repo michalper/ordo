@@ -42,6 +42,8 @@ Covers both classic B2C lifecycle automation and the B2B triggers most external 
   admin-managed template approval lifecycle and delivery-status webhook.
 - Web Push notifications — a `send_push` campaign action delivering real browser/OS notifications (RFC 8291/8292,
   no vendor SDK), to every device a customer has subscribed from.
+- Price-drop / back-in-stock alerts — a customer/visitor watches a product from its PDP, two scan crons dispatch
+  `price_drop`/`back_in_stock` campaign triggers on the first real change.
 
 **Shared foundation**
 

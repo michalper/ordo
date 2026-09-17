@@ -489,8 +489,31 @@
             });
     }
 
+    /**
+     * Registers a price-drop or back-in-stock watch for a single product - called from a
+     * theme's own PDP "Notify me" button. Deliberately fire-and-forget, same shape as
+     * registerPushSubscription() above: the caller gets a resolved/rejected promise from the
+     * fetch itself, there is no separate polling/confirmation step.
+     */
+    function subscribeToPriceWatch(productId, watchType) {
+        var body = new URLSearchParams({
+            product_id: String(productId),
+            watch_type: watchType
+        });
+
+        return fetch('/ordo/track/registerpricewatch', {
+            method: 'POST',
+            credentials: 'same-origin',
+            body: body,
+            keepalive: true
+        }).then(function (response) {
+            return response.json();
+        });
+    }
+
     window.ordoTrack = track;
     window.ordoSubscribeToPush = subscribeToPush;
+    window.ordoSubscribeToPriceWatch = subscribeToPriceWatch;
     track('page_view');
     startPopupPolling();
     startNotificationPolling();
