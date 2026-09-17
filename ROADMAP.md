@@ -54,14 +54,11 @@ as bugs above, not repeated here)*
 
 ## Documentation
 
-- **GitHub Wiki covering every feature, bilingual PL/EN, with screenshots.** Structure decided (bilingual-per-page,
-  see `docs/wiki/README.md` for the reasoning) and all 8 capability pages plus a Home/`_Sidebar` drafted in
-  `docs/wiki/` — content verified against the actual `Controller`/`Block`/`Model`/`Ui` classes and
-  `view/adminhtml/ui_component/*.xml`, not invented. Real screenshots (from a running Magento 2.4.9 admin instance)
-  are embedded for every page, including the campaign builder's Flow canvas and the segment edit form (both were
-  blocked by the `ActionPool`/`CampaignDispatcher` circular-dependency bug above — now fixed). Still needed: native
-  PL review of all the drafted text (same caveat as the machine-translated locale CSVs above). Not yet copied into
-  the real GitHub Wiki (`github.com/michalper/ordo.wiki`) — `docs/wiki/` is staging content for manual review first.
+- **GitHub Wiki covering every feature, bilingual PL/EN, with screenshots.** Published at
+  `github.com/michalper/ordo/wiki` — all 8 capability pages plus Home/`_Sidebar`, content verified against the
+  actual `Controller`/`Block`/`Model`/`Ui` classes and `view/adminhtml/ui_component/*.xml`, not invented, with real
+  screenshots (from a running Magento 2.4.9 admin instance) embedded for every page. `docs/wiki/` in this repo is
+  the source copy staged for edits before re-publishing. Still open: native PL review of the drafted text.
 
 ## Candidate new features
 
@@ -94,6 +91,5 @@ zasobów zewnętrznych):
    biznesem/produktem pod kątem priorytetu.
 2. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
    poświadczeń testowych.
-3. **GitHub Wiki (PL/EN, screenshots)** — struktura ustalona, treść wszystkich 8 stron i
-   wszystkie zrzuty ekranu (włącznie z kanwą Flow i formularzem segmentu) gotowe w
-   `docs/wiki/`; została tylko recenzja natywna tekstu PL i wklejenie do prawdziwego wiki.
+3. **GitHub Wiki (PL/EN, screenshots)** — opublikowane pod `github.com/michalper/ordo/wiki`;
+   zostaje tylko recenzja natywna tekstu PL.
