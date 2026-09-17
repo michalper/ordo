@@ -97,10 +97,6 @@ exist in some form. Not prioritized against each other; listed for later scoping
 - **Two-way SMS/WhatsApp conversation handling** — capture inbound replies (today only delivery-status
   callbacks are handled), with mandatory keyword-based opt-out (STOP) and a conversation view tied to the
   customer record. Large scope (compliance-sensitive once inbound is accepted at all), fits both.
-- **Multi-touch attribution / revenue-per-campaign reporting** — correlate `ordo_message_log`
-  click-throughs to subsequent orders within a configurable window, surfaced as attributed revenue on the
-  Campaign grid/dashboard. Medium scope, fits both.
-
 ## Priorytet kolejnych kroków
 
 Kolejność uwzględnia wagę (błędy finansowe > dług niezawodności > UX > tematy zależne od
@@ -114,8 +110,3 @@ zasobów zewnętrznych):
 4. **GitHub Wiki (PL/EN, screenshots)** — struktura ustalona, treść wszystkich 8 stron i
    wszystkie zrzuty ekranu (włącznie z kanwą Flow i formularzem segmentu) gotowe w
    `docs/wiki/`; została tylko recenzja natywna tekstu PL i wklejenie do prawdziwego wiki.
-
-Uwaga poza roadmapą: na branchu `feature/reorder-cycle-build-cart` jest niedokończona,
-nie-scommitowana praca nad akcją "build reorder cart" (temat sam w sobie już częściowo
-pokryty w CHANGELOGu przez manual reminder, PR #91) — do domknięcia jako osobny temat, nie
-część tej rundy porządkowej.
