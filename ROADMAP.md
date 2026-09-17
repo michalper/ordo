@@ -47,13 +47,6 @@ fully closed — see docs/CHANGELOG.md for the full history of each.
 Flow canvas UX (undo/redo, node duplication, palette search/filter, inline "send test") is now
 fully closed — see docs/CHANGELOG.md.
 
-### Communication channels (Email/SMS/WhatsApp/Push)
-
-- Every send is still one synchronous, unbatched HTTP call per customer inline in the dispatch
-  path — no concurrency control (client-side pacing per provider now exists, see docs/CHANGELOG.md
-  — that's throttling one process's own call rate, not coordinating concurrency across multiple
-  queue consumers/cron processes hitting the same provider at once).
-
 ### Commerce features (free gifts, order approval, reorder cycles, GDPR, product feed, dashboard)
 
 *(the "Free Gift never applies to a cart" and "guest checkout bypasses approval" items are listed
@@ -83,9 +76,22 @@ as bugs above, not repeated here)*
 Not gaps in something existing — genuinely new capabilities, proposed after checking they don't already
 exist in some form. Not prioritized against each other; listed for later scoping.
 
-- **Predictive send-time optimization** — pick each customer's historically best send hour from existing
-  `ordo_message_log` open/click data and hold the action via the existing delayed-action/resume mechanism
-  (`Cron\RunScheduledCampaignActions`) instead of a fixed delay. Medium scope, fits both.
+- **Predictive send-time optimization** *(in progress)* — pick each customer's historically best send hour from
+  existing `ordo_message_log`/`ordo_message_log_event` open/click data and hold the action via the existing
+  `CampaignDispatcher::deferActionUntil()`/`Cron\RunScheduledCampaignActions` resume mechanism instead of a fixed
+  delay. Medium scope, fits both.
+- **Cross-channel fallback for cart abandonment** — if the abandoned-cart email goes unopened for N hours,
+  fall back to SMS/WhatsApp instead of adding another email step; reuses the existing `send_sms`/`send_whatsapp`
+  actions and `ordo_message_log` open data. Small-medium scope, B2C.
+- **B2B: "reorder cycle at risk" segment** — flag customers whose order cadence has drifted meaningfully from
+  their own historical cycle (earlier signal than a full reorder-reminder miss), surfaced through the existing
+  sales-rep digest. Medium scope, B2B.
+- **Per-channel marketing consent** — extend `ConsentManager`/`ordo_customer_consent` from one blanket opt-out to
+  granular consent per channel (email/SMS/WhatsApp/push), a common compliance requirement for multi-channel
+  automation. Medium scope, shared foundation.
+- **A/B testing for campaign variants** — split traffic on a campaign action (e.g. two email variants) and
+  auto-pick a winner from `ordo_message_log` CTR data; pairs naturally with predictive send-time optimization
+  above. Medium-large scope, shared foundation.
 
 ## Priorytet kolejnych kroków
 

@@ -131,6 +131,20 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **No concurrency control across processes for outbound provider calls (ROADMAP.md
+  "Communication channels").** `Model\RateLimit\OutboundRateLimiter` (spaces consecutive
+  Twilio/WhatsApp/Push/webhook calls apart) was `CacheInterface`-backed — a read-then-write race,
+  its own old docblock admitted: "a handful of truly concurrent callers could each read the same
+  pre-update last-call time and under-throttle briefly." Multiple queue consumer instances and
+  overlapping cron runs genuinely can call the same provider at the same moment from different
+  processes, each with its own racy pacing state. Replaced with `Model\RateLimit\
+  ProviderRateLimitStore`, a new `ordo_provider_rate_limit` table claimed via a single atomic
+  `INSERT..ON DUPLICATE KEY UPDATE` — the same atomic-conditional-UPDATE idiom this module already
+  uses for cross-process coordination elsewhere (`ResourceModel\MessageSendRetry::claim()` and
+  friends), just applied to pacing instead of a one-shot claim. `OutboundRateLimiter`'s public API
+  (`throttle(string $channel, float $maxPerSecond)`) is unchanged, so its 4 existing callers
+  (`TwilioSmsSender`, `WhatsAppSender`, `PushSender`, `SendWebhook`) needed no changes.
+
 - **Every real page load of the campaign builder (Flow canvas, `ordo/campaign/edit`) threw a
   circular-dependency error.** `Model\Campaign\ActionPool`'s array argument constructs every
   registered action eagerly (`etc/di.xml`) — one of those, any `Send*` action, takes
