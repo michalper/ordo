@@ -65,6 +65,15 @@
         <amOnPage url="checkout/cart" stepKey="goToCart2"/>
         <waitForPageLoad stepKey="waitForCartPage2"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeSecondOrder"/>
+
+        <!-- A brief settle wait before draining — defensive against a message-visibility race
+             under CI load: sales_order_place_after's own publish() commits asynchronously
+             relative to the checkout redirect this action group waits for, so a consumer that
+             starts draining before that INSERT is visible would find an empty queue and exit
+             (consumers-wait-for-messages=0) having dispatched nothing, silently leaving the
+             order-confirmation email as the "latest" one instead of this campaign's. Same
+             reasoning/fix as AdminCampaignMultipleConditionsAndTest.xml's identical step. -->
+        <wait time="2" stepKey="waitForOrder2DispatchMessageVisible"/>
         <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainDispatchQueueAfterSecondOrder"/>
 
         <!-- Step 4: the real, merchant-visible output only a genuine second order could have
