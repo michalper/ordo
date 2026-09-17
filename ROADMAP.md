@@ -113,8 +113,3 @@ zasobów zewnętrznych):
 4. **GitHub Wiki (PL/EN, screenshots)** — struktura ustalona, treść wszystkich 8 stron i
    wszystkie zrzuty ekranu (włącznie z kanwą Flow i formularzem segmentu) gotowe w
    `docs/wiki/`; została tylko recenzja natywna tekstu PL i wklejenie do prawdziwego wiki.
-
-Uwaga poza roadmapą: na branchu `feature/reorder-cycle-build-cart` jest niedokończona,
-nie-scommitowana praca nad akcją "build reorder cart" (temat sam w sobie już częściowo
-pokryty w CHANGELOGu przez manual reminder, PR #91) — do domknięcia jako osobny temat, nie
-część tej rundy porządkowej.
