@@ -69,8 +69,6 @@ abstract class AbstractPriceWatchScanCron
     abstract protected function isNotifiableChange(mixed $oldValue, mixed $newValue): bool;
 
     /**
-     * @param mixed $oldValue
-     * @param mixed $newValue
      * @return array<string, mixed> the campaign trigger payload's change-specific fields, merged
      *   with customer_id/product_id.
      */
