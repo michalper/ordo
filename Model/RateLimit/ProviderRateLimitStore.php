@@ -47,9 +47,13 @@ class ProviderRateLimitStore
         $now = (int) round(microtime(true) * 1_000_000);
         $next = $now + $minIntervalMicros;
 
+        // ON DUPLICATE KEY UPDATE has no equivalent in Magento's query builder API; parameters
+        // are still bound below, not interpolated, and the table name comes from
+        // getTableName()/quoteIdentifier(), never from user input.
         $statement = $connection->query(
-            "INSERT INTO {$table} (channel, next_available_at_micros) VALUES (:channel, :next) "
-            . 'ON DUPLICATE KEY UPDATE next_available_at_micros = '
+            // phpcs:ignore Magento2.SQL.RawQuery.FoundRawSql
+            'INSERT INTO ' . $connection->quoteIdentifier($table) . ' (channel, next_available_at_micros) '
+            . 'VALUES (:channel, :next) ON DUPLICATE KEY UPDATE next_available_at_micros = '
             . 'IF(next_available_at_micros <= :now, :next2, next_available_at_micros)',
             ['channel' => $channel, 'next' => $next, 'now' => $now, 'next2' => $next]
         );
