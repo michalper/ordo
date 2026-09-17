@@ -96,7 +96,13 @@
              (this is what actually calls CustomerTagManager::addTag() and fires the
              "ordo_customer_tag_added" event that publishes to the campaign-dispatch queue),
              then the campaign-dispatch queue the tag_added trigger just landed on. -->
+        <!-- A brief settle wait before draining — defensive against a message-visibility race
+             under CI load, same reasoning as AdminCampaignMultipleConditionsAndTest.xml's
+             identical step: the bulk action's own publish() commits asynchronously relative to
+             the request this test's admin action just made. -->
+        <wait time="2" stepKey="waitForBulkActionMessageVisible"/>
         <magentoCLI command="queue:consumers:start ordo.automation.segment.bulk_action --max-messages=50" stepKey="runSegmentBulkActionConsumer"/>
+        <wait time="2" stepKey="waitForDispatchMessageVisible"/>
         <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
 
         <!-- Step 6: the real, database-observable proof — a coupon only this campaign's

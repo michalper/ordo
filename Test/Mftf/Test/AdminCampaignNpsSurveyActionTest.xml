@@ -115,6 +115,10 @@
         <waitForPageLoad stepKey="waitForCartPage"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
 
+        <!-- A brief settle wait before draining — defensive against a message-visibility race
+             under CI load, same reasoning as AdminCampaignMultipleConditionsAndTest.xml's
+             identical step. -->
+        <wait time="2" stepKey="waitForDispatchMessageVisible"/>
         <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
 
         <!-- Step 5: the survey widget appears - same long wait reasoning as

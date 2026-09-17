@@ -113,6 +113,10 @@
         <waitForPageLoad stepKey="waitForCartPageOrder1"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeFirstOrder"/>
 
+        <!-- A brief settle wait before draining — defensive against a message-visibility race
+             under CI load, same reasoning as AdminCampaignMultipleConditionsAndTest.xml's
+             identical step. -->
+        <wait time="2" stepKey="waitForOrder1DispatchMessageVisible"/>
         <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumerAfterOrder1"/>
 
         <!-- Same AJAX-load-then-negative-assert pattern as AdminCampaignMultipleConditionsAndTest.xml's
@@ -163,6 +167,10 @@
         <waitForPageLoad stepKey="waitForCartPageOrder2"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeSecondOrder"/>
 
+        <!-- A brief settle wait before draining — defensive against a message-visibility race
+             under CI load, same reasoning as AdminCampaignMultipleConditionsAndTest.xml's
+             identical step. -->
+        <wait time="2" stepKey="waitForOrder2DispatchMessageVisible"/>
         <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumerAfterOrder2"/>
 
         <!-- Step 7: the positive half — waitForText, not <see>, for the same AJAX-race reason
