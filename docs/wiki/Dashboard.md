@@ -42,13 +42,6 @@ Poniżej kart dashboard listuje też pojedyncze kampanie jako karty linkujące d
 przycisk "+ New Campaign"/"Dodaj kampanię" renderowany jest pod każdą kartą/tabelą, żeby główne
 CTA modułu było zawsze w zasięgu bez przewijania do góry.
 
-> 📷 Zrzut ekranu poniżej pochodzi z realnej instalacji testowej (Magento 2.4.9). W tym
-> konkretnym przebiegu treść kart nawigacyjnych nie wyrenderowała się na zrzucie (widoczny tylko
-> przycisk "+ New Campaign") — prawdopodobnie z powodu stanu danych/cache w środowisku testowym, a
-> nie błędu w kodzie (opisane wyżej karty i statystyki są potwierdzone bezpośrednio w
-> `DashboardViewModel.php` i `index.phtml`). Do uzupełnienia: świeży zrzut pełnego dashboardu z
-> widocznymi kartami, ścieżka `admin/ordo/dashboard/index`.
-
 ![Dashboard](images/dashboard.png)
 
 ---
@@ -94,12 +87,5 @@ Cycles (`ordo/reordercycle/index`), Message Log (`ordo/messagelog/index`), Order
 Below the cards, the dashboard also lists individual campaigns as cards linking to their edit
 pages, and a "+ New Campaign" button is rendered under every card/table so the module's main CTA
 stays reachable without scrolling back up.
-
-> 📷 The screenshot below is from a real test install (Magento 2.4.9). In this particular capture
-> the nav cards did not render (only the "+ New Campaign" button is visible) — most likely a
-> data/cache state quirk of the test environment rather than a code bug (the cards and stats
-> described above are confirmed directly against `DashboardViewModel.php` and `index.phtml`). To
-> do: a fresh screenshot of the full dashboard with the nav cards visible, at
-> `admin/ordo/dashboard/index`.
 
 ![Dashboard](images/dashboard.png)
