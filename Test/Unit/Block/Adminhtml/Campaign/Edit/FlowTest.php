@@ -580,6 +580,27 @@ class FlowTest extends TestCase
         );
     }
 
+    /**
+     * Regression test: order_frequency_at_least/recency_days_at_most/monetary_total_at_least
+     * had no entry here at all - the Drawflow "Flow" canvas (the only editor a merchant, or
+     * MFTF's window.ordoFlowTestHook.buildChain(), can use) falls back to the generic
+     * params_json field for any condition type not listed, so count/days/amount posted via
+     * fields: {count: ...} etc. was a silent no-op and the condition could never actually be
+     * satisfied. Confirmed via a real CI run: AdminOrderFrequencyAtLeastConditionTest/
+     * AdminRecencyDaysAtMostConditionTest/AdminMonetaryTotalAtLeastConditionTest all failed with
+     * their campaign's send_email action never firing, even after a long wait - not a timing
+     * race, the condition was unconditionally false because its param was never actually set.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetFieldsConfigListsRfmAtLeastConditionFields(): void
+    {
+        $config = $this->makeBlock()->getFieldsConfig()['condition'];
+
+        self::assertSame('count', $config['order_frequency_at_least'][0]['name']);
+        self::assertSame('days', $config['recency_days_at_most'][0]['name']);
+        self::assertSame('amount', $config['monetary_total_at_least'][0]['name']);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testGetFieldsConfigDescribesSplitAsAVariantListField(): void
     {

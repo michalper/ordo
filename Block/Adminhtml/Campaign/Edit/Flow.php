@@ -312,6 +312,9 @@ class Flow extends Template
                     ],
                 ],
                 'nps_score_at_least' => [['name' => 'threshold', 'label' => (string) __('Minimum NPS score')]],
+                'order_frequency_at_least' => [['name' => 'count', 'label' => (string) __('Minimum order count')]],
+                'recency_days_at_most' => [['name' => 'days', 'label' => (string) __('Maximum days since last order')]],
+                'monetary_total_at_least' => [['name' => 'amount', 'label' => (string) __('Minimum lifetime total')]],
                 'event_occurred' => [
                     [
                         'name' => 'event_type',
