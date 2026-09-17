@@ -160,6 +160,35 @@ class ClvCalculatorTest extends TestCase
         self::assertEqualsWithDelta(1200.0, $scores[42], 1.0);
     }
 
+    public function testComputeClvForAllCustomersScoresZeroWhenNoFrequencyOrFirstOrder(): void
+    {
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            ['customer_id' => '42', 'frequency' => '0', 'monetary' => null, 'first_order_at' => null],
+        ]);
+
+        $calculator = $this->makeCalculator($connection);
+        $scores = $calculator->computeClvForAllCustomers();
+
+        self::assertSame(0.0, $scores[42]);
+    }
+
+    public function testGetClvScoresReturnsCachedValueWithinTtl(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->expects(self::once())->method('fetchAll')->willReturn([
+            ['customer_id' => '42', 'clv_score' => '1234.5000'],
+        ]);
+
+        $calculator = $this->makeCalculator($connection);
+
+        self::assertSame([42 => 1234.5], $calculator->getClvScores());
+        // Second call within the cache TTL must not query the DB again.
+        self::assertSame([42 => 1234.5], $calculator->getClvScores());
+    }
+
     public function testGetClvScoresFallsBackToLiveComputeWhenStoredTableEmpty(): void
     {
         $now = 1700000000;

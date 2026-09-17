@@ -113,6 +113,105 @@ class CampaignScheduleCalendarViewModelTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testGetVisibleMonthLabelFormatsAsMonthYear(): void
+    {
+        $this->request->method('getParam')->willReturn('2026-11');
+
+        self::assertSame('November 2026', $this->makeViewModel()->getVisibleMonthLabel());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetCalendarDaysReturnsNoEntriesWhenNoTriggers(): void
+    {
+        $this->request->method('getParam')->willReturn('2026-11');
+        $this->campaignTriggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([]));
+        $this->campaignCollectionFactory = $this->createMock(CampaignCollectionFactory::class);
+        $this->campaignCollectionFactory->expects(self::never())->method('create');
+
+        $days = $this->makeViewModel()->getCalendarDays();
+
+        foreach ($days as $day) {
+            self::assertSame([], $day['entries']);
+        }
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetCalendarDaysSkipsScheduledAtTriggerWithMissingScheduledAtParam(): void
+    {
+        $this->request->method('getParam')->willReturn('2026-11');
+
+        $trigger = $this->makeTrigger(5, CampaignTriggerInterface::TRIGGER_SCHEDULED_AT, '{}');
+        $this->campaignTriggerCollectionFactory->method('create')
+            ->willReturn($this->makeTriggerCollection([$trigger]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([]));
+
+        $days = $this->makeViewModel()->getCalendarDays();
+
+        foreach ($days as $day) {
+            self::assertSame([], $day['entries']);
+        }
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetCalendarDaysSkipsScheduledAtTriggerWithUnparseableDate(): void
+    {
+        $this->request->method('getParam')->willReturn('2026-11');
+
+        $trigger = $this->makeTrigger(
+            5,
+            CampaignTriggerInterface::TRIGGER_SCHEDULED_AT,
+            '{"scheduled_at": "not-a-date"}'
+        );
+        $this->campaignTriggerCollectionFactory->method('create')
+            ->willReturn($this->makeTriggerCollection([$trigger]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([]));
+
+        $days = $this->makeViewModel()->getCalendarDays();
+
+        foreach ($days as $day) {
+            self::assertSame([], $day['entries']);
+        }
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetCalendarDaysSkipsScheduledAtTriggerOutsideTheVisibleGrid(): void
+    {
+        $this->request->method('getParam')->willReturn('2026-11');
+
+        $trigger = $this->makeTrigger(
+            5,
+            CampaignTriggerInterface::TRIGGER_SCHEDULED_AT,
+            '{"scheduled_at": "2027-06-15 09:00:00"}'
+        );
+        $this->campaignTriggerCollectionFactory->method('create')
+            ->willReturn($this->makeTriggerCollection([$trigger]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([]));
+
+        $days = $this->makeViewModel()->getCalendarDays();
+
+        foreach ($days as $day) {
+            self::assertSame([], $day['entries']);
+        }
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetCalendarDaysSkipsRecurringTriggerWithEmptyCronExpression(): void
+    {
+        $this->request->method('getParam')->willReturn('2026-11');
+
+        $trigger = $this->makeTrigger(7, CampaignTriggerInterface::TRIGGER_RECURRING_SCHEDULE, '{}');
+        $this->campaignTriggerCollectionFactory->method('create')
+            ->willReturn($this->makeTriggerCollection([$trigger]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([]));
+
+        $days = $this->makeViewModel()->getCalendarDays();
+
+        foreach ($days as $day) {
+            self::assertSame([], $day['entries']);
+        }
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetCalendarDaysPlotsAScheduledAtTriggerOnItsOwnDay(): void
     {
         $this->request->method('getParam')->willReturn('2026-11');

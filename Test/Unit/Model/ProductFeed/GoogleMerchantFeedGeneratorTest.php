@@ -52,6 +52,32 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
         );
     }
 
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetFeedCodeReturnsGoogleMerchant(): void
+    {
+        self::assertSame('google_merchant', $this->generator->getFeedCode());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetContentTypeReturnsXml(): void
+    {
+        self::assertSame('application/xml; charset=UTF-8', $this->generator->getContentType());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testIsEnabledDelegatesToConfig(): void
+    {
+        $this->config = $this->createMock(Config::class);
+        $this->config->expects(self::once())->method('isShoppingFeedEnabled')->with(3)->willReturn(true);
+        $this->generator = new GoogleMerchantFeedGenerator(
+            new CatalogFeedProductFetcher($this->productCollectionFactory, $this->catalogImageHelper),
+            $this->storeManager,
+            $this->config
+        );
+
+        self::assertTrue($this->generator->isEnabled(3));
+    }
+
     private function makeCollection(array $products): ProductCollection
     {
         $collection = $this->createStub(ProductCollection::class);

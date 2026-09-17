@@ -53,6 +53,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isPushEnabled());
         self::assertTrue($this->config->isFrequencyCapEnabled());
         self::assertTrue($this->config->isQuietHoursEnabled());
+        self::assertTrue($this->config->isMetaCatalogFeedEnabled());
     }
 
     public function testPushGettersDelegateToScopeConfig(): void
@@ -117,6 +118,7 @@ class ConfigTest extends TestCase
             ['ordo_automation/ad_audience_sync/meta_ad_account_id', 'store', null, '9999'],
             ['ordo_automation/shopping_feed/title', 'store', null, 'My Feed'],
             ['ordo_automation/shopping_feed/description', 'store', null, 'My Feed Description'],
+            ['ordo_automation/meta_catalog_feed/default_brand', 'store', null, 'Acme'],
         ]);
 
         self::assertSame('gid', $this->config->getGoogleAdsClientId());
@@ -128,6 +130,7 @@ class ConfigTest extends TestCase
         self::assertSame('9999', $this->config->getMetaAdAccountId());
         self::assertSame('My Feed', $this->config->getShoppingFeedTitle());
         self::assertSame('My Feed Description', $this->config->getShoppingFeedDescription());
+        self::assertSame('Acme', $this->config->getMetaCatalogFeedDefaultBrand());
     }
 
     public function testIntGettersUseDefaultWhenUnset(): void
