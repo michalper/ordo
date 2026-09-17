@@ -356,6 +356,25 @@
             <column name="attempts"/>
         </index>
     </table>
+    <table name="ordo_push_send_retry" resource="default" engine="innodb" comment="The send_push counterpart to ordo_message_send_retry, deliberately shaped differently: send_push fans out to every one of a customers registered subscriptions per execute() call (Model\Campaign\Action\SendPush), so a whole-action retry (like ordo_message_send_retry does for send_email/send_sms/send_whatsapp) would risk re-sending to subscriptions that already succeeded the first time. Instead, one row here is a single subscriptions send whose SendRetrier in-process retries were exhausted - Model\Push\PushSendRetryQueue creates these, Cron\RetryFailedPushSends re-attempts them with the same exponential-backoff/atomic-claim/dead-letter shape as ordo_message_send_retry, going straight through Model\Push\PushSubscriptionSender rather than Model\Campaign\ActionPool since this isnt a whole campaign action.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="subscription_id" padding="10" unsigned="true" nullable="false" comment="ordo_push_subscription.entity_id this row is retrying - if the subscription was deleted (unsubscribe, or SubscriptionGoneException) before this retry runs, the row is simply dropped, nothing left to retry"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Copied from the original send, for Model\Sms\MessageLogWriter's recordSent()/recordFailed() calls on retry"/>
+        <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="true" comment="Copied from the original send's context, for message-log/outcome attribution on retry"/>
+        <column xsi:type="varchar" name="variant" nullable="true" length="32" comment="Copied ordo_split_variant from the original send's context, same field MessageLogWriter's other callers pass"/>
+        <column xsi:type="text" name="payload" nullable="false" comment="The already-built JSON push payload (title/body/url) from the original send - built once by SendPush::execute() and shared across every subscription, so no need to re-render it on retry"/>
+        <column xsi:type="smallint" name="attempts" unsigned="true" nullable="false" default="0" comment="How many times this has been retried so far - a row stops being selected once this reaches Cron\RetryFailedPushSends::MAX_ATTEMPTS, becoming a permanent dead letter"/>
+        <column xsi:type="text" name="last_error" nullable="true" comment="The most recent failure's exception message"/>
+        <column xsi:type="datetime" name="next_retry_at" nullable="false" comment="Earliest time this row is eligible to be retried again - bumped forward as the claim itself (see ResourceModel\PushSendRetry::claim()), then corrected to the real backoff delay once the retry's own outcome is known"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="ORDO_PUSH_SEND_RETRY_NEXT_RETRY_AT_ATTEMPTS" indexType="btree">
+            <column name="next_retry_at"/>
+            <column name="attempts"/>
+        </index>
+    </table>
     <table name="ordo_campaign_dispatch_dead_letter" resource="default" engine="innodb" comment="A CampaignDispatchConsumer::execute() call that threw an exception it couldnt recover from (malformed message, or an exception CampaignDispatcher::dispatch() itself didnt already swallow internally) - previously this propagated uncaught to the message-queue framework and was lost with only a framework-level error log, no persisted record and no way to inspect what the message actually contained. Append-only, insert-only: nothing in this module currently re-processes these rows automatically, they exist purely so a broken/malformed dispatch is visible instead of silently dropped.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="trigger_event" nullable="true" length="64" comment="The trigger_event the message claimed, if the message could be decoded far enough to read it"/>

@@ -7,6 +7,24 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Persisted per-subscription retry for send_push (ROADMAP.md "Communication channels")** —
+  closes the last remaining gap in `SendRetrier`-exhausted sends: `send_email`/`send_sms`/
+  `send_whatsapp` already got a persisted retry queue, `send_push` was deliberately excluded
+  because it fans out to every one of a customer's registered subscriptions per `execute()` call,
+  so a whole-action retry (like `Model\Campaign\MessageSendRetryQueue`) would risk re-sending to
+  subscriptions that already succeeded the first time.
+  - New `ordo_push_send_retry` table + `Model\Push\PushSendRetryQueue` retry a single
+    subscription's send (not a whole action), same exponential-backoff/atomic-claim shape as
+    `ordo_message_send_retry`.
+  - `Model\Push\PushSubscriptionSender` is a new collaborator extracted from `SendPush`'s
+    per-subscription loop body, shared by `SendPush` and the new `Cron\RetryFailedPushSends` so
+    the two can't drift on what counts as a permanently-dead subscription vs. a transient failure
+    worth another try.
+  - `Cron\RetryFailedPushSends` re-attempts due rows every 10 minutes, going straight through
+    `PushSubscriptionSender` rather than `Model\Campaign\ActionPool` since this isn't a whole
+    campaign action — if the subscription itself no longer exists (unsubscribed, or already
+    deleted by a prior `SubscriptionGoneException`) the retry row is simply dropped.
+
 - **Customer Lifetime Value (CLV) scoring (ROADMAP.md "Candidate new features")** — a
   forward-looking counterpart to the existing RFM (`Model\Rfm\RfmCalculator`):
   - `Model\Clv\ClvCalculator` projects each customer's future value with the standard, explainable

@@ -53,11 +53,6 @@ fully closed — see docs/CHANGELOG.md.
   path — no concurrency control (client-side pacing per provider now exists, see docs/CHANGELOG.md
   — that's throttling one process's own call rate, not coordinating concurrency across multiple
   queue consumers/cron processes hitting the same provider at once).
-- `send_push`'s per-subscription sends still have no persisted retry once `SendRetrier`'s 3
-  in-process attempts are exhausted (`send_email`/`send_sms`/`send_whatsapp` now do, see
-  docs/CHANGELOG.md) — a whole-action retry would risk re-sending to subscriptions that already
-  succeeded the first time; a per-subscription retry queue would be needed to close this safely,
-  not attempted yet.
 
 ### Commerce features (free gifts, order approval, reorder cycles, GDPR, product feed, dashboard)
 

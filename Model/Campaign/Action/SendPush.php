@@ -9,12 +9,10 @@ use Ordo\Automation\Model\Campaign\FrequencyCapGate;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
-use Ordo\Automation\Model\Push\Exception\SubscriptionGoneException;
-use Ordo\Automation\Model\Push\PushSender;
 use Ordo\Automation\Model\Push\PushSubscriptionManager;
+use Ordo\Automation\Model\Push\PushSubscriptionSender;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Params: {"title": "...", "body": "...", "url": "https://..."} - "url" is optional, opened by
@@ -33,11 +31,12 @@ use Throwable;
  * Also checks FrequencyCapGate::allows() right after (opt-in, cross-channel), once per
  * customer before fanning out to their registered subscriptions.
  *
- * Deliberately NOT wired into Model\Campaign\MessageSendRetryQueue, unlike
- * Send{Email,Sms,WhatsApp} - this action fans out to every one of a customer's subscriptions per
- * execute() call, so a persisted retry that re-runs the whole action would risk re-sending to
- * subscriptions that already succeeded the first time. A per-subscription retry queue would be
- * needed to close this gap safely; not attempted here.
+ * Unlike Send{Email,Sms,WhatsApp} (which enqueue a whole-action retry via
+ * Model\Campaign\MessageSendRetryQueue when SendRetrier's in-process retries are exhausted), each
+ * subscription's send here is retried individually via Model\Push\PushSubscriptionSender +
+ * Model\Push\PushSendRetryQueue - a whole-action retry would risk re-sending to subscriptions
+ * that already succeeded the first time, since this fans out to every one of a customer's
+ * subscriptions per execute() call.
  */
 class SendPush implements ActionInterface
 {
@@ -45,13 +44,12 @@ class SendPush implements ActionInterface
 
     public function __construct(
         private readonly PushSubscriptionManager $pushSubscriptionManager,
-        private readonly PushSender $pushSender,
+        private readonly PushSubscriptionSender $pushSubscriptionSender,
         private readonly Config $config,
         private readonly MessageLogWriter $messageLogWriter,
         private readonly ConsentManager $consentManager,
         private readonly QuietHoursGate $quietHoursGate,
         private readonly FrequencyCapGate $frequencyCapGate,
-        private readonly SendRetrier $sendRetrier,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -119,39 +117,7 @@ class SendPush implements ActionInterface
         ]);
 
         foreach ($subscriptions as $subscription) {
-            // ordo_message_log.to_address is varchar(255) (sized for phone numbers/emails); some
-            // push services' endpoint URLs run longer, so this truncates purely for logging - the
-            // real, full endpoint used to send always comes straight from the subscription row.
-            $endpoint = substr((string) $subscription->getEndpoint(), 0, 255);
-            try {
-                // A dead/gone subscription (SubscriptionGoneException) is permanently invalid -
-                // excluded from SendRetrier's retry loop, same reasoning as SendSms's
-                // OptedOutException exclusion.
-                $this->sendRetrier->attempt(
-                    function () use ($subscription, $payload): void {
-                        $this->pushSender->send($subscription, $payload);
-                    },
-                    static fn (Throwable $e): bool => !$e instanceof SubscriptionGoneException
-                );
-                $this->messageLogWriter->recordSent(
-                    self::CHANNEL,
-                    $customerId,
-                    $endpoint,
-                    null,
-                    $campaignId,
-                    $variant
-                );
-            } catch (SubscriptionGoneException) {
-                $this->pushSubscriptionManager->delete($subscription);
-                $this->messageLogWriter->recordFailed(self::CHANNEL, $customerId, $endpoint, $campaignId, $variant);
-            } catch (Throwable $e) {
-                $this->logger->error(sprintf(
-                    'Ordo_Automation: campaign send_push action failed for customer #%d: %s',
-                    $customerId,
-                    $e->getMessage()
-                ));
-                $this->messageLogWriter->recordFailed(self::CHANNEL, $customerId, $endpoint, $campaignId, $variant);
-            }
+            $this->pushSubscriptionSender->send($subscription, $payload, $customerId, $campaignId, $variant);
         }
     }
 }

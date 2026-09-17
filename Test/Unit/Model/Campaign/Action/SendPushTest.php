@@ -5,14 +5,12 @@ namespace Ordo\Automation\Test\Unit\Model\Campaign\Action;
 
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign\Action\SendPush;
-use Ordo\Automation\Model\Campaign\Action\SendRetrier;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
-use Ordo\Automation\Model\Push\Exception\SubscriptionGoneException;
-use Ordo\Automation\Model\Push\PushSender;
 use Ordo\Automation\Model\Push\PushSubscriptionManager;
+use Ordo\Automation\Model\Push\PushSubscriptionSender;
 use Ordo\Automation\Model\PushSubscription;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -22,7 +20,7 @@ use Psr\Log\LoggerInterface;
 class SendPushTest extends TestCase
 {
     private PushSubscriptionManager $pushSubscriptionManager;
-    private PushSender $pushSender;
+    private PushSubscriptionSender $pushSubscriptionSender;
     private Config $config;
     private MessageLogWriter $messageLogWriter;
     private ConsentManager $consentManager;
@@ -33,7 +31,7 @@ class SendPushTest extends TestCase
     protected function setUp(): void
     {
         $this->pushSubscriptionManager = $this->createMock(PushSubscriptionManager::class);
-        $this->pushSender = $this->createMock(PushSender::class);
+        $this->pushSubscriptionSender = $this->createMock(PushSubscriptionSender::class);
         $this->config = $this->createMock(Config::class);
         $this->config->method('isPushEnabled')->willReturn(true);
         $this->messageLogWriter = $this->createMock(MessageLogWriter::class);
@@ -50,13 +48,12 @@ class SendPushTest extends TestCase
     {
         return new SendPush(
             $this->pushSubscriptionManager,
-            $this->pushSender,
+            $this->pushSubscriptionSender,
             $this->config,
             $this->messageLogWriter,
             $this->consentManager,
             $this->quietHoursGate,
             $this->frequencyCapGate,
-            new SendRetrier(1),
             $this->logger
         );
     }
@@ -76,9 +73,8 @@ class SendPushTest extends TestCase
         $this->pushSubscriptionManager->expects(self::once())->method('getForCustomer')->with(42)
             ->willReturn([$subscriptionA, $subscriptionB]);
 
-        $this->pushSender->expects(self::exactly(2))->method('send');
-        $this->messageLogWriter->expects(self::exactly(2))->method('recordSent')
-            ->with('push', 42, self::anything(), null);
+        $this->pushSubscriptionSender->expects(self::exactly(2))->method('send')
+            ->with(self::anything(), self::anything(), 42, null, null);
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['title' => 'Order shipped', 'body' => 'On its way', 'url' => 'https://example.com/order/1']);
@@ -90,12 +86,15 @@ class SendPushTest extends TestCase
         $subscription = $this->subscription('https://push.example.com/a');
         $this->pushSubscriptionManager->method('getForCustomer')->willReturn([$subscription]);
 
-        $this->pushSender->expects(self::once())->method('send')->with(
+        $this->pushSubscriptionSender->expects(self::once())->method('send')->with(
             $subscription,
             self::callback(function (string $payload) {
                 $decoded = json_decode($payload, true);
                 return $decoded['body'] === 'Check out: Widget - $19.99';
-            })
+            }),
+            42,
+            null,
+            null
         );
 
         $context = ['customer_id' => 42, 'recommended_products_text' => 'Check out: Widget - $19.99'];
@@ -142,7 +141,7 @@ class SendPushTest extends TestCase
         $this->consentManager->expects(self::once())->method('hasConsent')
             ->with(42, ConsentChannel::Push)->willReturn(false);
         $this->pushSubscriptionManager->expects(self::never())->method('getForCustomer');
-        $this->pushSender->expects(self::never())->method('send');
+        $this->pushSubscriptionSender->expects(self::never())->method('send');
         $this->messageLogWriter->expects(self::once())->method('recordOptedOut')->with('push', 42, '');
 
         $context = ['customer_id' => 42];
@@ -157,7 +156,7 @@ class SendPushTest extends TestCase
         $this->frequencyCapGate = $this->createMock(FrequencyCapGate::class);
         $this->frequencyCapGate->expects(self::never())->method('allows');
         $this->pushSubscriptionManager->expects(self::never())->method('getForCustomer');
-        $this->pushSender->expects(self::never())->method('send');
+        $this->pushSubscriptionSender->expects(self::never())->method('send');
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['title' => 'Hi']);
@@ -170,7 +169,7 @@ class SendPushTest extends TestCase
         $this->frequencyCapGate->expects(self::once())->method('allows')
             ->with(42, 'push', '', 'send_push')->willReturn(false);
         $this->pushSubscriptionManager->expects(self::never())->method('getForCustomer');
-        $this->pushSender->expects(self::never())->method('send');
+        $this->pushSubscriptionSender->expects(self::never())->method('send');
         $this->messageLogWriter->expects(self::never())->method('recordSuppressed');
 
         $context = ['customer_id' => 42];
@@ -181,92 +180,7 @@ class SendPushTest extends TestCase
     public function testExecuteDoesNothingWhenNoSubscriptionsRegistered(): void
     {
         $this->pushSubscriptionManager->method('getForCustomer')->willReturn([]);
-        $this->pushSender->expects(self::never())->method('send');
-
-        $context = ['customer_id' => 42];
-        $this->makeAction()->execute($context, ['title' => 'Hi']);
-    }
-
-    /**
-     * Regression test: a gone/dead subscription is permanently invalid, so it must fail fast on
-     * the first attempt, not burn through every retry on an outcome that can never change.
-     */
-    #[AllowMockObjectsWithoutExpectations]
-    public function testExecuteDeletesSubscriptionAndRecordsFailedWhenGone(): void
-    {
-        $subscription = $this->subscription('https://push.example.com/dead');
-        $this->pushSubscriptionManager->method('getForCustomer')->willReturn([$subscription]);
-        $this->pushSender->expects(self::once())->method('send')
-            ->willThrowException(new SubscriptionGoneException('gone'));
-
-        $this->pushSubscriptionManager->expects(self::once())->method('delete')->with($subscription);
-        $this->messageLogWriter->expects(self::once())->method('recordFailed')->with('push', 42, 'https://push.example.com/dead');
-
-        $context = ['customer_id' => 42];
-        $this->makeAction()->execute($context, ['title' => 'Hi']);
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testExecuteLogsErrorAndRecordsFailedOnOtherSendFailure(): void
-    {
-        $subscription = $this->subscription('https://push.example.com/a');
-        $this->pushSubscriptionManager->method('getForCustomer')->willReturn([$subscription]);
-        $this->pushSender->expects(self::exactly(3))->method('send')
-            ->willThrowException(new \RuntimeException('push service down'));
-
-        $this->pushSubscriptionManager->expects(self::never())->method('delete');
-        $this->logger->expects(self::once())->method('error');
-        $this->messageLogWriter->expects(self::once())->method('recordFailed')->with('push', 42, 'https://push.example.com/a');
-
-        $context = ['customer_id' => 42];
-        $this->makeAction()->execute($context, ['title' => 'Hi']);
-
-        self::assertTrue(true, 'execute() must not rethrow');
-    }
-
-    /**
-     * Regression test for the retry/backoff fix: a transient failure on the first attempt(s)
-     * must not permanently drop the message - a later attempt succeeding must still record the
-     * message as sent, not failed.
-     */
-    #[AllowMockObjectsWithoutExpectations]
-    public function testExecuteRetriesATransientSendFailureAndSucceeds(): void
-    {
-        $subscription = $this->subscription('https://push.example.com/a');
-        $this->pushSubscriptionManager->method('getForCustomer')->willReturn([$subscription]);
-        $this->pushSender->expects(self::exactly(2))->method('send')->willReturnCallback(
-            function () {
-                static $calls = 0;
-                $calls++;
-                if ($calls < 2) {
-                    throw new \RuntimeException('transient push service timeout');
-                }
-            }
-        );
-
-        $this->messageLogWriter->expects(self::once())->method('recordSent')
-            ->with('push', 42, 'https://push.example.com/a', null);
-        $this->messageLogWriter->expects(self::never())->method('recordFailed');
-        $this->logger->expects(self::never())->method('error');
-
-        $context = ['customer_id' => 42];
-        $this->makeAction()->execute($context, ['title' => 'Hi']);
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testExecuteContinuesToOtherSubscriptionsWhenOneFails(): void
-    {
-        $failing = $this->subscription('https://push.example.com/fail');
-        $succeeding = $this->subscription('https://push.example.com/ok');
-        $this->pushSubscriptionManager->method('getForCustomer')->willReturn([$failing, $succeeding]);
-        $this->pushSender->method('send')->willReturnCallback(function ($subscription) use ($failing) {
-            if ($subscription === $failing) {
-                throw new \RuntimeException('down');
-            }
-        });
-
-        $this->messageLogWriter->expects(self::once())->method('recordFailed');
-        $this->messageLogWriter->expects(self::once())->method('recordSent');
+        $this->pushSubscriptionSender->expects(self::never())->method('send');
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['title' => 'Hi']);
