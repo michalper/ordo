@@ -10,16 +10,25 @@ namespace Ordo\Automation\Model\Gdpr;
  * that already bit SetConsent's channel list once (see that class's own fix history in
  * docs/CHANGELOG.md). A table added to one list but not the other would silently mean either an
  * erasure that misses data (compliance risk) or an export that's incomplete - both now read from
- * here instead. Went stale once already, in exactly the way its own doc warns about: a follow-up
- * audit found this list was still missing ordo_customer_rfm_score, ordo_trigger_outcome_log,
- * ordo_campaign_outcome_log, ordo_push_subscription, ordo_reorder_cycle, ordo_offer and
- * ordo_credit_limit_alert_log — all seven do carry a real customer_id column per db_schema.xml,
- * so both erasure and export were silently incomplete until this fix.
+ * here instead.
  *
- * ordo_visitor_event is deliberately NOT included - it is keyed by visitor_id, an anonymous
- * browser-cookie identifier this module never links back to a customer_id by design (see
- * Observer\StitchVisitorIdentity's own doc on why that stitching only ever flows into tags/score,
- * not a stored customer_id column on the event rows themselves).
+ * Went stale TWICE already, in exactly the way this doc warns about. First: a follow-up audit
+ * found the list was missing ordo_customer_rfm_score, ordo_trigger_outcome_log,
+ * ordo_campaign_outcome_log, ordo_push_subscription, ordo_reorder_cycle, ordo_offer and
+ * ordo_credit_limit_alert_log. Second (2026-09-17, found during live end-to-end verification of
+ * unrelated features): eight more tables had accumulated a customer_id column since without ever
+ * being added here - ordo_browse_abandoned_reminder_log, ordo_campaign_attribution,
+ * ordo_campaign_scheduled_action, ordo_conversation_message, ordo_customer_clv_score,
+ * ordo_price_watch_subscription, ordo_push_send_retry, and ordo_visitor_event. That last one is
+ * the most important miss: this class used to document ordo_visitor_event as deliberately
+ * excluded because it was "keyed by visitor_id, an anonymous browser-cookie identifier this
+ * module never links back to a customer_id" - true when that reasoning was written, but
+ * Observer\StitchVisitorIdentity has since added a nullable customer_id column to that exact
+ * table (set once identity stitching links a visitor to a logged-in customer), silently making
+ * that reasoning wrong: a customer's browsing history, once linked to their account, was neither
+ * erased nor exported by a GDPR request. There is no automated check that this list stays
+ * complete - re-verify against db_schema.xml for every table with a customer_id column whenever
+ * a new one is added, don't trust this list is still exhaustive just because it was once.
  */
 class CustomerDataTableProvider
 {
@@ -46,6 +55,14 @@ class CustomerDataTableProvider
         'ordo_reorder_cycle' => 'reorder_cycles',
         'ordo_offer' => 'offers',
         'ordo_credit_limit_alert_log' => 'credit_limit_alert_log',
+        'ordo_browse_abandoned_reminder_log' => 'browse_abandoned_reminder_log',
+        'ordo_campaign_attribution' => 'campaign_attribution',
+        'ordo_campaign_scheduled_action' => 'campaign_scheduled_action',
+        'ordo_conversation_message' => 'conversation_messages',
+        'ordo_customer_clv_score' => 'clv_score',
+        'ordo_price_watch_subscription' => 'price_watch_subscriptions',
+        'ordo_push_send_retry' => 'push_send_retry',
+        'ordo_visitor_event' => 'visitor_events',
     ];
 
     /**
