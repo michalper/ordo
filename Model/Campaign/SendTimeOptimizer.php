@@ -89,6 +89,6 @@ class SendTimeOptimizer
                 ->where('ml.customer_id = ?', $customerId)
         );
 
-        return array_map(static fn ($value): string => (string)$value, $rows);
+        return array_map('strval', $rows);
     }
 }

@@ -2629,6 +2629,12 @@ parameters:
 			path: Model/Recommendation/ProductRecommender.php
 
 		-
+			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''strval'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Campaign/SendTimeOptimizer.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 4
