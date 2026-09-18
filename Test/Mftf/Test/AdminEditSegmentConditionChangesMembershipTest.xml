@@ -180,7 +180,14 @@
         <conditionalClick selector="{{AdminCartPriceRulesFormSection.manageCouponCodesHeader}}"
                            dependentSelector="#couponCodesGrid_table" visible="false" stepKey="openCouponCodesTabAfterOrder2"/>
         <waitForElementVisible selector="#couponCodesGrid_table" stepKey="waitForCouponCodesGridAfterOrder2"/>
-        <waitForText selector="#couponCodesGrid_table" userInput="SEGEDIT-" stepKey="seeGeneratedCouponInGridAfterOrder2"/>
+        <!-- Same loading-mask wait as the order-1 negative check above - missing it here let this
+             step read the grid's pre-refresh DOM state before its AJAX call landed. -->
+        <waitForElementNotVisible selector="#couponCodesGrid .admin__data-grid-loading-mask" stepKey="waitForGridLoadingMaskGoneAfterOrder2"/>
+        <!-- time="90", not the 60s default - a real CI run under load took longer than 60s for
+             this coupon to land in the grid even though generation itself runs synchronously via
+             the magentoCLI consumer drain above; waitForText already polls, this just widens the
+             window it polls within. -->
+        <waitForText selector="#couponCodesGrid_table" userInput="SEGEDIT-" time="90" stepKey="seeGeneratedCouponInGridAfterOrder2"/>
 
         <!-- Cleanup: same reasoning as AdminSegmentBulkActionAddPointsTest.xml's identical closing
              step — this test's own score rule is an unscoped group_id=1 demographic rule that
