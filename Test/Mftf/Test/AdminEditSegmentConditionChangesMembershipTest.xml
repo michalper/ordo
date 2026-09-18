@@ -154,7 +154,7 @@
              attaches, so the observable never picks it up and the form silently POSTs the
              original 999 - the segment's condition never actually changes, and no amount of
              waiting on the coupon grid afterward can fix that. -->
-        <waitForValue selector="[name='conditions[conditions][0][threshold]']" userInput="999" stepKey="waitForExistingThresholdHydrated"/>
+        <waitForJS function="function () { var el = document.querySelector(&quot;[name='conditions[conditions][0][threshold]']&quot;); return !!el &amp;&amp; el.value === '999'; }" stepKey="waitForExistingThresholdHydrated"/>
         <!-- Same type (score_at_least), just a threshold (10) the customer's existing 80 points
              now clears — no new customer data, only the segment's own row changes. -->
         <fillField selector="[name='conditions[conditions][0][threshold]']" userInput="10" stepKey="fillSegmentConditionAmount"/>
