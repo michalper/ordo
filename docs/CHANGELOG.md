@@ -5,6 +5,18 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **`cart_abandoned` campaign no longer fully suppressed by an email consent withdrawal** —
+  `Cron\SendAbandonedCartReminders`'s email-consent check previously skipped the *entire* row,
+  including `dispatchCampaigns()`, whenever a registered customer had withdrawn email consent.
+  That blocked non-email campaign actions (`add_tag`, `generate_coupon`, ...) too, even though they
+  have nothing to do with email — every channel action (`send_email`/`send_sms`/`send_push`/
+  `send_whatsapp`) already checks `ConsentManager` itself before sending, the same way
+  `Cron\SendBrowseAbandonmentReminders`'s dispatch-only design already relied on. The consent
+  check now only gates the fixed reminder email this cron sends directly (bypassing the campaign
+  engine's own per-action gate); the `cart_abandoned` trigger itself always dispatches.
+
 ### Added
 
 - **Local LLM (Ollama) content generation (ROADMAP.md "Candidate new features")** — a new

@@ -100,11 +100,16 @@ class SendAbandonedCartReminders
         $sent = 0;
         foreach ($rows as $row) {
             // A registered customer (guest quotes have no customer_id and aren't covered by the
-            // consent register at all) who opted out of email must never receive this reminder,
-            // same consent gate every other channel's send action applies before sending.
-            if (!empty($row['customer_id']) && !($consentByCustomer[(int) $row['customer_id']] ?? true)) {
-                continue;
-            }
+            // consent register at all) who opted out of email must never receive THIS fixed
+            // reminder - it's sent directly via TransportBuilder, bypassing the campaign engine's
+            // own per-action consent gate entirely, so it needs its own check here. The
+            // cart_abandoned campaign trigger below is dispatched regardless: its own actions
+            // (send_email/send_sms/send_push/send_whatsapp) already check ConsentManager
+            // themselves before sending, and a non-channel action (add_tag, generate_coupon, ...)
+            // has nothing to do with email consent at all - gating the whole trigger here would
+            // silently suppress those too, which used to be this method's actual behavior.
+            $hasEmailConsent = empty($row['customer_id'])
+                || ($consentByCustomer[(int) $row['customer_id']] ?? true);
 
             // Claim (log) BEFORE sending, not after - a crash between a successful send and the
             // log write must never cause a duplicate reminder on the next tick. If the send
@@ -113,7 +118,9 @@ class SendAbandonedCartReminders
             $this->logReminderSent($reminderLogRow);
 
             try {
-                $this->sendReminder($row);
+                if ($hasEmailConsent) {
+                    $this->sendReminder($row);
+                }
                 $this->dispatchCampaigns($row);
                 $sent++;
             } catch (\Throwable $e) {

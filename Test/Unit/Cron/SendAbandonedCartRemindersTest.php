@@ -18,11 +18,9 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
-use Ordo\Automation\Model\Cron\CronRunLogger;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class SendAbandonedCartRemindersTest extends TestCase
 {
@@ -100,12 +98,18 @@ class SendAbandonedCartRemindersTest extends TestCase
     }
 
     /**
-     * Regression test for a real consent-bypass bug a code audit found: this cron used to have no
-     * ConsentManager check at all for registered customers (guest quotes have no customer_id and
-     * aren't covered by the consent register at all, so they're unaffected).
+     * A registered customer who withdrew email consent must never receive the fixed reminder
+     * email (sent directly via TransportBuilder, bypassing the campaign engine's own per-action
+     * consent gate). The cart_abandoned campaign trigger still dispatches regardless - its own
+     * channel actions (send_email/send_sms/...) check consent themselves before sending, and a
+     * non-channel action (add_tag, generate_coupon) has nothing to do with email consent, so
+     * suppressing the whole trigger here would silently block those too. (This used to be a
+     * regression test for the opposite bug - no consent check existed at all; a later audit found
+     * that the fix that closed it had swung too far the other way and blocked the trigger
+     * entirely, not just the email.)
      */
     #[AllowMockObjectsWithoutExpectations]
-    public function testExecuteSkipsReminderWhenRegisteredCustomerWithdrewEmailConsent(): void
+    public function testExecuteSkipsOnlyTheFixedEmailWhenRegisteredCustomerWithdrewEmailConsent(): void
     {
         $config = $this->createStub(Config::class);
         $config->method('isAbandonedCartEnabled')->willReturn(true);
@@ -124,22 +128,33 @@ class SendAbandonedCartRemindersTest extends TestCase
                 'subtotal' => 150.0,
             ],
         ]);
-        $connection->expects(self::never())->method('insert');
+        // The claim still happens - the campaign trigger below still needs the same
+        // claim-before-dispatch dedup/cap every other reminder cron relies on.
+        $connection->expects(self::once())->method('insert');
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
-        $dispatcher->expects(self::never())->method('dispatch');
+        $dispatcher->expects(self::once())->method('dispatch')->with('cart_abandoned', [
+            'customer_id' => 5,
+            'cart_subtotal' => 150.0,
+        ]);
 
         $consentManager = $this->createMock(ConsentManager::class);
         $consentManager->expects(self::once())->method('hasConsentForCustomers')->with([5], ConsentChannel::Email)->willReturn([5 => false]);
 
+        // The fixed email path starts with quoteFactory->create()->load(...) - asserting it's
+        // never called proves sendReminder() itself was skipped, without needing to mock every
+        // TransportBuilder call to prove no email assembly happened.
+        $quoteFactory = $this->createMock(QuoteFactory::class);
+        $quoteFactory->expects(self::never())->method('create');
+
         (new SendAbandonedCartReminders(
             $config,
             $resourceConnection,
-            $this->createStub(QuoteFactory::class),
+            $quoteFactory,
             $this->createStub(TransportBuilder::class),
             $this->createStub(StoreManagerInterface::class),
             $this->createStub(StateInterface::class),
