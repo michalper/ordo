@@ -9,7 +9,7 @@
   "devDependencies": {
     "c8": "^10.1.2",
     "jquery": "^3.7.1",
-    "jsdom": "^25.0.1",
+    "jsdom": "^30.0.1",
     "qunit": "^2.22.0"
   }
 }
