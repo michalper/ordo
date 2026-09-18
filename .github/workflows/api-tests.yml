@@ -1,0 +1,233 @@
+name: API Tests
+
+# Real, full-stack REST API tests (Test/Api/) against a live Magento install — no mocks, no
+# Selenium/browser. Confirmed via a real local run (2026-09-18): these tests exist and are real
+# (plain PHPUnit + cURL against a running instance, see Test/Api/README.md), but were never
+# wired into ANY CI pipeline — ci.yml explicitly documents that Test/Api needs a real Magento
+# install and defers it ("see ROADMAP.md"), and nothing else picked it up since. This closes that
+# gap with the smallest install this suite actually needs: no Selenium, no MailHog, just
+# Magento + nginx/php-fpm + a fresh admin/customer/product fixture, mirroring mftf.yml's own
+# already-solved install steps (nginx/php-fpm setup, repo.magento.com auth, the local path
+# repository) minus everything Selenium-specific.
+#
+# Same two repository secrets as ci.yml/mftf.yml (MAGENTO_COMPOSER_USERNAME /
+# MAGENTO_COMPOSER_PASSWORD) — see ci.yml's own comment for how to get them.
+#
+# Runs on push/PR to main (this suite is a full Magento install but has no browser session, so
+# it's meaningfully faster than mftf.yml — closer to coverage.yml's cost than mftf.yml's) plus
+# on demand.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+          MYSQL_DATABASE: magento
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+
+      opensearch:
+        image: opensearchproject/opensearch:2.19.4
+        env:
+          discovery.type: single-node
+          DISABLE_SECURITY_PLUGIN: "true"
+          DISABLE_INSTALL_DEMO_CONFIG: "true"
+          OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd="curl -sf http://127.0.0.1:9200/_cluster/health"
+          --health-interval=10s --health-timeout=5s --health-retries=15
+
+    steps:
+      - name: Checkout module
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: ordo-module
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: "8.4"
+          extensions: bcmath, ctype, curl, dom, ftp, gd, intl, mbstring, mysqli, pdo_mysql, simplexml, soap, sodium, xsl, zip, opcache, sockets
+          coverage: none
+
+      - name: Remove shivammathur/setup-php's ambient GitHub auth
+        # See mftf.yml's identical step for why — nothing here needs GitHub API auth either.
+        run: composer config --global --unset github-oauth.github.com || true
+
+      - name: Checkout Magento 2.4.9
+        run: git clone --branch 2.4.9 --depth 1 https://github.com/magento/magento2.git magento
+
+      - name: Configure Composer for repo.magento.com and the local module
+        working-directory: magento
+        env:
+          MAGENTO_COMPOSER_USERNAME: ${{ secrets.MAGENTO_COMPOSER_USERNAME }}
+          MAGENTO_COMPOSER_PASSWORD: ${{ secrets.MAGENTO_COMPOSER_PASSWORD }}
+        run: |
+          composer config repositories.magento composer https://repo.magento.com
+          composer config http-basic.repo.magento.com "$MAGENTO_COMPOSER_USERNAME" "$MAGENTO_COMPOSER_PASSWORD"
+          composer config repositories.ordo-automation '{"type":"path","url":"../ordo-module","options":{"symlink":false}}'
+          composer config allow-plugins.magento/composer-dependency-version-audit-plugin true
+          composer config allow-plugins.magento/magento-composer-installer true
+          composer config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+
+      - name: Require the local module
+        working-directory: magento
+        run: composer require michalper/ordo:@dev --no-interaction --no-progress
+
+      - name: Install the module's own dev dependencies (PHPUnit)
+        # `composer require` above installs the module as a production dependency of the
+        # Magento app (no dev deps) — Test/Api itself needs this module's OWN require-dev
+        # (phpunit/phpunit) to actually run, a completely separate composer context from the
+        # Magento app's (and from the composer config set on the "magento" working-directory
+        # above — ordo-module has its own composer.json/auth.json). Same two-installs-in-one-job
+        # shape ci.yml's "Install dependencies" step covers when the module is checked out at
+        # repo root instead of under path:.
+        working-directory: ordo-module
+        env:
+          MAGENTO_COMPOSER_USERNAME: ${{ secrets.MAGENTO_COMPOSER_USERNAME }}
+          MAGENTO_COMPOSER_PASSWORD: ${{ secrets.MAGENTO_COMPOSER_PASSWORD }}
+        run: |
+          composer config repositories.magento composer https://repo.magento.com
+          composer config http-basic.repo.magento.com "$MAGENTO_COMPOSER_USERNAME" "$MAGENTO_COMPOSER_PASSWORD"
+          composer config allow-plugins.magento/composer-dependency-version-audit-plugin true
+          composer config allow-plugins.magento/magento-composer-installer true
+          composer config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Install Magento
+        working-directory: magento
+        run: |
+          bin/magento setup:install \
+            --base-url=http://127.0.0.1:8080/ \
+            --db-host=127.0.0.1 --db-name=magento --db-user=root \
+            --admin-firstname=Admin --admin-lastname=User \
+            --admin-email=admin@example.com --admin-user=apitest --admin-password='ApiTest123!' \
+            --language=en_US --currency=USD --timezone=America/Chicago \
+            --use-rewrites=1 \
+            --search-engine=opensearch --opensearch-host=127.0.0.1 --opensearch-port=9200 \
+            --backend-frontname=admin
+
+          bin/magento module:enable Ordo_Automation
+          bin/magento setup:upgrade
+          bin/magento deploy:mode:set developer
+
+          # Test/Api doesn't exercise the tracker.js/MFTF-only feature flags (popup, survey,
+          # push, price watch) — only the config this suite's own endpoints actually gate on.
+          bin/magento config:set ordo_automation/order_approval/enabled 1
+          bin/magento config:set ordo_automation/credit_limit/enabled 1
+
+          bin/magento indexer:set-mode realtime cataloginventory_stock catalog_product_price \
+            catalog_product_attribute catalog_category_product catalog_product_category
+
+          bin/magento setup:static-content:deploy -f en_US -a adminhtml
+          bin/magento cache:flush
+
+      - name: Install nginx and PHP-FPM
+        # Same reasoning as mftf.yml's identical step, minus the Selenium-driven concurrency
+        # concern — this suite is plain sequential cURL, so pm.max_children stays at a modest
+        # value rather than mftf.yml's 32.
+        run: |
+          sudo add-apt-repository -y ppa:ondrej/php
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq nginx php8.4-fpm php8.4-bcmath php8.4-curl php8.4-gd \
+            php8.4-intl php8.4-mbstring php8.4-mysql php8.4-soap php8.4-xsl \
+            php8.4-zip php8.4-opcache
+
+      - name: Configure and start nginx + PHP-FPM for Magento
+        working-directory: magento
+        run: |
+          sudo tee /etc/nginx/sites-available/magento.conf > /dev/null <<NGINX
+          server {
+              listen 8080;
+              server_name 127.0.0.1;
+              set \$MAGE_ROOT $(pwd);
+              set \$MAGE_MODE developer;
+              include $(pwd)/nginx.conf.sample;
+          }
+          NGINX
+          sudo sed -i "s#fastcgi_pass   fastcgi_backend;#fastcgi_pass unix:/run/php/php8.4-fpm.sock;#" nginx.conf.sample
+          sudo ln -sf /etc/nginx/sites-available/magento.conf /etc/nginx/sites-enabled/magento.conf
+          sudo rm -f /etc/nginx/sites-enabled/default
+
+          sudo sed -i "s/^user www-data;/user $(whoami);/" /etc/nginx/nginx.conf
+          sudo sed -i "s/^user = .*/user = $(whoami)/; s/^group = .*/group = $(whoami)/" \
+            /etc/php/8.4/fpm/pool.d/www.conf
+          sudo sed -i "s/^listen.owner = .*/listen.owner = $(whoami)/; s/^listen.group = .*/listen.group = $(whoami)/" \
+            /etc/php/8.4/fpm/pool.d/www.conf
+
+          sudo nginx -t
+          sudo systemctl restart php8.4-fpm
+          sudo systemctl restart nginx
+          for i in $(seq 1 15); do
+            curl -sf http://127.0.0.1:8080/ -o /dev/null && break
+            sleep 2
+          done
+          curl -sf http://127.0.0.1:8080/ -o /dev/null || (
+            echo "--- nginx error.log ---"; sudo tail -100 /var/log/nginx/error.log
+            echo "--- php8.4-fpm error log ---"; sudo tail -100 /var/log/php8.4-fpm.log
+            exit 1
+          )
+
+      - name: Seed a fresh customer and a test product
+        # A fresh install has NO customers yet, so the first one created here is guaranteed to
+        # land at entity_id=1 — exactly the standing assumption CreditLimitApiTest/
+        # CustomerTagManagementApiTest/OfferApiTest's own docblocks/comments already document.
+        # Confirmed via a real local run against a long-lived, reused dev install: those same
+        # tests fail with 404s there purely because entity_id=1 no longer exists after dozens of
+        # earlier sessions' customers were created and deleted — not a product bug (direct curl
+        # calls against the real, current customer id worked correctly). A from-scratch install
+        # every run is what makes the hardcoded "1" safe here.
+        working-directory: magento
+        run: |
+          curl -sf -X POST "http://127.0.0.1:8080/rest/V1/customers" \
+            -H "Content-Type: application/json" \
+            -d '{"customer":{"email":"apitest@example.com","firstname":"Api","lastname":"Test"},"password":"ApiTest123!"}'
+
+          bin/magento cache:flush
+
+      - name: Create a real product for FreeGiftApiTest
+        # Via the core REST product endpoint (not bin/magento — no built-in CLI command creates
+        # a full salable simple product) so it's immediately visible through the same API layer
+        # Test/Api itself uses, with no reindex/timing gap to wait out.
+        run: |
+          TOKEN=$(curl -sf -X POST "http://127.0.0.1:8080/rest/V1/integration/admin/token" \
+            -H "Content-Type: application/json" \
+            -d '{"username":"apitest","password":"ApiTest123!"}' | tr -d '"')
+
+          curl -sf -X POST "http://127.0.0.1:8080/rest/V1/products" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $TOKEN" \
+            -d '{"product":{"sku":"ORDO-API-TEST-SKU","name":"Ordo Api Test Product","price":10,"status":1,"visibility":4,"type_id":"simple","attribute_set_id":4,"extension_attributes":{"stock_item":{"qty":100,"is_in_stock":true}}}}'
+
+          echo "ORDO_API_TEST_PRODUCT_SKU=ORDO-API-TEST-SKU" >> "$GITHUB_ENV"
+
+      - name: Run Test/Api
+        # OrderApprovalApiTest's token-specific tests (approve-by-token, decision-links) need
+        # ORDO_API_TEST_APPROVAL_TOKEN/ENTITY_ID, which need a real pending approval seeded via a
+        # full checkout flow first — left unset here (they markTestSkipped(), see
+        # AbstractApiTestCase/Test/Api/README.md), same acceptable partial-coverage tradeoff as
+        # FreeGiftApiTest already documents for its own SKU requirement when none is found.
+        working-directory: ordo-module
+        env:
+          ORDO_API_BASE_URL: http://127.0.0.1:8080
+          ORDO_API_ADMIN_USERNAME: apitest
+          ORDO_API_ADMIN_PASSWORD: ApiTest123!
+          ORDO_API_CUSTOMER_EMAIL: apitest@example.com
+          ORDO_API_CUSTOMER_PASSWORD: ApiTest123!
+        run: vendor/bin/phpunit Test/Api --testdox
