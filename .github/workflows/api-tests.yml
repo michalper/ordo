@@ -129,8 +129,13 @@ jobs:
 
           # Test/Api doesn't exercise the tracker.js/MFTF-only feature flags (popup, survey,
           # push, price watch) — only the config this suite's own endpoints actually gate on.
+          # Confirmed via a real CI run: without free_gift/enabled, FreeGiftManagement::
+          # getEligibility() fails closed (returns zero slots) regardless of a real, qualifying
+          # cart — the exact same fail-closed-when-disabled pattern as every flag below it, not
+          # a product bug.
           bin/magento config:set ordo_automation/order_approval/enabled 1
           bin/magento config:set ordo_automation/credit_limit/enabled 1
+          bin/magento config:set ordo_automation/free_gift/enabled 1
 
           bin/magento indexer:set-mode realtime cataloginventory_stock catalog_product_price \
             catalog_product_attribute catalog_category_product catalog_product_category
