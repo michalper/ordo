@@ -23,6 +23,10 @@ spodziewać — bez żadnego żargonu programistycznego.
 - [Śledzenie i popupy](Tracking-and-Popups) — co klient ogląda i jak to wykorzystać.
 - [Cykle ponownych zakupów](Reorder-Cycles) — przypomnienia "czas zamówić znowu".
 
+Budujesz własny frontend (aplikację mobilną, headless sklep) i potrzebujesz dokumentacji
+technicznej? Zobacz [API Reference](API-Reference) — to jedyna strona w tym poradniku
+przeznaczona dla programistów, nie dla marketingu.
+
 ## Zanim zaczniesz
 
 Prawie każda funkcja ma własny przełącznik w **Sklepy → Konfiguracja → Ordo Automation** — jest
@@ -53,6 +57,10 @@ developer jargon.
 - [Order Approval](Order-Approval) — control over large B2B orders.
 - [Tracking & Popups](Tracking-and-Popups) — what customers browse, and how to use it.
 - [Reorder Cycles](Reorder-Cycles) — "time to reorder" reminders.
+
+Building your own frontend (a mobile app, a headless storefront) and need technical
+documentation? See [API Reference](API-Reference) — the one page in this guide meant for
+developers, not marketing.
 
 ## Before you start
 
