@@ -348,3 +348,61 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor inline test-send', functio
         );
     });
 });
+
+/**
+ * Regression test: applyPaletteGroupSearch()/applyPaletteItemSearch() sit OUTSIDE the
+ * define(['jquery'], ...) module closure (like every other top-level helper in this file), so
+ * neither has a jQuery binding of its own - applyPaletteGroupSearch's own `$(this)` call threw
+ * "TypeError: $ is not a function" in a real browser every single time a merchant typed into the
+ * palette search box, confirmed live. This test's jsdom harness sets a global `$` (see
+ * dom-env.js), which is exactly why that bug was invisible to every earlier test here - $ needs
+ * to be passed in explicitly now (this test calls the function the same way the real caller
+ * does post-fix, not relying on any global).
+ */
+QUnit.module('Ordo_Automation/js/campaign-flow-editor palette search', function () {
+    QUnit.test('applyPaletteGroupSearch() shows only matching items and keeps the group open', function (assert) {
+        const initCampaignFlowEditor = loadModule(
+            MODULE_PATH,
+            '<div class="ordo-flow-palette-group">'
+                + '<div class="ordo-flow-palette-item" data-flow-type="send_email">Send Email</div>'
+                + '<div class="ordo-flow-palette-item" data-flow-type="add_tag">Add Tag</div>'
+                + '</div>'
+        );
+        const $group = global.$('.ordo-flow-palette-group');
+
+        initCampaignFlowEditor.applyPaletteGroupSearch(global.$, $group, 'email', true);
+
+        assert.notStrictEqual($group.find('[data-flow-type="send_email"]').css('display'), 'none');
+        assert.strictEqual($group.find('[data-flow-type="add_tag"]').css('display'), 'none');
+        assert.notStrictEqual($group.css('display'), 'none', 'the group itself stays open when it has a match');
+    });
+
+    QUnit.test('applyPaletteGroupSearch() hides the whole group when nothing inside it matches', function (assert) {
+        const initCampaignFlowEditor = loadModule(
+            MODULE_PATH,
+            '<div class="ordo-flow-palette-group">'
+                + '<div class="ordo-flow-palette-item" data-flow-type="add_tag">Add Tag</div>'
+                + '</div>'
+        );
+        const $group = global.$('.ordo-flow-palette-group');
+
+        initCampaignFlowEditor.applyPaletteGroupSearch(global.$, $group, 'nothing-matches-this', true);
+
+        assert.strictEqual($group.css('display'), 'none');
+    });
+
+    QUnit.test('applyPaletteGroupSearch() shows every item again once the query is cleared', function (assert) {
+        const initCampaignFlowEditor = loadModule(
+            MODULE_PATH,
+            '<div class="ordo-flow-palette-group">'
+                + '<div class="ordo-flow-palette-item" data-flow-type="add_tag">Add Tag</div>'
+                + '</div>'
+        );
+        const $group = global.$('.ordo-flow-palette-group');
+
+        initCampaignFlowEditor.applyPaletteGroupSearch(global.$, $group, '', false);
+
+        assert.notStrictEqual($group.css('display'), 'none');
+        assert.notStrictEqual($group.find('[data-flow-type="add_tag"]').css('display'), 'none');
+    });
+});

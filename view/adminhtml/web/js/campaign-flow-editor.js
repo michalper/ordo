@@ -223,11 +223,18 @@ function applyPaletteItemSearch($item, query) {
  * on whether any item still matches - pulled out of the palette-search input handler for the
  * same nesting-depth reason as connectPendingTriggers() above; no behavior change.
  *
+ * $ is passed in explicitly (not read from the enclosing scope) because this function, like
+ * every other top-level helper in this file, sits OUTSIDE the define(['jquery'], ...) module
+ * closure below - it has no jQuery binding of its own. Confirmed via a real browser: typing in
+ * the palette search box threw "TypeError: $ is not a function" from inside the .each()
+ * callback below every single time, since nothing here ever falls back to a global $.
+ *
+ * @param {jQuery} $ the jQuery instance from the caller's own module scope
  * @param {jQuery} $group
  * @param {String} query
  * @param {Boolean} hasQuery
  */
-function applyPaletteGroupSearch($group, query, hasQuery) {
+function applyPaletteGroupSearch($, $group, query, hasQuery) {
     var groupHasMatch = false;
 
     $group.find('.ordo-flow-palette-item').each(function () {
@@ -1236,7 +1243,7 @@ define([
                     $groups = $(this).closest('.ordo-flow-palette').find('.ordo-flow-palette-group');
 
                 $groups.each(function () {
-                    applyPaletteGroupSearch($(this), query, hasQuery);
+                    applyPaletteGroupSearch($, $(this), query, hasQuery);
                 });
             });
 
@@ -1644,6 +1651,8 @@ define([
     initCampaignFlowEditor.buildSplitVariantActionTypeOptionsHtml = buildSplitVariantActionTypeOptionsHtml;
     initCampaignFlowEditor.renderVariantEditor = renderVariantEditor;
     initCampaignFlowEditor.paletteItemMatchesQuery = paletteItemMatchesQuery;
+    initCampaignFlowEditor.applyPaletteItemSearch = applyPaletteItemSearch;
+    initCampaignFlowEditor.applyPaletteGroupSearch = applyPaletteGroupSearch;
     initCampaignFlowEditor.testSendChannelForActionType = testSendChannelForActionType;
     initCampaignFlowEditor.buildTestSendPayload = buildTestSendPayload;
 
