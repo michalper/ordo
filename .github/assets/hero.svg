@@ -39,7 +39,7 @@
       <text x="56" y="28" fill="#F8FAFC" font-size="40" font-weight="700">ordo</text>
     </g>
 
-    <text x="0" y="4" fill="#94A3B8" font-size="20" font-weight="600" letter-spacing="0.3">Automation for Magento 2</text>
+    <text x="0" y="4" fill="#94A3B8" font-size="18" font-weight="600" letter-spacing="0.2">Marketing Automation for Magento Open Source</text>
 
     <text x="0" y="56" fill="#CBD5E1" font-size="17">Native Magento 2 Marketing</text>
     <text x="0" y="84" fill="#CBD5E1" font-size="17">Automation Engine. B2B &amp; B2C.</text>
@@ -47,7 +47,7 @@
 
     <g transform="translate(0, 150)">
       <rect x="0" y="0" width="146" height="34" rx="17" fill="#1E293B" stroke="#334155" />
-      <text x="73" y="22" fill="#93C5FD" font-size="13" font-weight="600" text-anchor="middle">PHP 8.2+</text>
+      <text x="73" y="22" fill="#93C5FD" font-size="13" font-weight="600" text-anchor="middle">PHP 8.4+</text>
 
       <rect x="158" y="0" width="196" height="34" rx="17" fill="#1E293B" stroke="#334155" />
       <text x="256" y="22" fill="#86EFAC" font-size="13" font-weight="600" text-anchor="middle">PHPStan: Level Max</text>
