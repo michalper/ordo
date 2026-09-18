@@ -69,7 +69,7 @@ jobs:
         # workflow's own run summary) — same action already used for coverage below, just a
         # second invocation with a different report_type and file.
         if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4 # v7.1.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./junit.xml
@@ -82,7 +82,7 @@ jobs:
         # the old action's embedded wrapper couldn't verify it ("gpg: Can't check signature: No
         # public key") — a Codecov-side issue, not this repo's config; v7 ships an updated
         # wrapper that trusts the current key.
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4 # v7.1.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./clover.xml
