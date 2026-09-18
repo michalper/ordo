@@ -315,4 +315,63 @@ class VisitorEventHelper extends Helper
             ));
         }
     }
+
+    /**
+     * Confirms Controller/Track/SubmitSurveyResponse.php has actually committed a real answer to
+     * ordo_survey_prompt before a caller moves on to fire a downstream campaign that reads it
+     * (e.g. AdminCampaignNpsSurveyActionTest.xml's nps_score_at_least condition) - the answer
+     * click's own POST is deliberately fire-and-forget (tracker.js removes the widget from the
+     * DOM immediately, keepalive:true, never awaited), so a fixed <wait> after it is guessing at
+     * a delay that varies with runner load, the same reasoning MailHogHelper::seeTextInLatestEmail()
+     * already documents for its own out-of-band poll. Keyed by email/customer_id, same join
+     * pattern as assertCustomerTagAddedByEmail() above - a real order_placed trigger targets a
+     * logged-in customer, so NpsSurvey.php queues the row against customer_id, not visitor_id.
+     *
+     * @throws \RuntimeException if the row never reaches the expected score within the timeout
+     */
+    public function waitForSurveyResponseRecordedByEmail(
+        string $email,
+        int $expectedScore,
+        int $timeoutSeconds = 20,
+        string $dbHost = '127.0.0.1',
+        string $dbName = 'magento',
+        string $dbUser = 'root',
+        string $dbPassword = ''
+    ): void {
+        $pdo = new \PDO(
+            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
+            $dbUser,
+            $dbPassword,
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+        );
+
+        $statement = $pdo->prepare(
+            'SELECT osp.score, osp.responded_at FROM ordo_survey_prompt osp '
+            . 'INNER JOIN customer_entity ce ON ce.entity_id = osp.customer_id '
+            . 'WHERE ce.email = :email ORDER BY osp.entity_id DESC LIMIT 1'
+        );
+
+        $deadline = microtime(true) + $timeoutSeconds;
+        $lastRow = null;
+
+        do {
+            $statement->execute(['email' => $email]);
+            $lastRow = $statement->fetch(\PDO::FETCH_ASSOC) ?: null;
+            if ($lastRow !== null
+                && $lastRow['responded_at'] !== null
+                && (int) $lastRow['score'] === $expectedScore
+            ) {
+                return;
+            }
+            usleep(500000);
+        } while (microtime(true) < $deadline);
+
+        throw new \RuntimeException(sprintf(
+            'ordo_survey_prompt for customer email="%s" never reached score=%d within %ds (last seen: %s).',
+            $email,
+            $expectedScore,
+            $timeoutSeconds,
+            $lastRow === null ? 'no row' : json_encode($lastRow)
+        ));
+    }
 }

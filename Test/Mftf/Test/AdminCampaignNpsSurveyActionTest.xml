@@ -137,11 +137,14 @@
         <!-- The answer click's own POST is deliberately fire-and-forget (tracker.js removes the
              widget from the DOM immediately, keepalive:true, never awaited) - dontSeeElement
              above only proves the CLIENT side, not that the server has actually written
-             score/responded_at yet. A short settle wait closes that race before the bulk action
-             below reads the customer's segment membership (which doesn't itself depend on the
-             score, but the point of ordering is that the answer must be committed before
-             Campaign B's condition is ever evaluated). -->
-        <wait time="2" stepKey="waitForResponsePostToLand"/>
+             score/responded_at yet. A fixed <wait> here guesses at a delay that varies with
+             runner load - a real CI run needed longer than 2s under load and Campaign B's
+             condition evaluated against a still-unanswered row. Polls instead, same reasoning as
+             MailHogHelper::seeTextInLatestEmail(). -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="waitForSurveyResponseRecordedByEmail" stepKey="waitForResponsePostToLand">
+            <argument name="email">$createCustomer.email$</argument>
+            <argument name="expectedScore">9</argument>
+        </helper>
 
         <!-- Step 6: apply the real tag from the admin UI via the segment's bulk-actions form -
              the only admin-UI path to CustomerTagManager::addTag(), which fires the tag_added

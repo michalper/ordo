@@ -147,6 +147,14 @@
              separate <visible>false</visible> concern. -->
         <executeJS function="require(['uiRegistry'], function (uiRegistry) { uiRegistry.get('ordo_segment_form.ordo_segment_form.conditions_fieldset', function (fieldset) { fieldset.opened(true); fieldset.visible(true); }); });" stepKey="expandConditionsFieldset"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForExistingConditionRow"/>
+        <!-- Proves the dynamicRows component has actually hydrated its knockout-bound value from
+             the persisted row (999) before we overwrite it - forcing the fieldset open via
+             uiRegistry just above doesn't guarantee the field's own data-binding lifecycle has
+             finished. Without this, fillField's direct DOM write can land before that binding
+             attaches, so the observable never picks it up and the form silently POSTs the
+             original 999 - the segment's condition never actually changes, and no amount of
+             waiting on the coupon grid afterward can fix that. -->
+        <waitForValue selector="[name='conditions[conditions][0][threshold]']" userInput="999" stepKey="waitForExistingThresholdHydrated"/>
         <!-- Same type (score_at_least), just a threshold (10) the customer's existing 80 points
              now clears — no new customer data, only the segment's own row changes. -->
         <fillField selector="[name='conditions[conditions][0][threshold]']" userInput="10" stepKey="fillSegmentConditionAmount"/>
