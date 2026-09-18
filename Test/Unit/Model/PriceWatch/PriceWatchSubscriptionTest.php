@@ -57,6 +57,28 @@ class PriceWatchSubscriptionTest extends AbstractModelTestCase
         self::assertNull($model->getVisitorId());
     }
 
+    public function testGuestEmailIsNullWhenNeverSet(): void
+    {
+        self::assertNull($this->makeModel()->getGuestEmail());
+    }
+
+    public function testGuestEmailRoundTrip(): void
+    {
+        $model = $this->makeModel();
+        $model->setGuestEmail('guest@example.com');
+
+        self::assertSame('guest@example.com', $model->getGuestEmail());
+    }
+
+    public function testGuestEmailCanBeSetBackToNull(): void
+    {
+        $model = $this->makeModel();
+        $model->setGuestEmail('guest@example.com');
+        $model->setGuestEmail(null);
+
+        self::assertNull($model->getGuestEmail());
+    }
+
     public function testProductIdRoundTrip(): void
     {
         $model = $this->makeModel();

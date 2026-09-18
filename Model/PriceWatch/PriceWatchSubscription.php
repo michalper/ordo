@@ -15,6 +15,7 @@ class PriceWatchSubscription extends AbstractModel
     public const ENTITY_ID = 'entity_id';
     public const CUSTOMER_ID = 'customer_id';
     public const VISITOR_ID = 'visitor_id';
+    public const GUEST_EMAIL = 'guest_email';
     public const PRODUCT_ID = 'product_id';
     public const WATCH_TYPE = 'watch_type';
     public const LAST_KNOWN_PRICE = 'last_known_price';
@@ -51,6 +52,23 @@ class PriceWatchSubscription extends AbstractModel
     public function setVisitorId(?string $visitorId): self
     {
         $this->setData(self::VISITOR_ID, $visitorId);
+        return $this;
+    }
+
+    /**
+     * Only ever set for a watch with no customer_id — the address a guest gave when
+     * registering, so ScanPriceDropAlerts/ScanBackInStockAlerts have somewhere to send a direct
+     * notification (bypassing the campaign engine, which assumes a customer_id).
+     */
+    public function getGuestEmail(): ?string
+    {
+        $value = $this->getData(self::GUEST_EMAIL);
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setGuestEmail(?string $guestEmail): self
+    {
+        $this->setData(self::GUEST_EMAIL, $guestEmail);
         return $this;
     }
 

@@ -925,6 +925,7 @@
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="true" comment="Set once identity stitching links this subscription's visitor_id to a logged-in customer, or immediately if the browser was already logged in when it subscribed"/>
         <column xsi:type="varchar" name="visitor_id" nullable="true" length="64" comment="Anonymous first-party cookie value, matches ordo_visitor_event.visitor_id - at least one of customer_id/visitor_id is always set"/>
+        <column xsi:type="varchar" name="guest_email" nullable="true" length="255" comment="Address a guest gave at registration time, only ever set when customer_id is null - lets the scan crons notify a guest directly instead of through the campaign engine, which assumes a customer_id"/>
         <column xsi:type="int" name="product_id" padding="10" unsigned="true" nullable="false" comment="catalog_product_entity.entity_id being watched"/>
         <column xsi:type="varchar" name="watch_type" nullable="false" length="20" comment="price_drop|back_in_stock"/>
         <column xsi:type="decimal" name="last_known_price" scale="4" precision="20" unsigned="false" nullable="true" comment="Product's final price the last time this subscription was registered or scanned - Cron\ScanPriceDropAlerts compares the current price against this"/>

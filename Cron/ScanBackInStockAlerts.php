@@ -14,10 +14,10 @@ use Ordo\Automation\Model\PriceWatch\PriceWatchSubscription;
  * campaign trigger the first time it transitions from out-of-stock to in-stock relative to the
  * row's own last_known_in_stock — never on every scan while the product simply stays in stock.
  *
- * Guest watches (no customer_id) still get their last_known_in_stock refreshed every run, but
- * never dispatch a campaign trigger, same restriction ScanPriceDropAlerts applies.
- * TODO: a guest-facing notification path is out of scope for this PR, same decision as
- * ScanPriceDropAlerts.
+ * Guest watches (no customer_id) still get their last_known_in_stock refreshed every run; a guest
+ * never dispatches a campaign trigger (every condition/action a campaign can run assumes a
+ * customer_id), but one that gave an email at registration gets notified directly instead — see
+ * AbstractPriceWatchScanCron/GuestPriceWatchNotifier, same as ScanPriceDropAlerts.
  *
  * The shared scan/claim/dispatch mechanics (batching, crash-safe claim-before-dispatch, guest
  * exclusion, logging) live in AbstractPriceWatchScanCron — this class only supplies the

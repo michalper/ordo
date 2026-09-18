@@ -13,10 +13,10 @@ use Ordo\Automation\Api\Data\CampaignTriggerInterface;
 use Ordo\Automation\Cron\ScanPriceDropAlerts;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CampaignDispatcher;
-use Psr\Log\LoggerInterface;
+use Ordo\Automation\Model\PriceWatch\GuestPriceWatchNotifier;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
-use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
+use Psr\Log\LoggerInterface;
 
 class ScanPriceDropAlertsTest extends TestCase
 {
@@ -38,13 +38,15 @@ class ScanPriceDropAlertsTest extends TestCase
         ResourceConnection $resourceConnection,
         ?ProductRepositoryInterface $productRepository = null,
         ?CampaignDispatcher $dispatcher = null,
-        ?LoggerInterface $logger = null
+        ?LoggerInterface $logger = null,
+        ?GuestPriceWatchNotifier $guestNotifier = null
     ): ScanPriceDropAlerts {
         return new ScanPriceDropAlerts(
             $config,
             $resourceConnection,
             $productRepository ?? $this->createStub(ProductRepositoryInterface::class),
             $dispatcher ?? $this->createStub(CampaignDispatcher::class),
+            $guestNotifier ?? $this->createStub(GuestPriceWatchNotifier::class),
             $this->makeCronRunLogger($logger ?? $this->createStub(LoggerInterface::class))
         );
     }
@@ -123,6 +125,99 @@ class ScanPriceDropAlertsTest extends TestCase
         $dispatcher->expects(self::never())->method('dispatch');
 
         $this->makeCron($config, $resourceConnection, $productRepository, $dispatcher)->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteNotifiesGuestWithCapturedEmailDirectlyOnRealDecrease(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isPriceWatchEnabled')->willReturn(true);
+        $config->method('getPriceWatchScanBatchSize')->willReturn(200);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            [
+                'entity_id' => 1,
+                'customer_id' => null,
+                'guest_email' => 'guest@example.com',
+                'product_id' => 10,
+                'last_known_price' => '100.0000',
+            ],
+        ]);
+        $connection->expects(self::once())->method('update');
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $product = $this->createStub(Product::class);
+        $product->method('getFinalPrice')->willReturn(80.0);
+        $productRepository = $this->createStub(ProductRepositoryInterface::class);
+        $productRepository->method('getById')->willReturn($product);
+
+        $dispatcher = $this->createMock(CampaignDispatcher::class);
+        $dispatcher->expects(self::never())->method('dispatch');
+
+        $guestNotifier = $this->createMock(GuestPriceWatchNotifier::class);
+        $guestNotifier->expects(self::once())->method('notify')->with(
+            'guest@example.com',
+            $product,
+            CampaignTriggerInterface::TRIGGER_PRICE_DROP,
+            ['old_price' => 100.0, 'new_price' => 80.0]
+        );
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('info')->with(self::stringContains('1 price drop triggers'));
+
+        $this->makeCron($config, $resourceConnection, $productRepository, $dispatcher, $logger, $guestNotifier)
+            ->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRollsBackClaimWhenGuestNotifyThrows(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isPriceWatchEnabled')->willReturn(true);
+        $config->method('getPriceWatchScanBatchSize')->willReturn(200);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            [
+                'entity_id' => 1,
+                'customer_id' => null,
+                'guest_email' => 'guest@example.com',
+                'product_id' => 10,
+                'last_known_price' => '100.0000',
+            ],
+        ]);
+        // Claim (1) then rollback (1) - never the "no-drop/guest" update path.
+        $connection->expects(self::exactly(2))->method('update');
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $product = $this->createStub(Product::class);
+        $product->method('getFinalPrice')->willReturn(80.0);
+        $productRepository = $this->createStub(ProductRepositoryInterface::class);
+        $productRepository->method('getById')->willReturn($product);
+
+        $guestNotifier = $this->createMock(GuestPriceWatchNotifier::class);
+        $guestNotifier->method('notify')->willThrowException(new \RuntimeException('send failed'));
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('error');
+
+        $this->makeCron(
+            $config,
+            $resourceConnection,
+            $productRepository,
+            $this->createStub(CampaignDispatcher::class),
+            $logger,
+            $guestNotifier
+        )->execute();
     }
 
     #[AllowMockObjectsWithoutExpectations]

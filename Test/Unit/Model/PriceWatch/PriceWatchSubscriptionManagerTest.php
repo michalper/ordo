@@ -84,6 +84,70 @@ class PriceWatchSubscriptionManagerTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testRegisterCapturesGuestEmailOnNewAnonymousRow(): void
+    {
+        $noRow = $this->createMock(PriceWatchSubscription::class);
+        $noRow->method('getId')->willReturn(null);
+        $this->collectionFactory->method('create')->willReturn($this->makeCollection($noRow));
+        $this->productRepository->method('getById')->willReturn($this->makeProduct());
+
+        $noRow->expects(self::once())->method('setGuestEmail')->with('guest@example.com');
+
+        $this->manager->register(
+            5,
+            PriceWatchSubscription::WATCH_TYPE_PRICE_DROP,
+            null,
+            'visitor-1',
+            'guest@example.com'
+        );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRegisterNeverCapturesGuestEmailForKnownCustomer(): void
+    {
+        $noRow = $this->createMock(PriceWatchSubscription::class);
+        $noRow->method('getId')->willReturn(null);
+        $this->collectionFactory->method('create')->willReturn($this->makeCollection($noRow));
+        $this->productRepository->method('getById')->willReturn($this->makeProduct());
+
+        $noRow->expects(self::once())->method('setGuestEmail')->with(null);
+
+        $this->manager->register(5, PriceWatchSubscription::WATCH_TYPE_PRICE_DROP, 42, null, 'guest@example.com');
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRegisterRefreshesGuestEmailOnExistingRowWhenGiven(): void
+    {
+        $existing = $this->createMock(PriceWatchSubscription::class);
+        $existing->method('getId')->willReturn(7);
+        $this->collectionFactory->method('create')->willReturn($this->makeCollection($existing));
+        $this->productRepository->method('getById')->willReturn($this->makeProduct());
+
+        $existing->expects(self::once())->method('setGuestEmail')->with('new@example.com');
+
+        $this->manager->register(
+            5,
+            PriceWatchSubscription::WATCH_TYPE_PRICE_DROP,
+            null,
+            'visitor-1',
+            'new@example.com'
+        );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRegisterNeverErasesExistingGuestEmailWhenNoneGiven(): void
+    {
+        $existing = $this->createMock(PriceWatchSubscription::class);
+        $existing->method('getId')->willReturn(7);
+        $this->collectionFactory->method('create')->willReturn($this->makeCollection($existing));
+        $this->productRepository->method('getById')->willReturn($this->makeProduct());
+
+        $existing->expects(self::never())->method('setGuestEmail');
+
+        $this->manager->register(5, PriceWatchSubscription::WATCH_TYPE_PRICE_DROP, null, 'visitor-1');
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testRegisterRefreshesExistingRowAndClearsNotifiedAt(): void
     {
         $existing = $this->createMock(PriceWatchSubscription::class);

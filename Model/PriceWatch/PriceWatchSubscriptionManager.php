@@ -36,7 +36,8 @@ class PriceWatchSubscriptionManager
         int $productId,
         string $watchType,
         ?int $customerId,
-        ?string $visitorId
+        ?string $visitorId,
+        ?string $guestEmail = null
     ): void {
         $subscription = $this->findExisting($productId, $watchType, $customerId, $visitorId);
         $isNew = !$subscription->getId();
@@ -54,11 +55,20 @@ class PriceWatchSubscriptionManager
         if ($isNew) {
             $subscription->setCustomerId($customerId);
             $subscription->setVisitorId($customerId === null ? $visitorId : null);
+            $subscription->setGuestEmail($customerId === null ? $guestEmail : null);
             $subscription->setCreatedAt(date('Y-m-d H:i:s'));
-        } elseif ($customerId !== null) {
-            // Same one-way transition PushSubscriptionManager::populate() applies — a previously
-            // anonymous watch becoming identified is never reversed back to null.
-            $subscription->setCustomerId($customerId);
+        } else {
+            if ($customerId !== null) {
+                // Same one-way transition PushSubscriptionManager::populate() applies — a
+                // previously anonymous watch becoming identified is never reversed back to null.
+                $subscription->setCustomerId($customerId);
+            }
+            if ($customerId === null && $guestEmail !== null) {
+                // A re-registration only ever refreshes the guest email when a new one is
+                // actually given - never erases an address already on file just because a later
+                // call happened not to include one.
+                $subscription->setGuestEmail($guestEmail);
+            }
         }
 
         $this->priceWatchSubscriptionResource->save($subscription);

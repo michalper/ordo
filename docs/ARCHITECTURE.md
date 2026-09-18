@@ -141,9 +141,11 @@ Directory/class map for anyone working on the code. Not shipped documentation fo
 - `Cron/ScanPriceDropAlerts.php`, `Cron/ScanBackInStockAlerts.php` — batched scan crons dispatching
   the `price_drop`/`back_in_stock` campaign triggers the first time a watched product's price
   drops or its stock status transitions false→true relative to the row's own last-known state;
-  claim-before-dispatch (`notified_at`) same as every other reminder cron in this module. Guest
-  watches are refreshed every run but never dispatch — no guest-facing notification path yet
-  (deliberate scope decision, see this PR)
+  claim-before-dispatch (`notified_at`) same as every other reminder cron in this module. A guest
+  watch (no `customer_id`) can't go through the campaign engine — every condition/action assumes a
+  `customer_id` — so a guest who gave an email at registration (`guest_email`) instead gets
+  notified directly via `Model/PriceWatch/GuestPriceWatchNotifier`; a guest with no email on file
+  just has its snapshot refreshed, same as before this existed
 
 ## GDPR
 

@@ -7,6 +7,20 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Guest-facing price-drop/back-in-stock notifications** — closes the real gap both scan crons'
+  own docblocks flagged: a guest (no `customer_id`) watching a product could never actually be
+  notified, since every condition/action a `price_drop`/`back_in_stock` campaign can run assumes a
+  real customer. `Controller\Track\RegisterPriceWatch` now accepts an optional `email` param for an
+  anonymous registration (validated, never required — an anonymous watch with no email still
+  registers exactly as before, it just never gets notified); `PriceWatchSubscriptionManager`
+  captures it into a new `guest_email` column, refreshing it on re-registration without ever
+  erasing an address already on file. `Cron\AbstractPriceWatchScanCron` now sends a guest with a
+  captured email a direct notification via the new `Model\PriceWatch\GuestPriceWatchNotifier`
+  (reusing `Model\Cron\ReminderEmailSender`, the same extraction five other reminder crons already
+  share, rather than a sixth copy of that shape) instead of silently doing nothing — same
+  claim-before-send/rollback-on-failure safety as the customer path. `window.ordoSubscribeToPriceWatch()`
+  in `tracker.js` grew a matching optional third `email` argument.
+
 - **Local LLM (Ollama) content generation (ROADMAP.md "Candidate new features")** — a new
   `generate_ai_content` campaign action calls a self-hosted Ollama instance
   (`Model\Ai\OllamaClient`, mirroring `Model\Http\JsonApiClient`'s shape) to personalize content

@@ -20,11 +20,11 @@ use Ordo\Automation\Model\PriceWatch\PriceWatchSubscription;
  * scan cron in this module: an unbounded table scan here would grow linearly with how many
  * watches exist, not with how many actually changed since the last run.
  *
- * Guest watches (no customer_id) still get their last_known_price refreshed every run, but never
- * dispatch a campaign trigger — every condition/action a campaign can run here assumes a real
- * customer_id, same restriction SendAbandonedCartReminders applies to guest quotes.
- * TODO: a guest-facing notification path (e.g. a captured email address, sent directly rather
- * than through the campaign engine) is a real gap, scoped out of this PR by deliberate decision.
+ * Guest watches (no customer_id) still get their last_known_price refreshed every run; a guest never
+ * dispatches a campaign trigger — every condition/action a campaign can run here assumes a real
+ * customer_id, same restriction SendAbandonedCartReminders applies to guest quotes — but one that
+ * gave an email at registration gets notified directly instead of through the campaign engine, see
+ * AbstractPriceWatchScanCron/GuestPriceWatchNotifier.
  *
  * The shared scan/claim/dispatch mechanics (batching, crash-safe claim-before-dispatch, guest
  * exclusion, logging) live in AbstractPriceWatchScanCron — this class only supplies the

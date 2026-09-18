@@ -24,6 +24,12 @@ use Ordo\Automation\Model\Track\VisitorIdentityResolver;
  * — see that class's own docblock for the full reasoning: CSRF is only skipped for anonymous
  * registrations, a logged-in registration must be checked against Origin/Referer since this is a
  * bare fetch() call with no page-rendered form_key.
+ *
+ * A guest (no customer_id) may optionally include an `email` param — the only address the scan
+ * crons (Cron\AbstractPriceWatchScanCron) have to notify a guest directly, since the campaign
+ * engine a logged-in customer's watch dispatches through assumes a customer_id. Optional, not
+ * required: an anonymous watch with no email is still registered exactly as before, it just never
+ * gets a notification once the price/stock actually changes.
  */
 class RegisterPriceWatch extends Action implements HttpPostActionInterface, CsrfAwareActionInterface
 {
@@ -68,8 +74,26 @@ class RegisterPriceWatch extends Action implements HttpPostActionInterface, Csrf
         }
 
         $customerId = $this->visitorIdentityResolver->resolveCustomerId();
+        $guestEmail = null;
 
-        $this->priceWatchSubscriptionManager->register($productId, $watchType, $customerId, $visitorId ?: null);
+        if ($customerId === null) {
+            $email = $this->getRequest()->getParam('email');
+            $email = is_string($email) ? trim($email) : '';
+            if ($email !== '') {
+                if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    return $result->setData(['ok' => false, 'reason' => 'invalid_email']);
+                }
+                $guestEmail = $email;
+            }
+        }
+
+        $this->priceWatchSubscriptionManager->register(
+            $productId,
+            $watchType,
+            $customerId,
+            $visitorId ?: null,
+            $guestEmail
+        );
 
         return $result->setData(['ok' => true]);
     }

@@ -5,11 +5,13 @@ namespace Ordo\Automation\Cron;
 
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Api\ProductRepositoryInterface;
+use Magento\Catalog\Model\Product;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\Cron\CronRunLogger;
+use Ordo\Automation\Model\PriceWatch\GuestPriceWatchNotifier;
 
 /**
  * Shared scan/claim/dispatch skeleton for the ordo_price_watch_subscription scan crons
@@ -18,8 +20,13 @@ use Ordo\Automation\Model\Cron\CronRunLogger;
  * time the tracked value genuinely changes for the better relative to the row's own last-known
  * snapshot, never again on every scan while it stays that way. Only what "changed" means (price
  * vs. stock) and the snapshot column differ between the two — everything else (batching, the
- * claim-before-dispatch crash safety, guest watches never dispatching, logging) is identical and
- * lives here once.
+ * claim-before-dispatch crash safety, logging) is identical and lives here once.
+ *
+ * A known customer dispatches through the campaign engine (CampaignDispatcher), same as every
+ * other trigger. A guest (no customer_id) can't — every condition/action a campaign can run
+ * assumes a real customer_id — so a guest watch with a captured guest_email instead gets a direct
+ * notification via GuestPriceWatchNotifier, and a guest watch with no email on file just has its
+ * snapshot refreshed, exactly as before this class supported guest_email at all.
  */
 abstract class AbstractPriceWatchScanCron
 {
@@ -30,6 +37,7 @@ abstract class AbstractPriceWatchScanCron
         private readonly ResourceConnection $resourceConnection,
         private readonly ProductRepositoryInterface $productRepository,
         private readonly CampaignDispatcher $campaignDispatcher,
+        private readonly GuestPriceWatchNotifier $guestPriceWatchNotifier,
         private readonly CronRunLogger $cronRunLogger
     ) {
     }
@@ -86,13 +94,20 @@ abstract class AbstractPriceWatchScanCron
         $snapshotColumn = $this->snapshotColumn();
 
         $select = $connection->select()
-            ->from($table, ['entity_id', 'customer_id', 'product_id', $snapshotColumn])
+            ->from($table, ['entity_id', 'customer_id', 'guest_email', 'product_id', $snapshotColumn])
             ->where('watch_type = ?', $this->watchType())
             ->where('notified_at IS NULL')
             ->order('entity_id ASC')
             ->limit($batchSize);
 
-        /** @var array<int, array{entity_id: int|string, customer_id: int|string|null, product_id: int|string}> $rows */
+        /**
+         * @var array<int, array{
+         *     entity_id: int|string,
+         *     customer_id: int|string|null,
+         *     guest_email: string|null,
+         *     product_id: int|string
+         * }> $rows
+         */
         $rows = $connection->fetchAll($select);
 
         $dispatched = 0;
@@ -113,8 +128,13 @@ abstract class AbstractPriceWatchScanCron
     }
 
     /**
-     * @param array{entity_id: int|string, customer_id: int|string|null, product_id: int|string} $row
-     * @return bool whether a campaign trigger was actually dispatched for this row
+     * @param array{
+     *     entity_id: int|string,
+     *     customer_id: int|string|null,
+     *     guest_email: string|null,
+     *     product_id: int|string
+     * } $row
+     * @return bool whether a campaign trigger or a guest notification was actually sent for this row
      */
     private function processRow(array $row): bool
     {
@@ -124,6 +144,11 @@ abstract class AbstractPriceWatchScanCron
         $oldValue = $row[$snapshotColumn] ?? null;
 
         try {
+            /** @var Product $product ProductRepositoryInterface::getById() always returns the
+             *  concrete Product model in practice — only its interface is declared, same
+             *  reasoning PriceWatchSubscriptionManager::register() applies. Narrowed here (not
+             *  just cast) so it type-checks against GuestPriceWatchNotifier::notify()'s concrete
+             *  Product parameter below. */
             $product = $this->productRepository->getById($productId);
         } catch (NoSuchEntityException) {
             // Product deleted since this watch was registered - nothing left to compare against.
@@ -133,6 +158,7 @@ abstract class AbstractPriceWatchScanCron
         $newValue = $this->readCurrentValue($product);
         $isNotifiable = $this->isNotifiableChange($oldValue, $newValue);
         $customerId = !empty($row['customer_id']) ? (int) $row['customer_id'] : null;
+        $guestEmail = !empty($row['guest_email']) ? (string) $row['guest_email'] : null;
 
         if ($isNotifiable && $customerId !== null) {
             // Claim (set notified_at) BEFORE dispatching, not after - a crash between a
@@ -154,8 +180,28 @@ abstract class AbstractPriceWatchScanCron
             return true;
         }
 
-        // No notifiable change yet, or a guest watch - just refresh the snapshot so the next scan
-        // compares against the product's current value, never dispatching for a guest.
+        if ($isNotifiable && $customerId === null && $guestEmail !== null) {
+            // Same claim-before-send/rollback-on-failure shape as the customer branch above, just
+            // sent directly to the guest instead of through the campaign engine.
+            $this->claim($entityId, $newValue);
+
+            try {
+                $this->guestPriceWatchNotifier->notify(
+                    $guestEmail,
+                    $product,
+                    $this->watchType(),
+                    $this->triggerPayload($oldValue, $newValue)
+                );
+            } catch (\Throwable $e) {
+                $this->unclaim($entityId);
+                throw $e;
+            }
+
+            return true;
+        }
+
+        // No notifiable change yet, or a guest watch with no email on file - just refresh the
+        // snapshot so the next scan compares against the product's current value.
         $this->updateSnapshot($entityId, $newValue);
         return false;
     }

@@ -152,8 +152,46 @@ class RegisterPriceWatchTest extends AbstractFrontendActionTestCase
         $this->cookieManager->method('getCookie')->willReturn('visitor-1');
 
         $this->priceWatchSubscriptionManager->expects(self::once())->method('register')
-            ->with(10, PriceWatchSubscription::WATCH_TYPE_BACK_IN_STOCK, null, 'visitor-1');
+            ->with(10, PriceWatchSubscription::WATCH_TYPE_BACK_IN_STOCK, null, 'visitor-1', null);
         $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
+
+        $controller->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRegistersAnonymousWatchWithCapturedGuestEmail(): void
+    {
+        $controller = $this->makeController();
+        $this->request->method('getParam')->willReturnMap([
+            ['product_id', null, '10'],
+            ['watch_type', null, 'back_in_stock'],
+            ['email', null, ' guest@example.com '],
+        ]);
+        $this->customerSession->method('isLoggedIn')->willReturn(false);
+        $this->cookieManager->method('getCookie')->willReturn('visitor-1');
+
+        $this->priceWatchSubscriptionManager->expects(self::once())->method('register')
+            ->with(10, PriceWatchSubscription::WATCH_TYPE_BACK_IN_STOCK, null, 'visitor-1', 'guest@example.com');
+        $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
+
+        $controller->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteReturnsInvalidEmailWhenGuestEmailMalformed(): void
+    {
+        $controller = $this->makeController();
+        $this->request->method('getParam')->willReturnMap([
+            ['product_id', null, '10'],
+            ['watch_type', null, 'back_in_stock'],
+            ['email', null, 'not-an-email'],
+        ]);
+        $this->customerSession->method('isLoggedIn')->willReturn(false);
+        $this->cookieManager->method('getCookie')->willReturn('visitor-1');
+
+        $this->jsonResult->expects(self::once())->method('setData')
+            ->with(['ok' => false, 'reason' => 'invalid_email']);
+        $this->priceWatchSubscriptionManager->expects(self::never())->method('register');
 
         $controller->execute();
     }
@@ -171,7 +209,7 @@ class RegisterPriceWatchTest extends AbstractFrontendActionTestCase
         $this->cookieManager->method('getCookie')->willReturn(null);
 
         $this->priceWatchSubscriptionManager->expects(self::once())->method('register')
-            ->with(10, PriceWatchSubscription::WATCH_TYPE_PRICE_DROP, 42, null);
+            ->with(10, PriceWatchSubscription::WATCH_TYPE_PRICE_DROP, 42, null, null);
 
         $controller->execute();
     }

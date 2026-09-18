@@ -494,12 +494,22 @@
      * theme's own PDP "Notify me" button. Deliberately fire-and-forget, same shape as
      * registerPushSubscription() above: the caller gets a resolved/rejected promise from the
      * fetch itself, there is no separate polling/confirmation step.
+     *
+     * `email` is optional and only looked at for a signed-out visitor - it's the only address the
+     * backend has to notify a guest directly once the price/stock actually changes, since a guest
+     * has no account for a campaign email to go to. A logged-in customer doesn't need it (their
+     * account email is used instead), and an anonymous call with no email still registers the
+     * watch exactly as before, it just never gets notified.
      */
-    function subscribeToPriceWatch(productId, watchType) {
-        var body = new URLSearchParams({
+    function subscribeToPriceWatch(productId, watchType, email) {
+        var params = {
             product_id: String(productId),
             watch_type: watchType
-        });
+        };
+        if (email) {
+            params.email = email;
+        }
+        var body = new URLSearchParams(params);
 
         return fetch('/ordo/track/registerpricewatch', {
             method: 'POST',

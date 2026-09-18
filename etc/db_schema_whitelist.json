@@ -880,6 +880,7 @@
             "entity_id": true,
             "customer_id": true,
             "visitor_id": true,
+            "guest_email": true,
             "product_id": true,
             "watch_type": true,
             "last_known_price": true,

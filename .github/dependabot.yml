@@ -37,3 +37,11 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+
+  # package.json is this module's JS unit-test harness only (qunit/c8/jquery/jsdom for
+  # Test/js/ — see package.json's own description), not a runtime dependency of the module
+  # itself, but its deps still need CVE patches like any other.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
