@@ -84,12 +84,22 @@
         <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
         <fillField selector="[name='name']" userInput="Segment Edit Membership Coupon Campaign" stepKey="fillName"/>
 
-        <!-- in_segment has no dedicated field — see AdminCampaignInSegmentConditionTest.xml's
-             identical comment on this same fallback. -->
+        <!-- in_segment HAS a dedicated field descriptor (Flow.php's getFieldsConfig(),
+             "segment_id", rendered as a <select> from getSegmentOptions()) - this comment
+             previously claimed otherwise and set a nonexistent data-field="params_json"
+             instead, which jQuery silently no-ops on. The segment_id select was left at
+             whatever its default option happens to be, never the segment this test just
+             created - so in_segment evaluated against the wrong (or no) segment on EVERY
+             order, regardless of the threshold edit this test exists to prove matters.
+             Confirmed via a real CI run on main: the coupon grid showed zero rows after order
+             2 even with a threshold the customer's score clearly clears. A genuine test-only
+             bug (Model/Segment/SegmentMatcher.php and the in_segment condition itself were
+             never wrong) - the previous "dynamicRows hydration race" fix elsewhere in this file
+             was a real, harmless defensive improvement, but this is the actual root cause. -->
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
-            {kind: 'condition', type: 'in_segment', fields: {params_json: '{&quot;segment_id&quot;: &quot;{$grabSegmentId}&quot;}'}},
+            {kind: 'condition', type: 'in_segment', fields: {segment_id: '{$grabSegmentId}'}},
             {kind: 'action', type: 'generate_coupon', fields: {rule_id: '$createRule.rule_id$', prefix: 'SEGEDIT', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraph"/>
 
@@ -154,7 +164,7 @@
              attaches, so the observable never picks it up and the form silently POSTs the
              original 999 - the segment's condition never actually changes, and no amount of
              waiting on the coupon grid afterward can fix that. -->
-        <waitForJS function="function () { var el = document.querySelector(&quot;[name='conditions[conditions][0][threshold]']&quot;); return !!el &amp;&amp; el.value === '999'; }" stepKey="waitForExistingThresholdHydrated"/>
+        <waitForJS function="var el = document.querySelector(&quot;[name='conditions[conditions][0][threshold]']&quot;); return !!el &amp;&amp; el.value === '999';" stepKey="waitForExistingThresholdHydrated"/>
         <!-- Same type (score_at_least), just a threshold (10) the customer's existing 80 points
              now clears — no new customer data, only the segment's own row changes. -->
         <fillField selector="[name='conditions[conditions][0][threshold]']" userInput="10" stepKey="fillSegmentConditionAmount"/>

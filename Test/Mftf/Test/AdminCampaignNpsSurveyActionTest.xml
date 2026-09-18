@@ -54,12 +54,18 @@
         <waitForElementVisible selector="[name='name']" stepKey="waitForNameFieldB"/>
         <fillField selector="[name='name']" userInput="NPS Score At Least After Survey Campaign" stepKey="fillNameB"/>
 
-        <!-- nps_score_at_least also has no dedicated field descriptor — same params_json
-             fallback precedent as AdminLoyaltyTierAtLeastConditionTest.xml's loyalty_tier_at_least. -->
+        <!-- nps_score_at_least HAS a dedicated field descriptor (Flow.php's getFieldsConfig(),
+             "threshold") - this comment previously claimed otherwise and set a nonexistent
+             data-field="params_json" instead, which jQuery silently no-ops on (zero matched
+             elements), leaving the real "threshold" input at its default empty value. Confirmed
+             via a real CI run on main: the saved ordo_campaign_condition row had params={} with
+             no threshold at all, so nps_score_at_least evaluated false every time regardless of
+             the actual survey score, and the tag never got added - a genuine test-only bug, not
+             a product one (Model/Campaign/Condition/NpsScoreAtLeast.php itself was never wrong). -->
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvasB"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'tag_added'},
-            {kind: 'condition', type: 'nps_score_at_least', fields: {params_json: '{&quot;threshold&quot;:9}'}},
+            {kind: 'condition', type: 'nps_score_at_least', fields: {threshold: '9'}},
             {kind: 'action', type: 'add_tag', fields: {tag: 'nps_promoter', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraphB"/>
 

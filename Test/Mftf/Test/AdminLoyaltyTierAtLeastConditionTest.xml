@@ -52,10 +52,15 @@
         <waitForElementVisible selector="[name='name']" stepKey="waitForNameFieldB"/>
         <fillField selector="[name='name']" userInput="Loyalty Tier At Least After Add Points Campaign" stepKey="fillNameB"/>
 
+        <!-- loyalty_tier_at_least HAS a dedicated field descriptor (Flow.php's
+             getFieldsConfig(), "tier", rendered as a <select> from getLoyaltyTierOptions()) -
+             setting data-field="params_json" is a no-op (zero matched elements), leaving the
+             real tier select at whatever its default option happens to be. Same class of bug
+             as AdminCampaignNpsSurveyActionTest.xml/AdminCampaignInSegmentConditionTest.xml. -->
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvasB"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
-            {kind: 'condition', type: 'loyalty_tier_at_least', fields: {params_json: '{&quot;tier&quot;:&quot;gold&quot;}'}},
+            {kind: 'condition', type: 'loyalty_tier_at_least', fields: {tier: 'gold'}},
             {kind: 'action', type: 'add_tag', fields: {tag: 'gold_tier_customer', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraphB"/>
 

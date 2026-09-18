@@ -83,15 +83,18 @@
         <waitForElementVisible selector="[name='name']" stepKey="waitForNameFieldB"/>
         <fillField selector="[name='name']" userInput="In-Segment Coupon Campaign B" stepKey="fillNameB"/>
 
-        <!-- in_segment has no dedicated field in Block/Adminhtml/Campaign/Edit/Flow::getFieldsConfig()
-             (only tag/order_total_gte/score_at_least/visitor_tag conditions do) — it goes through
-             the generic params_json fallback field campaign-flow-editor.js renders for any
-             condition/action type it doesn't recognize, same as every other condition without a
-             dedicated one. -->
+        <!-- in_segment HAS a dedicated field descriptor in Block/Adminhtml/Campaign/Edit/
+             Flow::getFieldsConfig() ("segment_id", rendered as a <select> from
+             getSegmentOptions()) - this comment previously claimed otherwise and set a
+             nonexistent data-field="params_json" instead, which jQuery silently no-ops on
+             (zero matched elements). Confirmed via a real CI run on main: a sibling test
+             (AdminEditSegmentConditionChangesMembershipTest.xml) with the identical mistake
+             never got a coupon regardless of segment membership, because the real segment_id
+             select was left at its default, never the segment actually created. -->
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvasB"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
-            {kind: 'condition', type: 'in_segment', fields: {params_json: '{&quot;segment_id&quot;: &quot;{$grabSegmentId}&quot;}'}},
+            {kind: 'condition', type: 'in_segment', fields: {segment_id: '{$grabSegmentId}'}},
             {kind: 'action', type: 'generate_coupon', fields: {rule_id: '$createRule.rule_id$', prefix: 'INSEGTEST', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraphB"/>
 
