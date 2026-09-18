@@ -28,6 +28,11 @@ class GuestPriceWatchNotifier
     ) {
     }
 
+    /**
+     * @param array<string, mixed> $payload the change-specific fields from
+     *   AbstractPriceWatchScanCron::triggerPayload() (e.g. old_price/new_price,
+     *   old_in_stock/new_in_stock)
+     */
     public function notify(string $email, Product $product, string $watchType, array $payload): void
     {
         $this->reminderEmailSender->send(
@@ -41,12 +46,18 @@ class GuestPriceWatchNotifier
         );
     }
 
+    /**
+     * @param array<string, mixed> $payload
+     */
     private function buildMessage(string $watchType, array $payload): string
     {
         if ($watchType === PriceWatchSubscription::WATCH_TYPE_BACK_IN_STOCK) {
             return (string) __('Good news — the product you were watching is back in stock.');
         }
 
-        return (string) __('Good news — the price dropped to %1.', (string) ($payload['new_price'] ?? ''));
+        $newPrice = $payload['new_price'] ?? null;
+        $newPriceText = is_scalar($newPrice) ? (string) $newPrice : '';
+
+        return (string) __('Good news — the price dropped to %1.', $newPriceText);
     }
 }

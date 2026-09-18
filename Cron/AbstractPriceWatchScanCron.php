@@ -180,9 +180,11 @@ abstract class AbstractPriceWatchScanCron
             return true;
         }
 
-        if ($isNotifiable && $customerId === null && $guestEmail !== null) {
-            // Same claim-before-send/rollback-on-failure shape as the customer branch above, just
-            // sent directly to the guest instead of through the campaign engine.
+        if ($isNotifiable && $guestEmail !== null) {
+            // Only reachable when customer_id was null - the branch above already claims/returns
+            // for every notifiable row with a known customer. Same claim-before-send/
+            // rollback-on-failure shape as that branch, just sent directly to the guest instead
+            // of through the campaign engine.
             $this->claim($entityId, $newValue);
 
             try {
