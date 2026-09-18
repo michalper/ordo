@@ -18,7 +18,12 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   prompt configured, or a timeout/unreachable Ollama instance all fall back to the action's own
   configured static text rather than blocking or failing the dispatch. Outbound calls go through
   the existing `OutboundRateLimiter` so a queue burst can't flood a local instance. New "AI
-  Content (self-hosted Ollama)" admin config group (Stores > Configuration > Ordo Automation).
+  Content (self-hosted Ollama)" admin config group (Stores > Configuration > Ordo Automation),
+  with dedicated `prompt`/`output_key`/`fallback` fields on the Flow canvas (not the generic
+  "Params (JSON)" fallback textarea) and a "Test Connection" button on the config page itself
+  (`Controller\Adminhtml\Ai\TestConnection`) that calls the real `OllamaClient::generate()` path
+  with a trivial prompt, so a misconfiguration is caught immediately instead of only being
+  discovered via the action's own silent fail-soft fallback during a real campaign dispatch.
 
 ## [1.0.0]
 

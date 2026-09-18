@@ -1,0 +1,42 @@
+<?php
+/** @var \Ordo\Automation\Block\Adminhtml\System\Config\TestOllamaConnection $block */
+/** @var \Magento\Framework\Escaper $escaper */
+?>
+<button type="button" id="ordo-test-ollama-connection" class="action-default">
+    <span><?= $escaper->escapeHtml(__('Test Connection')) ?></span>
+</button>
+<span id="ordo-test-ollama-connection-result" style="margin-left: 1em; display: none;"></span>
+<script>
+require(['jquery'], function ($) {
+    'use strict';
+
+    $('#ordo-test-ollama-connection').on('click', function () {
+        var $button = $(this),
+            $result = $('#ordo-test-ollama-connection-result');
+
+        $button.prop('disabled', true);
+        $result.hide();
+
+        fetch('<?= $escaper->escapeJs($block->getAjaxUrl()) ?>', {
+            method: 'POST',
+            credentials: 'same-origin'
+        })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                $result.text(data.message)
+                    .css('color', data.ok ? 'green' : 'red')
+                    .show();
+            })
+            .catch(function () {
+                $result.text('<?= $escaper->escapeJs((string) __('The test failed.')) ?>')
+                    .css('color', 'red')
+                    .show();
+            })
+            .finally(function () {
+                $button.prop('disabled', false);
+            });
+    });
+});
+</script>

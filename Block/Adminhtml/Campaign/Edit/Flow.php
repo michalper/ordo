@@ -412,6 +412,36 @@ class Flow extends Template
                         ),
                     ],
                 ],
+                'generate_ai_content' => [
+                    [
+                        'name' => 'prompt',
+                        'label' => (string) __('Prompt'),
+                        'notice' => (string) __(
+                            'Reference dispatch context with {{placeholders}}, e.g. '
+                            . '{{customer_first_name}}. Calls the self-hosted Ollama instance '
+                            . 'configured under Stores > Configuration > Ordo Automation > AI '
+                            . 'Content.'
+                        ),
+                    ],
+                    [
+                        'name' => 'output_key',
+                        'label' => (string) __('Output variable name'),
+                        'notice' => (string) __(
+                            'A later "Send Email" action in this same chain can render the '
+                            . 'result with {{var <output variable name>|raw}}. Defaults to '
+                            . '"ai_content_html" if left blank.'
+                        ),
+                    ],
+                    [
+                        'name' => 'fallback',
+                        'label' => (string) __('Fallback text'),
+                        'notice' => (string) __(
+                            'Used instead of a real Ollama response whenever AI content '
+                            . 'generation is disabled, unconfigured, or the local instance '
+                            . 'times out - the send is never blocked by this action.'
+                        ),
+                    ],
+                ],
             ],
         ];
     }

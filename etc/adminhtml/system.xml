@@ -526,6 +526,11 @@
                     <comment>Paces outbound calls so a queue burst reaching many customers in one tick can't flood a local instance. 0 disables throttling entirely.</comment>
                     <depends><field id="enabled">1</field></depends>
                 </field>
+                <field id="test_connection" translate="label" type="button" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Test Connection</label>
+                    <frontend_model>Ordo\Automation\Block\Adminhtml\System\Config\TestOllamaConnection</frontend_model>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
             </group>
 
             <group id="attribution" translate="label" type="text" sortOrder="165" showInDefault="1" showInWebsite="1" showInStore="1">
