@@ -55,6 +55,13 @@ automatycznego tagowania po zachowaniu (patrz [Śledzenie i popupy](Tracking-and
 
 Odpowiedź: `{"ok": true}` albo `{"ok": false, "reason": "tracking_disabled" | "invalid_payload"}`.
 
+```bash
+curl -X POST "https://twoj-sklep.pl/ordo/track/event" \
+  -d "visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69" \
+  -d "event_type=product_view" \
+  -d "event_key=24-MB01"
+```
+
 ### `GET /ordo/track/popup?visitor_id=...`
 
 Odpytuje o jednorazowy popup zakolejkowany przez akcję kampanii `show_popup`. **Konsumuje**
@@ -63,6 +70,10 @@ regularnie (natywny klient robi to co 25s, pierwszy raz po 2s).
 
 Odpowiedź: `{"popup": {"headline": "...", "body": "...", "cta_label": "...", "cta_url": "..."} | null}`.
 
+```bash
+curl "https://twoj-sklep.pl/ordo/track/popup?visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69"
+```
+
 ### `GET /ordo/track/notification?visitor_id=...`
 
 Odpytuje o **wszystkie** nieprzeczytane, nieprzedawnione trwałe powiadomienia (akcja kampanii
@@ -70,6 +81,10 @@ Odpytuje o **wszystkie** nieprzeczytane, nieprzedawnione trwałe powiadomienia (
 przy każdym poll, aż zostanie jawnie odrzucony.
 
 Odpowiedź: `{"notifications": [{"id": 123, "headline": "...", "body": "...", "cta_label": "...", "cta_url": "..."}]}`.
+
+```bash
+curl "https://twoj-sklep.pl/ordo/track/notification?visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69"
+```
 
 ### `POST /ordo/track/dismissnotification`
 
@@ -83,12 +98,22 @@ Odrzuca powiadomienie (ustawia `read_at`).
 Odpowiedź: `{"ok": true}` albo `{"ok": false}` — w tym gdy `notification_id` nie należy do
 wołającego (sprawdzane po `customer_id` lub `visitor_id`).
 
+```bash
+curl -X POST "https://twoj-sklep.pl/ordo/track/dismissnotification" \
+  -d "visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69" \
+  -d "notification_id=123"
+```
+
 ### `GET /ordo/track/survey?visitor_id=...`
 
 Odpytuje o jednorazową ankietę NPS/satysfakcji (akcja kampanii `nps_survey`). Claim-before-deliver,
 jak popup.
 
 Odpowiedź: `{"survey": {"id": 456, "question": "..."} | null}`.
+
+```bash
+curl "https://twoj-sklep.pl/ordo/track/survey?visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69"
+```
 
 ### `POST /ordo/track/submitsurveyresponse`
 
@@ -102,6 +127,13 @@ Zapisuje odpowiedź na ankietę.
 
 Odpowiedź: `{"ok": true}` albo `{"ok": false}` — odrzucane gdy ankieta już odpowiedziana, nie
 istnieje, albo nie należy do wołającego.
+
+```bash
+curl -X POST "https://twoj-sklep.pl/ordo/track/submitsurveyresponse" \
+  -d "visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69" \
+  -d "survey_id=456" \
+  -d "score=9"
+```
 
 ### `POST /ordo/track/registerpushsubscription`
 
@@ -119,6 +151,13 @@ Odpowiedź: `{"ok": true}` albo `{"ok": false, "reason": "push_disabled" \| "inv
 (brak klasycznego `form_key`, bo to gołe `fetch()`) — musi zgadzać się z domeną sklepu.
 Anonimowe rejestracje (brak sesji) nie mają tego wymogu.
 
+```bash
+curl -X POST "https://twoj-sklep.pl/ordo/track/registerpushsubscription" \
+  -d "endpoint=https://fcm.googleapis.com/fcm/send/xyz123" \
+  -d "p256dh=BNcRd..." \
+  -d "auth=tBHIt..."
+```
+
 ### `POST /ordo/track/unregisterpushsubscription`
 
 | Parametr | Typ | Wymagany |
@@ -126,6 +165,11 @@ Anonimowe rejestracje (brak sesji) nie mają tego wymogu.
 | `endpoint` | string | tak |
 
 Odpowiedź: `{"ok": true}` albo `{"ok": false, "reason": "invalid_payload"}`.
+
+```bash
+curl -X POST "https://twoj-sklep.pl/ordo/track/unregisterpushsubscription" \
+  -d "endpoint=https://fcm.googleapis.com/fcm/send/xyz123"
+```
 
 ### `POST /ordo/track/registerpricewatch`
 
@@ -138,6 +182,12 @@ Rejestruje subskrypcję "powiadom mnie" na PDP (spadek ceny / powrót na stan).
 
 Odpowiedź: `{"ok": true}` albo `{"ok": false, "reason": "price_watch_disabled" \| "invalid_payload" \| "invalid_product"}`.
 Ten sam model CSRF co `registerpushsubscription`.
+
+```bash
+curl -X POST "https://twoj-sklep.pl/ordo/track/registerpricewatch" \
+  -d "product_id=123" \
+  -d "watch_type=price_drop"
+```
 
 ## REST API (`/rest/V1/ordo/...`)
 
@@ -155,6 +205,11 @@ Triggery/warunki/akcje są płaskimi zasobami filtrowanymi po `campaign_id` prze
 `searchCriteria` Magento (`?searchCriteria[filterGroups][0][filters][0][field]=campaign_id&...`),
 nie zagnieżdżonym URL-em.
 
+```bash
+curl "https://twoj-sklep.pl/rest/V1/ordo/campaigns" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
 ### Tagi klientów (ACL admina: `Ordo_Automation::campaigns`)
 
 Podstawowy mechanizm segmentacji ("wyślij do wszystkich z tagiem X") — headless storefront/CRM
@@ -166,12 +221,22 @@ może zarządzać tagami bez sesji admina w panelu.
 - `DELETE /V1/ordo/customers/:customerId/tags/:tag` — usuwa tag
 - `GET /V1/ordo/tags/:tag/customers` — lista ID klientów z danym tagiem
 
+```bash
+curl -X PUT "https://twoj-sklep.pl/rest/V1/ordo/customers/42/tags/vip" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
 ### Oferty z terminem wygaśnięcia (offer expiry)
 - `GET/POST /V1/ordo/offers`, `GET/PUT/DELETE /V1/ordo/offers/:entityId` — ACL admina
   (`Ordo_Automation::config`)
 - `POST /V1/ordo/offers/:offerId/self-extend` — **`self`**, token dowolnego zalogowanego
   klienta; własność konkretnej oferty sprawdzana wewnątrz (nie ACL) — klient może samodzielnie
   przedłużyć **swoją** ofertę o kolejny okres.
+
+```bash
+curl -X POST "https://twoj-sklep.pl/rest/V1/ordo/offers/15/self-extend" \
+  -H "Authorization: Bearer $CUSTOMER_TOKEN"
+```
 
 ### Zatwierdzanie zamówień (order approval)
 - `GET /V1/ordo/order-approvals`, `GET /V1/ordo/order-approvals/:entityId` — tylko odczyt, ACL
@@ -184,6 +249,10 @@ może zarządzać tagami bez sesji admina w panelu.
   approve/reject (z wbudowanym tokenem) bez odsłaniania samego tokena jako osobnego pola —
   przydatne np. dla aplikacji mobilnej handlowca.
 
+```bash
+curl -X POST "https://twoj-sklep.pl/rest/V1/ordo/order-approvals/a1b2c3d4e5f6/approve"
+```
+
 ### Free gift (prezent za zamówienie)
 - CRUD dla `free-gift-offers`, `free-gift-offer-tiers`, `free-gift-offer-products` — ACL admina
   (`Ordo_Automation::free_gifts`)
@@ -191,10 +260,25 @@ może zarządzać tagami bez sesji admina w panelu.
   (bez sprawdzania własności, gdy nie ma zalogowanego klienta)
 - `PUT /V1/ordo/carts/:cartId/free-gifts` — **`self`**; wybór konkretnych SKU z dostępnego puli
 
+```bash
+curl "https://twoj-sklep.pl/rest/V1/ordo/carts/98/free-gift-eligibility" \
+  -H "Authorization: Bearer $CUSTOMER_TOKEN"
+
+curl -X PUT "https://twoj-sklep.pl/rest/V1/ordo/carts/98/free-gifts" \
+  -H "Authorization: Bearer $CUSTOMER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"skus": ["FREE-GIFT-SKU-1"]}'
+```
+
 ### Limit kredytowy (B2B)
 - `GET /V1/ordo/credit-limit/mine` — **`self`**; rozwiązuje klienta z samego tokena, żaden
   `customerId` nie jest potrzebny (i nie da się "zgadnąć" cudzego limitu)
 - `GET /V1/ordo/customers/:customerId/credit-limit` — ACL admina (`Ordo_Automation::config`)
+
+```bash
+curl "https://twoj-sklep.pl/rest/V1/ordo/credit-limit/mine" \
+  -H "Authorization: Bearer $CUSTOMER_TOKEN"
+```
 
 ### Cykle odkupu (reorder cycles) — tylko odczyt
 - `GET /V1/ordo/reorder-cycles`, `GET /V1/ordo/reorder-cycles/:entityId` — ACL admina
@@ -222,6 +306,18 @@ Odpowiedzi: `200 {"ok": true}` / `401 {"ok": false}` (błędna sygnatura) / `404
 
 Payload JSON trafia do kontekstu kampanii jako `webhook_payload` — warunki/akcje kampanii mogą
 go odczytać przez pole "Params (JSON)".
+
+Przykład (curl):
+```bash
+BODY='{"order_number":"12345","event":"shipped"}'
+SECRET="twoj-sekret-z-konfiguracji"
+SIGNATURE="sha256=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | cut -d' ' -f2)"
+
+curl -X POST "https://twoj-sklep.pl/ordo/webhook/receive" \
+  -H "Content-Type: application/json" \
+  -H "X-Ordo-Signature: $SIGNATURE" \
+  -d "$BODY"
+```
 
 ## Przykład: pełny flow trackingu po stronie custom frontendu
 
@@ -302,6 +398,13 @@ automatic behavior-based tagging (see [Tracking & Popups](Tracking-and-Popups)).
 
 Response: `{"ok": true}` or `{"ok": false, "reason": "tracking_disabled" | "invalid_payload"}`.
 
+```bash
+curl -X POST "https://your-store.com/ordo/track/event" \
+  -d "visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69" \
+  -d "event_type=product_view" \
+  -d "event_key=24-MB01"
+```
+
 ### `GET /ordo/track/popup?visitor_id=...`
 
 Polls for a one-shot popup queued by a campaign's `show_popup` action. This **consumes** the
@@ -310,6 +413,10 @@ bundled client polls every 25s, first poll after 2s).
 
 Response: `{"popup": {"headline": "...", "body": "...", "cta_label": "...", "cta_url": "..."} | null}`.
 
+```bash
+curl "https://your-store.com/ordo/track/popup?visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69"
+```
+
 ### `GET /ordo/track/notification?visitor_id=...`
 
 Polls for **every** unread, unexpired persistent notification (a campaign's `show_notification`
@@ -317,6 +424,10 @@ action). Unlike the popup endpoint, this does **not** consume anything — the s
 on every poll until explicitly dismissed.
 
 Response: `{"notifications": [{"id": 123, "headline": "...", "body": "...", "cta_label": "...", "cta_url": "..."}]}`.
+
+```bash
+curl "https://your-store.com/ordo/track/notification?visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69"
+```
 
 ### `POST /ordo/track/dismissnotification`
 
@@ -330,12 +441,22 @@ Dismisses a notification (sets `read_at`).
 Response: `{"ok": true}` or `{"ok": false}` — including when `notification_id` doesn't belong to
 the caller (checked against `customer_id` or `visitor_id`).
 
+```bash
+curl -X POST "https://your-store.com/ordo/track/dismissnotification" \
+  -d "visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69" \
+  -d "notification_id=123"
+```
+
 ### `GET /ordo/track/survey?visitor_id=...`
 
 Polls for a one-shot NPS/satisfaction survey (a campaign's `nps_survey` action).
 Claim-before-deliver, same as the popup endpoint.
 
 Response: `{"survey": {"id": 456, "question": "..."} | null}`.
+
+```bash
+curl "https://your-store.com/ordo/track/survey?visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69"
+```
 
 ### `POST /ordo/track/submitsurveyresponse`
 
@@ -349,6 +470,13 @@ Records a survey answer.
 
 Response: `{"ok": true}` or `{"ok": false}` — rejected if the survey was already answered,
 doesn't exist, or doesn't belong to the caller.
+
+```bash
+curl -X POST "https://your-store.com/ordo/track/submitsurveyresponse" \
+  -d "visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69" \
+  -d "survey_id=456" \
+  -d "score=9"
+```
 
 ### `POST /ordo/track/registerpushsubscription`
 
@@ -366,6 +494,13 @@ Response: `{"ok": true}` or `{"ok": false, "reason": "push_disabled" \| "invalid
 (there's no classic `form_key` — this is a bare `fetch()` call) — it must match the store's own
 domain. Anonymous registrations (no session) skip this check.
 
+```bash
+curl -X POST "https://your-store.com/ordo/track/registerpushsubscription" \
+  -d "endpoint=https://fcm.googleapis.com/fcm/send/xyz123" \
+  -d "p256dh=BNcRd..." \
+  -d "auth=tBHIt..."
+```
+
 ### `POST /ordo/track/unregisterpushsubscription`
 
 | Param | Type | Required |
@@ -373,6 +508,11 @@ domain. Anonymous registrations (no session) skip this check.
 | `endpoint` | string | yes |
 
 Response: `{"ok": true}` or `{"ok": false, "reason": "invalid_payload"}`.
+
+```bash
+curl -X POST "https://your-store.com/ordo/track/unregisterpushsubscription" \
+  -d "endpoint=https://fcm.googleapis.com/fcm/send/xyz123"
+```
 
 ### `POST /ordo/track/registerpricewatch`
 
@@ -385,6 +525,12 @@ Registers a "notify me" subscription from a PDP (price drop / back in stock).
 
 Response: `{"ok": true}` or `{"ok": false, "reason": "price_watch_disabled" \| "invalid_payload" \| "invalid_product"}`.
 Same CSRF model as `registerpushsubscription`.
+
+```bash
+curl -X POST "https://your-store.com/ordo/track/registerpricewatch" \
+  -d "product_id=123" \
+  -d "watch_type=price_drop"
+```
 
 ## REST API (`/rest/V1/ordo/...`)
 
@@ -402,6 +548,11 @@ Triggers/conditions/actions are flat resources filtered by `campaign_id` via Mag
 `searchCriteria` (`?searchCriteria[filterGroups][0][filters][0][field]=campaign_id&...`), not a
 nested URL.
 
+```bash
+curl "https://your-store.com/rest/V1/ordo/campaigns" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
 ### Customer tags (admin ACL: `Ordo_Automation::campaigns`)
 
 The core segmentation primitive ("send to everyone tagged X") — a headless storefront/CRM can
@@ -413,12 +564,22 @@ manage tags without an admin panel session.
 - `DELETE /V1/ordo/customers/:customerId/tags/:tag` — removes a tag
 - `GET /V1/ordo/tags/:tag/customers` — customer IDs holding a given tag
 
+```bash
+curl -X PUT "https://your-store.com/rest/V1/ordo/customers/42/tags/vip" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
 ### Offer expiry
 - `GET/POST /V1/ordo/offers`, `GET/PUT/DELETE /V1/ordo/offers/:entityId` — admin ACL
   (`Ordo_Automation::config`)
 - `POST /V1/ordo/offers/:offerId/self-extend` — **`self`**, any logged-in customer's token;
   ownership of the specific offer is checked inside the service (not by ACL) — a customer can
   extend **their own** offer by one more period.
+
+```bash
+curl -X POST "https://your-store.com/rest/V1/ordo/offers/15/self-extend" \
+  -H "Authorization: Bearer $CUSTOMER_TOKEN"
+```
 
 ### Order approval
 - `GET /V1/ordo/order-approvals`, `GET /V1/ordo/order-approvals/:entityId` — read-only, admin
@@ -430,6 +591,10 @@ manage tags without an admin panel session.
   approve/reject URLs (token baked in) without ever exposing the token as its own field — useful
   for e.g. a sales-rep mobile app.
 
+```bash
+curl -X POST "https://your-store.com/rest/V1/ordo/order-approvals/a1b2c3d4e5f6/approve"
+```
+
 ### Free gift
 - CRUD for `free-gift-offers`, `free-gift-offer-tiers`, `free-gift-offer-products` — admin ACL
   (`Ordo_Automation::free_gifts`)
@@ -437,10 +602,25 @@ manage tags without an admin panel session.
   (ownership check is skipped when there's no logged-in customer)
 - `PUT /V1/ordo/carts/:cartId/free-gifts` — **`self`**; picks specific SKUs from the eligible pool
 
+```bash
+curl "https://your-store.com/rest/V1/ordo/carts/98/free-gift-eligibility" \
+  -H "Authorization: Bearer $CUSTOMER_TOKEN"
+
+curl -X PUT "https://your-store.com/rest/V1/ordo/carts/98/free-gifts" \
+  -H "Authorization: Bearer $CUSTOMER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"skus": ["FREE-GIFT-SKU-1"]}'
+```
+
 ### Credit limit (B2B)
 - `GET /V1/ordo/credit-limit/mine` — **`self`**; resolves the customer from the token itself, no
   `customerId` needed (and no way to guess someone else's limit)
 - `GET /V1/ordo/customers/:customerId/credit-limit` — admin ACL (`Ordo_Automation::config`)
+
+```bash
+curl "https://your-store.com/rest/V1/ordo/credit-limit/mine" \
+  -H "Authorization: Bearer $CUSTOMER_TOKEN"
+```
 
 ### Reorder cycles — read-only
 - `GET /V1/ordo/reorder-cycles`, `GET /V1/ordo/reorder-cycles/:entityId` — admin ACL
@@ -468,6 +648,18 @@ Responses: `200 {"ok": true}` / `401 {"ok": false}` (bad signature) / `404 {"ok"
 
 The JSON payload lands in the campaign's context as `webhook_payload` — campaign
 conditions/actions can read it via the "Params (JSON)" field.
+
+Example (curl):
+```bash
+BODY='{"order_number":"12345","event":"shipped"}'
+SECRET="your-secret-from-configuration"
+SIGNATURE="sha256=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | cut -d' ' -f2)"
+
+curl -X POST "https://your-store.com/ordo/webhook/receive" \
+  -H "Content-Type: application/json" \
+  -H "X-Ordo-Signature: $SIGNATURE" \
+  -d "$BODY"
+```
 
 ## Example: a full tracking flow from a custom frontend
 
