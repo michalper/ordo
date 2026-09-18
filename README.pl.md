@@ -1,6 +1,6 @@
-# Ordo Automation dla Magento 2
+# Ordo — Marketing Automation dla Magento Open Source
 
-![Ordo Automation](.github/assets/hero.svg)
+![Ordo — Marketing Automation dla Magento Open Source](.github/assets/hero.svg)
 
 [![CI](https://github.com/michalper/ordo/actions/workflows/ci.yml/badge.svg)](https://github.com/michalper/ordo/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/michalper/ordo/graph/badge.svg?token=JYXG9P7692)](https://codecov.io/gh/michalper/ordo)

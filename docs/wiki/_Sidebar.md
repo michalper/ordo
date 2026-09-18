@@ -1,4 +1,4 @@
-**Ordo Automation**
+**Ordo** — Marketing Automation for Magento
 
 - [Home](Home)
 - [Dashboard](Dashboard)

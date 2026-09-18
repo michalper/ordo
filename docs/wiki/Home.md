@@ -2,9 +2,9 @@
 
 # Polski
 
-# Ordo Automation — przewodnik
+# Ordo: przewodnik po Marketing Automation dla Magento Open Source
 
-Ordo Automation to system automatyzacji marketingu wbudowany bezpośrednio w Twój sklep — bez
+Ordo to system automatyzacji marketingu wbudowany bezpośrednio w Twój sklep — bez
 dodatkowej licencji, bez osobnej subskrypcji. Wysyła e-maile, SMS-y i WhatsApp na podstawie tego,
 co klient faktycznie robi w sklepie: porzuca koszyk, przegląda produkt, składa zamówienie, milknie
 na jakiś czas.
@@ -37,9 +37,9 @@ właśnie ten przełącznik.
 
 # English
 
-# Ordo Automation — guide
+# Ordo: a guide to Marketing Automation for Magento Open Source
 
-Ordo Automation is marketing automation built directly into your store — no extra license, no
+Ordo is marketing automation built directly into your store — no extra license, no
 separate subscription. It sends emails, SMS, and WhatsApp messages based on what a customer
 actually does in your store: abandons a cart, views a product, places an order, goes quiet for a
 while.
