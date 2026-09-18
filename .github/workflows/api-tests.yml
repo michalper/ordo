@@ -152,7 +152,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq nginx php8.4-fpm php8.4-bcmath php8.4-curl php8.4-gd \
             php8.4-intl php8.4-mbstring php8.4-mysql php8.4-soap php8.4-xsl \
-            php8.4-zip php8.4-opcache
+            php8.4-zip php8.4-opcache mysql-client
 
       - name: Configure and start nginx + PHP-FPM for Magento
         working-directory: magento
@@ -222,12 +222,79 @@ jobs:
 
           echo "ORDO_API_TEST_PRODUCT_SKU=ORDO-API-TEST-SKU" >> "$GITHUB_ENV"
 
+      - name: Seed two pending order approvals for OrderApprovalApiTest
+        # testApproveByTokenIsOneTimeUse and testGetDecisionLinksByIdReturnsUsableApproveUrl each
+        # SPEND their own approval (approve-by-token is one-time-use by design), so each needs
+        # its own separate pending row - not the same one twice. HoldOrderForApproval only fires
+        # when the ordering customer has both a spend limit (ordo_order_spend_limit) and an
+        # approval-admin email (ordo_approval_admin_email) set, and the order total exceeds that
+        # limit - set here on the customer created above, then two real orders placed through
+        # the actual REST checkout flow (not a raw SQL fixture insert) so sales_order_place_after
+        # fires for real, same as a genuine storefront order would. The token itself is
+        # deliberately never exposed by any API response (see OrderApprovalRepositoryInterface's
+        # own docblock) - reading it straight from the database is the only way a test harness
+        # can get it, same reasoning MFTF's own AdminApproveOrderViaEmailTest already documents
+        # for reading it out of a real email instead.
+        working-directory: magento
+        run: |
+          ADMIN_TOKEN=$(curl -sf -X POST "http://127.0.0.1:8080/rest/V1/integration/admin/token" \
+            -H "Content-Type: application/json" \
+            -d '{"username":"apitest","password":"ApiTest123!"}' | tr -d '"')
+
+          curl -sf -X PUT "http://127.0.0.1:8080/rest/V1/customers/1" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $ADMIN_TOKEN" \
+            -d '{"customer":{"id":1,"email":"apitest@example.com","firstname":"Api","lastname":"Test","custom_attributes":[{"attribute_code":"ordo_order_spend_limit","value":"1"},{"attribute_code":"ordo_approval_admin_email","value":"admin@example.com"}]}}'
+
+          bin/magento config:set payment/checkmo/active 1
+          bin/magento config:set carriers/flatrate/active 1
+          bin/magento cache:flush
+
+          CUSTOMER_TOKEN=$(curl -sf -X POST "http://127.0.0.1:8080/rest/V1/integration/customer/token" \
+            -H "Content-Type: application/json" \
+            -d '{"username":"apitest@example.com","password":"ApiTest123!"}' | tr -d '"')
+
+          place_one_order() {
+            CART_ID=$(curl -sf -X POST "http://127.0.0.1:8080/rest/V1/carts/mine" \
+              -H "Authorization: Bearer $CUSTOMER_TOKEN")
+
+            curl -sf -X POST "http://127.0.0.1:8080/rest/V1/carts/mine/items" \
+              -H "Content-Type: application/json" -H "Authorization: Bearer $CUSTOMER_TOKEN" \
+              -d "{\"cartItem\":{\"sku\":\"ORDO-API-TEST-SKU\",\"qty\":1,\"quote_id\":\"$CART_ID\"}}" \
+              > /dev/null
+
+            ADDRESS='{"region":"California","region_id":12,"country_id":"US","street":["1 Test St"],"postcode":"90001","city":"Los Angeles","firstname":"Api","lastname":"Test","email":"apitest@example.com","telephone":"5555555555"}'
+
+            curl -sf -X POST "http://127.0.0.1:8080/rest/V1/carts/mine/shipping-information" \
+              -H "Content-Type: application/json" -H "Authorization: Bearer $CUSTOMER_TOKEN" \
+              -d "{\"addressInformation\":{\"shipping_address\":$ADDRESS,\"billing_address\":$ADDRESS,\"shipping_carrier_code\":\"flatrate\",\"shipping_method_code\":\"flatrate\"}}" \
+              > /dev/null
+
+            curl -sf -X POST "http://127.0.0.1:8080/rest/V1/carts/mine/payment-information" \
+              -H "Content-Type: application/json" -H "Authorization: Bearer $CUSTOMER_TOKEN" \
+              -d "{\"paymentMethod\":{\"method\":\"checkmo\"},\"billingAddress\":$ADDRESS}" \
+              > /dev/null
+          }
+
+          place_one_order
+          place_one_order
+
+          # Two rows, oldest first - the first order placed gets spent by
+          # testApproveByTokenIsOneTimeUse, the second is read (not spent) by
+          # testGetDecisionLinksByIdReturnsUsableApproveUrl (which itself approves via the
+          # token IT extracts from decision-links, not this one directly).
+          TOKEN_ROW=$(mysql -h 127.0.0.1 -u root magento -N -e \
+            "SELECT token, entity_id FROM ordo_order_approval ORDER BY entity_id ASC LIMIT 2;")
+
+          APPROVAL_TOKEN=$(echo "$TOKEN_ROW" | sed -n '1p' | cut -f1)
+          APPROVAL_ENTITY_ID=$(echo "$TOKEN_ROW" | sed -n '2p' | cut -f2)
+
+          echo "ORDO_API_TEST_APPROVAL_TOKEN=$APPROVAL_TOKEN" >> "$GITHUB_ENV"
+          echo "ORDO_API_TEST_APPROVAL_ENTITY_ID=$APPROVAL_ENTITY_ID" >> "$GITHUB_ENV"
+
       - name: Run Test/Api
-        # OrderApprovalApiTest's token-specific tests (approve-by-token, decision-links) need
-        # ORDO_API_TEST_APPROVAL_TOKEN/ENTITY_ID, which need a real pending approval seeded via a
-        # full checkout flow first — left unset here (they markTestSkipped(), see
-        # AbstractApiTestCase/Test/Api/README.md), same acceptable partial-coverage tradeoff as
-        # FreeGiftApiTest already documents for its own SKU requirement when none is found.
+        # FreeGiftApiTest's own SKU requirement is the only remaining "skip if not found"
+        # tradeoff left — see its own README.md note.
         working-directory: ordo-module
         env:
           ORDO_API_BASE_URL: http://127.0.0.1:8080
