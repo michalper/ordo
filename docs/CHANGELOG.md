@@ -5,7 +5,28 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [1.0.0]
+
+First git-tagged release — every version before this one was a documentation-only checkpoint in
+this file, never a real `git tag`. Verified before tagging: the full MFTF matrix green on `main`
+(7/7 groups), and `Test/Api`'s real REST-functional suite green against a fresh install (new CI
+pipeline, `.github/workflows/api-tests.yml`).
+
 ### Added
+
+- **API reference documentation** — a new wiki page (`docs/wiki/API-Reference.md`) documenting
+  every public HTTP endpoint suitable for a custom/headless frontend: the full REST API
+  (`/rest/V1/ordo/...`) endpoint map with its auth model (admin ACL vs `self` vs `anonymous`),
+  the unauthenticated on-site tracking endpoints (`/ordo/track/...`) `tracker.js` itself uses,
+  the inbound webhook's HMAC signing scheme, and a runnable `curl` example under every endpoint.
+- **`Test/Api` wired into CI** (`.github/workflows/api-tests.yml`) — this module's own
+  cURL-based REST-functional test suite existed but was never run by any pipeline; this gives it
+  a real, fresh Magento install every run (no Selenium, so meaningfully cheaper than the MFTF
+  pipeline).
+- **Public repositioning**: "Ordo — Marketing Automation for Magento Open Source" as the
+  consistent tagline across README (EN/PL), the wiki, and the hero image — the brand name itself
+  stays "Ordo" rather than folding "Magento" into it (Adobe's own Marketplace naming guidance
+  discourages that pattern).
 
 - **Price-drop & back-in-stock alerts (ROADMAP.md "Candidate new features")** — a customer or
   visitor can opt in on a product's page to be notified when its price drops or it comes back in
@@ -1418,7 +1439,25 @@ the original bug.
   byte-for-byte-identical customer_id-or-visitor_id resolution block duplicated across `ShowPopup`, `Notify`,
   and `NpsSurvey` — no behavior change. Found via a design-review subagent pass.
 
-## [1.0.0]
+### Fixed
+
+- Root-caused a run of intermittent MFTF failures on the `segment`/`tracking` matrix legs down to a real,
+  reproducible bug in three test files, not flakiness: `in_segment`, `loyalty_tier_at_least`, and
+  `nps_score_at_least` all have dedicated field descriptors in `Flow.php`'s `getFieldsConfig()` (rendered as
+  their own `<select>`/`<input>` by `campaign-flow-editor.js`), but the affected tests' own comments claimed
+  otherwise and set a nonexistent `data-field="params_json"`, which jQuery silently no-ops on — the real field
+  was left at its default, never the value the test intended. `AdminEditSegmentConditionChangesMembershipTest`'s
+  `in_segment` condition pointed at the wrong (or no) segment on every order regardless of the segment-threshold
+  edit the test exists to prove matters; `AdminCampaignNpsSurveyActionTest`'s `nps_score_at_least` condition
+  saved with `params={}` (no threshold at all). No production code was wrong — `SegmentMatcher` and
+  `NpsScoreAtLeast` both behaved correctly given the malformed condition rows the tests themselves created.
+- Two smaller, genuine MFTF-only bugs found while chasing the above: a missing click to expand the segment
+  edit page's collapsed-by-default "Bulk actions" `<details>` panel before waiting for its now-hidden select
+  (`AdminCampaignNpsSurveyActionTest`), and a fixed 2-second wait after a survey answer's fire-and-forget POST
+  that wasn't reliably enough time under CI load — replaced with a real poll
+  (`VisitorEventHelper::waitForSurveyResponseRecordedByEmail()`).
+
+## [0.9.5]
 
 First full pass verified end to end against a real Magento Open Source 2.4.7 instance, including a real order
 placed through storefront checkout, held for approval, approved via the token link, and released.
