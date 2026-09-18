@@ -41,6 +41,7 @@ class CampaignSaveProcessor
         'content_block_id', 'output_key', 'days', 'count', 'percentile', 'question',
         'sku', 'category_id', 'scheduled_at', 'cron_expression', 'variants',
         'segment_id', 'tier', 'event_type', 'event_key', 'within_days',
+        'prompt', 'fallback',
     ];
 
     /**

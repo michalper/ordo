@@ -19,7 +19,16 @@ require(['jquery'], function ($) {
 
         fetch('<?= $escaper->escapeJs($block->getAjaxUrl()) ?>', {
             method: 'POST',
-            credentials: 'same-origin'
+            credentials: 'same-origin',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            // Magento's own admin CSRF check silently redirects a form_key-less POST back to
+            // the Dashboard (no exception, nothing logged) - confirmed via a real click in a
+            // real browser: fetch() got a 200 with the Dashboard's own HTML back, which broke
+            // response.json() and always landed on the generic catch() "test failed" message
+            // regardless of whether Ollama itself was actually reachable. The hidden form_key
+            // input Magento_Backend/formkey renders on every admin page is the standard source
+            // for this, same as every other admin AJAX call in core.
+            body: 'form_key=' + encodeURIComponent($('input[name="form_key"]').val())
         })
             .then(function (response) {
                 return response.json();

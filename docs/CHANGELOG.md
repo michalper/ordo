@@ -24,6 +24,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   (`Controller\Adminhtml\Ai\TestConnection`) that calls the real `OllamaClient::generate()` path
   with a trivial prompt, so a misconfiguration is caught immediately instead of only being
   discovered via the action's own silent fail-soft fallback during a real campaign dispatch.
+  Verified end to end against a real, locally-running Ollama instance (a real click through the
+  admin Flow canvas, a real save, a real `CampaignDispatcher::dispatch()` call) - caught and
+  fixed two real bugs that unit tests alone had missed: the "Test Connection" button's AJAX call
+  was missing the `form_key` Magento's admin CSRF check silently requires (redirected to the
+  Dashboard with no exception logged, breaking `response.json()`), and `prompt`/`fallback` were
+  missing from `CampaignSaveProcessor::DEDICATED_PARAM_FIELDS` (only `output_key` was already
+  present, inherited from `add_dynamic_content`), so every `generate_ai_content` action saved
+  through the admin UI silently dropped its prompt and fallback text.
 
 ## [1.0.0]
 

@@ -323,6 +323,51 @@ class CampaignSaveProcessorTest extends TestCase
     }
 
     /**
+     * Regression test: the exact same class of bug as testProcessPersistsDynamicContentActionFields()
+     * above, found live against a real Ollama instance in a real browser - generate_ai_content's
+     * prompt/fallback fields (Block\Adminhtml\Campaign\Edit\Flow::getFieldsConfig()'s
+     * generate_ai_content entry) were missing from DEDICATED_PARAM_FIELDS (only output_key was
+     * already present, inherited from add_dynamic_content), so every generate_ai_content action
+     * saved through the admin UI silently dropped its prompt and fallback text, persisting only
+     * params = {"output_key": "..."} with no way to actually generate anything.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessPersistsGenerateAiContentActionFields(): void
+    {
+        $processor = $this->makeProcessor();
+
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(1);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
+        $this->conditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+        $this->actionCollectionFactory->method('create')->willReturn($this->emptyActionCollection());
+
+        $action = $this->createMock(CampaignAction::class);
+        $action->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => json_decode($data['params'], true) === [
+                'output_key' => 'ai_content_html',
+                'prompt' => 'Write a greeting for {{customer_first_name}}',
+                'fallback' => 'Welcome back!',
+            ]
+        ));
+        $this->campaignActionFactory->method('create')->willReturn($action);
+        $this->campaignActionResource->expects(self::once())->method('save')->with($action);
+
+        $processor->process([
+            'conditions' => ['conditions' => []],
+            'actions' => ['actions' => [[
+                'type' => 'generate_ai_content',
+                'prompt' => 'Write a greeting for {{customer_first_name}}',
+                'output_key' => 'ai_content_html',
+                'fallback' => 'Welcome back!',
+                'params_json' => '',
+            ]]],
+        ]);
+    }
+
+    /**
      * The split action's 'variants' field is JSON, not a plain scalar like every other
      * DEDICATED_PARAM_FIELDS entry - campaign-flow-editor.js's renderVariantEditor() posts it as
      * a JSON string (its own serialized in-memory model), which must be decoded back into a real
