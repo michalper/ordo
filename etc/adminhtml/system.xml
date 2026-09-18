@@ -504,6 +504,30 @@
                 </field>
             </group>
 
+            <group id="ai" translate="label" type="text" sortOrder="166" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>AI Content (self-hosted Ollama)</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Master switch for the "Generate AI Content" campaign action. Calls a self-hosted Ollama instance (https://ollama.com) only - no data ever leaves the store. A timeout or unreachable instance falls back to the action's own configured static text rather than blocking the send.</comment>
+                </field>
+                <field id="ollama_base_url" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Ollama Base URL</label>
+                    <comment>e.g. http://localhost:11434 - a local instance on the same network as this store, not a third-party hosted API.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="ollama_model" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Model</label>
+                    <comment>Any model already pulled on that Ollama instance (e.g. "llama3.2"). Defaults to "llama3.2" if left blank.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="max_requests_per_second" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Max Requests Per Second</label>
+                    <comment>Paces outbound calls so a queue burst reaching many customers in one tick can't flood a local instance. 0 disables throttling entirely.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
+
             <group id="attribution" translate="label" type="text" sortOrder="165" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Multi-Touch Campaign Attribution</label>
                 <field id="window_days" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">

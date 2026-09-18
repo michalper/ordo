@@ -77,15 +77,6 @@ exist in some form. Not prioritized against each other; listed for later scoping
 - **A/B testing for campaign variants** — split traffic on a campaign action (e.g. two email variants) and
   auto-pick a winner from `ordo_message_log` CTR data; pairs naturally with predictive send-time optimization.
   Medium-large scope, shared foundation.
-- **Local LLM (Ollama) content generation** — a `generate_ai_content` campaign action (or an extension of the
-  existing `Add Dynamic Content` action) that calls a self-hosted Ollama instance to personalize email subject/
-  body per customer from context already in the dispatch (tags, RFM/CLV, order history) — no data leaves the
-  store, consistent with this module's own "no external MA subscription" positioning. Same fail-soft posture as
-  every other send action (`Model/Ai/OllamaClient.php` mirroring `Model/Http/JsonApiClient.php`'s shape): a
-  timeout or unreachable Ollama falls back to static content rather than blocking the send, and outbound calls
-  go through the existing `OutboundRateLimiter` so a queue burst can't flood a local instance. Medium scope,
-  shared foundation.
-
 ## Priorytet kolejnych kroków
 
 Kolejność uwzględnia wagę (błędy finansowe > dług niezawodności > UX > tematy zależne od

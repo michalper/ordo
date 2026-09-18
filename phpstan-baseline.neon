@@ -1113,7 +1113,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 16
+			count: 18
 			path: Helper/Config.php
 
 		-
@@ -1229,6 +1229,12 @@ parameters:
 			identifier: cast.string
 			count: 1
 			path: Model/Campaign/Action/AddDynamicContent.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
+			path: Model/Campaign/Action/GenerateAiContent.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'

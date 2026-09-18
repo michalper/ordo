@@ -48,6 +48,7 @@ class TypeLabels
         'send_whatsapp' => 'Send WhatsApp',
         'send_push' => 'Send Push',
         'split' => 'A/B Split Test',
+        'generate_ai_content' => 'Generate AI Content (Ollama)',
     ];
 
     public function conditionLabel(string $type): string

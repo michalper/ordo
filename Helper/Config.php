@@ -110,6 +110,11 @@ class Config
     private const string XML_PATH_WHATSAPP_WEBHOOK_VERIFY_TOKEN = 'ordo_automation/whatsapp/webhook_verify_token';
     private const string XML_PATH_WHATSAPP_MAX_PER_SECOND = 'ordo_automation/whatsapp/max_requests_per_second';
 
+    private const string XML_PATH_AI_ENABLED = 'ordo_automation/ai/enabled';
+    private const string XML_PATH_AI_OLLAMA_BASE_URL = 'ordo_automation/ai/ollama_base_url';
+    private const string XML_PATH_AI_OLLAMA_MODEL = 'ordo_automation/ai/ollama_model';
+    private const string XML_PATH_AI_MAX_PER_SECOND = 'ordo_automation/ai/max_requests_per_second';
+
     private const string XML_PATH_WEBHOOK_ENABLED = 'ordo_automation/webhook/enabled';
     private const string XML_PATH_WEBHOOK_OUTBOUND_URL = 'ordo_automation/webhook/outbound_url';
     private const string XML_PATH_WEBHOOK_OUTBOUND_SECRET = 'ordo_automation/webhook/outbound_secret';
@@ -714,6 +719,44 @@ class Config
     public function getWhatsAppMaxRequestsPerSecond(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_WHATSAPP_MAX_PER_SECOND, 5, $storeId);
+    }
+
+    public function isAiContentEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_AI_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * No default — an empty string means "not configured", which OllamaClient treats as
+     * "nothing to call" rather than trying (and failing) against a bogus URL.
+     */
+    public function getOllamaBaseUrl(?int $storeId = null): string
+    {
+        return (string) $this->scopeConfig->getValue(
+            self::XML_PATH_AI_OLLAMA_BASE_URL,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getOllamaModel(?int $storeId = null): string
+    {
+        $model = (string) $this->scopeConfig->getValue(
+            self::XML_PATH_AI_OLLAMA_MODEL,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+
+        return $model !== '' ? $model : 'llama3.2';
+    }
+
+    public function getAiMaxRequestsPerSecond(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_AI_MAX_PER_SECOND, 2, $storeId);
     }
 
     public function isWebhookEnabled(?int $storeId = null): bool

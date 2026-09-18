@@ -311,6 +311,7 @@
                 <item name="send_whatsapp" xsi:type="object">Ordo\Automation\Model\Campaign\Action\SendWhatsApp</item>
                 <item name="send_push" xsi:type="object">Ordo\Automation\Model\Campaign\Action\SendPush</item>
                 <item name="send_webhook" xsi:type="object">Ordo\Automation\Model\Campaign\Action\SendWebhook</item>
+                <item name="generate_ai_content" xsi:type="object">Ordo\Automation\Model\Campaign\Action\GenerateAiContent</item>
             </argument>
         </arguments>
     </type>
