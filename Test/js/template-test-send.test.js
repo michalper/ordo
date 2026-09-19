@@ -55,6 +55,16 @@ QUnit.module('Ordo_Automation/js/template-test-send', function () {
         assert.notStrictEqual($panel.find('[data-test-send-field="whatsapp"]').css('display'), 'none');
     });
 
+    QUnit.test('changing the channel select re-syncs the visible fields via the module\'s own delegate', function (assert) {
+        loadModule(MODULE_PATH, panelHtml());
+        const $panel = global.$('.ordo-template-test-send');
+
+        $panel.find('[data-test-send-channel]').val('whatsapp').trigger('change');
+
+        assert.strictEqual($panel.find('[data-test-send-field="message"]').css('display'), 'none');
+        assert.notStrictEqual($panel.find('[data-test-send-field="whatsapp"]').css('display'), 'none');
+    });
+
     QUnit.test('submit() renders a success message and applies the success class', function (assert) {
         stubFetch({ok: true, json: function () { return Promise.resolve({success: true, message: 'Test email sent to a@b.com.'}); }});
 
