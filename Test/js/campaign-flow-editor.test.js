@@ -1005,6 +1005,71 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor initCampaignFlowEditor()',
         assert.strictEqual(global.$('.ordo-flow-node-error').length, 2, 'the whole second, disconnected chain is flagged');
     });
 
+    QUnit.test('Apply flags a totally isolated action node with no trigger and no connections at all', function (assert) {
+        initEditor();
+        global.window.ordoFlowTestHook.buildChain([
+            { kind: 'trigger', type: 'order_placed' },
+            { kind: 'action', type: 'add_tag' }
+        ]);
+        // A second, SEPARATE buildChain() call for a single action with no trigger of its own and
+        // no connection to anything - unlike the "two trigger chains" case above (each node there
+        // is still reachable from ITS OWN trigger via the BFS, just not from the campaign's
+        // primary one), this one is never reachable from ANY trigger at all.
+        const loneIds = global.window.ordoFlowTestHook.buildChain([
+            { kind: 'action', type: 'send_email', fields: { message: 'orphan' } }
+        ]);
+
+        global.$('[data-flow-action="apply"]').trigger('click');
+
+        assert.true(global.$('#node-' + loneIds[0]).hasClass('ordo-flow-node-error'));
+    });
+
+    function danglingConnectionFlowData() {
+        return {
+            drawflow: {
+                Home: {
+                    data: {
+                        1: {
+                            id: 1,
+                            name: 'ordo-flow-trigger',
+                            data: {},
+                            class: 'ordo-flow-trigger',
+                            html: '<div class="ordo-flow-node" data-kind="trigger" data-params="{}">'
+                                + '<div class="ordo-flow-node-head"><span>Trigger</span></div>'
+                                + '<select class="ordo-flow-type-select">'
+                                + '<option value="order_placed" selected="selected">Order Placed</option>'
+                                + '</select>'
+                                + '<div class="ordo-flow-fields"></div></div>',
+                            typenode: false,
+                            inputs: {},
+                            // Points at node id '999', which has no entry in `data` at all - the
+                            // shape validateFlow()'s own reachability BFS defends against with its
+                            // `if (!currentNode) continue;` guard (real Drawflow keeps connections
+                            // in sync on removeNodeId() in normal use; this simulates whatever
+                            // edge case that guard was written for, e.g. a hand-edited/corrupted
+                            // saved flow).
+                            outputs: { output_1: { connections: [{ node: '999', output: 'input_1' }] } },
+                            pos_x: 60,
+                            pos_y: 60
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    QUnit.test('Apply tolerates a dangling connection to a node id that no longer exists', function (assert) {
+        initEditor(TYPES_CONFIG, danglingConnectionFlowData());
+
+        assert.strictEqual(global.$('.drawflow-node').length, 1);
+
+        global.$('[data-flow-action="apply"]').trigger('click');
+
+        // Doesn't throw walking the dangling reference; still correctly reports the flow as
+        // incomplete (no action anywhere) rather than crashing on it.
+        assert.true(global.$('.ordo-flow-error').text().includes('at least one Action'));
+    });
+
     QUnit.test('a valid flow clears any previous error and saves through the registered form provider', function (assert) {
         const providerCalls = [];
 
@@ -1151,7 +1216,12 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor initCampaignFlowEditor()',
     QUnit.test('clicking Undo with nothing in history yet is a no-op', function (assert) {
         initEditor();
 
-        global.$('[data-flow-action="undo"]').trigger('click');
+        // The button starts real-DOM `disabled`, and jQuery's trigger('click') on a form control
+        // dispatches via the native click() method - same as a real browser, jsdom refuses to fire
+        // it at all while disabled, so the delegated handler (and undo()'s own historyIndex guard)
+        // would never run. Force-enabling first is what lets this test actually exercise the
+        // guard itself, rather than only ever proving the disabled attribute prevents a click.
+        global.$('[data-flow-action="undo"]').prop('disabled', false).trigger('click');
 
         assert.strictEqual(global.$('.drawflow-node').length, 0);
     });
@@ -1163,9 +1233,37 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor initCampaignFlowEditor()',
         try {
             global.window.ordoFlowTestHook.buildChain([{ kind: 'action', type: 'add_tag' }]);
 
-            global.$('[data-flow-action="redo"]').trigger('click');
+            // See the Undo test above for why this needs a force-enable first.
+            global.$('[data-flow-action="redo"]').prop('disabled', false).trigger('click');
 
             assert.strictEqual(global.$('.drawflow-node').length, 1);
+        } finally {
+            restore();
+        }
+    });
+
+    QUnit.test('history is capped at 50 entries, so undoing past the limit stops at the oldest surviving snapshot', function (assert) {
+        initEditor();
+        const restore = stubImmediateTimeout();
+
+        try {
+            // 56 total pushes get made (the initial empty-canvas snapshot, plus one per node add
+            // below): with a 50-entry cap, the oldest 6 (the empty canvas plus the first 5 node
+            // adds) get trimmed off, so the earliest state still reachable via undo is 6 nodes.
+            for (let i = 0; i < 55; i++) {
+                global.window.ordoFlowTestHook.buildChain([{ kind: 'action', type: 'add_tag' }]);
+            }
+            assert.strictEqual(global.$('.drawflow-node').length, 55, 'sanity check: all 55 nodes were added');
+
+            for (let i = 0; i < 49; i++) {
+                global.$('[data-flow-action="undo"]').trigger('click');
+            }
+
+            assert.strictEqual(
+                global.$('.drawflow-node').length,
+                6,
+                'undo stops at the oldest surviving (trimmed) snapshot instead of the true first state'
+            );
         } finally {
             restore();
         }

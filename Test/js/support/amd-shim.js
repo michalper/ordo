@@ -118,18 +118,52 @@ function loadAmdModule(loadModule) {
                 return require('../../../view/adminhtml/web/lib/drawflow/drawflow.min.js');
             }
             if (dep === 'Magento_Ui/js/form/element/abstract') {
-                // Identity extend() - returns the raw config object a module passes to
-                // Abstract.extend({...}) unchanged, instead of building a real knockout-observable
-                // prototype chain (uiClass's actual _super()-injecting inheritance). Tests call the
-                // config's own methods (buildPreview(), onXChange()) directly via .call(fakeThis),
-                // never initObservable() itself, so there's no need for a working _super() or real
-                // observable wiring here.
-                return { extend: function (config) { return config; } };
+                // extend() returns the raw config object a module passes to Abstract.extend({...})
+                // unchanged (no real knockout-observable prototype chain), but attaches a _super()
+                // real enough for initObservable() to actually run: real uiClass's own _super()
+                // (injected per-overridden-method by its ES5-style inheritance) returns the base
+                // class instance, whose .observe(names) turns each named property into a plain
+                // get/set-by-calling-with-or-without-an-argument function - exactly what
+                // buildPreview()/onXChange() already read/write via this.discountStep()/
+                // this.discountStep(value). Good enough for a test to call initObservable() for
+                // real and then drive the resulting isBuyXGetY()/previewText() computeds by
+                // writing through the very observables .observe() created, instead of only ever
+                // calling buildPreview()/onXChange() directly via .call(fakeThis).
+                return {
+                    extend: function (config) {
+                        config._super = config._super || function () {
+                            var self = this;
+
+                            return {
+                                observe: function (names) {
+                                    (names || []).forEach(function (name) {
+                                        var value;
+
+                                        self[name] = function (next) {
+                                            if (arguments.length > 0) {
+                                                value = next;
+                                                return self;
+                                            }
+
+                                            return value;
+                                        };
+                                    });
+
+                                    return self;
+                                }
+                            };
+                        };
+
+                        return config;
+                    }
+                };
             }
             if (dep === 'ko') {
-                // computed() only needs to exist for a module's initObservable() to run without
-                // throwing - not to actually recompute reactively - since no test here exercises
-                // initObservable() (see Magento_Ui/js/form/element/abstract above).
+                // computed(fn, context) returns fn re-bound to context, called fresh every time -
+                // not memoized/reactive like the real thing, but since nothing here mutates an
+                // observable out from under a test between reading computed() results, a plain
+                // eagerly-recomputing bound function is behaviorally indistinguishable for testing
+                // purposes.
                 return {
                     computed: function (fn, context) {
                         return typeof fn === 'function' ? fn.bind(context) : fn;

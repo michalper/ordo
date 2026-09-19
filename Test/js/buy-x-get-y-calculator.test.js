@@ -119,4 +119,23 @@ QUnit.module('Ordo_Automation/js/buy-x-get-y-calculator', function () {
         assert.strictEqual(context.discountStep(), '3');
         assert.strictEqual(context.discountAmount(), '1');
     });
+
+    QUnit.test('initObservable() wires isBuyXGetY()/previewText() as real computeds over the observed fields', function (assert) {
+        const config = loadModule(MODULE_PATH);
+        const context = Object.create(config);
+
+        context.initObservable();
+        context.simpleAction('buy_x_get_y');
+        context.discountStep('3');
+        context.discountAmount('1');
+
+        assert.true(context.isBuyXGetY());
+        assert.strictEqual(
+            context.previewText(),
+            'Buy 3, get 1 free — customers pay for 3 out of every 4 (25% off that batch).'
+        );
+
+        context.simpleAction('percent_off');
+        assert.false(context.isBuyXGetY());
+    });
 });
