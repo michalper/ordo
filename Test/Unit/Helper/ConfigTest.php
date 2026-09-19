@@ -55,6 +55,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isQuietHoursEnabled());
         self::assertTrue($this->config->isMetaCatalogFeedEnabled());
         self::assertTrue($this->config->isPriceWatchEnabled());
+        self::assertTrue($this->config->isAiContentEnabled());
     }
 
     public function testPushGettersDelegateToScopeConfig(): void
@@ -174,6 +175,7 @@ class ConfigTest extends TestCase
         self::assertSame(20, $this->config->getPushMaxRequestsPerSecond());
         self::assertSame(5, $this->config->getWebhookMaxRequestsPerSecond());
         self::assertSame(200, $this->config->getPriceWatchScanBatchSize());
+        self::assertSame(2, $this->config->getAiMaxRequestsPerSecond());
     }
 
     public function testOutboundRateLimitGettersReturnAnExplicitZeroRatherThanFallingBackToTheDefault(): void
@@ -184,6 +186,7 @@ class ConfigTest extends TestCase
         self::assertSame(0, $this->config->getWhatsAppMaxRequestsPerSecond());
         self::assertSame(0, $this->config->getPushMaxRequestsPerSecond());
         self::assertSame(0, $this->config->getWebhookMaxRequestsPerSecond());
+        self::assertSame(0, $this->config->getAiMaxRequestsPerSecond());
     }
 
     public function testWebhookOutboundUrlReturnsTheConfiguredValue(): void
@@ -198,6 +201,34 @@ class ConfigTest extends TestCase
         $this->scopeConfig->method('getValue')->willReturn(null);
 
         self::assertSame('', $this->config->getWebhookOutboundUrl());
+    }
+
+    public function testGetOllamaBaseUrlReturnsTheConfiguredValue(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn('http://ollama.local:11434');
+
+        self::assertSame('http://ollama.local:11434', $this->config->getOllamaBaseUrl());
+    }
+
+    public function testGetOllamaBaseUrlIsEmptyWhenUnconfigured(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn(null);
+
+        self::assertSame('', $this->config->getOllamaBaseUrl());
+    }
+
+    public function testGetOllamaModelReturnsTheConfiguredValue(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn('llama3.1');
+
+        self::assertSame('llama3.1', $this->config->getOllamaModel());
+    }
+
+    public function testGetOllamaModelFallsBackToLlama32WhenUnconfigured(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn(null);
+
+        self::assertSame('llama3.2', $this->config->getOllamaModel());
     }
 
     public function testWebhookSecretsDecryptTheirConfiguredValue(): void
