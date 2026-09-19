@@ -5,24 +5,31 @@ namespace Ordo\Automation\Test\Unit\Block\Adminhtml\System\Config;
 
 use Magento\Backend\Block\Template\Context;
 use Magento\Framework\App\ObjectManager;
+use Magento\Framework\Data\Form\Element\AbstractElement;
+use Magento\Framework\Event\ManagerInterface;
 use Magento\Framework\ObjectManagerInterface;
 use Magento\Framework\UrlInterface;
 use Ordo\Automation\Block\Adminhtml\System\Config\TestOllamaConnection;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 /**
- * render()/_getElementHtml() are pure delegation to Magento's own Field/Template rendering
- * pipeline (real template resolution, real filesystem reads) - not meaningfully unit-testable
- * without a full app bootstrap, same reasoning every other Field/Template-based block in this
- * module's Test/Unit only ever exercises its own added logic (see Segment\AudienceSizeTest,
- * WhatsAppTemplate\BodyPreviewTest). getAjaxUrl() is the one piece of actual logic this class
- * adds, so it's the only thing tested here.
- *
  * Backend\Block\Template's own constructor (Field's parent) falls back to
- * ObjectManager::getInstance()->get(...) for jsonHelper/directoryHelper whenever a subclass
- * doesn't forward them explicitly - which TestOllamaConnection doesn't. Stubbing the global
- * ObjectManager singleton for the duration of this test (and restoring it in tearDown) is the
- * same technique AudienceSizeTest/BulkActionsTest use for the equivalent problem there.
+ * ObjectManager::getInstance()->get(...) for jsonHelper/directoryHelper/SecureHtmlRenderer
+ * whenever a subclass doesn't forward them explicitly - which TestOllamaConnection doesn't.
+ * Stubbing the global ObjectManager singleton for the duration of this test (and restoring it in
+ * tearDown) is the same technique AudienceSizeTest/BulkActionsTest use for the equivalent problem
+ * there.
+ *
+ * render()/_getElementHtml() go through real Magento core (Field::render(),
+ * Backend\Block\Template::_toHtml()) rather than being re-mocked away: passing an explicit empty
+ * `template` in $data makes Template::_toHtml()'s own `if (!$this->getTemplate()) return '';`
+ * short-circuit before any real filesystem/theme-resolution code runs, so the whole real render()
+ * chain executes safely without needing a full app bootstrap - it just never gets far enough to
+ * touch a template file. $element is a real (constructor-disabled) AbstractElement rather than a
+ * fully-mocked one specifically so its magic uns*()/getData()/setData() (Field::render() reads
+ * several element getters that are pure DataObject magic, not real declared methods) keep working
+ * for real; only getHtmlId() - which needs a real Form to avoid a null-pointer - is faked.
  */
 class TestOllamaConnectionTest extends TestCase
 {
@@ -38,7 +45,7 @@ class TestOllamaConnectionTest extends TestCase
         ObjectManager::setInstance($this->createStub(ObjectManagerInterface::class));
     }
 
-    public function testGetAjaxUrlBuildsTheTestConnectionControllerUrl(): void
+    private function makeContext(): Context
     {
         $urlBuilder = $this->createStub(UrlInterface::class);
         $urlBuilder->method('getUrl')->willReturnMap([
@@ -47,12 +54,42 @@ class TestOllamaConnectionTest extends TestCase
 
         $context = $this->createStub(Context::class);
         $context->method('getUrlBuilder')->willReturn($urlBuilder);
+        $context->method('getEventManager')->willReturn($this->createStub(ManagerInterface::class));
 
-        $block = new TestOllamaConnection($context);
+        return $context;
+    }
+
+    public function testGetAjaxUrlBuildsTheTestConnectionControllerUrl(): void
+    {
+        $block = new TestOllamaConnection($this->makeContext());
 
         self::assertSame(
             'https://example.com/admin/ordo/ai/testconnection/',
             $block->getAjaxUrl()
         );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRenderStripsScopeOverridesAndReturnsARealFormRow(): void
+    {
+        $element = $this->getMockBuilder(AbstractElement::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getHtmlId'])
+            ->getMock();
+        $element->method('getHtmlId')->willReturn('ordo_ai_test_connection');
+        // Real (unmocked) magic setter - proves unsScope()/unsCanUseWebsiteValue()/
+        // unsCanUseDefaultValue() actually ran, not just that render() didn't throw.
+        $element->setData('scope', 'websites');
+        $element->setData('can_use_website_value', true);
+        $element->setData('can_use_default_value', true);
+
+        $block = new TestOllamaConnection($this->makeContext(), ['template' => '']);
+
+        $html = $block->render($element);
+
+        self::assertStringContainsString('row_ordo_ai_test_connection', $html);
+        self::assertNull($element->getScope());
+        self::assertNull($element->getCanUseWebsiteValue());
+        self::assertNull($element->getCanUseDefaultValue());
     }
 }
