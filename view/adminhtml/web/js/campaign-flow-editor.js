@@ -504,7 +504,6 @@ define([
             var history = [],
                 historyIndex = -1,
                 HISTORY_LIMIT = 50,
-                isRestoringHistory = false,
                 historyDebounceTimer = null;
 
             function updateHistoryButtons() {
@@ -523,13 +522,8 @@ define([
              * burn an undo step.
              */
             function pushHistory() {
-                var snapshot;
+                var snapshot = JSON.stringify(editor.export());
 
-                if (isRestoringHistory) {
-                    return;
-                }
-
-                snapshot = JSON.stringify(editor.export());
                 if (historyIndex >= 0 && history[historyIndex] === snapshot) {
                     return;
                 }
@@ -550,20 +544,15 @@ define([
              * pushed immediately instead (see the editor.on(...) wiring below).
              */
             function scheduleHistoryPush() {
-                if (isRestoringHistory) {
-                    return;
-                }
                 clearTimeout(historyDebounceTimer);
                 historyDebounceTimer = setTimeout(pushHistory, 400);
             }
 
             function restoreHistorySnapshot(snapshot) {
-                isRestoringHistory = true;
                 editor.import(JSON.parse(snapshot));
                 $(container).find('[data-kind]').each(function () {
                     bindNode($(this), $(this).attr('data-kind'));
                 });
-                isRestoringHistory = false;
                 updateHistoryButtons();
             }
 
@@ -838,10 +827,8 @@ define([
              *   of leaving it at whatever sorts first — used when the node was dropped from a
              *   specific palette chip (e.g. dragging "order_total_gte" onto the canvas should
              *   produce a condition node already set to that type, not a generic blank one)
-             * @param {Number} [posX] canvas-relative position; defaults to the old
-             *   click-to-add placement (fixed x for triggers, randomized for everything else)
-             *   when not dropped at a specific point
-             * @param {Number} [posY]
+             * @param {Number} posX canvas-relative position
+             * @param {Number} posY
              */
             function addNode(kind, presetType, posX, posY) {
                 var label = KIND_LABELS[kind],
@@ -849,16 +836,6 @@ define([
                     html = buildNodeHtml(kind, label, typeOptions, presetType),
                     nodeId,
                     inputCount = kind === 'trigger' ? 0 : 1;
-
-                // Math.random() here only jitters where a new node lands on the canvas so
-                // stacked nodes don't overlap exactly — cosmetic layout, not a security or
-                // cryptographic use, so a predictable PRNG is fine. NOSONAR: javascript:S2245
-                if (posX === undefined) {
-                    posX = kind === 'trigger' ? 60 : (60 + Math.random() * 400); // NOSONAR
-                }
-                if (posY === undefined) {
-                    posY = 260 + Math.random() * 120; // NOSONAR
-                }
 
                 nodeId = editor.addNode(
                     'ordo-flow-' + kind,
