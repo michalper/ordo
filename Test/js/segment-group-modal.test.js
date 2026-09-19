@@ -179,6 +179,21 @@ QUnit.module('Ordo_Automation/js/segment-group-modal', function () {
         assert.strictEqual($rows.find('.ordo-group-json-error-message').length, 1);
     });
 
+    QUnit.test('readRows() marks a blank fallback textarea as valid', function (assert) {
+        const api = loadModule(MODULE_PATH);
+        const $rows = global.$('<div></div>');
+
+        api.appendInlineRow(
+            $rows,
+            [{ value: 'some_future_condition_type', label: 'Some Future Condition Type' }],
+            { type: 'some_future_condition_type', params: {} },
+            function () {}
+        );
+
+        assert.deepEqual(api.readRows($rows), [{ type: 'some_future_condition_type', params: {} }]);
+        assert.strictEqual($rows.find('textarea').hasClass('ordo-group-json-invalid'), false);
+    });
+
     QUnit.test('readRows() clears the invalid marker once the JSON is fixed', function (assert) {
         const api = loadModule(MODULE_PATH);
         const $rows = global.$('<div></div>');
@@ -236,6 +251,105 @@ QUnit.module('Ordo_Automation/js/segment-group-modal', function () {
 
         assert.strictEqual($rows.find('.ordo-group-value label').text(), 'Minimum score');
         assert.strictEqual(syncCalls, 1);
+    });
+
+    QUnit.test('buildInlinePanel() starts empty when the saved JSON parses to something other than an array', function (assert) {
+        const api = loadModule(MODULE_PATH);
+        const $groupCell = global.$('<td></td>');
+        const $jsonField = global.$('<textarea>{"not":"an array"}</textarea>');
+
+        api.buildInlinePanel($groupCell, $jsonField);
+
+        assert.strictEqual($groupCell.find('.ordo-group-row').length, 0);
+    });
+
+    QUnit.test('buildInlinePanel()\'s "+ Add Condition" button appends a row and writes it back to the hidden field', function (assert) {
+        const api = loadModule(
+            MODULE_PATH,
+            '<div data-index="conditions"><select><option value="tag">Has Tag</option></select></div>'
+        );
+        const $groupCell = global.$('<td></td>');
+        const $jsonField = global.$('<textarea>[]</textarea>');
+        let changeEvents = 0;
+
+        $jsonField.on('change', function () { changeEvents++; });
+
+        api.buildInlinePanel($groupCell, $jsonField);
+        $groupCell.find('.ordo-group-inline-add').trigger('click');
+
+        assert.strictEqual($groupCell.find('.ordo-group-row').length, 1);
+        assert.deepEqual(JSON.parse($jsonField.val()), [{ type: 'tag', params: {} }]);
+        assert.strictEqual(changeEvents, 1);
+    });
+
+    QUnit.test('refreshGroupRows() skips a row with no group_logic cell instead of throwing', function (assert) {
+        const api = loadModule(
+            MODULE_PATH,
+            '<table data-index="conditions"><tbody><tr class="data-row">'
+            + '<td><div data-index="type"><select>'
+            + '<option value="group" selected>Group (nested AND/OR)</option>'
+            + '</select></div></td>'
+            + '<td><textarea name="conditions[0][group_conditions_json]">[]</textarea></td>'
+            + '</tr></tbody></table>'
+        );
+
+        api.refreshGroupRows();
+
+        assert.strictEqual(global.$('.ordo-group-inline').length, 0);
+    });
+
+    QUnit.test('a change on any select inside conditions schedules a re-scan via refreshGroupRows after a tick delay', function (assert) {
+        const api = loadModule(
+            MODULE_PATH,
+            '<div data-index="conditions"><select><option value="tag">Has Tag</option></select></div>'
+        );
+        const originalSetTimeout = global.setTimeout;
+        let capturedDelay = null;
+        let capturedCallback = null;
+
+        // Same setTimeout-stubbing technique as segment-sku-autocomplete.test.js's focusout test -
+        // asserts the *contract* (a tick-delayed re-scan is scheduled, via refreshGroupRows itself
+        // - see this module's own comment on the delegate for why the delay exists) without
+        // depending on real elapsed time.
+        global.setTimeout = function (callback, delay) {
+            capturedDelay = delay;
+            capturedCallback = callback;
+            return 0;
+        };
+
+        try {
+            global.$('[data-index="conditions"] select').trigger('change');
+
+            assert.strictEqual(capturedDelay, 50);
+            assert.strictEqual(capturedCallback, api.refreshGroupRows);
+        } finally {
+            global.setTimeout = originalSetTimeout;
+        }
+    });
+
+    QUnit.test('clicking an add/delete row button schedules a re-scan via refreshGroupRows after a tick delay', function (assert) {
+        const api = loadModule(
+            MODULE_PATH,
+            '<div data-index="conditions"><button data-action="add_new_row">Add</button></div>'
+        );
+        const originalSetTimeout = global.setTimeout;
+        let capturedDelay = null;
+        let capturedCallback = null;
+
+        global.setTimeout = function (callback, delay) {
+            capturedDelay = delay;
+            capturedCallback = callback;
+            return 0;
+        };
+
+        try {
+            global.$('[data-index="conditions"] button[data-action="add_new_row"]').trigger('click');
+
+            assert.strictEqual(capturedDelay, 150);
+            assert.strictEqual(capturedCallback, api.refreshGroupRows);
+        } finally {
+            global.setTimeout = originalSetTimeout;
+        }
     });
 
     QUnit.test('refreshGroupRows() builds an inline panel for a "group" row and is idempotent', function (assert) {

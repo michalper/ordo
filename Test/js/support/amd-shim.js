@@ -36,14 +36,52 @@ function loadAmdModule(loadModule) {
                         return function () {
                             return fn.apply(this, arguments);
                         };
+                    },
+                    // Only the exact-match lookup free-gift-offer-form.js's hydrateExistingChips()
+                    // needs - a plain linear scan for the first item whose properties all match.
+                    findWhere: function (list, properties) {
+                        return (list || []).find(function (item) {
+                            return Object.keys(properties).every(function (key) {
+                                return item[key] === properties[key];
+                            });
+                        });
                     }
                 };
             }
             if (dep === 'Magento_Ui/js/modal/modal') {
-                // Real usage only imports this for its side effect (registering $.fn.modal() on
-                // jQuery) - campaign-flow-editor.js/free-gift-offer-form.js tests exercise their
-                // own pure top-level helpers (unionNodeOutputConnections/isProductSkuField/etc.),
-                // never the actual modal dialog, so nothing needs to consume this value.
+                // Real usage only imports this for its side effect: registering $.fn.modal() on
+                // jQuery. openModal/closeModal are no-ops (jsdom has no real dialog to show/hide),
+                // but a call with an options object still appends the modal content to
+                // document.body (so a test can find it via ordinary document-rooted selectors
+                // afterwards, the only way to reach it once it's only reachable by clicking a
+                // module's own "open" button) and renders each of `buttons` as a real, clickable
+                // <button> - free-gift-offer-form.js's own "Add Selected"/"Cancel" buttons need to
+                // actually run their click handlers for a test to drive that flow end to end, same
+                // as a real Magento admin page would. Matches the real widget's own contract of
+                // invoking each button's click handler with `this` bound to the clicked <button>
+                // itself (see that file's own comment on why that binding specifically matters).
+                global.$.fn.modal = global.$.fn.modal || function (optionsOrAction) {
+                    if (optionsOrAction === 'openModal' || optionsOrAction === 'closeModal') {
+                        return this;
+                    }
+
+                    var options = optionsOrAction || {};
+                    var $buttonBar = global.$('<div class="ordo-test-modal-buttons"></div>');
+
+                    (options.buttons || []).forEach(function (button) {
+                        var $button = global.$('<button type="button"></button>').text(button.text);
+
+                        $button.on('click', function () {
+                            button.click.call($button[0]);
+                        });
+                        $buttonBar.append($button);
+                    });
+
+                    global.$(global.document.body).append(this).append($buttonBar);
+
+                    return this;
+                };
+
                 return undefined;
             }
             if (dep === 'uiRegistry') {
@@ -58,6 +96,36 @@ function loadAmdModule(loadModule) {
                 // body, which the tests here never call (they exercise its exposed pure helpers
                 // directly), so this only needs to exist, not actually work.
                 return function Drawflow() {};
+            }
+            if (dep === 'Magento_Ui/js/form/element/abstract') {
+                // Identity extend() - returns the raw config object a module passes to
+                // Abstract.extend({...}) unchanged, instead of building a real knockout-observable
+                // prototype chain (uiClass's actual _super()-injecting inheritance). Tests call the
+                // config's own methods (buildPreview(), onXChange()) directly via .call(fakeThis),
+                // never initObservable() itself, so there's no need for a working _super() or real
+                // observable wiring here.
+                return { extend: function (config) { return config; } };
+            }
+            if (dep === 'ko') {
+                // computed() only needs to exist for a module's initObservable() to run without
+                // throwing - not to actually recompute reactively - since no test here exercises
+                // initObservable() (see Magento_Ui/js/form/element/abstract above).
+                return {
+                    computed: function (fn, context) {
+                        return typeof fn === 'function' ? fn.bind(context) : fn;
+                    }
+                };
+            }
+            if (dep === 'mage/translate') {
+                // Real usage only imports this for its side effect (registering $.mage.__() on
+                // jQuery, same role Magento_Ui/js/modal/modal plays for $.fn.modal() above) - an
+                // identity passthrough is indistinguishable from the real translator for a test
+                // that never switches locale.
+                global.$.mage = global.$.mage || {};
+                global.$.mage.__ = global.$.mage.__ || function (text) {
+                    return text;
+                };
+                return undefined;
             }
             throw new Error('Test/js/support/amd-shim: unsupported dependency "' + dep + '"');
         });

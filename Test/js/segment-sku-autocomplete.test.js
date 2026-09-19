@@ -23,6 +23,17 @@ function stubFetch(responseInit) {
     return calls;
 }
 
+/**
+ * Waits for one macrotask tick, by which point Node has already drained every microtask queued
+ * so far (fetch()'s/searchProducts()'s own .then() chain included) - simpler than counting exactly
+ * how many .then() hops the real request path involves.
+ */
+function flushPromises() {
+    return new Promise(function (resolve) {
+        setTimeout(resolve, 0);
+    });
+}
+
 QUnit.module('Ordo_Automation/js/segment-sku-autocomplete', function () {
     QUnit.test('isSkuField() matches a top-level condition row\'s sku field, nothing else', function (assert) {
         const api = loadModule(MODULE_PATH);
@@ -123,5 +134,90 @@ QUnit.module('Ordo_Automation/js/segment-sku-autocomplete', function () {
 
         api.closeDropdown();
         assert.strictEqual(global.$('.ordo-sku-suggest').length, 0);
+    });
+
+    QUnit.test('typing into a matching sku field renders a dropdown of results while still focused', async function (assert) {
+        loadModule(MODULE_PATH, '<input name="conditions[conditions][0][sku]">');
+        const $input = global.$('input[name="conditions[conditions][0][sku]"]');
+
+        stubFetch({ ok: true, json: () => Promise.resolve({ items: [{ sku: '24-MB01', name: 'Blue Shirt' }] }) });
+
+        $input[0].focus();
+        $input.val('shirt').trigger('input');
+        await flushPromises();
+
+        assert.strictEqual(global.$('.ordo-sku-suggest-row').length, 1);
+    });
+
+    QUnit.test('a search response is discarded once the input is no longer focused', async function (assert) {
+        loadModule(MODULE_PATH, '<input name="conditions[conditions][0][sku]">');
+        const $input = global.$('input[name="conditions[conditions][0][sku]"]');
+
+        stubFetch({ ok: true, json: () => Promise.resolve({ items: [{ sku: '24-MB01', name: 'Blue Shirt' }] }) });
+
+        $input[0].focus();
+        $input.val('shirt').trigger('input');
+        $input[0].blur();
+        await flushPromises();
+
+        assert.strictEqual(global.$('.ordo-sku-suggest-row').length, 0);
+    });
+
+    QUnit.test('typing into a non-sku input never triggers a search', async function (assert) {
+        loadModule(MODULE_PATH, '<input name="conditions[conditions][0][tag]">');
+        const $input = global.$('input[name="conditions[conditions][0][tag]"]');
+
+        const calls = stubFetch({ ok: true, json: () => Promise.resolve({ items: [] }) });
+
+        $input.val('shirt').trigger('input');
+        await flushPromises();
+
+        assert.strictEqual(calls.length, 0);
+    });
+
+    QUnit.test('a search term under 2 characters closes any open dropdown without searching', async function (assert) {
+        loadModule(MODULE_PATH, '<input name="conditions[conditions][0][sku]">');
+        const $input = global.$('input[name="conditions[conditions][0][sku]"]');
+
+        global.$('body').append('<div class="ordo-sku-suggest"></div>');
+        const calls = stubFetch({ ok: true, json: () => Promise.resolve({ items: [] }) });
+
+        $input.val('a').trigger('input');
+        await flushPromises();
+
+        assert.strictEqual(calls.length, 0);
+        assert.strictEqual(global.$('.ordo-sku-suggest').length, 0);
+    });
+
+    QUnit.test('losing focus schedules the dropdown to close after the mousedown grace period', function (assert) {
+        loadModule(MODULE_PATH, '<input name="conditions[conditions][0][sku]">');
+        const $input = global.$('input[name="conditions[conditions][0][sku]"]');
+        const originalSetTimeout = global.setTimeout;
+        let capturedDelay = null;
+        let fire = null;
+
+        // Same setTimeout-stubbing technique as free-gift-offer-form.test.js's sleep() test -
+        // asserts the contract (a 150ms grace period is scheduled) without depending on real
+        // elapsed time.
+        global.setTimeout = function (callback, delay) {
+            capturedDelay = delay;
+            fire = callback;
+            return 0;
+        };
+
+        try {
+            global.$('body').append('<div class="ordo-sku-suggest"></div>');
+
+            $input.trigger('focusout');
+
+            assert.strictEqual(capturedDelay, 150);
+            assert.strictEqual(global.$('.ordo-sku-suggest').length, 1, 'still open until the timer fires');
+
+            fire();
+
+            assert.strictEqual(global.$('.ordo-sku-suggest').length, 0);
+        } finally {
+            global.setTimeout = originalSetTimeout;
+        }
     });
 });
