@@ -144,6 +144,14 @@ QUnit.module('Ordo_Automation/js/free-gift-offer-form', function () {
         assert.deepEqual(await api.searchProducts('abc'), []);
     });
 
+    QUnit.test('searchProducts() resolves to an empty array on a non-ok response', async function (assert) {
+        const api = loadModule(MODULE_PATH);
+
+        stubFetch({ ok: false });
+
+        assert.deepEqual(await api.searchProducts('abc'), []);
+    });
+
     QUnit.test('renderChip() removes any existing chip and adds nothing when the item has no sku', function (assert) {
         const api = loadModule(
             MODULE_PATH,
@@ -167,6 +175,30 @@ QUnit.module('Ordo_Automation/js/free-gift-offer-form', function () {
         assert.strictEqual($chip.length, 1);
         assert.strictEqual($chip.find('.ordo-picker-chip-name').text(), 'A Gift');
         assert.strictEqual($chip.find('.ordo-picker-chip-sku').text(), 'XYZ');
+    });
+
+    QUnit.test('renderChip() renders a thumbnail image when the item has one', function (assert) {
+        const api = loadModule(MODULE_PATH, '<div class="admin__field-control"><input id="sku-input"></div>');
+        const $input = global.$('#sku-input');
+
+        api.renderChip($input, { sku: 'XYZ', name: 'A Gift', thumbnail_url: '/media/xyz.jpg' });
+
+        const $chip = $input.closest('.admin__field-control').find('.ordo-picker-chip');
+
+        assert.strictEqual($chip.find('img.ordo-picker-chip-thumb').attr('src'), '/media/xyz.jpg');
+        assert.strictEqual($chip.find('.ordo-picker-chip-noimg').length, 0);
+    });
+
+    QUnit.test('renderChip() falls back to the sku as the visible name when the item has none', function (assert) {
+        const api = loadModule(MODULE_PATH, '<div class="admin__field-control"><input id="sku-input"></div>');
+        const $input = global.$('#sku-input');
+
+        api.renderChip($input, { sku: 'XYZ' });
+
+        assert.strictEqual(
+            $input.closest('.admin__field-control').find('.ordo-picker-chip-name').text(),
+            'XYZ'
+        );
     });
 
     // ------------------------------------------------------------------
@@ -225,6 +257,27 @@ QUnit.module('Ordo_Automation/js/free-gift-offer-form', function () {
         await flushPromises();
 
         assert.strictEqual(global.$('.ordo-picker-suggestion').length, 1);
+    });
+
+    QUnit.test('a dropdown suggestion with a thumbnail and known qty renders both instead of the fallbacks', async function (assert) {
+        loadModule(MODULE_PATH, '<div class="admin__field-control"><input name="products[products][0][sku]"></div>');
+        const $input = global.$('input[name="products[products][0][sku]"]');
+
+        stubFetch({
+            ok: true,
+            json: () => Promise.resolve({
+                items: [{ sku: '24-MB01', name: 'Blue Shirt', thumbnail_url: '/media/shirt.jpg', qty: 5 }]
+            })
+        });
+
+        $input[0].focus();
+        $input.val('shirt').trigger('input');
+        await flushPromises();
+
+        const $suggestion = global.$('.ordo-picker-suggestion');
+        assert.strictEqual($suggestion.find('img').attr('src'), '/media/shirt.jpg');
+        assert.strictEqual($suggestion.find('.ordo-picker-suggestion-noimg').length, 0);
+        assert.strictEqual($suggestion.find('.ordo-picker-suggestion-qty').text(), 'Qty: 5');
     });
 
     QUnit.test('a product search response is discarded once the input is no longer focused', async function (assert) {
@@ -428,6 +481,23 @@ QUnit.module('Ordo_Automation/js/free-gift-offer-form', function () {
         assert.strictEqual($rows.eq(1).find('input[name$="[gift_slots]"]').val(), '3');
     });
 
+    QUnit.test('"Sort tiers by subtotal" treats a blank min_subtotal as 0 instead of NaN', function (assert) {
+        loadModule(
+            MODULE_PATH,
+            '<div data-index="tiers"><table><tbody>'
+            + tierRowMarkup(0, '100', '3') + tierRowMarkup(1, '', '1') + tierRowMarkup(2, '50', '2')
+            + '</tbody></table><button data-action="add_new_row"></button></div>'
+        );
+
+        global.$('.ordo-tier-sort-button').trigger('click');
+
+        const $rows = global.$('[data-index="tiers"] tr.data-row');
+
+        assert.strictEqual($rows.eq(0).find('input[name$="[min_subtotal]"]').val(), '', 'the blank row sorts first, as 0');
+        assert.strictEqual($rows.eq(1).find('input[name$="[min_subtotal]"]').val(), '50');
+        assert.strictEqual($rows.eq(2).find('input[name$="[min_subtotal]"]').val(), '100');
+    });
+
     QUnit.test('clicking a tier row\'s "Duplicate" button copies its values into a newly added row', async function (assert) {
         loadModule(
             MODULE_PATH,
@@ -482,6 +552,25 @@ QUnit.module('Ordo_Automation/js/free-gift-offer-form', function () {
 
         assert.strictEqual(global.$('.ordo-picker-modal-row').length, 1);
         assert.strictEqual(global.$('.ordo-picker-suggestion-name').text(), 'Blue Shirt');
+    });
+
+    QUnit.test('a bulk picker modal row with a thumbnail and known qty renders both instead of the fallbacks', async function (assert) {
+        loadModule(MODULE_PATH, productsMarkup());
+        stubFetch({
+            ok: true,
+            json: () => Promise.resolve({
+                items: [{ sku: '24-MB01', name: 'Blue Shirt', thumbnail_url: '/media/shirt.jpg', qty: 5 }]
+            })
+        });
+
+        global.$('.ordo-picker-bulk-button').trigger('click');
+        global.$('.ordo-picker-modal-search').val('shirt').trigger('input');
+        await flushPromises();
+
+        const $row = global.$('.ordo-picker-modal-row');
+        assert.strictEqual($row.find('img').attr('src'), '/media/shirt.jpg');
+        assert.strictEqual($row.find('.ordo-picker-suggestion-noimg').length, 0);
+        assert.strictEqual($row.find('.ordo-picker-suggestion-qty').text(), 'Qty: 5');
     });
 
     QUnit.test('the bulk picker modal shows an empty-state message when nothing matches', async function (assert) {

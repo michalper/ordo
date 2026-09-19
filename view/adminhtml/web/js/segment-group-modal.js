@@ -164,7 +164,9 @@ define([
      * @param {jQuery} $textarea
      * @param {Boolean} isValid
      * @param {String} [reason] the underlying JSON.parse() error message, appended to the
-     *     visible notice so an admin who does know JSON gets an actual clue, not just "invalid".
+     *     visible notice so an admin who does know JSON gets an actual clue, not just "invalid" -
+     *     always passed by the one real caller (a caught JSON.parse() error's own .message is
+     *     never empty), but left optional here since isValid=true never needs one.
      */
     function markJsonValidity($textarea, isValid, reason) {
         var $wrap = $textarea.closest('.ordo-group-value'),
@@ -180,8 +182,7 @@ define([
         if (!$message.length) {
             $message = $('<div class="ordo-group-json-error-message"></div>').insertAfter($textarea);
         }
-        $message.text('Invalid JSON - this condition will match nothing until fixed.'
-            + (reason ? ' (' + reason + ')' : ''));
+        $message.text('Invalid JSON - this condition will match nothing until fixed. (' + reason + ')');
     }
 
     /**
@@ -244,7 +245,7 @@ define([
                 }
             } else {
                 var $textarea = $valueWrap.find('textarea'),
-                    raw = String($textarea.val() ?? '').trim();
+                    raw = String($textarea.val()).trim();
 
                 if (raw !== '') {
                     try {

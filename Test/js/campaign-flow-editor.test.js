@@ -79,6 +79,18 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor', function () {
         assert.true(initCampaignFlowEditor.paletteItemMatchesQuery('Order total at least', 'order_total_gte', '   '));
     });
 
+    QUnit.test('paletteItemMatchesQuery() treats a missing label as an empty string rather than throwing', function (assert) {
+        const initCampaignFlowEditor = loadModule(MODULE_PATH);
+
+        assert.true(initCampaignFlowEditor.paletteItemMatchesQuery(undefined, 'order_total_gte', 'gte'));
+    });
+
+    QUnit.test('paletteItemMatchesQuery() treats a missing type as an empty string rather than throwing', function (assert) {
+        const initCampaignFlowEditor = loadModule(MODULE_PATH);
+
+        assert.false(initCampaignFlowEditor.paletteItemMatchesQuery('Order total at least', undefined, 'zzz'));
+    });
+
     QUnit.test('cloneSplitVariant() fills in defaults for a bare/malformed raw entry', function (assert) {
         const initCampaignFlowEditor = loadModule(MODULE_PATH);
 
@@ -127,6 +139,18 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor', function () {
         );
 
         assert.ok(html.includes('<option value="custom_action">custom_action</option>'));
+    });
+
+    QUnit.test('buildSplitVariantActionTypeOptionsHtml() treats a missing action types list as empty rather than throwing', function (assert) {
+        const initCampaignFlowEditor = loadModule(MODULE_PATH);
+        const html = initCampaignFlowEditor.buildSplitVariantActionTypeOptionsHtml(
+            undefined,
+            {},
+            '',
+            function (raw) { return raw; }
+        );
+
+        assert.strictEqual(html, '');
     });
 
     /**
@@ -283,6 +307,58 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor', function () {
 
             assert.strictEqual($container.find('.ordo-flow-variant-action-row').length, 1);
             assert.strictEqual($container.find('.ordo-flow-variant-action-type').val(), 'send_email');
+        });
+
+        QUnit.test('renders action type options with raw type names when the config has no action labels at all', function (assert) {
+            const initCampaignFlowEditor = loadModule(MODULE_PATH);
+            const $container = global.$('<div></div>');
+            const typesConfigNoLabels = { actions: ['add_tag', 'send_email', 'split'], labels: {} };
+            const initial = [{ key: 'a', weight: 100, actions: [{ type: 'add_tag', params: {} }] }];
+
+            initCampaignFlowEditor.renderVariantEditor($container, 'variants', initial, typesConfigNoLabels);
+
+            assert.strictEqual($container.find('.ordo-flow-variant-action-type option').first().text(), 'add_tag');
+        });
+
+        QUnit.test('clearing an action\'s params textarea resets its params to an empty object', function (assert) {
+            const initCampaignFlowEditor = loadModule(MODULE_PATH);
+            const $container = global.$('<div></div>');
+            const initial = [{ key: 'a', weight: 100, actions: [{ type: 'add_tag', params: { tag: 'vip' } }] }];
+
+            initCampaignFlowEditor.renderVariantEditor($container, 'variants', initial, TYPES_CONFIG);
+            $container.find('.ordo-flow-variant-action-params').val('').trigger('input');
+
+            assert.deepEqual(
+                JSON.parse($container.find('input[data-field="variants"]').val())[0].actions[0].params,
+                {}
+            );
+        });
+
+        QUnit.test('clearing the weight input resets it to 0 instead of NaN', function (assert) {
+            const initCampaignFlowEditor = loadModule(MODULE_PATH);
+            const $container = global.$('<div></div>');
+
+            initCampaignFlowEditor.renderVariantEditor($container, 'variants', [{ key: 'a', weight: 75, actions: [] }], TYPES_CONFIG);
+            $container.find('.ordo-flow-variant-weight').val('').trigger('input');
+
+            assert.strictEqual(
+                JSON.parse($container.find('input[data-field="variants"]').val())[0].weight,
+                0
+            );
+        });
+
+        QUnit.test('"+ Add action" defaults to a blank type when the config has no non-split action types at all', function (assert) {
+            const initCampaignFlowEditor = loadModule(MODULE_PATH);
+            const $container = global.$('<div></div>');
+            const typesConfigNoActions = { labels: { action: {} } };
+
+            initCampaignFlowEditor.renderVariantEditor($container, 'variants', [{ key: 'a', weight: 100, actions: [] }], typesConfigNoActions);
+            $container.find('.ordo-flow-variant-action-add').trigger('click');
+
+            assert.deepEqual(
+                JSON.parse($container.find('input[data-field="variants"]').val())[0].actions,
+                [{ type: '', params: {} }]
+            );
         });
     });
 });
@@ -500,6 +576,26 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor initCampaignFlowEditor()',
         assert.strictEqual(nodeIds.length, 3);
     });
 
+    QUnit.test('buildChain() with no nodeSpecs at all adds nothing instead of throwing', function (assert) {
+        initEditor();
+
+        const nodeIds = global.window.ordoFlowTestHook.buildChain();
+
+        assert.deepEqual(nodeIds, []);
+        assert.strictEqual(global.$('.drawflow-node').length, 0);
+    });
+
+    QUnit.test('a kind with no entry at all in typesConfig.labels renders its type options with raw type names', function (assert) {
+        const typesConfig = JSON.parse(JSON.stringify(TYPES_CONFIG));
+
+        delete typesConfig.labels.condition;
+        initEditor(typesConfig);
+
+        global.window.ordoFlowTestHook.buildChain([{ kind: 'condition', type: 'tag' }]);
+
+        assert.strictEqual(global.$('.ordo-flow-type-select option[value="tag"]').text(), 'tag');
+    });
+
     // ------------------------------------------------------------------
     // renderFields(): per-type field rendering branches
     // ------------------------------------------------------------------
@@ -636,6 +732,107 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor initCampaignFlowEditor()',
             }
         };
     }
+
+    /**
+     * Generic single-node fixture for scenarios existingConditionFlowData()'s fixed condition/
+     * tag/order_total_gte shape can't cover: a custom kind/type select and a data-params attribute
+     * that's either entirely absent (`dataParamsAttr === null`) or an arbitrary raw string (not
+     * always well-formed JSON) - both are shapes only a saved (or hand-edited) flow can produce,
+     * never buildChain()'s own fresh-node path (buildNodeHtml() always writes data-params="{}").
+     *
+     * @param {String} kind
+     * @param {String} selectOptionsHtml
+     * @param {String|null} dataParamsAttr
+     */
+    function existingNodeFlowData(kind, selectOptionsHtml, dataParamsAttr) {
+        var dataParamsHtml = dataParamsAttr === null ? '' : ' data-params=\'' + dataParamsAttr + '\'';
+
+        return {
+            drawflow: {
+                Home: {
+                    data: {
+                        1: {
+                            id: 1,
+                            name: 'ordo-flow-' + kind,
+                            data: {},
+                            class: 'ordo-flow-' + kind,
+                            html: '<div class="ordo-flow-node" data-kind="' + kind + '"' + dataParamsHtml + '>'
+                                + '<div class="ordo-flow-node-head"><span>Node</span>'
+                                + '<button type="button" class="ordo-flow-duplicate">&#10697;</button>'
+                                + '<button type="button" class="ordo-flow-delete">&times;</button></div>'
+                                + '<select class="ordo-flow-type-select">' + selectOptionsHtml + '</select>'
+                                + '<div class="ordo-flow-fields"></div>'
+                                + '</div>',
+                            typenode: false,
+                            inputs: { input_1: { connections: [] } },
+                            outputs: { output_1: { connections: [] } },
+                            pos_x: 60,
+                            pos_y: 260
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    QUnit.test('a select-type field marks the matching option as selected when a value is pre-filled from a saved flow', function (assert) {
+        const typesConfig = JSON.parse(JSON.stringify(TYPES_CONFIG));
+
+        typesConfig.actions.push('add_dynamic_content');
+        typesConfig.labels.action.add_dynamic_content = 'Add Dynamic Content';
+        typesConfig.fields.action.add_dynamic_content = [
+            { name: 'content_block_id', label: 'Content Block', options: { 1: 'Block A', 2: 'Block B' } }
+        ];
+
+        initEditor(typesConfig, existingNodeFlowData(
+            'action',
+            '<option value="add_dynamic_content" selected="selected">Add Dynamic Content</option>',
+            '{&quot;content_block_id&quot;:&quot;2&quot;}'
+        ));
+
+        assert.strictEqual(global.$('.ordo-flow-fields select[data-field="content_block_id"]').val(), '2');
+    });
+
+    QUnit.test('a node with no saved data-params attribute at all starts with blank fields instead of throwing', function (assert) {
+        const typesConfig = JSON.parse(JSON.stringify(TYPES_CONFIG));
+
+        initEditor(typesConfig, existingNodeFlowData(
+            'condition',
+            '<option value="tag" selected="selected">Has Tag</option>',
+            null
+        ));
+
+        assert.strictEqual(global.$('.drawflow-node').length, 1);
+        assert.strictEqual(global.$('.ordo-flow-fields input[data-field="tag"]').val(), '');
+    });
+
+    QUnit.test('an unmapped type\'s fallback textarea treats a "null" saved params value as empty rather than throwing', function (assert) {
+        const typesConfig = JSON.parse(JSON.stringify(TYPES_CONFIG));
+
+        typesConfig.actions.push('custom_unmapped_action');
+
+        initEditor(typesConfig, existingNodeFlowData(
+            'action',
+            '<option value="custom_unmapped_action" selected="selected">Custom</option>',
+            'null'
+        ));
+
+        assert.strictEqual(global.$('.ordo-flow-params-textarea').val(), '');
+    });
+
+    QUnit.test('an unmapped type\'s fallback textarea pre-fills real saved params as JSON', function (assert) {
+        const typesConfig = JSON.parse(JSON.stringify(TYPES_CONFIG));
+
+        typesConfig.actions.push('custom_unmapped_action');
+
+        initEditor(typesConfig, existingNodeFlowData(
+            'action',
+            '<option value="custom_unmapped_action" selected="selected">Custom</option>',
+            '{&quot;foo&quot;:&quot;bar&quot;}'
+        ));
+
+        assert.strictEqual(global.$('.ordo-flow-params-textarea').val(), JSON.stringify({ foo: 'bar' }));
+    });
 
     QUnit.test('loading an existing flow imports it and binds fields from each node\'s saved data-params', function (assert) {
         initEditor(TYPES_CONFIG, existingConditionFlowData('{&quot;tag&quot;:&quot;vip&quot;}'));
@@ -940,6 +1137,26 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor initCampaignFlowEditor()',
         assert.strictEqual(global.$('.ordo-flow-templates').attr('open'), undefined, 'the details element closes itself');
     });
 
+    QUnit.test('getNextTemplateStartX() treats an unparseable left position as 0 instead of NaN', function (assert) {
+        initEditor();
+
+        const nodeIds = global.window.ordoFlowTestHook.buildChain([{ kind: 'action', type: 'add_tag' }]);
+
+        // Real Drawflow always assigns a numeric pos_x, so this can only happen via direct DOM
+        // tampering - simulates whatever edge case the `|| 0` fallback was written to defend
+        // against (a stylesheet override, a browser quirk, etc.) rather than a realistic click
+        // path, same spirit as this file's other hand-crafted-DOM tests.
+        global.$('#node-' + nodeIds[0]).css('left', '');
+
+        const secondIds = global.window.ordoFlowTestHook.buildChain([{ kind: 'action', type: 'send_email' }]);
+
+        // jsdom always reports offsetWidth as 0 (no real layout), so getNextTemplateStartX()'s own
+        // `this.offsetWidth || 220` fallback is what supplies the node's assumed width here -
+        // maxRight becomes 0 (the corrupted left) + 220, so the next node starts at 220 + 60 = 280,
+        // not 340 (which is what a real left of 60 would have produced).
+        assert.strictEqual(global.$('#node-' + secondIds[0]).css('left'), '280px');
+    });
+
     QUnit.test('an unknown template key is a no-op', function (assert) {
         initEditor();
         global.$(global.document.body).append('<button data-flow-template="does-not-exist"></button>');
@@ -1171,6 +1388,28 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor initCampaignFlowEditor()',
                 ctrlKey: true, shiftKey: true, key: 'z', target: global.$('#canvas')[0]
             }));
             assert.strictEqual(global.$('.drawflow-node').length, 2, 'Ctrl+Shift+Z redoes');
+        } finally {
+            restore();
+        }
+    });
+
+    QUnit.test('Ctrl+Y redoes the same as Ctrl+Shift+Z', function (assert) {
+        initEditor();
+        const restore = stubImmediateTimeout();
+
+        try {
+            global.window.ordoFlowTestHook.buildChain([{ kind: 'action', type: 'add_tag' }]);
+            global.window.ordoFlowTestHook.buildChain([{ kind: 'action', type: 'send_email' }]);
+
+            global.$(global.document).trigger(global.$.Event('keydown', {
+                ctrlKey: true, key: 'z', target: global.$('#canvas')[0]
+            }));
+            assert.strictEqual(global.$('.drawflow-node').length, 1);
+
+            global.$(global.document).trigger(global.$.Event('keydown', {
+                ctrlKey: true, key: 'y', target: global.$('#canvas')[0]
+            }));
+            assert.strictEqual(global.$('.drawflow-node').length, 2, 'Ctrl+Y redoes');
         } finally {
             restore();
         }

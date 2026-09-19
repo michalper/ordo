@@ -959,12 +959,11 @@ define([
              * @return {{x: Number, y: Number}}
              */
             function toCanvasPosition(clientX, clientY) {
-                var rect = editor.precanvas.getBoundingClientRect(),
-                    zoom = editor.zoom || 1;
+                var rect = editor.precanvas.getBoundingClientRect();
 
                 return {
-                    x: (clientX - rect.x) / zoom,
-                    y: (clientY - rect.y) / zoom
+                    x: (clientX - rect.x) / editor.zoom,
+                    y: (clientY - rect.y) / editor.zoom
                 };
             }
 
@@ -1374,7 +1373,7 @@ define([
              * @return {Number}
              */
             function countNodeOutputs(node) {
-                return Object.keys(node.outputs || {}).reduce(function (count, key) {
+                return Object.keys(node.outputs).reduce(function (count, key) {
                     return count + node.outputs[key].connections.length;
                 }, 0);
             }
@@ -1398,7 +1397,7 @@ define([
                         parent[id] = id;
                     }
                     while (parent[id] !== id) {
-                        parent[id] = parent[parent[id]] || parent[id];
+                        parent[id] = parent[parent[id]];
                         id = parent[id];
                     }
                     return id;
@@ -1486,7 +1485,7 @@ define([
                         continue;
                     }
 
-                    Object.keys(currentNode.outputs || {}).forEach(function (outputKey) {
+                    Object.keys(currentNode.outputs).forEach(function (outputKey) {
                         expandReachableOutput(outputKey, currentNode, reachable, queue);
                     });
                 }

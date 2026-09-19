@@ -66,6 +66,14 @@ QUnit.module('Ordo_Automation/js/segment-sku-autocomplete', function () {
         assert.deepEqual(await api.searchProducts('shirt'), []);
     });
 
+    QUnit.test('searchProducts() resolves to an empty array when the response has no items key', async function (assert) {
+        const api = loadModule(MODULE_PATH);
+
+        stubFetch({ ok: true, json: () => Promise.resolve({}) });
+
+        assert.deepEqual(await api.searchProducts('shirt'), []);
+    });
+
     QUnit.test('searchProducts() resolves to an empty array instead of rejecting on a network error', async function (assert) {
         const api = loadModule(MODULE_PATH);
 

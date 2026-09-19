@@ -54,6 +54,22 @@ QUnit.module('Ordo_Automation/js/whatsapp-template-body-preview', function () {
         assert.true(global.$('[data-body-preview-count]').hasClass('ordo-whatsapp-body-preview-count-over'));
     });
 
+    QUnit.test('update() treats a missing max as 0 instead of NaN, and never flags it as over-limit', function (assert) {
+        const api = loadModule(
+            MODULE_PATH,
+            '<div class="ordo-whatsapp-body-preview">'
+            + '<p data-body-preview-count="1"></p>'
+            + '<div data-body-preview-text="1"></div>'
+            + '</div>'
+            + '<textarea name="body_text"></textarea>'
+        );
+
+        api.update(global.$('.ordo-whatsapp-body-preview'), 'Hi there');
+
+        assert.strictEqual(global.$('[data-body-preview-count]').text(), '8 / 0 characters');
+        assert.false(global.$('[data-body-preview-count]').hasClass('ordo-whatsapp-body-preview-count-over'));
+    });
+
     QUnit.test('attach() finds the rendered textarea and renders its current value', function (assert) {
         const api = loadModule(MODULE_PATH, panelHtml());
         global.$('textarea[name="body_text"]').val('Hi {{1}}!');

@@ -163,7 +163,7 @@ define([
     var debouncedSuggest = _.debounce(function ($input) {
         // String(...).trim() instead of jQuery's own $.trim() - removed in jQuery 4 (deprecated
         // since 3.5) in favor of the native method.
-        var term = String($input.val() ?? '').trim();
+        var term = String($input.val()).trim();
 
         if (term.length < 2) {
             closeDropdown();
@@ -201,7 +201,7 @@ define([
     function hydrateExistingChips() {
         $('input[name^="products[products]"][name$="[sku]"]').each(function () {
             var $input = $(this),
-                sku = String($input.val() ?? '').trim();
+                sku = String($input.val()).trim();
 
             if (sku === '') {
                 return;
@@ -315,7 +315,7 @@ define([
             }, 300);
 
         $modalContent.find('.ordo-picker-modal-search').on('input', function () {
-            debouncedModalSearch(String($(this).val() ?? '').trim());
+            debouncedModalSearch(String($(this).val()).trim());
         });
 
         $modalContent.modal({

@@ -97,6 +97,20 @@ QUnit.module('Ordo_Automation/js/segment-group-modal', function () {
         assert.strictEqual($wrap.data('valueKey'), 'segment_id');
     });
 
+    QUnit.test('renderValueField() leaves a select at its default option when no value is saved yet', function (assert) {
+        const api = loadModule(
+            MODULE_PATH,
+            '<div data-index="segment_id"><select>'
+            + '<option value="1">VIP customers</option>'
+            + '</select></div>'
+        );
+        const $wrap = global.$('<div></div>');
+
+        api.renderValueField($wrap, 'in_segment', {});
+
+        assert.strictEqual($wrap.find('select').val(), null, 'no option matches an empty saved value');
+    });
+
     QUnit.test('appendInlineRow() + readRows() round-trips a dedicated-field condition', function (assert) {
         const api = loadModule(MODULE_PATH);
         const $rows = global.$('<div></div>');
@@ -128,6 +142,29 @@ QUnit.module('Ordo_Automation/js/segment-group-modal', function () {
         );
 
         assert.deepEqual(api.readRows($rows), [{ type: 'in_segment', params: { segment_id: '7' } }]);
+    });
+
+    QUnit.test('appendInlineRow() tolerates a condition with no params key at all', function (assert) {
+        const api = loadModule(MODULE_PATH);
+        const $rows = global.$('<div></div>');
+
+        api.appendInlineRow($rows, [{ value: 'tag', label: 'Has Tag' }], { type: 'tag' }, function () {});
+
+        assert.strictEqual($rows.find('input').val(), '');
+    });
+
+    QUnit.test('readRows() treats a select-type value with no options at all as an empty string, not null', function (assert) {
+        const api = loadModule(MODULE_PATH); // no data-index="segment_id" markup - readSelectOptions() finds nothing
+        const $rows = global.$('<div></div>');
+
+        api.appendInlineRow(
+            $rows,
+            [{ value: 'in_segment', label: 'In Segment' }],
+            { type: 'in_segment', params: {} },
+            function () {}
+        );
+
+        assert.deepEqual(api.readRows($rows), [{ type: 'in_segment', params: {} }]);
     });
 
     QUnit.test('readRows() drops an empty dedicated value instead of writing an empty-string param', function (assert) {
@@ -261,6 +298,17 @@ QUnit.module('Ordo_Automation/js/segment-group-modal', function () {
         api.buildInlinePanel($groupCell, $jsonField);
 
         assert.strictEqual($groupCell.find('.ordo-group-row').length, 0);
+    });
+
+    QUnit.test('buildInlinePanel() treats an empty saved value as an empty condition list, not corrupted JSON', function (assert) {
+        const api = loadModule(MODULE_PATH);
+        const $groupCell = global.$('<td></td>');
+        const $jsonField = global.$('<textarea></textarea>');
+
+        api.buildInlinePanel($groupCell, $jsonField);
+
+        assert.strictEqual($groupCell.find('.ordo-group-row').length, 0);
+        assert.strictEqual($groupCell.find('.ordo-group-json-error-message').length, 0);
     });
 
     QUnit.test('buildInlinePanel()\'s "+ Add Condition" button appends a row and writes it back to the hidden field', function (assert) {
