@@ -7,7 +7,7 @@
     "test:js:coverage": "c8 --reporter=lcov --reporter=text --report-dir=coverage-js --include=view/**/web/js/**/*.js npm run test:js"
   },
   "devDependencies": {
-    "c8": "^10.1.2",
+    "c8": "^12.0.0",
     "jquery": "^3.7.1",
     "jsdom": "^30.0.1",
     "qunit": "^2.22.0"
