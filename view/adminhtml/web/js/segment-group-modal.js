@@ -234,14 +234,17 @@ define([
                 params = {};
 
             if (valueKey) {
-                var value = $.trim($valueWrap.find('input, select').val());
+                // String(...).trim() instead of jQuery's own $.trim() - removed in jQuery 4
+                // (deprecated since 3.5) in favor of the native method; String(...) keeps the
+                // same null/undefined-safe behavior $.trim() had for a possibly-empty .val().
+                var value = String($valueWrap.find('input, select').val() ?? '').trim();
 
                 if (value !== '') {
                     params[valueKey] = value;
                 }
             } else {
                 var $textarea = $valueWrap.find('textarea'),
-                    raw = $.trim($textarea.val());
+                    raw = String($textarea.val() ?? '').trim();
 
                 if (raw !== '') {
                     try {

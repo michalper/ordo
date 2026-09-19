@@ -161,7 +161,9 @@ define([
     }
 
     var debouncedSuggest = _.debounce(function ($input) {
-        var term = $.trim($input.val());
+        // String(...).trim() instead of jQuery's own $.trim() - removed in jQuery 4 (deprecated
+        // since 3.5) in favor of the native method.
+        var term = String($input.val() ?? '').trim();
 
         if (term.length < 2) {
             closeDropdown();
@@ -199,7 +201,7 @@ define([
     function hydrateExistingChips() {
         $('input[name^="products[products]"][name$="[sku]"]').each(function () {
             var $input = $(this),
-                sku = $.trim($input.val());
+                sku = String($input.val() ?? '').trim();
 
             if (sku === '') {
                 return;
@@ -220,7 +222,7 @@ define([
 
     function getExistingSkus() {
         return $('input[name^="products[products]"][name$="[sku]"]')
-            .map(function () { return $.trim($(this).val()); })
+            .map(function () { return String($(this).val() ?? '').trim(); })
             .get()
             .filter(function (sku) { return sku !== ''; });
     }
@@ -313,7 +315,7 @@ define([
             }, 300);
 
         $modalContent.find('.ordo-picker-modal-search').on('input', function () {
-            debouncedModalSearch($.trim($(this).val()));
+            debouncedModalSearch(String($(this).val() ?? '').trim());
         });
 
         $modalContent.modal({

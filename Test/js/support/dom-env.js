@@ -1,7 +1,7 @@
 'use strict';
 
 const { JSDOM } = require('jsdom');
-const jqueryFactory = require('jquery');
+const jqueryModulePath = require.resolve('jquery');
 
 /**
  * Builds a fresh jsdom document + jQuery bound to it, and installs both as globals - the AMD
@@ -10,15 +10,27 @@ const jqueryFactory = require('jquery');
  * test to get an isolated DOM: reusing one jsdom instance across tests would leak state (event
  * delegates bound in one test firing during another) exactly the way a shared browser tab would.
  *
+ * jQuery 4's own dist/jquery.js dropped the re-callable `factory(window)` export its UMD wrapper
+ * used to return in a CommonJS environment with no window global (jQuery 3 and earlier) - it now
+ * unconditionally runs `factory(global, true)` at require() time and throws immediately if
+ * `global.document` isn't already set. Getting a *fresh* $ bound to a *new* jsdom window each test
+ * therefore means setting `global.window`/`global.document` BEFORE requiring jquery, and clearing
+ * jquery's own require.cache entry first so its module-level UMD code actually re-runs against the
+ * window just set, rather than returning the same cached $ from a previous test's now-discarded
+ * document.
+ *
  * @param {String} [bodyHtml] initial markup for <body>
  * @return {{dom: JSDOM, $: Function}}
  */
 function createDomEnv(bodyHtml) {
     const dom = new JSDOM(`<!doctype html><html><body>${bodyHtml || ''}</body></html>`);
-    const $ = jqueryFactory(dom.window);
 
     global.window = dom.window;
     global.document = dom.window.document;
+
+    delete require.cache[jqueryModulePath];
+    const $ = require('jquery');
+
     global.$ = $;
     global.jQuery = $;
 

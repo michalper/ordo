@@ -89,7 +89,9 @@ define([
     }
 
     var debouncedSuggest = _.debounce(function ($input) {
-        var term = $.trim($input.val());
+        // String(...).trim() instead of jQuery's own $.trim() - removed in jQuery 4 (deprecated
+        // since 3.5) in favor of the native method.
+        var term = String($input.val() ?? '').trim();
 
         if (term.length < 2) {
             closeDropdown();
