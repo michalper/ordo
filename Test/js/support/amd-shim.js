@@ -85,17 +85,37 @@ function loadAmdModule(loadModule) {
                 return undefined;
             }
             if (dep === 'uiRegistry') {
-                // Stub matching Magento_Ui's own registry.get(name, callback) shape closely enough
-                // for a module's top-level define() to resolve - never actually invoked by the
-                // tests here (they don't exercise the "Apply flow to form" save path).
-                return { get: function () {} };
+                // Stub matching Magento_Ui's own registry.get(name, callback) shape. A test that
+                // wants to drive the "Apply flow to form" save path registers a fake provider by
+                // name first (global.__uiRegistryProviders['x'] = {set: ..., save: ...}) - one
+                // shared lookup table rather than a per-load closure, since `registry` itself is
+                // never exposed to a test (it's an internal closure variable inside campaign-flow-
+                // editor.js's own define() factory, only ever used later, when a test clicks the
+                // Apply button, not at module-load time). A test that doesn't register anything
+                // gets the same no-op behavior every other test here already relies on.
+                return {
+                    get: function (name, callback) {
+                        var provider = (global.__uiRegistryProviders || {})[name];
+
+                        if (provider) {
+                            callback(provider);
+                        }
+                    }
+                };
             }
             if (dep === 'drawflow') {
-                // A no-op stand-in for the Drawflow constructor - real construction
-                // (`new Drawflow(container)`) only happens inside initCampaignFlowEditor()'s own
-                // body, which the tests here never call (they exercise its exposed pure helpers
-                // directly), so this only needs to exist, not actually work.
-                return function Drawflow() {};
+                // The REAL vendored Drawflow library (view/adminhtml/web/lib/drawflow/
+                // drawflow.min.js), not a stand-in - confirmed directly that its own UMD build
+                // constructs, .start()s, and drives nodes/connections correctly against a plain
+                // jsdom container with no special jsdom options (no pretendToBeVisual, no canvas
+                // shim) needed. Safe to cache across tests unlike jquery's own require in
+                // dom-env.js - this exports a plain class definition with no document/window
+                // reference captured at require() time, only inside its own methods, called fresh
+                // against whatever container a test passes to `new Drawflow(container)`. This lets
+                // Test/js/campaign-flow-editor.test.js drive initCampaignFlowEditor() itself end to
+                // end via window.ordoFlowTestHook.buildChain(), instead of only ever exercising the
+                // pure helpers pulled out of it.
+                return require('../../../view/adminhtml/web/lib/drawflow/drawflow.min.js');
             }
             if (dep === 'Magento_Ui/js/form/element/abstract') {
                 // Identity extend() - returns the raw config object a module passes to
