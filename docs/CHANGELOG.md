@@ -7,6 +7,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **MFTF: Meta/Facebook Catalog feed (`AdminMetaCatalogFeedServesRealProductTest`)** — closes SCENARIOS.md §18's
+  last open row, mirroring the already-covered Google Merchant feed test (`AdminShoppingFeedRefreshAndServeTest`)
+  for the second feed format sharing the same `AbstractFeedAction`/`RefreshNow`/`FeedGeneratorPool` plumbing.
+  `MetaCatalogFeedGenerator::renderRow()` silently skips a product missing any required field, including a
+  non-empty `default_brand` config value (Meta has no manufacturer-attribute mapping here, only a store-wide
+  default) — that config is set before the refresh, or the real product would be silently absent from the feed
+  rather than causing a visible test failure.
+
 - **MFTF: scheduled campaign trigger real-fire (`AdminScheduledCampaignTriggerRealFireTest`)** — closes
   SCENARIOS.md §11's last cron gap. `AdminScheduledCampaignCalendarTest` only ever covered the read-only calendar
   preview; nothing confirmed `Cron\DispatchScheduledCampaignTriggers`/`Model\Campaign\ScheduledTriggerScanner`
