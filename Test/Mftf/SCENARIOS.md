@@ -224,9 +224,9 @@ through. `Controller/Offer/*` (self-extend,
 | `Cron\CalculateReorderCycle` detects a recurring purchase pattern from real order history                                                                                                                                            | ✅ `AdminReorderCycleAndReminderTest`                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `Cron\SendReorderReminders` emails a customer whose predicted next-order date has arrived                                                                                                                                            | ✅ `AdminReorderCycleAndReminderTest`                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Mass-delete selected reorder cycle rows                                                                                                                                                                                              | ✅ `AdminReorderCycleMassDeleteTest` — found and fixed a real bug while writing this: the action fataled unconditionally in the real admin UI with a MySQL 1052 "entity_id ambiguous" error (this grid's own customer_entity join has its own entity_id column; fixed via a `$_map` field alias, same fix applied to Campaign's and MessageLog's own grid collections, which had the identical latent bug - see `etc/di.xml`/each `Grid\Collection.php`'s own docblock) |
-| On-demand "Recalculate Now" (`Controller/Adminhtml/ReorderCycle/RecalculateNow.php`) — synchronous re-run of `Cron\CalculateReorderCycle`'s own logic, no waiting for the nightly schedule                                           | ⬜ not covered — no MFTF yet                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| On-demand "Send Reminder" for one reorder cycle row (`Controller/Adminhtml/ReorderCycle/SendReminder.php`) — a real email sent outside the cron's own schedule                                                                       | ⬜ not covered — no MFTF yet                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| On-demand "Build Cart" for one reorder cycle row (`Controller/Adminhtml/ReorderCycle/BuildCart.php`, `Model/ReorderCycle/ReorderCartBuilder.php`) — populates a real cart and redirects into Magento's own "Create New Order" screen | ⬜ not covered — no MFTF yet                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| On-demand "Recalculate Now" (`Controller/Adminhtml/ReorderCycle/RecalculateNow.php`) — synchronous re-run of `Cron\CalculateReorderCycle`'s own logic, no waiting for the nightly schedule                                           | ✅ `AdminReorderCycleManualActionsTest`                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| On-demand "Send Reminder" for one reorder cycle row (`Controller/Adminhtml/ReorderCycle/SendReminder.php`) — a real email sent outside the cron's own schedule                                                                       | ✅ `AdminReorderCycleManualActionsTest`                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| On-demand "Build Cart" for one reorder cycle row (`Controller/Adminhtml/ReorderCycle/BuildCart.php`, `Model/ReorderCycle/ReorderCartBuilder.php`) — populates a real cart and redirects into Magento's own "Create New Order" screen | ✅ `AdminReorderCycleManualActionsTest`                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 ## 9. Dashboard (`Controller/Adminhtml/Dashboard/`)
 
@@ -520,18 +520,24 @@ test closes at once:
    tracking, multi-touch attribution); the trigger-response and campaign-funnel rows are each a plain
    `sales_order_place_after`-driven observer test, same shape as dozens of already-closed rows elsewhere in this
    document.
-2. **§27 Web push subscription lifecycle** — four rows, all real HTTP POSTs a synthetic-but-`PushEndpointValidator`-
-   valid endpoint makes testable without a real push service (see that section's own intro).
-3. **§28 Campaign split action** — surprisingly undocumented given its complexity; the determinism + per-variant
-   attribution rows are the highest-value pair (they double as regression coverage for §29's own "split-tested
-   funnel" row, which depends on this existing first).
-4. **§26 Campaign/Segment JSON import** — mirrors `AdminCampaignAndSegmentExportTest` almost exactly (export a real
-   entity, re-import the same file, assert the graph round-trips) — likely the fastest to write of this whole
-   batch.
-5. Smaller, independent rows: `not_in_segment` (§1b), `generate_ai_content`'s fail-soft path (§1c), the three
-   Reorder Cycle manual admin actions (§8), `AudienceSize`/`RecalculateSegmentAudienceSizes` (§2/§11), the
-   Meta/Facebook Catalog feed (§18), `DispatchScheduledCampaignTriggers` real-fire (§11), `RetryFailedPushSends`
-   (§11, likely `Test/Integration` not MFTF - same "no live push service" reasoning as `send_push` itself).
+2. Remaining independent rows, verified genuinely open by a 2026-09-23 re-check of each one's own section table
+   (three more items on this same list — `not_in_segment` §1b, `AudienceSize`/`RecalculateSegmentAudienceSizes`
+   §2/§11, and the Reorder Cycle manual admin actions §8 — turned out to already be done too, see below):
+   `generate_ai_content`'s fail-soft path (§1c, likely `Test/Integration`/unit rather than MFTF - no real local
+   Ollama instance in this sandbox/CI, same carve-out as `send_sms`'s own), the Meta/Facebook Catalog feed (§18),
+   `DispatchScheduledCampaignTriggers` real-fire (§11), `RetryFailedPushSends` (§11, likely `Test/Integration` not
+   MFTF - same "no live push service" reasoning as `send_push` itself).
+
+§26 Campaign/Segment JSON import was already fully closed before this re-audit (all 4 rows ✅,
+`AdminCampaignAndSegmentImportTest`/`AdminImportValidatesUploadedFileTest`) — same untrimmed-list situation as
+§27/§28 below. §27 Web push subscription lifecycle was already fully closed before this re-audit (all 4 rows ✅,
+`AdminPushSubscriptionLifecycleTest`/`AdminPushSubscriptionLoggedInOriginCheckTest`) — this list simply hadn't been
+trimmed after that work landed. §28 Campaign split action is now fully closed too — its determinism/per-variant-
+attribution rows were already ✅ (`AdminCampaignSplitActionAttributesVariantsTest`, same pre-existing-but-untrimmed-
+list situation as §27) and its one genuinely open row (fails-closed-on-no-variants) is now
+`AdminCampaignSplitActionNoUsableVariantsFailsClosedTest`; only its 🔶 row (the documented delay_minutes
+limitation) remains, explicitly not worth a dedicated test. §8's three Reorder Cycle manual admin actions
+(Recalculate Now/Send Reminder/Build Cart) are now covered too, in one `AdminReorderCycleManualActionsTest`.
 
 Separately, section 22 (Webhook action/trigger), 23 (Two-way SMS/WhatsApp conversations), 24 (Price-drop &
 back-in-stock alerts), and 25 (Predictive send-time optimization) are already ✅ as of this session — their

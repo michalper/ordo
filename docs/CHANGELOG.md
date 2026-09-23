@@ -7,6 +7,16 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **MFTF: Reorder Cycle manual admin actions (`AdminReorderCycleManualActionsTest`)** — closes SCENARIOS.md §8's
+  three remaining gaps: "Recalculate Now" (`Controller\Adminhtml\ReorderCycle\RecalculateNow`, a synchronous
+  re-run), "Send Reminder Now" (a real email outside the cron's own schedule), and "Build Cart" (populates a real
+  quote and redirects into Magento's own Create New Order screen). The latter two are real POSTs against the row's
+  own `entity_id` via the same form-submit-with-FORM_KEY technique `AdminDeleteOrdoEntityByFormPostActionGroup`
+  already uses for every other `ordo_*` entity's Delete controller; the new `ReorderCycleTestHelper` reads that
+  `entity_id` directly (this grid is entirely cron-populated, with no MFTF-reachable UI path to it). Also corrects
+  `Test/Mftf/SCENARIOS.md`'s "Suggested next batch" list further — `not_in_segment` (§1b) and
+  `AudienceSize`/`RecalculateSegmentAudienceSizes` (§2/§11) turned out to already be covered by existing tests too.
+
 - **Nightly OWASP ZAP full (active) scan (`.github/workflows/zap.yml`)** — free DAST scan against
   a live Magento install built with the same steps `api-tests.yml` already uses, runs on a nightly
   cron (offset from `mftf.yml`'s) plus `workflow_dispatch` — not on every push, both because of
