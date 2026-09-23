@@ -50,22 +50,38 @@ class CampaignSendSmsActionTest extends TestCase
 
         // Restore — sms/enabled has no <config_data> default, so it's unset/false unless a test
         // turns it on; leaving it flipped on would leak into every other test run afterward.
-        self::$objectManager->get(\Magento\Framework\App\MutableScopeConfig::class)
-            ->setValue('ordo_automation/sms/enabled', 0, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+        // Same explicit store-scope-code reasoning as the test's own setValue() call.
+        $storeId = (int) self::$objectManager->get(\Magento\Store\Model\StoreManagerInterface::class)
+            ->getStore()->getId();
+        self::$objectManager->get(\Magento\Framework\App\MutableScopeConfig::class)->setValue(
+            'ordo_automation/sms/enabled',
+            0,
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
     }
 
     public function testExecuteSendsSmsToTheRealCustomersConfiguredPhone(): void
     {
-        // See magento-testing:magento-integration-test-lite — MutableScopeConfig is the real,
-        // controlled config source this lite integration-test pattern uses instead of mocking
-        // ScopeConfigInterface, so Config::isSmsEnabled() (real DI, reads real scope config)
-        // sees this the same way it would see an admin actually enabling the feature.
-        self::$objectManager->get(\Magento\Framework\App\MutableScopeConfig::class)
-            ->setValue('ordo_automation/sms/enabled', 1, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-
         $customerRepository = self::$objectManager->get(\Magento\Customer\Api\CustomerRepositoryInterface::class);
         $customerFactory = self::$objectManager->get(\Magento\Customer\Api\Data\CustomerInterfaceFactory::class);
         $storeManager = self::$objectManager->get(\Magento\Store\Model\StoreManagerInterface::class);
+
+        // See magento-testing:magento-integration-test-lite — MutableScopeConfig is the real,
+        // controlled config source this lite integration-test pattern uses instead of mocking
+        // ScopeConfigInterface, so Config::isSmsEnabled() (real DI, reads real scope config)
+        // sees this the same way it would see an admin actually enabling the feature. The scope
+        // CODE is passed explicitly (this class's own real, current store id) rather than left
+        // null/default - confirmed via a real CI run that in this class's own 'frontend' area
+        // (unlike GenerateAiContentActionTest's 'adminhtml'), Config::isSmsEnabled(null) resolves
+        // to the real current store's numeric id at read time, which didn't match an override
+        // written under a null/default scope code at write time.
+        self::$objectManager->get(\Magento\Framework\App\MutableScopeConfig::class)->setValue(
+            'ordo_automation/sms/enabled',
+            1,
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            (int) $storeManager->getStore()->getId()
+        );
 
         $email = 'ordo-automation-send-sms-test-' . uniqid('', true) . '@example.test';
         $customer = $customerFactory->create();
@@ -91,18 +107,6 @@ class CampaignSendSmsActionTest extends TestCase
         // via a real CI run that this was needed for the custom attribute to actually show up.
         self::$objectManager->get(\Magento\Customer\Model\CustomerRegistry::class)
             ->remove($this->customerId);
-
-        // TEMPORARY diagnostic - isolates exactly which of SendSms::execute()'s own early-return
-        // branches (SMS disabled vs. no phone attribute) is actually being hit, since two
-        // separate, well-reasoned fix attempts (second save, CustomerRegistry::remove()) both
-        // failed to change the symptom. Removed once the real cause is confirmed.
-        $reloaded = $customerRepository->getById($this->customerId);
-        $diagPhone = $reloaded->getCustomAttribute(AddCustomerSmsPhoneAttribute::ATTRIBUTE_CODE);
-        fwrite(STDERR, sprintf(
-            "[DIAG] isSmsEnabled=%s phoneAttr=%s\n",
-            self::$objectManager->get(\Ordo\Automation\Helper\Config::class)->isSmsEnabled() ? 'true' : 'false',
-            $diagPhone !== null ? var_export($diagPhone->getValue(), true) : 'NULL'
-        ));
 
         $recordingSender = self::$objectManager->create(RecordingTwilioSmsSender::class);
 
