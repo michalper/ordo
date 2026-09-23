@@ -521,6 +521,18 @@ real-fire and `RetryFailedPushSends`, §18's Meta/Facebook Catalog feed, and §1
 path are now closed too. There is currently no further known gap — re-audit this document against `etc/di.xml`/
 `Controller/Adminhtml/*`/`etc/crontab.xml`/`etc/events.xml` periodically rather than trusting it at face value, the
 same instruction this document's own header already gives.
+Working order for the drift found by the 2026-09-20 re-audit, roughly by blast radius / how much of a single new
+test closes at once:
+
+1. Remaining rows: `generate_ai_content`'s fail-soft path (§1c, likely `Test/Integration`/unit rather than MFTF -
+   no real local Ollama instance in this sandbox/CI, same carve-out as `send_sms`'s own), `RetryFailedPushSends`
+   (§11, likely `Test/Integration` not MFTF - same "no live push service" reasoning as `send_push` itself).
+
+§26 Campaign/Segment JSON import, §27 Web push subscription lifecycle, and §28 Campaign split action were all
+already fully closed before this re-audit — this list simply hadn't been trimmed after that work landed. §29
+Campaign performance analytics, §8's three Reorder Cycle manual admin actions, §11's
+`DispatchScheduledCampaignTriggers` real-fire, and §18's Meta/Facebook Catalog feed are now closed too, by this
+same re-audit pass. Only the two rows above remain, and both are more likely `Test/Integration`/unit than MFTF.
 
 Separately, section 22 (Webhook action/trigger), 23 (Two-way SMS/WhatsApp conversations), 24 (Price-drop &
 back-in-stock alerts), and 25 (Predictive send-time optimization) are already ✅ as of this session — their

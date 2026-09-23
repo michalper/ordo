@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminMetaCatalogFeedServesRealProductTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Product feed"/>
+            <title value="Admin can refresh the Meta/Facebook Catalog CSV feed, and the public feed URL serves a real product"/>
+            <description value="Closes SCENARIOS.md #18's last open row - the Meta Catalog feed (Model\ProductFeed\MetaCatalogFeedGenerator, Controller\ProductFeed\MetaCatalog) is a second, complete feed format alongside the already-covered Google Merchant one (AdminShoppingFeedRefreshAndServeTest), sharing the same AbstractFeedAction/RefreshNow/FeedGeneratorPool plumbing - this mirrors that test almost exactly, format differences aside. MetaCatalogFeedGenerator::renderRow() silently SKIPS a product missing any required field, including a non-empty default_brand config value (Meta has no manufacturer-attribute mapping in this module, only a store-wide default) - config is set before the refresh, not just the enabled flag, or the real product would be silently absent from the feed rather than causing a visible failure. Asserts the real product's SKU/name/price appear as real CSV field values in the served text/csv response, alongside the feed's own header row, not just that the refresh didn't error."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="campaign2"/>
+        </annotations>
+        <before>
+            <magentoCLI command="config:set ordo_automation/meta_catalog_feed/enabled 1" stepKey="enableMetaCatalogFeed"/>
+            <magentoCLI command="config:set ordo_automation/meta_catalog_feed/default_brand &quot;Ordo Test Brand&quot;" stepKey="setDefaultBrand"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <magentoCLI command="config:set ordo_automation/meta_catalog_feed/enabled 0" stepKey="disableMetaCatalogFeed"/>
+            <magentoCLI command="config:set ordo_automation/meta_catalog_feed/default_brand &quot;&quot;" stepKey="clearDefaultBrand"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: the real, on-demand admin refresh - RefreshNow loops every registered feed
+             generator (Google + Meta) x every store in one call, no Meta-specific trigger
+             exists. Same real success message text as the sibling Google feed test. -->
+        <amOnPage url="admin/ordo/productfeed/refreshnow" stepKey="clickRefreshNow"/>
+        <waitForPageLoad stepKey="waitForRefresh"/>
+        <see selector=".message-success" userInput="Product feeds refreshed for" stepKey="seeRefreshSuccessMessage"/>
+
+        <!-- Step 2: the real, public Meta Catalog feed URL - a real catalog product's own SKU,
+             name, and price must appear as real CSV field values, alongside the feed's own
+             header row, not just that the endpoint returns something. seeInPageSource
+             (Codeception's seeInSource), not see() - same reasoning as the Google feed test:
+             the raw response can render as an interactive DOM tree in some browsers rather than
+             literal visible text. -->
+        <amOnPage url="ordo/productfeed/metacatalog" stepKey="goToPublicMetaCatalogFeedUrl"/>
+        <waitForPageLoad stepKey="waitForMetaCatalogFeedPage"/>
+        <seeInPageSource html="id,title,description,availability,condition,price,link,image_link,brand" stepKey="seeCsvHeaderRow"/>
+        <seeInPageSource html="$createProduct.sku$" stepKey="seeProductSkuInFeed"/>
+        <seeInPageSource html="$createProduct.name$" stepKey="seeProductNameInFeed"/>
+        <seeInPageSource html="Ordo Test Brand" stepKey="seeDefaultBrandInFeed"/>
+    </test>
+</tests>

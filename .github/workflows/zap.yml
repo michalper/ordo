@@ -23,7 +23,12 @@ on:
 jobs:
   zap-full-scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # A real full/active scan of this app was confirmed (2026-09-23 CI run) to still be running
+    # at the 60-minute mark and get killed by the job timeout before ever producing a report -
+    # a hard kill leaves no artifact at all, unlike ZAP's own -m cap below (which lets it wrap up
+    # gracefully and still report whatever it found). 180 minutes leaves real headroom above
+    # that -m 120 cap plus the ~5-minute install.
+    timeout-minutes: 180
 
     services:
       mysql:
@@ -156,3 +161,9 @@ jobs:
           fail_action: false
           allow_issue_writing: false
           artifact_name: zap-full-scan-report
+          # Caps ZAP's own active-scan phase at 120 minutes (per zap-full-scan.py's -m flag) so
+          # it wraps up and reports whatever it found within the job's own 180-minute budget,
+          # rather than running indefinitely and getting hard-killed by the job timeout with no
+          # report at all - confirmed via a real run that a full scan of this app takes longer
+          # than the previous 60-minute job timeout allowed.
+          cmd_options: "-m 120"
