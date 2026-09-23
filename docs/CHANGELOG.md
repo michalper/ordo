@@ -7,11 +7,13 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- **Nightly OWASP ZAP baseline scan (`.github/workflows/zap.yml`)** — free, passive DAST scan
-  against a live Magento install built with the same steps `api-tests.yml` already uses, runs on
-  a nightly cron (offset from `mftf.yml`'s) plus `workflow_dispatch`. Report is a CI artifact, not
-  an auto-filed issue, and does not fail the build yet — a first pass to gauge signal-to-noise
-  before turning on `fail_action`.
+- **Nightly OWASP ZAP full (active) scan (`.github/workflows/zap.yml`)** — free DAST scan against
+  a live Magento install built with the same steps `api-tests.yml` already uses, runs on a nightly
+  cron (offset from `mftf.yml`'s) plus `workflow_dispatch` — not on every push, both because of
+  the full Magento install and because an active scan runs longer than a passive baseline would.
+  The install is built fresh each run and discarded after, so active attack payloads never touch
+  a shared/persistent environment. Report is a CI artifact, not an auto-filed issue, and does not
+  fail the build yet — a first pass to gauge signal-to-noise before turning on `fail_action`.
 
 ### Fixed
 

@@ -1,13 +1,16 @@
 name: ZAP DAST Scan
 
-# Free, open-source dynamic security scan (OWASP ZAP baseline/passive scan) against a live
-# Magento install, using the exact same install sequence api-tests.yml already uses (nginx +
-# PHP-FPM, MySQL, OpenSearch, module enabled) minus the Test/Api-specific data fixtures this
-# scan doesn't need. Passive baseline only for now — no active attack attempts, so it's safe to
-# run against the same install every time without risking corrupted fixtures.
+# Free, open-source dynamic security scan (OWASP ZAP full/active scan) against a live Magento
+# install, using the exact same install sequence api-tests.yml already uses (nginx + PHP-FPM,
+# MySQL, OpenSearch, module enabled) minus the Test/Api-specific data fixtures this scan doesn't
+# need. Full scan actively attacks the app (SQLi/XSS payloads etc.), not just passive baseline —
+# safe here because the install is built fresh in this job and discarded after, never a shared or
+# persistent environment.
 #
 # Runs nightly (offset from mftf.yml's 03:00 UTC cron) plus on demand, not on every push/PR,
-# because it needs the same tens-of-minutes-long full Magento install as api-tests.yml/mftf.yml.
+# both because of the tens-of-minutes-long full Magento install (same cost as api-tests.yml/
+# mftf.yml) and because an active scan itself takes meaningfully longer than the passive baseline
+# did.
 #
 # Same two repository secrets as ci.yml/api-tests.yml/mftf.yml (MAGENTO_COMPOSER_USERNAME /
 # MAGENTO_COMPOSER_PASSWORD).
@@ -18,9 +21,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  zap-baseline:
+  zap-full-scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
 
     services:
       mysql:
@@ -145,11 +148,11 @@ jobs:
             exit 1
           )
 
-      - name: ZAP baseline scan
-        uses: zaproxy/action-baseline@7c4deb10e6261301961c86d65d54a516394f9aed # v0.14.0
+      - name: ZAP full scan
+        uses: zaproxy/action-full-scan@3c58388149901b9a03b7718852c5ba889646c27c # v0.13.0
         with:
           target: "http://127.0.0.1:8080/"
-          issue_title: "ZAP baseline scan report"
+          issue_title: "ZAP full scan report"
           fail_action: false
           allow_issue_writing: false
-          artifact_name: zap-baseline-report
+          artifact_name: zap-full-scan-report
