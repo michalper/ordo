@@ -1,0 +1,155 @@
+name: ZAP DAST Scan
+
+# Free, open-source dynamic security scan (OWASP ZAP baseline/passive scan) against a live
+# Magento install, using the exact same install sequence api-tests.yml already uses (nginx +
+# PHP-FPM, MySQL, OpenSearch, module enabled) minus the Test/Api-specific data fixtures this
+# scan doesn't need. Passive baseline only for now — no active attack attempts, so it's safe to
+# run against the same install every time without risking corrupted fixtures.
+#
+# Runs nightly (offset from mftf.yml's 03:00 UTC cron) plus on demand, not on every push/PR,
+# because it needs the same tens-of-minutes-long full Magento install as api-tests.yml/mftf.yml.
+#
+# Same two repository secrets as ci.yml/api-tests.yml/mftf.yml (MAGENTO_COMPOSER_USERNAME /
+# MAGENTO_COMPOSER_PASSWORD).
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+jobs:
+  zap-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+          MYSQL_DATABASE: magento
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+
+      opensearch:
+        image: opensearchproject/opensearch:2.19.4
+        env:
+          discovery.type: single-node
+          DISABLE_SECURITY_PLUGIN: "true"
+          DISABLE_INSTALL_DEMO_CONFIG: "true"
+          OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd="curl -sf http://127.0.0.1:9200/_cluster/health"
+          --health-interval=10s --health-timeout=5s --health-retries=15
+
+    steps:
+      - name: Checkout module
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: ordo-module
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: "8.4"
+          extensions: bcmath, ctype, curl, dom, ftp, gd, intl, mbstring, mysqli, pdo_mysql, simplexml, soap, sodium, xsl, zip, opcache, sockets
+          coverage: none
+
+      - name: Remove shivammathur/setup-php's ambient GitHub auth
+        run: composer config --global --unset github-oauth.github.com || true
+
+      - name: Checkout Magento 2.4.9
+        run: git clone --branch 2.4.9 --depth 1 https://github.com/magento/magento2.git magento
+
+      - name: Configure Composer for repo.magento.com and the local module
+        working-directory: magento
+        env:
+          MAGENTO_COMPOSER_USERNAME: ${{ secrets.MAGENTO_COMPOSER_USERNAME }}
+          MAGENTO_COMPOSER_PASSWORD: ${{ secrets.MAGENTO_COMPOSER_PASSWORD }}
+        run: |
+          composer config repositories.magento composer https://repo.magento.com
+          composer config http-basic.repo.magento.com "$MAGENTO_COMPOSER_USERNAME" "$MAGENTO_COMPOSER_PASSWORD"
+          composer config repositories.ordo-automation '{"type":"path","url":"../ordo-module","options":{"symlink":false}}'
+          composer config allow-plugins.magento/composer-dependency-version-audit-plugin true
+          composer config allow-plugins.magento/magento-composer-installer true
+          composer config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+
+      - name: Require the local module
+        working-directory: magento
+        run: composer require michalper/ordo:@dev --no-interaction --no-progress
+
+      - name: Install Magento
+        working-directory: magento
+        run: |
+          bin/magento setup:install \
+            --base-url=http://127.0.0.1:8080/ \
+            --db-host=127.0.0.1 --db-name=magento --db-user=root \
+            --admin-firstname=Admin --admin-lastname=User \
+            --admin-email=admin@example.com --admin-user=apitest --admin-password='ApiTest123!' \
+            --language=en_US --currency=USD --timezone=America/Chicago \
+            --use-rewrites=1 \
+            --search-engine=opensearch --opensearch-host=127.0.0.1 --opensearch-port=9200 \
+            --backend-frontname=admin
+
+          bin/magento module:enable Ordo_Automation
+          bin/magento setup:upgrade
+          bin/magento deploy:mode:set developer
+          bin/magento setup:static-content:deploy -f en_US -a adminhtml
+          bin/magento cache:flush
+
+      - name: Install nginx and PHP-FPM
+        run: |
+          sudo add-apt-repository -y ppa:ondrej/php
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq nginx php8.4-fpm php8.4-bcmath php8.4-curl php8.4-gd \
+            php8.4-intl php8.4-mbstring php8.4-mysql php8.4-soap php8.4-xsl \
+            php8.4-zip php8.4-opcache mysql-client
+
+      - name: Configure and start nginx + PHP-FPM for Magento
+        working-directory: magento
+        run: |
+          sudo tee /etc/nginx/sites-available/magento.conf > /dev/null <<NGINX
+          server {
+              listen 8080;
+              server_name 127.0.0.1;
+              set \$MAGE_ROOT $(pwd);
+              set \$MAGE_MODE developer;
+              include $(pwd)/nginx.conf.sample;
+          }
+          NGINX
+          sudo sed -i "s#fastcgi_pass   fastcgi_backend;#fastcgi_pass unix:/run/php/php8.4-fpm.sock;#" nginx.conf.sample
+          sudo ln -sf /etc/nginx/sites-available/magento.conf /etc/nginx/sites-enabled/magento.conf
+          sudo rm -f /etc/nginx/sites-enabled/default
+
+          sudo sed -i "s/^user www-data;/user $(whoami);/" /etc/nginx/nginx.conf
+          sudo sed -i "s/^user = .*/user = $(whoami)/; s/^group = .*/group = $(whoami)/" \
+            /etc/php/8.4/fpm/pool.d/www.conf
+          sudo sed -i "s/^listen.owner = .*/listen.owner = $(whoami)/; s/^listen.group = .*/listen.group = $(whoami)/" \
+            /etc/php/8.4/fpm/pool.d/www.conf
+
+          sudo nginx -t
+          sudo systemctl restart php8.4-fpm
+          sudo systemctl restart nginx
+          for i in $(seq 1 15); do
+            curl -sf http://127.0.0.1:8080/ -o /dev/null && break
+            sleep 2
+          done
+          curl -sf http://127.0.0.1:8080/ -o /dev/null || (
+            echo "--- nginx error.log ---"; sudo tail -100 /var/log/nginx/error.log
+            echo "--- php8.4-fpm error log ---"; sudo tail -100 /var/log/php8.4-fpm.log
+            exit 1
+          )
+
+      - name: ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: "http://127.0.0.1:8080/"
+          issue_title: "ZAP baseline scan report"
+          fail_action: false
+          issue: false
+          artifact_name: zap-baseline-report

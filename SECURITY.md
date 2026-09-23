@@ -5,6 +5,11 @@
 This module tracks the latest release only — install the newest tag via Composer
 (`composer require michalper/ordo`) and keep it up to date.
 
+## Automated Scanning
+
+`composer audit` (dependency vulnerabilities), SonarCloud (SAST) and a nightly OWASP ZAP
+baseline scan (DAST, against a live install) run in CI. None of this replaces a manual pentest.
+
 ## Reporting a Vulnerability
 
 Please **do not** open a public GitHub issue for a security vulnerability.

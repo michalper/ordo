@@ -5,6 +5,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- **Nightly OWASP ZAP baseline scan (`.github/workflows/zap.yml`)** — free, passive DAST scan
+  against a live Magento install built with the same steps `api-tests.yml` already uses, runs on
+  a nightly cron (offset from `mftf.yml`'s) plus `workflow_dispatch`. Report is a CI artifact, not
+  an auto-filed issue, and does not fail the build yet — a first pass to gauge signal-to-noise
+  before turning on `fail_action`.
+
 ### Fixed
 
 - **`cart_abandoned` campaign no longer fully suppressed by an email consent withdrawal** —
