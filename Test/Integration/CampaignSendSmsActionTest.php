@@ -108,6 +108,24 @@ class CampaignSendSmsActionTest extends TestCase
         self::$objectManager->get(\Magento\Customer\Model\CustomerRegistry::class)
             ->remove($this->customerId);
 
+        // TEMPORARY diagnostic round 2 - the scope-code fix didn't change the symptom, so this
+        // checks the raw ScopeConfigInterface directly (bypassing Helper\Config entirely) with
+        // the exact store id used at write time, plus what store id Config's own internal
+        // resolution would use for a null $storeId call.
+        $rawScopeConfig = self::$objectManager->get(\Magento\Framework\App\Config\ScopeConfigInterface::class);
+        $diagStoreId = (int) $storeManager->getStore()->getId();
+        fwrite(STDERR, sprintf(
+            "[DIAG2] storeIdAtWrite=%d storeIdNow=%d rawIsSetFlag(storeId)=%s rawIsSetFlag(null)=%s helperIsSmsEnabled=%s mutableScopeConfigClass=%s scopeConfigClass=%s sameInstance=%s\n",
+            $diagStoreId,
+            $diagStoreId,
+            $rawScopeConfig->isSetFlag('ordo_automation/sms/enabled', \Magento\Store\Model\ScopeInterface::SCOPE_STORE, $diagStoreId) ? 'true' : 'false',
+            $rawScopeConfig->isSetFlag('ordo_automation/sms/enabled', \Magento\Store\Model\ScopeInterface::SCOPE_STORE, null) ? 'true' : 'false',
+            self::$objectManager->get(\Ordo\Automation\Helper\Config::class)->isSmsEnabled() ? 'true' : 'false',
+            get_class(self::$objectManager->get(\Magento\Framework\App\MutableScopeConfig::class)),
+            get_class($rawScopeConfig),
+            spl_object_id($rawScopeConfig) === spl_object_id(self::$objectManager->get(\Magento\Framework\App\MutableScopeConfig::class)) ? 'true' : 'false'
+        ));
+
         $recordingSender = self::$objectManager->create(RecordingTwilioSmsSender::class);
 
         /** @var SendSms $action */
