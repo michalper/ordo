@@ -7,6 +7,15 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **MFTF: scheduled campaign trigger real-fire (`AdminScheduledCampaignTriggerRealFireTest`)** — closes
+  SCENARIOS.md §11's last cron gap. `AdminScheduledCampaignCalendarTest` only ever covered the read-only calendar
+  preview; nothing confirmed `Cron\DispatchScheduledCampaignTriggers`/`Model\Campaign\ScheduledTriggerScanner`
+  actually dispatch a due `scheduled_at` trigger's campaign. Since a scheduled trigger's own dispatch context
+  carries no customer/visitor id, `generate_coupon` is used as the one real, non-customer-scoped, externally
+  observable action (same "Manage Coupon Codes" grid idiom `AdminCampaignScenarioEndToEndTest` already
+  established) — the cron is then forced a second time with no config change to prove `scheduled_at` fires at
+  most once ever, not twice.
+
 - **Nightly OWASP ZAP full (active) scan (`.github/workflows/zap.yml`)** — free DAST scan against
   a live Magento install built with the same steps `api-tests.yml` already uses, runs on a nightly
   cron (offset from `mftf.yml`'s) plus `workflow_dispatch` — not on every push, both because of

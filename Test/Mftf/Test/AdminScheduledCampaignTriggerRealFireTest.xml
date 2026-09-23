@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminScheduledCampaignTriggerRealFireTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Campaign engine"/>
+            <title value="A due scheduled_at campaign trigger genuinely dispatches its campaign once Cron\DispatchScheduledCampaignTriggers runs, and it fires at most once ever"/>
+            <description value="Closes SCENARIOS.md #11's last cron gap: AdminScheduledCampaignCalendarTest only covers the read-only calendar preview (Block\Adminhtml\Campaign\ScheduleCalendar\CampaignScheduleCalendarViewModel) - nothing confirms Model\Campaign\ScheduledTriggerScanner::scan() actually finds a due scheduled_at trigger and calls CampaignDispatcher::dispatchScheduledTrigger() for real. A scheduled_at trigger's own context carries no customer_id/visitor_id (CampaignDispatcher::dispatchScheduledTrigger()'s own $context is just {trigger_event, now}), so generate_coupon is the one action type with a real, externally-visible, non-customer-scoped side effect - the same idiom AdminCampaignScenarioEndToEndTest's own 'only assertion in this whole suite that checks a real, merchant-visible side effect' already established (a real salesrule_coupon row, visible in the rule's own 'Manage Coupon Codes' grid). The trigger's own scheduled_at is set 5 minutes in the past (already due the instant it saves), so forcing the cron once is enough to prove real-fire. A SECOND forced cron run with no config change then proves ScheduledTriggerScanner's own 'scheduled_at fires at most once ever' claim (its own class docblock) - the coupon grid must show exactly the same one coupon both times, not two."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="campaign3"/>
+        </annotations>
+        <before>
+            <createData entity="ApiSalesRule" stepKey="createRule"/>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createRule" stepKey="deleteRule"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- 5 minutes in the past - already due the instant the campaign saves, so a single
+             forced cron:run is enough; no need to wait out ScheduledTriggerScanner's own real
+             5-minute schedule. -->
+        <generateDate date="-5 minutes" format="Y-m-d H:i:s" timezone="UTC" stepKey="generatePastScheduledAt"/>
+
+        <!-- Step 1: the campaign - trigger=scheduled_at (already due), no condition (vacuously
+             satisfied), action=generate_coupon against the real rule created above. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Scheduled Trigger Real Fire Campaign" stepKey="fillName"/>
+        <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
+        <executeJS function="window.ordoFlowTestHook.buildChain([
+            {kind: 'trigger', type: 'scheduled_at', fields: {scheduled_at: '{$generatePastScheduledAt}'}},
+            {kind: 'action', type: 'generate_coupon', fields: {rule_id: '$createRule.rule_id$', prefix: 'SCHEDFIRE', delay_minutes: '0'}}
+        ]);" stepKey="buildFlowGraph"/>
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
+
+        <!-- Step 2: force DispatchScheduledCampaignTriggers to run now (real schedule every 5
+             minutes, see etc/crontab.xml) - it must find the already-due trigger and genuinely
+             dispatch the campaign. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\CronScheduleHelper" method="scheduleJobNow" stepKey="scheduleDispatchScheduledTriggersJobFirstRun">
+            <argument name="jobCode">ordo_automation_dispatch_scheduled_campaign_triggers</argument>
+        </helper>
+        <magentoCLI command="cron:run --group=default" stepKey="runDispatchScheduledTriggersCronFirstRun"/>
+
+        <!-- Step 3: the real, merchant-visible proof - a genuine salesrule_coupon row, same
+             grid/idiom AdminCampaignScenarioEndToEndTest's own generate_coupon assertion uses. -->
+        <amOnPage url="admin/sales_rule/promo_quote/edit/id/$createRule.rule_id$/" stepKey="goToRuleEditPageFirstCheck"/>
+        <waitForPageLoad stepKey="waitForRuleEditPageFirstCheck"/>
+        <conditionalClick selector="{{AdminCartPriceRulesFormSection.manageCouponCodesHeader}}"
+                           dependentSelector="#couponCodesGrid_table" visible="false" stepKey="openCouponCodesTabFirstCheck"/>
+        <waitForElementVisible selector="#couponCodesGrid_table" stepKey="waitForCouponCodesGridFirstCheck"/>
+        <waitForText selector="#couponCodesGrid_table" userInput="SCHEDFIRE-" stepKey="seeGeneratedCouponInGrid"/>
+        <executeJS function="return document.querySelectorAll('#couponCodesGrid_table tbody tr').length;" stepKey="countCouponRowsAfterFirstRun"/>
+        <assertEquals stepKey="assertExactlyOneCouponAfterFirstRun">
+            <expectedResult type="int">1</expectedResult>
+            <actualResult type="variable">countCouponRowsAfterFirstRun</actualResult>
+        </assertEquals>
+
+        <!-- Step 4: force the SAME cron a SECOND time, no config change in between -
+             ScheduledTriggerScanner's own 'fires at most once ever' claim for scheduled_at means
+             the grid must still show exactly the same one coupon, not two. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\CronScheduleHelper" method="scheduleJobNow" stepKey="scheduleDispatchScheduledTriggersJobSecondRun">
+            <argument name="jobCode">ordo_automation_dispatch_scheduled_campaign_triggers</argument>
+        </helper>
+        <magentoCLI command="cron:run --group=default" stepKey="runDispatchScheduledTriggersCronSecondRun"/>
+        <amOnPage url="admin/sales_rule/promo_quote/edit/id/$createRule.rule_id$/" stepKey="goToRuleEditPageSecondCheck"/>
+        <waitForPageLoad stepKey="waitForRuleEditPageSecondCheck"/>
+        <conditionalClick selector="{{AdminCartPriceRulesFormSection.manageCouponCodesHeader}}"
+                           dependentSelector="#couponCodesGrid_table" visible="false" stepKey="openCouponCodesTabSecondCheck"/>
+        <waitForElementVisible selector="#couponCodesGrid_table" stepKey="waitForCouponCodesGridSecondCheck"/>
+        <waitForText selector="#couponCodesGrid_table" userInput="SCHEDFIRE-" stepKey="seeGeneratedCouponStillInGrid"/>
+        <executeJS function="return document.querySelectorAll('#couponCodesGrid_table tbody tr').length;" stepKey="countCouponRowsAfterSecondRun"/>
+        <assertEquals stepKey="assertStillExactlyOneCouponAfterSecondRun">
+            <expectedResult type="int">1</expectedResult>
+            <actualResult type="variable">countCouponRowsAfterSecondRun</actualResult>
+        </assertEquals>
+
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
+    </test>
+</tests>
