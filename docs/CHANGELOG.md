@@ -15,6 +15,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   observable action (same "Manage Coupon Codes" grid idiom `AdminCampaignScenarioEndToEndTest` already
   established) — the cron is then forced a second time with no config change to prove `scheduled_at` fires at
   most once ever, not twice.
+- **MFTF: split action with no usable variants fails closed (`AdminCampaignSplitActionNoUsableVariantsFailsClosedTest`)** —
+  closes SCENARIOS.md §28's last open row (previously only unit-tested). A real order-triggered `split` action
+  with an empty `variants` list logs and is skipped by `CampaignDispatcher::runSplit()`; an `add_tag` action
+  chained right after it in the same flow is the real, database-observable proof the dispatch loop kept going
+  past the failed-closed split instead of aborting. Also trims SCENARIOS.md's stale "Suggested next batch" list —
+  §27 (web push) and the rest of §28 (split determinism/attribution) turned out to already be fully covered by
+  existing tests the list hadn't been updated to reflect.
+
 - **MFTF: campaign multi-touch attribution idempotency (`AdminCampaignAttributionSplitIsIdempotentTest`)** —
   closes SCENARIOS.md §29's last open row. A real `ordo_message_log_event` 'clicked' row is recorded via
   the new `Test\Mftf\Helper\CampaignClickTestHelper` (real clicks only arrive via a signed SendGrid webhook
