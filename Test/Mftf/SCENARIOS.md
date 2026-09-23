@@ -93,7 +93,7 @@ cases separately from the type-by-type ones.
 | `send_email` SendGrid delivery tracking (`Controller/Email/StatusCallback.php`) | ✅ `Test/Unit/Controller/Email/StatusCallbackTest.php` / `SendGridSignatureValidatorTest` / `EmailMessageMessageIdPluginTest` / `MessageIdGeneratorTest` — writes to the same `ordo_message_log` `send_sms` already writes to (a per-send `Message-ID` header, set via a plugin since `TransportBuilder` exposes no public seam of its own to reach the message it builds, is what a later SendGrid Event Webhook call correlates against); correctly out of MFTF's own scope, same reasoning as `send_sms`'s own row above (a real SendGrid account is needed for the actual webhook call, see ROADMAP.md) |
 | `send_whatsapp`                                                                 | `{template_id, params}`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | ✅ `Test/Unit/Model/Campaign/Action/SendWhatsAppTest.php` — approved-template gate, phone/consent/E.164 checks, sender success/failure paths (real Meta account still needed for the actual API call, see ROADMAP.md); correctly out of MFTF's own scope, same reasoning as `send_sms`'s own row above                                                                                          |
 | `send_push`                                                                     | `{title, body, url}`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | ✅ `Test/Unit/Model/Campaign/Action/SendPushTest.php` — consent gate, multi-subscription fan-out, dead-subscription cleanup on 404/410; `Test/Unit/Model/Push/*` covers the RFC 8291/8292 crypto itself in depth (real browser/push service still needed for an actual delivered notification, see ROADMAP.md); correctly out of MFTF's own scope, same reasoning as `send_sms`'s own row above |
-| `generate_ai_content`                                                           | `{prompt, output_key, fallback}`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | ⬜ unit-tested (`GenerateAiContentTest`), no MFTF yet — fail-soft to `fallback` when disabled/no prompt/Ollama unreachable is realistically MFTF-testable (no real local Ollama instance in this sandbox/CI, see ROADMAP.md); the real-Ollama-call path stays unit-only, same "no live provider" reasoning as `send_sms`'s own row above                                                        |
+| `generate_ai_content`                                                           | `{prompt, output_key, fallback}`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | ✅ unit-tested (`GenerateAiContentTest`) plus `Test/Integration/GenerateAiContentActionTest` — the latter proves a REAL unreachable Ollama host (`Model\Http\JsonApiClient`'s real cURL call, not mocked) is actually caught by `OllamaClient::generate()`'s own `catch (Throwable)`, not just simulated by a mock returning null                                                        |
 | `split` (A/B testing)                                                           | `{variants: [{key, weight, actions: [...]}]}` — see §28                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | ⬜ unit-tested (`SplitVariantSelectorTest`), no MFTF yet                                                                                                                                                                                                                                                                                                                                        |
 
 ### 1d. Structural cases (not type-specific)
@@ -271,7 +271,7 @@ than retrofitted into an existing section, since neither fits §1-§9's shape.
 | `PruneCronRunLog`                   | Deletes `ordo_cron_run_log` rows past the 30-day retention window                                                                                                                                                                                                                                                           | ✅ `AdminPruneCronRunLogTest`                                                                                                                                                                                       |
 | `DispatchScheduledCampaignTriggers` | Fires a due `scheduled_at`/`recurring_schedule` campaign trigger for real (`ScheduledTriggerScanner::scan()`) — only the read-only calendar *preview* is covered (`AdminScheduledCampaignCalendarTest`), nothing confirms a scheduled trigger genuinely dispatches its campaign once due                                    | ✅ `AdminScheduledCampaignTriggerRealFireTest` — also proves `scheduled_at` fires at most once ever (re-forcing the cron a second time doesn't double the real coupon it generated)                                |
 | `RecalculateSegmentAudienceSizes`   | Refreshes `ordo_segment.estimated_audience_size` — see §2's own `AudienceSize` row, same underlying gap                                                                                                                                                                                                                     | ✅ see §2 (`AdminSegmentAudienceSizeReflectsRealDataTest`)                                                                                                                                                          |
-| `RetryFailedPushSends`              | Re-attempts a single `ordo_push_send_retry` row directly via `Model\Push\PushSubscriptionSender` (not `ActionPool`, unlike every other retry cron here — a push retry is one subscription's send, not a whole campaign action), deletes on success, drops if the subscription itself is gone, dead-letters after 5 attempts | ⬜ unit-tested indirectly via `PushSendRetryQueueTest`/`PushSubscriptionSenderTest`, no dedicated cron test yet — likely `Test/Integration`, same "no real Web Push service" reasoning as `send_push`'s own §1c row |
+| `RetryFailedPushSends`              | Re-attempts a single `ordo_push_send_retry` row directly via `Model\Push\PushSubscriptionSender` (not `ActionPool`, unlike every other retry cron here — a push retry is one subscription's send, not a whole campaign action), deletes on success, drops if the subscription itself is gone, dead-letters after 5 attempts | ✅ `Test/Integration/RetryFailedPushSendsTest` — real atomic `claim()` against a real database, real backoff math, and real dead-lettering after `MAX_ATTEMPTS`, with only `Model\Push\PushSender`'s own outbound HTTP call substituted (no real Web Push service in this sandbox/CI) |
 
 All four crons above only fire once a day (or, for `SendSalesRepDigest`, once a week) at a fixed
 wall-clock time (`etc/crontab.xml`) — no MFTF test can wait that out. `Test/Mftf/Helper/CronScheduleHelper.php`
@@ -346,7 +346,7 @@ module's.
 | `Cron\RefreshProductFeed`/admin "Refresh Now" loop every store, one cached row + run-log entry per store                                                                                                                                                                                                                    | ✅ `AdminShoppingFeedRefreshAndServeTest` (admin-triggered, same `FeedGeneratorPool` path the cron uses) / `AdminProductFeedHealthGridTest` (the run-log entry)                                           |
 | Public feed controller serves the current request's own store's cached XML, 404s when disabled/uncached                                                                                                                                                                                                                     | ✅ `AdminShoppingFeedRefreshAndServeTest` (serves real cached XML; the 404-when-disabled half stays unit-only - Selenium/MFTF has no way to read a raw HTTP status code, only rendered page content)      |
 | Product Feed Health admin grid (`ordo/productfeed/index`) renders run-log rows                                                                                                                                                                                                                                              | ✅ `AdminProductFeedHealthGridTest`                                                                                                                                                                       |
-| Meta/Facebook Catalog CSV feed (`Model/ProductFeed/MetaCatalogFeedGenerator.php`, `Controller/ProductFeed/MetaCatalog.php`) — a second, complete feed format alongside Google Merchant, sharing the same `AbstractFeedAction`/refresh/health-grid plumbing this section's other rows already cover for the Google generator | ⬜ not covered — no MFTF yet                                                                                                                                                                              |
+| Meta/Facebook Catalog CSV feed (`Model/ProductFeed/MetaCatalogFeedGenerator.php`, `Controller/ProductFeed/MetaCatalog.php`) — a second, complete feed format alongside Google Merchant, sharing the same `AbstractFeedAction`/refresh/health-grid plumbing this section's other rows already cover for the Google generator | ✅ `AdminMetaCatalogFeedServesRealProductTest`                                                                                                                                                              |
 
 ## 19. Admin action audit log (`Model/AdminActionLog/Recorder.php`,
 
@@ -513,63 +513,14 @@ docblock):
 
 ## Suggested next batch (highest signal per test written)
 
-Working order for the drift found by the 2026-09-20 re-audit, roughly by blast radius / how much of a single new
-test closes at once:
-
-1. **§29 Campaign performance analytics** — the single biggest undocumented feature area (funnel, outcome
-   tracking, multi-touch attribution); the trigger-response and campaign-funnel rows are each a plain
-   `sales_order_place_after`-driven observer test, same shape as dozens of already-closed rows elsewhere in this
-   document.
-2. Remaining independent rows, verified genuinely open by a 2026-09-23 re-check of each one's own section table
-   (three more items on this same list — `not_in_segment` §1b, `AudienceSize`/`RecalculateSegmentAudienceSizes`
-   §2/§11, and the Reorder Cycle manual admin actions §8 — turned out to already be done too, see below):
-   `generate_ai_content`'s fail-soft path (§1c, likely `Test/Integration`/unit rather than MFTF - no real local
-   Ollama instance in this sandbox/CI, same carve-out as `send_sms`'s own), the Meta/Facebook Catalog feed (§18),
-   `RetryFailedPushSends` (§11, likely `Test/Integration` not MFTF - same "no live push service" reasoning as
-   `send_push` itself).
-   `DispatchScheduledCampaignTriggers` real-fire (§11), `RetryFailedPushSends` (§11, likely `Test/Integration` not
-   MFTF - same "no live push service" reasoning as `send_push` itself).
-
-§26 Campaign/Segment JSON import was already fully closed before this re-audit (all 4 rows ✅,
-`AdminCampaignAndSegmentImportTest`/`AdminImportValidatesUploadedFileTest`) — same untrimmed-list situation as
-§27/§28 below. §27 Web push subscription lifecycle was already fully closed before this re-audit (all 4 rows ✅,
-`AdminPushSubscriptionLifecycleTest`/`AdminPushSubscriptionLoggedInOriginCheckTest`) — this list simply hadn't been
-trimmed after that work landed. §28 Campaign split action is now fully closed too — its determinism/per-variant-
-attribution rows were already ✅ (`AdminCampaignSplitActionAttributesVariantsTest`, same pre-existing-but-untrimmed-
-list situation as §27) and its one genuinely open row (fails-closed-on-no-variants) is now
-`AdminCampaignSplitActionNoUsableVariantsFailsClosedTest`; only its 🔶 row (the documented delay_minutes
-limitation) remains, explicitly not worth a dedicated test. §8's three Reorder Cycle manual admin actions
-(Recalculate Now/Send Reminder/Build Cart) are now covered too, in one `AdminReorderCycleManualActionsTest`. §11's
-`DispatchScheduledCampaignTriggers` real-fire is now covered too, by `AdminScheduledCampaignTriggerRealFireTest`.
-(Recalculate Now/Send Reminder/Build Cart) are now covered too, in one `AdminReorderCycleManualActionsTest`.
-1. **§27 Web push subscription lifecycle** — four rows, all real HTTP POSTs a synthetic-but-`PushEndpointValidator`-
-   valid endpoint makes testable without a real push service (see that section's own intro).
-2. **§28 Campaign split action** — surprisingly undocumented given its complexity; the determinism + per-variant
-   attribution rows are the highest-value pair (they double as regression coverage for §29's own "split-tested
-   funnel" row, which depends on this existing first).
-3. **§26 Campaign/Segment JSON import** — mirrors `AdminCampaignAndSegmentExportTest` almost exactly (export a real
-   entity, re-import the same file, assert the graph round-trips) — likely the fastest to write of this whole
-   batch.
-4. Smaller, independent rows: `not_in_segment` (§1b), `generate_ai_content`'s fail-soft path (§1c), the three
-1. Smaller, independent rows: `not_in_segment` (§1b), `generate_ai_content`'s fail-soft path (§1c), the three
-   Reorder Cycle manual admin actions (§8), `AudienceSize`/`RecalculateSegmentAudienceSizes` (§2/§11), the
-   Meta/Facebook Catalog feed (§18), `DispatchScheduledCampaignTriggers` real-fire (§11), `RetryFailedPushSends`
-   (§11, likely `Test/Integration` not MFTF - same "no live push service" reasoning as `send_push` itself).
-   **Unverified as of this pass** - given how many items on this list have turned out to already be done (see
-   below), re-check each one's own section table before writing anything new.
-
-§26 Campaign/Segment JSON import was already fully closed before this re-audit (all 4 rows ✅,
-`AdminCampaignAndSegmentImportTest`/`AdminImportValidatesUploadedFileTest`) — same untrimmed-list situation as
-§27/§28 below. §27 Web push subscription lifecycle was already fully closed before this re-audit (all 4 rows ✅,
-`AdminPushSubscriptionLifecycleTest`/`AdminPushSubscriptionLoggedInOriginCheckTest`) — this list simply hadn't been
-trimmed after that work landed. §28 Campaign split action is now fully closed too — its determinism/per-variant-
-attribution rows were already ✅ (`AdminCampaignSplitActionAttributesVariantsTest`, same pre-existing-but-untrimmed-
-list situation as §27) and its one genuinely open row (fails-closed-on-no-variants) is now
-`AdminCampaignSplitActionNoUsableVariantsFailsClosedTest`; only its 🔶 row (the documented delay_minutes
-limitation) remains, explicitly not worth a dedicated test.
-
-§29 Campaign performance analytics is now fully closed — its only remaining row is the 🔶 one above, explicitly
-not worth a dedicated test (see its own note).
+**Status: the 2026-09-20 re-audit is now fully closed as of this same session (2026-09-23).** §26 Campaign/Segment
+JSON import, §27 Web push subscription lifecycle, and §28 Campaign split action were already fully closed before
+this re-audit even started — the list below simply hadn't been trimmed after that work landed. §29 Campaign
+performance analytics, §8's three Reorder Cycle manual admin actions, §11's `DispatchScheduledCampaignTriggers`
+real-fire and `RetryFailedPushSends`, §18's Meta/Facebook Catalog feed, and §1c's `generate_ai_content` fail-soft
+path are now closed too. There is currently no further known gap — re-audit this document against `etc/di.xml`/
+`Controller/Adminhtml/*`/`etc/crontab.xml`/`etc/events.xml` periodically rather than trusting it at face value, the
+same instruction this document's own header already gives.
 
 Separately, section 22 (Webhook action/trigger), 23 (Two-way SMS/WhatsApp conversations), 24 (Price-drop &
 back-in-stock alerts), and 25 (Predictive send-time optimization) are already ✅ as of this session — their

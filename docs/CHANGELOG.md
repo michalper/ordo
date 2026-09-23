@@ -7,6 +7,27 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Test/Integration: `generate_ai_content` real-network fail-soft (`GenerateAiContentActionTest`) and
+  `RetryFailedPushSends` cron (`RetryFailedPushSendsTest`)** — close the last two rows in SCENARIOS.md's 2026-09-20
+  re-audit, both deliberately `Test/Integration` rather than MFTF since neither needs a browser and neither has a
+  live external service to hit in this sandbox/CI (no local Ollama, no real Web Push service). Same
+  "override just the one risky external call, everything else real DI" posture as `CampaignSendSmsActionTest`:
+  `GenerateAiContentActionTest` points `Model\Ai\OllamaClient` at a real, immediately-refused localhost port so
+  `Model\Http\JsonApiClient`'s real cURL call actually throws and is actually caught, not just mocked as returning
+  null. `RetryFailedPushSendsTest` substitutes only `Model\Push\PushSender`'s own outbound HTTP call, leaving the
+  cron, both resource models, `PushSendRetryQueue`'s backoff math, and a real database entirely real — proving a
+  real atomic `claim()`, real exponential backoff, and real dead-lettering after `RetryFailedPushSends::MAX_ATTEMPTS`,
+  none of which the existing fully-mocked unit tests could. This closes the module's full test-coverage backlog as
+  tracked in `Test/Mftf/SCENARIOS.md` as of this session.
+
+- **MFTF: Meta/Facebook Catalog feed (`AdminMetaCatalogFeedServesRealProductTest`)** — closes SCENARIOS.md §18's
+  last open row, mirroring the already-covered Google Merchant feed test (`AdminShoppingFeedRefreshAndServeTest`)
+  for the second feed format sharing the same `AbstractFeedAction`/`RefreshNow`/`FeedGeneratorPool` plumbing.
+  `MetaCatalogFeedGenerator::renderRow()` silently skips a product missing any required field, including a
+  non-empty `default_brand` config value (Meta has no manufacturer-attribute mapping here, only a store-wide
+  default) — that config is set before the refresh, or the real product would be silently absent from the feed
+  rather than causing a visible test failure.
+
 - **MFTF: scheduled campaign trigger real-fire (`AdminScheduledCampaignTriggerRealFireTest`)** — closes
   SCENARIOS.md §11's last cron gap. `AdminScheduledCampaignCalendarTest` only ever covered the read-only calendar
   preview; nothing confirmed `Cron\DispatchScheduledCampaignTriggers`/`Model\Campaign\ScheduledTriggerScanner`
