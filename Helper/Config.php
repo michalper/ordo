@@ -6,6 +6,7 @@ namespace Ordo\Automation\Helper;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Store\Model\ScopeInterface;
+use Ordo\Automation\Model\Config\Source\AbandonedCartFallbackChannel;
 
 class Config
 {
@@ -17,6 +18,11 @@ class Config
     private const string XML_PATH_CART_DELAY_MINUTES = 'ordo_automation/abandoned_cart/delay_minutes';
     private const string XML_PATH_CART_MIN_SUBTOTAL = 'ordo_automation/abandoned_cart/min_subtotal';
     private const string XML_PATH_CART_MAX_REMINDERS = 'ordo_automation/abandoned_cart/max_reminders';
+    private const string XML_PATH_CART_FALLBACK_ENABLED = 'ordo_automation/abandoned_cart/fallback_enabled';
+    private const string XML_PATH_CART_FALLBACK_DELAY_HOURS = 'ordo_automation/abandoned_cart/fallback_delay_hours';
+    private const string XML_PATH_CART_FALLBACK_CHANNEL = 'ordo_automation/abandoned_cart/fallback_channel';
+    private const string XML_PATH_CART_FALLBACK_WHATSAPP_TEMPLATE_ID
+        = 'ordo_automation/abandoned_cart/fallback_whatsapp_template_id';
 
     private const string XML_PATH_BROWSE_ABANDONMENT_ENABLED = 'ordo_automation/browse_abandonment/enabled';
     private const string XML_PATH_BROWSE_ABANDONMENT_DELAY_MINUTES
@@ -222,6 +228,51 @@ class Config
     public function getAbandonedCartMaxReminders(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_CART_MAX_REMINDERS, 1, $storeId);
+    }
+
+    /**
+     * Off by default, same "don't silently add a new message channel to a live store" posture as
+     * every other opt-in feature in this class.
+     */
+    public function isAbandonedCartFallbackEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_CART_FALLBACK_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * How long Cron\SendAbandonedCartFallbackReminders waits after the fixed reminder email was
+     * sent, with it still unopened (ordo_message_log_event), before falling back to SMS/WhatsApp.
+     */
+    public function getAbandonedCartFallbackDelayHours(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_CART_FALLBACK_DELAY_HOURS, 24, $storeId);
+    }
+
+    /**
+     * Model\Config\Source\AbandonedCartFallbackChannel::SMS or ::WHATSAPP - a merchant picks one,
+     * not both (see that source model's own docblock for why).
+     */
+    public function getAbandonedCartFallbackChannel(?int $storeId = null): string
+    {
+        return (string) $this->scopeConfig->getValue(
+            self::XML_PATH_CART_FALLBACK_CHANNEL,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        ) ?: AbandonedCartFallbackChannel::SMS;
+    }
+
+    /**
+     * Which approved WhatsAppTemplate the fallback sends when the channel above is "whatsapp" -
+     * send_whatsapp always sends a template message, never free text (see that action's own
+     * docblock), so this can't just be a plain message string the way the SMS fallback is.
+     */
+    public function getAbandonedCartFallbackWhatsAppTemplateId(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_CART_FALLBACK_WHATSAPP_TEMPLATE_ID, 0, $storeId);
     }
 
     public function isPriceWatchEnabled(?int $storeId = null): bool

@@ -18,6 +18,9 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\Email\MessageIdGenerator;
+use Ordo\Automation\Model\Email\PendingMessageIdHolder;
+use Ordo\Automation\Model\Sms\MessageLogWriter;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -98,6 +101,73 @@ class SendAbandonedCartRemindersTest extends TestCase
     }
 
     /**
+     * Closes ROADMAP.md's "Cross-channel fallback for cart abandonment" own wiring: a registered
+     * customer's fixed reminder is logged to ordo_message_log with a real Message-ID (the same
+     * open-tracking correlation Model\Campaign\Action\SendEmail already uses), and the resulting
+     * message_log_id is written back onto this reminder's own log row, so Cron\
+     * SendAbandonedCartFallbackReminders can later check whether it was ever opened.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteLogsTheFixedReminderAndStoresItsMessageLogId(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isAbandonedCartEnabled')->willReturn(true);
+        $config->method('getAbandonedCartDelayMinutes')->willReturn(120);
+        $config->method('getAbandonedCartMinSubtotal')->willReturn(0.0);
+        $config->method('getAbandonedCartMaxReminders')->willReturn(1);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            [
+                'entity_id' => 10,
+                'customer_id' => 5,
+                'customer_email' => 'jan@example.com',
+                'customer_firstname' => 'Jan',
+                'subtotal' => 150.0,
+            ],
+        ]);
+        // The real ordo_message_log row this test's own MessageLogWriter stub "wrote" - looked
+        // up by provider_message_id right after, exactly as the real code does.
+        $connection->method('fetchOne')->willReturn('77');
+        $connection->expects(self::once())->method('update')->with(
+            'ordo_abandoned_cart_reminder_log',
+            ['message_log_id' => 77],
+            self::anything()
+        );
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $messageIdGenerator = $this->createStub(MessageIdGenerator::class);
+        $messageIdGenerator->method('generate')->willReturn('abc123@example.test');
+
+        $messageLogWriter = $this->createMock(MessageLogWriter::class);
+        $messageLogWriter->expects(self::once())->method('recordSent')->with(
+            'email',
+            5,
+            'jan@example.com',
+            '<abc123@example.test>'
+        );
+
+        (new SendAbandonedCartReminders(
+            $config,
+            $resourceConnection,
+            $this->makeQuoteFactoryStub(),
+            $this->makeTransportBuilderStub(),
+            $this->makeStoreManagerStub(),
+            $this->createStub(StateInterface::class),
+            $this->createStub(CampaignDispatcher::class),
+            $this->makeConsentManager(),
+            $this->makeCronRunLogger($this->createStub(LoggerInterface::class)),
+            $messageIdGenerator,
+            $this->createStub(PendingMessageIdHolder::class),
+            $messageLogWriter
+        ))->execute();
+    }
+
+    /**
      * A registered customer who withdrew email consent must never receive the fixed reminder
      * email (sent directly via TransportBuilder, bypassing the campaign engine's own per-action
      * consent gate). The cart_abandoned campaign trigger still dispatches regardless - its own
@@ -160,7 +230,10 @@ class SendAbandonedCartRemindersTest extends TestCase
             $this->createStub(StateInterface::class),
             $dispatcher,
             $consentManager,
-            $this->makeCronRunLogger($this->createStub(LoggerInterface::class))
+            $this->makeCronRunLogger($this->createStub(LoggerInterface::class)),
+            $this->createStub(MessageIdGenerator::class),
+            $this->createStub(PendingMessageIdHolder::class),
+            $this->createStub(MessageLogWriter::class)
         ))->execute();
     }
 
@@ -238,16 +311,15 @@ class SendAbandonedCartRemindersTest extends TestCase
             $this->createStub(StateInterface::class),
             $dispatcher,
             $this->makeConsentManager(),
-            $this->makeCronRunLogger($logger)
+            $this->makeCronRunLogger($logger),
+            $this->createStub(MessageIdGenerator::class),
+            $this->createStub(PendingMessageIdHolder::class),
+            $this->createStub(MessageLogWriter::class)
         ))->execute();
     }
 
-    private function makeCron(
-        Config $config,
-        ResourceConnection $resourceConnection,
-        ?CampaignDispatcher $dispatcher = null,
-        ?LoggerInterface $logger = null
-    ): SendAbandonedCartReminders {
+    private function makeQuoteFactoryStub(): QuoteFactory
+    {
         $quoteItem = $this->createStub(\Magento\Quote\Model\Quote\Item::class);
         $quoteItem->method('getName')->willReturn('Widget');
         $quoteItem->method('getQty')->willReturn(2.0);
@@ -259,11 +331,21 @@ class SendAbandonedCartRemindersTest extends TestCase
         $quoteFactory = $this->createStub(QuoteFactory::class);
         $quoteFactory->method('create')->willReturn($quote);
 
+        return $quoteFactory;
+    }
+
+    private function makeStoreManagerStub(): StoreManagerInterface
+    {
         $store = $this->createStub(Store::class);
         $store->method('getId')->willReturn(1);
         $storeManager = $this->createStub(StoreManagerInterface::class);
         $storeManager->method('getStore')->willReturn($store);
 
+        return $storeManager;
+    }
+
+    private function makeTransportBuilderStub(): TransportBuilder
+    {
         $transportBuilder = $this->createStub(TransportBuilder::class);
         $transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
         $transportBuilder->method('setTemplateOptions')->willReturnSelf();
@@ -272,16 +354,28 @@ class SendAbandonedCartRemindersTest extends TestCase
         $transportBuilder->method('addTo')->willReturnSelf();
         $transportBuilder->method('getTransport')->willReturn($this->createStub(TransportInterface::class));
 
+        return $transportBuilder;
+    }
+
+    private function makeCron(
+        Config $config,
+        ResourceConnection $resourceConnection,
+        ?CampaignDispatcher $dispatcher = null,
+        ?LoggerInterface $logger = null
+    ): SendAbandonedCartReminders {
         return new SendAbandonedCartReminders(
             $config,
             $resourceConnection,
-            $quoteFactory,
-            $transportBuilder,
-            $storeManager,
+            $this->makeQuoteFactoryStub(),
+            $this->makeTransportBuilderStub(),
+            $this->makeStoreManagerStub(),
             $this->createStub(StateInterface::class),
             $dispatcher ?? $this->createStub(CampaignDispatcher::class),
             $this->makeConsentManager(),
-            $this->makeCronRunLogger($logger ?? $this->createStub(LoggerInterface::class))
+            $this->makeCronRunLogger($logger ?? $this->createStub(LoggerInterface::class)),
+            $this->createStub(MessageIdGenerator::class),
+            $this->createStub(PendingMessageIdHolder::class),
+            $this->createStub(MessageLogWriter::class)
         );
     }
 }

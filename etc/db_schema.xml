@@ -39,11 +39,17 @@
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="quote_id" padding="10" unsigned="true" nullable="false" comment="quote.entity_id"/>
         <column xsi:type="timestamp" name="sent_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Sent At"/>
+        <column xsi:type="int" name="message_log_id" padding="10" unsigned="true" nullable="true" comment="ordo_message_log.entity_id this reminder's own real send was logged as, if it was a real customer (not a guest) - Cron\SendAbandonedCartFallbackReminders reads ordo_message_log_event through this to check whether the reminder was opened before falling back to SMS/WhatsApp"/>
+        <column xsi:type="timestamp" name="fallback_sent_at" nullable="true" comment="When Cron\SendAbandonedCartFallbackReminders attempted a cross-channel fallback for this reminder, if ever - null means either not yet due, opened before it became due, or fallback is disabled"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
         <index referenceId="ORDO_ABANDONED_CART_LOG_QUOTE_ID" indexType="btree">
             <column name="quote_id"/>
+        </index>
+        <index referenceId="ORDO_ABANDONED_CART_LOG_FALLBACK_DUE" indexType="btree">
+            <column name="fallback_sent_at"/>
+            <column name="message_log_id"/>
         </index>
     </table>
 

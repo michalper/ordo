@@ -14,6 +14,9 @@ use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Cron\CronRunLogger;
+use Ordo\Automation\Model\Email\MessageIdGenerator;
+use Ordo\Automation\Model\Email\PendingMessageIdHolder;
+use Ordo\Automation\Model\Sms\MessageLogWriter;
 
 /**
  * Finds quotes with items that have not been touched for the configured delay,
@@ -49,7 +52,10 @@ class SendAbandonedCartReminders
         private readonly StateInterface $inlineTranslation,
         private readonly CampaignDispatcher $campaignDispatcher,
         private readonly ConsentManager $consentManager,
-        private readonly CronRunLogger $cronRunLogger
+        private readonly CronRunLogger $cronRunLogger,
+        private readonly MessageIdGenerator $messageIdGenerator,
+        private readonly PendingMessageIdHolder $pendingMessageIdHolder,
+        private readonly MessageLogWriter $messageLogWriter
     ) {
     }
 
@@ -119,7 +125,10 @@ class SendAbandonedCartReminders
 
             try {
                 if ($hasEmailConsent) {
-                    $this->sendReminder($row);
+                    $messageLogId = $this->sendReminder($row);
+                    if ($messageLogId !== null) {
+                        $this->setReminderLogMessageLogId($reminderLogRow, $messageLogId);
+                    }
                 }
                 $this->dispatchCampaigns($row);
                 $sent++;
@@ -137,8 +146,12 @@ class SendAbandonedCartReminders
 
     /**
      * @param AbandonedCartRow $row
+     * @return int|null the real ordo_message_log row's own entity_id this send was logged as -
+     *     only for a registered customer (Cron\SendAbandonedCartFallbackReminders' own cross-
+     *     channel fallback needs a real customer_id to send SMS/WhatsApp to regardless, so a
+     *     guest quote's send isn't worth logging for that purpose)
      */
-    private function sendReminder(array $row): void
+    private function sendReminder(array $row): ?int
     {
         $quote = $this->quoteFactory->create()->load((int) $row['entity_id']);
         $store = $this->storeManager->getStore();
@@ -153,22 +166,57 @@ class SendAbandonedCartReminders
 
         $this->inlineTranslation->suspend();
 
-        $transport = $this->transportBuilder
-            ->setTemplateIdentifier(self::XML_PATH_EMAIL_TEMPLATE)
-            ->setTemplateOptions(['area' => Area::AREA_FRONTEND, 'store' => $store->getId()])
-            ->setTemplateVars([
-                'customer_name' => $row['customer_firstname'] ?: 'there',
-                'cart_items' => $items,
-                'cart_subtotal' => $row['subtotal'],
-                'store' => $store,
-            ])
-            ->setFromByScope(self::XML_PATH_EMAIL_SENDER, $store->getId())
-            ->addTo($row['customer_email'], $row['customer_firstname'] ?: $row['customer_email'])
-            ->getTransport();
+        // Same Message-ID wiring Model\Campaign\Action\SendEmail uses - lets Controller\Email\
+        // StatusCallback's SendGrid Event Webhook correlate a later "open" event back to this
+        // exact send, which Cron\SendAbandonedCartFallbackReminders reads to decide whether to
+        // fall back to SMS/WhatsApp.
+        $messageId = $this->messageIdGenerator->generate();
+        $this->pendingMessageIdHolder->set($messageId);
 
-        $transport->sendMessage();
+        try {
+            $transport = $this->transportBuilder
+                ->setTemplateIdentifier(self::XML_PATH_EMAIL_TEMPLATE)
+                ->setTemplateOptions(['area' => Area::AREA_FRONTEND, 'store' => $store->getId()])
+                ->setTemplateVars([
+                    'customer_name' => $row['customer_firstname'] ?: 'there',
+                    'cart_items' => $items,
+                    'cart_subtotal' => $row['subtotal'],
+                    'store' => $store,
+                ])
+                ->setFromByScope(self::XML_PATH_EMAIL_SENDER, $store->getId())
+                ->addTo($row['customer_email'], $row['customer_firstname'] ?: $row['customer_email'])
+                ->getTransport();
 
-        $this->inlineTranslation->resume();
+            $transport->sendMessage();
+        } finally {
+            $this->pendingMessageIdHolder->consume();
+            $this->inlineTranslation->resume();
+        }
+
+        if (empty($row['customer_id'])) {
+            return null;
+        }
+
+        $this->messageLogWriter->recordSent(
+            'email',
+            (int) $row['customer_id'],
+            $row['customer_email'],
+            '<' . $messageId . '>'
+        );
+
+        return $this->findMessageLogIdByProviderMessageId('<' . $messageId . '>');
+    }
+
+    private function findMessageLogIdByProviderMessageId(string $providerMessageId): ?int
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $id = $connection->fetchOne(
+            $connection->select()
+                ->from($this->resourceConnection->getTableName('ordo_message_log'), ['entity_id'])
+                ->where('provider_message_id = ?', $providerMessageId)
+        );
+
+        return $id ? (int) $id : null;
     }
 
     /**
@@ -206,6 +254,27 @@ class SendAbandonedCartReminders
         $table = $this->resourceConnection->getTableName('ordo_abandoned_cart_reminder_log');
 
         $connection->insert($table, $row);
+    }
+
+    /**
+     * Fills in the message_log_id a successful sendReminder() only learns after the claim row
+     * already exists (see this class's own docblock on that column) - matched the same way
+     * deleteReminderLog() matches its own row, by the exact claim values rather than a captured
+     * entity_id/lastInsertId().
+     *
+     * @param array<string, mixed> $row the exact same array passed to logReminderSent()
+     */
+    private function setReminderLogMessageLogId(array $row, int $messageLogId): void
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('ordo_abandoned_cart_reminder_log');
+
+        $where = [];
+        foreach ($row as $column => $value) {
+            $where[] = $connection->quoteInto($connection->quoteIdentifier($column) . ' = ?', $value);
+        }
+
+        $connection->update($table, ['message_log_id' => $messageLogId], implode(' AND ', $where));
     }
 
     /**

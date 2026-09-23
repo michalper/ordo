@@ -7,6 +7,32 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Cross-channel fallback for cart abandonment (ROADMAP.md candidate)** — new
+  `Cron\SendAbandonedCartFallbackReminders` (off by default,
+  `ordo_automation/abandoned_cart/fallback_enabled`). The fixed abandoned-cart reminder email
+  (`Cron\SendAbandonedCartReminders`) is now logged to `ordo_message_log` with a real Message-ID,
+  the same open-tracking correlation `Model\Campaign\Action\SendEmail` already uses, for any
+  registered customer's reminder — the resulting `message_log_id` is stored on the reminder's own
+  log row (`ordo_abandoned_cart_reminder_log`, two new columns). Once a configurable delay has
+  passed (`fallback_delay_hours`, default 24) with no real "opened" event
+  (`ordo_message_log_event`), the fallback cron sends via the real `send_sms`/`send_whatsapp`
+  campaign actions directly (a merchant picks one channel, `fallback_channel`) — consent,
+  frequency-cap, and quiet-hours gating all apply exactly as a real campaign send would. A guest
+  quote's reminder is never logged with a `message_log_id` in the first place (no customer record
+  to resolve a phone number from), so fallback only ever applies to registered customers, the same
+  limitation the fixed reminder's own campaign dispatch already has.
+
+- **Auto-pick a winner for A/B-split campaign variants (ROADMAP.md candidate)** — new
+  `Model\Campaign\SplitWinnerCalculator` and `Cron\AutoPickCampaignSplitWinner` (off by default,
+  `ordo_automation/ab_test/auto_winner_enabled`). The manual, weighted `split` campaign action
+  already ran variants at their admin-configured weights forever on its own
+  (`Model\Campaign\SplitVariantSelector`); this compares each variant's real click-through rate
+  (`ordo_message_log`/`ordo_message_log_event`) once every variant has reached a configurable
+  minimum sample size (`ordo_automation/ab_test/min_sample_size`, default 100), and permanently
+  shifts all future traffic to whichever variant is winning — a one-shot decision recorded in the
+  action's own `params` (`winner`/`winner_decided_at`), not a continuous reallocation. Re-editing
+  a split's variants in the admin naturally clears the old decision.
+
 - **Test/Integration: `generate_ai_content` real-network fail-soft (`GenerateAiContentActionTest`) and
   `RetryFailedPushSends` cron (`RetryFailedPushSendsTest`)** — close the last two rows in SCENARIOS.md's 2026-09-20
   re-audit, both deliberately `Test/Integration` rather than MFTF since neither needs a browser and neither has a

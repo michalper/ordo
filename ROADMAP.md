@@ -65,9 +65,6 @@ as bugs above, not repeated here)*
 Not gaps in something existing — genuinely new capabilities, proposed after checking they don't already
 exist in some form. Not prioritized against each other; listed for later scoping.
 
-- **Cross-channel fallback for cart abandonment** — if the abandoned-cart email goes unopened for N hours,
-  fall back to SMS/WhatsApp instead of adding another email step; reuses the existing `send_sms`/`send_whatsapp`
-  actions and `ordo_message_log` open data. Small-medium scope, B2C.
 - **B2B: "reorder cycle at risk" segment** — flag customers whose order cadence has drifted meaningfully from
   their own historical cycle (earlier signal than a full reorder-reminder miss), surfaced through the existing
   sales-rep digest. Medium scope, B2B.

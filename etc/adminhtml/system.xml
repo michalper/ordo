@@ -48,6 +48,28 @@
                     <validate>validate-digits validate-greater-than-zero</validate>
                     <depends><field id="enabled">1</field></depends>
                 </field>
+                <field id="fallback_enabled" translate="label comment" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Cross-channel fallback</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Off by default. When on, Cron\SendAbandonedCartFallbackReminders falls back to SMS or WhatsApp for a registered customer whose reminder email is still unopened (real ordo_message_log_event open tracking) after the delay below, instead of sending another email.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="fallback_delay_hours" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Fall back after N hours unopened</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="fallback_enabled">1</field></depends>
+                </field>
+                <field id="fallback_channel" translate="label" type="select" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Fallback channel</label>
+                    <source_model>Ordo\Automation\Model\Config\Source\AbandonedCartFallbackChannel</source_model>
+                    <depends><field id="fallback_enabled">1</field></depends>
+                </field>
+                <field id="fallback_whatsapp_template_id" translate="label comment" type="text" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>WhatsApp template ID</label>
+                    <comment>Only used when the fallback channel above is WhatsApp - send_whatsapp always sends an approved template message, never free text, so an entity_id from Marketing &gt; WhatsApp Templates is required.</comment>
+                    <validate>validate-digits</validate>
+                    <depends><field id="fallback_enabled">1</field></depends>
+                </field>
             </group>
 
             <group id="browse_abandonment" translate="label" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
