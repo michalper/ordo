@@ -124,6 +124,19 @@ jobs:
           # queue is empty instead, the same fix mftf.yml's own install already applies.
           bin/magento setup:config:set --consumers-wait-for-messages=0 -n
 
+          # FreeGiftManagementScenarioTest creates a real product via the API and immediately
+          # tries to add it to a real quote - same "not salable/addable to cart until stock/price
+          # indexes recompute" fresh-install gap api-tests.yml's own install already works around,
+          # confirmed via a real first CI run of this workflow ("Product that you are trying to
+          # add is not available").
+          bin/magento indexer:set-mode realtime cataloginventory_stock catalog_product_price \
+            catalog_product_attribute catalog_category_product catalog_product_category
+
+          # A fresh install's EAV attribute-metadata cache can lag the schema/data patches that
+          # just ran (e.g. AddCustomerSmsPhoneAttribute) - api-tests.yml/mftf.yml's own installs
+          # both flush here too, for the same reason.
+          bin/magento cache:flush
+
       - name: Run Test/Integration
         working-directory: magento
         run: vendor/bin/phpunit --bootstrap app/bootstrap.php vendor/michalper/ordo/Test/Integration

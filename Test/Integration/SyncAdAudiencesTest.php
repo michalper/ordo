@@ -13,7 +13,7 @@ use Ordo\Automation\Model\AdAudienceFactory;
 use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Model\ResourceModel\AdAudience as AdAudienceResource;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
-use Ordo\Automation\Model\ResourceModel\SegmentCondition as SegmentConditionResource;
+use Ordo\Automation\Model\ResourceModel\Segment\Condition as SegmentConditionResource;
 use Ordo\Automation\Model\SegmentConditionFactory;
 use Ordo\Automation\Model\SegmentFactory;
 use Ordo\Automation\Cron\SyncAdAudiences;
