@@ -92,6 +92,18 @@ class CampaignSendSmsActionTest extends TestCase
         self::$objectManager->get(\Magento\Customer\Model\CustomerRegistry::class)
             ->remove($this->customerId);
 
+        // TEMPORARY diagnostic - isolates exactly which of SendSms::execute()'s own early-return
+        // branches (SMS disabled vs. no phone attribute) is actually being hit, since two
+        // separate, well-reasoned fix attempts (second save, CustomerRegistry::remove()) both
+        // failed to change the symptom. Removed once the real cause is confirmed.
+        $reloaded = $customerRepository->getById($this->customerId);
+        $diagPhone = $reloaded->getCustomAttribute(AddCustomerSmsPhoneAttribute::ATTRIBUTE_CODE);
+        fwrite(STDERR, sprintf(
+            "[DIAG] isSmsEnabled=%s phoneAttr=%s\n",
+            self::$objectManager->get(\Ordo\Automation\Helper\Config::class)->isSmsEnabled() ? 'true' : 'false',
+            $diagPhone !== null ? var_export($diagPhone->getValue(), true) : 'NULL'
+        ));
+
         $recordingSender = self::$objectManager->create(RecordingTwilioSmsSender::class);
 
         /** @var SendSms $action */
