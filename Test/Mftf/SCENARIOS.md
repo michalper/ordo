@@ -520,15 +520,16 @@ test closes at once:
    tracking, multi-touch attribution); the trigger-response and campaign-funnel rows are each a plain
    `sales_order_place_after`-driven observer test, same shape as dozens of already-closed rows elsewhere in this
    document.
-2. **§26 Campaign/Segment JSON import** — mirrors `AdminCampaignAndSegmentExportTest` almost exactly (export a real
-   entity, re-import the same file, assert the graph round-trips) — likely the fastest to write of this whole
-   batch.
-3. Smaller, independent rows: `not_in_segment` (§1b), `generate_ai_content`'s fail-soft path (§1c), the three
+2. Smaller, independent rows: `not_in_segment` (§1b), `generate_ai_content`'s fail-soft path (§1c), the three
    Reorder Cycle manual admin actions (§8), `AudienceSize`/`RecalculateSegmentAudienceSizes` (§2/§11), the
    Meta/Facebook Catalog feed (§18), `DispatchScheduledCampaignTriggers` real-fire (§11), `RetryFailedPushSends`
    (§11, likely `Test/Integration` not MFTF - same "no live push service" reasoning as `send_push` itself).
+   **Unverified as of this pass** - given how many items on this list have turned out to already be done (see
+   below), re-check each one's own section table before writing anything new.
 
-§27 Web push subscription lifecycle was already fully closed before this re-audit (all 4 rows ✅,
+§26 Campaign/Segment JSON import was already fully closed before this re-audit (all 4 rows ✅,
+`AdminCampaignAndSegmentImportTest`/`AdminImportValidatesUploadedFileTest`) — same untrimmed-list situation as
+§27/§28 below. §27 Web push subscription lifecycle was already fully closed before this re-audit (all 4 rows ✅,
 `AdminPushSubscriptionLifecycleTest`/`AdminPushSubscriptionLoggedInOriginCheckTest`) — this list simply hadn't been
 trimmed after that work landed. §28 Campaign split action is now fully closed too — its determinism/per-variant-
 attribution rows were already ✅ (`AdminCampaignSplitActionAttributesVariantsTest`, same pre-existing-but-untrimmed-
