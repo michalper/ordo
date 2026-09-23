@@ -151,5 +151,5 @@ jobs:
           target: "http://127.0.0.1:8080/"
           issue_title: "ZAP baseline scan report"
           fail_action: false
-          issue: false
+          allow_issue_writing: false
           artifact_name: zap-baseline-report
