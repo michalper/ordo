@@ -474,7 +474,7 @@ by variant).
 |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | A real dispatch selects a variant deterministically (the same customer/visitor always resolves to the same variant for a given split node, re-used rather than re-rolled if hit again in the same dispatch/resume chain) and runs that variant's own action chain (e.g. two different `send_email` variants) | ✅ `AdminCampaignSplitActionAttributesVariantsTest` (plus unit-tested, `SplitVariantSelectorTest`)                                                                |
 | Each variant's real sent message is attributed to its own variant key in `ordo_message_log`, distinguishing variant A's real email from variant B's                                                                                                                                                          | ✅ `AdminCampaignSplitActionAttributesVariantsTest`                                                                                                               |
-| A split action with no usable variants fails closed (logs, doesn't crash the dispatch)                                                                                                                                                                                                                       | ⬜ unit-tested (`CampaignDispatcherTest`'s own `runSplit()` coverage), no MFTF yet                                                                                |
+| A split action with no usable variants fails closed (logs, doesn't crash the dispatch)                                                                                                                                                                                                                       | ✅ `AdminCampaignSplitActionNoUsableVariantsFailsClosedTest` — an `add_tag` chained right after the empty-variant split is the real, database-observable proof dispatch kept going past it                                                                |
 | Known phase-1 limitation: a variant action's own `delay_minutes` is ignored (forced to 0) since a synthetic action row has no real `ordo_campaign_action.entity_id` for `scheduleResume()`'s FK to point at                                                                                                  | 🔶 unit-tested (`CampaignDispatcherTest`), documented limitation, no MFTF needed - nothing to prove beyond the unit test until this limitation is actually lifted |
 
 ## 29. Campaign performance analytics — funnel, outcome tracking, multi-touch attribution (
@@ -547,9 +547,22 @@ limitation) remains, explicitly not worth a dedicated test. §8's three Reorder 
    entity, re-import the same file, assert the graph round-trips) — likely the fastest to write of this whole
    batch.
 4. Smaller, independent rows: `not_in_segment` (§1b), `generate_ai_content`'s fail-soft path (§1c), the three
+1. Smaller, independent rows: `not_in_segment` (§1b), `generate_ai_content`'s fail-soft path (§1c), the three
    Reorder Cycle manual admin actions (§8), `AudienceSize`/`RecalculateSegmentAudienceSizes` (§2/§11), the
    Meta/Facebook Catalog feed (§18), `DispatchScheduledCampaignTriggers` real-fire (§11), `RetryFailedPushSends`
    (§11, likely `Test/Integration` not MFTF - same "no live push service" reasoning as `send_push` itself).
+   **Unverified as of this pass** - given how many items on this list have turned out to already be done (see
+   below), re-check each one's own section table before writing anything new.
+
+§26 Campaign/Segment JSON import was already fully closed before this re-audit (all 4 rows ✅,
+`AdminCampaignAndSegmentImportTest`/`AdminImportValidatesUploadedFileTest`) — same untrimmed-list situation as
+§27/§28 below. §27 Web push subscription lifecycle was already fully closed before this re-audit (all 4 rows ✅,
+`AdminPushSubscriptionLifecycleTest`/`AdminPushSubscriptionLoggedInOriginCheckTest`) — this list simply hadn't been
+trimmed after that work landed. §28 Campaign split action is now fully closed too — its determinism/per-variant-
+attribution rows were already ✅ (`AdminCampaignSplitActionAttributesVariantsTest`, same pre-existing-but-untrimmed-
+list situation as §27) and its one genuinely open row (fails-closed-on-no-variants) is now
+`AdminCampaignSplitActionNoUsableVariantsFailsClosedTest`; only its 🔶 row (the documented delay_minutes
+limitation) remains, explicitly not worth a dedicated test.
 
 §29 Campaign performance analytics is now fully closed — its only remaining row is the 🔶 one above, explicitly
 not worth a dedicated test (see its own note).

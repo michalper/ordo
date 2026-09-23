@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCampaignSplitActionNoUsableVariantsFailsClosedTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Campaign split action / A-B testing"/>
+            <title value="A split action with no usable variants fails closed - it logs and is skipped, but the rest of the action chain after it still runs"/>
+            <description value="Closes SCENARIOS.md #28's last open MFTF row (unit-tested already via CampaignDispatcherTest's own runSplit() coverage, but never proven through a real dispatch end to end). Model\CampaignDispatcher::runSplit() calls normalizeVariants() on the split action's own params['variants'] - an empty array (this test's own fixture: window.ordoFlowTestHook.buildChain()'s 'variants' field is set to JSON.stringify([]), a real, syntactically valid but functionally empty variant list a merchant could genuinely save through the UI, e.g. by deleting every variant row) normalizes to [], which logs an error and returns without throwing or running any variant action - critically, runActionsFrom()'s own for-loop then simply `continue`s to the NEXT action in the campaign's own top-level chain (see runSplit()'s own call site), so a real add_tag action placed immediately after the split in the flow graph is the real, database-observable proof that dispatch survived the split and kept going, not merely that no PHP fatal error was thrown."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="dashboard"/>
+        </annotations>
+        <before>
+            <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: the campaign - trigger=order_placed, action=split with an EMPTY variants
+             list (no usable variants), then action=add_tag chained right after it - the only way
+             to observe, from outside the process, that the dispatch loop actually reached and
+             ran the action past the failed-closed split rather than aborting. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Split No Variants Fail Closed Campaign" stepKey="fillName"/>
+        <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
+        <executeJS function="window.ordoFlowTestHook.buildChain([
+            {kind: 'trigger', type: 'order_placed'},
+            {kind: 'action', type: 'split', fields: {variants: JSON.stringify([]), delay_minutes: '0'}},
+            {kind: 'action', type: 'add_tag', fields: {tag: 'split-no-variants-survived', delay_minutes: '0'}}
+        ]);" stepKey="buildFlowGraph"/>
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
+
+        <!-- Step 2: a real order, through real storefront checkout, as the real customer above. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+
+        <!-- Step 3: the real, database-observable proof the dispatch survived the empty-variant
+             split and reached the action after it - same idiom AdminCampaignAddTagActionTest
+             already uses. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertCustomerTagAddedByEmail" stepKey="assertTagAfterSplitWasApplied">
+            <argument name="email">$createCustomer.email$</argument>
+            <argument name="tag">split-no-variants-survived</argument>
+        </helper>
+
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
+    </test>
+</tests>

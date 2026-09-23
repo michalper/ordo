@@ -16,6 +16,14 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   `entity_id` directly (this grid is entirely cron-populated, with no MFTF-reachable UI path to it). Also corrects
   `Test/Mftf/SCENARIOS.md`'s "Suggested next batch" list further — `not_in_segment` (§1b) and
   `AudienceSize`/`RecalculateSegmentAudienceSizes` (§2/§11) turned out to already be covered by existing tests too.
+- **MFTF: split action with no usable variants fails closed (`AdminCampaignSplitActionNoUsableVariantsFailsClosedTest`)** —
+  closes SCENARIOS.md §28's last open row (previously only unit-tested). A real order-triggered `split` action
+  with an empty `variants` list logs and is skipped by `CampaignDispatcher::runSplit()`; an `add_tag` action
+  chained right after it in the same flow is the real, database-observable proof the dispatch loop kept going
+  past the failed-closed split instead of aborting. Also trims SCENARIOS.md's stale "Suggested next batch" list —
+  §27 (web push) and the rest of §28 (split determinism/attribution) turned out to already be fully covered by
+  existing tests the list hadn't been updated to reflect.
+
 - **MFTF: campaign multi-touch attribution idempotency (`AdminCampaignAttributionSplitIsIdempotentTest`)** —
   closes SCENARIOS.md §29's last open row. A real `ordo_message_log_event` 'clicked' row is recorded via
   the new `Test\Mftf\Helper\CampaignClickTestHelper` (real clicks only arrive via a signed SendGrid webhook
