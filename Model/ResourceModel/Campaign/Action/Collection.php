@@ -33,4 +33,15 @@ class Collection extends AbstractCollection
         $this->setOrder('sort_order', self::SORT_ORDER_ASC);
         return $this;
     }
+
+    /**
+     * Every action of a given type across every campaign in one query - used by
+     * Model\Campaign\SplitWinnerCalculator to scan every real 'split' action for a due
+     * auto-winner decision without needing to know which campaigns have one ahead of time.
+     */
+    public function addTypeFilter(string $type): self
+    {
+        $this->addFieldToFilter('type', $type);
+        return $this;
+    }
 }

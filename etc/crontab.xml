@@ -67,6 +67,9 @@
         <job name="ordo_automation_sync_ad_audiences" instance="Ordo\Automation\Cron\SyncAdAudiences" method="execute">
             <schedule>0 5 * * *</schedule>
         </job>
+        <job name="ordo_automation_auto_pick_campaign_split_winner" instance="Ordo\Automation\Cron\AutoPickCampaignSplitWinner" method="execute">
+            <schedule>30 * * * *</schedule>
+        </job>
         <job name="ordo_automation_refresh_product_feed" instance="Ordo\Automation\Cron\RefreshProductFeed" method="execute">
             <schedule>0 */6 * * *</schedule>
         </job>

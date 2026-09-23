@@ -132,6 +132,9 @@ class Config
 
     private const string XML_PATH_ATTRIBUTION_WINDOW_DAYS = 'ordo_automation/attribution/window_days';
 
+    private const string XML_PATH_AB_TEST_AUTO_WINNER_ENABLED = 'ordo_automation/ab_test/auto_winner_enabled';
+    private const string XML_PATH_AB_TEST_MIN_SAMPLE_SIZE = 'ordo_automation/ab_test/min_sample_size';
+
     private const string XML_PATH_FREQUENCY_CAP_ENABLED = 'ordo_automation/frequency_cap/enabled';
     private const string XML_PATH_FREQUENCY_CAP_MAX_MESSAGES = 'ordo_automation/frequency_cap/max_messages';
     private const string XML_PATH_FREQUENCY_CAP_WINDOW_HOURS = 'ordo_automation/frequency_cap/window_hours';
@@ -876,6 +879,32 @@ class Config
     public function getAttributionWindowDays(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_ATTRIBUTION_WINDOW_DAYS, 14, $storeId);
+    }
+
+    /**
+     * Off by default, same "not something to silently change a merchant's live campaign
+     * behavior" posture as frequency_cap/quiet_hours - a split action's variants keep their
+     * admin-configured weights forever unless this is explicitly turned on.
+     */
+    public function isAbTestAutoWinnerEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_AB_TEST_AUTO_WINNER_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * How many real sends a split action's variant needs (each) before Cron\
+     * AutoPickCampaignSplitWinner will compare its CTR against the others - avoids declaring a
+     * winner off a handful of sends where the "better" CTR is just noise. Default of 100
+     * mirrors the rough rule-of-thumb minimum sample size vendors like Mailchimp/Optimizely
+     * default their own auto-winner features to.
+     */
+    public function getAbTestMinSampleSize(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_AB_TEST_MIN_SAMPLE_SIZE, 100, $storeId);
     }
 
     public function isFrequencyCapEnabled(?int $storeId = null): bool

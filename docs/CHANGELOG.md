@@ -7,6 +7,17 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Auto-pick a winner for A/B-split campaign variants (ROADMAP.md candidate)** — new
+  `Model\Campaign\SplitWinnerCalculator` and `Cron\AutoPickCampaignSplitWinner` (off by default,
+  `ordo_automation/ab_test/auto_winner_enabled`). The manual, weighted `split` campaign action
+  already ran variants at their admin-configured weights forever on its own
+  (`Model\Campaign\SplitVariantSelector`); this compares each variant's real click-through rate
+  (`ordo_message_log`/`ordo_message_log_event`) once every variant has reached a configurable
+  minimum sample size (`ordo_automation/ab_test/min_sample_size`, default 100), and permanently
+  shifts all future traffic to whichever variant is winning — a one-shot decision recorded in the
+  action's own `params` (`winner`/`winner_decided_at`), not a continuous reallocation. Re-editing
+  a split's variants in the admin naturally clears the old decision.
+
 - **Test/Integration: `generate_ai_content` real-network fail-soft (`GenerateAiContentActionTest`) and
   `RetryFailedPushSends` cron (`RetryFailedPushSendsTest`)** — close the last two rows in SCENARIOS.md's 2026-09-20
   re-audit, both deliberately `Test/Integration` rather than MFTF since neither needs a browser and neither has a

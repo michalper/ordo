@@ -542,6 +542,21 @@
                 </field>
             </group>
 
+            <group id="ab_test" translate="label" type="text" sortOrder="167" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>A/B Split Test Auto-Winner</label>
+                <field id="auto_winner_enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Off by default. When on, Cron\AutoPickCampaignSplitWinner compares each split action's variants by click-through rate (ordo_message_log/ordo_message_log_event) once every variant has reached the minimum sample size below, and permanently shifts all future traffic to whichever variant is winning - the split's own admin-configured weights otherwise stay fixed forever.</comment>
+                </field>
+                <field id="min_sample_size" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Minimum sample size per variant</label>
+                    <comment>How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the "better" CTR is just noise.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="auto_winner_enabled">1</field></depends>
+                </field>
+            </group>
+
             <group id="frequency_cap" translate="label" type="text" sortOrder="170" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Frequency Cap (cross-channel)</label>
                 <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">

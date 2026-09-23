@@ -476,6 +476,7 @@ by variant).
 | Each variant's real sent message is attributed to its own variant key in `ordo_message_log`, distinguishing variant A's real email from variant B's                                                                                                                                                          | ✅ `AdminCampaignSplitActionAttributesVariantsTest`                                                                                                               |
 | A split action with no usable variants fails closed (logs, doesn't crash the dispatch)                                                                                                                                                                                                                       | ✅ `AdminCampaignSplitActionNoUsableVariantsFailsClosedTest` — an `add_tag` chained right after the empty-variant split is the real, database-observable proof dispatch kept going past it                                                                |
 | Known phase-1 limitation: a variant action's own `delay_minutes` is ignored (forced to 0) since a synthetic action row has no real `ordo_campaign_action.entity_id` for `scheduleResume()`'s FK to point at                                                                                                  | 🔶 unit-tested (`CampaignDispatcherTest`), documented limitation, no MFTF needed - nothing to prove beyond the unit test until this limitation is actually lifted |
+| `Cron\AutoPickCampaignSplitWinner` (off by default) compares real variant CTR from `ordo_message_log`/`ordo_message_log_event` once every variant reaches the configured minimum sample size, and permanently shifts weights to the winner (`Model\Campaign\SplitWinnerCalculator`)                          | ⬜ unit-tested (`SplitWinnerCalculatorTest`, `AutoPickCampaignSplitWinnerTest`), no MFTF/Integration yet - would need a real split campaign, enough real sends+clicks per variant to cross the sample-size threshold, forcing the cron, then confirming the action's own params.variants weights actually flipped |
 
 ## 29. Campaign performance analytics — funnel, outcome tracking, multi-touch attribution (
 
@@ -513,26 +514,13 @@ docblock):
 
 ## Suggested next batch (highest signal per test written)
 
-**Status: the 2026-09-20 re-audit is now fully closed as of this same session (2026-09-23).** §26 Campaign/Segment
-JSON import, §27 Web push subscription lifecycle, and §28 Campaign split action were already fully closed before
-this re-audit even started — the list below simply hadn't been trimmed after that work landed. §29 Campaign
-performance analytics, §8's three Reorder Cycle manual admin actions, §11's `DispatchScheduledCampaignTriggers`
-real-fire and `RetryFailedPushSends`, §18's Meta/Facebook Catalog feed, and §1c's `generate_ai_content` fail-soft
-path are now closed too. There is currently no further known gap — re-audit this document against `etc/di.xml`/
-`Controller/Adminhtml/*`/`etc/crontab.xml`/`etc/events.xml` periodically rather than trusting it at face value, the
-same instruction this document's own header already gives.
-Working order for the drift found by the 2026-09-20 re-audit, roughly by blast radius / how much of a single new
-test closes at once:
+**Status: the 2026-09-20 re-audit is fully closed (as of 2026-09-23).** Every row from that re-audit — §8, §11,
+§18, §26, §27, §28, §29, and §1c's `generate_ai_content`/`RetryFailedPushSends` — is now ✅. Re-audit this
+document against `etc/di.xml`/`Controller/Adminhtml/*`/`etc/crontab.xml`/`etc/events.xml` periodically rather
+than trusting it at face value, the same instruction this document's own header already gives.
 
-1. Remaining rows: `generate_ai_content`'s fail-soft path (§1c, likely `Test/Integration`/unit rather than MFTF -
-   no real local Ollama instance in this sandbox/CI, same carve-out as `send_sms`'s own), `RetryFailedPushSends`
-   (§11, likely `Test/Integration` not MFTF - same "no live push service" reasoning as `send_push` itself).
-
-§26 Campaign/Segment JSON import, §27 Web push subscription lifecycle, and §28 Campaign split action were all
-already fully closed before this re-audit — this list simply hadn't been trimmed after that work landed. §29
-Campaign performance analytics, §8's three Reorder Cycle manual admin actions, §11's
-`DispatchScheduledCampaignTriggers` real-fire, and §18's Meta/Facebook Catalog feed are now closed too, by this
-same re-audit pass. Only the two rows above remain, and both are more likely `Test/Integration`/unit than MFTF.
+One new row from a genuinely new feature (not the re-audit): §28's `AutoPickCampaignSplitWinner` row above is
+unit-tested only, no MFTF/Integration yet.
 
 Separately, section 22 (Webhook action/trigger), 23 (Two-way SMS/WhatsApp conversations), 24 (Price-drop &
 back-in-stock alerts), and 25 (Predictive send-time optimization) are already ✅ as of this session — their
