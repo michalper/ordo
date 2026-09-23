@@ -176,7 +176,7 @@ class SplitWinnerCalculatorTest extends TestCase
         self::assertSame(1, $calculator->decideWinners());
 
         self::assertNotNull($savedParamsJson);
-        $saved = json_decode((string) $savedParamsJson, true);
+        $saved = json_decode($savedParamsJson, true);
         self::assertSame('b', $saved['winner']);
         self::assertArrayHasKey('winner_decided_at', $saved);
 
@@ -200,6 +200,33 @@ class SplitWinnerCalculatorTest extends TestCase
 
         $actionRow = $this->makeActionRow(1, ['variants' => [
             ['key' => 'a', 'weight' => 100],
+        ]]);
+
+        $calculator = new SplitWinnerCalculator(
+            $this->makeConfig(enabled: true),
+            $this->makeResourceConnection($connection),
+            $this->makeCollectionFactory([$actionRow]),
+            $resource
+        );
+
+        self::assertSame(0, $calculator->decideWinners());
+    }
+
+    public function testDecideWinnersSkipsWhenFewerThanTwoVariantsHaveAUsableKey(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::never())->method('select');
+
+        $resource = $this->createMock(CampaignActionResource::class);
+        $resource->expects(self::never())->method('save');
+
+        // Two variant entries, but only one has a real, non-empty string key - the same
+        // "nothing to compare" outcome as a genuinely single-variant split, reached via a
+        // different malformed-data path (an admin-edited variant missing its own key, not just
+        // too few variants overall).
+        $actionRow = $this->makeActionRow(1, ['variants' => [
+            ['key' => 'a', 'weight' => 50],
+            ['weight' => 50],
         ]]);
 
         $calculator = new SplitWinnerCalculator(

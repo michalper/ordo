@@ -91,7 +91,10 @@ class SplitWinnerCalculator
 
         $stats = $this->fetchStats($actionRow->getCampaignId(), $keys);
 
-        $bestKey = null;
+        // $keys is never empty here (the count($keys) < 2 guard above already returned), and
+        // $ctr is always >= 0.0 > this loop's own initial -1.0, so its first iteration always
+        // sets $bestKey - there is no code path where it stays unset.
+        $bestKey = $keys[0];
         $bestCtr = -1.0;
         foreach ($keys as $key) {
             $sent = $stats[$key]['sent'] ?? 0;
@@ -106,10 +109,6 @@ class SplitWinnerCalculator
                 $bestCtr = $ctr;
                 $bestKey = $key;
             }
-        }
-
-        if ($bestKey === null) {
-            return false;
         }
 
         foreach ($variants as &$variant) {

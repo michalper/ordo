@@ -6,6 +6,7 @@ namespace Ordo\Automation\Test\Unit\Helper;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Config\Source\AbandonedCartFallbackChannel;
 use PHPUnit\Framework\TestCase;
 
 class ConfigTest extends TestCase
@@ -52,6 +53,8 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isWhatsAppEnabled());
         self::assertTrue($this->config->isPushEnabled());
         self::assertTrue($this->config->isFrequencyCapEnabled());
+        self::assertTrue($this->config->isAbandonedCartFallbackEnabled());
+        self::assertTrue($this->config->isAbTestAutoWinnerEnabled());
         self::assertTrue($this->config->isQuietHoursEnabled());
         self::assertTrue($this->config->isMetaCatalogFeedEnabled());
         self::assertTrue($this->config->isPriceWatchEnabled());
@@ -176,6 +179,9 @@ class ConfigTest extends TestCase
         self::assertSame(5, $this->config->getWebhookMaxRequestsPerSecond());
         self::assertSame(200, $this->config->getPriceWatchScanBatchSize());
         self::assertSame(2, $this->config->getAiMaxRequestsPerSecond());
+        self::assertSame(24, $this->config->getAbandonedCartFallbackDelayHours());
+        self::assertSame(0, $this->config->getAbandonedCartFallbackWhatsAppTemplateId());
+        self::assertSame(100, $this->config->getAbTestMinSampleSize());
     }
 
     public function testOutboundRateLimitGettersReturnAnExplicitZeroRatherThanFallingBackToTheDefault(): void
@@ -229,6 +235,20 @@ class ConfigTest extends TestCase
         $this->scopeConfig->method('getValue')->willReturn(null);
 
         self::assertSame('llama3.2', $this->config->getOllamaModel());
+    }
+
+    public function testGetAbandonedCartFallbackChannelReturnsTheConfiguredValue(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn('whatsapp');
+
+        self::assertSame('whatsapp', $this->config->getAbandonedCartFallbackChannel());
+    }
+
+    public function testGetAbandonedCartFallbackChannelFallsBackToSmsWhenUnconfigured(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn(null);
+
+        self::assertSame(AbandonedCartFallbackChannel::SMS, $this->config->getAbandonedCartFallbackChannel());
     }
 
     public function testWebhookSecretsDecryptTheirConfiguredValue(): void
