@@ -71,9 +71,6 @@ exist in some form. Not prioritized against each other; listed for later scoping
 - **B2B: "reorder cycle at risk" segment** — flag customers whose order cadence has drifted meaningfully from
   their own historical cycle (earlier signal than a full reorder-reminder miss), surfaced through the existing
   sales-rep digest. Medium scope, B2B.
-- **Per-channel marketing consent** — extend `ConsentManager`/`ordo_customer_consent` from one blanket opt-out to
-  granular consent per channel (email/SMS/WhatsApp/push), a common compliance requirement for multi-channel
-  automation. Medium scope, shared foundation.
 - **A/B testing for campaign variants** — split traffic on a campaign action (e.g. two email variants) and
   auto-pick a winner from `ordo_message_log` CTR data; pairs naturally with predictive send-time optimization.
   Medium-large scope, shared foundation.
