@@ -37,20 +37,8 @@ class GenerateAiContentActionTest extends TestCase
         self::$objectManager->get(\Magento\Framework\App\State::class)->setAreaCode('adminhtml');
     }
 
-    protected function tearDown(): void
-    {
-        // No <config_data> default for either path, so both are unset/empty unless a test turns
-        // them on - leaving them set would leak into every other test run afterward.
-        $scopeConfig = self::$objectManager->get(MutableScopeConfig::class);
-        $scopeConfig->setValue('ordo_automation/ai/enabled', 0, ScopeInterface::SCOPE_STORE);
-        $scopeConfig->setValue('ordo_automation/ai/ollama_base_url', '', ScopeInterface::SCOPE_STORE);
-    }
-
     public function testFallsBackToStaticContentWhenAiContentDisabled(): void
     {
-        self::$objectManager->get(MutableScopeConfig::class)
-            ->setValue('ordo_automation/ai/enabled', 0, ScopeInterface::SCOPE_STORE);
-
         /** @var GenerateAiContent $action */
         $action = self::$objectManager->create(GenerateAiContent::class);
 
@@ -65,14 +53,33 @@ class GenerateAiContentActionTest extends TestCase
 
     public function testFallsBackToStaticContentWhenOllamaHostRefusesConnection(): void
     {
-        $scopeConfig = self::$objectManager->get(MutableScopeConfig::class);
+        // Two real CI runs (diagnostic-instrumented, on the sibling CampaignSendSmsActionTest)
+        // proved $objectManager->get(MutableScopeConfig::class)->setValue(...) does NOT affect
+        // what a class's own injected ScopeConfigInterface sees in this install - they resolve
+        // to two genuinely different object instances. The only way that's proven to actually
+        // work is constructing the SAME MutableScopeConfig instance and passing it explicitly
+        // as every affected class's own scopeConfig constructor argument - here that's BOTH
+        // OllamaClient (reads the base URL) and GenerateAiContent (reads the enabled flag), so a
+        // single shared Config instance built on that same MutableScopeConfig is injected into
+        // both.
+        $scopeConfig = self::$objectManager->create(MutableScopeConfig::class);
         $scopeConfig->setValue('ordo_automation/ai/enabled', 1, ScopeInterface::SCOPE_STORE);
         // Port 1 is a real, resolvable localhost address with nothing bound to it - a genuine
         // connection-refused failure through a real cURL call, not a mocked/stubbed one.
         $scopeConfig->setValue('ordo_automation/ai/ollama_base_url', 'http://127.0.0.1:1', ScopeInterface::SCOPE_STORE);
 
+        $config = self::$objectManager->create(\Ordo\Automation\Helper\Config::class, [
+            'scopeConfig' => $scopeConfig,
+        ]);
+        $ollamaClient = self::$objectManager->create(\Ordo\Automation\Model\Ai\OllamaClient::class, [
+            'config' => $config,
+        ]);
+
         /** @var GenerateAiContent $action */
-        $action = self::$objectManager->create(GenerateAiContent::class);
+        $action = self::$objectManager->create(GenerateAiContent::class, [
+            'config' => $config,
+            'ollamaClient' => $ollamaClient,
+        ]);
 
         $context = ['customer_first_name' => 'Alex'];
         $action->execute($context, [

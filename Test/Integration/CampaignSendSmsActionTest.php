@@ -47,18 +47,26 @@ class CampaignSendSmsActionTest extends TestCase
             }
             $this->customerId = null;
         }
+    }
 
-        // Restore — sms/enabled has no <config_data> default, so it's unset/false unless a test
-        // turns it on; leaving it flipped on would leak into every other test run afterward.
-        // Same explicit store-scope-code reasoning as the test's own setValue() call.
-        $storeId = (int) self::$objectManager->get(\Magento\Store\Model\StoreManagerInterface::class)
-            ->getStore()->getId();
-        self::$objectManager->get(\Magento\Framework\App\MutableScopeConfig::class)->setValue(
-            'ordo_automation/sms/enabled',
-            0,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
-            $storeId
-        );
+    /**
+     * Real magento-integration-test-lite MutableScopeConfig override, done correctly this time:
+     * two real CI runs (diagnostic instrumented) proved $objectManager->get(MutableScopeConfig::
+     * class)->setValue(...) does NOT affect what Helper\Config's own injected ScopeConfigInterface
+     * sees in this install - they resolve to two genuinely different object instances
+     * (Magento\Framework\App\MutableScopeConfig vs. Magento\Framework\App\Config), exactly the
+     * pitfall the skill's own docs warn about. The only way that's proven to actually work is
+     * constructing the SAME MutableScopeConfig instance and passing it explicitly as Helper\
+     * Config's own scopeConfig constructor argument.
+     */
+    private function createConfigWithSmsEnabled(): \Ordo\Automation\Helper\Config
+    {
+        $scopeConfig = self::$objectManager->create(\Magento\Framework\App\MutableScopeConfig::class);
+        $scopeConfig->setValue('ordo_automation/sms/enabled', 1, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+
+        return self::$objectManager->create(\Ordo\Automation\Helper\Config::class, [
+            'scopeConfig' => $scopeConfig,
+        ]);
     }
 
     public function testExecuteSendsSmsToTheRealCustomersConfiguredPhone(): void
@@ -66,22 +74,6 @@ class CampaignSendSmsActionTest extends TestCase
         $customerRepository = self::$objectManager->get(\Magento\Customer\Api\CustomerRepositoryInterface::class);
         $customerFactory = self::$objectManager->get(\Magento\Customer\Api\Data\CustomerInterfaceFactory::class);
         $storeManager = self::$objectManager->get(\Magento\Store\Model\StoreManagerInterface::class);
-
-        // See magento-testing:magento-integration-test-lite — MutableScopeConfig is the real,
-        // controlled config source this lite integration-test pattern uses instead of mocking
-        // ScopeConfigInterface, so Config::isSmsEnabled() (real DI, reads real scope config)
-        // sees this the same way it would see an admin actually enabling the feature. The scope
-        // CODE is passed explicitly (this class's own real, current store id) rather than left
-        // null/default - confirmed via a real CI run that in this class's own 'frontend' area
-        // (unlike GenerateAiContentActionTest's 'adminhtml'), Config::isSmsEnabled(null) resolves
-        // to the real current store's numeric id at read time, which didn't match an override
-        // written under a null/default scope code at write time.
-        self::$objectManager->get(\Magento\Framework\App\MutableScopeConfig::class)->setValue(
-            'ordo_automation/sms/enabled',
-            1,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
-            (int) $storeManager->getStore()->getId()
-        );
 
         $email = 'ordo-automation-send-sms-test-' . uniqid('', true) . '@example.test';
         $customer = $customerFactory->create();
@@ -108,29 +100,12 @@ class CampaignSendSmsActionTest extends TestCase
         self::$objectManager->get(\Magento\Customer\Model\CustomerRegistry::class)
             ->remove($this->customerId);
 
-        // TEMPORARY diagnostic round 2 - the scope-code fix didn't change the symptom, so this
-        // checks the raw ScopeConfigInterface directly (bypassing Helper\Config entirely) with
-        // the exact store id used at write time, plus what store id Config's own internal
-        // resolution would use for a null $storeId call.
-        $rawScopeConfig = self::$objectManager->get(\Magento\Framework\App\Config\ScopeConfigInterface::class);
-        $diagStoreId = (int) $storeManager->getStore()->getId();
-        fwrite(STDERR, sprintf(
-            "[DIAG2] storeIdAtWrite=%d storeIdNow=%d rawIsSetFlag(storeId)=%s rawIsSetFlag(null)=%s helperIsSmsEnabled=%s mutableScopeConfigClass=%s scopeConfigClass=%s sameInstance=%s\n",
-            $diagStoreId,
-            $diagStoreId,
-            $rawScopeConfig->isSetFlag('ordo_automation/sms/enabled', \Magento\Store\Model\ScopeInterface::SCOPE_STORE, $diagStoreId) ? 'true' : 'false',
-            $rawScopeConfig->isSetFlag('ordo_automation/sms/enabled', \Magento\Store\Model\ScopeInterface::SCOPE_STORE, null) ? 'true' : 'false',
-            self::$objectManager->get(\Ordo\Automation\Helper\Config::class)->isSmsEnabled() ? 'true' : 'false',
-            get_class(self::$objectManager->get(\Magento\Framework\App\MutableScopeConfig::class)),
-            get_class($rawScopeConfig),
-            spl_object_id($rawScopeConfig) === spl_object_id(self::$objectManager->get(\Magento\Framework\App\MutableScopeConfig::class)) ? 'true' : 'false'
-        ));
-
         $recordingSender = self::$objectManager->create(RecordingTwilioSmsSender::class);
 
         /** @var SendSms $action */
         $action = self::$objectManager->create(SendSms::class, [
             'smsSender' => $recordingSender,
+            'config' => $this->createConfigWithSmsEnabled(),
         ]);
 
         $context = ['customer_id' => $this->customerId];
