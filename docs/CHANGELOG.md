@@ -7,6 +7,15 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **MFTF: campaign multi-touch attribution idempotency (`AdminCampaignAttributionSplitIsIdempotentTest`)** —
+  closes SCENARIOS.md §29's last open row. A real `ordo_message_log_event` 'clicked' row is recorded via
+  the new `Test\Mftf\Helper\CampaignClickTestHelper` (real clicks only arrive via a signed SendGrid webhook
+  this environment can't produce, same reasoning `MessageLogTestHelper` already documents for
+  `ordo_message_log` itself), tied to the exact log row a real order-triggered `send_email` just wrote.
+  `Cron\ComputeCampaignAttribution` is then forced to run twice via `CronScheduleHelper`, and the Campaign
+  grid's "Attributed revenue" cell is asserted byte-identical both times — proving its delete-then-reinsert
+  recomputation never doubles the credited amount.
+
 - **Nightly OWASP ZAP full (active) scan (`.github/workflows/zap.yml`)** — free DAST scan against
   a live Magento install built with the same steps `api-tests.yml` already uses, runs on a nightly
   cron (offset from `mftf.yml`'s) plus `workflow_dispatch` — not on every push, both because of
