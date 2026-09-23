@@ -527,6 +527,8 @@ test closes at once:
    Ollama instance in this sandbox/CI, same carve-out as `send_sms`'s own), the Meta/Facebook Catalog feed (§18),
    `RetryFailedPushSends` (§11, likely `Test/Integration` not MFTF - same "no live push service" reasoning as
    `send_push` itself).
+   `DispatchScheduledCampaignTriggers` real-fire (§11), `RetryFailedPushSends` (§11, likely `Test/Integration` not
+   MFTF - same "no live push service" reasoning as `send_push` itself).
 
 §26 Campaign/Segment JSON import was already fully closed before this re-audit (all 4 rows ✅,
 `AdminCampaignAndSegmentImportTest`/`AdminImportValidatesUploadedFileTest`) — same untrimmed-list situation as
@@ -539,6 +541,7 @@ list situation as §27) and its one genuinely open row (fails-closed-on-no-varia
 limitation) remains, explicitly not worth a dedicated test. §8's three Reorder Cycle manual admin actions
 (Recalculate Now/Send Reminder/Build Cart) are now covered too, in one `AdminReorderCycleManualActionsTest`. §11's
 `DispatchScheduledCampaignTriggers` real-fire is now covered too, by `AdminScheduledCampaignTriggerRealFireTest`.
+(Recalculate Now/Send Reminder/Build Cart) are now covered too, in one `AdminReorderCycleManualActionsTest`.
 1. **§27 Web push subscription lifecycle** — four rows, all real HTTP POSTs a synthetic-but-`PushEndpointValidator`-
    valid endpoint makes testable without a real push service (see that section's own intro).
 2. **§28 Campaign split action** — surprisingly undocumented given its complexity; the determinism + per-variant
