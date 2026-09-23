@@ -4,10 +4,11 @@ name: CI
 # install — Test/Unit mocks every Magento dependency, and PHPStan (bitexpert/phpstan-magento)
 # only needs the framework/module *classes* available via Composer, not a running store.
 # Test/Integration, Test/Api, and MFTF are NOT run here: they require a real, installed Magento
-# application (database, env.php, and for MFTF a browser + webserver) — see AGENTS.md for how
-# to run those against the docker-compose environment in magento-ordo-test/. Wiring a full
-# Magento install into CI is a real, separate decision (build time, service containers), not
-# something folded into this workflow — see ROADMAP.md.
+# application (database, env.php, and for MFTF a browser + webserver) — see AGENTS.md for how to
+# run those against the docker-compose environment in magento-ordo-test/. Test/Integration and
+# Test/Api each have their own dedicated workflow (integration-tests.yml, api-tests.yml); MFTF's
+# is mftf.yml. Wiring a full Magento install into THIS workflow is still a deliberate non-goal
+# (build time, service containers) — that's what those separate workflows are for.
 #
 # Requires two repository secrets — MAGENTO_COMPOSER_USERNAME / MAGENTO_COMPOSER_PASSWORD —
 # because magento/framework and magento/module-* are not on public Packagist, only on

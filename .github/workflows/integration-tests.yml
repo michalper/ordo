@@ -1,0 +1,129 @@
+name: Integration Tests
+
+# Runs Test/Integration/*.php — the "lite" integration tests (see magento-testing:
+# magento-integration-test-lite skill / AGENTS.md): a real, installed Magento app booted via
+# app/bootstrap.php + Magento\Framework\App\Bootstrap, real DI, real database, no mocks except
+# the one genuinely risky external collaborator each test deliberately swaps out (no live
+# Twilio/SendGrid/Ollama/Web-Push account in this environment). This is NOT the same as Test/Api
+# (a running HTTP server, real REST calls) or MFTF (a real browser) — these tests call classes
+# directly in-process, so no nginx/PHP-FPM/Selenium is needed here, just the installed app on
+# disk with a working app/etc/env.php.
+#
+# Confirmed via a real run of this module's own test suite (AGENTS.md's own documented history):
+# Test/Integration existed with real coverage but was never wired into ANY CI pipeline —
+# ci.yml explicitly defers it, the same gap api-tests.yml closed for Test/Api. This closes it for
+# Test/Integration with the smallest install these tests actually need: MySQL + OpenSearch (for
+# setup:install itself), the DB queue driver (no RabbitMQ in this environment — several tests
+# start `bin/magento queue:consumers:start` themselves as a real subprocess, per AGENTS.md),
+# --consumers-wait-for-messages=0 so that never blocks waiting for a message that isn't coming.
+#
+# Same two repository secrets as ci.yml/api-tests.yml/mftf.yml (MAGENTO_COMPOSER_USERNAME /
+# MAGENTO_COMPOSER_PASSWORD).
+#
+# Runs on push/PR to main + workflow_dispatch — no live-browser cost like mftf.yml, so this can
+# run on every push/PR the same way api-tests.yml does, not just nightly.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+          MYSQL_DATABASE: magento
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+
+      opensearch:
+        image: opensearchproject/opensearch:2.19.4
+        env:
+          discovery.type: single-node
+          DISABLE_SECURITY_PLUGIN: "true"
+          DISABLE_INSTALL_DEMO_CONFIG: "true"
+          OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd="curl -sf http://127.0.0.1:9200/_cluster/health"
+          --health-interval=10s --health-timeout=5s --health-retries=15
+
+    steps:
+      - name: Checkout module
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: ordo-module
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: "8.4"
+          extensions: bcmath, ctype, curl, dom, ftp, gd, intl, mbstring, mysqli, pdo_mysql, simplexml, soap, sodium, xsl, zip, opcache, sockets
+          coverage: none
+
+      - name: Remove shivammathur/setup-php's ambient GitHub auth
+        run: composer config --global --unset github-oauth.github.com || true
+
+      - name: Checkout Magento 2.4.9
+        run: git clone --branch 2.4.9 --depth 1 https://github.com/magento/magento2.git magento
+
+      - name: Configure Composer for repo.magento.com and the local module
+        working-directory: magento
+        env:
+          MAGENTO_COMPOSER_USERNAME: ${{ secrets.MAGENTO_COMPOSER_USERNAME }}
+          MAGENTO_COMPOSER_PASSWORD: ${{ secrets.MAGENTO_COMPOSER_PASSWORD }}
+        run: |
+          composer config repositories.magento composer https://repo.magento.com
+          composer config http-basic.repo.magento.com "$MAGENTO_COMPOSER_USERNAME" "$MAGENTO_COMPOSER_PASSWORD"
+          composer config repositories.ordo-automation '{"type":"path","url":"../ordo-module","options":{"symlink":false}}'
+          composer config allow-plugins.magento/composer-dependency-version-audit-plugin true
+          composer config allow-plugins.magento/magento-composer-installer true
+          composer config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+
+      - name: Require the local module
+        working-directory: magento
+        # No --no-dev — Test/Integration runs via the Magento APP's own vendor/bin/phpunit (see
+        # each test's own docblock), which only exists if Magento's own require-dev (including
+        # phpunit/phpunit, already pinned in its committed composer.lock) actually gets installed
+        # alongside the newly required package, not skipped.
+        run: composer require michalper/ordo:@dev --no-interaction --no-progress
+
+      - name: Install Magento
+        working-directory: magento
+        run: |
+          bin/magento setup:install \
+            --base-url=http://127.0.0.1:8080/ \
+            --db-host=127.0.0.1 --db-name=magento --db-user=root \
+            --admin-firstname=Admin --admin-lastname=User \
+            --admin-email=admin@example.com --admin-user=admin --admin-password='Admin123!' \
+            --language=en_US --currency=USD --timezone=America/Chicago \
+            --use-rewrites=1 \
+            --search-engine=opensearch --opensearch-host=127.0.0.1 --opensearch-port=9200 \
+            --backend-frontname=admin
+
+          bin/magento module:enable Ordo_Automation
+          bin/magento setup:upgrade
+          bin/magento deploy:mode:set developer
+
+          # Several Test/Integration tests (CampaignQueueWiringTest, SegmentBulkActionQueueWiring
+          # Test, CampaignVisitorPopupScenarioTest) start `bin/magento queue:consumers:start
+          # --max-messages=N` themselves as a real subprocess (DB queue driver only here, no
+          # RabbitMQ, see AGENTS.md) - that call blocks (sleep(1) loop) until N messages actually
+          # exist, by default, forever if fewer ever arrive. This makes it return as soon as the
+          # queue is empty instead, the same fix mftf.yml's own install already applies.
+          bin/magento setup:config:set --consumers-wait-for-messages=0 -n
+
+      - name: Run Test/Integration
+        working-directory: magento
+        run: vendor/bin/phpunit --bootstrap app/bootstrap.php vendor/michalper/ordo/Test/Integration
