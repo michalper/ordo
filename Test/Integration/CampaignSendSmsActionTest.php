@@ -83,6 +83,15 @@ class CampaignSendSmsActionTest extends TestCase
         $saved->setCustomAttribute(AddCustomerSmsPhoneAttribute::ATTRIBUTE_CODE, '+15551234567');
         $customerRepository->save($saved);
 
+        // CustomerRepository caches the entity it just saved in Magento\Customer\Model\
+        // CustomerRegistry, keyed by id - a later getById() for the same id in this same process
+        // (SendSms::execute()'s own call below) returns that cached instance instead of
+        // re-reading the database, which is fine when it's the same object reflecting the save
+        // above, but removing it here forces a genuinely fresh DB read regardless - confirmed
+        // via a real CI run that this was needed for the custom attribute to actually show up.
+        self::$objectManager->get(\Magento\Customer\Model\CustomerRegistry::class)
+            ->remove($this->customerId);
+
         $recordingSender = self::$objectManager->create(RecordingTwilioSmsSender::class);
 
         /** @var SendSms $action */
