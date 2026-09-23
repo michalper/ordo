@@ -7,6 +7,24 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **MFTF: split action with no usable variants fails closed (`AdminCampaignSplitActionNoUsableVariantsFailsClosedTest`)** —
+  closes SCENARIOS.md §28's last open row (previously only unit-tested). A real order-triggered `split` action
+  with an empty `variants` list logs and is skipped by `CampaignDispatcher::runSplit()`; an `add_tag` action
+  chained right after it in the same flow is the real, database-observable proof the dispatch loop kept going
+  past the failed-closed split instead of aborting. Also trims SCENARIOS.md's stale "Suggested next batch" list —
+  §27 (web push) and the rest of §28 (split determinism/attribution) turned out to already be fully covered by
+  existing tests the list hadn't been updated to reflect.
+
+- **MFTF: Reorder Cycle manual admin actions (`AdminReorderCycleManualActionsTest`)** — closes SCENARIOS.md §8's
+  three remaining gaps: "Recalculate Now" (`Controller\Adminhtml\ReorderCycle\RecalculateNow`, a synchronous
+  re-run), "Send Reminder Now" (a real email outside the cron's own schedule), and "Build Cart" (populates a real
+  quote and redirects into Magento's own Create New Order screen). The latter two are real POSTs against the row's
+  own `entity_id` via the same form-submit-with-FORM_KEY technique `AdminDeleteOrdoEntityByFormPostActionGroup`
+  already uses for every other `ordo_*` entity's Delete controller; the new `ReorderCycleTestHelper` reads that
+  `entity_id` directly (this grid is entirely cron-populated, with no MFTF-reachable UI path to it). Also corrects
+  `Test/Mftf/SCENARIOS.md`'s "Suggested next batch" list further — `not_in_segment` (§1b) and
+  `AudienceSize`/`RecalculateSegmentAudienceSizes` (§2/§11) turned out to already be covered by existing tests too.
+
 - **MFTF: scheduled campaign trigger real-fire (`AdminScheduledCampaignTriggerRealFireTest`)** — closes
   SCENARIOS.md §11's last cron gap. `AdminScheduledCampaignCalendarTest` only ever covered the read-only calendar
   preview; nothing confirmed `Cron\DispatchScheduledCampaignTriggers`/`Model\Campaign\ScheduledTriggerScanner`
@@ -15,13 +33,6 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   observable action (same "Manage Coupon Codes" grid idiom `AdminCampaignScenarioEndToEndTest` already
   established) — the cron is then forced a second time with no config change to prove `scheduled_at` fires at
   most once ever, not twice.
-- **MFTF: split action with no usable variants fails closed (`AdminCampaignSplitActionNoUsableVariantsFailsClosedTest`)** —
-  closes SCENARIOS.md §28's last open row (previously only unit-tested). A real order-triggered `split` action
-  with an empty `variants` list logs and is skipped by `CampaignDispatcher::runSplit()`; an `add_tag` action
-  chained right after it in the same flow is the real, database-observable proof the dispatch loop kept going
-  past the failed-closed split instead of aborting. Also trims SCENARIOS.md's stale "Suggested next batch" list —
-  §27 (web push) and the rest of §28 (split determinism/attribution) turned out to already be fully covered by
-  existing tests the list hadn't been updated to reflect.
 
 - **MFTF: campaign multi-touch attribution idempotency (`AdminCampaignAttributionSplitIsIdempotentTest`)** —
   closes SCENARIOS.md §29's last open row. A real `ordo_message_log_event` 'clicked' row is recorded via

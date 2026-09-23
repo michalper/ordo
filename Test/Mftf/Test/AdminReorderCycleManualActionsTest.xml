@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminReorderCycleManualActionsTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Reorder cycles"/>
+            <title value="The Reorder Cycles grid's three on-demand row actions - Recalculate Now, Send Reminder Now, and Build Cart - each really work against a genuinely-detected cycle"/>
+            <description value="Closes SCENARIOS.md §8's last three reorder-cycle gaps in one test, sharing the same expensive real three-order/backdate/cron setup AdminReorderCycleAndReminderTest/AdminReorderCycleMassDeleteTest already use (Cron\CalculateReorderCycle requires &gt;= 3 real orders with a real interval, OrderBackdateHelper produces it via 30/20/10-day spacing). Controller\Adminhtml\ReorderCycle\RecalculateNow is a plain GET (read-only, synchronous CalculateReorderCycle::execute() re-run) - its own real success message ('Reorder cycles recalculated: N pair(s)') is the proof. SendReminder and BuildCart are both HttpPostActionInterface row actions (Ui\Component\Listing\Column\ReorderCycleActions' own 'post: true' grid links), posted the same real form-submit-with-FORM_KEY way AdminDeleteOrdoEntityByFormPostActionGroup already does for every other ordo_* entity's own Delete controller - addressed by the row's own real entity_id (ReorderCycleTestHelper, since this grid is entirely cron-populated with no MFTF-reachable UI path to its id, unlike a campaign/segment's own post-save URL). SendReminder's own real output is a real MailHog-delivered email; BuildCart's is a real redirect into Magento's own Create New Order screen with the cycle's own SKU already added to the cart."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="lifecycle"/>
+        </annotations>
+        <before>
+            <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <magentoCLI command="config:set ordo_automation/reorder/enabled 1" stepKey="enableReorder"/>
+        </before>
+        <after>
+            <magentoCLI command="config:set ordo_automation/reorder/enabled 0" stepKey="disableReorder"/>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: three REAL orders of the same SKU, through REAL storefront checkout - same
+             MIN_ORDERS_TO_DETECT_PATTERN=3 requirement as the two sibling reorder-cycle tests. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage1"/>
+        <waitForPageLoad stepKey="waitForProductPage1"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart1">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCart1"/>
+        <waitForPageLoad stepKey="waitForCartPage1"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeOrder1"/>
+
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage2"/>
+        <waitForPageLoad stepKey="waitForProductPage2"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart2">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCart2"/>
+        <waitForPageLoad stepKey="waitForCartPage2"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeOrder2"/>
+
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage3"/>
+        <waitForPageLoad stepKey="waitForProductPage3"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart3">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCart3"/>
+        <waitForPageLoad stepKey="waitForCartPage3"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeOrder3"/>
+
+        <!-- Step 2: a real, even 10-day spacing (30/20/10 days ago), then force
+             CalculateReorderCycle to run once via the real cron - a real ordo_reorder_cycle row
+             now genuinely exists for this customer/SKU, which every action below targets. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\OrderBackdateHelper" method="backdateRecentOrders" stepKey="backdateOrders">
+            <argument name="daysAgoCsv">30,20,10</argument>
+            <argument name="customerId">$createCustomer.id$</argument>
+        </helper>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\CronScheduleHelper" method="scheduleJobNow" stepKey="scheduleCalculateReorderCycleJob">
+            <argument name="jobCode">ordo_automation_calculate_reorder_cycle</argument>
+        </helper>
+        <magentoCLI command="cron:run --group=default" stepKey="runCalculateReorderCycleCron"/>
+
+        <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\ReorderCycleTestHelper" method="getEntityIdByCustomerId" stepKey="grabReorderCycleId">
+            <argument name="customerId">$createCustomer.id$</argument>
+        </helper>
+
+        <!-- Step 3: "Recalculate Now" - a plain GET, synchronous re-run of the same
+             CalculateReorderCycle logic the cron above already ran once - its own real success
+             message (with a real pair count) is the proof, not just "no error was thrown". -->
+        <amOnPage url="admin/ordo/reordercycle/recalculatenow" stepKey="clickRecalculateNow"/>
+        <waitForPageLoad stepKey="waitForRecalculateRedirect"/>
+        <see selector=".message-success" userInput="Reorder cycles recalculated:" stepKey="seeRecalculateSuccessMessage"/>
+
+        <!-- Step 4: "Send Reminder Now" - a real POST (same form-submit-with-FORM_KEY technique
+             AdminDeleteOrdoEntityByFormPostActionGroup already uses for every other ordo_*
+             entity's own Delete controller), addressed by this row's own real entity_id. -->
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="clickSendReminderNow">
+            <argument name="url" value="admin/ordo/reordercycle/sendreminder/entity_id/{$grabReorderCycleId}"/>
+            <argument name="successMessage" value="Reorder reminder sent to"/>
+        </actionGroup>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seeReorderCopyInEmail">
+            <argument name="expectedText">You usually order</argument>
+            <argument name="toAddress">$createCustomer.email$</argument>
+        </helper>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seeSkuInEmail">
+            <argument name="expectedText">$createProduct.sku$</argument>
+            <argument name="toAddress">$createCustomer.email$</argument>
+        </helper>
+
+        <!-- Step 5: "Build Cart" - same real-POST technique, redirects straight into Magento's
+             own Create New Order screen with this row's own SKU already added - a real quote
+             item, not merely a plausible-looking redirect. -->
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="clickBuildCart">
+            <argument name="url" value="admin/ordo/reordercycle/buildcart/entity_id/{$grabReorderCycleId}"/>
+            <argument name="successMessage" value="review and place the order below"/>
+        </actionGroup>
+        <seeInCurrentUrl url="sales/order_create" stepKey="seeOnCreateOrderScreen"/>
+        <waitForElementVisible selector="#order-items_grid" stepKey="waitForOrderItemsGrid"/>
+        <see selector="#order-items_grid" userInput="$createProduct.name$" stepKey="seeProductInCart"/>
+    </test>
+</tests>
