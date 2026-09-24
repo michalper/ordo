@@ -110,7 +110,11 @@ class RetryFailedPushSends
             $this->pushSendRetryResource->save($retry);
 
             $this->cronRunLogger->logFailure(
-                sprintf('retry push send to subscription #%d (attempt %d)', $retry->getSubscriptionId(), $attemptNumber),
+                sprintf(
+                    'retry push send to subscription #%d (attempt %d)',
+                    $retry->getSubscriptionId(),
+                    $attemptNumber
+                ),
                 $e
             );
 

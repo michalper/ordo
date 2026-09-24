@@ -67,7 +67,11 @@ class RefreshNow extends Action implements HttpGetActionInterface
 
         if ($refreshed > 0) {
             $this->messageManager->addSuccessMessage(
-                __('Product feeds refreshed for %1 store/format combination(s): %2 product(s) total.', $refreshed, $totalProducts)
+                __(
+                    'Product feeds refreshed for %1 store/format combination(s): %2 product(s) total.',
+                    $refreshed,
+                    $totalProducts
+                )
             );
         }
 

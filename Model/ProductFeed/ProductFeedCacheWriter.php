@@ -69,8 +69,13 @@ class ProductFeedCacheWriter
      * Swallows its own failure - a DB hiccup persisting this history row must never crash the
      * caller mid-refresh, same reasoning as CronRunLogger::persist().
      */
-    private function appendRunLog(string $feedCode, int $storeId, string $status, int $productCount, ?string $message): void
-    {
+    private function appendRunLog(
+        string $feedCode,
+        int $storeId,
+        string $status,
+        int $productCount,
+        ?string $message
+    ): void {
         try {
             $entry = $this->runLogFactory->create();
             $entry->setFeedCode($feedCode);

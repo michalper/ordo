@@ -35,7 +35,10 @@ class CampaignAttributedRevenue extends Column
             return $dataSource;
         }
 
-        $campaignIds = array_map(static fn (array $item): int => (int) $item['entity_id'], $dataSource['data']['items']);
+        $campaignIds = array_map(
+            static fn (array $item): int => (int) $item['entity_id'],
+            $dataSource['data']['items']
+        );
         $totals = $this->attributionCalculator->getAttributedRevenueForCampaigns($campaignIds);
         $fieldName = (string) $this->getData('name');
 

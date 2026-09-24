@@ -29,11 +29,19 @@ $weekdayLabels = [__('Sun'), __('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri
     </p>
 
     <div class="ordo-schedule-calendar-nav">
-        <a class="ordo-btn" href="<?= $escaper->escapeUrl($block->getUrl('ordo/campaign/schedulecalendar', ['month' => $viewModel->getPrevMonthParam()])) ?>">
+        <?php $prevMonthUrl = $block->getUrl(
+            'ordo/campaign/schedulecalendar',
+            ['month' => $viewModel->getPrevMonthParam()]
+        ) ?>
+        <a class="ordo-btn" href="<?= $escaper->escapeUrl($prevMonthUrl) ?>">
             <?= $escaper->escapeHtml(__('← Previous month')) ?>
         </a>
         <h3><?= $escaper->escapeHtml($viewModel->getVisibleMonthLabel()) ?></h3>
-        <a class="ordo-btn" href="<?= $escaper->escapeUrl($block->getUrl('ordo/campaign/schedulecalendar', ['month' => $viewModel->getNextMonthParam()])) ?>">
+        <?php $nextMonthUrl = $block->getUrl(
+            'ordo/campaign/schedulecalendar',
+            ['month' => $viewModel->getNextMonthParam()]
+        ) ?>
+        <a class="ordo-btn" href="<?= $escaper->escapeUrl($nextMonthUrl) ?>">
             <?= $escaper->escapeHtml(__('Next month →')) ?>
         </a>
     </div>
@@ -46,18 +54,27 @@ $weekdayLabels = [__('Sun'), __('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri
         <?php foreach ($days as $day): ?>
             <?php
             $dayClasses = ['ordo-schedule-calendar-day'];
-            $dayClasses[] = $day['inCurrentMonth'] ? 'ordo-schedule-calendar-day-in-month' : 'ordo-schedule-calendar-day-out-month';
+            $dayClasses[] = $day['inCurrentMonth']
+                ? 'ordo-schedule-calendar-day-in-month'
+                : 'ordo-schedule-calendar-day-out-month';
             if ($day['isToday']) {
                 $dayClasses[] = 'ordo-schedule-calendar-day-today';
             }
             ?>
             <div class="<?= $escaper->escapeHtmlAttr(implode(' ', $dayClasses)) ?>">
-                <span class="ordo-schedule-calendar-day-number"><?= $escaper->escapeHtml($day['date']->format('j')) ?></span>
+                <span class="ordo-schedule-calendar-day-number">
+                    <?= $escaper->escapeHtml($day['date']->format('j')) ?>
+                </span>
                 <?php if (!empty($day['entries'])): ?>
                     <ul class="ordo-schedule-calendar-entries">
                         <?php foreach ($day['entries'] as $entry): ?>
-                            <li class="ordo-schedule-calendar-entry ordo-schedule-calendar-entry-<?= $escaper->escapeHtmlAttr($entry['status']) ?>">
-                                <a href="<?= $escaper->escapeUrl($block->getUrl('ordo/campaign/edit', ['entity_id' => $entry['campaign_id']])) ?>"
+                            <?php $entryEditUrl = $block->getUrl(
+                                'ordo/campaign/edit',
+                                ['entity_id' => $entry['campaign_id']]
+                            ) ?>
+                            <li class="ordo-schedule-calendar-entry ordo-schedule-calendar-entry-<?=
+                                $escaper->escapeHtmlAttr($entry['status']) ?>">
+                                <a href="<?= $escaper->escapeUrl($entryEditUrl) ?>"
                                    title="<?= $escaper->escapeHtmlAttr($entry['campaign_name']) ?>">
                                     <?= $escaper->escapeHtml($entry['campaign_name']) ?>
                                 </a>

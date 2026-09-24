@@ -6,7 +6,7 @@ namespace Ordo\Automation\Model\PriceWatch;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
 use Ordo\Automation\Model\ResourceModel\PriceWatch\PriceWatchSubscription as PriceWatchSubscriptionResource;
-use Ordo\Automation\Model\ResourceModel\PriceWatch\PriceWatchSubscription\CollectionFactory as PriceWatchSubscriptionCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\PriceWatch\PriceWatchSubscription\CollectionFactory;
 
 /**
  * CRUD for ordo_price_watch_subscription — idempotent by (customer_id or visitor_id) +
@@ -20,7 +20,7 @@ class PriceWatchSubscriptionManager
 {
     public function __construct(
         private readonly PriceWatchSubscriptionResource $priceWatchSubscriptionResource,
-        private readonly PriceWatchSubscriptionCollectionFactory $collectionFactory,
+        private readonly CollectionFactory $collectionFactory,
         private readonly ProductRepositoryInterface $productRepository
     ) {
     }

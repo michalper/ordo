@@ -168,10 +168,13 @@ abstract class AbstractPriceWatchScanCron
             $this->claim($entityId, $newValue);
 
             try {
-                $this->campaignDispatcher->dispatch($this->triggerCode(), array_merge(
-                    ['customer_id' => $customerId, 'product_id' => $productId],
-                    $this->triggerPayload($oldValue, $newValue)
-                ));
+                $this->campaignDispatcher->dispatch(
+                    $this->triggerCode(),
+                    array_merge(
+                        ['customer_id' => $customerId, 'product_id' => $productId],
+                        $this->triggerPayload($oldValue, $newValue)
+                    )
+                );
             } catch (\Throwable $e) {
                 $this->unclaim($entityId);
                 throw $e;

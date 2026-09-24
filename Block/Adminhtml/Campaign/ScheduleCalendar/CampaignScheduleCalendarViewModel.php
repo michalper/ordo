@@ -108,8 +108,9 @@ class CampaignScheduleCalendarViewModel implements ArgumentInterface
     }
 
     /**
-     * @return array<string, array<int, array{campaign_id: int, campaign_name: string, trigger_event: string, status: string}>>
-     *  keyed "Y-m-d"
+     * @return array<string, array<int, array{
+     *     campaign_id: int, campaign_name: string, trigger_event: string, status: string
+     * }>> keyed "Y-m-d"
      */
     private function loadEntriesByDate(\DateTimeImmutable $rangeStart, \DateTimeImmutable $rangeEnd): array
     {
