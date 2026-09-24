@@ -1231,12 +1231,6 @@ parameters:
 			path: Model/Campaign/Action/AddDynamicContent.php
 
 		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 3
-			path: Model/Campaign/Action/GenerateAiContent.php
-
-		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 2
@@ -1271,6 +1265,12 @@ parameters:
 			identifier: cast.string
 			count: 2
 			path: Model/Campaign/Action/ContextTargetResolver.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
+			path: Model/Campaign/Action/GenerateAiContent.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -1591,6 +1591,18 @@ parameters:
 			path: Model/Campaign/ScheduledTriggerScanner.php
 
 		-
+			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''strval'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Campaign/SendTimeOptimizer.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: Model/Campaign/SplitVariantSelector.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
@@ -1897,7 +1909,7 @@ parameters:
 			path: Model/ContentBlock/DataProvider.php
 
 		-
-			message: '#^Method Ordo\\Automation\\Model\\ContentBlock\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\<int, array\<mixed\>\>\.$#'
+			message: '#^Method Ordo\\Automation\\Model\\ContentBlock\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\<int, array\<mixed, mixed\>\>\.$#'
 			identifier: return.type
 			count: 1
 			path: Model/ContentBlock/DataProvider.php
@@ -2699,12 +2711,6 @@ parameters:
 			identifier: argument.type
 			count: 3
 			path: Model/Recommendation/ProductRecommender.php
-
-		-
-			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''strval'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model/Campaign/SendTimeOptimizer.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'

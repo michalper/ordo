@@ -44,6 +44,11 @@ class SplitVariantSelector
 
         $variant = $this->pickByWeight($campaignId, $splitActionId, $variants, $this->resolveIdentity($context));
 
+        // A malformed $context (e.g. hand-crafted via a direct API call rather than produced by
+        // this module's own dispatcher) can have a non-array value here - reset it rather than
+        // crashing on the array-offset write below. PHPStan can't see that possibility (it only
+        // ever sees this module's own two writers of this key, both arrays), hence the baseline
+        // entry for this line rather than a real dead branch.
         if (!is_array($assignments)) {
             $assignments = [];
         }

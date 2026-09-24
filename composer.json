@@ -25,12 +25,12 @@
     "require-dev": {
         "ext-curl": "*",
         "ext-pdo": "*",
-        "bitexpert/phpstan-magento": "^0.43",
+        "bitexpert/phpstan-magento": "^0.44",
         "friendsofphp/php-cs-fixer": "^3.95",
         "infection/infection": "^0.35",
         "magento/magento-coding-standard": "^41",
         "magento/magento2-functional-testing-framework": "^5.0 || ^6.0",
-        "phpstan/phpstan": "^2.0, <2.2.10",
+        "phpstan/phpstan": "^2.2.15",
         "phpunit/phpunit": "^13.0",
         "rector/rector": "^2.6"
     },
