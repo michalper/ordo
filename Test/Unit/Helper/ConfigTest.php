@@ -49,6 +49,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isFreeGiftEnabled());
         self::assertTrue($this->config->isCreditLimitCheckoutBlockEnabled());
         self::assertTrue($this->config->isLeadScoringEnabled());
+        self::assertTrue($this->config->isLeadRoutingEnabled());
         self::assertTrue($this->config->isSmsEnabled());
         self::assertTrue($this->config->isWhatsAppEnabled());
         self::assertTrue($this->config->isPushEnabled());
