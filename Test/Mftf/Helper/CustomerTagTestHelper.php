@@ -54,6 +54,41 @@ class CustomerTagTestHelper extends Helper
         }
     }
 
+    /**
+     * Reads a tag back via the same REST API addTagViaApi() writes through
+     * (Api\CustomerTagManagementInterface::hasTag(), GET /V1/ordo/customers/:customerId/tags/:tag)
+     * - used to confirm a cron-written tag (not one this helper itself wrote) actually landed,
+     * without depending on a real email round-trip through a downstream digest cron.
+     */
+    public function hasTagViaApi(
+        string $restBaseUrl,
+        int $customerId,
+        string $tag,
+        string $adminUsername,
+        string $adminPassword
+    ): string {
+        $restBaseUrl = rtrim($restBaseUrl, '/');
+        $token = $this->fetchAdminToken($restBaseUrl, $adminUsername, $adminPassword);
+
+        $url = "{$restBaseUrl}/V1/ordo/customers/{$customerId}/tags/" . rawurlencode($tag);
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $token],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+        ]);
+        $body = curl_exec($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($body === false || $status >= 400) {
+            throw new \RuntimeException("Could not read tag \"{$tag}\" for customer #{$customerId} via {$url} (status {$status}): " . (string) $body);
+        }
+
+        return trim($body);
+    }
+
     private function fetchAdminToken(string $restBaseUrl, string $username, string $password): string
     {
         $ch = curl_init("{$restBaseUrl}/V1/integration/admin/token");

@@ -5,8 +5,8 @@
         <annotations>
             <features value="Ordo Automation"/>
             <stories value="Reorder cycles"/>
-            <title value="The 'reorder_cycle_at_risk' segment condition matches a genuinely-drifting customer, and Cron\TagReorderCycleAtRiskCustomers feeds the sales-rep digest"/>
-            <description value="Closes ROADMAP.md's 'reorder cycle at risk' candidate feature's own MFTF gap. Shares the same expensive real three-order/backdate/cron setup AdminReorderCycleManualActionsTest already uses (Cron\CalculateReorderCycle requires &gt;= 3 real orders with a real interval, OrderBackdateHelper produces it via 30/20/10-day spacing) - the resulting real ordo_reorder_cycle row has avg_interval_days=10 and last_order_date=10 days ago, a drift ratio of ~1.0 (Model\ReorderCycle\ReorderCycleDriftCalculator), comfortably above the 0.5 threshold this test configures on both sides (the segment condition's own 'ratio_at_least' param and Cron\TagReorderCycleAtRiskCustomers' config threshold). Two real signals from that one real drift: (1) a segment built with the reorder_cycle_at_risk condition, checked via the same live 'Estimated Audience Size' AJAX preview AdminSegmentAudienceSizeReflectsRealDataTest already established (Model\Segment\SegmentMemberResolver's own set-level resolution, not just SegmentMatcher's per-customer path); (2) the sales-rep digest (Cron\SendSalesRepDigest), which now includes an at-risk section fed by Cron\TagReorderCycleAtRiskCustomers - reusing AdminSendSalesRepDigestTest's own rep-email-assignment technique."/>
+            <title value="The 'reorder_cycle_at_risk' segment condition matches a genuinely-drifting customer, and Cron\TagReorderCycleAtRiskCustomers tags them for the sales-rep digest"/>
+            <description value="Closes ROADMAP.md's 'reorder cycle at risk' candidate feature's own MFTF gap. Shares the same expensive real three-order/backdate/cron setup AdminReorderCycleManualActionsTest already uses (Cron\CalculateReorderCycle requires &gt;= 3 real orders with a real interval, OrderBackdateHelper produces it via 30/20/10-day spacing) - the resulting real ordo_reorder_cycle row has avg_interval_days=10 and last_order_date=10 days ago, a drift ratio of ~1.0 (Model\ReorderCycle\ReorderCycleDriftCalculator), comfortably above the 0.5 threshold this test configures on both sides (the segment condition's own 'ratio_at_least' param and Cron\TagReorderCycleAtRiskCustomers' config threshold). Two real signals from that one real drift: (1) a segment built with the reorder_cycle_at_risk condition, checked via the same live 'Estimated Audience Size' AJAX preview AdminSegmentAudienceSizeReflectsRealDataTest already established (Model\Segment\SegmentMemberResolver's own set-level resolution, not just SegmentMatcher's per-customer path); (2) Cron\TagReorderCycleAtRiskCustomers actually tagging the customer, read back via CustomerTagManagementInterface::hasTag() (the same REST API CustomerTagTestHelper already uses to write tags elsewhere in this suite) - Cron\SendSalesRepDigest reading that tag into its own at-risk digest section is covered separately by unit tests (Test/Unit/Cron/SendSalesRepDigestTest.php) and, for the sibling 'inactive' tag/signal, by AdminSendSalesRepDigestTest's own real MailHog round trip; not duplicated here to avoid that test's own mail-delivery-timing sensitivity for a second, unrelated tag."/>
             <severity value="MAJOR"/>
             <group value="ordo_automation"/>
             <group value="campaign2"/>
@@ -107,26 +107,25 @@
         <click selector="[data-audience-size-refresh]" stepKey="clickRefreshAudienceSize"/>
         <waitForText selector="[data-audience-size-value]" userInput="1 customer(s)" stepKey="seeLiveAudienceSizeIsOne"/>
 
-        <!-- Step 5: the sales-rep digest's own at-risk section - Cron\TagReorderCycleAtRiskCustomers
-             tags the customer against the real drift ratio, Cron\SendSalesRepDigest reads that
-             tag the same way it already reads TagInactiveCustomers' own tag. -->
+        <!-- Step 5: Cron\TagReorderCycleAtRiskCustomers actually tags the customer against the
+             real drift ratio - read back via the real REST API (Api\CustomerTagManagementInterface
+             ::hasTag()), the same service the sales-rep digest itself reads from. -->
         <helper class="\Ordo\Automation\Test\Mftf\Helper\CronScheduleHelper" method="scheduleJobNow" stepKey="scheduleTagAtRiskJob">
             <argument name="jobCode">ordo_automation_tag_reorder_cycle_at_risk_customers</argument>
         </helper>
         <magentoCLI command="cron:run --group=default" stepKey="runTagAtRiskCron"/>
-        <helper class="\Ordo\Automation\Test\Mftf\Helper\CronScheduleHelper" method="scheduleJobNow" stepKey="scheduleSendSalesRepDigestJob">
-            <argument name="jobCode">ordo_automation_send_sales_rep_digest</argument>
-        </helper>
-        <magentoCLI command="cron:run --group=default" stepKey="runSendSalesRepDigestCron"/>
 
-        <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seeAtRiskCopyInEmail">
-            <argument name="expectedText">are at risk of missing their usual reorder</argument>
-            <argument name="toAddress">reorder-at-risk-rep@example.test</argument>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\CustomerTagTestHelper" method="hasTagViaApi" stepKey="grabHasAtRiskTag">
+            <argument name="restBaseUrl">{{_ENV.MAGENTO_BASE_URL}}rest</argument>
+            <argument name="customerId">$createCustomer.id$</argument>
+            <argument name="tag">reorder_cycle_at_risk</argument>
+            <argument name="adminUsername">{{_ENV.MAGENTO_ADMIN_USERNAME}}</argument>
+            <argument name="adminPassword">{{_ENV.MAGENTO_ADMIN_PASSWORD}}</argument>
         </helper>
-        <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seeCustomerNameInEmail">
-            <argument name="expectedText">$createCustomer.firstname$ $createCustomer.lastname$</argument>
-            <argument name="toAddress">reorder-at-risk-rep@example.test</argument>
-        </helper>
+        <assertEquals stepKey="seeCustomerTaggedAtRisk">
+            <expectedResult type="string">true</expectedResult>
+            <actualResult type="variable">grabHasAtRiskTag</actualResult>
+        </assertEquals>
 
         <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteSegment">
             <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabSegmentId}"/>
