@@ -164,7 +164,11 @@ class CalculateReorderCycle
             ? $this->reorderCycleFactory->create()->load((int) $existingId)
             : $this->reorderCycleFactory->create();
 
-        $model->setData([
+        // addData(), not setData() - setData() replaces the model's entire data array,
+        // including the entity_id load() above just populated, which makes AbstractDb::save()
+        // treat an existing row as new and attempt a duplicate INSERT (unique key on
+        // customer_id+sku) instead of an UPDATE.
+        $model->addData([
             'customer_id' => $customerId,
             'sku' => $sku,
             'avg_interval_days' => $avgIntervalDays,

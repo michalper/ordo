@@ -75,7 +75,7 @@ $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, 
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $model = $this->createMock(ReorderCycle::class);
-        $model->expects(self::once())->method('setData')->with(self::callback(
+        $model->expects(self::once())->method('addData')->with(self::callback(
             fn (array $data) => $data['customer_id'] === 1 && $data['sku'] === 'SKU-1'
         ));
 
@@ -118,9 +118,9 @@ $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, 
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $model = $this->createMock(ReorderCycle::class);
-        $setData = [];
-        $model->method('setData')->willReturnCallback(function (array $data) use (&$setData, $model) {
-            $setData = $data;
+        $addData = [];
+        $model->method('addData')->willReturnCallback(function (array $data) use (&$addData, $model) {
+            $addData = $data;
             return $model;
         });
 
@@ -138,7 +138,7 @@ $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, 
 
         self::assertSame(1, $result);
         // Three 10-day intervals - the middle one directly (10), not an average of two.
-        self::assertSame(10, $setData['avg_interval_days']);
+        self::assertSame(10, $addData['avg_interval_days']);
     }
 
     public function testExecuteSkipsSameDayRepeatPurchases(): void
@@ -186,7 +186,7 @@ $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, 
 
         $model = $this->createMock(ReorderCycle::class);
         $model->method('load')->willReturnSelf();
-        $model->expects(self::once())->method('setData');
+        $model->expects(self::once())->method('addData');
 
         $reorderCycleFactory = $this->createMock(ReorderCycleFactory::class);
         $reorderCycleFactory->method('create')->willReturn($model);
@@ -226,7 +226,7 @@ $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, 
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $model = $this->createMock(ReorderCycle::class);
-        $model->expects(self::once())->method('setData')->with(self::callback(
+        $model->expects(self::once())->method('addData')->with(self::callback(
             fn (array $data) => $data['avg_interval_days'] === 30
         ));
 

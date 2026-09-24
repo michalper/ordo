@@ -6,7 +6,7 @@
             <features value="Ordo Automation"/>
             <stories value="Product feed"/>
             <title value="Admin can refresh the Meta/Facebook Catalog CSV feed, and the public feed URL serves a real product"/>
-            <description value="Closes SCENARIOS.md #18's last open row - the Meta Catalog feed (Model\ProductFeed\MetaCatalogFeedGenerator, Controller\ProductFeed\MetaCatalog) is a second, complete feed format alongside the already-covered Google Merchant one (AdminShoppingFeedRefreshAndServeTest), sharing the same AbstractFeedAction/RefreshNow/FeedGeneratorPool plumbing - this mirrors that test almost exactly, format differences aside. MetaCatalogFeedGenerator::renderRow() silently SKIPS a product missing any required field, including a non-empty default_brand config value (Meta has no manufacturer-attribute mapping in this module, only a store-wide default) - config is set before the refresh, not just the enabled flag, or the real product would be silently absent from the feed rather than causing a visible failure. Asserts the real product's SKU/name/price appear as real CSV field values in the served text/csv response, alongside the feed's own header row, not just that the refresh didn't error."/>
+            <description value="Closes SCENARIOS.md #18's last open row - the Meta Catalog feed (Model\ProductFeed\MetaCatalogFeedGenerator, Controller\ProductFeed\MetaCatalog) is a second, complete feed format alongside the already-covered Google Merchant one (AdminShoppingFeedRefreshAndServeTest), sharing the same AbstractFeedAction/RefreshNow/FeedGeneratorPool plumbing - this mirrors that test almost exactly, format differences aside. MetaCatalogFeedGenerator::renderRow() silently SKIPS a product missing any required field, including a non-empty default_brand config value (Meta has no manufacturer-attribute mapping in this module, only a store-wide default) - config is set before the refresh, not just the enabled flag, or the real product would be silently absent from the feed rather than causing a visible failure. Unlike the Google feed's application/xml (which Chrome renders inline as a DOM tree), this feed's real Content-Type is text/csv, which headless Chrome hands off to the OS/browser's own download handling instead of navigating to - so PublicFeedDownloadTestHelper fetches the exact same public URL directly via an unauthenticated HTTP GET (same reasoning as AdminExportDownloadTestHelper's admin-download case, no cookie needed since this endpoint is deliberately public), then asserts the real product's SKU/name/price appear as real CSV field values, alongside the feed's own header row, not just that the refresh didn't error."/>
             <severity value="MAJOR"/>
             <group value="ordo_automation"/>
             <group value="campaign2"/>
@@ -33,15 +33,28 @@
 
         <!-- Step 2: the real, public Meta Catalog feed URL - a real catalog product's own SKU,
              name, and price must appear as real CSV field values, alongside the feed's own
-             header row, not just that the endpoint returns something. seeInPageSource
-             (Codeception's seeInSource), not see() - same reasoning as the Google feed test:
-             the raw response can render as an interactive DOM tree in some browsers rather than
-             literal visible text. -->
-        <amOnPage url="ordo/productfeed/metacatalog" stepKey="goToPublicMetaCatalogFeedUrl"/>
-        <waitForPageLoad stepKey="waitForMetaCatalogFeedPage"/>
-        <seeInPageSource html="id,title,description,availability,condition,price,link,image_link,brand" stepKey="seeCsvHeaderRow"/>
-        <seeInPageSource html="$createProduct.sku$" stepKey="seeProductSkuInFeed"/>
-        <seeInPageSource html="$createProduct.name$" stepKey="seeProductNameInFeed"/>
-        <seeInPageSource html="Ordo Test Brand" stepKey="seeDefaultBrandInFeed"/>
+             header row, not just that the endpoint returns something. text/csv has no browser-
+             native inline viewer (unlike the Google feed's application/xml), so headless Chrome
+             hands the response to its own download handling instead of navigating to it -
+             PublicFeedDownloadTestHelper fetches the real response body directly instead. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\PublicFeedDownloadTestHelper" method="fetchFeedBody" stepKey="fetchMetaCatalogFeedBody">
+            <argument name="url">{{_ENV.MAGENTO_BASE_URL}}ordo/productfeed/metacatalog</argument>
+        </helper>
+        <assertStringContainsString stepKey="seeCsvHeaderRow">
+            <expectedResult type="string">id,title,description,availability,condition,price,link,image_link,brand</expectedResult>
+            <actualResult type="variable">fetchMetaCatalogFeedBody</actualResult>
+        </assertStringContainsString>
+        <assertStringContainsString stepKey="seeProductSkuInFeed">
+            <expectedResult type="string">$createProduct.sku$</expectedResult>
+            <actualResult type="variable">fetchMetaCatalogFeedBody</actualResult>
+        </assertStringContainsString>
+        <assertStringContainsString stepKey="seeProductNameInFeed">
+            <expectedResult type="string">$createProduct.name$</expectedResult>
+            <actualResult type="variable">fetchMetaCatalogFeedBody</actualResult>
+        </assertStringContainsString>
+        <assertStringContainsString stepKey="seeDefaultBrandInFeed">
+            <expectedResult type="string">Ordo Test Brand</expectedResult>
+            <actualResult type="variable">fetchMetaCatalogFeedBody</actualResult>
+        </assertStringContainsString>
     </test>
 </tests>
