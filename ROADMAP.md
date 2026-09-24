@@ -67,9 +67,16 @@ as bugs above, not repeated here)*
 Not gaps in something existing — genuinely new capabilities, proposed after checking they don't already
 exist in some form. Not prioritized against each other; listed for later scoping.
 
-- **B2B: "reorder cycle at risk" segment** — flag customers whose order cadence has drifted meaningfully from
-  their own historical cycle (earlier signal than a full reorder-reminder miss), surfaced through the existing
-  sales-rep digest. Medium scope, B2B.
+- **Campaign template library** — a curated gallery of ready-to-use campaign starting points (e.g. welcome
+  series, cart abandonment, win-back, VIP upsell), each a pre-filled trigger/condition/action graph an admin
+  can pick and adapt instead of building from scratch. `Model\Campaign\CampaignImporter` already accepts the
+  JSON shape a template would need; this is the curated library + picker UI on top of it, not new import
+  plumbing. Medium scope, B2C/B2B.
+- **Real-time lead routing rules** — automatic, rule-based assignment of a new/qualifying lead to a sales rep
+  (e.g. round-robin, by region, by score threshold) at the moment they qualify, distinct from the existing
+  `ordo_sales_rep_email` attribute + weekly `Cron\SendSalesRepDigest` (which only reports on an
+  already-assigned rep's own book, it doesn't do the assigning). Medium scope, B2B.
+
 ## Priorytet kolejnych kroków
 
 Kolejność uwzględnia wagę (błędy finansowe > dług niezawodności > UX > tematy zależne od
