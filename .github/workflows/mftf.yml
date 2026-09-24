@@ -45,7 +45,7 @@ on:
 
 jobs:
   mftf:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     # One full Magento install + Selenium session per group, run concurrently — each test's
     # <group> annotation (Test/Mftf/Test/*.xml) says which of these it belongs to. Split out
