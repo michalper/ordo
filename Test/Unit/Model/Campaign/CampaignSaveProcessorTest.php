@@ -541,6 +541,41 @@ class CampaignSaveProcessorTest extends TestCase
         ]);
     }
 
+    /**
+     * Regression test, same reasoning as the two tests above: reorder_cycle_at_risk's own
+     * dedicated field (ratio_at_least) must be in DEDICATED_PARAM_FIELDS or it's posted but
+     * silently dropped - found via a real MFTF run (AdminReorderCycleAtRiskTest) whose segment
+     * saved with empty params despite the form field having the right value.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessPersistsReorderCycleAtRiskRatioAtLeastDedicatedField(): void
+    {
+        $processor = $this->makeProcessor();
+
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(1);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
+        $this->actionCollectionFactory->method('create')->willReturn($this->emptyActionCollection());
+
+        $condition = $this->createMock(CampaignCondition::class);
+        $condition->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => json_decode($data['params'], true) === ['ratio_at_least' => '0.5']
+        ));
+
+        $this->campaignConditionFactory->method('create')->willReturn($condition);
+        $this->conditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+        $this->campaignConditionResource->expects(self::once())->method('save');
+
+        $processor->process([
+            'conditions' => ['conditions' => [
+                ['type' => 'reorder_cycle_at_risk', 'ratio_at_least' => '0.5', 'params_json' => ''],
+            ]],
+            'actions' => ['actions' => []],
+        ]);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testProcessDefaultsDelayMinutesToZeroWhenAbsent(): void
     {

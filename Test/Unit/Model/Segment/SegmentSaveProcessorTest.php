@@ -242,6 +242,31 @@ class SegmentSaveProcessorTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testProcessPersistsReorderCycleAtRiskRatioAtLeastDedicatedField(): void
+    {
+        $processor = $this->makeProcessor();
+
+        $segment = $this->createMock(Segment::class);
+        $segment->method('getEntityId')->willReturn(1);
+        $this->segmentFactory->method('create')->willReturn($segment);
+
+        $this->segmentConditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+
+        $condition = $this->createMock(SegmentCondition::class);
+        $condition->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => $data['type'] === 'reorder_cycle_at_risk'
+                && json_decode($data['params'], true) === ['ratio_at_least' => '0.5']
+        ));
+        $this->segmentConditionFactory->method('create')->willReturn($condition);
+
+        $processor->process([
+            'conditions' => ['conditions' => [
+                ['type' => 'reorder_cycle_at_risk', 'ratio_at_least' => '0.5', 'params_json' => ''],
+            ]],
+        ]);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testProcessSetsAnyConditionLogicWhenPosted(): void
     {
         $processor = $this->makeProcessor();
