@@ -5,11 +5,15 @@ namespace Ordo\Automation\Controller\Adminhtml\LeadRoutingRule;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\Phrase;
+use Ordo\Automation\Controller\Adminhtml\Shared\DeletesEntityTrait;
 use Ordo\Automation\Model\LeadRoutingRuleFactory;
 use Ordo\Automation\Model\ResourceModel\LeadRoutingRule as LeadRoutingRuleResource;
 
 class Delete extends AbstractLeadRoutingRuleAction implements HttpPostActionInterface
 {
+    use DeletesEntityTrait;
+
     public function __construct(
         Context $context,
         private readonly LeadRoutingRuleFactory $leadRoutingRuleFactory,
@@ -18,26 +22,25 @@ class Delete extends AbstractLeadRoutingRuleAction implements HttpPostActionInte
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function deleteEntity(int $entityId): void
     {
-        $resultRedirect = $this->resultRedirectFactory->create();
-        $entityId = (int) $this->getRequest()->getParam('entity_id');
+        $leadRoutingRule = $this->leadRoutingRuleFactory->create();
+        $this->leadRoutingRuleResource->load($leadRoutingRule, $entityId);
+        $this->leadRoutingRuleResource->delete($leadRoutingRule);
+    }
 
-        if (!$entityId) {
-            $this->messageManager->addErrorMessage(__('Missing lead routing rule id.'));
-            return $resultRedirect->setPath('*/*/');
-        }
+    protected function getMissingIdMessage(): Phrase
+    {
+        return __('Missing lead routing rule id.');
+    }
 
-        try {
-            $leadRoutingRule = $this->leadRoutingRuleFactory->create();
-            $this->leadRoutingRuleResource->load($leadRoutingRule, $entityId);
-            $this->leadRoutingRuleResource->delete($leadRoutingRule);
+    protected function getDeletedMessage(): Phrase
+    {
+        return __('The lead routing rule has been deleted.');
+    }
 
-            $this->messageManager->addSuccessMessage(__('The lead routing rule has been deleted.'));
-        } catch (\Throwable $e) {
-            $this->messageManager->addErrorMessage(__('Could not delete the lead routing rule: %1', $e->getMessage()));
-        }
-
-        return $resultRedirect->setPath('*/*/');
+    protected function getDeleteErrorMessage(\Throwable $e): Phrase
+    {
+        return __('Could not delete the lead routing rule: %1', $e->getMessage());
     }
 }

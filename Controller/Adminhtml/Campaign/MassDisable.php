@@ -5,8 +5,11 @@ namespace Ordo\Automation\Controller\Adminhtml\Campaign;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Ui\Component\MassAction\Filter;
 use Ordo\Automation\Api\CampaignRepositoryInterface;
+use Ordo\Automation\Controller\Adminhtml\Shared\RunsMassActionTrait;
+use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
 
 /**
@@ -14,6 +17,8 @@ use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCo
  */
 class MassDisable extends AbstractCampaignAction implements HttpPostActionInterface
 {
+    use RunsMassActionTrait;
+
     public function __construct(
         Context $context,
         private readonly Filter $filter,
@@ -23,21 +28,20 @@ class MassDisable extends AbstractCampaignAction implements HttpPostActionInterf
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function getMassActionCollection(): iterable
     {
-        $resultRedirect = $this->resultRedirectFactory->create();
-        $collection = $this->filter->getCollection($this->campaignCollectionFactory->create());
+        return $this->filter->getCollection($this->campaignCollectionFactory->create());
+    }
 
-        $count = 0;
-        foreach ($collection as $campaign) {
-            /** @var \Ordo\Automation\Model\Campaign $campaign */
-            $campaign->setEnabled(false);
-            $this->campaignRepository->save($campaign);
-            $count++;
-        }
+    protected function applyToEntity(object $entity): void
+    {
+        /** @var Campaign $entity */
+        $entity->setEnabled(false);
+        $this->campaignRepository->save($entity);
+    }
 
-        $this->messageManager->addSuccessMessage(__('A total of %1 campaign(s) have been disabled.', $count));
-
-        return $resultRedirect->setPath('*/*/');
+    protected function getMassActionSuccessMessage(int $count): Phrase
+    {
+        return __('A total of %1 campaign(s) have been disabled.', $count);
     }
 }

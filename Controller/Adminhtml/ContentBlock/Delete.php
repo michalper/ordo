@@ -5,6 +5,8 @@ namespace Ordo\Automation\Controller\Adminhtml\ContentBlock;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\Phrase;
+use Ordo\Automation\Controller\Adminhtml\Shared\DeletesEntityTrait;
 use Ordo\Automation\Model\ContentBlockFactory;
 use Ordo\Automation\Model\ResourceModel\ContentBlock as ContentBlockResource;
 
@@ -15,6 +17,8 @@ use Ordo\Automation\Model\ResourceModel\ContentBlock as ContentBlockResource;
  */
 class Delete extends AbstractContentBlockAction implements HttpPostActionInterface
 {
+    use DeletesEntityTrait;
+
     public function __construct(
         Context $context,
         private readonly ContentBlockFactory $contentBlockFactory,
@@ -23,26 +27,25 @@ class Delete extends AbstractContentBlockAction implements HttpPostActionInterfa
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function deleteEntity(int $entityId): void
     {
-        $resultRedirect = $this->resultRedirectFactory->create();
-        $entityId = (int) $this->getRequest()->getParam('entity_id');
+        $contentBlock = $this->contentBlockFactory->create();
+        $this->contentBlockResource->load($contentBlock, $entityId);
+        $this->contentBlockResource->delete($contentBlock);
+    }
 
-        if (!$entityId) {
-            $this->messageManager->addErrorMessage(__('Missing content block id.'));
-            return $resultRedirect->setPath('*/*/');
-        }
+    protected function getMissingIdMessage(): Phrase
+    {
+        return __('Missing content block id.');
+    }
 
-        try {
-            $contentBlock = $this->contentBlockFactory->create();
-            $this->contentBlockResource->load($contentBlock, $entityId);
-            $this->contentBlockResource->delete($contentBlock);
+    protected function getDeletedMessage(): Phrase
+    {
+        return __('The content block has been deleted.');
+    }
 
-            $this->messageManager->addSuccessMessage(__('The content block has been deleted.'));
-        } catch (\Throwable $e) {
-            $this->messageManager->addErrorMessage(__('Could not delete the content block: %1', $e->getMessage()));
-        }
-
-        return $resultRedirect->setPath('*/*/');
+    protected function getDeleteErrorMessage(\Throwable $e): Phrase
+    {
+        return __('Could not delete the content block: %1', $e->getMessage());
     }
 }

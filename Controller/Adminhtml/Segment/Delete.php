@@ -5,6 +5,8 @@ namespace Ordo\Automation\Controller\Adminhtml\Segment;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\Phrase;
+use Ordo\Automation\Controller\Adminhtml\Shared\DeletesEntityTrait;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\SegmentFactory;
 
@@ -15,6 +17,8 @@ use Ordo\Automation\Model\SegmentFactory;
  */
 class Delete extends AbstractSegmentAction implements HttpPostActionInterface
 {
+    use DeletesEntityTrait;
+
     public function __construct(
         Context $context,
         private readonly SegmentFactory $segmentFactory,
@@ -23,27 +27,26 @@ class Delete extends AbstractSegmentAction implements HttpPostActionInterface
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function deleteEntity(int $entityId): void
     {
-        $resultRedirect = $this->resultRedirectFactory->create();
-        $entityId = (int) $this->getRequest()->getParam('entity_id');
+        $segment = $this->segmentFactory->create();
+        $this->segmentResource->load($segment, $entityId);
+        // Condition rows cascade-delete via the FK ON DELETE CASCADE in db_schema.xml.
+        $this->segmentResource->delete($segment);
+    }
 
-        if (!$entityId) {
-            $this->messageManager->addErrorMessage(__('Missing segment id.'));
-            return $resultRedirect->setPath('*/*/');
-        }
+    protected function getMissingIdMessage(): Phrase
+    {
+        return __('Missing segment id.');
+    }
 
-        try {
-            $segment = $this->segmentFactory->create();
-            $this->segmentResource->load($segment, $entityId);
-            // Condition rows cascade-delete via the FK ON DELETE CASCADE in db_schema.xml.
-            $this->segmentResource->delete($segment);
+    protected function getDeletedMessage(): Phrase
+    {
+        return __('The segment has been deleted.');
+    }
 
-            $this->messageManager->addSuccessMessage(__('The segment has been deleted.'));
-        } catch (\Throwable $e) {
-            $this->messageManager->addErrorMessage(__('Could not delete the segment: %1', $e->getMessage()));
-        }
-
-        return $resultRedirect->setPath('*/*/');
+    protected function getDeleteErrorMessage(\Throwable $e): Phrase
+    {
+        return __('Could not delete the segment: %1', $e->getMessage());
     }
 }

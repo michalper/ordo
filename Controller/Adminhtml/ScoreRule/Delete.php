@@ -5,6 +5,8 @@ namespace Ordo\Automation\Controller\Adminhtml\ScoreRule;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\Phrase;
+use Ordo\Automation\Controller\Adminhtml\Shared\DeletesEntityTrait;
 use Ordo\Automation\Model\ResourceModel\ScoreRule as ScoreRuleResource;
 use Ordo\Automation\Model\ScoreRuleFactory;
 
@@ -15,6 +17,8 @@ use Ordo\Automation\Model\ScoreRuleFactory;
  */
 class Delete extends AbstractScoreRuleAction implements HttpPostActionInterface
 {
+    use DeletesEntityTrait;
+
     public function __construct(
         Context $context,
         private readonly ScoreRuleFactory $scoreRuleFactory,
@@ -23,26 +27,25 @@ class Delete extends AbstractScoreRuleAction implements HttpPostActionInterface
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function deleteEntity(int $entityId): void
     {
-        $resultRedirect = $this->resultRedirectFactory->create();
-        $entityId = (int) $this->getRequest()->getParam('entity_id');
+        $scoreRule = $this->scoreRuleFactory->create();
+        $this->scoreRuleResource->load($scoreRule, $entityId);
+        $this->scoreRuleResource->delete($scoreRule);
+    }
 
-        if (!$entityId) {
-            $this->messageManager->addErrorMessage(__('Missing score rule id.'));
-            return $resultRedirect->setPath('*/*/');
-        }
+    protected function getMissingIdMessage(): Phrase
+    {
+        return __('Missing score rule id.');
+    }
 
-        try {
-            $scoreRule = $this->scoreRuleFactory->create();
-            $this->scoreRuleResource->load($scoreRule, $entityId);
-            $this->scoreRuleResource->delete($scoreRule);
+    protected function getDeletedMessage(): Phrase
+    {
+        return __('The score rule has been deleted.');
+    }
 
-            $this->messageManager->addSuccessMessage(__('The score rule has been deleted.'));
-        } catch (\Throwable $e) {
-            $this->messageManager->addErrorMessage(__('Could not delete the score rule: %1', $e->getMessage()));
-        }
-
-        return $resultRedirect->setPath('*/*/');
+    protected function getDeleteErrorMessage(\Throwable $e): Phrase
+    {
+        return __('Could not delete the score rule: %1', $e->getMessage());
     }
 }

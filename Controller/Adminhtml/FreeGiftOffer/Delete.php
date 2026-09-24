@@ -5,6 +5,8 @@ namespace Ordo\Automation\Controller\Adminhtml\FreeGiftOffer;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\Phrase;
+use Ordo\Automation\Controller\Adminhtml\Shared\DeletesEntityTrait;
 use Ordo\Automation\Model\FreeGiftOfferFactory;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer as FreeGiftOfferResource;
 
@@ -15,6 +17,8 @@ use Ordo\Automation\Model\ResourceModel\FreeGiftOffer as FreeGiftOfferResource;
  */
 class Delete extends AbstractFreeGiftOfferAction implements HttpPostActionInterface
 {
+    use DeletesEntityTrait;
+
     public function __construct(
         Context $context,
         private readonly FreeGiftOfferFactory $offerFactory,
@@ -23,27 +27,26 @@ class Delete extends AbstractFreeGiftOfferAction implements HttpPostActionInterf
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function deleteEntity(int $entityId): void
     {
-        $resultRedirect = $this->resultRedirectFactory->create();
-        $entityId = (int) $this->getRequest()->getParam('entity_id');
+        $offer = $this->offerFactory->create();
+        $this->offerResource->load($offer, $entityId);
+        // Tier/product rows cascade-delete via the FK ON DELETE CASCADE in db_schema.xml.
+        $this->offerResource->delete($offer);
+    }
 
-        if (!$entityId) {
-            $this->messageManager->addErrorMessage(__('Missing free gift offer id.'));
-            return $resultRedirect->setPath('*/*/');
-        }
+    protected function getMissingIdMessage(): Phrase
+    {
+        return __('Missing free gift offer id.');
+    }
 
-        try {
-            $offer = $this->offerFactory->create();
-            $this->offerResource->load($offer, $entityId);
-            // Tier/product rows cascade-delete via the FK ON DELETE CASCADE in db_schema.xml.
-            $this->offerResource->delete($offer);
+    protected function getDeletedMessage(): Phrase
+    {
+        return __('The free gift offer has been deleted.');
+    }
 
-            $this->messageManager->addSuccessMessage(__('The free gift offer has been deleted.'));
-        } catch (\Throwable $e) {
-            $this->messageManager->addErrorMessage(__('Could not delete the free gift offer: %1', $e->getMessage()));
-        }
-
-        return $resultRedirect->setPath('*/*/');
+    protected function getDeleteErrorMessage(\Throwable $e): Phrase
+    {
+        return __('Could not delete the free gift offer: %1', $e->getMessage());
     }
 }

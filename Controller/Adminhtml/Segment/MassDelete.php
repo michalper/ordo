@@ -5,9 +5,12 @@ namespace Ordo\Automation\Controller\Adminhtml\Segment;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Ui\Component\MassAction\Filter;
+use Ordo\Automation\Controller\Adminhtml\Shared\RunsMassActionTrait;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\ResourceModel\Segment\CollectionFactory as SegmentCollectionFactory;
+use Ordo\Automation\Model\Segment;
 
 /**
  * See Campaign\MassDelete's own docblock for the shared Filter/collection pattern - no cache tag
@@ -16,6 +19,8 @@ use Ordo\Automation\Model\ResourceModel\Segment\CollectionFactory as SegmentColl
  */
 class MassDelete extends AbstractSegmentAction implements HttpPostActionInterface
 {
+    use RunsMassActionTrait;
+
     public function __construct(
         Context $context,
         private readonly Filter $filter,
@@ -25,21 +30,20 @@ class MassDelete extends AbstractSegmentAction implements HttpPostActionInterfac
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function getMassActionCollection(): iterable
     {
-        $resultRedirect = $this->resultRedirectFactory->create();
-        $collection = $this->filter->getCollection($this->segmentCollectionFactory->create());
+        return $this->filter->getCollection($this->segmentCollectionFactory->create());
+    }
 
-        $count = 0;
-        foreach ($collection as $segment) {
-            /** @var \Ordo\Automation\Model\Segment $segment */
-            // Condition rows cascade-delete via the FK ON DELETE CASCADE in db_schema.xml.
-            $this->segmentResource->delete($segment);
-            $count++;
-        }
+    protected function applyToEntity(object $entity): void
+    {
+        /** @var Segment $entity */
+        // Condition rows cascade-delete via the FK ON DELETE CASCADE in db_schema.xml.
+        $this->segmentResource->delete($entity);
+    }
 
-        $this->messageManager->addSuccessMessage(__('A total of %1 segment(s) have been deleted.', $count));
-
-        return $resultRedirect->setPath('*/*/');
+    protected function getMassActionSuccessMessage(int $count): Phrase
+    {
+        return __('A total of %1 segment(s) have been deleted.', $count);
     }
 }

@@ -5,7 +5,10 @@ namespace Ordo\Automation\Controller\Adminhtml\FreeGiftOffer;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Ui\Component\MassAction\Filter;
+use Ordo\Automation\Controller\Adminhtml\Shared\RunsMassActionTrait;
+use Ordo\Automation\Model\FreeGiftOffer;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer as FreeGiftOfferResource;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\CollectionFactory as FreeGiftOfferCollectionFactory;
 
@@ -14,6 +17,8 @@ use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\CollectionFactory as FreeG
  */
 class MassDisable extends AbstractFreeGiftOfferAction implements HttpPostActionInterface
 {
+    use RunsMassActionTrait;
+
     public function __construct(
         Context $context,
         private readonly Filter $filter,
@@ -23,21 +28,20 @@ class MassDisable extends AbstractFreeGiftOfferAction implements HttpPostActionI
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function getMassActionCollection(): iterable
     {
-        $resultRedirect = $this->resultRedirectFactory->create();
-        $collection = $this->filter->getCollection($this->offerCollectionFactory->create());
+        return $this->filter->getCollection($this->offerCollectionFactory->create());
+    }
 
-        $count = 0;
-        foreach ($collection as $offer) {
-            /** @var \Ordo\Automation\Model\FreeGiftOffer $offer */
-            $offer->setEnabled(false);
-            $this->offerResource->save($offer);
-            $count++;
-        }
+    protected function applyToEntity(object $entity): void
+    {
+        /** @var FreeGiftOffer $entity */
+        $entity->setEnabled(false);
+        $this->offerResource->save($entity);
+    }
 
-        $this->messageManager->addSuccessMessage(__('A total of %1 free gift offer(s) have been disabled.', $count));
-
-        return $resultRedirect->setPath('*/*/');
+    protected function getMassActionSuccessMessage(int $count): Phrase
+    {
+        return __('A total of %1 free gift offer(s) have been disabled.', $count);
     }
 }

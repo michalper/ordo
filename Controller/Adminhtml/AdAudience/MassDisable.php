@@ -5,7 +5,10 @@ namespace Ordo\Automation\Controller\Adminhtml\AdAudience;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Ui\Component\MassAction\Filter;
+use Ordo\Automation\Controller\Adminhtml\Shared\RunsMassActionTrait;
+use Ordo\Automation\Model\AdAudience;
 use Ordo\Automation\Model\ResourceModel\AdAudience as AdAudienceResource;
 use Ordo\Automation\Model\ResourceModel\AdAudience\CollectionFactory as AdAudienceCollectionFactory;
 
@@ -14,6 +17,8 @@ use Ordo\Automation\Model\ResourceModel\AdAudience\CollectionFactory as AdAudien
  */
 class MassDisable extends AbstractAdAudienceAction implements HttpPostActionInterface
 {
+    use RunsMassActionTrait;
+
     public function __construct(
         Context $context,
         private readonly Filter $filter,
@@ -23,21 +28,20 @@ class MassDisable extends AbstractAdAudienceAction implements HttpPostActionInte
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function getMassActionCollection(): iterable
     {
-        $resultRedirect = $this->resultRedirectFactory->create();
-        $collection = $this->filter->getCollection($this->adAudienceCollectionFactory->create());
+        return $this->filter->getCollection($this->adAudienceCollectionFactory->create());
+    }
 
-        $count = 0;
-        foreach ($collection as $adAudience) {
-            /** @var \Ordo\Automation\Model\AdAudience $adAudience */
-            $adAudience->setEnabled(false);
-            $this->adAudienceResource->save($adAudience);
-            $count++;
-        }
+    protected function applyToEntity(object $entity): void
+    {
+        /** @var AdAudience $entity */
+        $entity->setEnabled(false);
+        $this->adAudienceResource->save($entity);
+    }
 
-        $this->messageManager->addSuccessMessage(__('A total of %1 ad audience(s) have been disabled.', $count));
-
-        return $resultRedirect->setPath('*/*/');
+    protected function getMassActionSuccessMessage(int $count): Phrase
+    {
+        return __('A total of %1 ad audience(s) have been disabled.', $count);
     }
 }

@@ -5,12 +5,17 @@ namespace Ordo\Automation\Controller\Adminhtml\LeadRoutingRule;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Ui\Component\MassAction\Filter;
+use Ordo\Automation\Controller\Adminhtml\Shared\RunsMassActionTrait;
+use Ordo\Automation\Model\LeadRoutingRule;
 use Ordo\Automation\Model\ResourceModel\LeadRoutingRule as LeadRoutingRuleResource;
 use Ordo\Automation\Model\ResourceModel\LeadRoutingRule\CollectionFactory as LeadRoutingRuleCollectionFactory;
 
 class MassEnable extends AbstractLeadRoutingRuleAction implements HttpPostActionInterface
 {
+    use RunsMassActionTrait;
+
     public function __construct(
         Context $context,
         private readonly Filter $filter,
@@ -20,21 +25,20 @@ class MassEnable extends AbstractLeadRoutingRuleAction implements HttpPostAction
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function getMassActionCollection(): iterable
     {
-        $resultRedirect = $this->resultRedirectFactory->create();
-        $collection = $this->filter->getCollection($this->leadRoutingRuleCollectionFactory->create());
+        return $this->filter->getCollection($this->leadRoutingRuleCollectionFactory->create());
+    }
 
-        $count = 0;
-        foreach ($collection as $leadRoutingRule) {
-            /** @var \Ordo\Automation\Model\LeadRoutingRule $leadRoutingRule */
-            $leadRoutingRule->setEnabled(true);
-            $this->leadRoutingRuleResource->save($leadRoutingRule);
-            $count++;
-        }
+    protected function applyToEntity(object $entity): void
+    {
+        /** @var LeadRoutingRule $entity */
+        $entity->setEnabled(true);
+        $this->leadRoutingRuleResource->save($entity);
+    }
 
-        $this->messageManager->addSuccessMessage(__('A total of %1 lead routing rule(s) have been enabled.', $count));
-
-        return $resultRedirect->setPath('*/*/');
+    protected function getMassActionSuccessMessage(int $count): Phrase
+    {
+        return __('A total of %1 lead routing rule(s) have been enabled.', $count);
     }
 }

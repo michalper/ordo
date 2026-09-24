@@ -5,9 +5,12 @@ namespace Ordo\Automation\Controller\Adminhtml\ScoreRule;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Ui\Component\MassAction\Filter;
+use Ordo\Automation\Controller\Adminhtml\Shared\RunsMassActionTrait;
 use Ordo\Automation\Model\ResourceModel\ScoreRule as ScoreRuleResource;
 use Ordo\Automation\Model\ResourceModel\ScoreRule\CollectionFactory as ScoreRuleCollectionFactory;
+use Ordo\Automation\Model\ScoreRule;
 
 /**
  * Grid mass-action counterpart to the single-rule enable/disable toggle already available from
@@ -18,6 +21,8 @@ use Ordo\Automation\Model\ResourceModel\ScoreRule\CollectionFactory as ScoreRule
  */
 class MassEnable extends AbstractScoreRuleAction implements HttpPostActionInterface
 {
+    use RunsMassActionTrait;
+
     public function __construct(
         Context $context,
         private readonly Filter $filter,
@@ -27,21 +32,20 @@ class MassEnable extends AbstractScoreRuleAction implements HttpPostActionInterf
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function getMassActionCollection(): iterable
     {
-        $resultRedirect = $this->resultRedirectFactory->create();
-        $collection = $this->filter->getCollection($this->scoreRuleCollectionFactory->create());
+        return $this->filter->getCollection($this->scoreRuleCollectionFactory->create());
+    }
 
-        $count = 0;
-        foreach ($collection as $scoreRule) {
-            /** @var \Ordo\Automation\Model\ScoreRule $scoreRule */
-            $scoreRule->setEnabled(true);
-            $this->scoreRuleResource->save($scoreRule);
-            $count++;
-        }
+    protected function applyToEntity(object $entity): void
+    {
+        /** @var ScoreRule $entity */
+        $entity->setEnabled(true);
+        $this->scoreRuleResource->save($entity);
+    }
 
-        $this->messageManager->addSuccessMessage(__('A total of %1 score rule(s) have been enabled.', $count));
-
-        return $resultRedirect->setPath('*/*/');
+    protected function getMassActionSuccessMessage(int $count): Phrase
+    {
+        return __('A total of %1 score rule(s) have been enabled.', $count);
     }
 }
