@@ -52,5 +52,14 @@ class ReorderCartBuilder
         $this->quoteSession->setStoreId((int) $customer->getStoreId());
 
         $this->orderCreate->addProduct((int) $product->getId(), ['qty' => 1]);
+
+        // addProduct() only mutates the in-memory quote item collection (setRecollect(true), no
+        // DB write) - without this, the item never reaches the actual quote row, so the very
+        // next real HTTP request (the redirect to sales/order_create/index this action's own
+        // caller does) loads a fresh Create object against the same still-empty quote from the
+        // database and shows an empty cart. Real Magento admin order-creation controllers (e.g.
+        // Sales\Controller\Adminhtml\Order\Create\AddProduct) always follow addProduct() with
+        // this same call for exactly this reason.
+        $this->orderCreate->saveQuote();
     }
 }
