@@ -515,26 +515,13 @@ docblock):
 
 ## Suggested next batch (highest signal per test written)
 
-**Status: the 2026-09-20 re-audit is now fully closed as of this same session (2026-09-23).** §26 Campaign/Segment
-JSON import, §27 Web push subscription lifecycle, and §28 Campaign split action were already fully closed before
-this re-audit even started — the list below simply hadn't been trimmed after that work landed. §29 Campaign
-performance analytics, §8's three Reorder Cycle manual admin actions, §11's `DispatchScheduledCampaignTriggers`
-real-fire and `RetryFailedPushSends`, §18's Meta/Facebook Catalog feed, and §1c's `generate_ai_content` fail-soft
-path are now closed too. There is currently no further known gap — re-audit this document against `etc/di.xml`/
-`Controller/Adminhtml/*`/`etc/crontab.xml`/`etc/events.xml` periodically rather than trusting it at face value, the
-same instruction this document's own header already gives.
-Working order for the drift found by the 2026-09-20 re-audit, roughly by blast radius / how much of a single new
-test closes at once:
-
-Two new rows from genuinely new features (not the re-audit), both unit-tested only, no MFTF/Integration yet:
-§28's `AutoPickCampaignSplitWinner` and §11's `SendAbandonedCartFallbackReminders`.
 **Status: the 2026-09-20 re-audit is fully closed (as of 2026-09-23).** Every row from that re-audit — §8, §11,
 §18, §26, §27, §28, §29, and §1c's `generate_ai_content`/`RetryFailedPushSends` — is now ✅. Re-audit this
 document against `etc/di.xml`/`Controller/Adminhtml/*`/`etc/crontab.xml`/`etc/events.xml` periodically rather
 than trusting it at face value, the same instruction this document's own header already gives.
 
-One new row from a genuinely new feature (not the re-audit): §28's `AutoPickCampaignSplitWinner` row above is
-unit-tested only, no MFTF/Integration yet.
+Two new rows from genuinely new features (not the re-audit), both unit-tested only, no MFTF/Integration yet:
+§28's `AutoPickCampaignSplitWinner` and §11's `SendAbandonedCartFallbackReminders`.
 
 Separately, section 22 (Webhook action/trigger), 23 (Two-way SMS/WhatsApp conversations), 24 (Price-drop &
 back-in-stock alerts), and 25 (Predictive send-time optimization) are already ✅ as of this session — their

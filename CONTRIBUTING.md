@@ -56,9 +56,11 @@ Four layers, each with a different scope and a different way to run it:
   what's covered and what isn't, and `AGENTS.md` for the real-CI-only pitfalls already found and fixed — read
   that before adding a new MFTF test, several of them cost real debugging time to track down.
 
-CI runs the unit-test + static-analysis lane on every push. `Test/Integration`, `Test/Api`, and MFTF need a real
-Magento install (service containers, browser) and are wired into `.github/workflows/mftf.yml`, which you can
-trigger manually (`workflow_dispatch`) once your PR is up.
+CI runs the unit-test + static-analysis lane (`ci.yml`) on every push. `Test/Integration`, `Test/Api`, and MFTF
+each need a real Magento install (service containers, and a browser for MFTF) and each have their own dedicated
+workflow: `integration-tests.yml` and `api-tests.yml` run on every push/PR too; `mftf.yml` runs nightly (full
+browser suite is slower) plus on demand. All three support manual `workflow_dispatch` if you want to trigger one
+directly once your PR is up.
 
 ## Making a change
 

@@ -31,9 +31,11 @@ scoped from real hands-on marketing automation experience.
 
 ### MFTF/scenario coverage
 
-Full inventory with what's covered and why: `Test/Mftf/SCENARIOS.md`. Every row there is currently ✅ — no open
-gaps. Kept as the standing scope check for anything newly added to the module (new trigger/condition/action/
-controller/cron gets a row there before it's considered done).
+Full inventory with what's covered and why: `Test/Mftf/SCENARIOS.md`. Two open rows as of 2026-09-23, both from
+brand-new features (not gaps in existing coverage): `AutoPickCampaignSplitWinner` (§28) and
+`SendAbandonedCartFallbackReminders` (§11), both unit-tested only, no MFTF/Integration yet. Kept as the standing
+scope check for anything newly added to the module (new trigger/condition/action/controller/cron gets a row
+there before it's considered done).
 
 ## Full-codebase improvement audit (2026-09-10)
 
