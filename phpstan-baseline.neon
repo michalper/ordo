@@ -487,6 +487,78 @@ parameters:
 			path: Controller/Adminhtml/Gdpr/SetConsent.php
 
 		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Adminhtml/LeadRoutingRule/Delete.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/LeadRoutingRule/Edit.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Adminhtml/LeadRoutingRule/Edit.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/LeadRoutingRule/Edit.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/LeadRoutingRule/Index.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/LeadRoutingRule/Index.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Controller\\Adminhtml\\LeadRoutingRule\\NewAction\:\:execute\(\) should return Magento\\Framework\\App\\ResponseInterface\|Magento\\Framework\\Controller\\ResultInterface but returns null\.$#'
+			identifier: return.type
+			count: 1
+			path: Controller/Adminhtml/LeadRoutingRule/NewAction.php
+
+		-
+			message: '#^Result of method Magento\\Backend\\App\\AbstractAction\:\:_forward\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: Controller/Adminhtml/LeadRoutingRule/NewAction.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getPostValue\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/LeadRoutingRule/Save.php
+
+		-
+			message: '#^Cannot access offset ''reps'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Controller/Adminhtml/LeadRoutingRule/Save.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Controller/Adminhtml/LeadRoutingRule/Save.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 8
+			path: Controller/Adminhtml/LeadRoutingRule/Save.php
+
+		-
 			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -2393,6 +2465,90 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Model/Http/JsonApiClient.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 4
+			path: Model/LeadRouting/LeadAssigner.php
+
+		-
+			message: '#^Parameter \#2 \$reps of method Ordo\\Automation\\Model\\LeadRouting\\LeadAssigner\:\:nextRep\(\) expects array\<int, array\<string, mixed\>\>, list\<mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/LeadRouting/LeadAssigner.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and false will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: Model/LeadRouting/LeadAssigner.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/LeadRouting/LeadRoutingRuleEvaluator.php
+
+		-
+			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/LeadRouting/LeadRoutingRuleEvaluator.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Model/LeadRoutingRule.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 5
+			path: Model/LeadRoutingRule.php
+
+		-
+			message: '#^Cannot access offset ''reps'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: Model/LeadRoutingRule/DataProvider.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Model/LeadRoutingRule/DataProvider.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/LeadRoutingRule/DataProvider.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\LeadRoutingRule\\DataProvider\:\:decodeReps\(\) should return array\<int, array\<string, mixed\>\> but returns array\<mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/LeadRoutingRule/DataProvider.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\LeadRoutingRule\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/LeadRoutingRule/DataProvider.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\LeadRoutingRule\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\<int, mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/LeadRoutingRule/DataProvider.php
+
+		-
+			message: '#^Property Ordo\\Automation\\Model\\LeadRoutingRule\\DataProvider\:\:\$loadedData type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Model/LeadRoutingRule/DataProvider.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'

@@ -10,6 +10,7 @@ use Magento\Framework\Event\ObserverInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\LeadRouting\LeadAssigner;
 use Ordo\Automation\Model\LeadRouting\LeadRoutingRuleEvaluator;
+use Ordo\Automation\Model\LeadRoutingRule;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -91,7 +92,7 @@ class AssignLeadRoutingRule implements ObserverInterface
         }
 
         $rule = $this->leadRoutingRuleEvaluator->getMatchingRule($customer);
-        if ($rule === null) {
+        if (!$rule instanceof LeadRoutingRule) {
             return;
         }
 

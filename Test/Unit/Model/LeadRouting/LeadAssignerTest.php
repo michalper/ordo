@@ -54,7 +54,7 @@ class LeadAssignerTest extends TestCase
         );
 
         $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
-        $customerRepository->method('getById')->with(42)->willReturn($customer);
+        $customerRepository->expects(self::once())->method('getById')->with(42)->willReturn($customer);
         $customerRepository->expects(self::once())->method('save')->with($customer);
 
         $assigner = new LeadAssigner($resourceConnection, $customerRepository);
