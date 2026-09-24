@@ -9,6 +9,7 @@ use Ordo\Automation\Model\CustomerScoreManager;
 use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Model\Event\EventOccurredResolver;
 use Ordo\Automation\Model\Purchase\PurchasedProductResolver;
+use Ordo\Automation\Model\ReorderCycle\ReorderCycleDriftCalculator;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\CollectionFactory as SegmentConditionCollectionFactory;
 use Ordo\Automation\Model\Rfm\RfmCalculator;
@@ -61,6 +62,15 @@ class SegmentMemberResolver
      */
     private ?array $percentileRanksCache = null;
 
+    /**
+     * Same per-resolve caching as $aggregatesCache, keyed by customer_id — a segment resolve
+     * only ever has one reorder_cycle_at_risk condition in practice, but the reset-at-top-of-
+     * getMatchingCustomerIds() shape is kept consistent with the RFM caches above regardless.
+     *
+     * @var array<int, float>|null
+     */
+    private ?array $reorderCycleDriftRatiosCache = null;
+
     public function __construct(
         private readonly SegmentConditionCollectionFactory $segmentConditionCollectionFactory,
         private readonly CustomerTagManager $customerTagManager,
@@ -72,7 +82,8 @@ class SegmentMemberResolver
         private readonly PurchasedProductResolver $purchasedProductResolver,
         private readonly EventOccurredResolver $eventOccurredResolver,
         private readonly GroupWalker $groupWalker,
-        private readonly SetGroupCombineStrategy $combineStrategy
+        private readonly SetGroupCombineStrategy $combineStrategy,
+        private readonly ReorderCycleDriftCalculator $reorderCycleDriftCalculator
     ) {
     }
 
@@ -88,6 +99,7 @@ class SegmentMemberResolver
             // snapshot for this resolve. A recursive call keeps reusing the same one.
             $this->aggregatesCache = null;
             $this->percentileRanksCache = null;
+            $this->reorderCycleDriftRatiosCache = null;
         }
 
         $conditions = $this->segmentConditionCollectionFactory->create();
@@ -153,6 +165,8 @@ class SegmentMemberResolver
                 return $this->resolvePurchasedCategory($params);
             case 'event_occurred':
                 return $this->resolveEventOccurred($params);
+            case 'reorder_cycle_at_risk':
+                return $this->resolveReorderCycleAtRisk($params);
             case 'order_total_gte':
             case 'visitor_tag':
                 return [];
@@ -431,6 +445,40 @@ class SegmentMemberResolver
         $this->aggregatesCache ??= $this->rfmCalculator->getAggregatesForAllCustomers();
 
         return $this->aggregatesCache;
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     * @return int[]
+     */
+    private function resolveReorderCycleAtRisk(array $params): array
+    {
+        $ratioAtLeast = $params['ratio_at_least'] ?? null;
+
+        if ($ratioAtLeast === null || !is_numeric($ratioAtLeast)) {
+            return [];
+        }
+
+        $threshold = (float) $ratioAtLeast;
+        $matching = [];
+
+        foreach ($this->getReorderCycleDriftRatios() as $customerId => $ratio) {
+            if ($ratio >= $threshold) {
+                $matching[] = $customerId;
+            }
+        }
+
+        return $matching;
+    }
+
+    /**
+     * @return array<int, float>
+     */
+    private function getReorderCycleDriftRatios(): array
+    {
+        $this->reorderCycleDriftRatiosCache ??= $this->reorderCycleDriftCalculator->getDriftRatiosForAllCustomers();
+
+        return $this->reorderCycleDriftRatiosCache;
     }
 
     /**

@@ -7,6 +7,21 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **"Reorder cycle at risk" segment condition + sales-rep digest signal (ROADMAP.md candidate)** —
+  new `Model\ReorderCycle\ReorderCycleDriftCalculator`, computing a "drift ratio" per
+  `ordo_reorder_cycle` row (days elapsed since the customer's last order in that SKU, divided by
+  their own historically detected average interval — 1.0 means exactly on schedule, above 1.0
+  means already running later than their own pattern predicts) and taking the worst ratio across a
+  customer's cycles. New `reorder_cycle_at_risk` condition type (`Model\Campaign\Condition\
+  ReorderCycleAtRisk`, params `{"ratio_at_least": "0.8"}`), usable in both campaigns and segments
+  the same as any other condition — an earlier, standing signal than `Cron\SendReorderReminders`'
+  own one-shot "already due" reminder (which effectively fires around ratio 1.0, adjusted by
+  `lead_days`). Also surfaced through the existing sales-rep digest: new `Cron\
+  TagReorderCycleAtRiskCustomers` (nightly, tags/untags against a configurable threshold,
+  `ordo_automation/reorder/at_risk_drift_ratio`, default 0.75) feeds `Cron\SendSalesRepDigest`,
+  which now sends a rep a combined digest of both inactive AND at-risk customers (a rep with only
+  one signal still gets exactly one email, not a second empty one).
+
 - **Cross-channel fallback for cart abandonment (ROADMAP.md candidate)** — new
   `Cron\SendAbandonedCartFallbackReminders` (off by default,
   `ordo_automation/abandoned_cart/fallback_enabled`). The fixed abandoned-cart reminder email

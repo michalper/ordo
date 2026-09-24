@@ -25,6 +25,12 @@
                     <validate>validate-digits</validate>
                     <depends><field id="enabled">1</field></depends>
                 </field>
+                <field id="at_risk_drift_ratio" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>"At risk" drift ratio</label>
+                    <comment>Elapsed days since last order, divided by the customer's own detected average interval. 1.0 = exactly on schedule. Default 0.75 flags a customer before they'd be considered due for a reminder.</comment>
+                    <validate>validate-number</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
             </group>
 
             <group id="abandoned_cart" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">

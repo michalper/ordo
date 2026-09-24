@@ -64,7 +64,8 @@ define([
         in_segment: {key: 'segment_id', label: 'Segment', select: true, optionsSelector: '[data-index="segment_id"] select'},
         not_in_segment: {key: 'segment_id', label: 'Segment', select: true, optionsSelector: '[data-index="segment_id"] select'},
         loyalty_tier_at_least: {key: 'tier', label: 'Minimum tier', select: true, optionsSelector: '[data-index="tier"] select'},
-        nps_score_at_least: {key: 'threshold', label: 'Minimum score (0-10)'}
+        nps_score_at_least: {key: 'threshold', label: 'Minimum score (0-10)'},
+        reorder_cycle_at_risk: {key: 'ratio_at_least', label: 'Drift ratio, at least (1.0 = exactly on schedule)'}
     };
 
     /**

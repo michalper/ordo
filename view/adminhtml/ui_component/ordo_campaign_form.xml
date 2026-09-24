@@ -246,7 +246,14 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
-                                    </actions>
+                                                                            <action name="13">
+                                            <target>${ $.parentName }.ratio_at_least</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+</actions>
                                 </rule>
                                 <rule name="1">
                                     <value>order_total_gte</value>
@@ -342,7 +349,14 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
-                                    </actions>
+                                                                            <action name="13">
+                                            <target>${ $.parentName }.ratio_at_least</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+</actions>
                                 </rule>
                                 <!-- Reuses the same "tag" field as the "tag" rule above — the
                                      visitor_tag condition has the exact same single param shape
@@ -443,7 +457,14 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
-                                    </actions>
+                                                                            <action name="13">
+                                            <target>${ $.parentName }.ratio_at_least</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+</actions>
                                 </rule>
                                 <rule name="3">
                                     <value>score_at_least</value>
@@ -539,7 +560,14 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
-                                    </actions>
+                                                                            <action name="13">
+                                            <target>${ $.parentName }.ratio_at_least</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+</actions>
                                 </rule>
                                 <!-- RFM-based conditions (§3/§4 in SCENARIOS.md) — recency in
                                      days, frequency as a plain order count, monetary as an
@@ -645,7 +673,14 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
-                                    </actions>
+                                                                            <action name="13">
+                                            <target>${ $.parentName }.ratio_at_least</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+</actions>
                                 </rule>
                                 <rule name="5">
                                     <value>order_frequency_at_least</value>
@@ -741,7 +776,14 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
-                                    </actions>
+                                                                            <action name="13">
+                                            <target>${ $.parentName }.ratio_at_least</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+</actions>
                                 </rule>
                                 <!-- Reuses "amount" (same param key and same "minimum total"
                                      shape as order_total_gte's own threshold — only the metric
@@ -842,7 +884,14 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
-                                    </actions>
+                                                                            <action name="13">
+                                            <target>${ $.parentName }.ratio_at_least</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+</actions>
                                 </rule>
                                 <!-- The three percentile-relative RFM conditions share one
                                      physical "percentile" field (0-100) — same reasoning as the
@@ -943,7 +992,14 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
-                                    </actions>
+                                                                            <action name="13">
+                                            <target>${ $.parentName }.ratio_at_least</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+</actions>
                                 </rule>
                                 <rule name="8">
                                     <value>order_frequency_percentile_at_least</value>
@@ -1039,7 +1095,14 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
-                                    </actions>
+                                                                            <action name="13">
+                                            <target>${ $.parentName }.ratio_at_least</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+</actions>
                                 </rule>
                                 <rule name="9">
                                     <value>monetary_percentile_at_least</value>
@@ -1135,7 +1198,14 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
-                                    </actions>
+                                                                            <action name="13">
+                                            <target>${ $.parentName }.ratio_at_least</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+</actions>
                                 </rule>
                                 <rule name="10">
                                     <value>purchased_sku</value>
@@ -1231,7 +1301,14 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
-                                    </actions>
+                                                                            <action name="13">
+                                            <target>${ $.parentName }.ratio_at_least</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+</actions>
                                 </rule>
                                 <rule name="11">
                                     <value>purchased_category</value>
@@ -1327,7 +1404,14 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
-                                    </actions>
+                                                                            <action name="13">
+                                            <target>${ $.parentName }.ratio_at_least</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+</actions>
                                 </rule>
                                 <!--
                                     "In Segment"/"Not In Segment"/"Loyalty Tier At Least"/
@@ -1433,7 +1517,14 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
-                                    </actions>
+                                                                            <action name="13">
+                                            <target>${ $.parentName }.ratio_at_least</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+</actions>
                                 </rule>
                                 <!-- Same params shape (segment_id) as in_segment above - see
                                      Model\Campaign\Condition\NotInSegment's own docblock. -->
@@ -1531,7 +1622,14 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
-                                    </actions>
+                                                                            <action name="13">
+                                            <target>${ $.parentName }.ratio_at_least</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+</actions>
                                 </rule>
                                 <rule name="14">
                                     <value>loyalty_tier_at_least</value>
@@ -1627,7 +1725,14 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
-                                    </actions>
+                                                                            <action name="13">
+                                            <target>${ $.parentName }.ratio_at_least</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+</actions>
                                 </rule>
                                 <!-- Reuses the same "threshold" field score_at_least already uses
                                      - see Model\Campaign\Condition\NpsScoreAtLeast's own docblock
@@ -1726,7 +1831,14 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action>
-                                    </actions>
+                                                                            <action name="13">
+                                            <target>${ $.parentName }.ratio_at_least</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+</actions>
                                 </rule>
                                 <rule name="16">
                                     <value>event_occurred</value>
@@ -1822,9 +1934,119 @@
                                                 <param name="0" xsi:type="boolean">true</param>
                                             </params>
                                         </action>
+                                                                            <action name="13">
+                                            <target>${ $.parentName }.ratio_at_least</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+</actions>
+                                </rule>
+                                <rule name="17">
+                                    <value>reorder_cycle_at_risk</value>
+                                    <actions>
+                                        <action name="0">
+                                            <target>${ $.parentName }.amount</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="1">
+                                            <target>${ $.parentName }.category_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="2">
+                                            <target>${ $.parentName }.count</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="3">
+                                            <target>${ $.parentName }.days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="4">
+                                            <target>${ $.parentName }.event_key</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="5">
+                                            <target>${ $.parentName }.event_type</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="6">
+                                            <target>${ $.parentName }.percentile</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="7">
+                                            <target>${ $.parentName }.segment_id</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="8">
+                                            <target>${ $.parentName }.sku</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="9">
+                                            <target>${ $.parentName }.tag</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.threshold</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.tier</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="12">
+                                            <target>${ $.parentName }.within_days</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">false</param>
+                                            </params>
+                                        </action>
+                                        <action name="13">
+                                            <target>${ $.parentName }.ratio_at_least</target>
+                                            <callback>visible</callback>
+                                            <params>
+                                                <param name="0" xsi:type="boolean">true</param>
+                                            </params>
+                                        </action>
                                     </actions>
                                 </rule>
-                            </rules>
+</rules>
                         </switcherConfig>
                     </settings>
                     <formElements>
@@ -1896,6 +2118,16 @@
                                  specified range." precisely because of this. validate-digits
                                  (non-negative integer) is enough of a functional guard here. -->
                             <rule name="validate-digits" xsi:type="boolean">true</rule>
+                        </validation>
+                    </settings>
+                </field>
+                <field name="ratio_at_least" formElement="input" sortOrder="18">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Reorder Cycle Drift Ratio, At Least (1.0 = exactly on schedule)</label>
+                        <visible>false</visible>
+                        <validation>
+                            <rule name="validate-number" xsi:type="boolean">true</rule>
                         </validation>
                     </settings>
                 </field>
