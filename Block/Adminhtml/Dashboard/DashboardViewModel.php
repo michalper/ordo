@@ -323,7 +323,7 @@ class DashboardViewModel implements ArgumentInterface
      */
     private function loadTriggerLabelsByCampaignId(array $campaignIds): array
     {
-        if (!$campaignIds) {
+        if ($campaignIds === []) {
             return [];
         }
 

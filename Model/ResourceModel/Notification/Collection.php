@@ -32,7 +32,7 @@ class Collection extends AbstractCollection
             $conditions[] = ['field' => 'visitor_id', 'condition' => ['eq' => $visitorId]];
         }
 
-        if ($conditions) {
+        if ($conditions !== []) {
             $this->addFieldToFilter(
                 array_column($conditions, 'field'),
                 array_column($conditions, 'condition')
