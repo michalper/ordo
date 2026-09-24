@@ -94,7 +94,7 @@ class CampaignDispatcher
     {
         $conditionLogicByCampaign = $this->campaignIdsForTrigger($triggerEvent);
 
-        if (!$conditionLogicByCampaign) {
+        if ($conditionLogicByCampaign === []) {
             return;
         }
 
@@ -224,7 +224,7 @@ class CampaignDispatcher
         }
 
         $conditionLogicByCampaign = [];
-        if ($candidateIds) {
+        if ($candidateIds !== []) {
             $campaigns = $this->campaignCollectionFactory->create();
             $campaigns->addIdsFilter(array_keys($candidateIds));
             $campaigns->addEnabledFilter();

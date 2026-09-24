@@ -311,6 +311,20 @@ class ConfigTest extends TestCase
         self::assertSame(99.9, $this->config->getAbandonedCartMinSubtotal());
     }
 
+    public function testGetReorderAtRiskDriftRatioUsesDefaultWhenUnset(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn(null);
+
+        self::assertSame(0.75, $this->config->getReorderAtRiskDriftRatio());
+    }
+
+    public function testGetReorderAtRiskDriftRatioUsesConfiguredValue(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn('0.9');
+
+        self::assertSame(0.9, $this->config->getReorderAtRiskDriftRatio());
+    }
+
     public function testObscureFieldGettersDecryptTheirConfiguredValue(): void
     {
         $this->scopeConfig->method('getValue')->willReturnMap([

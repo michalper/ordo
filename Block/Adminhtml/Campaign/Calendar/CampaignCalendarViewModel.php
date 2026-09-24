@@ -121,7 +121,7 @@ class CampaignCalendarViewModel implements ArgumentInterface
      */
     private function loadTriggerLabelsByCampaignId(array $campaignIds): array
     {
-        if (!$campaignIds) {
+        if ($campaignIds === []) {
             return [];
         }
 
@@ -157,7 +157,7 @@ class CampaignCalendarViewModel implements ArgumentInterface
      */
     private function loadTimelineByCampaignId(array $campaignIds): array
     {
-        if (!$campaignIds) {
+        if ($campaignIds === []) {
             return [];
         }
 

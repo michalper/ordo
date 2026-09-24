@@ -59,7 +59,7 @@ class HoldOrderForApproval implements ObserverInterface
         }
 
         $customer = $this->resolveCustomer($order);
-        if (!$customer) {
+        if (!$customer instanceof \Magento\Customer\Api\Data\CustomerInterface) {
             return;
         }
 

@@ -91,7 +91,7 @@ class TrimExcessFreeGifts implements ObserverInterface
             'intval',
             $this->offerCollectionFactory->create()->addEnabledFilter()->getAllIds()
         );
-        if (!$offerIds) {
+        if ($offerIds === []) {
             return 0;
         }
 

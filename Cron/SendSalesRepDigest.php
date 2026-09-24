@@ -13,7 +13,10 @@ use Ordo\Automation\Setup\Patch\Data\AddSalesRepAttributes;
 /**
  * One digest email per rep instead of one alert per signal — a rep with 40 accounts should not
  * get 40 separate emails the day a batch of them goes inactive. Groups every customer currently
- * tagged "inactive" by their assigned rep's email and sends each rep a single weekly list.
+ * tagged "inactive" (TagInactiveCustomers) or "reorder cycle at risk" (
+ * TagReorderCycleAtRiskCustomers) by their assigned rep's email and sends each rep a single
+ * weekly list per signal — a rep with only one of the two signals still gets exactly one email,
+ * not a second empty one, since sendDigest() is only called when at least one list is non-empty.
  */
 class SendSalesRepDigest
 {
@@ -34,12 +37,18 @@ class SendSalesRepDigest
             return;
         }
 
-        $customersByRepEmail = $this->groupInactiveCustomersByRep();
+        $inactiveByRep = $this->groupCustomersByRep(TagInactiveCustomers::TAG_INACTIVE);
+        $atRiskByRep = $this->groupCustomersByRep(TagReorderCycleAtRiskCustomers::TAG_REORDER_AT_RISK);
+
+        $repEmails = array_unique(array_merge(array_keys($inactiveByRep), array_keys($atRiskByRep)));
 
         $sent = 0;
-        foreach ($customersByRepEmail as $repEmail => $customerNames) {
+        foreach ($repEmails as $repEmail) {
+            $inactiveNames = $inactiveByRep[$repEmail] ?? [];
+            $atRiskNames = $atRiskByRep[$repEmail] ?? [];
+
             try {
-                $this->sendDigest($repEmail, $customerNames);
+                $this->sendDigest($repEmail, $inactiveNames, $atRiskNames);
                 $sent++;
             } catch (\Throwable $e) {
                 $this->cronRunLogger->logFailure(
@@ -57,19 +66,19 @@ class SendSalesRepDigest
      * own `{{for}}` email template directive (`Magento\Framework\Filter\DirectiveProcessor\
      * ForDirective::getLoopReplacementText()`) silently `continue`s past any loop item that
      * isn't already an array or `DataObject`, so a plain `string[]` here renders as an empty
-     * list every time (the `customer_count` in the subject would still be right — only the
-     * `{{for name in customer_names}}` body silently produces nothing). Confirmed by
-     * exercising the real cron end to end (see docs/CHANGELOG.md) — no unit test mocking
-     * `EmailSender` catches this, since the bug is in what the *real* template engine does
-     * with the shape of the data, not in this class's own logic.
+     * list every time (the count in the subject would still be right — only the `{{for name in
+     * ...}}` body silently produces nothing). Confirmed by exercising the real cron end to end
+     * (see docs/CHANGELOG.md) — no unit test mocking `EmailSender` catches this, since the bug is
+     * in what the *real* template engine does with the shape of the data, not in this class's
+     * own logic.
      *
      * @return array<string, array{name: string}[]> rep email => list of {name: "Customer Name (customer_id)"}
      */
-    private function groupInactiveCustomersByRep(): array
+    private function groupCustomersByRep(string $tag): array
     {
         $grouped = [];
 
-        $customerIds = $this->customerTagManager->getCustomerIdsWithTag(TagInactiveCustomers::TAG_INACTIVE);
+        $customerIds = $this->customerTagManager->getCustomerIdsWithTag($tag);
         $customerMap = $this->customerMapBuilder->build($customerIds);
 
         foreach ($customerIds as $customerId) {
@@ -97,15 +106,19 @@ class SendSalesRepDigest
     }
 
     /**
-     * @param array{name: string}[] $customerNames
+     * @param array{name: string}[] $inactiveNames
+     * @param array{name: string}[] $atRiskNames
      */
-    private function sendDigest(string $repEmail, array $customerNames): void
+    private function sendDigest(string $repEmail, array $inactiveNames, array $atRiskNames): void
     {
         $this->emailSender->send(
             self::XML_PATH_EMAIL_TEMPLATE,
             [
-                'customer_count' => count($customerNames),
-                'customer_names' => $customerNames,
+                'customer_count' => count($inactiveNames),
+                'customer_names' => $inactiveNames,
+                'at_risk_count' => count($atRiskNames),
+                'at_risk_customer_names' => $atRiskNames,
+                'total_count' => count($inactiveNames) + count($atRiskNames),
             ],
             $repEmail
         );

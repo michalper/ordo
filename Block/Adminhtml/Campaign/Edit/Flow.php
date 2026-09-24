@@ -315,6 +315,9 @@ class Flow extends Template
                 'order_frequency_at_least' => [['name' => 'count', 'label' => (string) __('Minimum order count')]],
                 'recency_days_at_most' => [['name' => 'days', 'label' => (string) __('Maximum days since last order')]],
                 'monetary_total_at_least' => [['name' => 'amount', 'label' => (string) __('Minimum lifetime total')]],
+                'reorder_cycle_at_risk' => [
+                    ['name' => 'ratio_at_least', 'label' => (string) __('Drift ratio, at least (1.0 = exactly on schedule)')],
+                ],
                 'event_occurred' => [
                     [
                         'name' => 'event_type',

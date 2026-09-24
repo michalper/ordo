@@ -157,7 +157,7 @@ class FreeGiftManagement implements FreeGiftManagementInterface
         $subtotal = (float) $quote->getBaseSubtotal();
         $offers = $this->offerCollectionFactory->create()->addEnabledFilter();
         $offerIds = array_map('intval', $offers->getAllIds());
-        if (!$offerIds) {
+        if ($offerIds === []) {
             return [];
         }
 
@@ -196,7 +196,7 @@ class FreeGiftManagement implements FreeGiftManagementInterface
      */
     private function mapEligibleSkusToOfferId(array $activeOfferIds): array
     {
-        if (!$activeOfferIds) {
+        if ($activeOfferIds === []) {
             return [];
         }
 
@@ -215,7 +215,7 @@ class FreeGiftManagement implements FreeGiftManagementInterface
 
         $activeOfferIds = $this->activeOfferIds($quote);
         $earned = 0;
-        if ($activeOfferIds) {
+        if ($activeOfferIds !== []) {
             $subtotal = (float) $quote->getBaseSubtotal();
             foreach ($this->tierCollectionFactory->create()->addOffersFilter($activeOfferIds) as $tier) {
                 if ($tier->getMinSubtotal() <= $subtotal) {
