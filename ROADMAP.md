@@ -67,9 +67,6 @@ as bugs above, not repeated here)*
 Not gaps in something existing — genuinely new capabilities, proposed after checking they don't already
 exist in some form. Not prioritized against each other; listed for later scoping.
 
-- **B2B: "reorder cycle at risk" segment** — flag customers whose order cadence has drifted meaningfully from
-  their own historical cycle (earlier signal than a full reorder-reminder miss), surfaced through the existing
-  sales-rep digest. Medium scope, B2B.
 ## Priorytet kolejnych kroków
 
 Kolejność uwzględnia wagę (błędy finansowe > dług niezawodności > UX > tematy zależne od

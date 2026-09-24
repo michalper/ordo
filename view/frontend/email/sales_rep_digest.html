@@ -1,16 +1,27 @@
-<!--@subject {{var customer_count}} customers need your attention this week @-->
+<!--@subject {{var total_count}} customers need your attention this week @-->
 {{template config_path="design/email/header_template"}}
 
 <table role="presentation">
     <tr class="email-intro">
         <td>
             <p class="greeting">Hi,</p>
+            {{if customer_count}}
             <p><strong>{{var customer_count}}</strong> of your customers have gone inactive this week:</p>
             <ul>
                 {{for name in customer_names}}
                 <li>{{var name.name}}</li>
                 {{/for}}
             </ul>
+            {{/if}}
+            {{if at_risk_count}}
+            <p><strong>{{var at_risk_count}}</strong> of your customers are at risk of missing their usual
+                reorder — their order cadence has drifted from their own normal cycle:</p>
+            <ul>
+                {{for name in at_risk_customer_names}}
+                <li>{{var name.name}}</li>
+                {{/for}}
+            </ul>
+            {{/if}}
         </td>
     </tr>
 </table>

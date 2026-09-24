@@ -13,6 +13,7 @@ class Config
     private const string XML_PATH_REORDER_ENABLED = 'ordo_automation/reorder/enabled';
     private const string XML_PATH_REORDER_MIN_ORDERS = 'ordo_automation/reorder/min_orders';
     private const string XML_PATH_REORDER_LEAD_DAYS = 'ordo_automation/reorder/lead_days';
+    private const string XML_PATH_REORDER_AT_RISK_DRIFT_RATIO = 'ordo_automation/reorder/at_risk_drift_ratio';
 
     private const string XML_PATH_CART_ENABLED = 'ordo_automation/abandoned_cart/enabled';
     private const string XML_PATH_CART_DELAY_MINUTES = 'ordo_automation/abandoned_cart/delay_minutes';
@@ -203,6 +204,27 @@ class Config
     public function getReorderLeadDays(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_REORDER_LEAD_DAYS, 2, $storeId);
+    }
+
+    /**
+     * The drift ratio (elapsed days since last order / the customer's own historical average
+     * interval) at or above which Cron\TagReorderCycleAtRiskCustomers tags a customer "at risk"
+     * for the sales-rep digest. Default 0.75 - a customer already three-quarters of the way
+     * through their own normal cadence, before Cron\SendReorderReminders would even consider
+     * them "due" (that fires around 1.0, adjusted by lead_days). This is a separate, standing
+     * threshold from the segment condition's own per-segment "ratio_at_least" param - an admin
+     * building a segment picks their own threshold there; this one only governs what the
+     * always-on digest tagging considers noteworthy.
+     */
+    public function getReorderAtRiskDriftRatio(?int $storeId = null): float
+    {
+        $value = $this->scopeConfig->getValue(
+            self::XML_PATH_REORDER_AT_RISK_DRIFT_RATIO,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+
+        return $value !== null && $value !== '' ? (float) $value : 0.75;
     }
 
     public function isAbandonedCartEnabled(?int $storeId = null): bool

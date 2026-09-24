@@ -9,6 +9,7 @@ use Ordo\Automation\Model\CustomerScoreManager;
 use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Model\Event\EventOccurredResolver;
 use Ordo\Automation\Model\Purchase\PurchasedProductResolver;
+use Ordo\Automation\Model\ReorderCycle\ReorderCycleDriftCalculator;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\Collection as SegmentConditionCollection;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\CollectionFactory as SegmentConditionCollectionFactory;
@@ -32,6 +33,7 @@ class SegmentMemberResolverTest extends TestCase
     private LoggerInterface&\PHPUnit\Framework\MockObject\MockObject $logger;
     private PurchasedProductResolver&\PHPUnit\Framework\MockObject\MockObject $purchasedProductResolver;
     private EventOccurredResolver&\PHPUnit\Framework\MockObject\MockObject $eventOccurredResolver;
+    private ReorderCycleDriftCalculator&\PHPUnit\Framework\MockObject\MockObject $reorderCycleDriftCalculator;
     private SegmentMemberResolver $resolver;
     private Segment $segmentStub;
 
@@ -49,6 +51,7 @@ class SegmentMemberResolverTest extends TestCase
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->purchasedProductResolver = $this->createMock(PurchasedProductResolver::class);
         $this->eventOccurredResolver = $this->createMock(EventOccurredResolver::class);
+        $this->reorderCycleDriftCalculator = $this->createMock(ReorderCycleDriftCalculator::class);
 
         // willReturnCallback (not willReturn) so stubSegmentConditionLogic() can change what's
         // returned later in a test — PHPUnit stacks multiple ->method('create') stubs FIFO, so a
@@ -69,7 +72,8 @@ class SegmentMemberResolverTest extends TestCase
             $this->purchasedProductResolver,
             $this->eventOccurredResolver,
             new GroupWalker(),
-            new SetGroupCombineStrategy()
+            new SetGroupCombineStrategy(),
+            $this->reorderCycleDriftCalculator
         );
     }
 
@@ -559,6 +563,30 @@ class SegmentMemberResolverTest extends TestCase
     public function testScoreAtLeastFailsClosedOnNonNumericThreshold(): void
     {
         $this->stubSegment(1, [['type' => 'score_at_least', 'params' => ['threshold' => 'not-a-number']]]);
+        $this->primeFactory();
+
+        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testReorderCycleAtRiskFiltersByDriftRatioInclusively(): void
+    {
+        $this->stubSegment(1, [['type' => 'reorder_cycle_at_risk', 'params' => ['ratio_at_least' => '0.75']]]);
+        $this->primeFactory();
+
+        $this->reorderCycleDriftCalculator->method('getDriftRatiosForAllCustomers')->willReturn([
+            1 => 0.75,
+            2 => 0.5,
+            3 => 1.5,
+        ]);
+
+        self::assertSame([1, 3], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testReorderCycleAtRiskFailsClosedOnNonNumericRatio(): void
+    {
+        $this->stubSegment(1, [['type' => 'reorder_cycle_at_risk', 'params' => ['ratio_at_least' => 'not-a-number']]]);
         $this->primeFactory();
 
         self::assertSame([], $this->resolver->getMatchingCustomerIds(1));

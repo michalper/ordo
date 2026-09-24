@@ -599,6 +599,7 @@ class FlowTest extends TestCase
         self::assertSame('count', $config['order_frequency_at_least'][0]['name']);
         self::assertSame('days', $config['recency_days_at_most'][0]['name']);
         self::assertSame('amount', $config['monetary_total_at_least'][0]['name']);
+        self::assertSame('ratio_at_least', $config['reorder_cycle_at_risk'][0]['name']);
     }
 
     #[AllowMockObjectsWithoutExpectations]
