@@ -76,6 +76,7 @@ class ReorderCartBuilderTest extends TestCase
         $customer->method('getStoreId')->willReturn(2);
 
         $this->orderCreate->expects(self::once())->method('addProduct')->with(42, ['qty' => 1]);
+        $this->orderCreate->expects(self::once())->method('saveQuote');
 
         $this->builder->build($cycle, $customer);
 
@@ -115,6 +116,7 @@ class ReorderCartBuilderTest extends TestCase
         $this->orderCreate->method('addProduct')->willThrowException(
             new LocalizedException(__('out of stock'))
         );
+        $this->orderCreate->expects(self::never())->method('saveQuote');
 
         $this->expectException(LocalizedException::class);
         $this->builder->build($cycle, $customer);
