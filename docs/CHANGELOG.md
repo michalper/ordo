@@ -7,6 +7,27 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Real-time lead routing rules (ROADMAP.md candidate)** — automatic, rule-based, round-robin assignment of
+  a qualifying lead to a sales rep at the moment they qualify (real storefront registration, or crossing the
+  lead-score threshold), distinct from the existing `ordo_sales_rep_email` attribute + weekly
+  `Cron\SendSalesRepDigest`, which only ever reported on an already-assigned rep's book. New
+  `Model\LeadRoutingRule` entity (`ordo_lead_routing_rule`, mirroring `ScoreRule`'s own flat single-table
+  shape: `attribute_code`/`operator`/`value` condition — a blank `attribute_code` is a catch-all match — plus
+  a JSON `reps` pool) with full admin CRUD under a new "Lead Routing Rules" dashboard card.
+  `Model\LeadRouting\LeadRoutingRuleEvaluator` finds the first enabled matching rule;
+  `Model\LeadRouting\LeadAssigner` atomically advances a per-rule round-robin pointer
+  (`ordo_lead_routing_rule_state`, same transaction + `SELECT ... FOR UPDATE` shape as
+  `CustomerScoreManager::applyDemographicScore()`) and writes the exact same three customer attributes
+  `SalesRepEmailContext`/`SendSalesRepDigest` already read — nothing downstream needed to change. New
+  `Observer\AssignLeadRoutingRule` wired to both `customer_register_success` and
+  `ordo_customer_score_threshold_crossed`; skips a customer who already has any assigned rep (automatic or
+  manual) — a one-time assignment, never a silent reassignment. MFTF (`AdminAssignsLeadViaRoutingRuleTest`)
+  drives two real storefront registrations through a real admin-created rule and found a real bug: the
+  "reps" `dynamicRows` field posts as `$data['reps']['reps']` (component name matching its own dataScope —
+  the same nesting `Model\Campaign\CampaignSaveProcessor` already handles for its "triggers"/"actions"
+  fields), so `Save.php` originally read the un-nested key and every real submission silently saved an
+  empty rep pool. Fixed.
+
 - **"Reorder cycle at risk" segment condition + sales-rep digest signal (ROADMAP.md candidate)** —
   new `Model\ReorderCycle\ReorderCycleDriftCalculator`, computing a "drift ratio" per
   `ordo_reorder_cycle` row (days elapsed since the customer's last order in that SKU, divided by

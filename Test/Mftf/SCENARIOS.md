@@ -516,6 +516,20 @@ docblock):
 | `Cron\ComputeCampaignAttribution` computes a real equal-weight revenue split across every campaign a customer clicked through (real `ordo_message_log_event` TYPE_CLICKED rows) before a real order, and the Campaign grid's "Attributed revenue" column reflects it — re-running is idempotent (existing rows for the same order are deleted and reinserted, not doubled) | ✅ `AdminCampaignAttributionSplitIsIdempotentTest` — a real click is recorded via the new `CampaignClickTestHelper` (real webhook signature verification is out of MFTF's reach here, same reasoning `MessageLogTestHelper` already documents for `ordo_message_log` itself), tied to the exact `ordo_message_log` row a real order-triggered `send_email` just wrote |
 | The outcome-log "converted"/"responded" number and the attribution-table "attributed revenue" number are expected to disagree for the same campaign/order (single-touch vs. multi-touch) — not itself a scenario needing its own test, but worth asserting the two aren't accidentally reconciled to match if either implementation ever changes                           | 🔶 documented in code (`CampaignAttributedRevenue`'s own docblock), no dedicated regression test - low priority                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
+## 30. Real-time lead routing rules (`Model/LeadRoutingRule.php`, `Model/LeadRouting/{LeadRoutingRuleEvaluator,
+LeadAssigner}.php`, `Observer/AssignLeadRoutingRule.php`, `Controller/Adminhtml/LeadRoutingRule/*`)
+
+Automatic, rule-based assignment of a qualifying lead to a sales rep, round-robin, at the moment they qualify
+(registration, or crossing the lead-score threshold) — distinct from the existing `ordo_sales_rep_email`
+attribute + weekly `Cron\SendSalesRepDigest`, which only reports on an already-assigned rep's book. Writes to
+the exact same three customer attributes (`AddSalesRepAttributes`) everything else already reads, so no
+downstream consumer changes.
+
+| Scenario                                                                                                                                            | Status                                         |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------|
+| A real routing rule (blank `attribute_code` — matches every customer) with a two-rep pool, created via the real admin form, assigns two genuinely distinct real storefront registrations to the two reps in round-robin order, read back via REST | ✅ `AdminAssignsLeadViaRoutingRuleTest` — found and fixed a real bug while writing this: the "reps" `dynamicRows` field (name == its own `dataScope`, "reps") posts as the nested `$data['reps']['reps']`, the same `dataScope`-then-component-name nesting `Model\Campaign\CampaignSaveProcessor` already handles for its own "triggers"/"actions" fields — `Controller\Adminhtml\LeadRoutingRule\Save` originally read the un-nested `$data['reps']`, so every real submission silently saved an empty rep pool (`reps: "[]"`) despite the form itself showing filled-in values. |
+| An already-assigned customer (automatic or manual) is never silently reassigned by a later qualifying event    | ✅ `Test/Unit/Model/LeadRouting/LeadAssignerTest.php` (`hasAssignedRep()`), exercised inside `Observer\AssignLeadRoutingRule` |
+
 ## Suggested next batch (highest signal per test written)
 
 **Status: the 2026-09-20 re-audit is fully closed (as of 2026-09-23).** Every row from that re-audit — §8, §11,

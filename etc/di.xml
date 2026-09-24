@@ -104,7 +104,15 @@
                 <item name="ordo_productfeedrunlog_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\ProductFeedRunLog\Grid\Collection</item>
                 <item name="ordo_adminactionlog_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\AdminActionLog\Grid\Collection</item>
                 <item name="ordo_conversationmessage_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\ConversationMessage\Grid\Collection</item>
+                <item name="ordo_leadroutingrule_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\LeadRoutingRule\Grid\Collection</item>
             </argument>
+        </arguments>
+    </type>
+
+    <type name="Ordo\Automation\Model\ResourceModel\LeadRoutingRule\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">ordo_lead_routing_rule</argument>
+            <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\LeadRoutingRule</argument>
         </arguments>
     </type>
 

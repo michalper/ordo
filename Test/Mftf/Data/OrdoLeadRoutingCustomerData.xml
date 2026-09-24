@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="urn:magento:mftf:DataGenerator/etc/dataProfileSchema.xsd">
+    <!-- AdminAssignsLeadViaRoutingRuleTest needs two genuinely distinct real storefront
+         registrations in one test run - same "second independently unique entity" reasoning as
+         Data/OrdoOverlapCustomerData.xml's own OrdoOverlapCustomerTwo (Magento_Customer's
+         CustomerEntityOne has no sibling, and re-invoking SignUpNewUserFromStorefrontActionGroup
+         against the same entity twice would collide on the same already-registered email). Uses
+         CustomerEntityOne for the first registration, this for the second. -->
+    <entity name="OrdoLeadRoutingCustomerTwo" type="customer">
+        <data key="group_id">1</data>
+        <data key="default_billing">true</data>
+        <data key="default_shipping">true</data>
+        <data key="email" unique="prefix">lead.routing.two@example.com</data>
+        <data key="firstname">LeadRouting</data>
+        <data key="lastname">Two</data>
+        <data key="fullname">LeadRouting Two</data>
+        <data key="password">pwdTest123!</data>
+        <data key="store_id">0</data>
+        <data key="website_id">0</data>
+        <data key="group">General</data>
+    </entity>
+</entities>

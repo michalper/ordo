@@ -3,6 +3,7 @@
     <event name="customer_register_success">
         <observer name="ordo_automation_send_welcome_email" instance="Ordo\Automation\Observer\SendWelcomeEmail"/>
         <observer name="ordo_automation_dispatch_customer_registered_campaigns" instance="Ordo\Automation\Observer\DispatchCustomerRegisteredCampaigns"/>
+        <observer name="ordo_automation_assign_lead_routing_rule" instance="Ordo\Automation\Observer\AssignLeadRoutingRule"/>
     </event>
     <event name="sales_order_place_after">
         <observer name="ordo_automation_hold_order_for_approval" instance="Ordo\Automation\Observer\HoldOrderForApproval"/>
@@ -40,6 +41,7 @@
     </event>
     <event name="ordo_customer_score_threshold_crossed">
         <observer name="ordo_automation_dispatch_score_threshold_campaigns" instance="Ordo\Automation\Observer\DispatchScoreThresholdCampaigns"/>
+        <observer name="ordo_automation_assign_lead_routing_rule_on_score_threshold" instance="Ordo\Automation\Observer\AssignLeadRoutingRule"/>
     </event>
     <event name="checkout_cart_product_add_after">
         <observer name="ordo_automation_track_cart_add" instance="Ordo\Automation\Observer\TrackCartAdd"/>

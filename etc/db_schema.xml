@@ -682,6 +682,34 @@
         </constraint>
     </table>
 
+    <table name="ordo_lead_routing_rule" resource="default" engine="innodb" comment="Rule matching a qualifying customer to a pool of sales reps, assigned round-robin at real-time qualification (registration or lead score threshold crossed) - see Observer AssignLeadRoutingRule">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="name" nullable="false" length="255" comment="Admin-facing rule name"/>
+        <column xsi:type="varchar" name="attribute_code" nullable="true" length="64" comment="Customer attribute code, same vocabulary as ordo_score_rule.attribute_code - blank matches every customer (catch-all/default pool)"/>
+        <column xsi:type="varchar" name="operator" nullable="true" length="32" comment="Comparison operator: equals, not_equals, contains - unused when attribute_code is blank"/>
+        <column xsi:type="varchar" name="value" nullable="true" length="255" comment="Value to compare the attribute against - unused when attribute_code is blank"/>
+        <column xsi:type="text" name="reps" nullable="true" comment="JSON array of {email, name, phone} - the round-robin pool this rule assigns from"/>
+        <column xsi:type="boolean" name="enabled" nullable="false" default="1" comment="Whether this rule is evaluated"/>
+        <column xsi:type="int" name="sort_order" unsigned="true" nullable="false" default="0" comment="Match order - first enabled rule that matches wins"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+    </table>
+
+    <table name="ordo_lead_routing_rule_state" resource="default" engine="innodb" comment="Round-robin pointer per ordo_lead_routing_rule - kept in its own table from the rule row itself, same reasoning as ordo_customer_demographic_score being separate from ordo_customer_score">
+        <column xsi:type="int" name="rule_id" padding="10" unsigned="true" nullable="false" comment="ordo_lead_routing_rule.entity_id"/>
+        <column xsi:type="int" name="last_assigned_position" unsigned="true" nullable="false" default="0" comment="Index into the rule own reps array that was assigned last"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="rule_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="ORDO_LEAD_ROUTING_RULE_STATE_RULE_ID_LEAD_ROUTING_RULE_ENTITY_ID"
+                    table="ordo_lead_routing_rule_state" column="rule_id"
+                    referenceTable="ordo_lead_routing_rule" referenceColumn="entity_id" onDelete="CASCADE"/>
+    </table>
+
     <table name="ordo_customer_demographic_score" resource="default" engine="innodb" comment="Current sum of matching ordo_score_rule points per customer, tracked separately from ordo_customer_score so a rule changes delta can be computed and applied additively instead of re-summing every rule on every save">
         <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
         <column xsi:type="int" name="score" unsigned="false" nullable="false" default="0" comment="Current sum of matching demographic scoring rule points"/>

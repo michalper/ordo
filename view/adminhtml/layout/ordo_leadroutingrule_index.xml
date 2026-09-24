@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <css src="Ordo_Automation::css/_tokens.css"/>
+        <css src="Ordo_Automation::css/dashboard.css"/>
+    </head>
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="ordo_leadroutingrule_listing_intro"
+                   template="Ordo_Automation::listing_intro.phtml" before="ordo_leadroutingrule_listing">
+                <arguments>
+                    <argument name="intro_text" xsi:type="string">Automatically assigns a qualifying lead (a new registration, or an existing customer whose lead score just crossed the configured threshold) to a sales rep from a rule matched pool, round-robin. An existing assignment — automatic or manual — is never overwritten.</argument>
+                </arguments>
+            </block>
+            <block class="Ordo\Automation\Block\Adminhtml\Listing\LeadRoutingRuleEmptyStateHint"
+                   name="ordo_leadroutingrule_listing_empty_state"
+                   template="Ordo_Automation::listing_empty_state.phtml"
+                   after="ordo_leadroutingrule_listing_intro" before="ordo_leadroutingrule_listing">
+                <arguments>
+                    <argument name="hint_text" xsi:type="string">No routing rules yet — a rule matches a qualifying customer and assigns them, round-robin, to one of its own pool of sales reps.</argument>
+                    <argument name="cta_label" xsi:type="string">Create your first routing rule</argument>
+                    <argument name="cta_path" xsi:type="string">ordo/leadroutingrule/new</argument>
+                </arguments>
+            </block>
+            <uiComponent name="ordo_leadroutingrule_listing"/>
+        </referenceContainer>
+    </body>
+</page>

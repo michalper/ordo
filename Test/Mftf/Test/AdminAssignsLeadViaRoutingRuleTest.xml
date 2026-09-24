@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminAssignsLeadViaRoutingRuleTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Lead routing"/>
+            <title value="A real storefront registration is automatically assigned, round-robin, to a rep from a matching lead routing rule"/>
+            <description value="Covers Observer\AssignLeadRoutingRule end to end. Enables lead routing, creates a real catch-all rule (blank attribute_code, so it matches every customer) with a two-rep pool via the admin UI, then drives two genuinely distinct real storefront registrations (SignUpNewUserFromStorefrontActionGroup against customer/account/create - the only path that dispatches customer_register_success, same reasoning AdminCampaignCustomerRegisteredTriggerTest's own docblock already establishes; createData's POST /V1/customers never fires it). Reads the real ordo_sales_rep_email attribute back via Magento core's own REST API (LeadRoutingRuleTestHelper, same 'read via REST instead of a second round trip' technique CustomerTagTestHelper already established) and asserts the two customers got the two different reps, in round-robin order - the real proof the ordo_lead_routing_rule_state pointer persists and cycles across two separate real requests, not just within one in-memory call."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="lifecycle"/>
+        </annotations>
+        <before>
+            <magentoCLI command="config:set ordo_automation/lead_routing/enabled 1" stepKey="enableLeadRouting"/>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <magentoCLI command="config:set ordo_automation/lead_routing/enabled 0" stepKey="disableLeadRouting"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: a real catch-all rule (blank attribute_code) with two reps in its pool,
+             via the real admin form - LeadRoutingRuleEvaluator treats a blank attribute_code as
+             an automatic match for every customer. -->
+        <amOnPage url="admin/ordo/leadroutingrule/new" stepKey="goToNewRulePage"/>
+        <waitForPageLoad stepKey="waitForNewRulePage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Round Robin Test Rule" stepKey="fillName"/>
+
+        <waitForElementClickable selector="//*[contains(text(), 'Add Rep')]" stepKey="waitForAddRepButton"/>
+        <click selector="//*[contains(text(), 'Add Rep')]" stepKey="addFirstRepRow"/>
+        <waitForElementVisible selector="(//input[contains(@name,'[email]')])[1]" stepKey="waitForFirstRepEmail"/>
+        <fillField selector="(//input[contains(@name,'[email]')])[1]" userInput="rep-a@example.test" stepKey="fillFirstRepEmail"/>
+        <fillField selector="(//input[contains(@name,'[name]')])[1]" userInput="Rep A" stepKey="fillFirstRepName"/>
+
+        <click selector="//*[contains(text(), 'Add Rep')]" stepKey="addSecondRepRow"/>
+        <waitForElementVisible selector="(//input[contains(@name,'[email]')])[2]" stepKey="waitForSecondRepEmail"/>
+        <fillField selector="(//input[contains(@name,'[email]')])[2]" userInput="rep-b@example.test" stepKey="fillSecondRepEmail"/>
+        <fillField selector="(//input[contains(@name,'[name]')])[2]" userInput="Rep B" stepKey="fillSecondRepName"/>
+
+        <waitForElementClickable selector="#save" stepKey="waitForSaveButton"/>
+        <click selector="#save" stepKey="clickSave"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The lead routing rule has been saved." stepKey="seeSuccessMessage"/>
+
+        <!-- A plain Save click redirects to the grid, not the edit page (Controller\Adminhtml\
+             LeadRoutingRule\Save's own "back" param check) - same reasoning
+             AdminCampaignAndSegmentExportTest's own identical comment gives for Segment's Save.
+             Find the just-created row by its distinctive name and grab entity_id from its own
+             edit link instead. -->
+        <waitForPageLoad stepKey="waitForGridAfterSave"/>
+        <grabAttributeFrom selector="//tr[contains(., 'Round Robin Test Rule')]//a[contains(@href, 'leadroutingrule/edit')]" userInput="href" stepKey="grabRuleEditHref"/>
+        <executeJS function="return '{$grabRuleEditHref}'.match(/entity_id\/(\d+)/)[1];" stepKey="grabRuleId"/>
+
+        <!-- Step 2: two genuinely distinct real storefront registrations. -->
+        <actionGroup ref="SignUpNewUserFromStorefrontActionGroup" stepKey="registerCustomerOne">
+            <argument name="Customer" value="CustomerEntityOne"/>
+        </actionGroup>
+        <actionGroup ref="StorefrontCustomerLogoutActionGroup" stepKey="logoutCustomerOne"/>
+        <actionGroup ref="SignUpNewUserFromStorefrontActionGroup" stepKey="registerCustomerTwo">
+            <argument name="Customer" value="OrdoLeadRoutingCustomerTwo"/>
+        </actionGroup>
+
+        <!-- Step 3: the real proof - two different reps, in round-robin order, read back via
+             Magento's own core REST API (no ordo_sales_rep_email-specific endpoint exists). -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\LeadRoutingRuleTestHelper" method="getAssignedRepEmailByCustomerEmail" stepKey="getFirstCustomerRep">
+            <argument name="restBaseUrl">{{_ENV.MAGENTO_BASE_URL}}rest</argument>
+            <argument name="customerEmail">{{CustomerEntityOne.email}}</argument>
+            <argument name="adminUsername">{{_ENV.MAGENTO_ADMIN_USERNAME}}</argument>
+            <argument name="adminPassword">{{_ENV.MAGENTO_ADMIN_PASSWORD}}</argument>
+        </helper>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\LeadRoutingRuleTestHelper" method="getAssignedRepEmailByCustomerEmail" stepKey="getSecondCustomerRep">
+            <argument name="restBaseUrl">{{_ENV.MAGENTO_BASE_URL}}rest</argument>
+            <argument name="customerEmail">{{OrdoLeadRoutingCustomerTwo.email}}</argument>
+            <argument name="adminUsername">{{_ENV.MAGENTO_ADMIN_USERNAME}}</argument>
+            <argument name="adminPassword">{{_ENV.MAGENTO_ADMIN_PASSWORD}}</argument>
+        </helper>
+        <assertEquals stepKey="assertFirstCustomerGotRepA">
+            <expectedResult type="string">rep-a@example.test</expectedResult>
+            <actualResult type="variable">getFirstCustomerRep</actualResult>
+        </assertEquals>
+        <assertEquals stepKey="assertSecondCustomerGotRepB">
+            <expectedResult type="string">rep-b@example.test</expectedResult>
+            <actualResult type="variable">getSecondCustomerRep</actualResult>
+        </assertEquals>
+
+        <!-- Cleanup happens here, inline, rather than in <after> - a grabFromCurrentUrl step key
+             like $grabRuleId is scoped to the main test body only; MFTF generates <after> as a
+             separate PHP method with no visibility into it (confirmed the hard way: referencing
+             {$grabRuleId} in <after> throws "Undefined variable" at runtime), same reasoning
+             AdminCampaignAndSegmentImportTest's own inline deletes already follow. -->
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteRoutingRule">
+            <argument name="url" value="admin/ordo/leadroutingrule/delete/entity_id/{$grabRuleId}"/>
+            <argument name="successMessage" value="The lead routing rule has been deleted."/>
+        </actionGroup>
+    </test>
+</tests>

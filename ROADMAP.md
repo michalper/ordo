@@ -72,10 +72,6 @@ exist in some form. Not prioritized against each other; listed for later scoping
   can pick and adapt instead of building from scratch. `Model\Campaign\CampaignImporter` already accepts the
   JSON shape a template would need; this is the curated library + picker UI on top of it, not new import
   plumbing. Medium scope, B2C/B2B.
-- **Real-time lead routing rules** — automatic, rule-based assignment of a new/qualifying lead to a sales rep
-  (e.g. round-robin, by region, by score threshold) at the moment they qualify, distinct from the existing
-  `ordo_sales_rep_email` attribute + weekly `Cron\SendSalesRepDigest` (which only reports on an
-  already-assigned rep's own book, it doesn't do the assigning). Medium scope, B2B.
 
 ## Priorytet kolejnych kroków
 

@@ -78,6 +78,8 @@ class Config
     private const string XML_PATH_LOYALTY_SILVER_THRESHOLD = 'ordo_automation/lead_scoring/loyalty_silver_threshold';
     private const string XML_PATH_LOYALTY_GOLD_THRESHOLD = 'ordo_automation/lead_scoring/loyalty_gold_threshold';
 
+    private const string XML_PATH_LEAD_ROUTING_ENABLED = 'ordo_automation/lead_routing/enabled';
+
     private const string XML_PATH_SMS_ENABLED = 'ordo_automation/sms/enabled';
     private const string XML_PATH_SMS_TWILIO_ACCOUNT_SID = 'ordo_automation/sms/twilio_account_sid';
     private const string XML_PATH_SMS_TWILIO_AUTH_TOKEN = 'ordo_automation/sms/twilio_auth_token';
@@ -546,6 +548,15 @@ class Config
     public function getScoreThreshold(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_LEAD_SCORING_THRESHOLD, 100, $storeId);
+    }
+
+    public function isLeadRoutingEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_LEAD_ROUTING_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
     }
 
     /**
