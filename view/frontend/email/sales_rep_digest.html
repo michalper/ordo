@@ -5,7 +5,7 @@
     <tr class="email-intro">
         <td>
             <p class="greeting">Hi,</p>
-            {{if customer_count}}
+            {{if has_inactive}}
             <p><strong>{{var customer_count}}</strong> of your customers have gone inactive this week:</p>
             <ul>
                 {{for name in customer_names}}
@@ -13,7 +13,7 @@
                 {{/for}}
             </ul>
             {{/if}}
-            {{if at_risk_count}}
+            {{if has_at_risk}}
             <p><strong>{{var at_risk_count}}</strong> of your customers are at risk of missing their usual
                 reorder — their order cadence has drifted from their own normal cycle:</p>
             <ul>

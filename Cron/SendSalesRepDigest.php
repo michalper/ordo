@@ -111,13 +111,21 @@ class SendSalesRepDigest
      */
     private function sendDigest(string $repEmail, array $inactiveNames, array $atRiskNames): void
     {
+        // has_inactive/has_at_risk (not customer_count/at_risk_count) drive the template's own
+        // {{if}} blocks - Magento's IfDirective evaluates a condition as "empty" via `== ''`,
+        // and in PHP 8 an int 0 is NOT loosely equal to '' (0 == '' is false, unlike PHP 7), so
+        // {{if customer_count}} with customer_count=0 would render its TRUTHY branch instead of
+        // being skipped. A real bool resolves correctly either way (false == '' is true), so the
+        // counts stay in their own separate variables purely for display via {{var}}.
         $this->emailSender->send(
             self::XML_PATH_EMAIL_TEMPLATE,
             [
                 'customer_count' => count($inactiveNames),
                 'customer_names' => $inactiveNames,
+                'has_inactive' => $inactiveNames !== [],
                 'at_risk_count' => count($atRiskNames),
                 'at_risk_customer_names' => $atRiskNames,
+                'has_at_risk' => $atRiskNames !== [],
                 'total_count' => count($inactiveNames) + count($atRiskNames),
             ],
             $repEmail

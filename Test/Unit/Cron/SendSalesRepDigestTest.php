@@ -146,8 +146,10 @@ class SendSalesRepDigestTest extends TestCase
             ->with(self::callback(function (array $vars): bool {
                 self::assertSame(1, $vars['customer_count']);
                 self::assertSame([['name' => 'Jan Kowalski (#5)']], $vars['customer_names']);
+                self::assertTrue($vars['has_inactive']);
                 self::assertSame(0, $vars['at_risk_count']);
                 self::assertSame([], $vars['at_risk_customer_names']);
+                self::assertFalse($vars['has_at_risk']);
                 self::assertSame(1, $vars['total_count']);
                 return true;
             }))
@@ -206,8 +208,10 @@ class SendSalesRepDigestTest extends TestCase
             ->with(self::callback(function (array $vars): bool {
                 self::assertSame(0, $vars['customer_count']);
                 self::assertSame([], $vars['customer_names']);
+                self::assertFalse($vars['has_inactive']);
                 self::assertSame(1, $vars['at_risk_count']);
                 self::assertSame([['name' => 'Anna Nowak (#7)']], $vars['at_risk_customer_names']);
+                self::assertTrue($vars['has_at_risk']);
                 self::assertSame(1, $vars['total_count']);
                 return true;
             }))
