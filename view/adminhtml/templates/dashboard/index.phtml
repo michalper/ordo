@@ -394,6 +394,18 @@ $segmentNavDesc = __(
             'desc' => __('Read-only: every admin save of a Campaign or Segment - who, when, and what changed'),
             'icon' => 'inbox',
         ],
+        [
+            'url' => $block->getUrl('ordo/pushsubscription/index'),
+            'title' => __('Push Subscriptions'),
+            'desc' => __('Every browser/device Web Push subscription currently registered'),
+            'icon' => 'inbox',
+        ],
+        [
+            'url' => $block->getUrl('ordo/pricewatch/index'),
+            'title' => __('Price Watch Subscriptions'),
+            'desc' => __('Every price-drop or back-in-stock watch a customer or guest has registered'),
+            'icon' => 'inbox',
+        ],
     ];
     ?>
     <?php foreach ($navGroups as $navGroup): ?>

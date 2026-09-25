@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <css src="Ordo_Automation::css/_tokens.css"/>
+        <css src="Ordo_Automation::css/dashboard.css"/>
+    </head>
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="ordo_pushsubscription_listing_intro"
+                   template="Ordo_Automation::listing_intro.phtml" before="ordo_pushsubscription_listing">
+                <arguments>
+                    <argument name="intro_text" xsi:type="string">Read-only: every browser/device Web Push subscription currently registered, one row per endpoint. Delete a row to force that device to re-subscribe.</argument>
+                </arguments>
+            </block>
+            <uiComponent name="ordo_pushsubscription_listing"/>
+        </referenceContainer>
+    </body>
+</page>

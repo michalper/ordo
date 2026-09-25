@@ -7,6 +7,15 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Admin grids for Push Subscriptions and Price Watch Subscriptions** (round-2 admin UI/UX audit,
+  ROADMAP.md) — `Controller\Track\RegisterPushSubscription`/`RegisterPriceWatch` had no admin-side
+  visibility at all; an admin could only infer subscription state indirectly via logs/emails. New
+  read-only listings (`ordo/pushsubscription/index`, `ordo/pricewatch/index`) reuse the existing
+  `Model\PushSubscription`/`Model\PriceWatch\PriceWatchSubscription` resource models and collections
+  (already used by the tracking controllers and scan crons — no new schema), each with its own ACL
+  resource and a `MassDelete` so an admin can remove a stale/unwanted subscription directly, plus
+  dashboard cards in the "Diagnostics" group alongside Message Log/Cron Run Log.
+
 - **Responsive breakpoints for the GDPR search field, campaign calendar table, and campaign schedule
   calendar** (round-2 admin UI/UX audit, ROADMAP.md) — `dashboard.css`'s `.ordo-input` had a fixed 320px
   `min-width` that overflowed a narrow admin viewport instead of ever shrinking; `campaign_calendar.css`'s

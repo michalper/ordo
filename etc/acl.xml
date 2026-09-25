@@ -28,6 +28,8 @@
                 <resource id="Ordo_Automation::admin_action_log" title="Ordo Automation Admin Action Log" translate="title" sortOrder="650"/>
                 <resource id="Ordo_Automation::lead_routing_rules" title="Ordo Automation Lead Routing Rules" translate="title" sortOrder="660"/>
                 <resource id="Ordo_Automation::credit_limit" title="Ordo Automation Credit Limit" translate="title" sortOrder="670"/>
+                <resource id="Ordo_Automation::push_subscriptions" title="Ordo Automation Push Subscriptions" translate="title" sortOrder="680"/>
+                <resource id="Ordo_Automation::price_watch_subscriptions" title="Ordo Automation Price Watch Subscriptions" translate="title" sortOrder="690"/>
             </resource>
         </resources>
     </acl>

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <css src="Ordo_Automation::css/_tokens.css"/>
+        <css src="Ordo_Automation::css/dashboard.css"/>
+    </head>
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="ordo_pricewatch_listing_intro"
+                   template="Ordo_Automation::listing_intro.phtml" before="ordo_pricewatch_listing">
+                <arguments>
+                    <argument name="intro_text" xsi:type="string">Read-only: every price-drop or back-in-stock watch a customer or guest has registered on a product. Delete a row to cancel that watch.</argument>
+                </arguments>
+            </block>
+            <uiComponent name="ordo_pricewatch_listing"/>
+        </referenceContainer>
+    </body>
+</page>
