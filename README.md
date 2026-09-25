@@ -23,7 +23,7 @@ Covers both classic B2C lifecycle automation (abandoned cart, win-back) and B2B 
 can't see at all — credit limit alerts, order approval workflows, reorder reminders — because they never had
 access to that data.
 
-![The Flow canvas — a Cart Abandoned trigger feeding an Order Total ≥ condition into a Send Email action](.github/assets/flow-canvas.png)
+![Building a campaign on the Flow canvas — a Cart Abandoned trigger feeding an Order Total ≥ condition into a Send Email action](.github/assets/flow-canvas-demo.gif)
 
 ## Features
 
