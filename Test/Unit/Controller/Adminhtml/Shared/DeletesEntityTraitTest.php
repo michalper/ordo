@@ -87,6 +87,20 @@ class DeletesEntityTraitTest extends AbstractAdminActionTestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteCastsStringEntityIdToInt(): void
+    {
+        $controller = $this->makeController();
+        $this->request->method('getParam')->willReturnMap([['entity_id', '5abc']]);
+
+        $redirect = $this->createMock(Redirect::class);
+        $redirect->method('setPath')->willReturnSelf();
+        $this->resultRedirectFactory->method('create')->willReturn($redirect);
+
+        self::assertSame($redirect, $controller->execute());
+        self::assertSame([5], $controller->deletedIds);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteAddsErrorMessageWhenDeleteThrows(): void
     {
         $controller = $this->makeController();
