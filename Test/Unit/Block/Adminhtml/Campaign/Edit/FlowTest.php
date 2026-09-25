@@ -151,6 +151,33 @@ class FlowTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testGetTriggerEventTypesReturnsOptionValues(): void
+    {
+        self::assertSame(['order_placed'], $this->makeBlock()->getTriggerEventTypes());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetConditionTypesReturnsPoolAvailableTypes(): void
+    {
+        self::assertSame(['order_total_gte', 'tag'], $this->makeBlock()->getConditionTypes());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetTriggerEventLabelsKeepsBothEntriesWhenMultipleOptionsExist(): void
+    {
+        $this->triggerEventSource = $this->createStub(TriggerEvent::class);
+        $this->triggerEventSource->method('toOptionArray')->willReturn([
+            ['value' => 'order_placed', 'label' => __('Order Placed')],
+            ['value' => 'cart_abandoned', 'label' => __('Cart Abandoned')],
+        ]);
+
+        self::assertSame(
+            ['order_placed' => 'Order Placed', 'cart_abandoned' => 'Cart Abandoned'],
+            $this->makeBlock()->getTriggerEventLabels()
+        );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetConditionTypeLabelsMapsTypeToLabel(): void
     {
         self::assertSame(
@@ -464,8 +491,11 @@ class FlowTest extends TestCase
         $contentBlock->method('getName')->willReturn('Welcome Snippet');
         $contentBlock->method('getType')->willReturn('snippet');
 
-        $contentBlockCollection = $this->createStub(ContentBlockCollection::class);
-        $contentBlockCollection->method('addFieldToFilter')->willReturnSelf();
+        $contentBlockCollection = $this->createMock(ContentBlockCollection::class);
+        $contentBlockCollection->expects(self::once())
+            ->method('addFieldToFilter')
+            ->with('enabled', 1)
+            ->willReturnSelf();
         $contentBlockCollection->method('getIterator')->willReturn(new \ArrayIterator([$contentBlock]));
         $this->contentBlockCollectionFactory = $this->createStub(ContentBlockCollectionFactory::class);
         $this->contentBlockCollectionFactory->method('create')->willReturn($contentBlockCollection);
