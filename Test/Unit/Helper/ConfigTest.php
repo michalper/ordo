@@ -63,6 +63,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isReferralEnabled());
         self::assertTrue($this->config->isPriceWatchEnabled());
         self::assertTrue($this->config->isAiContentEnabled());
+        self::assertTrue($this->config->isAiAgentEnabled());
     }
 
     public function testPushGettersDelegateToScopeConfig(): void
@@ -140,6 +141,28 @@ class ConfigTest extends TestCase
         self::assertSame('My Feed', $this->config->getShoppingFeedTitle());
         self::assertSame('My Feed Description', $this->config->getShoppingFeedDescription());
         self::assertSame('Acme', $this->config->getMetaCatalogFeedDefaultBrand());
+    }
+
+    public function testAiAgentGettersDelegateToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_automation/ai_agent/name', 'store', null, 'My Store'],
+            ['ordo_automation/ai_agent/description', 'store', null, 'A great store'],
+            ['ordo_automation/ai_agent/contact_email', 'store', null, 'shop@example.com'],
+        ]);
+
+        self::assertSame('My Store', $this->config->getAiAgentName());
+        self::assertSame('A great store', $this->config->getAiAgentDescription());
+        self::assertSame('shop@example.com', $this->config->getAiAgentContactEmail());
+    }
+
+    public function testAiAgentGettersReturnEmptyStringWhenUnset(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn(null);
+
+        self::assertSame('', $this->config->getAiAgentName());
+        self::assertSame('', $this->config->getAiAgentDescription());
+        self::assertSame('', $this->config->getAiAgentContactEmail());
     }
 
     public function testIntGettersUseDefaultWhenUnset(): void
