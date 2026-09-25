@@ -37,6 +37,18 @@ parameters:
 			path: Block/Adminhtml/Campaign/ScheduleCalendar/CampaignScheduleCalendarViewModel.php
 
 		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Block/Adminhtml/Customer360/Index.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Block/Adminhtml/Customer360/Index.php
+
+		-
 			message: '#^Constant Ordo\\Automation\\Block\\Adminhtml\\Dashboard\\DashboardViewModel\:\:COUNT_CACHE_LIFETIME is unused\.$#'
 			identifier: classConstant.unused
 			count: 1
@@ -371,6 +383,24 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/CronRunLog/Index.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/Customer360/Index.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Controller/Adminhtml/Customer360/Index.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/Customer360/Index.php
 
 		-
 			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
@@ -2165,6 +2195,48 @@ parameters:
 			identifier: cast.string
 			count: 3
 			path: Model/Cron/CronRunLog.php
+
+		-
+			message: '#^Cannot access offset ''order_count'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/Customer360/Customer360SnapshotBuilder.php
+
+		-
+			message: '#^Cannot access offset ''order_total'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/Customer360/Customer360SnapshotBuilder.php
+
+		-
+			message: '#^Cannot call method getId\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/Customer360/Customer360SnapshotBuilder.php
+
+		-
+			message: '#^Cannot call method getName\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/Customer360/Customer360SnapshotBuilder.php
+
+		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 1
+			path: Model/Customer360/Customer360SnapshotBuilder.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Model/Customer360/Customer360SnapshotBuilder.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\Customer360\\Customer360SnapshotBuilder\:\:getMatchingSegmentNames\(\) should return array\<string\> but returns list\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/Customer360/Customer360SnapshotBuilder.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'

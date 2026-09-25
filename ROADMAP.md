@@ -41,8 +41,6 @@ Not prioritized against each other; listed for later scoping with the business/p
 - **Email template drafts** — version history is done (`Model\EmailTemplateVersion`, snapshot-on-save +
   restore). What's left: editing a template's content as a separate draft without touching the live
   version `send_email` already reads, then publishing it when ready. Medium scope.
-- **Customer 360 / CDP view** — one admin screen aggregating segments/tags/RFM/lead score/NPS/loyalty tier
-  per customer. Medium-large scope.
 - **Cross-campaign revenue/LTV comparison view** — ranks/compares campaigns against each other, or does
   cohort/LTV analysis over time, on top of the existing per-campaign funnel view. Medium scope.
 - **Per-topic preference granularity within a channel** — split a channel's opt-in further (e.g. "promotional"

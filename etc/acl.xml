@@ -31,6 +31,7 @@
                 <resource id="Ordo_Automation::push_subscriptions" title="Ordo Automation Push Subscriptions" translate="title" sortOrder="680"/>
                 <resource id="Ordo_Automation::price_watch_subscriptions" title="Ordo Automation Price Watch Subscriptions" translate="title" sortOrder="690"/>
                 <resource id="Ordo_Automation::email_template_versioning" title="Ordo Automation Email Template Versioning" translate="title" sortOrder="700"/>
+                <resource id="Ordo_Automation::customer_360" title="Ordo Automation Customer 360" translate="title" sortOrder="710"/>
             </resource>
         </resources>
     </acl>

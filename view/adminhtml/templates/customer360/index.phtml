@@ -1,0 +1,141 @@
+<?php
+/** @var \Ordo\Automation\Block\Adminhtml\Customer360\Index $block */
+/** @var \Magento\Framework\Escaper $escaper */
+$snapshot = $block->getSnapshot();
+?>
+<div class="ordo-dashboard">
+    <div class="ordo-page-toolbar">
+        <a class="ordo-toolbar-back-link" href="<?= $escaper->escapeUrl($block->getUrl('ordo/dashboard/index')) ?>">
+            <?= $escaper->escapeHtml(__('← Back to Dashboard')) ?>
+        </a>
+    </div>
+    <p class="ordo-listing-intro">
+        <?= $escaper->escapeHtml(__(
+            'Look up one customer by email to see everything this module already knows about'
+            . ' them - segments, tags, RFM/CLV, lead score, NPS, loyalty tier, and order history -'
+            . ' on one screen.'
+        )) ?>
+    </p>
+
+    <div class="ordo-gdpr-card">
+        <div class="ordo-section-head">
+            <h2><?= $escaper->escapeHtml(__('Find a customer')) ?></h2>
+        </div>
+        <form action="<?= $escaper->escapeUrl($block->getSearchFormAction()) ?>" method="get">
+            <div class="ordo-gdpr-search-row">
+                <div class="admin__field">
+                    <label class="admin__field-label" for="ordo-customer360-email">
+                        <span><?= $escaper->escapeHtml(__('Customer email')) ?></span>
+                    </label>
+                    <div class="admin__field-control">
+                        <input type="email" id="ordo-customer360-email" name="email" class="ordo-input"
+                               value="<?= $escaper->escapeHtmlAttr($block->getCustomerEmail()) ?>"/>
+                    </div>
+                </div>
+                <button type="submit" class="ordo-btn ordo-btn-primary">
+                    <?= $escaper->escapeHtml(__('Search')) ?>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <?php if ($block->isCustomerResolved() && $snapshot): ?>
+        <div class="ordo-gdpr-card">
+            <div class="ordo-section-head">
+                <h2>
+                    <?= $escaper->escapeHtml(__(
+                        '%1 — customer #%2 (%3)',
+                        $snapshot->name !== '' ? $snapshot->name : __('(no name)'),
+                        $snapshot->customerId,
+                        $snapshot->email
+                    )) ?>
+                </h2>
+            </div>
+            <div class="ordo-trigger-stats">
+                <div class="ordo-trigger-stat-row">
+                    <span class="ordo-trigger-stat-label"><?= $escaper->escapeHtml(__('Lead score')) ?></span>
+                    <span class="ordo-trigger-stat-value"><?= $escaper->escapeHtml((string) $snapshot->leadScore) ?></span>
+                </div>
+                <div class="ordo-trigger-stat-row">
+                    <span class="ordo-trigger-stat-label"><?= $escaper->escapeHtml(__('Loyalty tier')) ?></span>
+                    <span class="ordo-badge ordo-badge-on"><?= $escaper->escapeHtml($snapshot->loyaltyTier) ?></span>
+                </div>
+                <div class="ordo-trigger-stat-row">
+                    <span class="ordo-trigger-stat-label"><?= $escaper->escapeHtml(__('NPS score')) ?></span>
+                    <span class="ordo-trigger-stat-value">
+                        <?= $snapshot->npsScore !== null
+                            ? $escaper->escapeHtml((string) $snapshot->npsScore)
+                            : $escaper->escapeHtml(__('Never surveyed')) ?>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ordo-gdpr-card">
+            <div class="ordo-section-head">
+                <h2><?= $escaper->escapeHtml(__('RFM / order history')) ?></h2>
+            </div>
+            <div class="ordo-trigger-stats">
+                <div class="ordo-trigger-stat-row">
+                    <span class="ordo-trigger-stat-label"><?= $escaper->escapeHtml(__('RFM score')) ?></span>
+                    <span class="ordo-trigger-stat-value">
+                        <?= $escaper->escapeHtml($snapshot->rfmScoreLabel ?? (string) __('Not yet computed')) ?>
+                    </span>
+                </div>
+                <div class="ordo-trigger-stat-row">
+                    <span class="ordo-trigger-stat-label"><?= $escaper->escapeHtml(__('Days since last order')) ?></span>
+                    <span class="ordo-trigger-stat-value">
+                        <?= $snapshot->recencyDays !== null
+                            ? $escaper->escapeHtml((string) $snapshot->recencyDays)
+                            : $escaper->escapeHtml(__('Never ordered')) ?>
+                    </span>
+                </div>
+                <div class="ordo-trigger-stat-row">
+                    <span class="ordo-trigger-stat-label"><?= $escaper->escapeHtml(__('Total orders')) ?></span>
+                    <span class="ordo-trigger-stat-value"><?= $escaper->escapeHtml((string) $snapshot->orderCount) ?></span>
+                </div>
+                <div class="ordo-trigger-stat-row">
+                    <span class="ordo-trigger-stat-label"><?= $escaper->escapeHtml(__('Lifetime spend')) ?></span>
+                    <span class="ordo-trigger-stat-value">
+                        <?= $escaper->escapeHtml($this->helper(\Magento\Framework\Pricing\Helper\Data::class)
+                            ->currency($snapshot->orderTotal, true, false)) ?>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ordo-gdpr-card">
+            <div class="ordo-section-head">
+                <h2><?= $escaper->escapeHtml(__('Tags')) ?></h2>
+            </div>
+            <?php if ($snapshot->tags === []): ?>
+                <p class="ordo-listing-intro"><?= $escaper->escapeHtml(__('No tags.')) ?></p>
+            <?php else: ?>
+                <div class="ordo-trigger-stats">
+                    <?php foreach ($snapshot->tags as $tag): ?>
+                        <div class="ordo-trigger-stat-row">
+                            <span class="ordo-badge ordo-badge-off"><?= $escaper->escapeHtml($tag) ?></span>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <div class="ordo-gdpr-card">
+            <div class="ordo-section-head">
+                <h2><?= $escaper->escapeHtml(__('Qualifies for segments')) ?></h2>
+            </div>
+            <?php if ($snapshot->matchingSegmentNames === []): ?>
+                <p class="ordo-listing-intro"><?= $escaper->escapeHtml(__('No matching enabled segments.')) ?></p>
+            <?php else: ?>
+                <div class="ordo-trigger-stats">
+                    <?php foreach ($snapshot->matchingSegmentNames as $segmentName): ?>
+                        <div class="ordo-trigger-stat-row">
+                            <span class="ordo-trigger-stat-label"><?= $escaper->escapeHtml($segmentName) ?></span>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+</div>

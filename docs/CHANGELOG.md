@@ -27,6 +27,15 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   dead end. Config-gated (default off): Stores > Configuration > Ordo Automation > Email Template Version
   History.
 
+- **Customer 360 view** (ROADMAP.md candidate) — new admin screen (search by email, same shape as the GDPR
+  tool) aggregating everything this module already tracks about one customer onto a single page: lead
+  score, loyalty tier, RFM standing (recency/frequency/monetary + score label), NPS, tags, order
+  count/lifetime spend, and which currently-enabled segments they qualify for. `Model\Customer360\
+  Customer360SnapshotBuilder` reads every value from the same manager/calculator a campaign
+  condition/trigger already reads at dispatch time (`CustomerScoreManager`, `LoyaltyTierCalculator`,
+  `RfmCalculator`, `CustomerTagManager`, `SurveyPrompt`, `SegmentMatcher`) - no new data, no new tables,
+  just one screen instead of five.
+
 - **`review_request_due` campaign trigger** (ROADMAP.md candidate) — new `Cron\ScanReviewRequestDue` finds a
   registered customer's completed order (`sales_order.status = 'complete'`) once
   `ordo_automation/review_request/delay_days` has passed since it was placed, and dispatches the trigger once
