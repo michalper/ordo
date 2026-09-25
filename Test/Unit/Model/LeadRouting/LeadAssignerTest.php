@@ -223,6 +223,86 @@ class LeadAssignerTest extends TestCase
         $assigner->assign(42, $this->makeRule(1, [['email' => 'first@example.com']]));
     }
 
+    /**
+     * A malformed reps JSON (a null entry rather than a real rep object at the position the
+     * round-robin pointer landed on) makes nextRep() itself return null - assign() must bail out
+     * without touching the customer rather than writing bogus custom-attribute values.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAssignDoesNothingWhenTheRepAtTheComputedPositionIsNull(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $this->stubFetchOne($connection, false);
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+        $select->method('forUpdate')->willReturnSelf();
+        $connection->method('select')->willReturn($select);
+        $connection->method('quoteIdentifier')->willReturnArgument(0);
+        $connection->expects(self::once())->method('commit');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getCustomAttribute')->willReturn(null);
+
+        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $customerRepository->method('getById')->willReturn($customer);
+        $customerRepository->expects(self::never())->method('save');
+
+        $assigner = new LeadAssigner($resourceConnection, $customerRepository);
+
+        // Position 0 (no state row yet) is null instead of a rep object.
+        $assigner->assign(42, $this->makeRule(1, [null, ['email' => 'second@example.com']]));
+    }
+
+    /**
+     * A failure writing the round-robin pointer must roll back the transaction and propagate,
+     * not swallow the error and silently skip the assignment.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAssignRollsBackAndRethrowsWhenAdvancingTheRoundRobinPointerFails(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $this->stubFetchOne($connection, false);
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+        $select->method('forUpdate')->willReturnSelf();
+        $connection->method('select')->willReturn($select);
+        $connection->method('quoteIdentifier')->willReturnArgument(0);
+        // Only the round-robin pointer's own INSERT should fail - RELEASE_LOCK in assign()'s own
+        // finally block must still be allowed to run without also throwing, same as a real
+        // connection would behave.
+        $connection->method('query')->willReturnCallback(function (string $sql) {
+            if (str_starts_with($sql, 'INSERT INTO')) {
+                throw new \RuntimeException('deadlock');
+            }
+            return null;
+        });
+        $connection->expects(self::once())->method('rollBack');
+        $connection->expects(self::never())->method('commit');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getCustomAttribute')->willReturn(null);
+
+        $customerRepository = $this->createStub(CustomerRepositoryInterface::class);
+        $customerRepository->method('getById')->willReturn($customer);
+
+        $assigner = new LeadAssigner($resourceConnection, $customerRepository);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('deadlock');
+
+        $assigner->assign(42, $this->makeRule(1, [['email' => 'first@example.com']]));
+    }
+
     public function testAssignNoOpsWhenTheRuleHasNoReps(): void
     {
         $resourceConnection = $this->createMock(ResourceConnection::class);

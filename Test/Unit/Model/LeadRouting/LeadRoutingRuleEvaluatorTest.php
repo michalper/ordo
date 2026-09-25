@@ -112,6 +112,53 @@ class LeadRoutingRuleEvaluatorTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testNotEqualsOperatorMatchesWhenTheValueIsPresentAndDiffers(): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getGroupId')->willReturn(1);
+
+        $rule = $this->makeRule(1, 'group_id', 'not_equals', '2');
+        $evaluator = $this->makeEvaluator([$rule]);
+
+        self::assertSame($rule, $evaluator->getMatchingRule($customer));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testNotEqualsOperatorDoesNotMatchWhenTheValueIsPresentAndEqual(): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getGroupId')->willReturn(1);
+
+        $evaluator = $this->makeEvaluator([$this->makeRule(1, 'group_id', 'not_equals', '1')]);
+
+        self::assertNull($evaluator->getMatchingRule($customer));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testCoreGetterUsedForWebsiteIdAttribute(): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getWebsiteId')->willReturn(3);
+
+        $rule = $this->makeRule(1, 'website_id', 'equals', '3');
+        $evaluator = $this->makeEvaluator([$rule]);
+
+        self::assertSame($rule, $evaluator->getMatchingRule($customer));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testCoreGetterUsedForStoreIdAttribute(): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getStoreId')->willReturn(2);
+
+        $rule = $this->makeRule(1, 'store_id', 'equals', '2');
+        $evaluator = $this->makeEvaluator([$rule]);
+
+        self::assertSame($rule, $evaluator->getMatchingRule($customer));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testNotEqualsOperatorMatchesWhenTheAttributeIsEntirelyMissing(): void
     {
         // Regression: a customer with no "tier" custom attribute at all is just as much
