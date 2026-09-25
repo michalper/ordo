@@ -66,10 +66,6 @@ exist in some form. Not prioritized against each other; listed for later scoping
   can pick and adapt instead of building from scratch. `Model\Campaign\CampaignImporter` already accepts the
   JSON shape a template would need; this is the curated library + picker UI on top of it, not new import
   plumbing. Medium scope, B2C/B2B.
-- **Multi-step drip sequences / delay-as-a-graph-step** — today a campaign is a single-shot
-  trigger→conditions→actions run (`Model/CampaignDispatcher`); there's no native Flow canvas node for
-  "wait N days, then continue" — a 5-email onboarding drip needs 5 separate campaigns chained manually.
-  Large scope: new node type, scheduling, canvas UX.
 - **Email template versioning/drafts** — `SendEmail` sends a configured template with no version history or
   draft/publish state; A/B testing exists at the campaign level (`SplitWinnerCalculator`) but not at the
   template-content level. Medium scope.
