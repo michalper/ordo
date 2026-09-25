@@ -109,7 +109,31 @@
                 <item name="ordo_adminactionlog_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\AdminActionLog\Grid\Collection</item>
                 <item name="ordo_conversationmessage_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\ConversationMessage\Grid\Collection</item>
                 <item name="ordo_leadroutingrule_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\LeadRoutingRule\Grid\Collection</item>
+                <item name="ordo_pushsubscription_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\PushSubscription\Grid\Collection</item>
+                <item name="ordo_pricewatch_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\PriceWatch\PriceWatchSubscription\Grid\Collection</item>
+                <item name="ordo_emailtemplateversion_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\EmailTemplateVersion\Grid\Collection</item>
             </argument>
+        </arguments>
+    </type>
+
+    <type name="Ordo\Automation\Model\ResourceModel\PushSubscription\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">ordo_push_subscription</argument>
+            <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\PushSubscription</argument>
+        </arguments>
+    </type>
+
+    <type name="Ordo\Automation\Model\ResourceModel\PriceWatch\PriceWatchSubscription\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">ordo_price_watch_subscription</argument>
+            <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\PriceWatch\PriceWatchSubscription</argument>
+        </arguments>
+    </type>
+
+    <type name="Ordo\Automation\Model\ResourceModel\EmailTemplateVersion\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">ordo_email_template_version</argument>
+            <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\EmailTemplateVersion</argument>
         </arguments>
     </type>
 
