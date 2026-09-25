@@ -385,6 +385,18 @@ parameters:
 			path: Controller/Adminhtml/Dashboard/Index.php
 
 		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/EmailTemplateVersion/Index.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/EmailTemplateVersion/Index.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
@@ -2188,6 +2200,18 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
+			path: Model/EmailTemplateVersion.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 4
+			path: Model/EmailTemplateVersion.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
 			path: Model/Event/EventOccurredResolver.php
 
 		-
@@ -3647,6 +3671,18 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Plugin/ContentBlock/ContentBlockResourceAuditPlugin.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Plugin/Email/SnapshotEmailTemplateVersion.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 4
+			path: Plugin/Email/SnapshotEmailTemplateVersion.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'

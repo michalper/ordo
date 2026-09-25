@@ -38,8 +38,9 @@ Not prioritized against each other; listed for later scoping with the business/p
 - **Campaign template library** — curated gallery of ready-to-use campaign starting points (welcome series,
   cart abandonment, win-back, VIP upsell), picked and adapted instead of built from scratch.
   `Model\Campaign\CampaignImporter` already accepts the needed JSON shape. Medium scope, B2C/B2B.
-- **Email template versioning/drafts** — version history / draft-publish state for `SendEmail`'s template
-  content. Medium scope.
+- **Email template drafts** — version history is done (`Model\EmailTemplateVersion`, snapshot-on-save +
+  restore). What's left: editing a template's content as a separate draft without touching the live
+  version `send_email` already reads, then publishing it when ready. Medium scope.
 - **Referral/advocacy program** — invite-a-friend flow (referral code, tracking, reward-on-referral) on top of
   the existing `GenerateCoupon`/`AddPoints` actions. Medium scope, B2C.
 - **Customer 360 / CDP view** — one admin screen aggregating segments/tags/RFM/lead score/NPS/loyalty tier

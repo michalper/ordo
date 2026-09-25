@@ -537,10 +537,12 @@ downstream consumer changes.
 document against `etc/di.xml`/`Controller/Adminhtml/*`/`etc/crontab.xml`/`etc/events.xml` periodically rather
 than trusting it at face value, the same instruction this document's own header already gives.
 
-Four new rows from genuinely new features (not the re-audit), all unit-tested only, no MFTF/Integration yet:
+Five new rows from genuinely new features (not the re-audit), all unit-tested only, no MFTF/Integration yet:
 §28's `AutoPickCampaignSplitWinner`, §11's `SendAbandonedCartFallbackReminders`, the
 `Controller\Adminhtml\PushSubscription`/`PriceWatch` read-only grids + `MassDelete` (round-2 admin UI/UX
-audit, ROADMAP.md), and the new `Cron\ScanReviewRequestDue`/`review_request_due` trigger (ROADMAP.md
+audit, ROADMAP.md), the new `Cron\ScanReviewRequestDue`/`review_request_due` trigger (ROADMAP.md candidate
+feature), and the new email template version history + restore
+(`Plugin\Email\SnapshotEmailTemplateVersion`, `Controller\Adminhtml\EmailTemplateVersion\*` - ROADMAP.md
 candidate feature).
 
 Separately, section 22 (Webhook action/trigger), 23 (Two-way SMS/WhatsApp conversations), 24 (Price-drop &

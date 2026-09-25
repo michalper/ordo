@@ -446,6 +446,14 @@
                     <depends><field id="enabled">1</field></depends>
                 </field>
             </group>
+            <group id="email_template_versioning" translate="label" type="text" sortOrder="137" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Email Template Version History</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Snapshots a Magento email template's content every time it's saved (Marketing &gt; Email Templates), so a "send_email" campaign action's referenced template can be restored if an edit breaks it. Magento's own template editor has no version history of its own.</comment>
+                </field>
+            </group>
             <group id="email" translate="label" type="text" sortOrder="140" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Email Delivery Tracking (SendGrid)</label>
                 <field id="sendgrid_webhook_verification_key" translate="label comment" type="obscure" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">

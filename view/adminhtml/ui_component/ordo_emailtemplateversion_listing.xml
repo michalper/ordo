@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">ordo_emailtemplateversion_listing.ordo_emailtemplateversion_listing_data_source</item>
+        </item>
+    </argument>
+    <settings>
+        <spinner>ordo_emailtemplateversion_columns</spinner>
+        <deps>
+            <dep>ordo_emailtemplateversion_listing.ordo_emailtemplateversion_listing_data_source</dep>
+        </deps>
+        <buttons>
+            <button name="back_to_dashboard">
+                <url path="ordo/dashboard/index"/>
+                <class>back</class>
+                <label translate="true">Back to Dashboard</label>
+            </button>
+        </buttons>
+    </settings>
+
+    <dataSource name="ordo_emailtemplateversion_listing_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider</argument>
+            <argument name="name" xsi:type="string">ordo_emailtemplateversion_listing_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">entity_id</argument>
+            <argument name="requestFieldName" xsi:type="string">entity_id</argument>
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="update_url" xsi:type="url" path="mui/index/render"/>
+                </item>
+            </argument>
+        </argument>
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/grid/provider</item>
+            </item>
+        </argument>
+    </dataSource>
+
+    <listingToolbar name="listing_top">
+        <massaction name="listing_massaction">
+            <action name="restore">
+                <settings>
+                    <confirm>
+                        <message translate="true">Restore the selected version(s)? This overwrites each version's template with this snapshot's subject/content, and itself creates a new snapshot of the resulting state.</message>
+                        <title translate="true">Restore template version(s)</title>
+                    </confirm>
+                    <url path="*/*/massRestore"/>
+                    <type>restore</type>
+                    <label translate="true">Restore</label>
+                </settings>
+            </action>
+        </massaction>
+        <exportButton name="export_button"/>
+    </listingToolbar>
+
+    <columns name="ordo_emailtemplateversion_columns">
+        <selectionsColumn name="ids">
+            <settings>
+                <indexField>entity_id</indexField>
+            </settings>
+        </selectionsColumn>
+        <column name="entity_id">
+            <settings>
+                <filter>text</filter>
+                <sorting>desc</sorting>
+                <label translate="true">ID</label>
+            </settings>
+        </column>
+        <column name="template_id">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Template ID</label>
+            </settings>
+        </column>
+        <column name="template_code">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Template Name</label>
+            </settings>
+        </column>
+        <column name="template_subject">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Subject</label>
+            </settings>
+        </column>
+        <column name="created_at" class="Magento\Ui\Component\Listing\Columns\Date">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <sorting>desc</sorting>
+                <label translate="true">Snapshot Taken</label>
+            </settings>
+        </column>
+    </columns>
+</listing>

@@ -1,0 +1,45 @@
+<?php
+declare(strict_types=1);
+
+namespace Ordo\Automation\Test\Unit\Controller\Adminhtml\EmailTemplateVersion;
+
+use Magento\Backend\Model\View\Result\Page;
+use Magento\Framework\View\Page\Config as PageConfig;
+use Magento\Framework\View\Page\Title;
+use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\EmailTemplateVersion\Index;
+use Ordo\Automation\Test\Unit\Controller\AbstractAdminActionTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+
+class IndexTest extends AbstractAdminActionTestCase
+{
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteBuildsResultPage(): void
+    {
+        $context = $this->makeContext();
+
+        $title = $this->createMock(Title::class);
+        $title->expects(self::once())->method('prepend')->with(__('Email Template Versions'));
+
+        $pageConfig = $this->createStub(PageConfig::class);
+        $pageConfig->method('getTitle')->willReturn($title);
+
+        $resultPage = $this->createMock(Page::class);
+        $resultPage->expects(self::once())
+            ->method('setActiveMenu')
+            ->with('Ordo_Automation::email_template_versioning')
+            ->willReturnSelf();
+        $resultPage->method('getConfig')->willReturn($pageConfig);
+
+        $resultPageFactory = $this->createStub(PageFactory::class);
+        $resultPageFactory->method('create')->willReturn($resultPage);
+
+        $controller = new Index($context, $resultPageFactory);
+        self::assertSame($resultPage, $controller->execute());
+    }
+
+    public function testUsesEmailTemplateVersioningAclResource(): void
+    {
+        self::assertSame('Ordo_Automation::email_template_versioning', Index::ADMIN_RESOURCE);
+    }
+}

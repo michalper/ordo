@@ -111,6 +111,9 @@ class Config
     private const string XML_PATH_META_CATALOG_FEED_DEFAULT_BRAND
         = 'ordo_automation/meta_catalog_feed/default_brand';
 
+    private const string XML_PATH_EMAIL_TEMPLATE_VERSIONING_ENABLED
+        = 'ordo_automation/email_template_versioning/enabled';
+
     private const string XML_PATH_EMAIL_SENDGRID_WEBHOOK_VERIFICATION_KEY
         = 'ordo_automation/email/sendgrid_webhook_verification_key';
 
@@ -736,6 +739,15 @@ class Config
     {
         return $this->scopeConfig->isSetFlag(
             self::XML_PATH_META_CATALOG_FEED_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function isEmailTemplateVersioningEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_EMAIL_TEMPLATE_VERSIONING_ENABLED,
             ScopeInterface::SCOPE_STORE,
             $storeId
         );

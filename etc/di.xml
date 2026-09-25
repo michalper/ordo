@@ -35,6 +35,10 @@
         <plugin name="ordo_automation_email_message_id" type="Ordo\Automation\Plugin\Email\EmailMessageMessageIdPlugin"/>
     </type>
 
+    <type name="Magento\Email\Model\ResourceModel\Template">
+        <plugin name="ordo_automation_snapshot_email_template_version" type="Ordo\Automation\Plugin\Email\SnapshotEmailTemplateVersion"/>
+    </type>
+
     <type name="Ordo\Automation\Model\AdAudience\SyncClientPool">
         <arguments>
             <argument name="clients" xsi:type="array">

@@ -406,6 +406,12 @@ $segmentNavDesc = __(
             'desc' => __('Every price-drop or back-in-stock watch a customer or guest has registered'),
             'icon' => 'inbox',
         ],
+        [
+            'url' => $block->getUrl('ordo/emailtemplateversion/index'),
+            'title' => __('Email Template Versions'),
+            'desc' => __('Every snapshot taken of a Magento email template, with a restore option'),
+            'icon' => 'inbox',
+        ],
     ];
     ?>
     <?php foreach ($navGroups as $navGroup): ?>
