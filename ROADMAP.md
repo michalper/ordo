@@ -37,10 +37,12 @@ actual `ui_component`/`Controller/Adminhtml`/`view/adminhtml/web` code.
   No listing in the module has a standard `exportButton` at all — CSV/XML export only exists as bespoke
   controllers for Campaign/Segment. Real gap for audit/compliance use cases (GDPR log review, admin action
   audit, order-approval history).
-- **No responsive breakpoints on most admin stylesheets**: `flow.css` is the only stylesheet in the module
-  with `@media` queries. `dashboard.css`, `campaign-form.css`, `segment-form.css`,
-  `whatsapp-template-form.css`, `campaign_calendar.css`, `campaign_schedule_calendar.css`,
-  `free-gift-offer-form.css` have none — these screens won't adapt to narrow admin viewports/tablets.
+- **Remaining stylesheets without a media query**: `campaign-form.css`, `segment-form.css`,
+  `whatsapp-template-form.css`, `free-gift-offer-form.css`. Lower priority than the ones already fixed —
+  these already lean heavily on `flex-wrap: wrap` for their multi-item rows, so they degrade reasonably on
+  narrow viewports without one; worth a real-browser check at tablet width before deciding whether they
+  need their own breakpoint too. (`dashboard.css`, `campaign_calendar.css`, `campaign_schedule_calendar.css`
+  got real breakpoints in the round-2 pass; `flow.css` already had one.)
 - **No admin visibility into push-subscription / price-watch opt-in state**: `Controller/Track/*`
   (RegisterPushSubscription, RegisterPriceWatch) collects this data, but there's no
   `Controller/Adminhtml` grid to view or manage it — only inferable indirectly via logs/emails.

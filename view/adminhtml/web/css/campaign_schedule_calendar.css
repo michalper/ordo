@@ -110,3 +110,27 @@
   border-radius: 4px;
   padding: 2px 10px;
 }
+
+/* The 7-column month grid has no fallback below tablet width - each day cell's fixed
+   min-height/padding just gets cramped instead of ever shrinking, and the nav/legend rows never
+   wrap. Same shape as flow.css's own first media query. */
+@media (max-width: 640px) {
+  .ordo-schedule-calendar-nav {
+    flex-wrap: wrap;
+  }
+
+  .ordo-schedule-calendar-day {
+    min-height: 56px;
+    padding: 4px 4px;
+  }
+
+  .ordo-schedule-calendar-weekday {
+    padding: 6px 2px;
+    font-size: var(--ordo-font-xs);
+  }
+
+  .ordo-schedule-calendar-legend {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}

@@ -287,6 +287,16 @@ body.ordo-campaign-index #add:hover {
   min-width: 320px;
 }
 
+/* .ordo-input's fixed 320px min-width sits inside a flex-wrap row with a submit button - fine on
+   its own line once wrapped, but never shrinks below 320px, so it still overflows a narrow admin
+   viewport instead of ever filling it. */
+@media (max-width: 480px) {
+  .ordo-input {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
 .ordo-input:focus { outline: none; border-color: var(--ordo-primary); }
 
 .ordo-gdpr-consent-row {

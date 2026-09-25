@@ -78,3 +78,17 @@
   font-size: var(--ordo-font-xs);
   color: var(--ordo-text-muted);
 }
+
+/* The multi-column table has no fallback below tablet width - it just gets squeezed instead of
+   ever scrolling. Same shape as flow.css's own first media query. */
+@media (max-width: 640px) {
+  .ordo-calendar-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ordo-section-head-actions {
+    flex-wrap: wrap;
+  }
+}
