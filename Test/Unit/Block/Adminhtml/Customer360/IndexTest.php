@@ -9,6 +9,7 @@ use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\App\ObjectManager;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\ObjectManagerInterface;
+use Magento\Framework\Pricing\Helper\Data as PricingHelper;
 use Magento\Framework\Registry;
 use Magento\Framework\UrlInterface;
 use Ordo\Automation\Block\Adminhtml\Customer360\Index;
@@ -22,6 +23,7 @@ class IndexTest extends TestCase
     private CustomerRepositoryInterface $customerRepository;
     private Customer360SnapshotBuilder $snapshotBuilder;
     private UrlInterface $urlBuilder;
+    private PricingHelper $pricingHelper;
     private Index $block;
 
     protected function setUp(): void
@@ -34,11 +36,18 @@ class IndexTest extends TestCase
         $this->customerRepository = $this->createStub(CustomerRepositoryInterface::class);
         $this->snapshotBuilder = $this->createStub(Customer360SnapshotBuilder::class);
         $this->urlBuilder = $this->createStub(UrlInterface::class);
+        $this->pricingHelper = $this->createStub(PricingHelper::class);
 
         $context = $this->createStub(Context::class);
         $context->method('getUrlBuilder')->willReturn($this->urlBuilder);
 
-        $this->block = new Index($context, $this->registry, $this->customerRepository, $this->snapshotBuilder);
+        $this->block = new Index(
+            $context,
+            $this->registry,
+            $this->customerRepository,
+            $this->snapshotBuilder,
+            $this->pricingHelper
+        );
     }
 
     protected function tearDown(): void
@@ -111,7 +120,7 @@ class IndexTest extends TestCase
 
         $context = $this->createStub(Context::class);
         $context->method('getUrlBuilder')->willReturn($this->urlBuilder);
-        $block = new Index($context, $this->registry, $this->customerRepository, $builder);
+        $block = new Index($context, $this->registry, $this->customerRepository, $builder, $this->pricingHelper);
 
         self::assertSame($snapshot, $block->getSnapshot());
         // Second call must not rebuild - the mock's expects(once()) above enforces this.
@@ -126,5 +135,12 @@ class IndexTest extends TestCase
             'https://example.com/admin/ordo/customer360/index/',
             $this->block->getSearchFormAction()
         );
+    }
+
+    public function testFormatCurrencyDelegatesToPricingHelper(): void
+    {
+        $this->pricingHelper->method('currency')->willReturn('$199.99');
+
+        self::assertSame('$199.99', $this->block->formatCurrency(199.99));
     }
 }

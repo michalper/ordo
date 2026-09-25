@@ -7,6 +7,7 @@ use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\Pricing\Helper\Data as PricingHelper;
 use Magento\Framework\Registry;
 use Ordo\Automation\Model\Customer360\Customer360Snapshot;
 use Ordo\Automation\Model\Customer360\Customer360SnapshotBuilder;
@@ -24,9 +25,27 @@ class Index extends Template
         private readonly Registry $registry,
         private readonly CustomerRepositoryInterface $customerRepository,
         private readonly Customer360SnapshotBuilder $snapshotBuilder,
+        private readonly PricingHelper $pricingHelper,
         array $data = []
     ) {
         parent::__construct($context, $data);
+    }
+
+    public function formatCurrency(float $amount): string
+    {
+        return (string) $this->pricingHelper->currency($amount, true, false);
+    }
+
+    /**
+     * Renders one "label: value" row of the stat-row markup repeated across this screen's cards.
+     * $valueHtml is trusted, already-escaped markup - callers own escaping their own value.
+     */
+    public function statRow(string $label, string $valueHtml): string
+    {
+        return '<div class="ordo-trigger-stat-row">'
+            . '<span class="ordo-trigger-stat-label">' . $this->escapeHtml($label) . '</span>'
+            . $valueHtml
+            . '</div>';
     }
 
     public function getCustomerEmail(): string
