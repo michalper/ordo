@@ -9,25 +9,15 @@ scoped from real hands-on marketing automation experience.
 
 ## Test coverage
 
-- **Ad-audience sync (`Cron\SyncAdAudiences`) has no test against a real Google Ads/Meta account.** Note:
-  a since-fixed bug (docs/CHANGELOG.md "Fixed") meant `getGoogleAdsClientSecret()`/`getGoogleAdsRefreshToken()`/
-  `getGoogleAdsDeveloperToken()`/`getMetaAccessToken()` returned ciphertext at runtime, not the decrypted
-  secret — every real API call would have failed auth regardless of this gap. Same shape as
-  `send_sms`'s equivalent gap, already closed (see docs/CHANGELOG.md): unit tests
-  (`GoogleAdsSyncClientTest`/`MetaSyncClientTest`/`GoogleOAuthTokenProviderTest`)
-  drive the real request-building/response-parsing logic via a fake `Curl`, and the integration test
-  (`SyncAdAudiencesTest`) uses real DI/database (real segment/tag/customer rows, real `SegmentMemberResolver`
-  query, real `PiiHasher`) but swaps `SyncClientInterface` for a `RecordingSyncClient` — so the actual HTTP
-  calls to `googleads.googleapis.com`/`graph.facebook.com` (OAuth token exchange, offline user data job
-  lifecycle, Custom Audience creation/replace) have never been exercised against live credentials.
-- **`send_whatsapp` / WhatsApp templates have no test against a real Meta WhatsApp Business Account.** Note:
-  the same since-fixed bug meant `getWhatsAppAccessToken()`/`getWhatsAppAppSecret()` returned ciphertext at
-  runtime — every real Graph API call and every webhook signature check would have failed regardless of this
-  gap. Same shape again: unit tests (`WhatsAppSenderTest`/`WhatsAppTemplateClientTest`) drive the real Graph API
-  request-building/response-parsing logic via a fake `Curl`, and `WhatsAppSignatureValidatorTest`/`WebhookTest`
-  use a real HMAC-SHA256 signature — but template submission (`SubmitForReview`), approval polling
-  (`RefreshStatus`), and an actual template message send have never been exercised against a live WABA/phone
-  number, and the webhook receiver has never received a genuine callback from Meta.
+- **Ad-audience sync (`Cron\SyncAdAudiences`) has no test against a real Google Ads/Meta account.** Unit
+  tests drive the request-building/response-parsing logic via a fake `Curl`, and the integration test uses
+  real DI/database but swaps `SyncClientInterface` for a `RecordingSyncClient` — the actual HTTP calls
+  (OAuth token exchange, offline user data job lifecycle, Custom Audience creation/replace) have never been
+  exercised against live credentials.
+- **`send_whatsapp` / WhatsApp templates have no test against a real Meta WhatsApp Business Account.** Same
+  shape: unit tests cover the Graph API request/response logic via a fake `Curl`, and the webhook signature
+  check uses a real HMAC-SHA256 — but template submission, approval polling, and an actual template send
+  have never been exercised against a live WABA/phone number.
 
 ### MFTF/scenario coverage
 
@@ -37,30 +27,10 @@ brand-new features (not gaps in existing coverage): `AutoPickCampaignSplitWinner
 scope check for anything newly added to the module (new trigger/condition/action/controller/cron gets a row
 there before it's considered done).
 
-## Full-codebase improvement audit (2026-09-10)
-
-Five independent passes over the whole module (campaign engine, segmentation/RFM/scoring,
-communication channels, commerce features, admin platform/UX/API), each grounded in the actual
-code rather than guesswork. Organized by domain below. Tiers 0-4 from the original pass are all
-fully closed — see docs/CHANGELOG.md for the full history of each.
-
-### Campaign engine (`Model/CampaignDispatcher.php`, `Model/Queue/*`, Flow canvas)
-
-Flow canvas UX (undo/redo, node duplication, palette search/filter, inline "send test") is now
-fully closed — see docs/CHANGELOG.md.
-
-### Commerce features (free gifts, order approval, reorder cycles, GDPR, product feed, dashboard)
-
-*(the "Free Gift never applies to a cart" and "guest checkout bypasses approval" items are listed
-as bugs above, not repeated here)*
-
 ## Documentation
 
-- **GitHub Wiki covering every feature, bilingual PL/EN, with screenshots.** Published at
-  `github.com/michalper/ordo/wiki` — all 8 capability pages plus Home/`_Sidebar`, content verified against the
-  actual `Controller`/`Block`/`Model`/`Ui` classes and `view/adminhtml/ui_component/*.xml`, not invented, with real
-  screenshots (from a running Magento 2.4.9 admin instance) embedded for every page. `docs/wiki/` in this repo is
-  the source copy staged for edits before re-publishing. Still open: native PL review of the drafted text.
+- **GitHub Wiki** (`github.com/michalper/ordo/wiki`, source staged in `docs/wiki/`) — still open: native PL
+  review of the drafted text.
 
 ## Candidate new features
 
