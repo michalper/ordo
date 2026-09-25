@@ -81,14 +81,17 @@ exist in some form. Not prioritized against each other; listed for later scoping
 - **Customer 360 / CDP view** — segments, tags, RFM/CLV, lead score, NPS, loyalty tier already exist as
   separate condition inputs, but there's no single admin screen aggregating them per customer; today it's
   queryable per-condition, not visualized per-customer. Medium-large scope.
-- **Campaign revenue/LTV dashboard** — `CampaignFunnelStats`/`AttributionCalculator` already compute
-  attribution data, but there's no dedicated reporting view for revenue-per-campaign or cohort/LTV analysis
-  built on top of it. Medium scope.
-- **Granular preference center** — channel opt-out today looks to be binary per channel (SMS/WhatsApp), not
-  a full per-topic/per-channel preference center. Needs confirming current opt-out granularity before
-  scoping. Medium scope.
-- **Inbound webhooks** — `send_webhook` (action) only sends outbound; there's no trigger that receives
-  external events (e.g. from Zapier/Make) into the campaign engine. Medium scope, needs auth/security design.
+- **Cross-campaign revenue/LTV comparison view** — `CampaignFunnelStats::getForCampaign()` already computes
+  full funnel + revenue for one campaign at a time (`Block\Adminhtml\Campaign\FunnelViewModel`, viewed on
+  that campaign's own edit page), and the dashboard already totals sent/converted/conversion-rate/revenue
+  *across* every campaign (`DashboardViewModel::getCampaignFunnelSummary()`). What's actually missing is a
+  view that ranks/compares individual campaigns against each other, or does cohort/LTV analysis over time —
+  not a "there's no revenue data" gap, a "no comparison screen" gap. Medium scope.
+- **Per-topic preference granularity within a channel** — `ConsentManager`/`ConsentChannel` already track
+  consent per customer per channel (email/sms/push/whatsapp/**ads**, five distinct channels, not just a
+  single on/off), so this is *not* the "opt-out is binary" gap originally suspected. The real, narrower gap:
+  no further split within a channel (e.g. "promotional email" vs "product update email" as separate
+  opt-ins) — confirm there's real merchant demand for that before scoping. Medium scope.
 
 ## Priority of next steps
 
