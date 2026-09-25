@@ -37,24 +37,13 @@ actual `ui_component`/`Controller/Adminhtml`/`view/adminhtml/web` code.
   No listing in the module has a standard `exportButton` at all — CSV/XML export only exists as bespoke
   controllers for Campaign/Segment. Real gap for audit/compliance use cases (GDPR log review, admin action
   audit, order-approval history).
-- **Inconsistent mass actions**: `WhatsAppTemplate` has `MassDelete` but no `MassEnable`/`MassDisable`,
-  unlike AdAudience, Campaign, ContentBlock, FreeGiftOffer, LeadRoutingRule, ScoreRule, Segment, which all
-  have the full enable/disable/delete triad.
 - **No responsive breakpoints on most admin stylesheets**: `flow.css` is the only stylesheet in the module
   with `@media` queries. `dashboard.css`, `campaign-form.css`, `segment-form.css`,
   `whatsapp-template-form.css`, `campaign_calendar.css`, `campaign_schedule_calendar.css`,
   `free-gift-offer-form.css` have none — these screens won't adapt to narrow admin viewports/tablets.
-- **Inconsistent destructive-action confirmation UX**: GDPR "Erase all data"
-  (`view/adminhtml/templates/gdpr/index.phtml:94`) uses a native `confirm()` in `onsubmit`, while other
-  screens (e.g. Segment's `DeleteButton`) use Magento's `deleteConfirm`/modal pattern — inconsistent for a
-  highly destructive, irreversible action.
 - **No admin visibility into push-subscription / price-watch opt-in state**: `Controller/Track/*`
   (RegisterPushSubscription, RegisterPriceWatch) collects this data, but there's no
   `Controller/Adminhtml` grid to view or manage it — only inferable indirectly via logs/emails.
-- **Flow canvas template loading — verify no silent merge**: `view/adminhtml/web/js/campaign-flow-editor.js`
-  (~1025–1117) has history of a fixed bug where loading a second template silently duplicated/orphaned
-  nodes, and a native `confirm()` was removed from that path. Confirm the current UX still warns the admin
-  before loading a template overwrites/merges an in-progress canvas, rather than doing it silently.
 - **Flat top-level admin menu** (`etc/adminhtml/menu.xml`): a single "Ordo Automation" entry, all other
   screens reached via dashboard cards — no menu-driven path to e.g. Message Log or RFM. Note, not a
   confirmed bug: may be an intentional design choice; revisit only if it proves to be a real navigation

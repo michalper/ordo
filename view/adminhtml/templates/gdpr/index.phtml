@@ -91,10 +91,16 @@
                     'Permanently erase all Ordo Automation data for this customer? This cannot be undone.'
                 ); ?>
                 <form action="<?= $escaper->escapeUrl($block->getEraseFormAction()) ?>" method="post"
-                      onsubmit="return confirm('<?= $escaper->escapeJs($eraseConfirm) ?>');">
+                      id="ordo-gdpr-erase-form">
                     <?= $block->getBlockHtml('formkey') ?>
                     <input type="hidden" name="customer_id" value="<?= (int) $block->getCustomerId() ?>"/>
-                    <button type="submit" class="ordo-btn ordo-btn-danger">
+                    <button type="submit" class="ordo-btn ordo-btn-danger"
+                            data-mage-init='<?= /* @noEscape */ json_encode([
+                                'confirm' => [
+                                    'message' => (string) $eraseConfirm,
+                                    'actions' => ['confirm' => ['formId' => 'ordo-gdpr-erase-form']],
+                                ],
+                            ]) ?>'>
                         <?= $escaper->escapeHtml(__('Erase all data')) ?>
                     </button>
                 </form>

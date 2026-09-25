@@ -38,6 +38,10 @@
         </argument>
     </dataSource>
 
+    <listingToolbar name="listing_top">
+        <exportButton name="export_button"/>
+    </listingToolbar>
+
     <columns name="ordo_adminactionlog_columns">
         <column name="entity_id">
             <settings>

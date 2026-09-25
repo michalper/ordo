@@ -7,6 +7,19 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **CSV/XML export on the Admin Action Log, Cron Run Log, Order Approval, and Product Feed Run Log grids**
+  (round-2 admin UI/UX audit, ROADMAP.md) — these four listings had no `exportButton` at all, unlike every
+  other grid's bespoke export controller; added the standard `Magento_Ui` `exportButton` to each
+  `ui_component` listing (no new controller code needed, this is a built-in `mui/export/*` component).
+
+### Fixed
+
+- **GDPR "Erase all data" now uses Magento's own confirm modal instead of a native `confirm()`** —
+  `view/adminhtml/templates/gdpr/index.phtml`'s erase form relied on `onsubmit="return confirm(...)"`, the
+  only screen in the module doing so (every other destructive action, e.g. Segment's `DeleteButton`, uses
+  Magento's `mage/backend/confirm` modal via `data-mage-init`). Switched to the same `data-mage-init`
+  `confirm` widget pattern, submitting the form by id on confirmation.
+
 - **Real-time lead routing rules (ROADMAP.md candidate)** — automatic, rule-based, round-robin assignment of
   a qualifying lead to a sales rep at the moment they qualify (real storefront registration, or crossing the
   lead-score threshold), distinct from the existing `ordo_sales_rep_email` attribute + weekly
