@@ -100,5 +100,8 @@
         <job name="ordo_automation_scan_back_in_stock_alerts" instance="Ordo\Automation\Cron\ScanBackInStockAlerts" method="execute">
             <schedule>*/15 * * * *</schedule>
         </job>
+        <job name="ordo_automation_scan_review_request_due" instance="Ordo\Automation\Cron\ScanReviewRequestDue" method="execute">
+            <schedule>0 * * * *</schedule>
+        </job>
     </group>
 </config>

@@ -42,8 +42,6 @@ Not prioritized against each other; listed for later scoping with the business/p
   content. Medium scope.
 - **Referral/advocacy program** — invite-a-friend flow (referral code, tracking, reward-on-referral) on top of
   the existing `GenerateCoupon`/`AddPoints` actions. Medium scope, B2C.
-- **Review-request campaigns** — trigger/action tied to Magento's native `module-review` for post-purchase
-  review requests. Small-medium scope.
 - **Customer 360 / CDP view** — one admin screen aggregating segments/tags/RFM/lead score/NPS/loyalty tier
   per customer. Medium-large scope.
 - **Cross-campaign revenue/LTV comparison view** — ranks/compares campaigns against each other, or does

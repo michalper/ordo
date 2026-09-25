@@ -41,6 +41,10 @@ class TriggerEvent implements OptionSourceInterface
             ],
             ['value' => CampaignTriggerInterface::TRIGGER_PRICE_DROP, 'label' => __('Price Drop')],
             ['value' => CampaignTriggerInterface::TRIGGER_BACK_IN_STOCK, 'label' => __('Back In Stock')],
+            [
+                'value' => CampaignTriggerInterface::TRIGGER_REVIEW_REQUEST_DUE,
+                'label' => __('Review Request Due (N days after a completed order)'),
+            ],
         ];
     }
 }

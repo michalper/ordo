@@ -31,6 +31,9 @@ class Config
     private const string XML_PATH_BROWSE_ABANDONMENT_MAX_REMINDERS
         = 'ordo_automation/browse_abandonment/max_reminders';
 
+    private const string XML_PATH_REVIEW_REQUEST_ENABLED = 'ordo_automation/review_request/enabled';
+    private const string XML_PATH_REVIEW_REQUEST_DELAY_DAYS = 'ordo_automation/review_request/delay_days';
+
     private const string XML_PATH_OFFER_ENABLED = 'ordo_automation/offer/enabled';
     private const string XML_PATH_OFFER_LEAD_DAYS = 'ordo_automation/offer/lead_days';
     private const string XML_PATH_OFFER_MAX_SELF_EXTENSIONS = 'ordo_automation/offer/max_self_extensions';
@@ -333,6 +336,20 @@ class Config
     public function getBrowseAbandonmentMaxReminders(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_BROWSE_ABANDONMENT_MAX_REMINDERS, 1, $storeId);
+    }
+
+    public function isReviewRequestEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_REVIEW_REQUEST_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getReviewRequestDelayDays(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_REVIEW_REQUEST_DELAY_DAYS, 14, $storeId);
     }
 
     public function isOfferReminderEnabled(?int $storeId = null): bool

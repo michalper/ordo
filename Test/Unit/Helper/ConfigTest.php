@@ -58,6 +58,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isAbTestAutoWinnerEnabled());
         self::assertTrue($this->config->isQuietHoursEnabled());
         self::assertTrue($this->config->isMetaCatalogFeedEnabled());
+        self::assertTrue($this->config->isReviewRequestEnabled());
         self::assertTrue($this->config->isPriceWatchEnabled());
         self::assertTrue($this->config->isAiContentEnabled());
     }
@@ -153,6 +154,7 @@ class ConfigTest extends TestCase
         self::assertSame(1, $this->config->getOfferMaxSelfExtensions());
         self::assertSame(7, $this->config->getOfferSelfExtensionDays());
         self::assertSame(80, $this->config->getCreditLimitWarningThreshold());
+        self::assertSame(14, $this->config->getReviewRequestDelayDays());
         self::assertSame(7, $this->config->getCreditLimitAlertCooldownDays());
         self::assertSame(90, $this->config->getWinBackInactiveDays());
         self::assertSame(3, $this->config->getClvProjectionYears());

@@ -66,6 +66,14 @@ interface CampaignTriggerInterface
     public const TRIGGER_BACK_IN_STOCK = 'back_in_stock';
 
     /**
+     * Fires from Cron\ScanReviewRequestDue for a registered customer's completed order once
+     * `review_request_delay_days` has passed since it was placed - context carries `order_id`
+     * alongside the usual `customer_id`, same shape as TRIGGER_ORDER_PLACED. Claimed via
+     * ordo_review_request_log, one dispatch per order - see that cron's own docblock.
+     */
+    public const TRIGGER_REVIEW_REQUEST_DUE = 'review_request_due';
+
+    /**
      * @return int|null
      */
     public function getEntityId(): ?int;

@@ -7,6 +7,17 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **`review_request_due` campaign trigger** (ROADMAP.md candidate) — new `Cron\ScanReviewRequestDue` finds a
+  registered customer's completed order (`sales_order.status = 'complete'`) once
+  `ordo_automation/review_request/delay_days` has passed since it was placed, and dispatches the trigger once
+  per order (claimed via the new `ordo_review_request_log` table, same crash-safe claim-before-dispatch shape
+  as `Cron\SendBrowseAbandonmentReminders`). No new action needed — a store wires whatever it wants
+  (`send_email`, `generate_coupon`, `add_points`, ...) onto the trigger via the existing campaign builder.
+  Deliberately doesn't cross-check Magento's own `review`/`review_detail` tables for an existing review;
+  dispatches unconditionally per completed order, same "one entity, one dedup key" simplicity as every other
+  reminder cron in this module — a store that wants to skip already-reviewing customers can add that as a
+  campaign condition.
+
 - **Admin grids for Push Subscriptions and Price Watch Subscriptions** (round-2 admin UI/UX audit,
   ROADMAP.md) — `Controller\Track\RegisterPushSubscription`/`RegisterPriceWatch` had no admin-side
   visibility at all; an admin could only infer subscription state indirectly via logs/emails. New

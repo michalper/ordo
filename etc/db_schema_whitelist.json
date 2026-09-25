@@ -57,6 +57,18 @@
             "PRIMARY": true
         }
     },
+    "ordo_review_request_log": {
+        "column": {
+            "entity_id": true,
+            "order_id": true,
+            "customer_id": true,
+            "dispatched_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_REVIEW_REQUEST_LOG_ORDER_ID": true
+        }
+    },
     "ordo_offer": {
         "column": {
             "entity_id": true,
