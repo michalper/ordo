@@ -21,16 +21,14 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\CreditLimitCalculator;
-use Ordo\Automation\Model\CustomerMapBuilder;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\Cron\ReminderLogStore;
+use Ordo\Automation\Model\CustomerMapBuilder;
 use Ordo\Automation\Model\SalesRepEmailContext;
 use Ordo\Automation\Model\TriggerOutcomeLogger;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
-use Ordo\Automation\Model\Cron\CronRunLogger;
 use Psr\Log\LoggerInterface;
-use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class SendCreditLimitAlertsTest extends TestCase
 {
@@ -58,6 +56,23 @@ class SendCreditLimitAlertsTest extends TestCase
         $connection->method('fetchOne')->willReturnCallback(
             fn ($query) => is_string($query) && str_contains($query, 'GET_LOCK') ? 1 : $countResult
         );
+    }
+
+    /**
+     * The cheap alertedRecently() pre-check passes (0), but claim()'s own re-check under the
+     * lock returns 1 - another process claimed this customer/band in between. Only the count
+     * query's second call (the one inside claim()) should see 1.
+     */
+    private function stubFetchOneRaceLostInsideClaim(AdapterInterface $connection): void
+    {
+        $countCalls = 0;
+        $connection->method('fetchOne')->willReturnCallback(function ($query) use (&$countCalls) {
+            if (is_string($query) && str_contains($query, 'GET_LOCK')) {
+                return 1;
+            }
+            $countCalls++;
+            return $countCalls > 1 ? 1 : 0;
+        });
     }
 
     /**
@@ -232,6 +247,37 @@ class SendCreditLimitAlertsTest extends TestCase
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
         $this->stubFetchOne($connection, 1);
+        $connection->expects(self::never())->method('insert');
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $this->makeCron($config, $calculator, $resourceConnection)->execute();
+    }
+
+    /**
+     * Regression: claim() itself, not just the cheap alertedRecently() pre-check, must be the
+     * real guard against a double-send - a race lost inside claim() (another process claimed
+     * this customer/band between the pre-check and the lock being acquired) must still skip the
+     * alert, not send it anyway.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSkipsWhenClaimLosesTheRaceEvenThoughThePreCheckPassed(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isCreditLimitAlertEnabled')->willReturn(true);
+        $config->method('getCreditLimitWarningThreshold')->willReturn(80);
+        $config->method('getCreditLimitAlertCooldownDays')->willReturn(7);
+
+        $calculator = $this->createMock(CreditLimitCalculator::class);
+        $calculator->method('getCustomerIdsWithCreditLimit')->willReturn([5]);
+        $calculator->method('getUsedCreditForCustomers')->willReturn([5 => 1200.0]);
+        $calculator->method('getCreditLimitFromCustomer')->willReturn(1000.0);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $this->stubFetchOneRaceLostInsideClaim($connection);
         $connection->expects(self::never())->method('insert');
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
