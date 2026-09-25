@@ -14,11 +14,16 @@
 
 *[Czytaj po polsku](README.pl.md)*
 
-Marketing automation that runs inside stock Magento Open Source — no Adobe Commerce B2B license, no external MA
-subscription. Triggers are computed from data Magento already has (orders, quotes, customers, carts), or from a small
-first-party data model added alongside it.
+A Klaviyo/HubSpot-style campaign engine (trigger → conditions → actions, drag-and-drop canvas) that runs *inside*
+stock Magento Open Source — no Adobe Commerce B2B license, no per-contact MA subscription. Triggers are computed
+from data Magento already has (orders, quotes, customers, carts), or from a small first-party data model added
+alongside it.
 
-Covers both classic B2C lifecycle automation and the B2B triggers most external MA tools can't see.
+Covers both classic B2C lifecycle automation (abandoned cart, win-back) and B2B triggers most external MA tools
+can't see at all — credit limit alerts, order approval workflows, reorder reminders — because they never had
+access to that data.
+
+![The Flow canvas — a Cart Abandoned trigger feeding an Order Total ≥ condition into a Send Email action](.github/assets/flow-canvas.png)
 
 ## Features
 
