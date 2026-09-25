@@ -23,6 +23,20 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   own inbound API-key auth + rate limiting design first — this module currently only has outbound
   rate limiting).
 
+- **Inbound API-key auth + rate limiting for AI-agent commerce endpoints** — second step of AI-agent
+  commerce readiness (GEO), building the credential/throttling infrastructure a future
+  `POST /V1/ordo/ai-agent/quote` endpoint (and any other inbound AI-agent endpoint) will authenticate
+  and throttle through. `Model\AiAgent\ApiKeyGenerator`/`ApiKeyAuthenticator` issue and verify opaque
+  API keys (only the sha256 hash is ever persisted, in the new `ordo_ai_agent_api_key` table) - no
+  admin grid, since these are machine credentials handed to an agent operator out of band; keys are
+  managed via three new CLI commands (`ordo:ai-agent:api-key:generate|revoke|list`), the same
+  precedent as the existing `ordo:push:vapid:generate`. `Model\AiAgent\InboundRateLimiter` enforces a
+  configurable per-API-key requests/minute budget (Stores > Configuration > Ordo Automation >
+  AI-Agent Commerce Readiness), a coarse cache-backed abuse guard in the same "acceptable trade-off,
+  not worth a DB table" shape as the existing `Model\Approval\ApprovalRateLimiter` - deliberately not
+  the DB-claim primitive `Model\RateLimit\ProviderRateLimitStore` uses, since that one paces this
+  module's own outbound calls, not inbound traffic it doesn't control the shape of.
+
 - **Referral/advocacy program** (ROADMAP.md candidate) — a customer gets a shareable 8-character referral
   code (`Model\ReferralManager::getOrCreateCode()`, `Controller\Referral\MyCode`); a new customer who
   registers after visiting `ordo/referral/track?ref=CODE` (code stashed on session, redeemed at

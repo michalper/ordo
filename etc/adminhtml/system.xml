@@ -475,6 +475,11 @@
                     <label>Contact Email</label>
                     <depends><field id="enabled">1</field></depends>
                 </field>
+                <field id="rate_limit_per_minute" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Requests Per Minute Per API Key</label>
+                    <comment>Model\AiAgent\InboundRateLimiter's per-API-key budget for the AI-agent commerce endpoints, enforced after Model\AiAgent\ApiKeyAuthenticator verifies the request's key. 0 disables throttling entirely. Keys are issued/revoked via "bin/magento ordo:ai-agent:api-key:*" - there's no admin grid for them.</comment>
+                    <validate>validate-digits</validate>
+                </field>
             </group>
             <group id="email_template_versioning" translate="label" type="text" sortOrder="137" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Email Template Version History</label>

@@ -934,6 +934,20 @@
             "PRIMARY": true
         }
     },
+    "ordo_ai_agent_api_key": {
+        "column": {
+            "entity_id": true,
+            "label": true,
+            "token_hash": true,
+            "is_active": true,
+            "created_at": true,
+            "last_used_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_AI_AGENT_API_KEY_TOKEN_HASH": true
+        }
+    },
     "ordo_price_watch_subscription": {
         "column": {
             "entity_id": true,

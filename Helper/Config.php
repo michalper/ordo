@@ -116,6 +116,8 @@ class Config
     private const string XML_PATH_AI_AGENT_NAME = 'ordo_automation/ai_agent/name';
     private const string XML_PATH_AI_AGENT_DESCRIPTION = 'ordo_automation/ai_agent/description';
     private const string XML_PATH_AI_AGENT_CONTACT_EMAIL = 'ordo_automation/ai_agent/contact_email';
+    private const string XML_PATH_AI_AGENT_RATE_LIMIT_PER_MINUTE
+        = 'ordo_automation/ai_agent/rate_limit_per_minute';
 
     private const string XML_PATH_EMAIL_TEMPLATE_VERSIONING_ENABLED
         = 'ordo_automation/email_template_versioning/enabled';
@@ -794,6 +796,16 @@ class Config
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
+    }
+
+    /**
+     * Per-API-key requests/minute budget for the AI-agent commerce endpoints
+     * (Model\AiAgent\InboundRateLimiter) - 0 or unset disables throttling entirely (opt-in, same
+     * "<=0 means not configured" convention as OutboundRateLimiter::throttle()'s $maxPerSecond).
+     */
+    public function getAiAgentRateLimitPerMinute(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_AI_AGENT_RATE_LIMIT_PER_MINUTE, 60, $storeId);
     }
 
     public function isEmailTemplateVersioningEnabled(?int $storeId = null): bool

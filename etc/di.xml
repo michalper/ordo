@@ -417,6 +417,9 @@
         <arguments>
             <argument name="commands" xsi:type="array">
                 <item name="ordo_push_vapid_generate" xsi:type="object">Ordo\Automation\Console\Command\GenerateVapidKeysCommand</item>
+                <item name="ordo_ai_agent_api_key_generate" xsi:type="object">Ordo\Automation\Console\Command\ApiKey\GenerateCommand</item>
+                <item name="ordo_ai_agent_api_key_revoke" xsi:type="object">Ordo\Automation\Console\Command\ApiKey\RevokeCommand</item>
+                <item name="ordo_ai_agent_api_key_list" xsi:type="object">Ordo\Automation\Console\Command\ApiKey\ListCommand</item>
             </argument>
         </arguments>
     </type>

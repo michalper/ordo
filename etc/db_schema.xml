@@ -1061,4 +1061,19 @@
         </constraint>
     </table>
 
+    <table name="ordo_ai_agent_api_key" resource="default" engine="innodb" comment="Credentials for the AI-agent commerce endpoints (Model/AiAgent), issued/revoked via the ordo:ai-agent:api-key:* CLI commands - no admin grid, since these are machine credentials handed to an agent operator out of band, not something an admin browses day to day. Only the sha256 hash is stored, never the plaintext key - the same 'shown once at creation, never retrievable again' model as any API token screen.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="label" nullable="false" length="255" comment="Admin-facing label for whichever agent/integration this key was issued to"/>
+        <column xsi:type="varchar" name="token_hash" nullable="false" length="64" comment="sha256 hex digest of the plaintext key (Model\AiAgent\ApiKeyGenerator) - the plaintext itself is never persisted, only ever returned once at creation time"/>
+        <column xsi:type="boolean" name="is_active" nullable="false" default="1" comment="Revoked keys are kept (is_active=0), not deleted, so a revoked key's past last_used_at history isn't lost"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="last_used_at" nullable="true" comment="Set by Model\AiAgent\ApiKeyAuthenticator on every successful authentication - lets an admin tell a live integration from an abandoned one before deciding whether to revoke it"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="ORDO_AI_AGENT_API_KEY_TOKEN_HASH">
+            <column name="token_hash"/>
+        </constraint>
+    </table>
+
 </schema>

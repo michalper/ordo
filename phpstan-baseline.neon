@@ -91,6 +91,18 @@ parameters:
 			path: Block/Frontend/ContentBlock/Render.php
 
 		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Console/Command/ApiKey/GenerateCommand.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Console/Command/ApiKey/RevokeCommand.php
+
+		-
 			message: '#^Cannot access offset ''d'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
@@ -1367,6 +1379,54 @@ parameters:
 			identifier: cast.string
 			count: 1
 			path: Model/AdminActionLog/Recorder.php
+
+		-
+			message: '#^Cannot access offset ''created_at'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/AiAgent/AiAgentApiKeyStore.php
+
+		-
+			message: '#^Cannot access offset ''entity_id'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: Model/AiAgent/AiAgentApiKeyStore.php
+
+		-
+			message: '#^Cannot access offset ''is_active'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/AiAgent/AiAgentApiKeyStore.php
+
+		-
+			message: '#^Cannot access offset ''label'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: Model/AiAgent/AiAgentApiKeyStore.php
+
+		-
+			message: '#^Cannot access offset ''last_used_at'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/AiAgent/AiAgentApiKeyStore.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Model/AiAgent/AiAgentApiKeyStore.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 4
+			path: Model/AiAgent/AiAgentApiKeyStore.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and false will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: Model/AiAgent/InboundRateLimiter.php
 
 		-
 			message: '#^Strict comparison using \!\=\= between string and false will always evaluate to true\.$#'
