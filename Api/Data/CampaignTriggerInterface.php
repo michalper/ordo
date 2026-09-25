@@ -74,6 +74,14 @@ interface CampaignTriggerInterface
     public const TRIGGER_REVIEW_REQUEST_DUE = 'review_request_due';
 
     /**
+     * Fires from Observer\DispatchReferralConvertedCampaigns when a referred customer places
+     * their first order - context targets the REFERRER (customer_id = the person who referred,
+     * not the customer who just ordered), plus "referred_customer_id" and "order_id". See
+     * Model\ReferralManager for the referral lifecycle this closes.
+     */
+    public const TRIGGER_REFERRAL_CONVERTED = 'referral_converted';
+
+    /**
      * @return int|null
      */
     public function getEntityId(): ?int;

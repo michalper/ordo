@@ -60,6 +60,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isMetaCatalogFeedEnabled());
         self::assertTrue($this->config->isReviewRequestEnabled());
         self::assertTrue($this->config->isEmailTemplateVersioningEnabled());
+        self::assertTrue($this->config->isReferralEnabled());
         self::assertTrue($this->config->isPriceWatchEnabled());
         self::assertTrue($this->config->isAiContentEnabled());
     }

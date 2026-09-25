@@ -537,13 +537,13 @@ downstream consumer changes.
 document against `etc/di.xml`/`Controller/Adminhtml/*`/`etc/crontab.xml`/`etc/events.xml` periodically rather
 than trusting it at face value, the same instruction this document's own header already gives.
 
-Five new rows from genuinely new features (not the re-audit), all unit-tested only, no MFTF/Integration yet:
+Six new rows from genuinely new features (not the re-audit), all unit-tested only, no MFTF/Integration yet:
 §28's `AutoPickCampaignSplitWinner`, §11's `SendAbandonedCartFallbackReminders`, the
 `Controller\Adminhtml\PushSubscription`/`PriceWatch` read-only grids + `MassDelete` (round-2 admin UI/UX
-audit, ROADMAP.md), the new `Cron\ScanReviewRequestDue`/`review_request_due` trigger (ROADMAP.md candidate
-feature), and the new email template version history + restore
-(`Plugin\Email\SnapshotEmailTemplateVersion`, `Controller\Adminhtml\EmailTemplateVersion\*` - ROADMAP.md
-candidate feature).
+audit, ROADMAP.md), the new `Cron\ScanReviewRequestDue`/`review_request_due` trigger, the new email template
+version history + restore (`Plugin\Email\SnapshotEmailTemplateVersion`,
+`Controller\Adminhtml\EmailTemplateVersion\*`), and the new referral program (`Model\ReferralManager`,
+`Controller\Referral\*`, `referral_converted` trigger) - the last three all ROADMAP.md candidate features.
 
 Separately, section 22 (Webhook action/trigger), 23 (Two-way SMS/WhatsApp conversations), 24 (Price-drop &
 back-in-stock alerts), and 25 (Predictive send-time optimization) are already ✅ as of this session — their

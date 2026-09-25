@@ -86,6 +86,36 @@
             "PRIMARY": true
         }
     },
+    "ordo_referral_code": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "code": true,
+            "created_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_REFERRAL_CODE_CUSTOMER_ID": true,
+            "ORDO_REFERRAL_CODE_CODE": true
+        }
+    },
+    "ordo_referral": {
+        "column": {
+            "entity_id": true,
+            "referrer_customer_id": true,
+            "referred_customer_id": true,
+            "status": true,
+            "created_at": true,
+            "converted_at": true
+        },
+        "index": {
+            "ORDO_REFERRAL_REFERRER_CUSTOMER_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_REFERRAL_REFERRED_CUSTOMER_ID": true
+        }
+    },
     "ordo_offer": {
         "column": {
             "entity_id": true,

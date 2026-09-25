@@ -45,6 +45,10 @@ class TriggerEvent implements OptionSourceInterface
                 'value' => CampaignTriggerInterface::TRIGGER_REVIEW_REQUEST_DUE,
                 'label' => __('Review Request Due (N days after a completed order)'),
             ],
+            [
+                'value' => CampaignTriggerInterface::TRIGGER_REFERRAL_CONVERTED,
+                'label' => __('Referral Converted (referred customer placed their first order)'),
+            ],
         ];
     }
 }
