@@ -1675,12 +1675,6 @@ parameters:
 			path: Model/Campaign/SendTimeOptimizer.php
 
 		-
-			message: '#^Call to function is_array\(\) with array\<mixed, mixed\> will always evaluate to true\.$#'
-			identifier: function.alreadyNarrowedType
-			count: 1
-			path: Model/Campaign/SplitVariantSelector.php
-
-		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
