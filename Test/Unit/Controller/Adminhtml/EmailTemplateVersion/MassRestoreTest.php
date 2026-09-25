@@ -110,4 +110,52 @@ class MassRestoreTest extends AbstractAdminActionTestCase
         );
         $controller->execute();
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteReportsErrorWhenSaveThrows(): void
+    {
+        $context = $this->makeContext();
+        $redirect = $this->createMock(Redirect::class);
+        $redirect->method('setPath')->willReturnSelf();
+        $this->resultRedirectFactory->method('create')->willReturn($redirect);
+
+        $version = $this->createStub(EmailTemplateVersion::class);
+        $version->method('getTemplateId')->willReturn(7);
+        $version->method('getTemplateCode')->willReturn('welcome_email');
+        $version->method('getTemplateSubject')->willReturn('Welcome back!');
+        $version->method('getTemplateText')->willReturn('<p>Hello</p>');
+        $version->method('getTemplateStyles')->willReturn(null);
+
+        $collection = $this->makeRealCollection(EmailTemplateVersionCollection::class, 'ordo_email_template_version');
+        $collection->addItem($version);
+
+        $filter = $this->createMock(Filter::class);
+        $filter->expects(self::once())->method('getCollection')->willReturn($collection);
+
+        $emailTemplateVersionCollectionFactory = $this->createStub(EmailTemplateVersionCollectionFactory::class);
+        $emailTemplateVersionCollectionFactory->method('create')
+            ->willReturn($this->createStub(EmailTemplateVersionCollection::class));
+
+        $liveTemplate = $this->createStub(MagentoTemplate::class);
+        $liveTemplate->method('getId')->willReturn(7);
+
+        $magentoTemplateFactory = $this->createStub(MagentoTemplateFactory::class);
+        $magentoTemplateFactory->method('create')->willReturn($liveTemplate);
+
+        $magentoTemplateResource = $this->createMock(MagentoTemplateResource::class);
+        $magentoTemplateResource->method('save')->willThrowException(new \RuntimeException('db is on fire'));
+
+        $this->messageManager->expects(self::once())->method('addErrorMessage')
+            ->with(__('Could not restore template "%1": %2', 'welcome_email', 'db is on fire'));
+        $this->messageManager->expects(self::never())->method('addSuccessMessage');
+
+        $controller = new MassRestore(
+            $context,
+            $filter,
+            $emailTemplateVersionCollectionFactory,
+            $magentoTemplateFactory,
+            $magentoTemplateResource
+        );
+        $controller->execute();
+    }
 }
