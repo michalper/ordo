@@ -27,6 +27,39 @@ brand-new features (not gaps in existing coverage): `AutoPickCampaignSplitWinner
 scope check for anything newly added to the module (new trigger/condition/action/controller/cron gets a row
 there before it's considered done).
 
+## Admin UI/UX audit (2026-09-25, round 2)
+
+Focused pass over the admin UI surface (grids, forms, CSS, confirmation dialogs), grounded in the
+actual `ui_component`/`Controller/Adminhtml`/`view/adminhtml/web` code.
+
+- **Grids with no export and no mass actions/filters**: `ordo_adminactionlog_listing.xml`,
+  `ordo_cronrunlog_listing.xml`, `ordo_orderapproval_listing.xml`, `ordo_productfeedrunlog_listing.xml`.
+  No listing in the module has a standard `exportButton` at all — CSV/XML export only exists as bespoke
+  controllers for Campaign/Segment. Real gap for audit/compliance use cases (GDPR log review, admin action
+  audit, order-approval history).
+- **Inconsistent mass actions**: `WhatsAppTemplate` has `MassDelete` but no `MassEnable`/`MassDisable`,
+  unlike AdAudience, Campaign, ContentBlock, FreeGiftOffer, LeadRoutingRule, ScoreRule, Segment, which all
+  have the full enable/disable/delete triad.
+- **No responsive breakpoints on most admin stylesheets**: `flow.css` is the only stylesheet in the module
+  with `@media` queries. `dashboard.css`, `campaign-form.css`, `segment-form.css`,
+  `whatsapp-template-form.css`, `campaign_calendar.css`, `campaign_schedule_calendar.css`,
+  `free-gift-offer-form.css` have none — these screens won't adapt to narrow admin viewports/tablets.
+- **Inconsistent destructive-action confirmation UX**: GDPR "Erase all data"
+  (`view/adminhtml/templates/gdpr/index.phtml:94`) uses a native `confirm()` in `onsubmit`, while other
+  screens (e.g. Segment's `DeleteButton`) use Magento's `deleteConfirm`/modal pattern — inconsistent for a
+  highly destructive, irreversible action.
+- **No admin visibility into push-subscription / price-watch opt-in state**: `Controller/Track/*`
+  (RegisterPushSubscription, RegisterPriceWatch) collects this data, but there's no
+  `Controller/Adminhtml` grid to view or manage it — only inferable indirectly via logs/emails.
+- **Flow canvas template loading — verify no silent merge**: `view/adminhtml/web/js/campaign-flow-editor.js`
+  (~1025–1117) has history of a fixed bug where loading a second template silently duplicated/orphaned
+  nodes, and a native `confirm()` was removed from that path. Confirm the current UX still warns the admin
+  before loading a template overwrites/merges an in-progress canvas, rather than doing it silently.
+- **Flat top-level admin menu** (`etc/adminhtml/menu.xml`): a single "Ordo Automation" entry, all other
+  screens reached via dashboard cards — no menu-driven path to e.g. Message Log or RFM. Note, not a
+  confirmed bug: may be an intentional design choice; revisit only if it proves to be a real navigation
+  pain point.
+
 ## Documentation
 
 - **GitHub Wiki** (`github.com/michalper/ordo/wiki`, source staged in `docs/wiki/`) — still open: native PL
@@ -42,6 +75,29 @@ exist in some form. Not prioritized against each other; listed for later scoping
   can pick and adapt instead of building from scratch. `Model\Campaign\CampaignImporter` already accepts the
   JSON shape a template would need; this is the curated library + picker UI on top of it, not new import
   plumbing. Medium scope, B2C/B2B.
+- **Multi-step drip sequences / delay-as-a-graph-step** — today a campaign is a single-shot
+  trigger→conditions→actions run (`Model/CampaignDispatcher`); there's no native Flow canvas node for
+  "wait N days, then continue" — a 5-email onboarding drip needs 5 separate campaigns chained manually.
+  Large scope: new node type, scheduling, canvas UX.
+- **Email template versioning/drafts** — `SendEmail` sends a configured template with no version history or
+  draft/publish state; A/B testing exists at the campaign level (`SplitWinnerCalculator`) but not at the
+  template-content level. Medium scope.
+- **Referral/advocacy program** — `GenerateCoupon`/`AddPoints` already exist as building blocks, but there's
+  no dedicated "invite a friend" flow (referral code, tracking, reward-on-referral). Medium scope, B2C.
+- **Review-request campaigns** — no trigger/action tied to Magento's native `module-review` for post-purchase
+  review requests, despite the module already having the delayed post-purchase pattern (win-back, reorder
+  reminders) to build on. Small-medium scope.
+- **Customer 360 / CDP view** — segments, tags, RFM/CLV, lead score, NPS, loyalty tier already exist as
+  separate condition inputs, but there's no single admin screen aggregating them per customer; today it's
+  queryable per-condition, not visualized per-customer. Medium-large scope.
+- **Campaign revenue/LTV dashboard** — `CampaignFunnelStats`/`AttributionCalculator` already compute
+  attribution data, but there's no dedicated reporting view for revenue-per-campaign or cohort/LTV analysis
+  built on top of it. Medium scope.
+- **Granular preference center** — channel opt-out today looks to be binary per channel (SMS/WhatsApp), not
+  a full per-topic/per-channel preference center. Needs confirming current opt-out granularity before
+  scoping. Medium scope.
+- **Inbound webhooks** — `send_webhook` (action) only sends outbound; there's no trigger that receives
+  external events (e.g. from Zapier/Make) into the campaign engine. Medium scope, needs auth/security design.
 
 ## Priority of next steps
 
