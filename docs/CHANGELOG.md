@@ -7,6 +7,16 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Referral/advocacy program** (ROADMAP.md candidate) — a customer gets a shareable 8-character referral
+  code (`Model\ReferralManager::getOrCreateCode()`, `Controller\Referral\MyCode`); a new customer who
+  registers after visiting `ordo/referral/track?ref=CODE` (code stashed on session, redeemed at
+  `customer_register_success` by `Observer\RedeemReferralCode`) is recorded as referred
+  (`ordo_referral`, `pending`). The referral converts - and a new `referral_converted` campaign trigger
+  publishes targeting the REFERRER - the first time the referred customer places an order
+  (`Observer\DispatchReferralConvertedCampaigns`, `Model\Referral\FirstOrderChecker`). No new action type:
+  a store wires `generate_coupon`/`add_points`/`send_email` onto the trigger via the existing campaign
+  builder, same as every other trigger-only feature in this module.
+
 - **Admin grids for Push Subscriptions and Price Watch Subscriptions** (round-2 admin UI/UX audit,
   ROADMAP.md) — `Controller\Track\RegisterPushSubscription`/`RegisterPriceWatch` had no admin-side
   visibility at all; an admin could only infer subscription state indirectly via logs/emails. New

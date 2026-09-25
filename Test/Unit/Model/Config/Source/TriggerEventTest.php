@@ -27,6 +27,7 @@ class TriggerEventTest extends TestCase
                 CampaignTriggerInterface::TRIGGER_WEBHOOK_RECEIVED,
                 CampaignTriggerInterface::TRIGGER_PRICE_DROP,
                 CampaignTriggerInterface::TRIGGER_BACK_IN_STOCK,
+                CampaignTriggerInterface::TRIGGER_REFERRAL_CONVERTED,
             ],
             $values
         );

@@ -4,10 +4,12 @@
         <observer name="ordo_automation_send_welcome_email" instance="Ordo\Automation\Observer\SendWelcomeEmail"/>
         <observer name="ordo_automation_dispatch_customer_registered_campaigns" instance="Ordo\Automation\Observer\DispatchCustomerRegisteredCampaigns"/>
         <observer name="ordo_automation_assign_lead_routing_rule" instance="Ordo\Automation\Observer\AssignLeadRoutingRule"/>
+        <observer name="ordo_automation_redeem_referral_code" instance="Ordo\Automation\Observer\RedeemReferralCode"/>
     </event>
     <event name="sales_order_place_after">
         <observer name="ordo_automation_hold_order_for_approval" instance="Ordo\Automation\Observer\HoldOrderForApproval"/>
         <observer name="ordo_automation_dispatch_order_placed_campaigns" instance="Ordo\Automation\Observer\DispatchOrderPlacedCampaigns"/>
+        <observer name="ordo_automation_dispatch_referral_converted_campaigns" instance="Ordo\Automation\Observer\DispatchReferralConvertedCampaigns"/>
     </event>
     <!-- RecordTriggerOutcome/RecordCampaignOutcome are on sales_order_save_after, NOT
          sales_order_place_after like their sibling observers above - see each class's own

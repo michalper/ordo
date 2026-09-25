@@ -40,8 +40,6 @@ Not prioritized against each other; listed for later scoping with the business/p
   `Model\Campaign\CampaignImporter` already accepts the needed JSON shape. Medium scope, B2C/B2B.
 - **Email template versioning/drafts** — version history / draft-publish state for `SendEmail`'s template
   content. Medium scope.
-- **Referral/advocacy program** — invite-a-friend flow (referral code, tracking, reward-on-referral) on top of
-  the existing `GenerateCoupon`/`AddPoints` actions. Medium scope, B2C.
 - **Review-request campaigns** — trigger/action tied to Magento's native `module-review` for post-purchase
   review requests. Small-medium scope.
 - **Customer 360 / CDP view** — one admin screen aggregating segments/tags/RFM/lead score/NPS/loyalty tier

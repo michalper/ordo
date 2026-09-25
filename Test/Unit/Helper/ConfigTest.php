@@ -58,6 +58,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isAbTestAutoWinnerEnabled());
         self::assertTrue($this->config->isQuietHoursEnabled());
         self::assertTrue($this->config->isMetaCatalogFeedEnabled());
+        self::assertTrue($this->config->isReferralEnabled());
         self::assertTrue($this->config->isPriceWatchEnabled());
         self::assertTrue($this->config->isAiContentEnabled());
     }
