@@ -562,6 +562,22 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor initCampaignFlowEditor()',
         assert.strictEqual(global.$('.drawflow-node').length, 3);
     });
 
+    QUnit.test('the connection arrowhead marker is sized and colored to actually be visible', function (assert) {
+        initEditor();
+
+        // Regression coverage for a directly reported readability bug: the original 10x10 grey
+        // (#8493a0) marker was nearly invisible against the 3px-wide magenta connection line
+        // (.ordo-flow-canvas .connection .main-path in flow.css) - present, but not something a
+        // merchant (or a screenshot) would actually notice.
+        const marker = global.document.getElementById('ordo-flow-arrowhead');
+        const path = marker.querySelector('path');
+
+        assert.ok(marker, 'the marker is injected into the document');
+        assert.strictEqual(marker.getAttribute('markerWidth'), '16');
+        assert.strictEqual(marker.getAttribute('markerHeight'), '16');
+        assert.strictEqual(path.getAttribute('fill'), '#c026d3', 'matches .main-path\'s own stroke color');
+    });
+
     QUnit.test('buildChain() fans multiple consecutive triggers into the same next node', function (assert) {
         initEditor();
 

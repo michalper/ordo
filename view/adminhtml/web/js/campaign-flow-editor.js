@@ -480,13 +480,20 @@ define([
                 // stroke-width, so the marker was rendering at wildly different, tiny sizes
                 // depending on the connection, which looked like a detached, misplaced arrow
                 // rather than one cleanly capping the line.
+                //
+                // Reported directly: at the original 10x10 size in flow.css's own grey
+                // (#8493a0), the arrowhead was essentially invisible against the 3px-wide,
+                // brighter magenta connection line (.ordo-flow-canvas .connection .main-path) -
+                // readable at 100% browser zoom if you looked closely, but gone entirely once
+                // shrunk into a screenshot. 16x16 and the same magenta as the line it caps reads
+                // clearly at both sizes.
                 marker.setAttribute('markerUnits', 'userSpaceOnUse');
-                marker.setAttribute('markerWidth', '10');
-                marker.setAttribute('markerHeight', '10');
+                marker.setAttribute('markerWidth', '16');
+                marker.setAttribute('markerHeight', '16');
                 marker.setAttribute('orient', 'auto');
 
                 path.setAttribute('d', 'M0,0 L10,5 L0,10 z');
-                path.setAttribute('fill', '#8493a0');
+                path.setAttribute('fill', '#c026d3');
 
                 marker.appendChild(path);
                 svg.innerHTML = '<defs></defs>';
