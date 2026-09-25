@@ -303,6 +303,7 @@ class LeadAssignerTest extends TestCase
         $assigner->assign(42, $this->makeRule(1, [['email' => 'first@example.com']]));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testAssignNoOpsWhenTheRuleHasNoReps(): void
     {
         $resourceConnection = $this->createMock(ResourceConnection::class);
