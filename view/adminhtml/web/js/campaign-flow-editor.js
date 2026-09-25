@@ -1035,6 +1035,62 @@ define([
             }
 
             /**
+             * Rescales/pans the canvas so every node currently on it fits inside the visible
+             * viewport - reported directly: clicking "Load a Template" (or building far enough
+             * to the right by hand) could place nodes past the edge of the visible canvas with
+             * no way to reach them, since getNextTemplateStartX() only ever grows rightward and
+             * nothing ever brought the view back to what it just added. Only ever zooms OUT to
+             * fit (never in past 1x just because the content happens to be small), same
+             * reasoning as a "zoom to fit" button in any diagramming tool.
+             */
+            function fitCanvasToView() {
+                var $nodes = $(container).find('.drawflow-node'),
+                    padding = 40,
+                    containerWidth = container.clientWidth || 900,
+                    containerHeight = container.clientHeight || 460,
+                    minX = Infinity,
+                    minY = Infinity,
+                    maxX = -Infinity,
+                    maxY = -Infinity,
+                    contentWidth,
+                    contentHeight,
+                    scale;
+
+                if (!$nodes.length) {
+                    return;
+                }
+
+                $nodes.each(function () {
+                    var left = Number.parseFloat(this.style.left) || 0,
+                        top = Number.parseFloat(this.style.top) || 0,
+                        width = this.offsetWidth || 220,
+                        height = this.offsetHeight || 120;
+
+                    minX = Math.min(minX, left);
+                    minY = Math.min(minY, top);
+                    maxX = Math.max(maxX, left + width);
+                    maxY = Math.max(maxY, top + height);
+                });
+
+                contentWidth = Math.max(maxX - minX, 1);
+                contentHeight = Math.max(maxY - minY, 1);
+
+                scale = Math.min(
+                    1,
+                    (containerWidth - padding * 2) / contentWidth,
+                    (containerHeight - padding * 2) / contentHeight
+                );
+                scale = Math.max(scale, editor.zoom_min || 0.2);
+
+                editor.zoom = scale;
+                editor.zoom_last_value = scale;
+                editor.canvas_x = padding - minX * scale;
+                editor.canvas_y = padding - minY * scale;
+                editor.precanvas.style.transform =
+                    'translate(' + editor.canvas_x + 'px, ' + editor.canvas_y + 'px) scale(' + editor.zoom + ')';
+            }
+
+            /**
              * Adds one template's whole node chain to the canvas and wires it trigger ->
              * condition(s) -> action(s) in the order given, left to right, starting clear of
              * every existing node (see getNextTemplateStartX()) rather than at a random spot
@@ -1081,11 +1137,45 @@ define([
 
                     previousNodeId = nodeId;
                 });
+
+                fitCanvasToView();
             }
 
             $(document).on('click', '[data-flow-template]', function () {
                 applyTemplate($(this).attr('data-flow-template'));
                 $(this).closest('details.ordo-flow-templates').removeAttr('open');
+            });
+
+            $(container).closest('.ordo-flow-wrapper').on('click', '[data-flow-action="fit"]', function () {
+                fitCanvasToView();
+            });
+
+            // Fullscreen API is unavailable in jsdom (this module's own test environment) and on
+            // some older browsers - guarded so the button is a silent no-op there instead of
+            // throwing, rather than gating the whole toolbar behind a feature check.
+            $(container).closest('.ordo-flow-wrapper').on('click', '[data-flow-action="fullscreen"]', function () {
+                var wrapperEl = $(this).closest('.ordo-flow-wrapper').get(0);
+
+                if (document.fullscreenElement) {
+                    if (typeof document.exitFullscreen === 'function') {
+                        document.exitFullscreen();
+                    }
+                } else if (wrapperEl && typeof wrapperEl.requestFullscreen === 'function') {
+                    wrapperEl.requestFullscreen();
+                }
+            });
+
+            // The canvas has far more visible room in full screen (or loses it, leaving), and a
+            // merchant would otherwise have to reach for "Fit to View" themselves every time.
+            $(document).on('fullscreenchange', function () {
+                var $wrapper = $(container).closest('.ordo-flow-wrapper'),
+                    isFullscreen = document.fullscreenElement === $wrapper.get(0);
+
+                $wrapper.find('[data-flow-action="fullscreen"]')
+                    .text(isFullscreen ? '⤡' : '⛶')
+                    .attr('title', isFullscreen ? 'Exit Full Screen' : 'Full Screen');
+
+                fitCanvasToView();
             });
 
             /**

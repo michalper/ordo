@@ -97,6 +97,48 @@
     cursor: default;
 }
 
+.ordo-flow-fit,
+.ordo-flow-fullscreen {
+    background: #f4f5f6;
+    border-color: #dadfe3;
+    color: #41454b;
+    padding: 7px 12px !important;
+    font-size: 14px !important;
+}
+
+.ordo-flow-fit:hover,
+.ordo-flow-fullscreen:hover {
+    background: #e9ebee;
+}
+
+/* Full Screen (button above) puts the whole Flow card into the browser's native full-screen
+   mode - the canvas keeps its fixed 460px height otherwise (see .ordo-flow-canvas below), which
+   is exactly the cramped view a merchant is trying to escape. `:-webkit-full-screen` covers
+   older WebKit; standard `:fullscreen` covers everything current. */
+.ordo-flow-wrapper:fullscreen,
+.ordo-flow-wrapper:-webkit-full-screen {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    overflow: auto;
+}
+
+.ordo-flow-wrapper:fullscreen .ordo-flow-body,
+.ordo-flow-wrapper:-webkit-full-screen .ordo-flow-body {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.ordo-flow-wrapper:fullscreen .ordo-flow-canvas,
+.ordo-flow-wrapper:-webkit-full-screen .ordo-flow-canvas {
+    height: 100%;
+}
+
+.ordo-flow-wrapper:fullscreen .ordo-flow-palette,
+.ordo-flow-wrapper:-webkit-full-screen .ordo-flow-palette {
+    max-height: none;
+}
+
 .ordo-flow-toolbar button[data-flow-action="apply"] {
     /* Brand accent violet, shared with the dashboard's --ordo-primary; #7c3aed against
        white text reaches ~5.5:1, above WCAG AA's 4.5:1 for normal text. */

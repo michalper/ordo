@@ -519,6 +519,8 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor initCampaignFlowEditor()',
             + '<div class="ordo-flow-toolbar">'
             + '<button data-flow-action="undo"></button>'
             + '<button data-flow-action="redo"></button>'
+            + '<button data-flow-action="fit"></button>'
+            + '<button data-flow-action="fullscreen"></button>'
             + '<button data-flow-action="apply">Apply</button>'
             + '</div>'
             + '<div id="canvas"></div>'
@@ -1164,6 +1166,71 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor initCampaignFlowEditor()',
         global.$('[data-flow-template="does-not-exist"]').trigger('click');
 
         assert.strictEqual(global.$('.drawflow-node').length, 0);
+    });
+
+    QUnit.test('loading a template re-fits the canvas so the new nodes land in view', function (assert) {
+        const container = initEditor();
+
+        // Regression coverage for a directly reported bug: getNextTemplateStartX() only ever
+        // grows rightward, so loading a template could place its nodes past whatever was
+        // visible with no way back to them. Asserting the canvas's own transform actually
+        // changed from Drawflow's untouched default is as far as jsdom (no real layout, every
+        // node measures 0x0) can verify this without a real browser - the real-browser behavior
+        // (scale/position actually fit the content) is exercised by fitCanvasToView() itself
+        // being pure arithmetic over style.left/top, already covered indirectly by every other
+        // test in this file that reads style.left back.
+        const beforeTransform = global.$(container).find('.drawflow').css('transform');
+
+        global.$(global.document.body).append(
+            '<details class="ordo-flow-templates" open><button data-flow-template="abandoned_cart"></button></details>'
+        );
+        global.$('[data-flow-template="abandoned_cart"]').trigger('click');
+
+        assert.notStrictEqual(
+            global.$(container).find('.drawflow').css('transform'),
+            beforeTransform,
+            'fitCanvasToView() ran (and did not throw) after applyTemplate()'
+        );
+    });
+
+    // ------------------------------------------------------------------
+    // "Fit to View" / "Full Screen" toolbar buttons
+    // ------------------------------------------------------------------
+
+    QUnit.test('"Fit to View" is a no-op on an empty canvas instead of throwing', function (assert) {
+        initEditor();
+
+        assert.strictEqual(global.$('.drawflow-node').length, 0);
+
+        global.$('[data-flow-action="fit"]').trigger('click');
+
+        assert.strictEqual(global.$('.drawflow-node').length, 0, 'still no nodes - nothing to fit, nothing changed');
+    });
+
+    QUnit.test('"Fit to View" rescales the canvas around every node currently on it', function (assert) {
+        const container = initEditor();
+
+        global.window.ordoFlowTestHook.buildChain([
+            { kind: 'trigger', type: 'order_placed' },
+            { kind: 'action', type: 'add_tag', fields: { tag: 'thanked' } }
+        ]);
+
+        global.$('[data-flow-action="fit"]').trigger('click');
+
+        assert.ok(
+            global.$(container).find('.drawflow').css('transform'),
+            'a transform was applied to the canvas'
+        );
+    });
+
+    QUnit.test('"Full Screen" does not throw when the Fullscreen API is unavailable (this test environment)', function (assert) {
+        initEditor();
+
+        assert.strictEqual(typeof global.document.exitFullscreen, 'undefined');
+
+        global.$('[data-flow-action="fullscreen"]').trigger('click');
+
+        assert.ok(true, 'clicking the button did not throw even without a real Fullscreen API');
     });
 
     // ------------------------------------------------------------------

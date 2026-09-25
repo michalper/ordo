@@ -44,6 +44,20 @@ $applyFlowButtonLabel = __('Apply flow to form & Save');
                 $escaper->escapeHtmlAttr(__('Redo'))
             ?>" disabled>↷</button>
             <!--
+                Reported directly: "Load a Template" (or building far enough right by hand) could
+                place nodes past the edge of the visible canvas with no way to reach them again -
+                nothing ever panned/zoomed the view back to what was just added. "Fit to View"
+                re-centers/rescales on demand (also called automatically after loading a
+                template - see campaign-flow-editor.js's applyTemplate()); "Full Screen" gives
+                the canvas itself far more room to work with before that's even needed.
+            -->
+            <button type="button" class="ordo-flow-fit" data-flow-action="fit" title="<?=
+                $escaper->escapeHtmlAttr(__('Fit all nodes in view'))
+            ?>">⤢</button>
+            <button type="button" class="ordo-flow-fullscreen" data-flow-action="fullscreen" title="<?=
+                $escaper->escapeHtmlAttr(__('Full Screen'))
+            ?>">⛶</button>
+            <!--
                 Ready-made starting points for common, repeated scenarios (reported directly:
                 a merchant shouldn't have to hand-drag/wire the same trigger->action chain every
                 time for a scenario this module already knows is popular). The actual node
