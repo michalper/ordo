@@ -73,14 +73,12 @@ exist in some form. Not prioritized against each other; listed for later scoping
   JSON shape a template would need; this is the curated library + picker UI on top of it, not new import
   plumbing. Medium scope, B2C/B2B.
 
-## Priorytet kolejnych kroków
+## Priority of next steps
 
-Kolejność uwzględnia wagę (błędy finansowe > dług niezawodności > UX > tematy zależne od
-zasobów zewnętrznych):
+Order reflects severity (financial bugs > reliability debt > UX > topics dependent on external
+resources):
 
-1. **Nowe funkcje (sekcja "Candidate new features" powyżej)** — do rozważenia razem z
-   biznesem/produktem pod kątem priorytetu.
-2. **Testy na żywych kontach (Google Ads/Meta/WhatsApp)** — zależne od dostępności realnych
-   poświadczeń testowych.
-3. **GitHub Wiki (PL/EN, screenshots)** — opublikowane pod `github.com/michalper/ordo/wiki`;
-   zostaje tylko recenzja natywna tekstu PL.
+1. **New features (the "Candidate new features" section above)** — to be prioritized together
+   with the business/product side.
+2. **Tests against live accounts (Google Ads/Meta/WhatsApp)** — dependent on availability of real
+   test credentials.
