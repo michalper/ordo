@@ -73,52 +73,6 @@ exist in some form. Not prioritized against each other; listed for later scoping
   JSON shape a template would need; this is the curated library + picker UI on top of it, not new import
   plumbing. Medium scope, B2C/B2B.
 
-## 2026-09-25 codebase audit — being worked through on `fix/audit-findings-batch`
-
-Eight parallel domain passes (campaign engine, segmentation/scoring/lead-routing, communication
-channels, commerce features, admin UI/REST/security, performance, UX/UI, tooling/CI). Being fixed
-top-to-bottom on one branch; remove each line here as its fix lands, not after the branch merges -
-this section should be empty by the time that PR is done.
-
-**High**
-- [ ] `Controller/Adminhtml/WhatsAppTemplate/SubmitForReview.php` + `RefreshStatus.php`: both
-  `HttpGetActionInterface` but mutate state (submit template to Meta / overwrite status) via plain
-  GET navigation — CSRF risk if `use_form_key` is off. Convert to POST.
-- [ ] `Model/ScoreRule/ScoreRuleEvaluator.php:47-49` + `Model/LeadRouting/LeadRoutingRuleEvaluator.php:52-54`:
-  `not_equals` against a missing/unset attribute always returns `false` instead of `true` (same
-  copy-pasted bug in both). Untested.
-- [ ] `Model/CampaignDispatcher.php:294-332` `resumeScheduledAction()` never checks the campaign is
-  still `enabled` (unlike `dispatch()`/`dispatchScheduledTrigger()`) — disabling a campaign doesn't
-  stop already-scheduled delayed actions from firing.
-- [ ] Flow canvas icon-only buttons (`campaign-flow-editor.js`) rely on `title` alone; visible glyph
-  content wins accessible-name computation over `title` — screen reader announces the glyph, not
-  "Remove"/"Duplicate". Only one `aria-label` exists in the whole admin frontend.
-- [ ] `composer.lock` is gitignored — every CI run re-resolves `require-dev` fresh, which is exactly
-  what broke `static-analysis` this session (phpstan 2.2.15→2.2.16 mid-session). Commit the lockfile
-  (or pin exact versions for baseline/config-sensitive dev tools).
-
-**Medium**
-- [ ] `ReminderLogStore` (reorder/credit-limit/offer-expiry crons): claim is a `SELECT COUNT` then a
-  separate `insert()`, not atomic; no unique index on the three log tables — two overlapping cron
-  runs can double-send. `OrderApprovalManagement` does this correctly elsewhere in the same codebase.
-- [ ] `Observer/AssignLeadRoutingRule.php:88-98` + `LeadAssigner`: `hasAssignedRep()` checked outside
-  `assign()`'s own `SELECT FOR UPDATE` transaction — two near-simultaneous qualifying events for one
-  customer can both pass the guard and consume two round-robin turns.
-- [ ] `etc/webapi.xml`: `GET /V1/ordo/customers/:customerId/credit-limit` and
-  `GET /V1/ordo/order-approvals/:entityId/decision-links` are gated on the generic
-  `Ordo_Automation::config` ACL resource instead of a dedicated one.
-- [ ] `Block/Adminhtml/WhatsAppTemplate/Edit/SubmitForReviewButton.php`: re-submitting an
-  already-approved/pending template is not actually harmless (its own docblock's claim) —
-  `SubmitForReview` never checks current status before re-calling Meta.
-- [ ] `Ui/Component/Listing/Column/OrderApprovalActions.php:44`: `getDecisionLinksById()` called
-  per-row in a `foreach` — N+1 that scales with grid page size.
-- [ ] No CSS file in `view/adminhtml/web/css/` has a single media query; `flow.css`'s canvas is
-  fixed-height with no narrower-viewport fallback.
-- [ ] Typography scale (`--ordo-font-*`) duplicated in `flow.css` and `dashboard.css` and has already
-  drifted (each has tokens the other lacks) — centralize like `_tokens.css` already does for colors.
-- [ ] `infection.json5`'s MSI gate (70/70) has ~0 margin against the measured ~70.2% baseline — hit
-  exactly 69-70% twice this session from ordinary mutant-selection noise.
-
 ## Priority of next steps
 
 Order reflects severity (financial bugs > reliability debt > UX > topics dependent on external

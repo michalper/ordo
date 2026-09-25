@@ -1,16 +1,7 @@
 .ordo-flow-wrapper {
-    /* Same type scale as dashboard.css's .ordo-dashboard — this page and the dashboard never
-       render together, so there's no shared :root to hang one copy of these off; kept as two
-       identical token sets rather than one file's scale silently drifting from the other's. */
-    --ordo-font-2xs: 10px;
-    --ordo-font-xs: 11px;
-    --ordo-font-sm: 12px;
-    --ordo-font-base: 13px;
-    --ordo-font-md: 14px;
-    --ordo-font-xl: 18px;
-    --ordo-weight-regular: 400;
-    --ordo-weight-medium: 600;
-    --ordo-weight-bold: 700;
+    /* Type scale (--ordo-font-*/--ordo-weight-*) now lives in _tokens.css's own :root, loaded
+       ahead of this file by every layout that includes it (see ordo_campaign_edit.xml) - no
+       longer redeclared here now that it can't silently drift from dashboard.css's copy. */
 
     margin-bottom: 24px;
     background: #fff;
@@ -600,4 +591,27 @@
     border-color: #c026d3;
     transform: scale(1.25);
     cursor: crosshair;
+}
+
+/* No CSS file in this module had a single media query until this one - reported directly: the
+   palette (fixed 200px) + canvas (fixed 460px height) pairing had no fallback layout at all,
+   just squeezing/overflowing at a tablet-width viewport, the one width Magento's own admin theme
+   is otherwise built to support. Stacks the palette above the canvas and gives the palette a
+   fixed height of its own instead of the row's shared flex-basis once there's no room to sit
+   side by side. */
+@media (max-width: 960px) {
+    .ordo-flow-body {
+        flex-direction: column;
+    }
+
+    .ordo-flow-palette {
+        flex: 0 0 auto;
+        width: 100%;
+        max-height: 220px;
+        box-sizing: border-box;
+    }
+
+    .ordo-flow-canvas {
+        width: 100%;
+    }
 }

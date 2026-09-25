@@ -48,6 +48,21 @@ class SendReorderRemindersTest extends TestCase
     }
 
     /**
+     * ReminderLogStore::claim() now wraps the count-check in GET_LOCK()/RELEASE_LOCK() - a raw
+     * SQL string first arg to fetchOne(), unlike the count query's own Select object - so the
+     * generic AdapterInterface mock these tests share needs to answer both distinctly instead of
+     * one flat ->willReturn($n) for every fetchOne() call. $countResult is exactly what the old
+     * flat stub used to mean: 0 = "not yet sent" (claim proceeds to insert), 1 = "already sent"
+     * (claim refuses, no insert).
+     */
+    private function stubFetchOne(AdapterInterface $connection, int $countResult): void
+    {
+        $connection->method('fetchOne')->willReturnCallback(
+            fn ($query) => is_string($query) && str_contains($query, 'GET_LOCK') ? 1 : $countResult
+        );
+    }
+
+    /**
      * @param CustomerInterface[] $customers
      */
     private function makeCustomerMapBuilder(array $customers): CustomerMapBuilder
@@ -109,7 +124,7 @@ class SendReorderRemindersTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchOne')->willReturn(0);
+        $this->stubFetchOne($connection, 0);
         $connection->expects(self::once())->method('insert');
 
         $resourceConnection = $this->createStub(ResourceConnection::class);
@@ -146,7 +161,7 @@ class SendReorderRemindersTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchOne')->willReturn(0);
+        $this->stubFetchOne($connection, 0);
         $connection->expects(self::never())->method('insert');
 
         $resourceConnection = $this->createStub(ResourceConnection::class);
@@ -217,7 +232,7 @@ class SendReorderRemindersTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchOne')->willReturn(1);
+        $this->stubFetchOne($connection, 1);
         $connection->expects(self::never())->method('insert');
 
         $resourceConnection = $this->createStub(ResourceConnection::class);
@@ -247,7 +262,7 @@ class SendReorderRemindersTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchOne')->willReturn(0);
+        $this->stubFetchOne($connection, 0);
 
         $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -300,7 +315,7 @@ class SendReorderRemindersTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchOne')->willReturn(0);
+        $this->stubFetchOne($connection, 0);
         $connection->expects(self::never())->method('insert');
 
         $resourceConnection = $this->createStub(ResourceConnection::class);

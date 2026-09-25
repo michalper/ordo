@@ -242,11 +242,15 @@
     <!-- Admin-only, unlike the two anonymous routes above — lets an authorized admin (e.g. a
          sales-rep mobile app) retrieve the decision links for a pending approval without
          needing the original email. The token itself is still never returned directly, only
-         baked into these two URLs. -->
+         baked into these two URLs. Gated on its own dedicated resource (matching
+         Controller\Adminhtml\OrderApproval\Index's own ADMIN_RESOURCE), not the generic
+         Ordo_Automation::config - a role scoped only to "edit Ordo config" (a plausible narrow
+         role) must not be able to pull a live approval's decision-link tokens without also
+         having actual order-approval grid access. -->
     <route url="/V1/ordo/order-approvals/:entityId/decision-links" method="GET">
         <service class="Ordo\Automation\Api\OrderApprovalManagementInterface" method="getDecisionLinksById"/>
         <resources>
-            <resource ref="Ordo_Automation::config"/>
+            <resource ref="Ordo_Automation::order_approval"/>
         </resources>
     </route>
 
@@ -384,10 +388,13 @@
             <resource ref="self"/>
         </resources>
     </route>
+    <!-- Its own dedicated resource, not the generic Ordo_Automation::config - a role scoped only
+         to "edit Ordo config" (a plausible narrow admin role) must not be able to pull an
+         arbitrary customer's credit-limit status via REST just from that. -->
     <route url="/V1/ordo/customers/:customerId/credit-limit" method="GET">
         <service class="Ordo\Automation\Api\CreditLimitManagementInterface" method="getStatusForCustomer"/>
         <resources>
-            <resource ref="Ordo_Automation::config"/>
+            <resource ref="Ordo_Automation::credit_limit"/>
         </resources>
     </route>
 </routes>

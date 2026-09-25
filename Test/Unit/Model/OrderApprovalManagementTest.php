@@ -20,6 +20,8 @@ use Ordo\Automation\Model\OrderApprovalDecisionLinksFactory;
 use Ordo\Automation\Model\OrderApprovalFactory;
 use Ordo\Automation\Model\OrderApprovalManagement;
 use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
+use Ordo\Automation\Model\ResourceModel\OrderApproval\Collection as OrderApprovalCollection;
+use Ordo\Automation\Model\ResourceModel\OrderApproval\CollectionFactory as OrderApprovalCollectionFactory;
 use Ordo\Automation\Setup\Patch\Data\AddPendingApprovalOrderStatus;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
@@ -28,6 +30,7 @@ class OrderApprovalManagementTest extends TestCase
 {
     private OrderApprovalFactory $orderApprovalFactory;
     private OrderApprovalResource $orderApprovalResource;
+    private OrderApprovalCollectionFactory $orderApprovalCollectionFactory;
     private OrderCollectionFactory $orderCollectionFactory;
     private OrderConfig $orderConfig;
     private OrderRepositoryInterface $orderRepository;
@@ -40,6 +43,7 @@ class OrderApprovalManagementTest extends TestCase
     {
         $this->orderApprovalFactory = $this->createMock(OrderApprovalFactory::class);
         $this->orderApprovalResource = $this->createMock(OrderApprovalResource::class);
+        $this->orderApprovalCollectionFactory = $this->createStub(OrderApprovalCollectionFactory::class);
         $this->orderCollectionFactory = $this->createStub(OrderCollectionFactory::class);
         $this->orderConfig = $this->createMock(OrderConfig::class);
         $this->orderRepository = $this->createMock(OrderRepositoryInterface::class);
@@ -51,6 +55,7 @@ class OrderApprovalManagementTest extends TestCase
         $this->management = new OrderApprovalManagement(
             $this->orderApprovalFactory,
             $this->orderApprovalResource,
+            $this->orderApprovalCollectionFactory,
             $this->orderCollectionFactory,
             $this->orderConfig,
             $this->orderRepository,
@@ -94,6 +99,7 @@ class OrderApprovalManagementTest extends TestCase
         $this->management = new OrderApprovalManagement(
             $this->orderApprovalFactory,
             $this->orderApprovalResource,
+            $this->orderApprovalCollectionFactory,
             $this->orderCollectionFactory,
             $this->orderConfig,
             $this->orderRepository,
@@ -120,6 +126,7 @@ class OrderApprovalManagementTest extends TestCase
         $this->management = new OrderApprovalManagement(
             $this->orderApprovalFactory,
             $this->orderApprovalResource,
+            $this->orderApprovalCollectionFactory,
             $this->orderCollectionFactory,
             $this->orderConfig,
             $this->orderRepository,
@@ -378,5 +385,119 @@ class OrderApprovalManagementTest extends TestCase
         $this->decisionLinksFactory->method('create')->willReturn($links);
 
         self::assertSame($links, $this->management->getDecisionLinksById(5));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetDecisionLinksByIdsReturnsEmptyArrayForEmptyInputWithoutQuerying(): void
+    {
+        $approvalCollectionFactory = $this->createMock(OrderApprovalCollectionFactory::class);
+        $approvalCollectionFactory->expects(self::never())->method('create');
+        $this->orderApprovalCollectionFactory = $approvalCollectionFactory;
+
+        $this->management = new OrderApprovalManagement(
+            $this->orderApprovalFactory,
+            $this->orderApprovalResource,
+            $this->orderApprovalCollectionFactory,
+            $this->orderCollectionFactory,
+            $this->orderConfig,
+            $this->orderRepository,
+            $this->decisionLinksFactory,
+            $this->rateLimiter,
+            $this->remoteAddress
+        );
+
+        self::assertSame([], $this->management->getDecisionLinksByIds([]));
+    }
+
+    /**
+     * The N+1 fix itself: one approval collection load and one order collection load for the
+     * whole batch, not one of each per id - Ui\Component\Listing\Column\OrderApprovalActions is
+     * this method's one real caller, and calls it once per grid page.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetDecisionLinksByIdsBuildsLinksForEveryStillPendingIdInOneBatch(): void
+    {
+        $approval5 = $this->createStub(OrderApproval::class);
+        $approval5->method('getEntityId')->willReturn(5);
+        $approval5->method('getOrderId')->willReturn(70);
+        $approval5->method('getToken')->willReturn('tok-5');
+
+        $approval9 = $this->createStub(OrderApproval::class);
+        $approval9->method('getEntityId')->willReturn(9);
+        $approval9->method('getOrderId')->willReturn(71);
+        $approval9->method('getToken')->willReturn('tok-9');
+
+        $approvalCollection = $this->createStub(OrderApprovalCollection::class);
+        $approvalCollection->method('addFieldToFilter')->willReturnSelf();
+        $approvalCollection->method('getIterator')->willReturn(new \ArrayIterator([$approval5, $approval9]));
+
+        $approvalCollectionFactory = $this->createMock(OrderApprovalCollectionFactory::class);
+        $approvalCollectionFactory->expects(self::once())->method('create')->willReturn($approvalCollection);
+        $this->orderApprovalCollectionFactory = $approvalCollectionFactory;
+
+        $store = $this->createStub(Store::class);
+        $store->method('getBaseUrl')->willReturn('https://example.com/');
+
+        $order70 = $this->createStub(Order::class);
+        $order70->method('getEntityId')->willReturn(70);
+        $order70->method('getStore')->willReturn($store);
+
+        $order71 = $this->createStub(Order::class);
+        $order71->method('getEntityId')->willReturn(71);
+        $order71->method('getStore')->willReturn($store);
+
+        $orderCollection = $this->createStub(OrderCollection::class);
+        $orderCollection->method('addFieldToFilter')->willReturnSelf();
+        $orderCollection->method('getIterator')->willReturn(new \ArrayIterator([$order70, $order71]));
+
+        $orderCollectionFactory = $this->createMock(OrderCollectionFactory::class);
+        $orderCollectionFactory->expects(self::once())->method('create')->willReturn($orderCollection);
+        $this->orderCollectionFactory = $orderCollectionFactory;
+
+        $this->decisionLinksFactory->method('create')->willReturnCallback(
+            fn () => $this->createMock(OrderApprovalDecisionLinks::class)
+        );
+
+        $this->management = new OrderApprovalManagement(
+            $this->orderApprovalFactory,
+            $this->orderApprovalResource,
+            $this->orderApprovalCollectionFactory,
+            $this->orderCollectionFactory,
+            $this->orderConfig,
+            $this->orderRepository,
+            $this->decisionLinksFactory,
+            $this->rateLimiter,
+            $this->remoteAddress
+        );
+
+        $links = $this->management->getDecisionLinksByIds([5, 9]);
+
+        self::assertSame([5, 9], array_keys($links));
+    }
+
+    /**
+     * An approval whose order no longer exists (shouldn't normally happen - foreign key) is
+     * skipped rather than building a broken link, same "no actions to show" outcome as any other
+     * absent id.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetDecisionLinksByIdsSkipsAnApprovalWhoseOrderIsMissing(): void
+    {
+        $approval = $this->createStub(OrderApproval::class);
+        $approval->method('getEntityId')->willReturn(5);
+        $approval->method('getOrderId')->willReturn(70);
+        $approval->method('getToken')->willReturn('tok-5');
+
+        $approvalCollection = $this->createStub(OrderApprovalCollection::class);
+        $approvalCollection->method('addFieldToFilter')->willReturnSelf();
+        $approvalCollection->method('getIterator')->willReturn(new \ArrayIterator([$approval]));
+        $this->orderApprovalCollectionFactory->method('create')->willReturn($approvalCollection);
+
+        $orderCollection = $this->createStub(OrderCollection::class);
+        $orderCollection->method('addFieldToFilter')->willReturnSelf();
+        $orderCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
+        $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
+
+        self::assertSame([], $this->management->getDecisionLinksByIds([5]));
     }
 }

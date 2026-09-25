@@ -21,6 +21,14 @@ use Ordo\Automation\Setup\Patch\Data\AddSalesRepAttributes;
  * CustomerScoreManager::applyDemographicScore() - two overlapping qualifying events for two
  * different customers matching the same rule must never both read the same stale position and
  * assign the same rep twice in a row.
+ *
+ * assign() itself re-checks hasAssignedRep() again, under a per-customer named lock, right
+ * before actually assigning - the caller's own hasAssignedRep() check (Observer\
+ * AssignLeadRoutingRule) happens before this is even called, so two qualifying events racing
+ * for the same customer (e.g. customer_register_success and
+ * ordo_customer_score_threshold_crossed arriving close together) could otherwise both pass that
+ * check before either one saved, consuming two round-robin turns for what should be one
+ * assignment. Reported directly.
  */
 class LeadAssigner
 {
@@ -38,16 +46,38 @@ class LeadAssigner
         }
         $reps = array_values($reps);
 
-        $rep = $this->nextRep((int) $rule->getEntityId(), $reps);
-        if ($rep === null) {
+        $connection = $this->resourceConnection->getConnection();
+        $lockName = 'ordo_lead_assign_customer_' . $customerId;
+
+        // Fail closed if the lock can't be acquired (contended, or GET_LOCK() unsupported) -
+        // skip this assignment rather than risk a double round-robin turn. 5s is generous for a
+        // fast read+write pair on a single customer.
+        if (!(bool) $connection->fetchOne('SELECT GET_LOCK(?, 5)', [$lockName])) {
             return;
         }
 
-        $customer = $this->customerRepository->getById($customerId);
-        $customer->setCustomAttribute(AddSalesRepAttributes::ATTRIBUTE_REP_NAME, (string) ($rep['name'] ?? ''));
-        $customer->setCustomAttribute(AddSalesRepAttributes::ATTRIBUTE_REP_EMAIL, (string) ($rep['email'] ?? ''));
-        $customer->setCustomAttribute(AddSalesRepAttributes::ATTRIBUTE_REP_PHONE, (string) ($rep['phone'] ?? ''));
-        $this->customerRepository->save($customer);
+        try {
+            // A fresh load, not the (possibly now-stale) customer the caller's own pre-check
+            // read - a second qualifying event racing in for this same customer could have
+            // assigned a rep in the moment between that check and this lock being acquired.
+            $customer = $this->customerRepository->getById($customerId);
+            if ($this->hasAssignedRep($customer)) {
+                return;
+            }
+
+            $rep = $this->nextRep((int) $rule->getEntityId(), $reps);
+            if ($rep === null) {
+                return;
+            }
+
+            $customer->setCustomAttribute(AddSalesRepAttributes::ATTRIBUTE_REP_NAME, (string) ($rep['name'] ?? ''));
+            $customer->setCustomAttribute(AddSalesRepAttributes::ATTRIBUTE_REP_EMAIL, (string) ($rep['email'] ?? ''));
+            $customer->setCustomAttribute(AddSalesRepAttributes::ATTRIBUTE_REP_PHONE, (string) ($rep['phone'] ?? ''));
+            $this->customerRepository->save($customer);
+        } finally {
+            // phpcs:ignore Magento2.SQL.RawQuery.FoundRawSql
+            $connection->query('SELECT RELEASE_LOCK(?)', [$lockName]);
+        }
     }
 
     /**

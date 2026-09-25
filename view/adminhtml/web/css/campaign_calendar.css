@@ -1,3 +1,7 @@
+/* Depends on tokens (--ordo-font-*, --ordo-text-muted, etc.) defined by _tokens.css/dashboard.css
+   - both are loaded ahead of this file by this page's own layout XML
+   (ordo_campaign_calendar.xml), not an accident of load order elsewhere. */
+
 .ordo-section-head-actions {
   display: flex;
   align-items: center;

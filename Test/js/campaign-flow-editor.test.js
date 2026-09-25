@@ -303,7 +303,11 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor', function () {
             }];
 
             initCampaignFlowEditor.renderVariantEditor($container, 'variants', initial, TYPES_CONFIG);
-            $container.find('.ordo-flow-variant-action-row').eq(0).find('.ordo-flow-variant-action-remove').trigger('click');
+            const $removeButton = $container.find('.ordo-flow-variant-action-row').eq(0).find('.ordo-flow-variant-action-remove');
+
+            assert.strictEqual($removeButton.attr('aria-label'), 'Remove action');
+
+            $removeButton.trigger('click');
 
             assert.strictEqual($container.find('.ordo-flow-variant-action-row').length, 1);
             assert.strictEqual($container.find('.ordo-flow-variant-action-type').val(), 'send_email');
@@ -905,6 +909,18 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor initCampaignFlowEditor()',
         global.$('.ordo-flow-delete').trigger('click');
 
         assert.strictEqual(global.$('.drawflow-node').length, 0);
+    });
+
+    QUnit.test('a node\'s icon-only Duplicate/Remove buttons have an aria-label, not just a title', function (assert) {
+        initEditor();
+
+        // Regression: title alone loses to a button's own visible glyph content when a screen
+        // reader computes its accessible name, so "&#10697;"/"&times;" (not "Duplicate"/"Remove")
+        // is what used to get announced. aria-label always wins that computation.
+        global.window.ordoFlowTestHook.buildChain([{ kind: 'action', type: 'add_tag' }]);
+
+        assert.strictEqual(global.$('.ordo-flow-duplicate').attr('aria-label'), 'Duplicate');
+        assert.strictEqual(global.$('.ordo-flow-delete').attr('aria-label'), 'Remove');
     });
 
     // ------------------------------------------------------------------

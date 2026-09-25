@@ -13,4 +13,21 @@
     --ordo-color-ink: #1b1f2a;
     --ordo-color-muted: #6b7180;
     --ordo-color-border: #e4e7ee;
+
+    /* Type scale — was two identical-on-purpose copies (dashboard.css's .ordo-dashboard,
+       flow.css's .ordo-flow-wrapper), each keeping its own comment promising the other wouldn't
+       silently drift - it already had (each had a size the other lacked). Both pages that load
+       either file already load this one first (see their own layout XML), same as the color
+       tokens above, so there's no reason left for either to keep its own copy. */
+    --ordo-font-2xs: 10px;
+    --ordo-font-xs: 11px;
+    --ordo-font-sm: 12px;
+    --ordo-font-base: 13px;
+    --ordo-font-md: 14px;
+    --ordo-font-lg: 16px;
+    --ordo-font-xl: 18px;
+    --ordo-font-display: 26px;
+    --ordo-weight-regular: 400;
+    --ordo-weight-medium: 600;
+    --ordo-weight-bold: 700;
 }

@@ -112,6 +112,21 @@ class LeadRoutingRuleEvaluatorTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testNotEqualsOperatorMatchesWhenTheAttributeIsEntirelyMissing(): void
+    {
+        // Regression: a customer with no "tier" custom attribute at all is just as much
+        // "not equal to gold" as one whose tier is silver - a "tier not_equals gold" rule is
+        // meant to route both, not only the second.
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getCustomAttribute')->willReturn(null);
+
+        $rule = $this->makeRule(1, 'tier', 'not_equals', 'gold');
+        $evaluator = $this->makeEvaluator([$rule]);
+
+        self::assertSame($rule, $evaluator->getMatchingRule($customer));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testNoMatchReturnsNull(): void
     {
         $customer = $this->createStub(CustomerInterface::class);

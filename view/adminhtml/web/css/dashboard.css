@@ -10,17 +10,10 @@
   --ordo-off-text: var(--ordo-color-muted);
   --ordo-radius: 10px;
 
-  /* Type scale — every font-size/font-weight in this file (and flow.css's matching
-     copy) snaps to one of these, instead of each rule picking its own ad-hoc number. */
-  --ordo-font-xs: 11px;
-  --ordo-font-sm: 12px;
-  --ordo-font-base: 13px;
-  --ordo-font-md: 14px;
-  --ordo-font-lg: 16px;
-  --ordo-font-display: 26px;
-  --ordo-weight-regular: 400;
-  --ordo-weight-medium: 600;
-  --ordo-weight-bold: 700;
+  /* Type scale (--ordo-font-*/--ordo-weight-*) now lives in _tokens.css's own :root, loaded
+     ahead of this file (see ordo_dashboard_index.xml) - every font-size/font-weight in this
+     file still snaps to one of those, just no longer redeclared here where it could silently
+     drift from flow.css's copy (it already had). */
 }
 
 .ordo-dashboard-stats {

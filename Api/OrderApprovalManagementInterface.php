@@ -44,4 +44,16 @@ interface OrderApprovalManagementInterface
      * @throws NoSuchEntityException if the approval doesn't exist or is no longer pending
      */
     public function getDecisionLinksById(int $entityId): OrderApprovalDecisionLinksInterface;
+
+    /**
+     * Batched form of getDecisionLinksById() — one call for a whole grid page's pending rows
+     * instead of one per row (Ui\Component\Listing\Column\OrderApprovalActions's own reason for
+     * needing this — an N+1 found by a code audit). An id from $entityIds that's since been
+     * decided (or never existed) is simply absent from the returned array, not an error, same
+     * "no actions to show" as getDecisionLinksById()'s own NoSuchEntityException means there.
+     *
+     * @param int[] $entityIds
+     * @return array<int, OrderApprovalDecisionLinksInterface> keyed by entity_id
+     */
+    public function getDecisionLinksByIds(array $entityIds): array;
 }

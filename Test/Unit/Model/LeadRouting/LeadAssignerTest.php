@@ -17,6 +17,16 @@ use PHPUnit\Framework\TestCase;
 
 class LeadAssignerTest extends TestCase
 {
+    private function stubFetchOne(AdapterInterface $connection, $positionResult): void
+    {
+        // assign() now wraps the position lookup in GET_LOCK()/RELEASE_LOCK() - a raw SQL string
+        // first arg to fetchOne(), unlike the position query's own Select object - so the mock
+        // needs to answer both distinctly instead of one flat ->willReturn($v) for every call.
+        $connection->method('fetchOne')->willReturnCallback(
+            fn ($query) => is_string($query) && str_contains($query, 'GET_LOCK') ? 1 : $positionResult
+        );
+    }
+
     private function makeRule(int $entityId, array $reps): LeadRoutingRule
     {
         $rule = $this->createStub(LeadRoutingRule::class);
@@ -37,7 +47,7 @@ class LeadAssignerTest extends TestCase
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($select);
         $connection->method('quoteIdentifier')->willReturnArgument(0);
-        $connection->method('fetchOne')->willReturn(false);
+        $this->stubFetchOne($connection, false);
         $connection->expects(self::once())->method('commit');
 
         $resourceConnection = $this->createStub(ResourceConnection::class);
@@ -84,7 +94,7 @@ class LeadAssignerTest extends TestCase
         $connection->method('select')->willReturn($select);
         $connection->method('quoteIdentifier')->willReturnArgument(0);
         // Position 0 was assigned last - the next call should wrap to position 1.
-        $connection->method('fetchOne')->willReturn('0');
+        $this->stubFetchOne($connection, '0');
 
         $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -125,7 +135,7 @@ class LeadAssignerTest extends TestCase
         $connection->method('select')->willReturn($select);
         $connection->method('quoteIdentifier')->willReturnArgument(0);
         // Position 1 (the last of 2 reps) was assigned last - wraps to position 0.
-        $connection->method('fetchOne')->willReturn('1');
+        $this->stubFetchOne($connection, '1');
 
         $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -152,6 +162,65 @@ class LeadAssignerTest extends TestCase
         $assigner->assign(42, $rule);
 
         self::assertSame('first@example.com', $setAttributes[AddSalesRepAttributes::ATTRIBUTE_REP_EMAIL]);
+    }
+
+    /**
+     * Regression: a second qualifying event racing in for the same customer (e.g.
+     * customer_register_success and ordo_customer_score_threshold_crossed close together) used
+     * to be able to consume a round-robin turn even though a rep was already assigned in the
+     * meantime, since only the caller's own pre-lock hasAssignedRep() check guarded against that.
+     * assign() now re-checks with a fresh customer load, under the lock, before ever touching the
+     * round-robin state.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAssignDoesNothingWhenTheCustomerAlreadyHasARepOnceReCheckedUnderTheLock(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $this->stubFetchOne($connection, false);
+        $connection->expects(self::never())->method('select');
+        $connection->expects(self::once())->method('query')->with(self::stringContains('RELEASE_LOCK'), self::anything());
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $attribute = $this->createStub(AttributeInterface::class);
+        $attribute->method('getValue')->willReturn('already-assigned@example.com');
+
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getCustomAttribute')->willReturn($attribute);
+
+        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $customerRepository->expects(self::once())->method('getById')->with(42)->willReturn($customer);
+        $customerRepository->expects(self::never())->method('save');
+
+        $assigner = new LeadAssigner($resourceConnection, $customerRepository);
+
+        $assigner->assign(42, $this->makeRule(1, [['email' => 'first@example.com']]));
+    }
+
+    /**
+     * Regression: assign() must fail closed (never assign) rather than proceed unlocked when a
+     * concurrent process already holds the same per-customer named lock.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAssignDoesNothingWhenTheLockCannotBeAcquired(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('fetchOne')->willReturnCallback(
+            fn ($query) => is_string($query) && str_contains($query, 'GET_LOCK') ? 0 : false
+        );
+        $connection->expects(self::never())->method('query');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+
+        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $customerRepository->expects(self::never())->method('getById');
+
+        $assigner = new LeadAssigner($resourceConnection, $customerRepository);
+
+        $assigner->assign(42, $this->makeRule(1, [['email' => 'first@example.com']]));
     }
 
     public function testAssignNoOpsWhenTheRuleHasNoReps(): void

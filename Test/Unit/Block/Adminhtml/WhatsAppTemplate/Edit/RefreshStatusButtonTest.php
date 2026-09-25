@@ -47,5 +47,6 @@ class RefreshStatusButtonTest extends TestCase
         self::assertSame('Refresh Status from Meta', (string) $data['label']);
         self::assertSame(30, $data['sort_order']);
         self::assertStringContainsString('entity_id/5', $data['on_click']);
+        self::assertStringStartsWith('deleteConfirm(', $data['on_click']);
     }
 }

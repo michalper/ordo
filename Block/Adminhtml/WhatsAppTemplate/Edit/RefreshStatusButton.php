@@ -20,8 +20,13 @@ class RefreshStatusButton extends GenericButton implements ButtonProviderInterfa
         return [
             'label' => __('Refresh Status from Meta'),
             'class' => 'action-secondary',
+            // deleteConfirm (Magento core, mage/adminhtml/tools.js) is this codebase's own
+            // established POST-with-form-key helper for a mutating admin action - this one makes
+            // a real outbound Graph API call and writes the result, so a plain GET navigation
+            // isn't safe here either (see SubmitForReviewButton's own comment).
             'on_click' => sprintf(
-                "location.href = '%s';",
+                "deleteConfirm('%s', '%s')",
+                __('Refresh this template\'s status from Meta?'),
                 $this->getUrl('*/*/refreshstatus', ['entity_id' => $this->getEntityId()])
             ),
             'sort_order' => 30,

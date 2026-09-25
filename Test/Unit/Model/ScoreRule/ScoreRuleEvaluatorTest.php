@@ -127,6 +127,20 @@ class ScoreRuleEvaluatorTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testNotEqualsOperatorMatchesWhenTheAttributeIsEntirelyMissing(): void
+    {
+        // Regression: a customer with no "tier" custom attribute at all is just as much
+        // "not equal to gold" as one whose tier is silver - a "tier not_equals gold" rule is
+        // meant to catch both, not only the second.
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getCustomAttribute')->willReturn(null);
+
+        $evaluator = $this->makeEvaluator([$this->makeRule('tier', 'not_equals', 'gold', 8)]);
+
+        self::assertSame(8, $evaluator->getMatchingRulePoints($customer));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testMultipleMatchingRulesSumPoints(): void
     {
         $customer = $this->createStub(CustomerInterface::class);

@@ -88,6 +88,49 @@ class SubmitForReviewTest extends AbstractAdminActionTestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRefusesToResubmitAnAlreadyPendingTemplate(): void
+    {
+        $controller = $this->makeController();
+        $this->request->method('getParam')->willReturnMap([['entity_id', null, 5]]);
+
+        $redirect = $this->createMock(Redirect::class);
+        $redirect->expects(self::once())->method('setPath')
+            ->with('*/*/edit', ['entity_id' => 5])->willReturnSelf();
+        $this->resultRedirectFactory->method('create')->willReturn($redirect);
+
+        $template = $this->createMock(WhatsAppTemplate::class);
+        $template->method('getEntityId')->willReturn(5);
+        $template->method('getStatus')->willReturn(WhatsAppTemplate::STATUS_PENDING);
+        $this->whatsAppTemplateFactory->method('create')->willReturn($template);
+
+        $this->whatsAppTemplateClient->expects(self::never())->method('submitTemplate');
+        $this->whatsAppTemplateResource->expects(self::never())->method('save');
+        $this->messageManager->expects(self::once())->method('addErrorMessage');
+
+        self::assertSame($redirect, $controller->execute());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRefusesToResubmitAnAlreadyApprovedTemplate(): void
+    {
+        $controller = $this->makeController();
+        $this->request->method('getParam')->willReturnMap([['entity_id', null, 5]]);
+
+        $redirect = $this->createMock(Redirect::class);
+        $redirect->method('setPath')->willReturnSelf();
+        $this->resultRedirectFactory->method('create')->willReturn($redirect);
+
+        $template = $this->createMock(WhatsAppTemplate::class);
+        $template->method('getEntityId')->willReturn(5);
+        $template->method('getStatus')->willReturn(WhatsAppTemplate::STATUS_APPROVED);
+        $this->whatsAppTemplateFactory->method('create')->willReturn($template);
+
+        $this->whatsAppTemplateClient->expects(self::never())->method('submitTemplate');
+
+        self::assertSame($redirect, $controller->execute());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsWithErrorWhenMetaRejectsSubmission(): void
     {
         $controller = $this->makeController();

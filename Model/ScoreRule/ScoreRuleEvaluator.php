@@ -13,7 +13,9 @@ use Ordo\Automation\Model\ScoreRule;
  * website_id, email, store_id); anything else falls back to the customer's EAV custom
  * attributes via getCustomAttribute(). A rule referencing an attribute the customer doesn't
  * have (typo'd code, attribute removed, etc.) simply never matches — no exception, no log,
- * that's expected admin-configuration UX, not an error condition.
+ * that's expected admin-configuration UX, not an error condition. The one exception is
+ * not_equals: a missing attribute counts as a match there too, same as a value that's merely
+ * different from the one configured (see matches()).
  */
 class ScoreRuleEvaluator
 {
@@ -45,17 +47,23 @@ class ScoreRuleEvaluator
     private function matches(CustomerInterface $customer, ScoreRule $rule): bool
     {
         $attributeValue = $this->getAttributeValue($customer, $rule->getAttributeCode());
+
         if ($attributeValue === null) {
-            return false;
+            // Every other operator needs a real value to compare against, but not_equals is the
+            // one case where "the customer doesn't even have this attribute" should still count
+            // as a match - a rule reading "loyalty_tier not_equals gold" is meant to catch every
+            // customer who isn't tier-gold, and a customer with no tier at all plainly isn't.
+            // Reported directly: this early return used to apply to not_equals too, silently
+            // failing to match every customer missing the attribute instead of scoring them.
+            return $rule->getOperator() === self::OPERATOR_NOT_EQUALS;
         }
 
-        $actual = $attributeValue;
         $expected = $rule->getValue();
 
         return match ($rule->getOperator()) {
-            self::OPERATOR_EQUALS => $actual === $expected,
-            self::OPERATOR_NOT_EQUALS => $actual !== $expected,
-            self::OPERATOR_CONTAINS => str_contains($actual, $expected),
+            self::OPERATOR_EQUALS => $attributeValue === $expected,
+            self::OPERATOR_NOT_EQUALS => $attributeValue !== $expected,
+            self::OPERATOR_CONTAINS => str_contains($attributeValue, $expected),
             default => false,
         };
     }

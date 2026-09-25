@@ -293,6 +293,19 @@ class CampaignDispatcher
      */
     public function resumeScheduledAction(int $campaignId, int $resumeActionId, array $context): void
     {
+        // Reported directly: disabling a campaign is documented as pausing it ("disable to pause
+        // it without deleting it" - README/CLAUDE.md), but a customer already parked mid-chain on
+        // a delay_minutes step would still get every remaining action run once this cron resumed
+        // them, since (unlike dispatch()/dispatchScheduledTrigger() above) nothing here re-checked
+        // the campaign was still enabled. Same "not found" shape as the resume-row guard below -
+        // the campaign existing but disabled isn't an error, just nothing left to resume into.
+        $campaigns = $this->campaignCollectionFactory->create();
+        $campaigns->addIdsFilter([$campaignId]);
+        $campaigns->addEnabledFilter();
+        if (!$campaigns->getFirstItem()->getId()) {
+            return;
+        }
+
         // One small lookup for the resume row's own sort_order, so the main query below can be
         // filtered to "sort_order >= that" instead of loading every action in the campaign just
         // to linear-scan for the one entity_id we already know.

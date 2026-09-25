@@ -47,5 +47,6 @@ class SubmitForReviewButtonTest extends TestCase
         self::assertSame('Submit for Review', (string) $data['label']);
         self::assertSame(40, $data['sort_order']);
         self::assertStringContainsString('entity_id/5', $data['on_click']);
+        self::assertStringStartsWith('deleteConfirm(', $data['on_click']);
     }
 }

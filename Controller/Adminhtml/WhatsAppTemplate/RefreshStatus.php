@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Controller\Adminhtml\WhatsAppTemplate;
 
 use Magento\Backend\App\Action\Context;
-use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\App\Action\HttpPostActionInterface;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate as WhatsAppTemplateResource;
 use Ordo\Automation\Model\WhatsApp\WhatsAppTemplateClient;
 use Ordo\Automation\Model\WhatsAppTemplate;
@@ -13,11 +13,13 @@ use Ordo\Automation\Model\WhatsAppTemplateFactory;
 /**
  * Polls Meta for a pending template's current approval status - a manual "Refresh Now" pull,
  * same pattern this module already uses for the standalone shopping feed
- * (Controller\Adminhtml\ProductFeed\RefreshNow). Controller\WhatsApp\Webhook also updates this
- * same field automatically when Meta's own message_template_status_update webhook event
- * arrives - this action exists for whenever an admin doesn't want to wait for that.
+ * (Controller\Adminhtml\ProductFeed\RefreshNow, which stays GET - a read-only local recompute).
+ * This one is POST instead: it makes a real outbound Graph API call and writes the result,
+ * unlike that local, idempotent recompute. Controller\WhatsApp\Webhook also updates this same
+ * field automatically when Meta's own message_template_status_update webhook event arrives -
+ * this action exists for whenever an admin doesn't want to wait for that.
  */
-class RefreshStatus extends AbstractWhatsAppTemplateAction implements HttpGetActionInterface
+class RefreshStatus extends AbstractWhatsAppTemplateAction implements HttpPostActionInterface
 {
     /**
      * @var array<string, string> Meta's own uppercase status value => WhatsAppTemplate::STATUS_*

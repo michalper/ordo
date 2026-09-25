@@ -86,9 +86,17 @@ class SendReorderReminders
             // Claim (log) BEFORE sending, not after - see ReminderLogStore::deleteMatching()'s
             // own docblock for why: a crash between a successful send and the log write must
             // never cause a resend next tick, and a genuine send failure rolls the claim back so
-            // this cycle is retried.
+            // this cycle is retried. claim() (not a plain insert()) re-checks "already sent
+            // today" atomically - the cheap reminderAlreadySentToday() check above is only a
+            // fast pre-filter, not the actual guard against a double-send.
             $reminderLogRow = $this->buildReminderLogRow((int) $cycle->getEntityId());
-            $this->reminderLogStore->insert(self::REMINDER_LOG_TABLE, $reminderLogRow);
+            if (!$this->reminderLogStore->claim(
+                self::REMINDER_LOG_TABLE,
+                $this->reminderLogMatchConditions((int) $cycle->getEntityId()),
+                $reminderLogRow
+            )) {
+                continue;
+            }
 
             try {
                 $customer = $customerMap[$customerId];
@@ -126,10 +134,21 @@ class SendReorderReminders
 
     private function reminderAlreadySentToday(int $reorderCycleId): bool
     {
-        return $this->reminderLogStore->countMatching(self::REMINDER_LOG_TABLE, [
+        return $this->reminderLogStore->countMatching(
+            self::REMINDER_LOG_TABLE,
+            $this->reminderLogMatchConditions($reorderCycleId)
+        ) > 0;
+    }
+
+    /**
+     * @return array<string, int|string>
+     */
+    private function reminderLogMatchConditions(int $reorderCycleId): array
+    {
+        return [
             'reorder_cycle_id = ?' => $reorderCycleId,
             'DATE(sent_at) = ?' => date('Y-m-d'),
-        ]) > 0;
+        ];
     }
 
     /**

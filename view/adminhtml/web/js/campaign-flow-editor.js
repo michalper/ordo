@@ -314,7 +314,7 @@ define([
                     }
                     onChange();
                 }),
-            $removeButton = $('<button type="button" class="ordo-flow-variant-action-remove" title="Remove action">&times;</button>')
+            $removeButton = $('<button type="button" class="ordo-flow-variant-action-remove" title="Remove action" aria-label="Remove action">&times;</button>')
                 .on('click', onRemove);
 
         return $('<div class="ordo-flow-variant-action-row"></div>')
@@ -820,8 +820,8 @@ define([
                 return '<div class="ordo-flow-node" data-kind="' + kind + '" data-params="{}">' +
                     '<div class="ordo-flow-node-head"><span>' + label + '</span>' +
                     testSendHtml +
-                    '<button type="button" class="ordo-flow-duplicate" title="Duplicate">&#10697;</button>' +
-                    '<button type="button" class="ordo-flow-delete" title="Remove">&times;</button></div>' +
+                    '<button type="button" class="ordo-flow-duplicate" title="Duplicate" aria-label="Duplicate">&#10697;</button>' +
+                    '<button type="button" class="ordo-flow-delete" title="Remove" aria-label="Remove">&times;</button></div>' +
                     '<select class="ordo-flow-type-select">' + optionsHtml + '</select>' +
                     delayHtml +
                     '<div class="ordo-flow-fields"></div>' +
@@ -1178,9 +1178,14 @@ define([
                 var $wrapper = $(container).closest('.ordo-flow-wrapper'),
                     isFullscreen = document.fullscreenElement === $wrapper.get(0);
 
+                // aria-label alongside title - an icon-only button's visible glyph content wins
+                // accessible-name computation over title alone, so title by itself is never
+                // announced to a screen reader (see the same fix on the other icon-only buttons
+                // in this file: .ordo-flow-duplicate/.ordo-flow-delete/.ordo-flow-variant-action-remove).
                 $wrapper.find('[data-flow-action="fullscreen"]')
                     .text(isFullscreen ? '⤡' : '⛶')
-                    .attr('title', isFullscreen ? 'Exit Full Screen' : 'Full Screen');
+                    .attr('title', isFullscreen ? 'Exit Full Screen' : 'Full Screen')
+                    .attr('aria-label', isFullscreen ? 'Exit Full Screen' : 'Full Screen');
 
                 fitCanvasToView();
             });

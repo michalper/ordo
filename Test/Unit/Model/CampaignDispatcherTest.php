@@ -129,6 +129,7 @@ class CampaignDispatcherTest extends TestCase
         $collection->method('addIdsFilter');
         $collection->method('addEnabledFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator($campaigns));
+        $collection->method('getFirstItem')->willReturn($campaigns[0] ?? $this->createStub(\Ordo\Automation\Model\Campaign::class));
 
         return $collection;
     }
@@ -657,6 +658,14 @@ class CampaignDispatcherTest extends TestCase
      */
     private function makeResumeActionCollections(?CampaignAction $resumeRow, array $mainRows): void
     {
+        // resumeScheduledAction() now re-checks the campaign is still enabled before doing
+        // anything else - default every resume test to "yes, enabled" so only the one test that
+        // cares about this (testResumeScheduledActionDoesNothingWhenCampaignIsDisabled) needs to
+        // override it.
+        $this->campaignCollectionFactory->method('create')->willReturn(
+            $this->makeCampaignCollection([$this->makeCampaign(1)])
+        );
+
         $lookupCollection = $this->createStub(ActionCollection::class);
         $lookupCollection->method('addFieldToFilter')->willReturnSelf();
         $lookupCollection->method('getFirstItem')->willReturn(
@@ -697,6 +706,10 @@ class CampaignDispatcherTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testResumeScheduledActionFiltersMainQueryBySortOrderOfResumeRow(): void
     {
+        $this->campaignCollectionFactory->method('create')->willReturn(
+            $this->makeCampaignCollection([$this->makeCampaign(1)])
+        );
+
         $resumeAction = $this->createMock(CampaignAction::class);
         $resumeAction->method('getEntityId')->willReturn(11);
         $resumeAction->method('getSortOrder')->willReturn(30);
@@ -756,6 +769,22 @@ class CampaignDispatcherTest extends TestCase
         $this->actionPool = new ActionPool(['tag_customer' => $action]);
 
         $this->makeDispatcher()->resumeScheduledAction(9, 11, ['customer_id' => 1]);
+    }
+
+    /**
+     * Regression: disabling a campaign is documented as pausing it, but a customer already
+     * parked mid-chain on a delay_minutes step used to still get every remaining action run once
+     * this cron resumed them - resumeScheduledAction() never re-checked the campaign was still
+     * enabled, unlike dispatch()/dispatchScheduledTrigger().
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResumeScheduledActionDoesNothingWhenCampaignIsDisabled(): void
+    {
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([]));
+
+        $this->actionCollectionFactory->expects(self::never())->method('create');
+
+        $this->makeDispatcher()->resumeScheduledAction(1, 11, []);
     }
 
     #[AllowMockObjectsWithoutExpectations]

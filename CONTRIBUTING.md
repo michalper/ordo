@@ -37,6 +37,19 @@ change, force a reinstall: `rm -rf vendor/michalper/ordo && composer update mich
 
 Both run in CI (`.github/workflows/ci.yml`) on every push/PR; a change that doesn't pass either won't merge.
 
+**Why `composer.lock` isn't committed**: this repo is a library (consumed by a real Magento app via a path
+repository — see "What this is" in `CLAUDE.md`), not a deployable application, so it follows Composer's own
+guidance for packages and leaves version resolution to whoever requires it. The trade-off: CI's own
+`composer install` re-resolves `require-dev` fresh on every run, so a new release of a dev-only tool can
+change behavior between one PR and the next with no code change on either side — this actually happened
+(`phpstan/phpstan` 2.2.15 → 2.2.16 mid-session invalidated one `phpstan-baseline.neon` entry). `phpstan/phpstan`
+and `infection/infection` are pinned to an exact version in `composer.json` (not a caret range) for exactly
+this reason: they're the two whose output is checked into the repo (`phpstan-baseline.neon`, `infection.json5`'s
+MSI gate) and would otherwise silently drift underneath it. Bumping either is still automatic to *notice* -
+Dependabot's `composer` ecosystem entry (`.github/dependabot.yml`, weekly) opens a PR the moment a new version
+of either exists, same as any other dependency - the pin only means that PR's own CI is where a baseline/MSI
+fallout shows up and gets fixed, not some unrelated PR that happened to run after the version silently moved.
+
 ## Tests
 
 Four layers, each with a different scope and a different way to run it:

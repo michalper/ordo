@@ -27,6 +27,7 @@
                 <resource id="Ordo_Automation::order_approval" title="Ordo Automation Order Approval" translate="title" sortOrder="640"/>
                 <resource id="Ordo_Automation::admin_action_log" title="Ordo Automation Admin Action Log" translate="title" sortOrder="650"/>
                 <resource id="Ordo_Automation::lead_routing_rules" title="Ordo Automation Lead Routing Rules" translate="title" sortOrder="660"/>
+                <resource id="Ordo_Automation::credit_limit" title="Ordo Automation Credit Limit" translate="title" sortOrder="670"/>
             </resource>
         </resources>
     </acl>

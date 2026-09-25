@@ -90,9 +90,17 @@ class SendCreditLimitAlerts
             // Claim (log) BEFORE sending, not after - see ReminderLogStore::deleteMatching()'s
             // own docblock: a crash between a successful send and the log write must never cause
             // a duplicate alert next tick, and a genuine send failure rolls the claim back so
-            // this customer/band is retried.
+            // this customer/band is retried. claim() (not a plain insert()) re-checks the
+            // cooldown window atomically - the cheap alertedRecently() check above is only a
+            // fast pre-filter, not the actual guard against a double-send.
             $alertLogRow = $this->buildAlertLogRow($customerId, $band, $utilization);
-            $this->reminderLogStore->insert(self::REMINDER_LOG_TABLE, $alertLogRow);
+            if (!$this->reminderLogStore->claim(
+                self::REMINDER_LOG_TABLE,
+                $this->alertLogMatchConditions($customerId, $band),
+                $alertLogRow
+            )) {
+                continue;
+            }
 
             try {
                 $this->sendAlert($customer, $utilization, $limit, $used, $band);
@@ -125,14 +133,25 @@ class SendCreditLimitAlerts
 
     private function alertedRecently(int $customerId, int $band): bool
     {
+        return $this->reminderLogStore->countMatching(
+            self::REMINDER_LOG_TABLE,
+            $this->alertLogMatchConditions($customerId, $band)
+        ) > 0;
+    }
+
+    /**
+     * @return array<string, int|string>
+     */
+    private function alertLogMatchConditions(int $customerId, int $band): array
+    {
         $cooldownDays = $this->config->getCreditLimitAlertCooldownDays();
         $cutoff = date('Y-m-d H:i:s', (int) strtotime("-{$cooldownDays} days"));
 
-        return $this->reminderLogStore->countMatching(self::REMINDER_LOG_TABLE, [
+        return [
             'customer_id = ?' => $customerId,
             'threshold_percent = ?' => $band,
             'sent_at >= ?' => $cutoff,
-        ]) > 0;
+        ];
     }
 
     private function sendAlert(

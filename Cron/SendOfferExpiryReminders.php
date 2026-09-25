@@ -87,12 +87,20 @@ class SendOfferExpiryReminders
 
             // Claim (log) BEFORE sending, not after - a crash between a successful send and the
             // log write must never cause a resend on the next tick. If the send itself then
-            // fails, the claim is rolled back so this offer is retried next run.
+            // fails, the claim is rolled back so this offer is retried next run. claim() (not a
+            // plain insert()) re-checks "already sent" atomically - the cheap reminderAlreadySent()
+            // check above is only a fast pre-filter, not the actual guard against a double-send.
             $reminderLogRow = $this->buildReminderLogRow(
                 (int) $offer->getEntityId(),
                 self::REMINDER_TYPE_EXPIRING_SOON
             );
-            $this->reminderLogStore->insert(self::REMINDER_LOG_TABLE, $reminderLogRow);
+            if (!$this->reminderLogStore->claim(
+                self::REMINDER_LOG_TABLE,
+                $this->reminderLogMatchConditions((int) $offer->getEntityId(), self::REMINDER_TYPE_EXPIRING_SOON),
+                $reminderLogRow
+            )) {
+                continue;
+            }
 
             try {
                 $customer = $customerMap[$customerId];
@@ -133,10 +141,21 @@ class SendOfferExpiryReminders
 
     private function reminderAlreadySent(int $offerId, string $type): bool
     {
-        return $this->reminderLogStore->countMatching(self::REMINDER_LOG_TABLE, [
+        return $this->reminderLogStore->countMatching(
+            self::REMINDER_LOG_TABLE,
+            $this->reminderLogMatchConditions($offerId, $type)
+        ) > 0;
+    }
+
+    /**
+     * @return array<string, int|string>
+     */
+    private function reminderLogMatchConditions(int $offerId, string $type): array
+    {
+        return [
             'offer_id = ?' => $offerId,
             'reminder_type = ?' => $type,
-        ]) > 0;
+        ];
     }
 
     /**

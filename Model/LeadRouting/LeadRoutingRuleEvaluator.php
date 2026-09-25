@@ -54,17 +54,23 @@ class LeadRoutingRuleEvaluator
         }
 
         $attributeValue = $this->getAttributeValue($customer, $attributeCode);
+
         if ($attributeValue === null) {
-            return false;
+            // Every other operator needs a real value to compare against, but not_equals is the
+            // one case where "the customer doesn't even have this attribute" should still count
+            // as a match - a rule reading "loyalty_tier not_equals gold" is meant to route every
+            // customer who isn't tier-gold, and a customer with no tier at all plainly isn't.
+            // Reported directly: this early return used to apply to not_equals too, silently
+            // skipping every customer missing the attribute instead of routing them.
+            return $rule->getOperator() === self::OPERATOR_NOT_EQUALS;
         }
 
-        $actual = $attributeValue;
         $expected = $rule->getValue();
 
         return match ($rule->getOperator()) {
-            self::OPERATOR_EQUALS => $actual === $expected,
-            self::OPERATOR_NOT_EQUALS => $actual !== $expected,
-            self::OPERATOR_CONTAINS => str_contains($actual, $expected),
+            self::OPERATOR_EQUALS => $attributeValue === $expected,
+            self::OPERATOR_NOT_EQUALS => $attributeValue !== $expected,
+            self::OPERATOR_CONTAINS => str_contains($attributeValue, $expected),
             default => false,
         };
     }

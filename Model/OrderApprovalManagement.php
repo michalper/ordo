@@ -16,6 +16,7 @@ use Ordo\Automation\Api\Data\OrderApprovalInterface;
 use Ordo\Automation\Api\OrderApprovalManagementInterface;
 use Ordo\Automation\Model\Approval\ApprovalRateLimiter;
 use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
+use Ordo\Automation\Model\ResourceModel\OrderApproval\CollectionFactory as OrderApprovalCollectionFactory;
 use Ordo\Automation\Setup\Patch\Data\AddPendingApprovalOrderStatus;
 
 /**
@@ -35,6 +36,7 @@ class OrderApprovalManagement implements OrderApprovalManagementInterface
     public function __construct(
         private readonly OrderApprovalFactory $orderApprovalFactory,
         private readonly OrderApprovalResource $orderApprovalResource,
+        private readonly OrderApprovalCollectionFactory $orderApprovalCollectionFactory,
         private readonly OrderCollectionFactory $orderCollectionFactory,
         private readonly OrderConfig $orderConfig,
         private readonly OrderRepositoryInterface $orderRepository,
@@ -105,8 +107,62 @@ class OrderApprovalManagement implements OrderApprovalManagementInterface
         // fix and the multi-store bug it closes.
         $order = $this->loadOrder($approval->getOrderId());
         $baseUrl = rtrim((string) $order->getStore()->getBaseUrl(), '/');
-        $token = $approval->getToken();
 
+        return $this->buildDecisionLinks($baseUrl, (string) $approval->getToken());
+    }
+
+    public function getDecisionLinksByIds(array $entityIds): array
+    {
+        if ($entityIds === []) {
+            return [];
+        }
+
+        $approvals = $this->orderApprovalCollectionFactory->create();
+        $approvals->addFieldToFilter('entity_id', ['in' => $entityIds]);
+        $approvals->addFieldToFilter('status', OrderApproval::STATUS_PENDING);
+
+        $orderIdByApprovalId = [];
+        foreach ($approvals as $approval) {
+            /** @var OrderApproval $approval */
+            $orderIdByApprovalId[(int) $approval->getEntityId()] = (int) $approval->getOrderId();
+        }
+
+        if ($orderIdByApprovalId === []) {
+            return [];
+        }
+
+        // One batched order load for the whole page instead of one per row - the actual N+1
+        // this method exists to close (Ui\Component\Listing\Column\OrderApprovalActions used to
+        // call getDecisionLinksById(), and so this same loadOrder()-per-call, once per grid row).
+        $orders = $this->orderCollectionFactory->create();
+        $orders->addFieldToFilter('entity_id', ['in' => array_unique(array_values($orderIdByApprovalId))]);
+
+        $baseUrlByOrderId = [];
+        foreach ($orders as $order) {
+            /** @var Order $order */
+            $baseUrlByOrderId[(int) $order->getEntityId()] = rtrim((string) $order->getStore()->getBaseUrl(), '/');
+        }
+
+        $links = [];
+        foreach ($approvals as $approval) {
+            /** @var OrderApproval $approval */
+            $entityId = (int) $approval->getEntityId();
+            $baseUrl = $baseUrlByOrderId[$orderIdByApprovalId[$entityId]] ?? null;
+
+            // The referenced order no longer exists - shouldn't normally happen (foreign key),
+            // but skip rather than build a broken link if it somehow does.
+            if ($baseUrl === null) {
+                continue;
+            }
+
+            $links[$entityId] = $this->buildDecisionLinks($baseUrl, (string) $approval->getToken());
+        }
+
+        return $links;
+    }
+
+    private function buildDecisionLinks(string $baseUrl, string $token): OrderApprovalDecisionLinksInterface
+    {
         /** @var OrderApprovalDecisionLinks $links */
         $links = $this->decisionLinksFactory->create();
         $links->setApproveUrl($baseUrl . '/ordo/approval/approve/token/' . $token);
