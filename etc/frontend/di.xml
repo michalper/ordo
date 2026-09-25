@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <!-- Matches "/.well-known/ai-plugin.json", which has no frontName segment for the standard
+         router to match against - see App\Router\WellKnownRouter's own doc for why this needs a
+         dedicated router at all. A low sortOrder (standard router's is 30) so this checks first;
+         non-matching requests fall through untouched. -->
+    <type name="Magento\Framework\App\RouterList">
+        <arguments>
+            <argument name="routerList" xsi:type="array">
+                <item name="ordo_well_known" xsi:type="array">
+                    <item name="class" xsi:type="string">Ordo\Automation\App\Router\WellKnownRouter</item>
+                    <item name="disable" xsi:type="boolean">false</item>
+                    <item name="sortOrder" xsi:type="string">20</item>
+                </item>
+            </argument>
+        </arguments>
+    </type>
+</config>

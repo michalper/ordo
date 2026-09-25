@@ -454,6 +454,28 @@
                     <depends><field id="enabled">1</field></depends>
                 </field>
             </group>
+            <group id="ai_agent" translate="label" type="text" sortOrder="136" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>AI-Agent Commerce Readiness</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Publishes a public, unauthenticated JSON product feed for autonomous AI shopping agents at "/ordo/productfeed/aiagent" (refreshed by the same Cron\RefreshProductFeed as the Google Merchant/Meta Catalog feeds above) plus a discovery manifest at "/.well-known/ai-plugin.json" pointing at it.</comment>
+                </field>
+                <field id="name" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Name</label>
+                    <comment>Short store name an agent displays to a user (manifest's "name_for_human"/"name_for_model").</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="description" translate="label" type="textarea" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Description</label>
+                    <comment>What an agent should tell a user this store is for (manifest's "description_for_human"/"description_for_model").</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="contact_email" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Contact Email</label>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="email_template_versioning" translate="label" type="text" sortOrder="137" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Email Template Version History</label>
                 <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">

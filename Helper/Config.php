@@ -112,6 +112,11 @@ class Config
     private const string XML_PATH_META_CATALOG_FEED_DEFAULT_BRAND
         = 'ordo_automation/meta_catalog_feed/default_brand';
 
+    private const string XML_PATH_AI_AGENT_ENABLED = 'ordo_automation/ai_agent/enabled';
+    private const string XML_PATH_AI_AGENT_NAME = 'ordo_automation/ai_agent/name';
+    private const string XML_PATH_AI_AGENT_DESCRIPTION = 'ordo_automation/ai_agent/description';
+    private const string XML_PATH_AI_AGENT_CONTACT_EMAIL = 'ordo_automation/ai_agent/contact_email';
+
     private const string XML_PATH_EMAIL_TEMPLATE_VERSIONING_ENABLED
         = 'ordo_automation/email_template_versioning/enabled';
 
@@ -745,6 +750,47 @@ class Config
     {
         return $this->scopeConfig->isSetFlag(
             self::XML_PATH_META_CATALOG_FEED_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Master switch for the whole AI-agent commerce readiness surface: the "ai_agent" product
+     * feed format (FeedGeneratorPool) and the "/.well-known/ai-plugin.json" manifest both check
+     * this - one toggle, since a manifest advertising a feed that isn't published is useless.
+     */
+    public function isAiAgentEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_AI_AGENT_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getAiAgentName(?int $storeId = null): string
+    {
+        return (string) $this->scopeConfig->getValue(
+            self::XML_PATH_AI_AGENT_NAME,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getAiAgentDescription(?int $storeId = null): string
+    {
+        return (string) $this->scopeConfig->getValue(
+            self::XML_PATH_AI_AGENT_DESCRIPTION,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getAiAgentContactEmail(?int $storeId = null): string
+    {
+        return (string) $this->scopeConfig->getValue(
+            self::XML_PATH_AI_AGENT_CONTACT_EMAIL,
             ScopeInterface::SCOPE_STORE,
             $storeId
         );

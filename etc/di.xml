@@ -53,6 +53,7 @@
             <argument name="generators" xsi:type="array">
                 <item name="google_merchant" xsi:type="object">Ordo\Automation\Model\ProductFeed\GoogleMerchantFeedGenerator</item>
                 <item name="meta_catalog" xsi:type="object">Ordo\Automation\Model\ProductFeed\MetaCatalogFeedGenerator</item>
+                <item name="ai_agent" xsi:type="object">Ordo\Automation\Model\ProductFeed\AiAgentFeedGenerator</item>
             </argument>
         </arguments>
     </type>
@@ -68,6 +69,11 @@
     <type name="Ordo\Automation\Controller\ProductFeed\MetaCatalog">
         <arguments>
             <argument name="feedGenerator" xsi:type="object">Ordo\Automation\Model\ProductFeed\MetaCatalogFeedGenerator</argument>
+        </arguments>
+    </type>
+    <type name="Ordo\Automation\Controller\ProductFeed\AiAgent">
+        <arguments>
+            <argument name="feedGenerator" xsi:type="object">Ordo\Automation\Model\ProductFeed\AiAgentFeedGenerator</argument>
         </arguments>
     </type>
 

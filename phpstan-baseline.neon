@@ -1239,7 +1239,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 19
+			count: 22
 			path: Helper/Config.php
 
 		-
@@ -2801,6 +2801,12 @@ parameters:
 			identifier: cast.string
 			count: 4
 			path: Model/PriceWatch/PriceWatchSubscription.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/ProductFeed/AiAgentFeedGenerator.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'

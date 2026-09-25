@@ -7,6 +7,22 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **AI-agent commerce readiness: `ai_agent` product feed + `/.well-known/ai-plugin.json` manifest** —
+  first step of AI-agent commerce readiness (GEO). A third `Api\ProductFeed\FeedGeneratorInterface`
+  format (`Model\ProductFeed\AiAgentFeedGenerator`), reusing `CatalogFeedProductFetcher` the same way
+  the Google Merchant/Meta Catalog feeds do, but emitting a flat JSON array with plain field names
+  (`sku`, `name`, `price`, `currency`, `in_stock`, `url`, `image_url`) instead of a platform-specific
+  dialect — served at `/ordo/productfeed/aiagent`, refreshed by the existing `Cron\RefreshProductFeed`.
+  A discovery manifest at `/.well-known/ai-plugin.json` (`Controller\WellKnown\AiPluginManifest`)
+  points an agent at that feed; since this path has no frontName segment for Magento's standard
+  router to match, it's served via a new dedicated `App\Router\WellKnownRouter` registered into
+  `Magento\Framework\App\RouterList` (`etc/frontend/di.xml`) — the first precedent for a fixed
+  top-level route in this module. Both gated behind one new toggle, Stores > Configuration >
+  Ordo Automation > AI-Agent Commerce Readiness. Explicitly out of scope for this change: an MCP
+  server, headless/programmable checkout, and the `POST /V1/ordo/ai-agent/quote` endpoint (needs its
+  own inbound API-key auth + rate limiting design first — this module currently only has outbound
+  rate limiting).
+
 - **Referral/advocacy program** (ROADMAP.md candidate) — a customer gets a shareable 8-character referral
   code (`Model\ReferralManager::getOrCreateCode()`, `Controller\Referral\MyCode`); a new customer who
   registers after visiting `ordo/referral/track?ref=CODE` (code stashed on session, redeemed at
