@@ -9,4 +9,8 @@
 - [Order Approval](Order-Approval)
 - [Tracking & Popups](Tracking-and-Popups)
 - [Reorder Cycles](Reorder-Cycles)
+- [Customer 360](Customer-360)
+- [Referral Program](Referral-Program)
+- [Email Template Versioning](Email-Template-Versioning)
+- [AI-Agent Commerce Readiness](AI-Agent-Commerce-Readiness)
 - [API Reference](API-Reference)
