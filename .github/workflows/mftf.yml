@@ -197,30 +197,30 @@ jobs:
           # StorefrontTrackerSetsVisitorCookieTest explicitly documents (see its own test XML)
           # that it assumes this is already on — true of the long-lived local sandbox this suite
           # was originally written/verified against, not of a from-scratch install like this one.
-          bin/magento config:set ordo_automation/tracking/enabled 1
+          bin/magento config:set ordo_tracking/tracking/enabled 1
           # AdminApproveOrderViaEmailTest needs order-hold-for-approval actually active.
-          bin/magento config:set ordo_automation/order_approval/enabled 1
+          bin/magento config:set ordo_b2b/order_approval/enabled 1
           # AdminScoreThresholdCampaignTest needs Observer/EvaluateCustomerScoreRules.php to
           # actually run on customer_save_after — off by default, same as the two flags above.
-          bin/magento config:set ordo_automation/lead_scoring/enabled 1
+          bin/magento config:set ordo_scoring/lead_scoring/enabled 1
           # AdminCampaignPopupActionTest needs tracker.js's startPopupPolling() to actually run
           # (gated behind data-popup-enabled="1" on the tracker script tag) — off by default,
           # same as the flags above.
-          bin/magento config:set ordo_automation/tracking/popup_enabled 1
+          bin/magento config:set ordo_tracking/tracking/popup_enabled 1
           # AdminCampaignNotifyActionTest needs tracker.js's startNotificationPolling() to
           # actually run (gated behind data-notification-enabled="1") — off by default, same as
           # popup_enabled above.
-          bin/magento config:set ordo_automation/tracking/notification_enabled 1
+          bin/magento config:set ordo_tracking/tracking/notification_enabled 1
           # AdminCampaignNpsSurveyActionTest needs tracker.js's startSurveyPolling() to actually
           # run (gated behind data-nps-survey-enabled="1") — off by default, same as
           # notification_enabled above.
-          bin/magento config:set ordo_automation/tracking/nps_survey_enabled 1
+          bin/magento config:set ordo_tracking/tracking/nps_survey_enabled 1
           # AdminTagInactiveCustomersAndWinBackEmailTest/AdminSendCreditLimitAlertTest/
           # AdminSendSalesRepDigestTest (lifecycle group) need their crons' own feature flags
           # actually on — off by default, same as the flags above.
           bin/magento config:set ordo_automation/lifecycle/enabled 1
-          bin/magento config:set ordo_automation/credit_limit/enabled 1
-          bin/magento config:set ordo_automation/sales_rep/digest_enabled 1
+          bin/magento config:set ordo_b2b/credit_limit/enabled 1
+          bin/magento config:set ordo_b2b/sales_rep/digest_enabled 1
 
           # Every admin test that navigates straight to a URL (amOnPage) rather than
           # clicking a rendered link was silently redirected to the Dashboard — confirmed

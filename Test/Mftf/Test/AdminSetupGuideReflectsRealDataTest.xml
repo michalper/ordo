@@ -17,12 +17,12 @@
                  run left configured - isChannelConfigured() only needs ONE of SMS/WhatsApp on
                  with a non-empty credential, so both must be off for the "not done" assertions
                  below to be meaningful. -->
-            <magentoCLI command="config:set ordo_automation/sms/enabled 0" stepKey="disableSmsBefore"/>
-            <magentoCLI command="config:set ordo_automation/whatsapp/enabled 0" stepKey="disableWhatsAppBefore"/>
+            <magentoCLI command="config:set ordo_channels/sms/enabled 0" stepKey="disableSmsBefore"/>
+            <magentoCLI command="config:set ordo_channels/whatsapp/enabled 0" stepKey="disableWhatsAppBefore"/>
         </before>
         <after>
-            <magentoCLI command="config:set ordo_automation/sms/enabled 0" stepKey="disableSmsAfter"/>
-            <magentoCLI command="config:set ordo_automation/whatsapp/enabled 0" stepKey="disableWhatsAppAfter"/>
+            <magentoCLI command="config:set ordo_channels/sms/enabled 0" stepKey="disableSmsAfter"/>
+            <magentoCLI command="config:set ordo_channels/whatsapp/enabled 0" stepKey="disableWhatsAppAfter"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
@@ -39,8 +39,8 @@
 
         <!-- Step 2: a real config:set turning SMS on with a real-looking Twilio SID - no UI
              click-through of the wizard step itself, only the underlying config it reads. -->
-        <magentoCLI command="config:set ordo_automation/sms/enabled 1" stepKey="enableSms"/>
-        <magentoCLI command="config:set ordo_automation/sms/twilio_account_sid ACtestSetupGuideSid00000000000000" stepKey="setTwilioSid"/>
+        <magentoCLI command="config:set ordo_channels/sms/enabled 1" stepKey="enableSms"/>
+        <magentoCLI command="config:set ordo_channels/sms/twilio_account_sid ACtestSetupGuideSid00000000000000" stepKey="setTwilioSid"/>
 
         <amOnPage url="admin/ordo/setup/index" stepKey="goToSetupGuideAfterChannel"/>
         <waitForPageLoad stepKey="waitForSetupGuideAfterChannel"/>
@@ -98,7 +98,7 @@
         <!-- Step 5: breaking just ONE of the three (the channel) again brings the banner right
              back - isComplete() genuinely ANDs all three live checks each time it's read, not a
              one-time "onboarding finished" flag that would stay true afterward. -->
-        <magentoCLI command="config:set ordo_automation/sms/enabled 0" stepKey="disableSmsAgain"/>
+        <magentoCLI command="config:set ordo_channels/sms/enabled 0" stepKey="disableSmsAgain"/>
 
         <amOnPage url="admin/ordo/dashboard/index" stepKey="goToDashboardAfterBreakingChannel"/>
         <waitForPageLoad stepKey="waitForDashboardAfterBreakingChannel"/>

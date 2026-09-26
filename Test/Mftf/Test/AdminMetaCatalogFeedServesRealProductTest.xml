@@ -12,14 +12,14 @@
             <group value="campaign2"/>
         </annotations>
         <before>
-            <magentoCLI command="config:set ordo_automation/meta_catalog_feed/enabled 1" stepKey="enableMetaCatalogFeed"/>
-            <magentoCLI command="config:set ordo_automation/meta_catalog_feed/default_brand &quot;Ordo Test Brand&quot;" stepKey="setDefaultBrand"/>
+            <magentoCLI command="config:set ordo_integrations/meta_catalog_feed/enabled 1" stepKey="enableMetaCatalogFeed"/>
+            <magentoCLI command="config:set ordo_integrations/meta_catalog_feed/default_brand &quot;Ordo Test Brand&quot;" stepKey="setDefaultBrand"/>
             <createData entity="SimpleProduct2" stepKey="createProduct"/>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
-            <magentoCLI command="config:set ordo_automation/meta_catalog_feed/enabled 0" stepKey="disableMetaCatalogFeed"/>
-            <magentoCLI command="config:set ordo_automation/meta_catalog_feed/default_brand &quot;&quot;" stepKey="clearDefaultBrand"/>
+            <magentoCLI command="config:set ordo_integrations/meta_catalog_feed/enabled 0" stepKey="disableMetaCatalogFeed"/>
+            <magentoCLI command="config:set ordo_integrations/meta_catalog_feed/default_brand &quot;&quot;" stepKey="clearDefaultBrand"/>
             <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>

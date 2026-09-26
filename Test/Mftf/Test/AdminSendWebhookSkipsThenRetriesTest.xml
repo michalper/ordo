@@ -17,13 +17,13 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
 
             <!-- Baseline: webhooks off, whatever an earlier test/run left configured. -->
-            <magentoCLI command="config:set ordo_automation/webhook/enabled 0" stepKey="disableWebhookBefore"/>
+            <magentoCLI command="config:set ordo_channels/webhook/enabled 0" stepKey="disableWebhookBefore"/>
         </before>
         <after>
-            <magentoCLI command="config:set ordo_automation/webhook/enabled 0" stepKey="disableWebhookAfter"/>
-            <magentoCLI command="config:set ordo_automation/webhook/outbound_url ''" stepKey="clearOutboundUrlAfter"/>
-            <magentoCLI command="config:set ordo_automation/webhook/outbound_secret ''" stepKey="clearOutboundSecretAfter"/>
-            <magentoCLI command="config:set ordo_automation/webhook/inbound_secret ''" stepKey="clearInboundSecretAfter"/>
+            <magentoCLI command="config:set ordo_channels/webhook/enabled 0" stepKey="disableWebhookAfter"/>
+            <magentoCLI command="config:set ordo_channels/webhook/outbound_url ''" stepKey="clearOutboundUrlAfter"/>
+            <magentoCLI command="config:set ordo_channels/webhook/outbound_secret ''" stepKey="clearOutboundSecretAfter"/>
+            <magentoCLI command="config:set ordo_channels/webhook/inbound_secret ''" stepKey="clearInboundSecretAfter"/>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
@@ -31,9 +31,9 @@
 
         <!-- Step 1: the campaign - trigger=order_placed, action=send_webhook - and a broken
              Outbound URL + both secrets set (webhooks still disabled at this point). -->
-        <magentoCLI command="config:set ordo_automation/webhook/outbound_url http://127.0.0.1:1/unreachable" stepKey="setBrokenOutboundUrl"/>
-        <magentoCLI command="config:set ordo_automation/webhook/outbound_secret webhook_test_shared_secret" stepKey="setOutboundSecret"/>
-        <magentoCLI command="config:set ordo_automation/webhook/inbound_secret webhook_test_shared_secret" stepKey="setInboundSecret"/>
+        <magentoCLI command="config:set ordo_channels/webhook/outbound_url http://127.0.0.1:1/unreachable" stepKey="setBrokenOutboundUrl"/>
+        <magentoCLI command="config:set ordo_channels/webhook/outbound_secret webhook_test_shared_secret" stepKey="setOutboundSecret"/>
+        <magentoCLI command="config:set ordo_channels/webhook/inbound_secret webhook_test_shared_secret" stepKey="setInboundSecret"/>
 
         <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
         <waitForPageLoad stepKey="waitForNewCampaignPage"/>
@@ -72,7 +72,7 @@
 
         <!-- Step 3: enable webhooks - the SAME broken URL now genuinely fails order #2's real
              dispatch, and SendWebhook's own catch enqueues a real retry row. -->
-        <magentoCLI command="config:set ordo_automation/webhook/enabled 1" stepKey="enableWebhook"/>
+        <magentoCLI command="config:set ordo_channels/webhook/enabled 1" stepKey="enableWebhook"/>
 
         <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPageSecondOrder"/>
         <waitForPageLoad stepKey="waitForProductPageSecondOrder"/>
@@ -88,7 +88,7 @@
         <!-- Step 4: fix the Outbound URL to this store's own real /ordo/webhook/receive - the
              Outbound and Inbound secrets are already the same value, so the self-signed call
              validates on arrival - then force the retry due now and run it for real. -->
-        <magentoCLI command="config:set ordo_automation/webhook/outbound_url {{_ENV.MAGENTO_BASE_URL}}ordo/webhook/receive" stepKey="fixOutboundUrl"/>
+        <magentoCLI command="config:set ordo_channels/webhook/outbound_url {{_ENV.MAGENTO_BASE_URL}}ordo/webhook/receive" stepKey="fixOutboundUrl"/>
         <helper class="\Ordo\Automation\Test\Mftf\Helper\CronScheduleHelper" method="backdateMostRecentMessageSendRetry" stepKey="backdateRetry">
             <argument name="actionType">send_webhook</argument>
         </helper>

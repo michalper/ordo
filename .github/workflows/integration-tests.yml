@@ -142,7 +142,7 @@ jobs:
           # off by default on a fresh install, same as mftf.yml's own install already documents
           # for its own tracking-dependent tests (confirmed via a real first CI run of this
           # workflow: the aggregation silently did nothing without this).
-          bin/magento config:set ordo_automation/tracking/enabled 1
+          bin/magento config:set ordo_tracking/tracking/enabled 1
 
       - name: Run Test/Integration
         working-directory: magento

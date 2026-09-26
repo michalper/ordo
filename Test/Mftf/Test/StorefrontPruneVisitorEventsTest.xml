@@ -6,7 +6,7 @@
             <features value="Ordo Automation"/>
             <stories value="On-site behavior tracking"/>
             <title value="Cron\PruneVisitorEvents deletes a real, genuinely-past-retention visitor event"/>
-            <description value="Closes the last of §7's two prune-cron gaps in SCENARIOS.md. A real event is logged the normal way (window.ordoTrack(), same as every other tracker.js-driven test), then ordo_automation/tracking/retention_days is set to 0 (real default 7) so the event - logged moments ago - already counts as past retention the instant the cron runs (real schedule 04:00 daily, see etc/crontab.xml, forced via CronScheduleHelper). Asserts the row is genuinely gone via VisitorEventHelper::assertVisitorEventNotLogged(), not just that the cron didn't throw."/>
+            <description value="Closes the last of §7's two prune-cron gaps in SCENARIOS.md. A real event is logged the normal way (window.ordoTrack(), same as every other tracker.js-driven test), then ordo_tracking/tracking/retention_days is set to 0 (real default 7) so the event - logged moments ago - already counts as past retention the instant the cron runs (real schedule 04:00 daily, see etc/crontab.xml, forced via CronScheduleHelper). Asserts the row is genuinely gone via VisitorEventHelper::assertVisitorEventNotLogged(), not just that the cron didn't throw."/>
             <severity value="MAJOR"/>
             <group value="ordo_automation"/>
             <group value="dashboard"/>
@@ -15,10 +15,10 @@
             <!-- Restored to the real default (7) in <after> so it doesn't linger for whatever
                  other tracking-group test runs next in this same install and logs an event of
                  its own. -->
-            <magentoCLI command="config:set ordo_automation/tracking/retention_days 0" stepKey="setRetentionDaysToZero"/>
+            <magentoCLI command="config:set ordo_tracking/tracking/retention_days 0" stepKey="setRetentionDaysToZero"/>
         </before>
         <after>
-            <magentoCLI command="config:set ordo_automation/tracking/retention_days 7" stepKey="restoreRetentionDaysDefault"/>
+            <magentoCLI command="config:set ordo_tracking/tracking/retention_days 7" stepKey="restoreRetentionDaysDefault"/>
         </after>
 
         <!-- Step 1: a real anonymous visitor_id cookie and a real logged event - same mechanism

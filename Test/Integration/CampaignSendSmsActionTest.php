@@ -62,7 +62,7 @@ class CampaignSendSmsActionTest extends TestCase
     private function createConfigWithSmsEnabled(): \Ordo\Automation\Helper\Config
     {
         $scopeConfig = self::$objectManager->create(\Magento\Framework\App\MutableScopeConfig::class);
-        $scopeConfig->setValue('ordo_automation/sms/enabled', 1, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+        $scopeConfig->setValue('ordo_channels/sms/enabled', 1, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
 
         return self::$objectManager->create(\Ordo\Automation\Helper\Config::class, [
             'scopeConfig' => $scopeConfig,

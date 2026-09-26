@@ -12,12 +12,12 @@
             <group value="campaign2"/>
         </annotations>
         <before>
-            <magentoCLI command="config:set ordo_automation/shopping_feed/enabled 1" stepKey="enableShoppingFeed"/>
+            <magentoCLI command="config:set ordo_integrations/shopping_feed/enabled 1" stepKey="enableShoppingFeed"/>
             <createData entity="SimpleProduct2" stepKey="createProduct"/>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
-            <magentoCLI command="config:set ordo_automation/shopping_feed/enabled 0" stepKey="disableShoppingFeed"/>
+            <magentoCLI command="config:set ordo_integrations/shopping_feed/enabled 0" stepKey="disableShoppingFeed"/>
             <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>

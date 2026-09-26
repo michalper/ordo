@@ -5,6 +5,20 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Admin config split into six sections instead of one flat "General" list** — `etc/adminhtml/
+  system.xml`'s 31 groups (Reorder Reminder through Quiet Hours) were all one long scroll under
+  a single `ordo_automation` section. Now grouped under the same "Ordo Automation" tab as six
+  left-nav sections: `ordo_automation` (Engagement & Retention, kept as-is), `ordo_b2b` (B2B &
+  Sales Operations), `ordo_scoring` (Segmentation & Scoring), `ordo_channels` (Messaging
+  Channels), `ordo_tracking` (Tracking & AI Content), `ordo_integrations` (Feeds &
+  Integrations). A field's group id and field id are unchanged; only the section prefix of a
+  moved group's stored config path changes (e.g. `ordo_automation/sms/enabled` →
+  `ordo_channels/sms/enabled`). `Setup\Patch\Data\MigrateSystemConfigSectionSplit` rewrites any
+  already-stored `core_config_data` rows for the 22 moved groups on upgrade, so an existing
+  install's configured values (API keys, thresholds, delay minutes, etc.) survive the split.
+
 ### Added
 
 - **`POST /V1/ordo/ai-agent/quote`** — third and final step of AI-agent commerce readiness (GEO).

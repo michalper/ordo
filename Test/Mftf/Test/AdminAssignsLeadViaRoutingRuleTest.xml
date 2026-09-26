@@ -12,11 +12,11 @@
             <group value="lifecycle"/>
         </annotations>
         <before>
-            <magentoCLI command="config:set ordo_automation/lead_routing/enabled 1" stepKey="enableLeadRouting"/>
+            <magentoCLI command="config:set ordo_b2b/lead_routing/enabled 1" stepKey="enableLeadRouting"/>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
-            <magentoCLI command="config:set ordo_automation/lead_routing/enabled 0" stepKey="disableLeadRouting"/>
+            <magentoCLI command="config:set ordo_b2b/lead_routing/enabled 0" stepKey="disableLeadRouting"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 

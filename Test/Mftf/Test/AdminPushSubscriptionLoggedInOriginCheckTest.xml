@@ -13,11 +13,11 @@
         </annotations>
         <before>
             <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
-            <magentoCLI command="config:set ordo_automation/push/enabled 1" stepKey="enablePush"/>
+            <magentoCLI command="config:set ordo_channels/push/enabled 1" stepKey="enablePush"/>
         </before>
         <after>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
-            <magentoCLI command="config:set ordo_automation/push/enabled 0" stepKey="disablePush"/>
+            <magentoCLI command="config:set ordo_channels/push/enabled 0" stepKey="disablePush"/>
         </after>
 
         <!-- A real storefront login, in a real browser session, so the PHPSESSID grabbed below is
