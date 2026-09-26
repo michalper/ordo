@@ -345,6 +345,61 @@ left, but still within limit" and a UI may want to render the two differently.
 non-canceled orders (`Model\CreditLimitCalculator::getUsedCredit()`), not a cached counter, so
 this always reflects the current state, not the value at the last alert cron run.
 
+## AI-agent quote
+
+Third and final step of AI-agent commerce readiness (GEO), after the `ai_agent` product feed
+(`/ordo/productfeed/aiagent`) and the `/.well-known/ai-plugin.json` discovery manifest. Prices
+a basket of SKUs+quantities for a given shipping destination in one call — the same
+"assemble already-existing calculators into one response" shape as the other endpoints on this
+page, except here the underlying calculator is a real, throwaway `Magento\Quote\Model\Quote`
+(never persisted) run through Magento's own price/discount/tax/shipping engines.
+
+| Method | Path                     | Service method                          | Auth      |
+|--------|--------------------------|------------------------------------------|-----------|
+| POST   | `/V1/ordo/ai-agent/quote` | `AiAgentQuoteManagementInterface::getQuote` | anonymous |
+
+`anonymous` here doesn't mean unauthenticated — Magento's ACL layer does nothing for this route
+on purpose, since an AI agent has no Magento customer/admin session. The real credential is an
+API key, checked (and rate-limited) by `Plugin\AiAgent\AuthenticateQuoteRequestPlugin` before the
+service method ever runs:
+
+```
+POST /rest/V1/ordo/ai-agent/quote
+Authorization: Bearer oaa_<the plaintext key from "bin/magento ordo:ai-agent:api-key:generate">
+Content-Type: application/json
+
+{
+  "items": [{"sku": "24-MB01", "qty": 2}, {"sku": "MISSING-SKU", "qty": 1}],
+  "countryId": "US",
+  "postcode": "10001"
+}
+
+→ 200 {
+  "currency": "USD",
+  "subtotal": 60,
+  "discount_amount": 0,
+  "shipping_amount": 5,
+  "grand_total": 65,
+  "estimated_delivery_days": 5,
+  "lines": [{"sku": "24-MB01", "qty": 2, "unit_price": 30, "row_total": 60}],
+  "unmatched_skus": ["MISSING-SKU"]
+}
+```
+
+- A SKU that doesn't match any product is **skipped, not a request failure** — reported back in
+  `unmatched_skus` instead. The request only fails (`400`) if *none* of the requested SKUs
+  matched anything.
+- `shipping_amount` is the cheapest of whatever carriers/methods are configured for the given
+  `countryId`/`postcode`/`region` — the same rate a real checkout would quote.
+- `estimated_delivery_days` is a flat, store-wide config value (Stores > Configuration > Ordo
+  Automation > AI-Agent Commerce Readiness), not a per-order calculation — this module has no
+  real per-carrier/per-route logistics data.
+- Missing/invalid `Authorization` header → `401`. Over the configured per-key requests/minute
+  budget → `429`. Feature disabled (master `ai_agent` toggle) → `404`.
+
+Keys are issued/revoked via `bin/magento ordo:ai-agent:api-key:generate|revoke|list` — there is
+no admin grid for them; see `Model/AiAgent/AiAgentApiKeyStore`'s own doc for why.
+
 ## Full example: campaign CRUD round trip
 
 ```bash

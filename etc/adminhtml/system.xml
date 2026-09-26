@@ -480,6 +480,12 @@
                     <comment>Model\AiAgent\InboundRateLimiter's per-API-key budget for the AI-agent commerce endpoints, enforced after Model\AiAgent\ApiKeyAuthenticator verifies the request's key. 0 disables throttling entirely. Keys are issued/revoked via "bin/magento ordo:ai-agent:api-key:*" - there's no admin grid for them.</comment>
                     <validate>validate-digits</validate>
                 </field>
+                <field id="estimated_delivery_days" translate="label comment" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Estimated Delivery Days</label>
+                    <comment>Flat, store-wide value returned as "estimated_delivery_days" by POST /V1/ordo/ai-agent/quote - this module has no real per-carrier/per-route logistics data to compute a genuine ETA from.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
             </group>
             <group id="email_template_versioning" translate="label" type="text" sortOrder="137" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Email Template Version History</label>

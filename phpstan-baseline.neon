@@ -1423,6 +1423,90 @@ parameters:
 			path: Model/AiAgent/AiAgentApiKeyStore.php
 
 		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 1
+			path: Model/AiAgent/AiAgentQuoteItem.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/AiAgent/AiAgentQuoteItem.php
+
+		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 3
+			path: Model/AiAgent/AiAgentQuoteLine.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/AiAgent/AiAgentQuoteLine.php
+
+		-
+			message: '#^Cannot call method getCode\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/AiAgent/AiAgentQuoteManagement.php
+
+		-
+			message: '#^Cannot call method getPrice\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: Model/AiAgent/AiAgentQuoteManagement.php
+
+		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 7
+			path: Model/AiAgent/AiAgentQuoteManagement.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/AiAgent/AiAgentQuoteManagement.php
+
+		-
+			message: '#^Parameter \#1 \$product of method Magento\\Quote\\Model\\Quote\:\:addProduct\(\) expects Magento\\Catalog\\Model\\Product, Magento\\Catalog\\Api\\Data\\ProductInterface given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/AiAgent/AiAgentQuoteManagement.php
+
+		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 4
+			path: Model/AiAgent/AiAgentQuoteResult.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/AiAgent/AiAgentQuoteResult.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/AiAgent/AiAgentQuoteResult.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\AiAgent\\AiAgentQuoteResult\:\:getLines\(\) should return array\<Ordo\\Automation\\Api\\Data\\AiAgentQuoteLineInterface\> but returns array\<mixed, mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/AiAgent/AiAgentQuoteResult.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\AiAgent\\AiAgentQuoteResult\:\:getUnmatchedSkus\(\) should return array\<string\> but returns array\<mixed, mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/AiAgent/AiAgentQuoteResult.php
+
+		-
 			message: '#^Strict comparison using \!\=\= between string and false will always evaluate to true\.$#'
 			identifier: notIdentical.alwaysTrue
 			count: 1

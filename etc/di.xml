@@ -29,6 +29,10 @@
     <preference for="Ordo\Automation\Api\FreeGiftManagementInterface" type="Ordo\Automation\Model\FreeGiftManagement"/>
     <preference for="Ordo\Automation\Api\Data\CreditLimitStatusInterface" type="Ordo\Automation\Model\CreditLimitStatus"/>
     <preference for="Ordo\Automation\Api\CreditLimitManagementInterface" type="Ordo\Automation\Model\CreditLimitManagement"/>
+    <preference for="Ordo\Automation\Api\AiAgentQuoteManagementInterface" type="Ordo\Automation\Model\AiAgent\AiAgentQuoteManagement"/>
+    <preference for="Ordo\Automation\Api\Data\AiAgentQuoteItemInterface" type="Ordo\Automation\Model\AiAgent\AiAgentQuoteItem"/>
+    <preference for="Ordo\Automation\Api\Data\AiAgentQuoteLineInterface" type="Ordo\Automation\Model\AiAgent\AiAgentQuoteLine"/>
+    <preference for="Ordo\Automation\Api\Data\AiAgentQuoteResultInterface" type="Ordo\Automation\Model\AiAgent\AiAgentQuoteResult"/>
     <preference for="Ordo\Automation\Model\Sms\SmsSenderInterface" type="Ordo\Automation\Model\Sms\TwilioSmsSender"/>
 
     <type name="Magento\Framework\Mail\EmailMessageInterfaceFactory">

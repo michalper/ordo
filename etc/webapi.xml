@@ -232,6 +232,17 @@
             <resource ref="anonymous"/>
         </resources>
     </route>
+
+    <!-- Anonymous by design — an AI shopping agent has no Magento customer/admin session. The
+         real credential is the "Authorization: Bearer <api-key>" header, verified (and
+         rate-limited) by Plugin\AiAgent\AuthenticateQuoteRequestPlugin, since anonymous ACL does
+         nothing on its own. See AiAgentQuoteManagementInterface. -->
+    <route url="/V1/ordo/ai-agent/quote" method="POST">
+        <service class="Ordo\Automation\Api\AiAgentQuoteManagementInterface" method="getQuote"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
     <route url="/V1/ordo/order-approvals/:token/reject" method="POST">
         <service class="Ordo\Automation\Api\OrderApprovalManagementInterface" method="rejectByToken"/>
         <resources>

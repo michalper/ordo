@@ -3,4 +3,11 @@
     <type name="Magento\Framework\Webapi\ServiceOutputProcessor">
         <plugin name="ordo_automation_sparse_fieldset" type="Ordo\Automation\Plugin\Webapi\SparseFieldsetPlugin"/>
     </type>
+
+    <!-- POST /V1/ordo/ai-agent/quote is <resource ref="anonymous"/> (etc/webapi.xml) - this
+         plugin is the actual gate, reading the Authorization header REST-only (see the plugin's
+         own doc for why it's scoped to webapi_rest, not the global etc/di.xml). -->
+    <type name="Ordo\Automation\Api\AiAgentQuoteManagementInterface">
+        <plugin name="ordo_automation_authenticate_ai_agent_quote" type="Ordo\Automation\Plugin\AiAgent\AuthenticateQuoteRequestPlugin"/>
+    </type>
 </config>

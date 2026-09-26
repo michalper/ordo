@@ -7,6 +7,19 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **`POST /V1/ordo/ai-agent/quote`** — third and final step of AI-agent commerce readiness (GEO).
+  Prices a basket of SKUs+quantities for a shipping destination in one call:
+  `Model\AiAgent\AiAgentQuoteManagement` builds a throwaway (never persisted) `Magento\Quote\Model\
+  Quote` for exactly the request, runs it through Magento's own price/discount/tax/shipping
+  engines via `collectTotals()`, picks the cheapest shipping rate, and reads the totals back into
+  one DTO - a price check, not a cart. A SKU that doesn't match any product is skipped and
+  reported in `unmatched_skus`, not a request failure. `<resource ref="anonymous"/>` (an AI agent
+  has no Magento session) - `Plugin\AiAgent\AuthenticateQuoteRequestPlugin` is the actual gate,
+  reading the `Authorization: Bearer <api-key>` header and enforcing
+  `Model\AiAgent\ApiKeyAuthenticator`/`InboundRateLimiter` (added in the previous PR) before the
+  service method ever runs. See `API.md`'s "AI-agent quote" section for the full request/response
+  shape.
+
 - **AI-agent commerce readiness: `ai_agent` product feed + `/.well-known/ai-plugin.json` manifest** —
   first step of AI-agent commerce readiness (GEO). A third `Api\ProductFeed\FeedGeneratorInterface`
   format (`Model\ProductFeed\AiAgentFeedGenerator`), reusing `CatalogFeedProductFetcher` the same way
