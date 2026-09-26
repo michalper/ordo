@@ -84,13 +84,12 @@ would set them up).
   endpoint with no built-in template (a theme wires it into "My Account" itself), so there's
   nothing visual in this module to capture; the JSON shape documented was read from that
   controller's actual code, not invented.
-- **Not captured:** the campaign builder's Drawflow/Flow canvas itself (trigger → conditions →
-  actions graph). Opening `ordo/campaign/edit` in that test environment currently throws
-  `LogicException: Circular dependency: Ordo\Automation\Model\Campaign\ActionPool depends on
-  Ordo\Automation\Model\CampaignDispatcher and vice versa` — a pre-existing environment/DI issue
-  unrelated to this documentation change, out of scope to fix here (docs-only task, no PHP
-  changes). The Campaigns page has a placeholder marking exactly what a human needs to capture
-  once that's resolved (or reproduced in a different environment).
+- The campaign builder's Drawflow/Flow canvas (trigger → conditions → actions graph) is captured
+  in `images/flow-canvas.png` and verified live again on 2026-09-26 against the same test
+  environment: `ordo/campaign/edit` loads correctly with the demo campaign's trigger and action
+  nodes connected, no `LogicException`. An earlier version of this note reported a circular
+  dependency (`ActionPool` ↔ `CampaignDispatcher`) at that URL — that was already stale by the
+  time this pass reviewed it and does not reproduce.
 - Native-language review of the PL text in every page is **not done** — it was written by the
   same (non-native-workflow) pass as the EN text, same caveat this repo already carries for the
   10 machine-translated locale CSVs (see ROADMAP.md).
