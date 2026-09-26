@@ -22,6 +22,11 @@ spodziewać — bez żadnego żargonu programistycznego.
 - [Akceptacja zamówień](Order-Approval) — kontrola dużych zamówień B2B.
 - [Śledzenie i popupy](Tracking-and-Popups) — co klient ogląda i jak to wykorzystać.
 - [Cykle ponownych zakupów](Reorder-Cycles) — przypomnienia "czas zamówić znowu".
+- [Customer 360](Customer-360) — wszystko o jednym kliencie na jednym ekranie.
+- [Program poleceń](Referral-Program) — kod polecający i nagrody za polecenia.
+- [Historia wersji szablonów e-mail](Email-Template-Versioning) — cofnij zepsutą edycję szablonu.
+- [Gotowość na agentów AI (GEO)](AI-Agent-Commerce-Readiness) — feed, manifest i wycena dla
+  botów zakupowych.
 
 Budujesz własny frontend (aplikację mobilną, headless sklep) i potrzebujesz dokumentacji
 technicznej? Zobacz [API Reference](API-Reference) — to jedyna strona w tym poradniku
@@ -57,6 +62,11 @@ developer jargon.
 - [Order Approval](Order-Approval) — control over large B2B orders.
 - [Tracking & Popups](Tracking-and-Popups) — what customers browse, and how to use it.
 - [Reorder Cycles](Reorder-Cycles) — "time to reorder" reminders.
+- [Customer 360](Customer-360) — everything about one customer on one screen.
+- [Referral Program](Referral-Program) — referral codes and reward triggers.
+- [Email Template Versioning](Email-Template-Versioning) — undo a broken template edit.
+- [AI-Agent Commerce Readiness](AI-Agent-Commerce-Readiness) — feed, manifest, and pricing for
+  AI shopping agents.
 
 Building your own frontend (a mobile app, a headless storefront) and need technical
 documentation? See [API Reference](API-Reference) — the one page in this guide meant for
