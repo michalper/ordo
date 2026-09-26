@@ -40,15 +40,13 @@ $snapshot = $block->getSnapshot();
     </div>
 
     <?php if ($block->isCustomerResolved() && $snapshot): ?>
+        <?php $customerName = $snapshot->name !== '' ? $snapshot->name : (string) __('(no name)') ?>
         <div class="ordo-gdpr-card">
             <div class="ordo-section-head">
                 <h2>
-                    <?= $escaper->escapeHtml(__(
-                        '%1 — customer #%2 (%3)',
-                        $snapshot->name !== '' ? $snapshot->name : __('(no name)'),
-                        $snapshot->customerId,
-                        $snapshot->email
-                    )) ?>
+                    <?= $escaper->escapeHtml(
+                        __('%1 — customer #%2 (%3)', $customerName, $snapshot->customerId, $snapshot->email)
+                    ) ?>
                 </h2>
             </div>
             <div class="ordo-trigger-stats">

@@ -417,12 +417,8 @@ class DashboardViewModel implements ArgumentInterface
 
         $result = [];
         foreach (TriggerOutcomeLogger::TRIGGER_TYPES as $triggerType) {
-            $triggerStats = $stats[$triggerType] ?? [
-                'sent' => 0,
-                'responded' => 0,
-                'response_rate' => 0.0,
-                'recovered_revenue' => 0.0,
-            ];
+            $triggerStats = $stats[$triggerType]
+                ?? ['sent' => 0, 'responded' => 0, 'response_rate' => 0.0, 'recovered_revenue' => 0.0];
             $result[$triggerType] = [
                 'label' => $this->getTriggerOutcomeLabel($triggerType),
                 'sent' => $triggerStats['sent'],
