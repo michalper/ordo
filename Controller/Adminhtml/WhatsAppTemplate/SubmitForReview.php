@@ -49,7 +49,8 @@ class SubmitForReview extends AbstractWhatsAppTemplateAction implements HttpPost
         // Re-submitting an already-pending/approved template isn't harmless: it re-registers the
         // same content with Meta a second time, which their API may treat as a duplicate/reject -
         // only a draft or a rejected template has anything to gain from submitting again.
-        if (in_array($template->getStatus(), [WhatsAppTemplate::STATUS_PENDING, WhatsAppTemplate::STATUS_APPROVED], true)) {
+        $alreadySubmittedStatuses = [WhatsAppTemplate::STATUS_PENDING, WhatsAppTemplate::STATUS_APPROVED];
+        if (in_array($template->getStatus(), $alreadySubmittedStatuses, true)) {
             $this->messageManager->addErrorMessage(
                 __('This template has already been submitted to Meta - nothing to do.')
             );

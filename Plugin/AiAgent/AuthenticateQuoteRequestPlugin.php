@@ -36,7 +36,11 @@ class AuthenticateQuoteRequestPlugin
     public function beforeGetQuote(AiAgentQuoteManagementInterface $subject): void
     {
         if (!$this->config->isAiAgentEnabled()) {
-            throw new WebapiException(__('AI-agent commerce endpoints are disabled.'), 0, WebapiException::HTTP_NOT_FOUND);
+            throw new WebapiException(
+                __('AI-agent commerce endpoints are disabled.'),
+                0,
+                WebapiException::HTTP_NOT_FOUND
+            );
         }
 
         $plaintextKey = $this->extractBearerToken((string) $this->request->getHeader('Authorization'));

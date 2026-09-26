@@ -7,12 +7,13 @@
         <strong><?= $escaper->escapeHtml(__('Import %1', $block->getEntityLabel())) ?></strong>
     </div>
     <div class="admin__fieldset-wrapper-content">
+        <?php
+        $importIntroTemplate = 'Choose a JSON file previously downloaded from this %1\'s own Export action. '
+            . 'Importing always creates a brand-new %1 - it never overwrites an existing one.';
+        $importIntroText = __($importIntroTemplate, $block->getEntityLabel());
+        ?>
         <p>
-            <?= $escaper->escapeHtml(__(
-                'Choose a JSON file previously downloaded from this %1\'s own Export action. '
-                . 'Importing always creates a brand-new %1 - it never overwrites an existing one.',
-                $block->getEntityLabel()
-            )) ?>
+            <?= $escaper->escapeHtml($importIntroText) ?>
         </p>
         <form
             action="<?= $escaper->escapeUrl($block->getImportUrl()) ?>"

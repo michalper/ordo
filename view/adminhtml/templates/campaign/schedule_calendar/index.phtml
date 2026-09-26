@@ -6,6 +6,9 @@
 $viewModel = $block->getData('view_model');
 $days = $viewModel->getCalendarDays();
 $weekdayLabels = [__('Sun'), __('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri'), __('Sat')];
+$scheduleCalendarRoute = 'ordo/campaign/schedulecalendar';
+$prevMonthParams = ['month' => $viewModel->getPrevMonthParam()];
+$nextMonthParams = ['month' => $viewModel->getNextMonthParam()];
 ?>
 <div class="ordo-page-toolbar">
     <a class="ordo-toolbar-back-link" href="<?= $escaper->escapeUrl($block->getUrl('ordo/campaign/calendar')) ?>">
@@ -29,18 +32,12 @@ $weekdayLabels = [__('Sun'), __('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri
     </p>
 
     <div class="ordo-schedule-calendar-nav">
-        <?php $prevMonthUrl = $block->getUrl(
-            'ordo/campaign/schedulecalendar',
-            ['month' => $viewModel->getPrevMonthParam()]
-        ) ?>
+        <?php $prevMonthUrl = $block->getUrl($scheduleCalendarRoute, $prevMonthParams) ?>
         <a class="ordo-btn" href="<?= $escaper->escapeUrl($prevMonthUrl) ?>">
             <?= $escaper->escapeHtml(__('← Previous month')) ?>
         </a>
         <h3><?= $escaper->escapeHtml($viewModel->getVisibleMonthLabel()) ?></h3>
-        <?php $nextMonthUrl = $block->getUrl(
-            'ordo/campaign/schedulecalendar',
-            ['month' => $viewModel->getNextMonthParam()]
-        ) ?>
+        <?php $nextMonthUrl = $block->getUrl($scheduleCalendarRoute, $nextMonthParams) ?>
         <a class="ordo-btn" href="<?= $escaper->escapeUrl($nextMonthUrl) ?>">
             <?= $escaper->escapeHtml(__('Next month →')) ?>
         </a>
@@ -68,10 +65,8 @@ $weekdayLabels = [__('Sun'), __('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri
                 <?php if (!empty($day['entries'])): ?>
                     <ul class="ordo-schedule-calendar-entries">
                         <?php foreach ($day['entries'] as $entry): ?>
-                            <?php $entryEditUrl = $block->getUrl(
-                                'ordo/campaign/edit',
-                                ['entity_id' => $entry['campaign_id']]
-                            ) ?>
+                            <?php $entryEditParams = ['entity_id' => $entry['campaign_id']] ?>
+                            <?php $entryEditUrl = $block->getUrl('ordo/campaign/edit', $entryEditParams) ?>
                             <li class="ordo-schedule-calendar-entry ordo-schedule-calendar-entry-<?=
                                 $escaper->escapeHtmlAttr($entry['status']) ?>">
                                 <a href="<?= $escaper->escapeUrl($entryEditUrl) ?>"

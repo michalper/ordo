@@ -30,8 +30,11 @@ class SnapshotEmailTemplateVersion
     ) {
     }
 
-    public function afterSave(TemplateResource $subject, TemplateResource $result, AbstractModel $object): TemplateResource
-    {
+    public function afterSave(
+        TemplateResource $subject,
+        TemplateResource $result,
+        AbstractModel $object
+    ): TemplateResource {
         if (!$this->config->isEmailTemplateVersioningEnabled()) {
             return $result;
         }
