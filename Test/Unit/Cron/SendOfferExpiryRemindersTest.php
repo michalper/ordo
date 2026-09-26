@@ -63,6 +63,23 @@ class SendOfferExpiryRemindersTest extends TestCase
     }
 
     /**
+     * The cheap reminderAlreadySent() pre-check passes (0), but claim()'s own re-check under the
+     * lock returns 1 - another process claimed this offer/reminder-type in between. Only the
+     * count query's second call (the one inside claim()) should see 1.
+     */
+    private function stubFetchOneRaceLostInsideClaim(AdapterInterface $connection): void
+    {
+        $countCalls = 0;
+        $connection->method('fetchOne')->willReturnCallback(function ($query) use (&$countCalls) {
+            if (is_string($query) && str_contains($query, 'GET_LOCK')) {
+                return 1;
+            }
+            $countCalls++;
+            return $countCalls > 1 ? 1 : 0;
+        });
+    }
+
+    /**
      * @param CustomerInterface[] $customers
      */
     private function makeCustomerMapBuilder(array $customers): CustomerMapBuilder
@@ -139,6 +156,44 @@ class SendOfferExpiryRemindersTest extends TestCase
         $logger->expects(self::once())->method('info')->with(self::stringContains('1 offer expiry reminders'));
 
         $this->makeCron($config, $collectionFactory, $resourceConnection, $logger)->execute();
+    }
+
+    /**
+     * Regression: claim() itself, not just the cheap reminderAlreadySent() pre-check, must be the
+     * real guard against a double-send - a race lost inside claim() (another process claimed
+     * this offer/reminder-type between the pre-check and the lock being acquired) must still skip
+     * the reminder, not send it anyway.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSkipsWhenClaimLosesTheRaceEvenThoughThePreCheckPassed(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isOfferReminderEnabled')->willReturn(true);
+        $config->method('getOfferLeadDays')->willReturn(2);
+        $config->method('getOfferMaxSelfExtensions')->willReturn(1);
+
+        $offer = $this->createStub(Offer::class);
+        $offer->method('getEntityId')->willReturn(4);
+        $offer->method('getCustomerId')->willReturn(5);
+        $offer->method('canSelfExtend')->willReturn(true);
+
+        $collection = $this->createStub(Collection::class);
+        $collection->method('addExpiringOnFilter');
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$offer]));
+
+        $collectionFactory = $this->createMock(CollectionFactory::class);
+        $collectionFactory->method('create')->willReturn($collection);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $this->stubFetchOneRaceLostInsideClaim($connection);
+        $connection->expects(self::never())->method('insert');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $this->makeCron($config, $collectionFactory, $resourceConnection)->execute();
     }
 
     /**

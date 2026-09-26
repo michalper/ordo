@@ -80,6 +80,9 @@ class AiAgentQuoteManagementTest extends TestCase
             if ($result === 'error') {
                 return 'Could not add product.';
             }
+            if ($result === 'throws') {
+                throw new \Magento\Framework\Exception\LocalizedException(__('boom'));
+            }
             return new QuoteItemTestDouble(10.0, 10.0 * $qty);
         });
 
@@ -137,6 +140,39 @@ class AiAgentQuoteManagementTest extends TestCase
 
         self::assertCount(1, $result->getLines());
         self::assertSame('SKU-OK', $result->getLines()[0]->getSku());
+        self::assertSame(['SKU-BAD'], $result->getUnmatchedSkus());
+    }
+
+    /**
+     * Regression: Quote::addProduct() can throw (e.g. a LocalizedException for a disabled/
+     * out-of-stock-with-backorders-off product), not just return an error string - that must be
+     * skipped and reported the same way as any other unmatched SKU, not bubble up and fail the
+     * whole request.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetQuoteSkipsSkuWhenAddProductThrows(): void
+    {
+        $this->makeQuote(['SKU-BAD' => 'throws']);
+        $this->productRepository->method('get')->willReturnMap([
+            ['SKU-OK', $this->makeProduct('SKU-OK')],
+            ['SKU-BAD', $this->makeProduct('SKU-BAD')],
+        ]);
+        $this->address->setTestSubtotal(10.0)
+            ->setTestDiscountAmount(0.0)
+            ->setTestShippingAmount(0.0)
+            ->setTestGrandTotal(10.0)
+            ->setTestRates([]);
+
+        $result = $this->management->getQuote(
+            [
+                (new AiAgentQuoteItem())->setSku('SKU-OK')->setQty(1.0),
+                (new AiAgentQuoteItem())->setSku('SKU-BAD')->setQty(1.0),
+            ],
+            'US',
+            '10001'
+        );
+
+        self::assertCount(1, $result->getLines());
         self::assertSame(['SKU-BAD'], $result->getUnmatchedSkus());
     }
 

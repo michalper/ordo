@@ -210,6 +210,8 @@ class ConfigTest extends TestCase
         self::assertSame(24, $this->config->getAbandonedCartFallbackDelayHours());
         self::assertSame(0, $this->config->getAbandonedCartFallbackWhatsAppTemplateId());
         self::assertSame(100, $this->config->getAbTestMinSampleSize());
+        self::assertSame(60, $this->config->getAiAgentRateLimitPerMinute());
+        self::assertSame(5, $this->config->getAiAgentEstimatedDeliveryDays());
     }
 
     public function testOutboundRateLimitGettersReturnAnExplicitZeroRatherThanFallingBackToTheDefault(): void

@@ -40,7 +40,8 @@ class Save extends AbstractLeadRoutingRuleAction implements HttpPostActionInterf
             $leadRoutingRule->setAttributeCode((string) ($data['attribute_code'] ?? ''));
             $leadRoutingRule->setOperator((string) ($data['operator'] ?? ''));
             $leadRoutingRule->setValue((string) ($data['value'] ?? ''));
-            $leadRoutingRule->setReps($this->encodeReps($data['reps']['reps'] ?? []));
+            $rawReps = $data['reps']['reps'] ?? [];
+            $leadRoutingRule->setReps($this->encodeReps(is_array($rawReps) ? $rawReps : []));
             $leadRoutingRule->setEnabled((bool) ($data['enabled'] ?? false));
             $leadRoutingRule->setSortOrder((int) ($data['sort_order'] ?? 0));
 
@@ -68,13 +69,11 @@ class Save extends AbstractLeadRoutingRuleAction implements HttpPostActionInterf
      * {"123": {"email": "...", "name": "...", "phone": "..."}} - reindexed here into a plain
      * JSON array (LeadAssigner::assign() reads it as a 0-indexed pool), dropping any row with a
      * blank email (an admin who added then emptied a row, not a real pool entry).
+     *
+     * @param mixed[] $rawReps
      */
-    private function encodeReps(mixed $rawReps): string
+    private function encodeReps(array $rawReps): string
     {
-        if (!is_array($rawReps)) {
-            return '[]';
-        }
-
         $reps = [];
         foreach ($rawReps as $row) {
             if (!is_array($row) || trim((string) ($row['email'] ?? '')) === '') {

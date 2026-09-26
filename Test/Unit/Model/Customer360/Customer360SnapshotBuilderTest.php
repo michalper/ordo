@@ -43,6 +43,28 @@ class Customer360SnapshotBuilderTest extends TestCase
         return $resourceConnection;
     }
 
+    /**
+     * Defensive-only path: COUNT(*)/SUM(...) with no GROUP BY always returns exactly one row
+     * even when zero orders match, so fetchRow() returning nothing is not a real-world case -
+     * still handled gracefully rather than assumed away.
+     */
+    private function makeResourceConnectionWithNoRow(): ResourceConnection
+    {
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchRow')->willReturn(false);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        return $resourceConnection;
+    }
+
     public function testBuildAggregatesEveryDataSourceIntoOneSnapshot(): void
     {
         $customer = $this->createStub(CustomerInterface::class);
@@ -180,6 +202,61 @@ class Customer360SnapshotBuilderTest extends TestCase
         self::assertNull($snapshot->npsScore);
         self::assertSame([], $snapshot->tags);
         self::assertSame([], $snapshot->matchingSegmentNames);
+        self::assertSame(0, $snapshot->orderCount);
+        self::assertSame(0.0, $snapshot->orderTotal);
+    }
+
+    public function testBuildDefaultsOrderStatsToZeroWhenTheAggregateQueryReturnsNoRow(): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getId')->willReturn(7);
+        $customer->method('getEmail')->willReturn('new@example.com');
+        $customer->method('getFirstname')->willReturn('');
+        $customer->method('getLastname')->willReturn('');
+
+        $customerScoreManager = $this->createStub(CustomerScoreManager::class);
+        $customerScoreManager->method('getScore')->willReturn(0);
+
+        $loyaltyTierCalculator = $this->createStub(LoyaltyTierCalculator::class);
+        $loyaltyTierCalculator->method('getTierForScore')->willReturn(LoyaltyTierCalculator::BRONZE);
+        $loyaltyTierCalculator->method('getTierLabel')->willReturn('Bronze');
+
+        $rfmCalculator = $this->createStub(RfmCalculator::class);
+        $rfmCalculator->method('getRecencyDays')->willReturn(null);
+        $rfmCalculator->method('getFrequency')->willReturn(0);
+        $rfmCalculator->method('getMonetaryTotal')->willReturn(0.0);
+        $rfmCalculator->method('getRfmScoreLabel')->willReturn(null);
+
+        $customerTagManager = $this->createStub(CustomerTagManagementInterface::class);
+        $customerTagManager->method('getTags')->willReturn([]);
+
+        $emptyPrompt = $this->createStub(SurveyPrompt::class);
+        $emptyPrompt->method('getScore')->willReturn(null);
+        $surveyPromptCollection = $this->createStub(SurveyPromptCollection::class);
+        $surveyPromptCollection->method('addLatestResponseFilter')->willReturnSelf();
+        $surveyPromptCollection->method('getFirstItem')->willReturn($emptyPrompt);
+        $surveyPromptCollectionFactory = $this->createStub(SurveyPromptCollectionFactory::class);
+        $surveyPromptCollectionFactory->method('create')->willReturn($surveyPromptCollection);
+
+        $segmentCollection = $this->makeRealCollection(SegmentCollection::class, 'ordo_segment');
+        $segmentCollectionFactory = $this->createStub(SegmentCollectionFactory::class);
+        $segmentCollectionFactory->method('create')->willReturn($segmentCollection);
+
+        $segmentMatcher = $this->createStub(SegmentMatcher::class);
+
+        $builder = new Customer360SnapshotBuilder(
+            $customerScoreManager,
+            $loyaltyTierCalculator,
+            $rfmCalculator,
+            $customerTagManager,
+            $surveyPromptCollectionFactory,
+            $segmentCollectionFactory,
+            $segmentMatcher,
+            $this->makeResourceConnectionWithNoRow()
+        );
+
+        $snapshot = $builder->build($customer);
+
         self::assertSame(0, $snapshot->orderCount);
         self::assertSame(0.0, $snapshot->orderTotal);
     }

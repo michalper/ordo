@@ -409,6 +409,36 @@ class OrderApprovalManagementTest extends TestCase
         self::assertSame([], $this->management->getDecisionLinksByIds([]));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetDecisionLinksByIdsReturnsEmptyArrayWhenNoneOfTheIdsAreStillPending(): void
+    {
+        $approvalCollection = $this->createStub(OrderApprovalCollection::class);
+        $approvalCollection->method('addFieldToFilter')->willReturnSelf();
+        $approvalCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
+
+        $approvalCollectionFactory = $this->createMock(OrderApprovalCollectionFactory::class);
+        $approvalCollectionFactory->method('create')->willReturn($approvalCollection);
+        $this->orderApprovalCollectionFactory = $approvalCollectionFactory;
+
+        $orderCollectionFactory = $this->createMock(OrderCollectionFactory::class);
+        $orderCollectionFactory->expects(self::never())->method('create');
+        $this->orderCollectionFactory = $orderCollectionFactory;
+
+        $this->management = new OrderApprovalManagement(
+            $this->orderApprovalFactory,
+            $this->orderApprovalResource,
+            $this->orderApprovalCollectionFactory,
+            $this->orderCollectionFactory,
+            $this->orderConfig,
+            $this->orderRepository,
+            $this->decisionLinksFactory,
+            $this->rateLimiter,
+            $this->remoteAddress
+        );
+
+        self::assertSame([], $this->management->getDecisionLinksByIds([5, 9]));
+    }
+
     /**
      * The N+1 fix itself: one approval collection load and one order collection load for the
      * whole batch, not one of each per id - Ui\Component\Listing\Column\OrderApprovalActions is

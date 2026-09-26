@@ -8,6 +8,7 @@ use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\App\ObjectManager;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\Escaper;
 use Magento\Framework\ObjectManagerInterface;
 use Magento\Framework\Pricing\Helper\Data as PricingHelper;
 use Magento\Framework\Registry;
@@ -40,6 +41,7 @@ class IndexTest extends TestCase
 
         $context = $this->createStub(Context::class);
         $context->method('getUrlBuilder')->willReturn($this->urlBuilder);
+        $context->method('getEscaper')->willReturn(new Escaper());
 
         $this->block = new Index(
             $context,
@@ -142,5 +144,18 @@ class IndexTest extends TestCase
         $this->pricingHelper->method('currency')->willReturn('$199.99');
 
         self::assertSame('$199.99', $this->block->formatCurrency(199.99));
+    }
+
+    public function testStatRowRendersTheLabelEscapedAndTheValueHtmlAsIs(): void
+    {
+        $html = $this->block->statRow('<b>Label</b>', '<span class="value">42</span>');
+
+        self::assertSame(
+            '<div class="ordo-trigger-stat-row">'
+                . '<span class="ordo-trigger-stat-label">&lt;b&gt;Label&lt;/b&gt;</span>'
+                . '<span class="value">42</span>'
+                . '</div>',
+            $html
+        );
     }
 }
