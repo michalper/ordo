@@ -52,6 +52,10 @@ over):
 - `Tracking-and-Popups.md`
 - `Reorder-Cycles.md`
 - `Dashboard.md`
+- `Customer-360.md`
+- `Referral-Program.md`
+- `Email-Template-Versioning.md`
+- `AI-Agent-Commerce-Readiness.md`
 
 `_Sidebar.md` is included here too, staged the same way, listing all pages above in the order a
 reader would want (start at Dashboard, then the capability pages roughly in the order a merchant
@@ -64,11 +68,22 @@ would set them up).
   `docs/ARCHITECTURE.md` and `docs/CHANGELOG.md` — not invented. Exact class names, config paths,
   and admin URLs are called out per page so a reviewer can spot-check any claim against the code.
 - Screenshots are **real**, taken against a running Magento 2.4.9 admin instance
-  (`magento-ordo-test/`, this module installed from the current branch) logged in as a real admin
-  user, for: the module dashboard, the Campaigns grid, the Segments grid, the RFM report, the
-  Score Rules grid, the Free Gift Offers grid and its tier-editing form, the Order Approvals grid,
-  the Reorder Cycles grid, and the On-Site Behavior Tracking configuration section. See
+  (`magento-ordo-test/`, this module installed from `main` at commit 9039232, then updated as
+  #230-#232 landed) logged in as a real admin user, for: the module dashboard, the Campaigns
+  grid, the Segments grid, the RFM report, the Score Rules grid, the Free Gift Offers grid and
+  its tier-editing form, the Order Approvals grid, the Reorder Cycles grid, the On-Site Behavior
+  Tracking configuration section, the Customer 360 lookup (real customer with 6 orders, tags,
+  and matching segments), the AI-Agent Commerce Readiness config section, and the Email Template
+  Versions grid (two real snapshots from editing then re-editing a test template). See
   `docs/wiki/images/`.
+- The `POST /V1/ordo/ai-agent/quote` example in `AI-Agent-Commerce-Readiness.md` and the
+  `/.well-known/ai-plugin.json` example were both run for real against that same instance (an
+  API key generated via `bin/magento ordo:ai-agent:api-key:generate`) - not invented request/
+  response shapes.
+- The Referral Program page has no screenshot - `Controller\Referral\MyCode` is a bare JSON
+  endpoint with no built-in template (a theme wires it into "My Account" itself), so there's
+  nothing visual in this module to capture; the JSON shape documented was read from that
+  controller's actual code, not invented.
 - **Not captured:** the campaign builder's Drawflow/Flow canvas itself (trigger → conditions →
   actions graph). Opening `ordo/campaign/edit` in that test environment currently throws
   `LogicException: Circular dependency: Ordo\Automation\Model\Campaign\ActionPool depends on
