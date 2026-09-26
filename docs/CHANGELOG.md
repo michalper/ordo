@@ -5,6 +5,11 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-26
+
+Verified before tagging: full unit suite green (2780 tests), `phpstan analyse` clean, `cs-check`/
+`rector-check` clean, and CI's Integration Tests + API Tests green on `main`.
+
 ### Changed
 
 - **Admin config split into six sections instead of one flat "General" list** — `etc/adminhtml/
