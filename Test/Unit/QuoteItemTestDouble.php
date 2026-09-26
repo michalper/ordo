@@ -19,7 +19,7 @@ class QuoteItemTestDouble extends Item
 
     public function __construct(
         private readonly ?float $testPrice = null,
-        private readonly ?float $testRowTotal = null
+        private ?float $testRowTotal = null
     ) {
         // Deliberately skips parent::__construct().
     }
@@ -32,6 +32,16 @@ class QuoteItemTestDouble extends Item
     public function getRowTotal(): ?float
     {
         return $this->testRowTotal;
+    }
+
+    /**
+     * Mutable on purpose (unlike $testPrice) - lets a test simulate collectTotals() populating
+     * the real row total only after it's actually called, the same way real Magento does.
+     */
+    public function setTestRowTotal(?float $rowTotal): self
+    {
+        $this->testRowTotal = $rowTotal;
+        return $this;
     }
 
     public function setOriginalCustomPrice($value): self

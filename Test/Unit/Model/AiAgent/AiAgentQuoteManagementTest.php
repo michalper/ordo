@@ -235,4 +235,44 @@ class AiAgentQuoteManagementTest extends TestCase
         self::assertCount(1, $result->getLines());
         self::assertSame(20.0, $result->getLines()[0]->getRowTotal());
     }
+
+    /**
+     * Regression: Quote\Item::getRowTotal() is only populated once collectTotals() actually runs
+     * the totals-collection pipeline - it's still unset/zero immediately after addProduct(). A
+     * line's row total must be read AFTER collectTotals(), not captured at add-time, or it always
+     * comes back 0 in production (unlike unit_price, which addProduct() does set immediately).
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetQuoteReadsRowTotalAfterCollectTotalsNotAtAddTime(): void
+    {
+        $item = new QuoteItemTestDouble(10.0, null);
+
+        $quote = $this->getMockBuilder(QuoteTestDouble::class)
+            ->onlyMethods(['setStore', 'getShippingAddress', 'collectTotals', 'addProduct'])
+            ->getMock();
+        $quote->method('getShippingAddress')->willReturn($this->address);
+        $quote->method('addProduct')->willReturn($item);
+        // Simulates what real collectTotals() does: the row total only becomes available once
+        // this runs, not at addProduct() time (when it's still null/unset).
+        $quote->method('collectTotals')->willReturnCallback(function () use ($quote, $item) {
+            $item->setTestRowTotal(20.0);
+            return $quote;
+        });
+        $this->quoteFactory->method('create')->willReturn($quote);
+
+        $this->productRepository->method('get')->willReturn($this->makeProduct('SKU-OK'));
+        $this->address->setTestSubtotal(20.0)
+            ->setTestDiscountAmount(0.0)
+            ->setTestShippingAmount(0.0)
+            ->setTestGrandTotal(20.0)
+            ->setTestRates([]);
+
+        $result = $this->management->getQuote(
+            [(new AiAgentQuoteItem())->setSku('SKU-OK')->setQty(2.0)],
+            'US',
+            '10001'
+        );
+
+        self::assertSame(20.0, $result->getLines()[0]->getRowTotal());
+    }
 }
