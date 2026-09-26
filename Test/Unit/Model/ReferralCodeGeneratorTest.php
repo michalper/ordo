@@ -31,4 +31,21 @@ class ReferralCodeGeneratorTest extends TestCase
 
         self::assertSame('ABC123DE', $generator->generateUnique(fn (): bool => false));
     }
+
+    /**
+     * Astronomically unlikely in practice (36^8 possible codes), but exhausting every retry
+     * attempt must still return a code (a longer one) rather than looping forever or throwing.
+     */
+    public function testGenerateUniqueFallsBackToALongerCodeWhenEveryAttemptCollides(): void
+    {
+        $random = $this->createStub(Random::class);
+        $random->method('getRandomString')->willReturnMap([
+            [8, 'aaaaaaaa'],
+            [12, 'bbbbbbbbbbbb'],
+        ]);
+
+        $generator = new ReferralCodeGenerator($random);
+
+        self::assertSame('BBBBBBBBBBBB', $generator->generateUnique(fn (): bool => true));
+    }
 }
