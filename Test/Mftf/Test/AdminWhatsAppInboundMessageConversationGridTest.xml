@@ -14,7 +14,7 @@
         <before>
             <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
-            <magentoCLI command="config:set ordo_automation/whatsapp/app_secret whatsapp_test_app_secret" stepKey="setWhatsAppAppSecret"/>
+            <magentoCLI command="config:set ordo_channels/whatsapp/app_secret whatsapp_test_app_secret" stepKey="setWhatsAppAppSecret"/>
 
             <!-- A prior real "send" to this customer's own WhatsApp number, the same
                  already-established stand-in for a real send_whatsapp this suite's own
@@ -29,7 +29,7 @@
             </helper>
         </before>
         <after>
-            <magentoCLI command="config:set ordo_automation/whatsapp/app_secret ''" stepKey="clearWhatsAppAppSecret"/>
+            <magentoCLI command="config:set ordo_channels/whatsapp/app_secret ''" stepKey="clearWhatsAppAppSecret"/>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>

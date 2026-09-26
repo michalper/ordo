@@ -19,7 +19,7 @@
                  <after> so it doesn't linger for whatever other campaign-group test runs next in
                  this same install. max_messages/window_hours left at their real defaults (5,
                  24h). -->
-            <magentoCLI command="config:set ordo_automation/frequency_cap/enabled 1" stepKey="enableFrequencyCap"/>
+            <magentoCLI command="config:set ordo_channels/frequency_cap/enabled 1" stepKey="enableFrequencyCap"/>
             <!-- Five prior "sends" (the default cap) across a different channel, already on the
                  books before this test's own real order - see this test's own description for
                  why a real Twilio account isn't needed to produce them. -->
@@ -55,7 +55,7 @@
             </helper>
         </before>
         <after>
-            <magentoCLI command="config:set ordo_automation/frequency_cap/enabled 0" stepKey="disableFrequencyCap"/>
+            <magentoCLI command="config:set ordo_channels/frequency_cap/enabled 0" stepKey="disableFrequencyCap"/>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>

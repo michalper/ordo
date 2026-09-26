@@ -63,10 +63,10 @@ class GenerateAiContentActionTest extends TestCase
         // single shared Config instance built on that same MutableScopeConfig is injected into
         // both.
         $scopeConfig = self::$objectManager->create(MutableScopeConfig::class);
-        $scopeConfig->setValue('ordo_automation/ai/enabled', 1, ScopeInterface::SCOPE_STORE);
+        $scopeConfig->setValue('ordo_tracking/ai/enabled', 1, ScopeInterface::SCOPE_STORE);
         // Port 1 is a real, resolvable localhost address with nothing bound to it - a genuine
         // connection-refused failure through a real cURL call, not a mocked/stubbed one.
-        $scopeConfig->setValue('ordo_automation/ai/ollama_base_url', 'http://127.0.0.1:1', ScopeInterface::SCOPE_STORE);
+        $scopeConfig->setValue('ordo_tracking/ai/ollama_base_url', 'http://127.0.0.1:1', ScopeInterface::SCOPE_STORE);
 
         $config = self::$objectManager->create(\Ordo\Automation\Helper\Config::class, [
             'scopeConfig' => $scopeConfig,

@@ -40,132 +40,132 @@ class Config
     private const string XML_PATH_OFFER_MAX_SELF_EXTENSIONS = 'ordo_automation/offer/max_self_extensions';
     private const string XML_PATH_OFFER_SELF_EXTENSION_DAYS = 'ordo_automation/offer/self_extension_days';
 
-    private const string XML_PATH_CREDIT_ENABLED = 'ordo_automation/credit_limit/enabled';
-    private const string XML_PATH_CREDIT_WARNING_THRESHOLD = 'ordo_automation/credit_limit/warning_threshold_percent';
-    private const string XML_PATH_CREDIT_COOLDOWN_DAYS = 'ordo_automation/credit_limit/cooldown_days';
-    private const string XML_PATH_CREDIT_BLOCK_CHECKOUT_ENABLED = 'ordo_automation/credit_limit/block_checkout_enabled';
+    private const string XML_PATH_CREDIT_ENABLED = 'ordo_b2b/credit_limit/enabled';
+    private const string XML_PATH_CREDIT_WARNING_THRESHOLD = 'ordo_b2b/credit_limit/warning_threshold_percent';
+    private const string XML_PATH_CREDIT_COOLDOWN_DAYS = 'ordo_b2b/credit_limit/cooldown_days';
+    private const string XML_PATH_CREDIT_BLOCK_CHECKOUT_ENABLED = 'ordo_b2b/credit_limit/block_checkout_enabled';
 
     private const string XML_PATH_LIFECYCLE_ENABLED = 'ordo_automation/lifecycle/enabled';
     private const string XML_PATH_LIFECYCLE_WIN_BACK_INACTIVE_DAYS = 'ordo_automation/lifecycle/win_back_inactive_days';
 
-    private const string XML_PATH_CLV_PROJECTION_YEARS = 'ordo_automation/clv/projection_years';
-    private const string XML_PATH_CLV_MIN_TENURE_MONTHS = 'ordo_automation/clv/min_tenure_months';
+    private const string XML_PATH_CLV_PROJECTION_YEARS = 'ordo_scoring/clv/projection_years';
+    private const string XML_PATH_CLV_MIN_TENURE_MONTHS = 'ordo_scoring/clv/min_tenure_months';
 
-    private const string XML_PATH_APPROVAL_ENABLED = 'ordo_automation/order_approval/enabled';
-    private const string XML_PATH_APPROVAL_ESCALATION_DAYS = 'ordo_automation/order_approval/escalation_days';
+    private const string XML_PATH_APPROVAL_ENABLED = 'ordo_b2b/order_approval/enabled';
+    private const string XML_PATH_APPROVAL_ESCALATION_DAYS = 'ordo_b2b/order_approval/escalation_days';
     private const string XML_PATH_APPROVAL_ESCALATION_MAX_REMINDERS_PER_TIER
-        = 'ordo_automation/order_approval/escalation_max_reminders_per_tier';
+        = 'ordo_b2b/order_approval/escalation_max_reminders_per_tier';
     private const string XML_PATH_APPROVAL_ESCALATION_CHAIN_EMAILS
-        = 'ordo_automation/order_approval/escalation_chain_emails';
+        = 'ordo_b2b/order_approval/escalation_chain_emails';
 
-    private const string XML_PATH_SALES_REP_DIGEST_ENABLED = 'ordo_automation/sales_rep/digest_enabled';
+    private const string XML_PATH_SALES_REP_DIGEST_ENABLED = 'ordo_b2b/sales_rep/digest_enabled';
 
-    private const string XML_PATH_TRACKING_ENABLED = 'ordo_automation/tracking/enabled';
-    private const string XML_PATH_TRACKING_RETENTION_DAYS = 'ordo_automation/tracking/retention_days';
-    private const string XML_PATH_TRACKING_VIEW_THRESHOLD = 'ordo_automation/tracking/view_threshold';
-    private const string XML_PATH_TRACKING_CLICK_THRESHOLD = 'ordo_automation/tracking/click_threshold';
+    private const string XML_PATH_TRACKING_ENABLED = 'ordo_tracking/tracking/enabled';
+    private const string XML_PATH_TRACKING_RETENTION_DAYS = 'ordo_tracking/tracking/retention_days';
+    private const string XML_PATH_TRACKING_VIEW_THRESHOLD = 'ordo_tracking/tracking/view_threshold';
+    private const string XML_PATH_TRACKING_CLICK_THRESHOLD = 'ordo_tracking/tracking/click_threshold';
 
-    private const string XML_PATH_POPUP_ENABLED = 'ordo_automation/tracking/popup_enabled';
-    private const string XML_PATH_POPUP_POLL_INTERVAL_SECONDS = 'ordo_automation/tracking/popup_poll_interval_seconds';
-    private const string XML_PATH_POPUP_FREQUENCY_CAP_HOURS = 'ordo_automation/tracking/popup_frequency_cap_hours';
-    private const string XML_PATH_NOTIFICATION_ENABLED = 'ordo_automation/tracking/notification_enabled';
+    private const string XML_PATH_POPUP_ENABLED = 'ordo_tracking/tracking/popup_enabled';
+    private const string XML_PATH_POPUP_POLL_INTERVAL_SECONDS = 'ordo_tracking/tracking/popup_poll_interval_seconds';
+    private const string XML_PATH_POPUP_FREQUENCY_CAP_HOURS = 'ordo_tracking/tracking/popup_frequency_cap_hours';
+    private const string XML_PATH_NOTIFICATION_ENABLED = 'ordo_tracking/tracking/notification_enabled';
     private const string XML_PATH_NOTIFICATION_POLL_INTERVAL_SECONDS
-        = 'ordo_automation/tracking/notification_poll_interval_seconds';
-    private const string XML_PATH_NPS_SURVEY_ENABLED = 'ordo_automation/tracking/nps_survey_enabled';
+        = 'ordo_tracking/tracking/notification_poll_interval_seconds';
+    private const string XML_PATH_NPS_SURVEY_ENABLED = 'ordo_tracking/tracking/nps_survey_enabled';
     private const string XML_PATH_NPS_SURVEY_POLL_INTERVAL_SECONDS
-        = 'ordo_automation/tracking/nps_survey_poll_interval_seconds';
+        = 'ordo_tracking/tracking/nps_survey_poll_interval_seconds';
 
     private const string XML_PATH_FREE_GIFT_ENABLED = 'ordo_automation/free_gift/enabled';
 
-    private const string XML_PATH_LEAD_SCORING_ENABLED = 'ordo_automation/lead_scoring/enabled';
-    private const string XML_PATH_LEAD_SCORING_THRESHOLD = 'ordo_automation/lead_scoring/score_threshold';
-    private const string XML_PATH_LOYALTY_SILVER_THRESHOLD = 'ordo_automation/lead_scoring/loyalty_silver_threshold';
-    private const string XML_PATH_LOYALTY_GOLD_THRESHOLD = 'ordo_automation/lead_scoring/loyalty_gold_threshold';
+    private const string XML_PATH_LEAD_SCORING_ENABLED = 'ordo_scoring/lead_scoring/enabled';
+    private const string XML_PATH_LEAD_SCORING_THRESHOLD = 'ordo_scoring/lead_scoring/score_threshold';
+    private const string XML_PATH_LOYALTY_SILVER_THRESHOLD = 'ordo_scoring/lead_scoring/loyalty_silver_threshold';
+    private const string XML_PATH_LOYALTY_GOLD_THRESHOLD = 'ordo_scoring/lead_scoring/loyalty_gold_threshold';
 
-    private const string XML_PATH_LEAD_ROUTING_ENABLED = 'ordo_automation/lead_routing/enabled';
+    private const string XML_PATH_LEAD_ROUTING_ENABLED = 'ordo_b2b/lead_routing/enabled';
 
-    private const string XML_PATH_SMS_ENABLED = 'ordo_automation/sms/enabled';
-    private const string XML_PATH_SMS_TWILIO_ACCOUNT_SID = 'ordo_automation/sms/twilio_account_sid';
-    private const string XML_PATH_SMS_TWILIO_AUTH_TOKEN = 'ordo_automation/sms/twilio_auth_token';
-    private const string XML_PATH_SMS_TWILIO_API_KEY_SID = 'ordo_automation/sms/twilio_api_key_sid';
-    private const string XML_PATH_SMS_TWILIO_API_KEY_SECRET = 'ordo_automation/sms/twilio_api_key_secret';
-    private const string XML_PATH_SMS_TWILIO_FROM_NUMBER = 'ordo_automation/sms/twilio_from_number';
-    private const string XML_PATH_SMS_TWILIO_MAX_PER_SECOND = 'ordo_automation/sms/twilio_max_requests_per_second';
+    private const string XML_PATH_SMS_ENABLED = 'ordo_channels/sms/enabled';
+    private const string XML_PATH_SMS_TWILIO_ACCOUNT_SID = 'ordo_channels/sms/twilio_account_sid';
+    private const string XML_PATH_SMS_TWILIO_AUTH_TOKEN = 'ordo_channels/sms/twilio_auth_token';
+    private const string XML_PATH_SMS_TWILIO_API_KEY_SID = 'ordo_channels/sms/twilio_api_key_sid';
+    private const string XML_PATH_SMS_TWILIO_API_KEY_SECRET = 'ordo_channels/sms/twilio_api_key_secret';
+    private const string XML_PATH_SMS_TWILIO_FROM_NUMBER = 'ordo_channels/sms/twilio_from_number';
+    private const string XML_PATH_SMS_TWILIO_MAX_PER_SECOND = 'ordo_channels/sms/twilio_max_requests_per_second';
 
-    private const string XML_PATH_GOOGLE_ADS_CLIENT_ID = 'ordo_automation/ad_audience_sync/google_ads_client_id';
+    private const string XML_PATH_GOOGLE_ADS_CLIENT_ID = 'ordo_integrations/ad_audience_sync/google_ads_client_id';
     private const string XML_PATH_GOOGLE_ADS_CLIENT_SECRET
-        = 'ordo_automation/ad_audience_sync/google_ads_client_secret';
+        = 'ordo_integrations/ad_audience_sync/google_ads_client_secret';
     private const string XML_PATH_GOOGLE_ADS_REFRESH_TOKEN
-        = 'ordo_automation/ad_audience_sync/google_ads_refresh_token';
+        = 'ordo_integrations/ad_audience_sync/google_ads_refresh_token';
     private const string XML_PATH_GOOGLE_ADS_DEVELOPER_TOKEN
-        = 'ordo_automation/ad_audience_sync/google_ads_developer_token';
+        = 'ordo_integrations/ad_audience_sync/google_ads_developer_token';
     private const string XML_PATH_GOOGLE_ADS_LOGIN_CUSTOMER_ID
-        = 'ordo_automation/ad_audience_sync/google_ads_login_customer_id';
-    private const string XML_PATH_META_ACCESS_TOKEN = 'ordo_automation/ad_audience_sync/meta_access_token';
-    private const string XML_PATH_META_AD_ACCOUNT_ID = 'ordo_automation/ad_audience_sync/meta_ad_account_id';
+        = 'ordo_integrations/ad_audience_sync/google_ads_login_customer_id';
+    private const string XML_PATH_META_ACCESS_TOKEN = 'ordo_integrations/ad_audience_sync/meta_access_token';
+    private const string XML_PATH_META_AD_ACCOUNT_ID = 'ordo_integrations/ad_audience_sync/meta_ad_account_id';
 
-    private const string XML_PATH_SHOPPING_FEED_ENABLED = 'ordo_automation/shopping_feed/enabled';
-    private const string XML_PATH_SHOPPING_FEED_TITLE = 'ordo_automation/shopping_feed/title';
-    private const string XML_PATH_SHOPPING_FEED_DESCRIPTION = 'ordo_automation/shopping_feed/description';
+    private const string XML_PATH_SHOPPING_FEED_ENABLED = 'ordo_integrations/shopping_feed/enabled';
+    private const string XML_PATH_SHOPPING_FEED_TITLE = 'ordo_integrations/shopping_feed/title';
+    private const string XML_PATH_SHOPPING_FEED_DESCRIPTION = 'ordo_integrations/shopping_feed/description';
 
-    private const string XML_PATH_META_CATALOG_FEED_ENABLED = 'ordo_automation/meta_catalog_feed/enabled';
+    private const string XML_PATH_META_CATALOG_FEED_ENABLED = 'ordo_integrations/meta_catalog_feed/enabled';
     private const string XML_PATH_META_CATALOG_FEED_DEFAULT_BRAND
-        = 'ordo_automation/meta_catalog_feed/default_brand';
+        = 'ordo_integrations/meta_catalog_feed/default_brand';
 
-    private const string XML_PATH_AI_AGENT_ENABLED = 'ordo_automation/ai_agent/enabled';
-    private const string XML_PATH_AI_AGENT_NAME = 'ordo_automation/ai_agent/name';
-    private const string XML_PATH_AI_AGENT_DESCRIPTION = 'ordo_automation/ai_agent/description';
-    private const string XML_PATH_AI_AGENT_CONTACT_EMAIL = 'ordo_automation/ai_agent/contact_email';
+    private const string XML_PATH_AI_AGENT_ENABLED = 'ordo_integrations/ai_agent/enabled';
+    private const string XML_PATH_AI_AGENT_NAME = 'ordo_integrations/ai_agent/name';
+    private const string XML_PATH_AI_AGENT_DESCRIPTION = 'ordo_integrations/ai_agent/description';
+    private const string XML_PATH_AI_AGENT_CONTACT_EMAIL = 'ordo_integrations/ai_agent/contact_email';
     private const string XML_PATH_AI_AGENT_RATE_LIMIT_PER_MINUTE
-        = 'ordo_automation/ai_agent/rate_limit_per_minute';
+        = 'ordo_integrations/ai_agent/rate_limit_per_minute';
     private const string XML_PATH_AI_AGENT_ESTIMATED_DELIVERY_DAYS
-        = 'ordo_automation/ai_agent/estimated_delivery_days';
+        = 'ordo_integrations/ai_agent/estimated_delivery_days';
 
     private const string XML_PATH_EMAIL_TEMPLATE_VERSIONING_ENABLED
-        = 'ordo_automation/email_template_versioning/enabled';
+        = 'ordo_channels/email_template_versioning/enabled';
 
     private const string XML_PATH_EMAIL_SENDGRID_WEBHOOK_VERIFICATION_KEY
-        = 'ordo_automation/email/sendgrid_webhook_verification_key';
+        = 'ordo_channels/email/sendgrid_webhook_verification_key';
 
-    private const string XML_PATH_WHATSAPP_ENABLED = 'ordo_automation/whatsapp/enabled';
-    private const string XML_PATH_WHATSAPP_ACCESS_TOKEN = 'ordo_automation/whatsapp/access_token';
-    private const string XML_PATH_WHATSAPP_PHONE_NUMBER_ID = 'ordo_automation/whatsapp/phone_number_id';
-    private const string XML_PATH_WHATSAPP_BUSINESS_ACCOUNT_ID = 'ordo_automation/whatsapp/business_account_id';
-    private const string XML_PATH_WHATSAPP_APP_SECRET = 'ordo_automation/whatsapp/app_secret';
-    private const string XML_PATH_WHATSAPP_WEBHOOK_VERIFY_TOKEN = 'ordo_automation/whatsapp/webhook_verify_token';
-    private const string XML_PATH_WHATSAPP_MAX_PER_SECOND = 'ordo_automation/whatsapp/max_requests_per_second';
+    private const string XML_PATH_WHATSAPP_ENABLED = 'ordo_channels/whatsapp/enabled';
+    private const string XML_PATH_WHATSAPP_ACCESS_TOKEN = 'ordo_channels/whatsapp/access_token';
+    private const string XML_PATH_WHATSAPP_PHONE_NUMBER_ID = 'ordo_channels/whatsapp/phone_number_id';
+    private const string XML_PATH_WHATSAPP_BUSINESS_ACCOUNT_ID = 'ordo_channels/whatsapp/business_account_id';
+    private const string XML_PATH_WHATSAPP_APP_SECRET = 'ordo_channels/whatsapp/app_secret';
+    private const string XML_PATH_WHATSAPP_WEBHOOK_VERIFY_TOKEN = 'ordo_channels/whatsapp/webhook_verify_token';
+    private const string XML_PATH_WHATSAPP_MAX_PER_SECOND = 'ordo_channels/whatsapp/max_requests_per_second';
 
-    private const string XML_PATH_AI_ENABLED = 'ordo_automation/ai/enabled';
-    private const string XML_PATH_AI_OLLAMA_BASE_URL = 'ordo_automation/ai/ollama_base_url';
-    private const string XML_PATH_AI_OLLAMA_MODEL = 'ordo_automation/ai/ollama_model';
-    private const string XML_PATH_AI_MAX_PER_SECOND = 'ordo_automation/ai/max_requests_per_second';
+    private const string XML_PATH_AI_ENABLED = 'ordo_tracking/ai/enabled';
+    private const string XML_PATH_AI_OLLAMA_BASE_URL = 'ordo_tracking/ai/ollama_base_url';
+    private const string XML_PATH_AI_OLLAMA_MODEL = 'ordo_tracking/ai/ollama_model';
+    private const string XML_PATH_AI_MAX_PER_SECOND = 'ordo_tracking/ai/max_requests_per_second';
 
-    private const string XML_PATH_WEBHOOK_ENABLED = 'ordo_automation/webhook/enabled';
-    private const string XML_PATH_WEBHOOK_OUTBOUND_URL = 'ordo_automation/webhook/outbound_url';
-    private const string XML_PATH_WEBHOOK_OUTBOUND_SECRET = 'ordo_automation/webhook/outbound_secret';
-    private const string XML_PATH_WEBHOOK_INBOUND_SECRET = 'ordo_automation/webhook/inbound_secret';
-    private const string XML_PATH_WEBHOOK_MAX_PER_SECOND = 'ordo_automation/webhook/max_requests_per_second';
+    private const string XML_PATH_WEBHOOK_ENABLED = 'ordo_channels/webhook/enabled';
+    private const string XML_PATH_WEBHOOK_OUTBOUND_URL = 'ordo_channels/webhook/outbound_url';
+    private const string XML_PATH_WEBHOOK_OUTBOUND_SECRET = 'ordo_channels/webhook/outbound_secret';
+    private const string XML_PATH_WEBHOOK_INBOUND_SECRET = 'ordo_channels/webhook/inbound_secret';
+    private const string XML_PATH_WEBHOOK_MAX_PER_SECOND = 'ordo_channels/webhook/max_requests_per_second';
 
-    private const string XML_PATH_PUSH_ENABLED = 'ordo_automation/push/enabled';
-    private const string XML_PATH_PUSH_VAPID_PUBLIC_KEY = 'ordo_automation/push/vapid_public_key';
-    private const string XML_PATH_PUSH_VAPID_PRIVATE_KEY = 'ordo_automation/push/vapid_private_key';
-    private const string XML_PATH_PUSH_VAPID_SUBJECT = 'ordo_automation/push/vapid_subject';
-    private const string XML_PATH_PUSH_MAX_PER_SECOND = 'ordo_automation/push/max_requests_per_second';
+    private const string XML_PATH_PUSH_ENABLED = 'ordo_channels/push/enabled';
+    private const string XML_PATH_PUSH_VAPID_PUBLIC_KEY = 'ordo_channels/push/vapid_public_key';
+    private const string XML_PATH_PUSH_VAPID_PRIVATE_KEY = 'ordo_channels/push/vapid_private_key';
+    private const string XML_PATH_PUSH_VAPID_SUBJECT = 'ordo_channels/push/vapid_subject';
+    private const string XML_PATH_PUSH_MAX_PER_SECOND = 'ordo_channels/push/max_requests_per_second';
 
     private const string XML_PATH_PRICE_WATCH_ENABLED = 'ordo_automation/price_watch/enabled';
     private const string XML_PATH_PRICE_WATCH_SCAN_BATCH_SIZE = 'ordo_automation/price_watch/scan_batch_size';
 
-    private const string XML_PATH_ATTRIBUTION_WINDOW_DAYS = 'ordo_automation/attribution/window_days';
+    private const string XML_PATH_ATTRIBUTION_WINDOW_DAYS = 'ordo_scoring/attribution/window_days';
 
-    private const string XML_PATH_AB_TEST_AUTO_WINNER_ENABLED = 'ordo_automation/ab_test/auto_winner_enabled';
-    private const string XML_PATH_AB_TEST_MIN_SAMPLE_SIZE = 'ordo_automation/ab_test/min_sample_size';
+    private const string XML_PATH_AB_TEST_AUTO_WINNER_ENABLED = 'ordo_scoring/ab_test/auto_winner_enabled';
+    private const string XML_PATH_AB_TEST_MIN_SAMPLE_SIZE = 'ordo_scoring/ab_test/min_sample_size';
 
-    private const string XML_PATH_FREQUENCY_CAP_ENABLED = 'ordo_automation/frequency_cap/enabled';
-    private const string XML_PATH_FREQUENCY_CAP_MAX_MESSAGES = 'ordo_automation/frequency_cap/max_messages';
-    private const string XML_PATH_FREQUENCY_CAP_WINDOW_HOURS = 'ordo_automation/frequency_cap/window_hours';
-    private const string XML_PATH_QUIET_HOURS_ENABLED = 'ordo_automation/quiet_hours/enabled';
-    private const string XML_PATH_QUIET_HOURS_START_HOUR = 'ordo_automation/quiet_hours/start_hour';
-    private const string XML_PATH_QUIET_HOURS_END_HOUR = 'ordo_automation/quiet_hours/end_hour';
+    private const string XML_PATH_FREQUENCY_CAP_ENABLED = 'ordo_channels/frequency_cap/enabled';
+    private const string XML_PATH_FREQUENCY_CAP_MAX_MESSAGES = 'ordo_channels/frequency_cap/max_messages';
+    private const string XML_PATH_FREQUENCY_CAP_WINDOW_HOURS = 'ordo_channels/frequency_cap/window_hours';
+    private const string XML_PATH_QUIET_HOURS_ENABLED = 'ordo_channels/quiet_hours/enabled';
+    private const string XML_PATH_QUIET_HOURS_START_HOUR = 'ordo_channels/quiet_hours/start_hour';
+    private const string XML_PATH_QUIET_HOURS_END_HOUR = 'ordo_channels/quiet_hours/end_hour';
 
     public function __construct(
         private readonly ScopeConfigInterface $scopeConfig,

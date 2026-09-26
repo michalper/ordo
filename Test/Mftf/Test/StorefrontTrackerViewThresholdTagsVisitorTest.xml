@@ -6,7 +6,7 @@
             <features value="Ordo Automation"/>
             <stories value="On-site behavior tracking"/>
             <title value="Crossing the view threshold for product_view events actually tags the anonymous visitor"/>
-            <description value="Same mechanism as StorefrontTrackerClickThresholdTagsVisitorTest, the VIEW-event half of the same gap (see SCENARIOS.md §7): view events use VisitorAggregator::VIEW_EVENT_TYPES' default tag shape 'viewed_&lt;event_type&gt;_&lt;event_key&gt;' (not the 'clicked_X' shape click events get), and default view_threshold is 3 (Helper/Config::getTrackingViewThreshold(), XML path ordo_automation/tracking/view_threshold) - not 1 like clicks - so this fires the same product_view call three times before running the real 'ordo.automation.visitor.aggregate' consumer and asserting the resulting ordo_visitor_tag row directly."/>
+            <description value="Same mechanism as StorefrontTrackerClickThresholdTagsVisitorTest, the VIEW-event half of the same gap (see SCENARIOS.md §7): view events use VisitorAggregator::VIEW_EVENT_TYPES' default tag shape 'viewed_&lt;event_type&gt;_&lt;event_key&gt;' (not the 'clicked_X' shape click events get), and default view_threshold is 3 (Helper/Config::getTrackingViewThreshold(), XML path ordo_tracking/tracking/view_threshold) - not 1 like clicks - so this fires the same product_view call three times before running the real 'ordo.automation.visitor.aggregate' consumer and asserting the resulting ordo_visitor_tag row directly."/>
             <severity value="MAJOR"/>
             <group value="ordo_automation"/>
             <group value="tracking"/>

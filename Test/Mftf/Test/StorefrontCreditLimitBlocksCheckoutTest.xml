@@ -12,13 +12,13 @@
             <group value="lifecycle"/>
         </annotations>
         <before>
-            <magentoCLI command="config:set ordo_automation/credit_limit/block_checkout_enabled 1" stepKey="enableCreditLimitBlock"/>
+            <magentoCLI command="config:set ordo_b2b/credit_limit/block_checkout_enabled 1" stepKey="enableCreditLimitBlock"/>
             <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
             <createData entity="SimpleProduct2" stepKey="createProduct"/>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
-            <magentoCLI command="config:set ordo_automation/credit_limit/block_checkout_enabled 0" stepKey="disableCreditLimitBlock"/>
+            <magentoCLI command="config:set ordo_b2b/credit_limit/block_checkout_enabled 0" stepKey="disableCreditLimitBlock"/>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>

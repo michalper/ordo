@@ -69,9 +69,9 @@ class ConfigTest extends TestCase
     public function testPushGettersDelegateToScopeConfig(): void
     {
         $this->scopeConfig->method('getValue')->willReturnMap([
-            ['ordo_automation/push/vapid_public_key', 'store', null, 'public-key-b64url'],
-            ['ordo_automation/push/vapid_private_key', 'store', null, 'private-key-b64url'],
-            ['ordo_automation/push/vapid_subject', 'store', null, 'mailto:ops@example.com'],
+            ['ordo_channels/push/vapid_public_key', 'store', null, 'public-key-b64url'],
+            ['ordo_channels/push/vapid_private_key', 'store', null, 'private-key-b64url'],
+            ['ordo_channels/push/vapid_subject', 'store', null, 'mailto:ops@example.com'],
         ]);
 
         self::assertSame('public-key-b64url', $this->config->getVapidPublicKey());
@@ -91,11 +91,11 @@ class ConfigTest extends TestCase
     public function testTwilioGettersDelegateToScopeConfig(): void
     {
         $this->scopeConfig->method('getValue')->willReturnMap([
-            ['ordo_automation/sms/twilio_account_sid', 'store', null, 'AC123'],
-            ['ordo_automation/sms/twilio_auth_token', 'store', null, 'secret-token'],
-            ['ordo_automation/sms/twilio_api_key_sid', 'store', null, 'SK123'],
-            ['ordo_automation/sms/twilio_api_key_secret', 'store', null, 'secret-key'],
-            ['ordo_automation/sms/twilio_from_number', 'store', null, '+15550001111'],
+            ['ordo_channels/sms/twilio_account_sid', 'store', null, 'AC123'],
+            ['ordo_channels/sms/twilio_auth_token', 'store', null, 'secret-token'],
+            ['ordo_channels/sms/twilio_api_key_sid', 'store', null, 'SK123'],
+            ['ordo_channels/sms/twilio_api_key_secret', 'store', null, 'secret-key'],
+            ['ordo_channels/sms/twilio_from_number', 'store', null, '+15550001111'],
         ]);
 
         self::assertSame('AC123', $this->config->getTwilioAccountSid());
@@ -119,16 +119,16 @@ class ConfigTest extends TestCase
     public function testAdAudienceAndShoppingFeedGettersDelegateToScopeConfig(): void
     {
         $this->scopeConfig->method('getValue')->willReturnMap([
-            ['ordo_automation/ad_audience_sync/google_ads_client_id', 'store', null, 'gid'],
-            ['ordo_automation/ad_audience_sync/google_ads_client_secret', 'store', null, 'gsecret'],
-            ['ordo_automation/ad_audience_sync/google_ads_refresh_token', 'store', null, 'grefresh'],
-            ['ordo_automation/ad_audience_sync/google_ads_developer_token', 'store', null, 'gdev'],
-            ['ordo_automation/ad_audience_sync/google_ads_login_customer_id', 'store', null, '1234567890'],
-            ['ordo_automation/ad_audience_sync/meta_access_token', 'store', null, 'mtoken'],
-            ['ordo_automation/ad_audience_sync/meta_ad_account_id', 'store', null, '9999'],
-            ['ordo_automation/shopping_feed/title', 'store', null, 'My Feed'],
-            ['ordo_automation/shopping_feed/description', 'store', null, 'My Feed Description'],
-            ['ordo_automation/meta_catalog_feed/default_brand', 'store', null, 'Acme'],
+            ['ordo_integrations/ad_audience_sync/google_ads_client_id', 'store', null, 'gid'],
+            ['ordo_integrations/ad_audience_sync/google_ads_client_secret', 'store', null, 'gsecret'],
+            ['ordo_integrations/ad_audience_sync/google_ads_refresh_token', 'store', null, 'grefresh'],
+            ['ordo_integrations/ad_audience_sync/google_ads_developer_token', 'store', null, 'gdev'],
+            ['ordo_integrations/ad_audience_sync/google_ads_login_customer_id', 'store', null, '1234567890'],
+            ['ordo_integrations/ad_audience_sync/meta_access_token', 'store', null, 'mtoken'],
+            ['ordo_integrations/ad_audience_sync/meta_ad_account_id', 'store', null, '9999'],
+            ['ordo_integrations/shopping_feed/title', 'store', null, 'My Feed'],
+            ['ordo_integrations/shopping_feed/description', 'store', null, 'My Feed Description'],
+            ['ordo_integrations/meta_catalog_feed/default_brand', 'store', null, 'Acme'],
         ]);
 
         self::assertSame('gid', $this->config->getGoogleAdsClientId());
@@ -146,9 +146,9 @@ class ConfigTest extends TestCase
     public function testAiAgentGettersDelegateToScopeConfig(): void
     {
         $this->scopeConfig->method('getValue')->willReturnMap([
-            ['ordo_automation/ai_agent/name', 'store', null, 'My Store'],
-            ['ordo_automation/ai_agent/description', 'store', null, 'A great store'],
-            ['ordo_automation/ai_agent/contact_email', 'store', null, 'shop@example.com'],
+            ['ordo_integrations/ai_agent/name', 'store', null, 'My Store'],
+            ['ordo_integrations/ai_agent/description', 'store', null, 'A great store'],
+            ['ordo_integrations/ai_agent/contact_email', 'store', null, 'shop@example.com'],
         ]);
 
         self::assertSame('My Store', $this->config->getAiAgentName());
@@ -284,8 +284,8 @@ class ConfigTest extends TestCase
     public function testWebhookSecretsDecryptTheirConfiguredValue(): void
     {
         $this->scopeConfig->method('getValue')->willReturnMap([
-            ['ordo_automation/webhook/outbound_secret', 'store', null, 'webhook-outbound-secret'],
-            ['ordo_automation/webhook/inbound_secret', 'store', null, 'webhook-inbound-secret'],
+            ['ordo_channels/webhook/outbound_secret', 'store', null, 'webhook-outbound-secret'],
+            ['ordo_channels/webhook/inbound_secret', 'store', null, 'webhook-inbound-secret'],
         ]);
 
         self::assertSame('webhook-outbound-secret', $this->config->getWebhookOutboundSecret());
@@ -312,8 +312,8 @@ class ConfigTest extends TestCase
     public function testQuietHoursHourGettersClampOutOfRangeConfigValues(): void
     {
         $this->scopeConfig->method('getValue')->willReturnMap([
-            ['ordo_automation/quiet_hours/start_hour', 'store', null, '99'],
-            ['ordo_automation/quiet_hours/end_hour', 'store', null, '-5'],
+            ['ordo_channels/quiet_hours/start_hour', 'store', null, '99'],
+            ['ordo_channels/quiet_hours/end_hour', 'store', null, '-5'],
         ]);
 
         self::assertSame(23, $this->config->getQuietHoursStartHour());
@@ -358,10 +358,10 @@ class ConfigTest extends TestCase
     public function testObscureFieldGettersDecryptTheirConfiguredValue(): void
     {
         $this->scopeConfig->method('getValue')->willReturnMap([
-            ['ordo_automation/email/sendgrid_webhook_verification_key', 'store', null, 'sg-verify-secret'],
-            ['ordo_automation/whatsapp/access_token', 'store', null, 'wa-access-secret'],
-            ['ordo_automation/whatsapp/app_secret', 'store', null, 'wa-app-secret'],
-            ['ordo_automation/whatsapp/webhook_verify_token', 'store', null, 'wa-verify-secret'],
+            ['ordo_channels/email/sendgrid_webhook_verification_key', 'store', null, 'sg-verify-secret'],
+            ['ordo_channels/whatsapp/access_token', 'store', null, 'wa-access-secret'],
+            ['ordo_channels/whatsapp/app_secret', 'store', null, 'wa-app-secret'],
+            ['ordo_channels/whatsapp/webhook_verify_token', 'store', null, 'wa-verify-secret'],
         ]);
 
         self::assertSame('sg-verify-secret', $this->config->getSendGridWebhookVerificationKey());
@@ -376,8 +376,8 @@ class ConfigTest extends TestCase
         // through decryptedConfig()) - real Meta identifiers, not secrets, so there's nothing to
         // decrypt.
         $this->scopeConfig->method('getValue')->willReturnMap([
-            ['ordo_automation/whatsapp/phone_number_id', 'store', null, '123456789012345'],
-            ['ordo_automation/whatsapp/business_account_id', 'store', null, '987654321098765'],
+            ['ordo_channels/whatsapp/phone_number_id', 'store', null, '123456789012345'],
+            ['ordo_channels/whatsapp/business_account_id', 'store', null, '987654321098765'],
         ]);
 
         self::assertSame('123456789012345', $this->config->getWhatsAppPhoneNumberId());

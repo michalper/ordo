@@ -40,7 +40,7 @@ class SetupWizardViewModel implements ArgumentInterface
                     . 'silently fails at dispatch time until credentials are set here.'
                 ),
                 'done' => $this->isChannelConfigured(),
-                'url' => $this->urlBuilder->getUrl('adminhtml/system_config/edit', ['section' => 'ordo_automation']),
+                'url' => $this->urlBuilder->getUrl('adminhtml/system_config/edit', ['section' => 'ordo_channels']),
             ],
             [
                 'title' => (string) __('Build a segment'),

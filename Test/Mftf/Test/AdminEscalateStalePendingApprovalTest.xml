@@ -6,7 +6,7 @@
             <features value="Ordo Automation"/>
             <stories value="Order approval"/>
             <title value="Cron\EscalateStalePendingApprovals reminds the admin again when a real held order is never acted on"/>
-            <description value="Same fixture as AdminApproveOrderViaEmailTest (OrdoApprovalCustomer, spend limit 10.00) but this time nobody acts on the initial hold email - ordo_automation/order_approval/escalation_days is set to 0 so the pending approval already counts as stale the instant the cron runs (real default is 2 days), and CronScheduleHelper forces the cron to run now instead of waiting out its real nightly schedule. Asserts the escalation email's distinct copy ('still waiting for your decision', not the initial hold email's own text) actually reaches the admin - seeTextInLatestEmail is safe here because the escalation necessarily lands after the initial hold email in real time."/>
+            <description value="Same fixture as AdminApproveOrderViaEmailTest (OrdoApprovalCustomer, spend limit 10.00) but this time nobody acts on the initial hold email - ordo_b2b/order_approval/escalation_days is set to 0 so the pending approval already counts as stale the instant the cron runs (real default is 2 days), and CronScheduleHelper forces the cron to run now instead of waiting out its real nightly schedule. Asserts the escalation email's distinct copy ('still waiting for your decision', not the initial hold email's own text) actually reaches the admin - seeTextInLatestEmail is safe here because the escalation necessarily lands after the initial hold email in real time."/>
             <severity value="CRITICAL"/>
             <group value="ordo_automation"/>
             <group value="segment"/>
@@ -17,10 +17,10 @@
             <!-- Cut from the real default (2 days) to 0, so a pending approval created moments
                  ago already counts as stale. Restored in <after> so it doesn't linger for
                  whatever other campaign-group test runs next in this same install. -->
-            <magentoCLI command="config:set ordo_automation/order_approval/escalation_days 0" stepKey="setEscalationDaysToZero"/>
+            <magentoCLI command="config:set ordo_b2b/order_approval/escalation_days 0" stepKey="setEscalationDaysToZero"/>
         </before>
         <after>
-            <magentoCLI command="config:set ordo_automation/order_approval/escalation_days 2" stepKey="restoreEscalationDaysDefault"/>
+            <magentoCLI command="config:set ordo_b2b/order_approval/escalation_days 2" stepKey="restoreEscalationDaysDefault"/>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
         </after>

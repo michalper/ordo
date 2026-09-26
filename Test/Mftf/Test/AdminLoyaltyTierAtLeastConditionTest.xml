@@ -12,7 +12,7 @@
             <group value="campaign"/>
         </annotations>
         <before>
-            <magentoCLI command="config:set ordo_automation/lead_scoring/loyalty_gold_threshold 500" stepKey="setGoldThreshold"/>
+            <magentoCLI command="config:set ordo_scoring/lead_scoring/loyalty_gold_threshold 500" stepKey="setGoldThreshold"/>
             <createData entity="SimpleProduct2" stepKey="createProduct"/>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>

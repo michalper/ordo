@@ -12,12 +12,12 @@
             <group value="tracking"/>
         </annotations>
         <before>
-            <magentoCLI command="config:set ordo_automation/tracking/enabled 0" stepKey="disableTracking"/>
+            <magentoCLI command="config:set ordo_tracking/tracking/enabled 0" stepKey="disableTracking"/>
         </before>
         <after>
             <!-- Every other tracking test in this suite assumes this config is on — restore it
                  unconditionally regardless of how this test itself finished. -->
-            <magentoCLI command="config:set ordo_automation/tracking/enabled 1" stepKey="reenableTracking"/>
+            <magentoCLI command="config:set ordo_tracking/tracking/enabled 1" stepKey="reenableTracking"/>
         </after>
 
         <!-- Step 1: any real storefront page, just to have a real browser context fetch() can
