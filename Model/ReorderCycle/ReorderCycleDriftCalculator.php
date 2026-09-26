@@ -59,7 +59,9 @@ class ReorderCycleDriftCalculator
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName('ordo_reorder_cycle');
 
-        /** @var array<int, array{customer_id: int|string, avg_interval_days: int|string, last_order_date: string}> $rows */
+        /**
+         * @var array<int, array{customer_id: int|string, avg_interval_days: int|string, last_order_date: string}> $rows
+         */
         $rows = $connection->fetchAll(
             $connection->select()->from($table, ['customer_id', 'avg_interval_days', 'last_order_date'])
         );

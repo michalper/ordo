@@ -8,7 +8,7 @@ use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Ui\Component\MassAction\Filter;
 use Ordo\Automation\Model\ResourceModel\PriceWatch\PriceWatchSubscription as PriceWatchSubscriptionResource;
-use Ordo\Automation\Model\ResourceModel\PriceWatch\PriceWatchSubscription\CollectionFactory as PriceWatchSubscriptionCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\PriceWatch\PriceWatchSubscription\CollectionFactory as WatchCollectionFactory;
 
 /**
  * Grid mass-delete for the "ids" selectionsColumn — lets an admin remove a stale/unwanted
@@ -22,7 +22,7 @@ class MassDelete extends Action implements HttpPostActionInterface
     public function __construct(
         Context $context,
         private readonly Filter $filter,
-        private readonly PriceWatchSubscriptionCollectionFactory $priceWatchSubscriptionCollectionFactory,
+        private readonly WatchCollectionFactory $priceWatchSubscriptionCollectionFactory,
         private readonly PriceWatchSubscriptionResource $priceWatchSubscriptionResource
     ) {
         parent::__construct($context);

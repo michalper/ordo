@@ -52,21 +52,18 @@ $snapshot = $block->getSnapshot();
                 </h2>
             </div>
             <div class="ordo-trigger-stats">
-                <?= /* @noEscape */ $block->statRow(
-                    (string) __('Lead score'),
-                    '<span class="ordo-trigger-stat-value">'
-                        . $escaper->escapeHtml((string) $snapshot->leadScore) . '</span>'
-                ) ?>
-                <?= /* @noEscape */ $block->statRow(
-                    (string) __('Loyalty tier'),
-                    '<span class="ordo-badge ordo-badge-on">' . $escaper->escapeHtml($snapshot->loyaltyTier) . '</span>'
-                ) ?>
-                <?= /* @noEscape */ $block->statRow(
-                    (string) __('NPS score'),
-                    '<span class="ordo-trigger-stat-value">' . ($snapshot->npsScore !== null
-                        ? $escaper->escapeHtml((string) $snapshot->npsScore)
-                        : $escaper->escapeHtml(__('Never surveyed'))) . '</span>'
-                ) ?>
+                <?php
+                $leadScoreValue = '<span class="ordo-trigger-stat-value">'
+                    . $escaper->escapeHtml((string) $snapshot->leadScore) . '</span>';
+                $loyaltyTierValue = '<span class="ordo-badge ordo-badge-on">'
+                    . $escaper->escapeHtml($snapshot->loyaltyTier) . '</span>';
+                $npsScoreValue = '<span class="ordo-trigger-stat-value">' . ($snapshot->npsScore !== null
+                    ? $escaper->escapeHtml((string) $snapshot->npsScore)
+                    : $escaper->escapeHtml(__('Never surveyed'))) . '</span>';
+                ?>
+                <?= /* @noEscape */ $block->statRow((string) __('Lead score'), $leadScoreValue) ?>
+                <?= /* @noEscape */ $block->statRow((string) __('Loyalty tier'), $loyaltyTierValue) ?>
+                <?= /* @noEscape */ $block->statRow((string) __('NPS score'), $npsScoreValue) ?>
             </div>
         </div>
 
@@ -75,27 +72,22 @@ $snapshot = $block->getSnapshot();
                 <h2><?= $escaper->escapeHtml(__('RFM / order history')) ?></h2>
             </div>
             <div class="ordo-trigger-stats">
-                <?= /* @noEscape */ $block->statRow(
-                    (string) __('RFM score'),
-                    '<span class="ordo-trigger-stat-value">'
-                        . $escaper->escapeHtml($snapshot->rfmScoreLabel ?? (string) __('Not yet computed'))
-                        . '</span>'
-                ) ?>
-                <?= /* @noEscape */ $block->statRow(
-                    (string) __('Days since last order'),
-                    '<span class="ordo-trigger-stat-value">' . ($snapshot->recencyDays !== null
-                        ? $escaper->escapeHtml((string) $snapshot->recencyDays)
-                        : $escaper->escapeHtml(__('Never ordered'))) . '</span>'
-                ) ?>
-                <?= /* @noEscape */ $block->statRow(
-                    (string) __('Total orders'),
-                    '<span class="ordo-trigger-stat-value">' . $escaper->escapeHtml((string) $snapshot->orderCount) . '</span>'
-                ) ?>
-                <?= /* @noEscape */ $block->statRow(
-                    (string) __('Lifetime spend'),
-                    '<span class="ordo-trigger-stat-value">' . $escaper->escapeHtml($block->formatCurrency($snapshot->orderTotal))
-                        . '</span>'
-                ) ?>
+                <?php
+                $rfmScoreValue = '<span class="ordo-trigger-stat-value">'
+                    . $escaper->escapeHtml($snapshot->rfmScoreLabel ?? (string) __('Not yet computed'))
+                    . '</span>';
+                $recencyDaysValue = '<span class="ordo-trigger-stat-value">' . ($snapshot->recencyDays !== null
+                    ? $escaper->escapeHtml((string) $snapshot->recencyDays)
+                    : $escaper->escapeHtml(__('Never ordered'))) . '</span>';
+                $orderCountValue = '<span class="ordo-trigger-stat-value">'
+                    . $escaper->escapeHtml((string) $snapshot->orderCount) . '</span>';
+                $orderTotalValue = '<span class="ordo-trigger-stat-value">'
+                    . $escaper->escapeHtml($block->formatCurrency($snapshot->orderTotal)) . '</span>';
+                ?>
+                <?= /* @noEscape */ $block->statRow((string) __('RFM score'), $rfmScoreValue) ?>
+                <?= /* @noEscape */ $block->statRow((string) __('Days since last order'), $recencyDaysValue) ?>
+                <?= /* @noEscape */ $block->statRow((string) __('Total orders'), $orderCountValue) ?>
+                <?= /* @noEscape */ $block->statRow((string) __('Lifetime spend'), $orderTotalValue) ?>
             </div>
         </div>
 
