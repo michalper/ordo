@@ -133,8 +133,8 @@ jobs:
           # getEligibility() fails closed (returns zero slots) regardless of a real, qualifying
           # cart — the exact same fail-closed-when-disabled pattern as every flag below it, not
           # a product bug.
-          bin/magento config:set ordo_automation/order_approval/enabled 1
-          bin/magento config:set ordo_automation/credit_limit/enabled 1
+          bin/magento config:set ordo_b2b/order_approval/enabled 1
+          bin/magento config:set ordo_b2b/credit_limit/enabled 1
           bin/magento config:set ordo_automation/free_gift/enabled 1
 
           bin/magento indexer:set-mode realtime cataloginventory_stock catalog_product_price \
