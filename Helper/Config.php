@@ -118,6 +118,8 @@ class Config
     private const string XML_PATH_AI_AGENT_CONTACT_EMAIL = 'ordo_automation/ai_agent/contact_email';
     private const string XML_PATH_AI_AGENT_RATE_LIMIT_PER_MINUTE
         = 'ordo_automation/ai_agent/rate_limit_per_minute';
+    private const string XML_PATH_AI_AGENT_ESTIMATED_DELIVERY_DAYS
+        = 'ordo_automation/ai_agent/estimated_delivery_days';
 
     private const string XML_PATH_EMAIL_TEMPLATE_VERSIONING_ENABLED
         = 'ordo_automation/email_template_versioning/enabled';
@@ -806,6 +808,15 @@ class Config
     public function getAiAgentRateLimitPerMinute(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_AI_AGENT_RATE_LIMIT_PER_MINUTE, 60, $storeId);
+    }
+
+    /**
+     * A flat, store-wide placeholder (Model\AiAgent\AiAgentQuoteManagement) - this module has no
+     * real per-carrier/per-route logistics data to compute a genuine ETA from.
+     */
+    public function getAiAgentEstimatedDeliveryDays(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_AI_AGENT_ESTIMATED_DELIVERY_DAYS, 5, $storeId);
     }
 
     public function isEmailTemplateVersioningEnabled(?int $storeId = null): bool
