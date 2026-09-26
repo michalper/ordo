@@ -8,10 +8,10 @@ use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Quote\Model\Quote;
+use Magento\Quote\Model\Quote\Item as QuoteItem;
 use Magento\Quote\Model\QuoteFactory;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Api\AiAgentQuoteManagementInterface;
-use Ordo\Automation\Api\Data\AiAgentQuoteLineInterface;
 use Ordo\Automation\Api\Data\AiAgentQuoteResultInterface;
 use Ordo\Automation\Helper\Config;
 
@@ -51,19 +51,20 @@ class AiAgentQuoteManagement implements AiAgentQuoteManagementInterface
         $quote = $this->quoteFactory->create();
         $quote->setStore($store);
 
-        $lines = [];
+        /** @var array<int, array{sku: string, qty: float, item: QuoteItem}> $addedItems */
+        $addedItems = [];
         $unmatchedSkus = [];
 
         foreach ($items as $item) {
-            $line = $this->addItem($quote, $item->getSku(), $item->getQty());
-            if ($line instanceof AiAgentQuoteLineInterface) {
-                $lines[] = $line;
+            $quoteItem = $this->addItem($quote, $item->getSku(), $item->getQty());
+            if ($quoteItem instanceof QuoteItem) {
+                $addedItems[] = ['sku' => $item->getSku(), 'qty' => $item->getQty(), 'item' => $quoteItem];
             } else {
                 $unmatchedSkus[] = $item->getSku();
             }
         }
 
-        if ($lines === []) {
+        if ($addedItems === []) {
             throw new InputException(__('None of the requested SKUs could be quoted.'));
         }
 
@@ -91,6 +92,15 @@ class AiAgentQuoteManagement implements AiAgentQuoteManagementInterface
         $quote->setTotalsCollectedFlag(false);
         $quote->collectTotals();
 
+        $lines = [];
+        foreach ($addedItems as $addedItem) {
+            $lines[] = $this->lineFactory->create()
+                ->setSku($addedItem['sku'])
+                ->setQty($addedItem['qty'])
+                ->setUnitPrice((float) $addedItem['item']->getPrice())
+                ->setRowTotal((float) $addedItem['item']->getRowTotal());
+        }
+
         return $this->resultFactory->create()
             // Same "read the store's own current currency code" approach as
             // GoogleMerchantFeedGenerator/AiAgentFeedGenerator - this quote is never persisted
@@ -106,7 +116,7 @@ class AiAgentQuoteManagement implements AiAgentQuoteManagementInterface
             ->setUnmatchedSkus($unmatchedSkus);
     }
 
-    private function addItem(Quote $quote, string $sku, float $qty): ?AiAgentQuoteLineInterface
+    private function addItem(Quote $quote, string $sku, float $qty): ?QuoteItem
     {
         try {
             $product = $this->productRepository->get($sku);
@@ -127,10 +137,10 @@ class AiAgentQuoteManagement implements AiAgentQuoteManagementInterface
             return null;
         }
 
-        return $this->lineFactory->create()
-            ->setSku($sku)
-            ->setQty($qty)
-            ->setUnitPrice((float) $item->getPrice())
-            ->setRowTotal((float) $item->getRowTotal());
+        // Deliberately NOT read into an AiAgentQuoteLine here - getPrice() is set immediately,
+        // but getRowTotal() (and any per-item discount) is only populated once collectTotals()
+        // actually runs the totals-collection pipeline, which hasn't happened yet at this point
+        // in the call sequence. Reading it here would silently return 0 for every row_total.
+        return $item;
     }
 }
