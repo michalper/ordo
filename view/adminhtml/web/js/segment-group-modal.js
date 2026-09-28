@@ -374,6 +374,25 @@ define([
         setTimeout(refreshGroupRows, 150);
     });
 
+    /**
+     * On a fresh page load, knockout's own dynamicRows component renders the outer conditions
+     * rows (and restores each row's saved "group" type) asynchronously, well after domReady! -
+     * a single refreshGroupRows() call right here can easily run before any <tr class="data-row">
+     * exists yet, silently building zero inline panels for rows that DO have saved group
+     * conditions (a real, hard-to-reproduce-locally race - it depends purely on how long
+     * dynamicRows takes to render on a given page load, no user interaction ever fires the
+     * change/click delegates above to retry). A MutationObserver on the conditions grid's own
+     * body catches that initial render (and any later one, e.g. after a store-view/section
+     * reload) the same way the two delegates above catch user-driven changes, without polling.
+     */
+    var $conditionsBody = $('[data-index="conditions"] tbody');
+
+    if ($conditionsBody.length && typeof MutationObserver !== 'undefined') {
+        new MutationObserver(function () {
+            refreshGroupRows();
+        }).observe($conditionsBody.get(0), {childList: true, subtree: true});
+    }
+
     refreshGroupRows();
 
     // Exposed purely so Test/js/segment-group-modal.test.js can exercise this module's actual
