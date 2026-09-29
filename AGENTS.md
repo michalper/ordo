@@ -6,6 +6,20 @@ Magento 2 module `michalper/ordo` (marketing automation for Ordo/Sellina): a cam
 
 - `docs/CHANGELOG.md` — history of decisions and changes (moved here from `CHANGELOG.md` at the root).
 - `docs/adr/` — Architecture Decision Records; decisions you can't reconstruct from the code alone.
+
+### When to write an ADR
+
+Add a new `docs/adr/NNNN-short-title.md` (next free number, same Status / Context / Decision /
+Consequences layout as the existing ones) in the same PR whenever a change:
+
+- picks one approach over a real alternative (e.g. DB vs. cache, cron vs. observer, queue vs. sync),
+- deliberately deviates from a pattern this codebase normally uses (e.g. "not a unique constraint"),
+- accepts a known limitation or trade-off that a future contributor could mistake for a bug.
+
+Write down *why*, including the alternatives rejected. If the only rationale is "it seemed simpler",
+say that. Don't write an ADR for bug fixes, refactors, or features that follow an existing pattern
+unchanged — `docs/CHANGELOG.md` covers those. An ADR is never edited to reflect a later change of
+mind: add a new ADR and set the old one's Status to "Superseded by ADR NNNN".
 - `.env.example` — environment variable contract (today: `Test/Api/*` only, see `Test/Api/README.md`).
 - `README.md` / `README.pl.md` — functional description of the module (EN/PL), don't duplicate that content here.
 - `ROADMAP.md`, `VERIFICATION.md`, `API.md` — respectively: what's in progress, what's been manually/test-verified, REST API reference.
