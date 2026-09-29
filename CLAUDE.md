@@ -18,6 +18,12 @@ real Magento instance via a Composer path repository (`"options": {"symlink": fa
 *copied*, not symlinked — see `AGENTS.md`/`CONTRIBUTING.md` for the `composer update` refresh step). PHP
 `>=8.4 <8.6`, targets Magento 2.4.8/2.4.9.
 
+## Architecture decisions
+
+When a change picks one approach over a real alternative, deviates from an existing pattern, or
+accepts a known trade-off, add an ADR under `docs/adr/` in the same PR — see "When to write an ADR"
+in `AGENTS.md`.
+
 ## Commands
 
 All of these run from a Magento root with this module installed (see `AGENTS.md` for the
