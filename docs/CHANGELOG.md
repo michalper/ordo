@@ -5,6 +5,22 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Nested-group inline panel no longer stays permanently empty after a race on segment form page load** —
+  the follow-up to #240's MutationObserver fix: an observer-driven `refreshGroupRows()` scan can catch a
+  'group' condition row at the moment its Type select already reads "group" but the row's hidden
+  `group_conditions_json` textarea hasn't rendered yet (each field in a dynamicRows record is its own
+  asynchronously-rendered UI component), building the inline panel with zero rows from the effective
+  `'[]'` — and the already-built guard then skipped that row on every later scan, so the saved group
+  conditions never appeared (and, since `sync()` had closed over an empty jQuery set, edits made to the
+  empty panel were silently dropped). Caught by `AdminCreateSegmentWithNestedGroupConditionTest` failing in
+  CI (run 37191250499: 0 rows found, 2 saved). `refreshGroupRows()` now detects that stale state — a panel
+  with zero rows while the now-present textarea holds one or more saved conditions, a combination no
+  user-driven path can produce since every edit keeps rows and JSON in step — and tears it down and
+  rebuilds. The MFTF test also now waits for the rebuilt rows before counting them, instead of counting the
+  instant the panel element shows.
+
 ## [1.1.0] - 2026-09-26
 
 Verified before tagging: full unit suite green (2780 tests), `phpstan analyse` clean, `cs-check`/

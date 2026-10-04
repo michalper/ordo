@@ -104,6 +104,14 @@
              in-memory state carried over from the save, since this is a genuinely fresh page
              load. -->
         <waitForElementVisible selector=".ordo-group-inline" stepKey="waitForReloadedInlinePanel"/>
+        <!-- Don't count rows the instant the panel shows: during the initial async dynamicRows
+             render the panel can legitimately be built before the row's group_conditions_json
+             textarea has rendered, then torn down and rebuilt with the saved rows on a later
+             MutationObserver-driven scan (see isStaleEmptyPanel() in segment-group-modal.js -
+             added for exactly the 0-vs-2 failure CI run 37191250499 caught here). Waiting for the
+             second row first makes the count below an assertion about the settled panel, not
+             about which scan happened to win the race. -->
+        <waitForElementVisible selector="(//div[contains(@class, 'ordo-group-row')])[2]" stepKey="waitForReloadedGroupRows"/>
         <!-- Same MalformedLocatorException pitfall as dontSeeManageGroupButton above: a bare
              class selector routes seeNumberOfElements through Selenium's native "class name"
              locator strategy, which some driver/selenium combinations reject outright. The
