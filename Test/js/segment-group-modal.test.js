@@ -426,6 +426,79 @@ QUnit.module('Ordo_Automation/js/segment-group-modal', function () {
         assert.strictEqual(global.$('.ordo-group-inline').length, 1, 'does not duplicate the panel on a second scan');
     });
 
+    QUnit.test('refreshGroupRows() rebuilds a panel that was built empty before the saved group JSON was available', function (assert) {
+        // The initial-render race AdminCreateSegmentWithNestedGroupConditionTest caught in CI
+        // (run 37191250499): a MutationObserver-driven scan sees the row's type already set to
+        // "group" while the group_conditions_json textarea's value hasn't been rendered yet, so
+        // the panel is built with zero rows - a later scan with the real value must tear the
+        // empty shell down and rebuild, not skip via the already-built guard.
+        const api = loadModule(
+            MODULE_PATH,
+            '<table data-index="conditions"><tbody><tr class="data-row">'
+            + '<td><div data-index="type"><select>'
+            + '<option value="tag">Has Tag</option>'
+            + '<option value="group" selected>Group (nested AND/OR)</option>'
+            + '</select></div></td>'
+            + '<td><div data-index="group_logic"></div></td>'
+            + '<td><textarea name="conditions[0][group_conditions_json]"></textarea></td>'
+            + '</tr></tbody></table>'
+        );
+
+        api.refreshGroupRows();
+        assert.strictEqual(global.$('.ordo-group-inline').length, 1, 'panel built from the not-yet-bound (empty) textarea');
+        assert.strictEqual(global.$('.ordo-group-row').length, 0, 'with zero rows');
+
+        global.$('textarea[name*="[group_conditions_json]"]').val('[{"type":"tag","params":{"tag":"vip"}}]');
+        api.refreshGroupRows();
+
+        assert.strictEqual(global.$('.ordo-group-inline').length, 1, 'still exactly one panel after the rebuild');
+        assert.strictEqual(global.$('.ordo-group-row').length, 1, 'rebuilt panel renders the saved condition');
+    });
+
+    QUnit.test('refreshGroupRows() leaves a legitimately empty group panel alone on a re-scan', function (assert) {
+        // '[]' in the textarea with zero rows is the consistent state a user who deleted a
+        // group's last row ends in - not the stale too-early build above, so no rebuild.
+        const api = loadModule(
+            MODULE_PATH,
+            '<table data-index="conditions"><tbody><tr class="data-row">'
+            + '<td><div data-index="type"><select>'
+            + '<option value="group" selected>Group (nested AND/OR)</option>'
+            + '</select></div></td>'
+            + '<td><div data-index="group_logic"></div></td>'
+            + '<td><textarea name="conditions[0][group_conditions_json]">[]</textarea></td>'
+            + '</tr></tbody></table>'
+        );
+
+        api.refreshGroupRows();
+        global.$('.ordo-group-inline').attr('data-test-original', '1');
+
+        api.refreshGroupRows();
+
+        assert.strictEqual(global.$('.ordo-group-inline').length, 1, 'still exactly one panel');
+        assert.strictEqual(global.$('.ordo-group-inline').attr('data-test-original'), '1', 'the original panel element survived, not a rebuild');
+    });
+
+    QUnit.test('refreshGroupRows() keeps the corrupted-JSON notice instead of rebuilding over it on a re-scan', function (assert) {
+        const api = loadModule(
+            MODULE_PATH,
+            '<table data-index="conditions"><tbody><tr class="data-row">'
+            + '<td><div data-index="type"><select>'
+            + '<option value="group" selected>Group (nested AND/OR)</option>'
+            + '</select></div></td>'
+            + '<td><div data-index="group_logic"></div></td>'
+            + '<td><textarea name="conditions[0][group_conditions_json]">{not valid json</textarea></td>'
+            + '</tr></tbody></table>'
+        );
+
+        api.refreshGroupRows();
+        assert.strictEqual(global.$('.ordo-group-json-error-message').length, 1);
+
+        api.refreshGroupRows();
+
+        assert.strictEqual(global.$('.ordo-group-inline').length, 1, 'still exactly one panel');
+        assert.strictEqual(global.$('.ordo-group-json-error-message').length, 1, 'corruption notice preserved, not wiped by a rebuild');
+    });
+
     QUnit.test('refreshGroupRows() removes the inline panel once the row is no longer type "group"', function (assert) {
         const api = loadModule(
             MODULE_PATH,

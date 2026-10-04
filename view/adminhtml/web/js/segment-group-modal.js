@@ -322,10 +322,47 @@ define([
     }
 
     /**
+     * During the initial async dynamicRows render, a MutationObserver-driven scan can catch a
+     * 'group' row at the moment its Type <select> already reads "group" but the row's hidden
+     * group_conditions_json textarea hasn't been rendered into the DOM yet (each field in a
+     * record is its own asynchronously-rendered UI component) - buildInlinePanel() then builds a
+     * panel with zero rows from the effective '[]', and the already-built guard in
+     * refreshGroupRows() would keep that empty shell forever (CI run 37191250499: panel visible,
+     * 0 rows, 2 saved conditions). A panel showing zero rows while the now-present textarea holds
+     * one or more saved conditions can only mean that too-early build: every user-driven path
+     * keeps rows and JSON in step via sync(), and deleting a group's last row writes '[]', so a
+     * legitimately emptied group never matches here. A parse failure doesn't count as stale
+     * either - the corrupted-JSON notice buildInlinePanel() already rendered must stay, not be
+     * wiped by a rebuild.
+     *
+     * @param {jQuery} $panel an existing .ordo-group-inline panel
+     * @param {jQuery} $jsonField the row's hidden group_conditions_json textarea
+     * @return {Boolean}
+     */
+    function isStaleEmptyPanel($panel, $jsonField) {
+        var saved;
+
+        if ($panel.find('.ordo-group-row').length) {
+            return false;
+        }
+
+        try {
+            saved = JSON.parse($jsonField.val() || '[]');
+        } catch (e) {
+            return false;
+        }
+
+        return Array.isArray(saved) && saved.length > 0;
+    }
+
+    /**
      * Finds every condition row currently set to type "group" and, if it doesn't already have its
      * inline panel built, builds one next to the hidden group_conditions_json field. Re-run on
      * every change to the outer Type select and after every dynamicRows add/delete, since rows
-     * (and their type) can change at any time.
+     * (and their type) can change at any time. A panel that was built before its saved JSON was
+     * available (see isStaleEmptyPanel) is torn down and rebuilt - which also re-captures the
+     * real textarea in sync()'s closure, where the too-early build may have closed over an empty
+     * jQuery set that silently dropped every subsequent edit.
      */
     function refreshGroupRows() {
         $('[data-index="conditions"] tr.data-row').each(function () {
@@ -350,8 +387,13 @@ define([
                 return;
             }
 
-            if ($groupCell.find('.ordo-group-inline').length) {
-                return;
+            var $existingPanel = $groupCell.find('.ordo-group-inline');
+
+            if ($existingPanel.length) {
+                if (!isStaleEmptyPanel($existingPanel, $jsonField)) {
+                    return;
+                }
+                $existingPanel.remove();
             }
 
             buildInlinePanel($groupCell, $jsonField);
