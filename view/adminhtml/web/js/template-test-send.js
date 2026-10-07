@@ -81,7 +81,10 @@ define([
     });
 
     $('[data-test-send-submit]').on('click', function () {
-        submit($(this).closest('.ordo-template-test-send'));
+        // `void`: submit()'s own chain ends in .catch().finally(), so the promise it hands back
+        // can't reject and there's nothing left for a click handler to do with it. Returned only
+        // so the tests can await the render it drives.
+        void submit($(this).closest('.ordo-template-test-send'));
     });
 
     $('.ordo-template-test-send').each(function () {

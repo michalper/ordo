@@ -67,7 +67,10 @@ define([
     }
 
     $('[data-audience-size-refresh]').on('click', function () {
-        refresh($(this).closest('.ordo-audience-size-panel'));
+        // `void`: refresh()'s own chain ends in .catch().finally(), so the promise it hands back
+        // can't reject and there's nothing left for a click handler to do with it. Returned only
+        // so the tests can await the render it drives.
+        void refresh($(this).closest('.ordo-audience-size-panel'));
     });
 
     $(document).on('input change', function (e) {

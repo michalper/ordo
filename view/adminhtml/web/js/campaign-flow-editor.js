@@ -1163,12 +1163,16 @@ define([
             $(container).closest('.ordo-flow-wrapper').on('click', '[data-flow-action="fullscreen"]', function () {
                 var wrapperEl = $(this).closest('.ordo-flow-wrapper').get(0);
 
+                // Both calls return a promise that rejects when the browser refuses the request
+                // (element not allowed to go fullscreen, no user gesture it recognizes) - caught
+                // and dropped for the same reason the typeof guards exist: the button is a
+                // nice-to-have, never worth an unhandled rejection in the console.
                 if (document.fullscreenElement) {
                     if (typeof document.exitFullscreen === 'function') {
-                        document.exitFullscreen();
+                        document.exitFullscreen().catch(function () {});
                     }
                 } else if (wrapperEl && typeof wrapperEl.requestFullscreen === 'function') {
-                    wrapperEl.requestFullscreen();
+                    wrapperEl.requestFullscreen().catch(function () {});
                 }
             });
 

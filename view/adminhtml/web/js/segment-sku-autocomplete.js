@@ -98,7 +98,9 @@ define([
             return;
         }
 
-        searchProducts(term).then(function (items) {
+        // `void`: searchProducts() swallows its own failures (resolves to [] - see its .catch),
+        // and a debounced keystroke handler has no caller to hand a promise back to.
+        void searchProducts(term).then(function (items) {
             // The field may have lost focus (or its value changed again) while the request was
             // in flight - only render against the input that's still actually focused.
             if ($input.is(':focus')) {

@@ -63,7 +63,10 @@ define([
     'use strict';
 
     $('[data-overlap-compute]').on('click', function () {
-        compute($(this).closest('.ordo-segment-overlap'));
+        // `void`: compute()'s own chain ends in .catch().finally(), so the promise it hands back
+        // can't reject and there's nothing left for a click handler to do with it. Returned only
+        // so the tests can await the render it drives.
+        void compute($(this).closest('.ordo-segment-overlap'));
     });
 
     // Exposed for Test/js/segment-overlap.test.js - see segment-group-modal.js's own return
