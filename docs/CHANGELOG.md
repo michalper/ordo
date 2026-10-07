@@ -7,6 +7,23 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- **The `customer_id`/`visitor_id` accessor pair moved into `Model\VisitorIdentityFieldsTrait`** —
+  `Notification`, `PendingPopup`, `SurveyPrompt` and `PriceWatch\PriceWatchSubscription` each carried
+  the same four methods byte for byte: typed getters/setters over `getData`/`setData` for the
+  anonymous-then-stitched-to-customer identity every one of those rows holds. SonarCloud flagged the
+  25-line block across all four files. A trait, not a base class, for the same reason
+  `RetryRecordFieldsTrait` is one — these otherwise extend Magento's `AbstractModel` directly and share
+  no other behaviour. Each class still declares its own `CUSTOMER_ID`/`VISITOR_ID` constants, so
+  `self::` resolves per-class and external `Notification::CUSTOMER_ID` references are untouched. Every
+  public signature is unchanged, and `phpstan-baseline.neon` needed no edit: PHPStan attributes a
+  trait's errors to the using class's file, so the `cast.int`/`cast.string` counts for all four files
+  stay exactly as they were (which is also why `RetryRecordFieldsTrait` has no baseline entry of its
+  own).
+
+  `Model\PushSubscription` has the same pair but deliberately keeps its own copy: its
+  `setCustomerId()` takes a non-nullable `int`, so adopting the trait would widen what that setter
+  accepts. Whether that difference is intentional is left alone here.
+
 - **The two SKU autocompletes now share their debounced search-as-you-type half** — `view/adminhtml/
   web/js/segment-sku-autocomplete.js` (the Segment/Campaign "Purchased Product (SKU)" condition) and
   `free-gift-offer-form.js` (each Products row on the Free Gift Offer form) carried the same 25 lines
