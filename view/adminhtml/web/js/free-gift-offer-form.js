@@ -170,7 +170,10 @@ define([
             return;
         }
 
-        searchProducts(term).then(function (items) {
+        // `void`: searchProducts() swallows its own failures (resolves to [] - see its .catch),
+        // and a debounced keystroke handler has no caller to hand a promise back to. Same reasoning
+        // at the other fire-and-forget call sites below.
+        void searchProducts(term).then(function (items) {
             // The field may have changed (or lost focus) while the request was in flight.
             if ($input.is(':focus')) {
                 renderDropdown($input, items);
@@ -207,7 +210,7 @@ define([
                 return;
             }
 
-            searchProducts(sku).then(function (items) {
+            void searchProducts(sku).then(function (items) {
                 var exact = _.findWhere(items, { sku: sku });
                 if (exact) {
                     renderChip($input, exact);
@@ -259,10 +262,14 @@ define([
             item,
             i;
 
+        // Deliberately sequential, not Promise.all(): each addProductRow() clicks dynamicRows'
+        // own "Add SKU" button and then waits for *the* new row to render, identifying it as
+        // "one more row than before". Two of those in flight at once can't tell their own new
+        // row from the other's, so they'd both fill the same one.
         for (i = 0; i < items.length; i++) {
             item = items[i];
             if (!existing.includes(item.sku)) {
-                await addProductRow(item);
+                await addProductRow(item); // NOSONAR: see the comment above this loop
                 existing.push(item.sku);
             }
         }
@@ -309,7 +316,7 @@ define([
                     $modalContent.find('.ordo-picker-modal-results').empty();
                     return;
                 }
-                searchProducts(term).then(function (items) {
+                void searchProducts(term).then(function (items) {
                     renderModalResults($modalContent, items);
                 });
             }, 300);
@@ -337,7 +344,7 @@ define([
                             .get();
 
                         $modalContent.modal('closeModal');
-                        addSelectedProducts(selected);
+                        void addSelectedProducts(selected);
                     }
                 },
                 {
@@ -498,7 +505,7 @@ define([
             }
 
             $('<button type="button" class="ordo-tier-duplicate" title="Duplicate this tier">Duplicate</button>')
-                .on('click', function () { duplicateTierRow($row); })
+                .on('click', function () { void duplicateTierRow($row); })
                 .appendTo($targetCell);
         });
     }

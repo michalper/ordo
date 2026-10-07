@@ -29,6 +29,40 @@
  * to fill in correctly. No condition type left needing a raw "Advanced (JSON)" fallback here
  * anymore (nps_score_at_least reuses the plain "threshold" text field, same as score_at_least).
  */
+/**
+ * During the initial async dynamicRows render, a MutationObserver-driven scan can catch a
+ * 'group' row at the moment its Type <select> already reads "group" but the row's hidden
+ * group_conditions_json textarea hasn't been rendered into the DOM yet (each field in a
+ * record is its own asynchronously-rendered UI component) - buildInlinePanel() then builds a
+ * panel with zero rows from the effective '[]', and the already-built guard in
+ * refreshGroupRows() would keep that empty shell forever (CI run 37191250499: panel visible,
+ * 0 rows, 2 saved conditions). A panel showing zero rows while the now-present textarea holds
+ * one or more saved conditions can only mean that too-early build: every user-driven path
+ * keeps rows and JSON in step via sync(), and deleting a group's last row writes '[]', so a
+ * legitimately emptied group never matches here. A parse failure doesn't count as stale
+ * either - the corrupted-JSON notice buildInlinePanel() already rendered must stay, not be
+ * wiped by a rebuild.
+ *
+ * @param {jQuery} $panel an existing .ordo-group-inline panel
+ * @param {jQuery} $jsonField the row's hidden group_conditions_json textarea
+ * @return {Boolean}
+ */
+function isStaleEmptyPanel($panel, $jsonField) {
+    var saved;
+
+    if ($panel.find('.ordo-group-row').length) {
+        return false;
+    }
+
+    try {
+        saved = JSON.parse($jsonField.val() || '[]');
+    } catch (e) {
+        return false;
+    }
+
+    return Array.isArray(saved) && saved.length > 0;
+}
+
 define([
     'jquery',
     'domReady!'
@@ -319,40 +353,6 @@ define([
 
         $panel.append($rows).append($addButton);
         $groupCell.append($panel);
-    }
-
-    /**
-     * During the initial async dynamicRows render, a MutationObserver-driven scan can catch a
-     * 'group' row at the moment its Type <select> already reads "group" but the row's hidden
-     * group_conditions_json textarea hasn't been rendered into the DOM yet (each field in a
-     * record is its own asynchronously-rendered UI component) - buildInlinePanel() then builds a
-     * panel with zero rows from the effective '[]', and the already-built guard in
-     * refreshGroupRows() would keep that empty shell forever (CI run 37191250499: panel visible,
-     * 0 rows, 2 saved conditions). A panel showing zero rows while the now-present textarea holds
-     * one or more saved conditions can only mean that too-early build: every user-driven path
-     * keeps rows and JSON in step via sync(), and deleting a group's last row writes '[]', so a
-     * legitimately emptied group never matches here. A parse failure doesn't count as stale
-     * either - the corrupted-JSON notice buildInlinePanel() already rendered must stay, not be
-     * wiped by a rebuild.
-     *
-     * @param {jQuery} $panel an existing .ordo-group-inline panel
-     * @param {jQuery} $jsonField the row's hidden group_conditions_json textarea
-     * @return {Boolean}
-     */
-    function isStaleEmptyPanel($panel, $jsonField) {
-        var saved;
-
-        if ($panel.find('.ordo-group-row').length) {
-            return false;
-        }
-
-        try {
-            saved = JSON.parse($jsonField.val() || '[]');
-        } catch (e) {
-            return false;
-        }
-
-        return Array.isArray(saved) && saved.length > 0;
     }
 
     /**
