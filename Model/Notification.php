@@ -15,6 +15,8 @@ use Ordo\Automation\Model\ResourceModel\Notification as NotificationResource;
  */
 class Notification extends AbstractModel
 {
+    use VisitorIdentityFieldsTrait;
+
     public const ENTITY_ID = 'entity_id';
     public const CUSTOMER_ID = 'customer_id';
     public const VISITOR_ID = 'visitor_id';
@@ -28,30 +30,6 @@ class Notification extends AbstractModel
     protected function _construct(): void
     {
         $this->_init(NotificationResource::class);
-    }
-
-    public function getCustomerId(): ?int
-    {
-        $value = $this->getData(self::CUSTOMER_ID);
-        return $value === null ? null : (int) $value;
-    }
-
-    public function setCustomerId(?int $customerId): self
-    {
-        $this->setData(self::CUSTOMER_ID, $customerId);
-        return $this;
-    }
-
-    public function getVisitorId(): ?string
-    {
-        $value = $this->getData(self::VISITOR_ID);
-        return $value === null ? null : (string) $value;
-    }
-
-    public function setVisitorId(?string $visitorId): self
-    {
-        $this->setData(self::VISITOR_ID, $visitorId);
-        return $this;
     }
 
     public function getHeadline(): string
