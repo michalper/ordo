@@ -13,5 +13,9 @@ composer.lock
 .aider*
 .env
 
+# macOS Finder metadata - Finder drops one of these into every directory it opens, so
+# they reappear on their own after being deleted
+.DS_Store
+
 # Local AI-assistant config with real API keys — never commit
 config.json
