@@ -1,5 +1,7 @@
 'use strict';
 
+const path = require('path');
+
 /**
  * Minimal AMD `define()` shim so a RequireJS module under view/**\/web/js can be loaded directly
  * by Node's own `require()` in tests, without pulling in a full RequireJS/Node loader just to
@@ -11,11 +13,16 @@
  * and 'domReady!' to a no-op (safe: jsdom's DOM already exists by the time a test requires the
  * module, so there's nothing left for the real domReady! plugin to defer).
  *
+ * Nests: an 'Ordo_Automation/js/...' dependency is one of this module's own files, loaded through
+ * this same shim recursively, so `global.define` is saved and restored around each load rather than
+ * deleted outright.
+ *
  * @param {Function} loadModule call require(path) for the AMD module under this shim active
  * @return {*} whatever the module's factory function returned
  */
 function loadAmdModule(loadModule) {
     let exported;
+    const outerDefine = global.define;
 
     global.define = function (deps, factory) {
         const resolved = deps.map(function (dep) {
@@ -181,6 +188,27 @@ function loadAmdModule(loadModule) {
                 };
                 return undefined;
             }
+            if (dep.startsWith('Ordo_Automation/js/')) {
+                // A real file under view/adminhtml/web/js, not a stand-in: RequireJS resolves
+                // 'Ordo_Automation/js/sku-suggest' to that module's own source, so the shim loads
+                // it recursively through itself and hands the factory whatever it returned.
+                //
+                // Its require cache entry is dropped first, for exactly the reason load-module.js
+                // drops the entry for the module under test: the factory closes over the `$` - and
+                // through it the `document` - it was handed at load time, so a cached copy would
+                // leave its own $(document).on(...) delegates wired to a previous test's discarded
+                // document, and no later test's typing would reach them.
+                const dependencyPath = path.join(
+                    __dirname, '..', '..', '..', 'view', 'adminhtml', 'web', 'js',
+                    dep.slice('Ordo_Automation/js/'.length) + '.js'
+                );
+
+                delete require.cache[require.resolve(dependencyPath)];
+
+                return loadAmdModule(function () {
+                    require(dependencyPath);
+                });
+            }
             throw new Error('Test/js/support/amd-shim: unsupported dependency "' + dep + '"');
         });
 
@@ -191,7 +219,13 @@ function loadAmdModule(loadModule) {
     try {
         loadModule();
     } finally {
-        delete global.define;
+        if (outerDefine === undefined) {
+            delete global.define;
+        } else {
+            // A nested load (see the 'Ordo_Automation/js/...' branch above) - hand the outer load
+            // its own define back, mid-dependency-resolution, instead of unsetting it.
+            global.define = outerDefine;
+        }
     }
 
     return exported;

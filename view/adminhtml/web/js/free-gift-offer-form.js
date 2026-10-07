@@ -47,9 +47,10 @@ function isTierField($el) {
 define([
     'jquery',
     'underscore',
+    'Ordo_Automation/js/sku-suggest',
     'Magento_Ui/js/modal/modal',
     'domReady!'
-], function ($, _) {
+], function ($, _, skuSuggest) {
     'use strict';
 
     var searchUrl = (window.BASE_URL || '') + 'freegiftoffer/productsearch';
@@ -160,32 +161,11 @@ define([
         $activeDropdown = $list;
     }
 
-    var debouncedSuggest = _.debounce(function ($input) {
-        // String(...).trim() instead of jQuery's own $.trim() - removed in jQuery 4 (deprecated
-        // since 3.5) in favor of the native method.
-        var term = String($input.val()).trim();
-
-        if (term.length < 2) {
-            closeDropdown();
-            return;
-        }
-
-        // `void`: searchProducts() swallows its own failures (resolves to [] - see its .catch),
-        // and a debounced keystroke handler has no caller to hand a promise back to. Same reasoning
-        // at the other fire-and-forget call sites below.
-        void searchProducts(term).then(function (items) {
-            // The field may have changed (or lost focus) while the request was in flight.
-            if ($input.is(':focus')) {
-                renderDropdown($input, items);
-            }
-        });
-    }, 300);
-
-    $(document).on('input', 'input', function () {
-        var $input = $(this);
-        if (isProductSkuField($input)) {
-            debouncedSuggest($input);
-        }
+    skuSuggest.attach({
+        isField: isProductSkuField,
+        search: searchProducts,
+        render: renderDropdown,
+        close: closeDropdown
     });
 
     $(document).on('focusout', 'input', function () {

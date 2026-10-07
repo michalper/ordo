@@ -5,7 +5,37 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- **The two SKU autocompletes now share their debounced search-as-you-type half** — `view/adminhtml/
+  web/js/segment-sku-autocomplete.js` (the Segment/Campaign "Purchased Product (SKU)" condition) and
+  `free-gift-offer-form.js` (each Products row on the Free Gift Offer form) carried the same 25 lines
+  of debounce-the-keystroke / ignore-terms-under-2-characters / search / render-if-still-focused logic
+  character for character, which SonarCloud flagged as a duplicated block across the two files (10.3%
+  duplication on #247's new code, purely because a two-line fix landed inside it). That part moved to a
+  new `Ordo_Automation/js/sku-suggest` module, which both now call via `skuSuggest.attach({isField,
+  search, render, close})`. The two modules stay otherwise independent, as
+  `segment-sku-autocomplete.js`'s own docblock intends: each keeps its own controller endpoint, its own
+  field-name predicate, its own dropdown markup, and its own `focusout` handling (they already differed
+  there — Free Gift only closes on a SKU field's blur, the segment one on any input's). No behaviour
+  change on either page. `Test/js/support/amd-shim.js` grew an `Ordo_Automation/js/...` branch so a
+  module under test can pull in another of this module's own files.
+
 ### Fixed
+
+- **Every floating promise in the admin JS is now either handled or explicitly ignored** (#247) —
+  SonarCloud's quality gate was failing on `new_reliability_rating` (3, against a required 1) from 10
+  `javascript:S9383` bugs across `view/adminhtml/web/js`, plus two code smells. The two Fullscreen API
+  calls in `campaign-flow-editor.js` genuinely could leave an unhandled rejection in the console when
+  the browser refuses the request and now carry a no-op `.catch`, for the same reason the `typeof`
+  guards around them already exist. The rest are fire-and-forget by design — `submit()`/`compute()`/
+  `refresh()` each end their own chain in `.catch().finally()`, and `searchProducts()` resolves to `[]`
+  on any failure — so those call sites are marked with `void`, which changes nothing at runtime. Also:
+  `isStaleEmptyPanel()` moved out of `segment-group-modal.js`'s `define()` factory (it closed over
+  nothing from it, not even `$`), and the deliberately sequential `await addProductRow(item)` loop in
+  `free-gift-offer-form.js` is now documented and marked `NOSONAR` rather than restructured — each
+  `addProductRow()` identifies its new row as "one more row than before", so two in flight at once
+  would both fill the same one.
 
 - **Nested-group inline panel no longer stays permanently empty after a race on segment form page load** —
   the follow-up to #240's MutationObserver fix: an observer-driven `refreshGroupRows()` scan can catch a
