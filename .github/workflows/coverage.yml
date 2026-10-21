@@ -95,7 +95,7 @@ jobs:
         # re-running the whole PHPUnit suite — passing the artifact is materially cheaper than
         # running php-coverage and sonar sequentially in one job, which is exactly the split
         # this workflow makes.
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: php-coverage-report
           path: clover.xml
@@ -125,7 +125,7 @@ jobs:
           npm run test:js:coverage
 
       - name: Upload lcov report for Sonar
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: js-coverage-report
           path: coverage-js/lcov.info
@@ -200,7 +200,7 @@ jobs:
 
       - name: Upload mutation testing log
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: infection-report
           path: |
