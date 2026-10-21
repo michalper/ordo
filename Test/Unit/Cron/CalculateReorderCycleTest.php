@@ -98,6 +98,56 @@ class CalculateReorderCycleTest extends TestCase
         self::assertSame(0, $this->makeCron($connection, $logger, 4)->execute());
     }
 
+    /**
+     * A 2-order history has only 1 interval, not enough for the median estimator to need a
+     * "middle of two" average - this is the floor itself, not a regression test for the
+     * estimator, so it only needs to prove the pair isn't skipped when the admin setting is
+     * configured at or below the 2-order floor.
+     */
+    public function testExecuteClampsAConfiguredMinimumBelowTwoUpToTheFloor(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-01-01 00:00:00'],
+            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-01-11 00:00:00'],
+        ]);
+        $connection->expects(self::once())->method('insertOnDuplicate');
+
+        $logger = $this->createStub(LoggerInterface::class);
+
+        self::assertSame(1, $this->makeCron($connection, $logger, 1)->execute());
+    }
+
+    /**
+     * Regression for the batch-write change: upserts flush every UPSERT_BATCH_SIZE (500) rows
+     * instead of accumulating the whole run in memory for one upsert at the end.
+     */
+    public function testExecuteFlushesUpsertsInBatches(): void
+    {
+        $rows = [];
+        for ($i = 1; $i <= 501; $i++) {
+            $rows[] = ['customer_id' => $i, 'sku' => 'SKU-1', 'created_at' => '2026-01-01 00:00:00'];
+            $rows[] = ['customer_id' => $i, 'sku' => 'SKU-1', 'created_at' => '2026-01-11 00:00:00'];
+        }
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn($rows);
+
+        $flushSizes = [];
+        $connection->expects(self::exactly(2))->method('insertOnDuplicate')
+            ->willReturnCallback(function (string $table, array $upsertRows) use (&$flushSizes): int {
+                $flushSizes[] = count($upsertRows);
+                return count($upsertRows);
+            });
+
+        $logger = $this->createStub(LoggerInterface::class);
+
+        self::assertSame(501, $this->makeCron($connection, $logger, 2)->execute());
+        self::assertSame([500, 1], $flushSizes);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteCreatesNewCycleWhenPatternDetected(): void
     {

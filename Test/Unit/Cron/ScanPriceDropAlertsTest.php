@@ -369,6 +369,52 @@ class ScanPriceDropAlertsTest extends TestCase
     }
 
     /**
+     * Same regression as the customer-path test above, for the guest branch - the two claim
+     * sites are separate conditional UPDATEs, each with its own "another process already won
+     * this row" outcome.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteDoesNotNotifyGuestWhenAnotherProcessAlreadyClaimedTheRow(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isPriceWatchEnabled')->willReturn(true);
+        $config->method('getPriceWatchScanBatchSize')->willReturn(200);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            [
+                'entity_id' => 1,
+                'customer_id' => null,
+                'guest_email' => 'guest@example.com',
+                'product_id' => 10,
+                'last_known_price' => '100.0000',
+            ],
+        ]);
+        $connection->expects(self::once())->method('update')->willReturn(0);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $product = $this->createStub(Product::class);
+        $product->method('getFinalPrice')->willReturn(80.0);
+        $productRepository = $this->createStub(ProductRepositoryInterface::class);
+        $productRepository->method('getById')->willReturn($product);
+
+        $guestNotifier = $this->createMock(GuestPriceWatchNotifier::class);
+        $guestNotifier->expects(self::never())->method('notify');
+
+        $this->makeCron(
+            $config,
+            $resourceConnection,
+            $productRepository,
+            $this->createStub(CampaignDispatcher::class),
+            guestNotifier: $guestNotifier
+        )->execute();
+    }
+
+    /**
      * Regression: a fixed 'entity_id ASC' order rescanned the same first batch every tick and
      * never reached watches beyond it - the scan must rotate on last_scanned_at (NULLs first).
      */
