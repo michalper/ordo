@@ -7,7 +7,7 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=michalper_ordo&metric=alert_status)](https://sonarcloud.io/project/overview?id=michalper_ordo)
 [![PHP](https://img.shields.io/badge/php-8.4%2B-777bb4)](composer.json)
 [![Magento](https://img.shields.io/badge/magento-2.4.8%20%7C%202.4.9-orange)](composer.json)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![License: OSL-3.0](https://img.shields.io/badge/license-OSL--3.0-blue)](LICENSE)
 [![Dependabot](https://img.shields.io/badge/dependabot-enabled-025E8C?logo=dependabot&logoColor=white)](.github/dependabot.yml)
 [![Code Style](https://img.shields.io/badge/code%20style-Magento2%20Coding%20Standard-orange)](phpcs.xml.dist)
 [![Open Issues](https://img.shields.io/github/issues/michalper/ordo)](https://github.com/michalper/ordo/issues)
@@ -89,6 +89,8 @@ bin/magento cache:flush
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Open Software License v. 3.0 (OSL-3.0) — see [LICENSE](LICENSE). Distributed via the Adobe
+Commerce Marketplace, which requires OSL-3.0 and credit to Adobe, Inc. for extensions built on
+Magento Open Source code.
 
 Copyright (c) 2026 Michał Per.

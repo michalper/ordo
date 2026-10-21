@@ -47,3 +47,9 @@ These are the module's first virtualTypes.
 - Button labels/messages now live as di.xml strings and reach `__()` as variables, so
   `i18n:collect-phrases` won't pick them up from PHP; the phrases were already present in every
   `i18n/*.csv`, and new ones must be added there by hand.
+- This resolution path is specific to a ui_component `class`/`type` attribute going through
+  `ObjectManager::create()` at runtime — it does NOT generalize to a `<plugin type="...">`
+  reference, which Magento's plugin-list compiler resolves statically and never resolves to a
+  virtualType's base class (confirmed the hard way: the same pattern applied to this module's
+  resource audit plugins failed `setup:di:compile` — see docs/CHANGELOG.md and
+  `Plugin\Shared\AbstractResourceAuditPlugin`, which uses real subclasses instead).

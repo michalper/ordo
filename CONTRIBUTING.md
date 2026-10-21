@@ -95,4 +95,4 @@ PHP version, relevant config). For a security issue, please don't open a public 
 
 ## License
 
-By contributing, you agree your contribution is licensed under this project's [MIT license](LICENSE).
+By contributing, you agree your contribution is licensed under this project's [OSL-3.0 license](LICENSE).
