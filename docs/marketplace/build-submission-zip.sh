@@ -4,14 +4,18 @@
 # Base content is exactly what `git archive` already exports for this repo's own composer
 # path-repository consumers (see .gitattributes' export-ignore list and its own comment for
 # why: vendor/, node_modules/, caches/logs excluded, .git itself never included). On top of
-# that, two paths that make sense for the path-repo copy (used by this repo's own dev/CI
-# tooling) but not for a Marketplace submission are excluded here instead of in
-# .gitattributes, since changing that file would also strip them from the local dev sandbox
-# install that still needs them present:
+# that, paths that make sense for the path-repo copy (used by this repo's own dev/CI tooling)
+# but not for a Marketplace submission are excluded here instead of in .gitattributes, since
+# changing that file would also strip them from the local dev sandbox install that still needs
+# them present:
 #   - .github/            CI workflow configuration, not something a merchant's store needs.
 #   - docs/marketplace/   this script's own output and the submission-prep materials
 #     (PDF guide, release notes) - shipping the Marketplace-submission paperwork inside the
 #     submission itself would be self-referential noise, not module functionality.
+#   - .gitignore, .gitattributes   found the hard way: Adobe's technical review rejects a
+#     submitted zip containing either, flagged as "Deprecated File" ("Please remove .gitignore
+#     from archive", same for .gitattributes) - not documented anywhere in the public
+#     guidelines pages, only surfaced by an actual failed submission.
 #
 # Everything else ships, Test/ included - EQP's technical review scans the whole package
 # (see ROADMAP.md item 4), so excluding it would just mean nothing catches a regression
@@ -47,7 +51,7 @@ OUT_ZIP="$OUT_DIR/${MODULE_NAME}-${VERSION}.zip"
 rm -rf "$STAGE_DIR" "$OUT_ZIP"
 mkdir -p "$STAGE_DIR"
 
-git archive HEAD -- . ':!.github' ':!docs/marketplace' | tar -x -C "$STAGE_DIR"
+git archive HEAD -- . ':!.github' ':!docs/marketplace' ':!.gitignore' ':!.gitattributes' | tar -x -C "$STAGE_DIR"
 
 python3 - "$STAGE_DIR/composer.json" "$VERSION" <<'EOF'
 import json, sys

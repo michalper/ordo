@@ -22,12 +22,16 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   list. Stamps a `version` into the packaged `composer.json` only (never the tracked file, which
   deliberately carries none — versioning is by git tag) since Adobe's review statically checks
   for `name`/`type`/`version` with no VCS to derive one from.
-- **`docs/marketplace/LISTING-CONTENT.md` + `assets/icon.svg`/`icon-512.png` +
+- **`docs/marketplace/LISTING-CONTENT.md` + `assets/icon.svg`/`icon-512.png`/`icon-240.png` +
   `screenshots/01-campaign-builder.jpg`/`02-trigger-condition-action.jpg`** (ROADMAP.md item 8) —
   the Marketplace listing's title, category, short/long description, version compatibility, icon
-  (reuses the README hero/admin menu mark, no Adobe/Magento branding per Adobe's content rule),
-  and the two required gallery screenshots, captured live from the Flow canvas rather than mocked
-  up.
+  (reuses the README hero/admin menu mark, no Adobe/Magento branding per Adobe's content rule,
+  240×240 per the actual submission form's requirement), and the two required gallery
+  screenshots, captured live from the Flow canvas rather than mocked up.
+- **`docs/marketplace/build-submission-zip.sh` now also excludes `.gitignore`/`.gitattributes`**
+  from the packaged zip — Adobe's technical review rejects a submission containing either
+  ("Deprecated File found"), found only by an actual failed submission, not documented on the
+  public guidelines pages.
 
 ### Fixed
 

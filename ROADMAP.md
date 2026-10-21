@@ -77,6 +77,10 @@ actually publishes, not something to pre-do here.
    submitted `composer.json` for `name`/`type`/*`version`* with no VCS to derive one from — the
    script stamps a version (from the exact git tag HEAD must be on) into the packaged copy only,
    never into the tracked file. `composer validate` confirmed the packaged `composer.json` is valid.
+   A second real gap surfaced only by an actual failed submission (not documented anywhere in
+   Adobe's public guidelines): the technical review rejects a package containing `.gitignore` or
+   `.gitattributes` ("Deprecated File found"), so the script excludes both alongside `.github/`
+   and `docs/marketplace/`.
 7. ~~**Marketplace seller account**~~ — done: Developer Portal account, Master/Developer Terms accepted,
    profile photo and Privacy Policy URL set (`docs/wiki/Privacy-Policy.md`, live on the GitHub wiki), PayPal
    payout email set, Tax Forms completed (US/Poland tax treaty — moot either way since Ordo ships free).

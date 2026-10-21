@@ -80,7 +80,9 @@ setup guide, is linked from the listing.</p>
 
 ## Icon
 
-`docs/marketplace/assets/icon-512.png` (512×512 PNG) — generated from `docs/marketplace/assets/icon.svg`,
+`docs/marketplace/assets/icon-240.png` (240×240 PNG, Adobe's exact required size for the extension icon
+upload — confirmed on the actual submission form, not documented on the public guidelines pages) —
+downscaled from `docs/marketplace/assets/icon-512.png`, generated from `docs/marketplace/assets/icon.svg`,
 the same mark/gradient as the README hero and the admin menu icon, so the brand reads consistently. No
 slogan or feature text, no Adobe/Magento name or logo, per Adobe's icon content rule.
 
