@@ -14,3 +14,4 @@
 - [Email Template Versioning](Email-Template-Versioning)
 - [AI-Agent Commerce Readiness](AI-Agent-Commerce-Readiness)
 - [API Reference](API-Reference)
+- [Privacy Policy](Privacy-Policy)

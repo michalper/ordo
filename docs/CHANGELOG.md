@@ -5,6 +5,30 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed (licensing)
+
+- **License switched from MIT to OSL-3.0** (ROADMAP.md "Adobe Commerce Marketplace listing" item
+  1) — Adobe's Extension Quality Program technical review requires extensions built on Magento
+  Open Source code to be licensed under the Open Software License v. 3.0, with credit to Adobe,
+  Inc. `LICENSE` now carries the full OSL-3.0 text plus that credit; `composer.json`'s `license`
+  field is `OSL-3.0`; `README.md`/`README.pl.md` updated to match. No installed user base yet
+  (module never publicly released), so no backward-compatibility concern.
+
+### Added (Marketplace submission tooling)
+
+- **`docs/marketplace/build-submission-zip.sh`** (ROADMAP.md item 6) — builds the zip for Adobe
+  Commerce Marketplace technical review from a tagged commit via `git archive`, excluding
+  `.github/` and `docs/marketplace/` itself on top of `.gitattributes`' existing export-ignore
+  list. Stamps a `version` into the packaged `composer.json` only (never the tracked file, which
+  deliberately carries none — versioning is by git tag) since Adobe's review statically checks
+  for `name`/`type`/`version` with no VCS to derive one from.
+- **`docs/marketplace/LISTING-CONTENT.md` + `assets/icon.svg`/`icon-512.png` +
+  `screenshots/01-campaign-builder.jpg`/`02-trigger-condition-action.jpg`** (ROADMAP.md item 8) —
+  the Marketplace listing's title, category, short/long description, version compatibility, icon
+  (reuses the README hero/admin menu mark, no Adobe/Magento branding per Adobe's content rule),
+  and the two required gallery screenshots, captured live from the Flow canvas rather than mocked
+  up.
+
 ### Fixed
 
 - **Three registered segment condition types matched nobody at the set level** —
@@ -50,9 +74,15 @@ follows [Keep a Changelog](https://keepachangelog.com/).
     skeleton: `Cron\AbstractRetryFailedCron`, claim/due-filter traits, one `Retry\RetryBackoff`
     (ADR 0010). Tables and queues stay separate per ADRs 0003/0004.
   - 32 admin edit-form button classes collapsed into 4 parametrized `Block\Adminhtml\Shared\Edit`
-    classes wired as this module's first virtualTypes (ADR 0009); same pattern then applied to the
-    5 copy-pasted resource audit plugins (one `Plugin\Shared\ResourceAuditPlugin`) and 11 empty
-    `Grid\Collection` subclasses (virtualTypes of SearchResult).
+    classes wired as this module's first virtualTypes (ADR 0009), and 11 empty `Grid\Collection`
+    subclasses collapsed into virtualTypes of SearchResult the same way. The 5 copy-pasted
+    resource audit plugins share one `Plugin\Shared\AbstractResourceAuditPlugin` base instead —
+    a virtualType was tried first (same shape as the buttons) but failed
+    `setup:di:compile` (caught while preparing the Varnish/production-mode MFTF run, ROADMAP.md
+    Marketplace item 5): a `<plugin type="...">` reference is statically resolved by Magento's
+    plugin-list compiler, which never resolves a virtualType there, unlike a ui_component
+    button's `class` attribute (resolved via `ObjectManager::create()` at runtime) — confirmed
+    against Magento core, zero of its own 517 plugin declarations reference a virtualType.
   - Five MassDelete controllers and WhatsAppTemplate\Delete adopted the existing shared
     mass-action/delete traits; Offer/Referral frontend abstracts merged into
     `Controller\AbstractCustomerAccountAction`.

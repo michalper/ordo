@@ -16,78 +16,24 @@
 
     <!-- These five entities have no extracted SaveProcessor (unlike Campaign/Segment above), so
          each plugin targets its own ResourceModel::save() instead - see
-         Plugin\Shared\ResourceAuditPlugin's own docblock. Each entity's plugin is a virtualType
-         of that one shared class, carrying only its entity_type label and audited-field list. -->
-    <virtualType name="OrdoAutomationContentBlockResourceAuditPlugin" type="Ordo\Automation\Plugin\Shared\ResourceAuditPlugin">
-        <arguments>
-            <argument name="entityType" xsi:type="string">content_block</argument>
-            <argument name="auditedFields" xsi:type="array">
-                <item name="0" xsi:type="string">name</item>
-                <item name="1" xsi:type="string">identifier</item>
-                <item name="2" xsi:type="string">type</item>
-                <item name="3" xsi:type="string">enabled</item>
-            </argument>
-        </arguments>
-    </virtualType>
-    <virtualType name="OrdoAutomationFreeGiftOfferResourceAuditPlugin" type="Ordo\Automation\Plugin\Shared\ResourceAuditPlugin">
-        <arguments>
-            <argument name="entityType" xsi:type="string">free_gift_offer</argument>
-            <argument name="auditedFields" xsi:type="array">
-                <item name="0" xsi:type="string">name</item>
-                <item name="1" xsi:type="string">enabled</item>
-            </argument>
-        </arguments>
-    </virtualType>
-    <virtualType name="OrdoAutomationScoreRuleResourceAuditPlugin" type="Ordo\Automation\Plugin\Shared\ResourceAuditPlugin">
-        <arguments>
-            <argument name="entityType" xsi:type="string">score_rule</argument>
-            <argument name="auditedFields" xsi:type="array">
-                <item name="0" xsi:type="string">attribute_code</item>
-                <item name="1" xsi:type="string">operator</item>
-                <item name="2" xsi:type="string">value</item>
-                <item name="3" xsi:type="string">points</item>
-                <item name="4" xsi:type="string">enabled</item>
-            </argument>
-        </arguments>
-    </virtualType>
-    <virtualType name="OrdoAutomationAdAudienceResourceAuditPlugin" type="Ordo\Automation\Plugin\Shared\ResourceAuditPlugin">
-        <arguments>
-            <argument name="entityType" xsi:type="string">ad_audience</argument>
-            <argument name="auditedFields" xsi:type="array">
-                <item name="0" xsi:type="string">name</item>
-                <item name="1" xsi:type="string">segment_id</item>
-                <item name="2" xsi:type="string">platform</item>
-                <item name="3" xsi:type="string">enabled</item>
-            </argument>
-        </arguments>
-    </virtualType>
-    <virtualType name="OrdoAutomationWhatsAppTemplateResourceAuditPlugin" type="Ordo\Automation\Plugin\Shared\ResourceAuditPlugin">
-        <arguments>
-            <argument name="entityType" xsi:type="string">whatsapp_template</argument>
-            <argument name="auditedFields" xsi:type="array">
-                <item name="0" xsi:type="string">name</item>
-                <item name="1" xsi:type="string">meta_template_name</item>
-                <item name="2" xsi:type="string">category</item>
-                <item name="3" xsi:type="string">language</item>
-                <item name="4" xsi:type="string">body_text</item>
-                <item name="5" xsi:type="string">status</item>
-            </argument>
-        </arguments>
-    </virtualType>
+         Plugin\Shared\AbstractResourceAuditPlugin's own docblock for why each is a real
+         subclass (naming only its entity_type label and audited-field list) rather than a
+         virtualType - Magento's plugin-list compiler doesn't resolve a virtualType there,
+         unlike the Shared\Edit admin buttons' ui_component class attribute. -->
     <type name="Ordo\Automation\Model\ResourceModel\ContentBlock">
-        <plugin name="ordo_admin_action_log_content_block" type="OrdoAutomationContentBlockResourceAuditPlugin"/>
+        <plugin name="ordo_admin_action_log_content_block" type="Ordo\Automation\Plugin\ContentBlock\ContentBlockResourceAuditPlugin"/>
     </type>
     <type name="Ordo\Automation\Model\ResourceModel\FreeGiftOffer">
-        <plugin name="ordo_admin_action_log_free_gift_offer" type="OrdoAutomationFreeGiftOfferResourceAuditPlugin"/>
+        <plugin name="ordo_admin_action_log_free_gift_offer" type="Ordo\Automation\Plugin\FreeGiftOffer\FreeGiftOfferResourceAuditPlugin"/>
     </type>
     <type name="Ordo\Automation\Model\ResourceModel\ScoreRule">
-        <plugin name="ordo_admin_action_log_score_rule" type="OrdoAutomationScoreRuleResourceAuditPlugin"/>
+        <plugin name="ordo_admin_action_log_score_rule" type="Ordo\Automation\Plugin\ScoreRule\ScoreRuleResourceAuditPlugin"/>
     </type>
     <type name="Ordo\Automation\Model\ResourceModel\AdAudience">
-        <plugin name="ordo_admin_action_log_ad_audience" type="OrdoAutomationAdAudienceResourceAuditPlugin"/>
+        <plugin name="ordo_admin_action_log_ad_audience" type="Ordo\Automation\Plugin\AdAudience\AdAudienceResourceAuditPlugin"/>
     </type>
     <type name="Ordo\Automation\Model\ResourceModel\WhatsAppTemplate">
-        <plugin name="ordo_admin_action_log_whatsapp_template" type="OrdoAutomationWhatsAppTemplateResourceAuditPlugin"/>
+        <plugin name="ordo_admin_action_log_whatsapp_template" type="Ordo\Automation\Plugin\WhatsAppTemplate\WhatsAppTemplateResourceAuditPlugin"/>
     </type>
 
     <!-- Admin edit-form toolbar buttons. The 32 per-entity button classes collapsed into four
