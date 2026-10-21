@@ -57,6 +57,8 @@ def parse_table(lines, i, styles):
             cells = [c.strip() for c in row.strip("|").split("|")]
             rows.append(cells)
         i += 1
+    if not rows:
+        raise ValueError("markdown table with no rows — check USER-GUIDE.md around the table markers")
     header, body = rows[0], rows[1:]
     data = [[Paragraph(inline(c), styles["OrdoCellHead"]) for c in header]]
     for r in body:
