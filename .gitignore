@@ -13,6 +13,10 @@ composer.lock
 .aider*
 .env
 
+# Built Marketplace submission zip - regenerate with docs/marketplace/build-submission-zip.sh,
+# never commit the artifact itself
+docs/marketplace/build/
+
 # macOS Finder metadata - Finder drops one of these into every directory it opens, so
 # they reappear on their own after being deleted
 .DS_Store

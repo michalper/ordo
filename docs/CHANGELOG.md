@@ -14,6 +14,15 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   field is `OSL-3.0`; `README.md`/`README.pl.md` updated to match. No installed user base yet
   (module never publicly released), so no backward-compatibility concern.
 
+### Added (Marketplace submission tooling)
+
+- **`docs/marketplace/build-submission-zip.sh`** (ROADMAP.md item 6) — builds the zip for Adobe
+  Commerce Marketplace technical review from a tagged commit via `git archive`, excluding
+  `.github/` and `docs/marketplace/` itself on top of `.gitattributes`' existing export-ignore
+  list. Stamps a `version` into the packaged `composer.json` only (never the tracked file, which
+  deliberately carries none — versioning is by git tag) since Adobe's review statically checks
+  for `name`/`type`/`version` with no VCS to derive one from.
+
 ### Fixed
 
 - **Three registered segment condition types matched nobody at the set level** —

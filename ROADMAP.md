@@ -66,9 +66,14 @@ order:
    memory pressure, see `AGENTS.md`) pass under Varnish + production mode. Only ever run on one
    PHP/Magento combo (whatever this sandbox has installed) — running the matrix across every
    version the listing claims to support is for whoever actually submits.
-6. **Package the zip** — `composer.json` already passes the mechanical checks (`type: magento2-module`,
-   no `extra.map`/`extra.magento-root-dir`, no forbidden `magento/*` requires, no stray `FIXME`/`TODO` in
-   source). Still need to confirm the packaged zip stays under the 30 MB limit.
+6. ~~**Package the zip**~~ — done: `docs/marketplace/build-submission-zip.sh` builds it (`git archive`
+   of a tagged commit, minus `.github/` and `docs/marketplace/` itself — neither is something a
+   merchant's store needs or that belongs inside its own submission paperwork). 7.57 MB, well under
+   the 30 MB limit. One real gap it caught: `composer.json` deliberately carries no `version` key in
+   this repo (versioned by git tag only), but Adobe's technical review statically checks the
+   submitted `composer.json` for `name`/`type`/*`version`* with no VCS to derive one from — the
+   script stamps a version (from the exact git tag HEAD must be on) into the packaged copy only,
+   never into the tracked file. `composer validate` confirmed the packaged `composer.json` is valid.
 7. **Marketplace seller account** — Developer Portal account (individual or company), accept
    Master/Developer Terms of Service, valid PayPal payout email, EU trader information (required —
    maintainer is EU-based), pricing model decision (one-time vs. subscription, or free).
