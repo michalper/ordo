@@ -33,6 +33,17 @@ class CampaignActionTest extends AbstractModelTestCase
         self::assertSame(['tag' => 'vip'], $model->getParams());
     }
 
+    public function testGetParamsDropsNonStringKeys(): void
+    {
+        // Params are conceptually always a key-value map - a hand-written API/DB payload that
+        // decodes to a list (or smuggles numeric keys) is normalized at this one source, so no
+        // getParams() consumer needs its own string-key filter anymore.
+        $model = $this->makeModel();
+        $model->setData('params', '{"tag":"vip","0":"smuggled"}');
+
+        self::assertSame(['tag' => 'vip'], $model->getParams());
+    }
+
     public function testEntityIdRoundTrip(): void
     {
         $model = $this->makeModel();

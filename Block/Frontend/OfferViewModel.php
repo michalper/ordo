@@ -48,11 +48,6 @@ class OfferViewModel implements ArgumentInterface
             && $offer->canSelfExtend($this->config->getOfferMaxSelfExtensions());
     }
 
-    public function getMaxSelfExtensions(): int
-    {
-        return $this->config->getOfferMaxSelfExtensions();
-    }
-
     public function getSelfExtensionDays(): int
     {
         return $this->config->getOfferSelfExtensionDays();

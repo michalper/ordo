@@ -3,8 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Approval;
 
-use Magento\Framework\App\CacheInterface;
-use Magento\Framework\Serialize\SerializerInterface;
+use Ordo\Automation\Model\RateLimit\CacheWindowCounter;
 
 /**
  * Bespoke cache-backed attempt counter for the order-approval decision endpoints - both the
@@ -32,8 +31,7 @@ class ApprovalRateLimiter
     private const string CACHE_TAG = 'ORDO_APPROVAL_RATE_LIMIT';
 
     public function __construct(
-        private readonly CacheInterface $cache,
-        private readonly SerializerInterface $serializer
+        private readonly CacheWindowCounter $counter
     ) {
     }
 
@@ -43,22 +41,12 @@ class ApprovalRateLimiter
      */
     public function isAllowed(string $token, string $ip): bool
     {
-        $key = $this->cacheKey($token, $ip);
-        $cached = $this->cache->load($key);
-        $count = $cached !== false ? (int) $this->serializer->unserialize($cached) : 0;
-
-        if ($count >= self::MAX_ATTEMPTS) {
-            return false;
-        }
-
-        $this->cache->save(
-            (string) $this->serializer->serialize($count + 1),
-            $key,
-            [self::CACHE_TAG],
-            self::WINDOW_SECONDS
+        return $this->counter->hit(
+            $this->cacheKey($token, $ip),
+            self::MAX_ATTEMPTS,
+            self::WINDOW_SECONDS,
+            self::CACHE_TAG
         );
-
-        return true;
     }
 
     private function cacheKey(string $token, string $ip): string

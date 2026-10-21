@@ -25,9 +25,7 @@ abstract class AbstractCampaignChildModel extends AbstractModel
      */
     public function getParams(): array
     {
-        $raw = (string) $this->getData('params');
-        $decoded = $raw !== '' ? json_decode($raw, true) : [];
-        return is_array($decoded) ? $decoded : [];
+        return ParamsMap::fromJson((string) $this->getData('params'));
     }
 
     public function getEntityId(): ?int

@@ -8,7 +8,7 @@ use Magento\Framework\Controller\Result\JsonFactory;
 use Ordo\Automation\Api\Data\CampaignTriggerInterface;
 use Ordo\Automation\Controller\Webhook\Receive;
 use Ordo\Automation\Helper\Config;
-use Ordo\Automation\Model\CampaignDispatcher;
+use Ordo\Automation\Model\Queue\CampaignDispatchPublisher;
 use Ordo\Automation\Model\Webhook\WebhookSignatureValidator;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -26,7 +26,7 @@ class ReceiveTest extends AbstractFrontendActionTestCase
 
     private JsonFactory $resultJsonFactory;
     private Config $config;
-    private CampaignDispatcher&\PHPUnit\Framework\MockObject\MockObject $campaignDispatcher;
+    private CampaignDispatchPublisher&\PHPUnit\Framework\MockObject\MockObject $campaignDispatchPublisher;
     private LoggerInterface $logger;
     private Json $jsonResult;
 
@@ -36,7 +36,7 @@ class ReceiveTest extends AbstractFrontendActionTestCase
         $this->config = $this->createStub(Config::class);
         $this->config->method('isWebhookEnabled')->willReturn(true);
         $this->config->method('getWebhookInboundSecret')->willReturn(self::SECRET);
-        $this->campaignDispatcher = $this->createMock(CampaignDispatcher::class);
+        $this->campaignDispatchPublisher = $this->createMock(CampaignDispatchPublisher::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->jsonResult = $this->createMock(Json::class);
@@ -52,7 +52,7 @@ class ReceiveTest extends AbstractFrontendActionTestCase
             $this->resultJsonFactory,
             $this->config,
             new WebhookSignatureValidator(),
-            $this->campaignDispatcher,
+            $this->campaignDispatchPublisher,
             $this->logger
         );
     }
@@ -70,8 +70,8 @@ class ReceiveTest extends AbstractFrontendActionTestCase
         $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
         $this->request->method('getContent')->willReturn($rawBody);
 
-        $this->campaignDispatcher->expects(self::once())
-            ->method('dispatch')
+        $this->campaignDispatchPublisher->expects(self::once())
+            ->method('publish')
             ->with(
                 CampaignTriggerInterface::TRIGGER_WEBHOOK_RECEIVED,
                 ['webhook_payload' => ['order_id' => 'ext-123']]
@@ -89,7 +89,7 @@ class ReceiveTest extends AbstractFrontendActionTestCase
         $this->request->method('getHeader')->willReturn('sha256=' . str_repeat('0', 64));
         $this->request->method('getContent')->willReturn('{"order_id":"ext-123"}');
 
-        $this->campaignDispatcher->expects(self::never())->method('dispatch');
+        $this->campaignDispatchPublisher->expects(self::never())->method('publish');
         $this->jsonResult->expects(self::once())->method('setHttpResponseCode')->with(401)->willReturnSelf();
         $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => false])->willReturnSelf();
 
@@ -103,7 +103,7 @@ class ReceiveTest extends AbstractFrontendActionTestCase
         $this->request->method('getHeader')->willReturn(null);
         $this->request->method('getContent')->willReturn('{"order_id":"ext-123"}');
 
-        $this->campaignDispatcher->expects(self::never())->method('dispatch');
+        $this->campaignDispatchPublisher->expects(self::never())->method('publish');
         $this->jsonResult->expects(self::once())->method('setHttpResponseCode')->with(401)->willReturnSelf();
 
         $controller->execute();
@@ -116,7 +116,7 @@ class ReceiveTest extends AbstractFrontendActionTestCase
         $this->config->method('isWebhookEnabled')->willReturn(false);
         $controller = $this->makeController();
 
-        $this->campaignDispatcher->expects(self::never())->method('dispatch');
+        $this->campaignDispatchPublisher->expects(self::never())->method('publish');
         $this->jsonResult->expects(self::once())->method('setHttpResponseCode')->with(404)->willReturnSelf();
 
         $controller->execute();
@@ -130,7 +130,7 @@ class ReceiveTest extends AbstractFrontendActionTestCase
         $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
         $this->request->method('getContent')->willReturn($rawBody);
 
-        $this->campaignDispatcher->expects(self::never())->method('dispatch');
+        $this->campaignDispatchPublisher->expects(self::never())->method('publish');
         $this->jsonResult->expects(self::once())
             ->method('setData')
             ->with(['ok' => false, 'reason' => 'invalid_payload'])
@@ -147,7 +147,7 @@ class ReceiveTest extends AbstractFrontendActionTestCase
         $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
         $this->request->method('getContent')->willReturn($rawBody);
 
-        $this->campaignDispatcher->method('dispatch')->willThrowException(new RuntimeException('db down'));
+        $this->campaignDispatchPublisher->method('publish')->willThrowException(new RuntimeException('db down'));
         $this->jsonResult->expects(self::once())->method('setHttpResponseCode')->with(500)->willReturnSelf();
 
         $controller->execute();

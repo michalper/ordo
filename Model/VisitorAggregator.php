@@ -54,13 +54,18 @@ class VisitorAggregator
                 ->group(['event_type', 'event_key'])
         );
 
-        /** @var array{event_type: string, event_key: string, occurrences: int|string} $row */
-        foreach ($rows as $row) {
-            if ((int) $row['occurrences'] < $this->resolveThreshold($row['event_type'])) {
-                continue;
-            }
+        $tags = $this->overThresholdTags($rows);
+        if ($tags === []) {
+            return;
+        }
 
-            $this->customerTagManager->addTag($customerId, $this->buildTag($row));
+        // One getTags() read instead of addTag()'s internal hasTag() SELECT per row — a visitor
+        // who already earned their tags otherwise re-pays one query per held tag on every event.
+        $existing = array_flip($this->customerTagManager->getTags($customerId));
+        foreach ($tags as $tag) {
+            if (!isset($existing[$tag])) {
+                $this->customerTagManager->addTag($customerId, $tag);
+            }
         }
     }
 
@@ -89,14 +94,37 @@ class VisitorAggregator
                 ->group(['event_type', 'event_key'])
         );
 
-        /** @var array{event_type: string, event_key: string, occurrences: int|string} $row */
+        $tags = $this->overThresholdTags($rows);
+        if ($tags === []) {
+            return;
+        }
+
+        // Same existing-tags diff as aggregateForCustomer() — see the comment there.
+        $existing = array_flip($this->visitorTagManager->getTags($visitorId));
+        foreach ($tags as $tag) {
+            if (!isset($existing[$tag])) {
+                $this->visitorTagManager->addTag($visitorId, $tag);
+            }
+        }
+    }
+
+    /**
+     * @param array<int, array{event_type: string, event_key: string, occurrences: int|string}> $rows
+     * @return string[]
+     */
+    private function overThresholdTags(array $rows): array
+    {
+        $tags = [];
+
         foreach ($rows as $row) {
             if ((int) $row['occurrences'] < $this->resolveThreshold($row['event_type'])) {
                 continue;
             }
 
-            $this->visitorTagManager->addTag($visitorId, $this->buildTag($row));
+            $tags[] = $this->buildTag($row);
         }
+
+        return $tags;
     }
 
     /**

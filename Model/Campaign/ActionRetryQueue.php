@@ -5,6 +5,7 @@ namespace Ordo\Automation\Model\Campaign;
 
 use Ordo\Automation\Model\CampaignActionRetryFactory;
 use Ordo\Automation\Model\ResourceModel\CampaignActionRetry as CampaignActionRetryResource;
+use Ordo\Automation\Model\Retry\RetryBackoff;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -23,7 +24,8 @@ class ActionRetryQueue
     public function __construct(
         private readonly CampaignActionRetryFactory $campaignActionRetryFactory,
         private readonly CampaignActionRetryResource $campaignActionRetryResource,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly RetryBackoff $retryBackoff
     ) {
     }
 
@@ -54,15 +56,11 @@ class ActionRetryQueue
     }
 
     /**
-     * Exponential backoff, same shape as SendRetrier's in-process retries but in minutes instead
-     * of microseconds (a persisted retry is inherently coarser-grained - this cron only runs
-     * periodically, not inline in a request), capped at MAX_DELAY_MINUTES so a row that's failed
-     * many times still gets retried at a bounded cadence rather than drifting further and
-     * further apart.
+     * Exponential backoff - the math lives in Model\Retry\RetryBackoff (shared with the other
+     * retry queues), parametrized by this queue's own BASE/MAX constants.
      */
     public function nextRetryAt(int $attempts): string
     {
-        $delayMinutes = min(self::BASE_DELAY_MINUTES * (2 ** max(0, $attempts - 1)), self::MAX_DELAY_MINUTES);
-        return date('Y-m-d H:i:s', strtotime("+{$delayMinutes} minutes"));
+        return $this->retryBackoff->nextRetryAt($attempts, self::BASE_DELAY_MINUTES, self::MAX_DELAY_MINUTES);
     }
 }

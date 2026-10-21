@@ -18,6 +18,8 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\Cron\ReminderEmailSender;
+use Ordo\Automation\Model\Cron\ReminderLogStore;
 use Ordo\Automation\Model\Email\MessageIdGenerator;
 use Ordo\Automation\Model\Email\PendingMessageIdHolder;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
@@ -155,15 +157,18 @@ class SendAbandonedCartRemindersTest extends TestCase
             $config,
             $resourceConnection,
             $this->makeQuoteFactoryStub(),
-            $this->makeTransportBuilderStub(),
-            $this->makeStoreManagerStub(),
-            $this->createStub(StateInterface::class),
+            new ReminderEmailSender(
+                $this->makeTransportBuilderStub(),
+                $this->makeStoreManagerStub(),
+                $this->createStub(StateInterface::class),
+                new PendingMessageIdHolder()
+            ),
             $this->createStub(CampaignDispatcher::class),
             $this->makeConsentManager(),
             $this->makeCronRunLogger($this->createStub(LoggerInterface::class)),
             $messageIdGenerator,
-            $this->createStub(PendingMessageIdHolder::class),
-            $messageLogWriter
+            $messageLogWriter,
+            new ReminderLogStore($resourceConnection)
         ))->execute();
     }
 
@@ -225,15 +230,18 @@ class SendAbandonedCartRemindersTest extends TestCase
             $config,
             $resourceConnection,
             $quoteFactory,
-            $this->createStub(TransportBuilder::class),
-            $this->createStub(StoreManagerInterface::class),
-            $this->createStub(StateInterface::class),
+            new ReminderEmailSender(
+                $this->createStub(TransportBuilder::class),
+                $this->makeStoreManagerStub(),
+                $this->createStub(StateInterface::class),
+                new PendingMessageIdHolder()
+            ),
             $dispatcher,
             $consentManager,
             $this->makeCronRunLogger($this->createStub(LoggerInterface::class)),
             $this->createStub(MessageIdGenerator::class),
-            $this->createStub(PendingMessageIdHolder::class),
-            $this->createStub(MessageLogWriter::class)
+            $this->createStub(MessageLogWriter::class),
+            new ReminderLogStore($resourceConnection)
         ))->execute();
     }
 
@@ -306,15 +314,18 @@ class SendAbandonedCartRemindersTest extends TestCase
             $config,
             $resourceConnection,
             $quoteFactory,
-            $this->createStub(TransportBuilder::class),
-            $this->createStub(StoreManagerInterface::class),
-            $this->createStub(StateInterface::class),
+            new ReminderEmailSender(
+                $this->createStub(TransportBuilder::class),
+                $this->makeStoreManagerStub(),
+                $this->createStub(StateInterface::class),
+                new PendingMessageIdHolder()
+            ),
             $dispatcher,
             $this->makeConsentManager(),
             $this->makeCronRunLogger($logger),
             $this->createStub(MessageIdGenerator::class),
-            $this->createStub(PendingMessageIdHolder::class),
-            $this->createStub(MessageLogWriter::class)
+            $this->createStub(MessageLogWriter::class),
+            new ReminderLogStore($resourceConnection)
         ))->execute();
     }
 
@@ -367,15 +378,18 @@ class SendAbandonedCartRemindersTest extends TestCase
             $config,
             $resourceConnection,
             $this->makeQuoteFactoryStub(),
-            $this->makeTransportBuilderStub(),
-            $this->makeStoreManagerStub(),
-            $this->createStub(StateInterface::class),
+            new ReminderEmailSender(
+                $this->makeTransportBuilderStub(),
+                $this->makeStoreManagerStub(),
+                $this->createStub(StateInterface::class),
+                new PendingMessageIdHolder()
+            ),
             $dispatcher ?? $this->createStub(CampaignDispatcher::class),
             $this->makeConsentManager(),
             $this->makeCronRunLogger($logger ?? $this->createStub(LoggerInterface::class)),
             $this->createStub(MessageIdGenerator::class),
-            $this->createStub(PendingMessageIdHolder::class),
-            $this->createStub(MessageLogWriter::class)
+            $this->createStub(MessageLogWriter::class),
+            new ReminderLogStore($resourceConnection)
         );
     }
 }

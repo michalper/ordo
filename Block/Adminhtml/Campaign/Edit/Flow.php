@@ -6,6 +6,7 @@ namespace Ordo\Automation\Block\Adminhtml\Campaign\Edit;
 use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
 use Magento\Directory\Helper\Data as DirectoryHelper;
+use Magento\Framework\Data\OptionSourceInterface;
 use Magento\Framework\Json\Helper\Data as JsonHelper;
 use Magento\Framework\Registry;
 use Ordo\Automation\Api\Data\CampaignTriggerInterface;
@@ -16,17 +17,16 @@ use Ordo\Automation\Model\Campaign\TypeLabels;
 use Ordo\Automation\Model\CampaignAction;
 use Ordo\Automation\Model\CampaignCondition;
 use Ordo\Automation\Model\CampaignTrigger;
+use Ordo\Automation\Model\Config\Source\EventType;
+use Ordo\Automation\Model\Config\Source\LoyaltyTier;
+use Ordo\Automation\Model\Config\Source\SegmentOptions;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
+use Ordo\Automation\Model\Config\Source\WhatsAppTemplateOptions;
 use Ordo\Automation\Model\ContentBlock;
-use Ordo\Automation\Model\LoyaltyTierCalculator;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as ConditionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\ContentBlock\CollectionFactory as ContentBlockCollectionFactory;
-use Ordo\Automation\Model\ResourceModel\Segment\CollectionFactory as SegmentCollectionFactory;
-use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate\CollectionFactory as WhatsAppTemplateCollectionFactory;
-use Ordo\Automation\Model\Segment;
-use Ordo\Automation\Model\WhatsAppTemplate;
 
 /**
  * Editable Drawflow (https://github.com/jerosoler/Drawflow) view of a campaign's trigger(s) →
@@ -57,9 +57,10 @@ class Flow extends Template
         private readonly ActionPool $actionPool,
         private readonly TypeLabels $typeLabels,
         private readonly ContentBlockCollectionFactory $contentBlockCollectionFactory,
-        private readonly WhatsAppTemplateCollectionFactory $whatsAppTemplateCollectionFactory,
-        private readonly SegmentCollectionFactory $segmentCollectionFactory,
-        private readonly LoyaltyTierCalculator $loyaltyTierCalculator,
+        private readonly WhatsAppTemplateOptions $whatsAppTemplateOptions,
+        private readonly SegmentOptions $segmentOptions,
+        private readonly LoyaltyTier $loyaltyTierOptions,
+        private readonly EventType $eventTypeOptions,
         array $data = [],
         ?JsonHelper $jsonHelper = null,
         ?DirectoryHelper $directoryHelper = null
@@ -175,77 +176,65 @@ class Flow extends Template
 
     /**
      * entity_id => name for every APPROVED WhatsApp template — options for the send_whatsapp
-     * action's template_id field. Only approved templates: Meta's own API rejects a send using
-     * anything else, so offering a draft/pending/rejected one here would be a guaranteed-to-fail
-     * choice (same reasoning as Model\Config\Source\WhatsAppTemplateOptions, which this
-     * duplicates rather than reuses — that class is a UI-component OptionSourceInterface, this
-     * canvas reads plain PHP arrays like getContentBlockOptions() above).
+     * action's template_id field, read from the same Source class the UI-component form uses
+     * (which also owns the "approved only" reasoning), flattened to the plain value => label
+     * map this canvas renders.
      *
-     * @return array<int, string>
+     * @return array<int|string, string>
      */
     public function getWhatsAppTemplateOptions(): array
     {
-        $collection = $this->whatsAppTemplateCollectionFactory->create();
-        $collection->addApprovedFilter();
-
-        $options = [];
-        foreach ($collection as $template) {
-            /** @var WhatsAppTemplate $template */
-            $options[(int) $template->getEntityId()] = $template->getName();
-        }
-
-        return $options;
+        return $this->toMap($this->whatsAppTemplateOptions);
     }
 
     /**
-     * entity_id => name for every segment — options for the in_segment/not_in_segment
-     * condition's segment_id field. Lists ALL segments, not just enabled ones, same reasoning as
-     * Model\Config\Source\SegmentOptions (which this duplicates rather than reuses - see
-     * getWhatsAppTemplateOptions()'s own docblock for why).
+     * entity_id => name for every segment (ALL of them, not just enabled — see the Source
+     * class) — options for the in_segment/not_in_segment condition's segment_id field.
      *
-     * @return array<int, string>
+     * @return array<int|string, string>
      */
     public function getSegmentOptions(): array
     {
-        $options = [];
-        foreach ($this->segmentCollectionFactory->create() as $segment) {
-            /** @var Segment $segment */
-            $options[(int) $segment->getEntityId()] = $segment->getName();
-        }
-
-        return $options;
+        return $this->toMap($this->segmentOptions);
     }
 
     /**
      * tier => human-readable label - options for the loyalty_tier_at_least condition's tier
-     * field. Duplicates Model\Config\Source\LoyaltyTier rather than reusing it, same reasoning
-     * as getWhatsAppTemplateOptions()'s own docblock.
+     * field.
      *
-     * @return array<string, string>
+     * @return array<int|string, string>
      */
     public function getLoyaltyTierOptions(): array
     {
-        $options = [];
-        foreach ($this->loyaltyTierCalculator->getAllTiers() as $tier) {
-            $options[$tier] = $this->loyaltyTierCalculator->getTierLabel($tier);
-        }
-
-        return $options;
+        return $this->toMap($this->loyaltyTierOptions);
     }
 
     /**
-     * event_type => human-readable label - options for the event_occurred condition's event_type
-     * field. Duplicates Model\Config\Source\EventType rather than reusing it, same reasoning as
-     * getWhatsAppTemplateOptions()'s own docblock.
+     * event_type => human-readable label - options for the event_occurred condition's
+     * event_type field.
      *
-     * @return array<string, string>
+     * @return array<int|string, string>
      */
     public function getEventTypeOptions(): array
     {
-        return [
-            'cart_add' => (string) __('Added to Cart'),
-            'wishlist_add' => (string) __('Added to Wishlist'),
-        ];
+        return $this->toMap($this->eventTypeOptions);
+    }
+
+    /**
+     * The canvas renders plain value => label maps; the admin form's Source classes return
+     * OptionSourceInterface's list-of-pairs shape. One flattener instead of each option getter
+     * re-querying what its Source class already queries.
+     *
+     * @return array<int|string, string>
+     */
+    private function toMap(OptionSourceInterface $source): array
+    {
+        $map = [];
+        foreach ($source->toOptionArray() as $option) {
+            $map[$option['value']] = (string) $option['label'];
+        }
+
+        return $map;
     }
 
     /**

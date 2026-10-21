@@ -4,8 +4,8 @@ declare(strict_types=1);
 namespace Ordo\Automation\Cron;
 
 use Magento\Framework\App\ResourceConnection;
+use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Cron\CronRunLogger;
-use Ordo\Automation\Model\ReorderCycleFactory;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle as ReorderCycleResource;
 
 /**
@@ -19,8 +19,9 @@ use Ordo\Automation\Model\ResourceModel\ReorderCycle as ReorderCycleResource;
  */
 class CalculateReorderCycle
 {
-    private const int MIN_ORDERS_TO_DETECT_PATTERN = 3;
     private const int LOOKBACK_ORDERS_PER_SKU = 10;
+
+    private const int UPSERT_BATCH_SIZE = 500;
 
     /**
      * Bounds the SQL scan itself to recent order history, not just the in-PHP slicing
@@ -37,9 +38,9 @@ class CalculateReorderCycle
 
     public function __construct(
         private readonly ResourceConnection $resourceConnection,
-        private readonly ReorderCycleFactory $reorderCycleFactory,
         private readonly ReorderCycleResource $reorderCycleResource,
-        private readonly CronRunLogger $cronRunLogger
+        private readonly CronRunLogger $cronRunLogger,
+        private readonly Config $config
     ) {
     }
 
@@ -77,18 +78,22 @@ class CalculateReorderCycle
             $ordersByCustomerSku[$key][] = $row['created_at'];
         }
 
+        // Admin-configurable (Stores → Configuration → Ordo Automation → Reorder, default 3) —
+        // this was a hardcoded constant for a while, leaving the admin field silently ignored.
+        $minOrders = max(2, $this->config->getReorderMinOrders());
+
         $processed = 0;
+        $pendingRows = [];
         foreach ($ordersByCustomerSku as $key => $dates) {
-            if (count($dates) < self::MIN_ORDERS_TO_DETECT_PATTERN) {
+            if (count($dates) < $minOrders) {
                 continue;
             }
 
             [$customerId, $sku] = explode('|', $key, 2);
             $dates = array_slice($dates, -self::LOOKBACK_ORDERS_PER_SKU);
 
-            // $dates always has >= MIN_ORDERS_TO_DETECT_PATTERN (3) entries here (checked
-            // above), so this loop always runs at least twice and $intervals is never empty —
-            // no empty-guard needed.
+            // $dates always has >= $minOrders (>= 2, clamped above) entries here, so this loop
+            // always runs at least once and $intervals is never empty — no empty-guard needed.
             $intervals = [];
             for ($i = 1, $count = count($dates); $i < $count; $i++) {
                 $intervals[] = ((int) strtotime($dates[$i]) - (int) strtotime($dates[$i - 1])) / 86400;
@@ -118,16 +123,22 @@ class CalculateReorderCycle
             $lastOrderDate = (string) end($dates);
             $nextExpectedDate = date('Y-m-d', (int) strtotime($lastOrderDate . ' + ' . $avgIntervalDays . ' days'));
 
-            $this->upsertCycle(
-                (int) $customerId,
-                $sku,
-                $avgIntervalDays,
-                $lastOrderDate,
-                $nextExpectedDate,
-                count($dates)
-            );
+            $pendingRows[] = [
+                'customer_id' => (int) $customerId,
+                'sku' => $sku,
+                'avg_interval_days' => $avgIntervalDays,
+                'last_order_date' => date('Y-m-d', (int) strtotime($lastOrderDate)),
+                'next_expected_date' => $nextExpectedDate,
+                'orders_considered' => count($dates),
+            ];
             $processed++;
+
+            if (count($pendingRows) >= self::UPSERT_BATCH_SIZE) {
+                $this->flushCycles($pendingRows);
+                $pendingRows = [];
+            }
         }
+        $this->flushCycles($pendingRows);
 
         $this->cronRunLogger->logSummary(sprintf('recalculated %d reorder cycles', $processed));
 
@@ -139,44 +150,24 @@ class CalculateReorderCycle
         return date('Y-m-d H:i:s', strtotime('-' . self::MAX_LOOKBACK_DAYS . ' days'));
     }
 
-    private function upsertCycle(
-        int $customerId,
-        string $sku,
-        int $avgIntervalDays,
-        string $lastOrderDate,
-        string $nextExpectedDate,
-        int $ordersConsidered
-    ): void {
-        // ResourceConnection::getConnection() (unlike a ResourceModel's own getConnection())
-        // is typed AdapterInterface, never AdapterInterface|false — same underlying connection
-        // in practice, just a narrower, accurate signature.
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->reorderCycleResource->getMainTable();
+    /**
+     * One multi-row INSERT ... ON DUPLICATE KEY UPDATE per batch against the
+     * (customer_id, sku) unique key, instead of the previous SELECT-id + load() + save()
+     * triple per row — same approach ResourceModel\Campaign\ScheduledTriggerState::markFired()
+     * already uses.
+     *
+     * @param array<int, array<string, int|string>> $rows
+     */
+    private function flushCycles(array $rows): void
+    {
+        if ($rows === []) {
+            return;
+        }
 
-        $existingId = $connection->fetchOne(
-            $connection->select()
-                ->from($table, 'entity_id')
-                ->where('customer_id = ?', $customerId)
-                ->where('sku = ?', $sku)
+        $this->resourceConnection->getConnection()->insertOnDuplicate(
+            $this->reorderCycleResource->getMainTable(),
+            $rows,
+            ['avg_interval_days', 'last_order_date', 'next_expected_date', 'orders_considered']
         );
-
-        $model = $existingId
-            ? $this->reorderCycleFactory->create()->load((int) $existingId)
-            : $this->reorderCycleFactory->create();
-
-        // addData(), not setData() - setData() replaces the model's entire data array,
-        // including the entity_id load() above just populated, which makes AbstractDb::save()
-        // treat an existing row as new and attempt a duplicate INSERT (unique key on
-        // customer_id+sku) instead of an UPDATE.
-        $model->addData([
-            'customer_id' => $customerId,
-            'sku' => $sku,
-            'avg_interval_days' => $avgIntervalDays,
-            'last_order_date' => date('Y-m-d', (int) strtotime($lastOrderDate)),
-            'next_expected_date' => $nextExpectedDate,
-            'orders_considered' => $ordersConsidered,
-        ]);
-
-        $this->reorderCycleResource->save($model);
     }
 }

@@ -3,97 +3,85 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Cron;
 
+use Magento\Framework\Model\AbstractModel;
 use Ordo\Automation\Model\Campaign\ActionRetryQueue;
 use Ordo\Automation\Model\CampaignActionRetry;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\Cron\CronRunLogger;
 use Ordo\Automation\Model\ResourceModel\CampaignActionRetry as CampaignActionRetryResource;
 use Ordo\Automation\Model\ResourceModel\CampaignActionRetry\CollectionFactory as CampaignActionRetryCollectionFactory;
+use Ordo\Automation\Model\RetryRecordInterface;
 
 /**
  * Re-attempts every ordo_campaign_action_retry row due for another try (see
  * etc/db_schema.xml's own comment and Model\Campaign\ActionRetryQueue, which creates these rows
- * in the first place from Cron\RunScheduledCampaignActions' own failures).
+ * in the first place from Cron\RunScheduledCampaignActions' own failures). The claim/attempt/
+ * reschedule/dead-letter loop itself lives in AbstractRetryFailedCron; an attempt here means
+ * resuming the scheduled action through CampaignDispatcher.
  *
- * A due row is claimed the same way ordo_campaign_scheduled_action rows are — a single atomic
- * conditional UPDATE (ResourceModel\CampaignActionRetry::claim()) — except here the claim itself
- * is "bump next_retry_at forward", not "set an executed_at that's never touched again", since a
- * row here is expected to be attempted more than once. On success the row is deleted outright
- * (there's nothing further to track); on another failure, attempts is incremented and
- * next_retry_at corrected to the real backoff delay; once attempts reaches MAX_ATTEMPTS the row
- * is left in place — Collection::addDueFilter() excludes it from future selection, so it becomes
- * a permanent dead letter for manual investigation rather than being retried forever.
+ * @extends AbstractRetryFailedCron<CampaignActionRetry>
  */
-class RetryFailedCampaignActions
+class RetryFailedCampaignActions extends AbstractRetryFailedCron
 {
     public const int MAX_ATTEMPTS = 5;
 
     public function __construct(
         private readonly CampaignActionRetryCollectionFactory $campaignActionRetryCollectionFactory,
-        private readonly CampaignActionRetryResource $campaignActionRetryResource,
+        CampaignActionRetryResource $campaignActionRetryResource,
         private readonly CampaignDispatcher $campaignDispatcher,
         private readonly ActionRetryQueue $actionRetryQueue,
-        private readonly CronRunLogger $cronRunLogger
+        CronRunLogger $cronRunLogger
     ) {
+        parent::__construct($campaignActionRetryResource, $cronRunLogger);
     }
 
-    public function execute(): void
+    protected function dueRetries(string $now): iterable
     {
-        $now = date('Y-m-d H:i:s');
-
         $due = $this->campaignActionRetryCollectionFactory->create();
         $due->addDueFilter($now, self::MAX_ATTEMPTS);
 
-        $succeeded = 0;
-        $exhausted = 0;
-        foreach ($due as $retry) {
-            /** @var CampaignActionRetry $retry */
-            $this->retryOne($retry, $now, $succeeded, $exhausted);
-        }
-
-        $this->cronRunLogger->logSummary(sprintf(
-            'retried %d campaign action(s), %d exhausted their retry budget',
-            $succeeded,
-            $exhausted
-        ));
+        /** @var iterable<CampaignActionRetry> $due */
+        return $due;
     }
 
-    private function retryOne(CampaignActionRetry $retry, string $now, int &$succeeded, int &$exhausted): void
+    protected function nextRetryAt(int $attemptNumber): string
     {
-        $attemptNumber = $retry->getAttempts() + 1;
-        $tentativeNextRetryAt = $this->actionRetryQueue->nextRetryAt($attemptNumber);
+        return $this->actionRetryQueue->nextRetryAt($attemptNumber);
+    }
 
-        if (!$this->campaignActionRetryResource->claim($retry, $now, $tentativeNextRetryAt)) {
-            // Lost the race to another overlapping cron run - it already claimed this row.
-            return;
-        }
+    /**
+     * @param CampaignActionRetry $retry
+     */
+    protected function attempt(AbstractModel&RetryRecordInterface $retry): RetryAttemptOutcome
+    {
+        $this->campaignDispatcher->resumeScheduledAction(
+            $retry->getCampaignId(),
+            $retry->getResumeActionId(),
+            $retry->getContext()
+        );
 
-        try {
-            $this->campaignDispatcher->resumeScheduledAction(
-                $retry->getCampaignId(),
-                $retry->getResumeActionId(),
-                $retry->getContext()
-            );
-            $this->campaignActionRetryResource->delete($retry);
-            $succeeded++;
-        } catch (\Throwable $e) {
-            $retry->setAttempts($attemptNumber);
-            $retry->setLastError($e->getMessage());
-            $retry->setNextRetryAt($tentativeNextRetryAt);
-            $this->campaignActionRetryResource->save($retry);
+        return RetryAttemptOutcome::Sent;
+    }
 
-            $this->cronRunLogger->logFailure(
-                sprintf(
-                    'retry campaign action resume for campaign #%d (attempt %d)',
-                    $retry->getCampaignId(),
-                    $attemptNumber
-                ),
-                $e
-            );
+    /**
+     * @param CampaignActionRetry $retry
+     */
+    protected function failureLabel(AbstractModel&RetryRecordInterface $retry, int $attemptNumber): string
+    {
+        return sprintf(
+            'retry campaign action resume for campaign #%d (attempt %d)',
+            $retry->getCampaignId(),
+            $attemptNumber
+        );
+    }
 
-            if ($attemptNumber >= self::MAX_ATTEMPTS) {
-                $exhausted++;
-            }
-        }
+    protected function maxAttempts(): int
+    {
+        return self::MAX_ATTEMPTS;
+    }
+
+    protected function subjectLabel(): string
+    {
+        return 'campaign action(s)';
     }
 }

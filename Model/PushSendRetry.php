@@ -13,7 +13,7 @@ use Ordo\Automation\Model\ResourceModel\PushSendRetry as PushSendRetryResource;
  * how these are created, claimed and eventually resolved. Internal implementation detail, same
  * "not a first-class thing to author" reasoning as MessageSendRetry.
  */
-class PushSendRetry extends AbstractModel
+class PushSendRetry extends AbstractModel implements RetryRecordInterface
 {
     use RetryRecordFieldsTrait;
 

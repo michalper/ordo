@@ -9,10 +9,10 @@
     </argument>
     <settings>
         <buttons>
-            <button name="back" class="Ordo\Automation\Block\Adminhtml\ScoreRule\Edit\BackButton"/>
-            <button name="delete" class="Ordo\Automation\Block\Adminhtml\ScoreRule\Edit\DeleteButton"/>
-            <button name="save" class="Ordo\Automation\Block\Adminhtml\ScoreRule\Edit\SaveButton"/>
-            <button name="save_and_continue" class="Ordo\Automation\Block\Adminhtml\ScoreRule\Edit\SaveAndContinueButton"/>
+            <button name="back" class="Ordo\Automation\Block\Adminhtml\Shared\Edit\BackButton"/>
+            <button name="delete" class="OrdoAutomationScoreRuleDeleteButton"/>
+            <button name="save" class="OrdoAutomationScoreRuleSaveButton"/>
+            <button name="save_and_continue" class="OrdoAutomationScoreRuleSaveAndContinueButton"/>
         </buttons>
         <namespace>ordo_scorerule_form</namespace>
         <dataScope>data</dataScope>

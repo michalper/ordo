@@ -52,6 +52,12 @@ class RunScheduledCampaignActions
     {
         $now = date('Y-m-d H:i:s');
 
+        // One lookup memo shared across every row and batch of THIS run (see
+        // CampaignDispatcher::resumeScheduledAction()) - 10k rows of one delayed broadcast repeat
+        // the same campaign-enabled/resume-row/action-list lookups otherwise. A local, not an
+        // instance property, so nothing accumulates across runs of a long-lived process.
+        $lookupMemo = [];
+
         for ($batch = 0; $batch < self::MAX_BATCHES; $batch++) {
             $due = $this->campaignScheduledActionCollectionFactory->create();
             $due->addDueFilter($now);
@@ -62,7 +68,7 @@ class RunScheduledCampaignActions
             foreach ($due as $scheduled) {
                 /** @var CampaignScheduledAction $scheduled */
                 $rowCount++;
-                $this->resumeOne($scheduled);
+                $this->resumeOne($scheduled, $lookupMemo);
             }
 
             // Claiming (setExecutedAt) moves rows out of the "due" filter, so re-querying page 1
@@ -81,7 +87,10 @@ class RunScheduledCampaignActions
         ));
     }
 
-    private function resumeOne(CampaignScheduledAction $scheduled): void
+    /**
+     * @param array<string, mixed> $lookupMemo
+     */
+    private function resumeOne(CampaignScheduledAction $scheduled, array &$lookupMemo): void
     {
         if (!$this->campaignScheduledActionResource->claim($scheduled, date('Y-m-d H:i:s'))) {
             // Lost the race to another overlapping cron run - it already claimed this row and
@@ -93,7 +102,8 @@ class RunScheduledCampaignActions
             $this->campaignDispatcher->resumeScheduledAction(
                 $scheduled->getCampaignId(),
                 $scheduled->getResumeActionId(),
-                $scheduled->getContext()
+                $scheduled->getContext(),
+                $lookupMemo
             );
         } catch (\Throwable $e) {
             $this->cronRunLogger->logFailure(

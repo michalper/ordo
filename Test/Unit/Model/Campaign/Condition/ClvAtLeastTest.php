@@ -48,4 +48,19 @@ class ClvAtLeastTest extends TestCase
 
         self::assertFalse($this->condition->isSatisfied(['customer_id' => 42], []));
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResolveCustomerIdsFiltersInclusivelyOnTheCachedScores(): void
+    {
+        $this->clvCalculator->method('getClvScores')->willReturn([1 => 6000.0, 2 => 4999.99, 3 => 5000.0]);
+
+        self::assertSame([1, 3], $this->condition->resolveCustomerIds(['amount' => '5000']));
+    }
+
+    public function testResolveCustomerIdsFailsClosedOnNonNumericAmount(): void
+    {
+        $this->clvCalculator->expects(self::never())->method('getClvScores');
+
+        self::assertSame([], $this->condition->resolveCustomerIds(['amount' => 'lots']));
+    }
 }

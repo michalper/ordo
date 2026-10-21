@@ -87,8 +87,8 @@ class SendAbandonedCartFallbackRemindersTest extends TestCase
         $connection->expects(self::once())->method('update')->with(
             'ordo_abandoned_cart_reminder_log',
             self::callback(static fn (array $data): bool => array_key_exists('fallback_sent_at', $data)),
-            self::anything()
-        );
+            self::stringContains('fallback_sent_at IS NULL')
+        )->willReturn(1);
 
         $sendSms = $this->createMock(SendSms::class);
         $sendSms->expects(self::once())->method('execute')->with(
@@ -129,6 +129,7 @@ class SendAbandonedCartFallbackRemindersTest extends TestCase
                 'subtotal' => 150.0,
             ],
         ]);
+        $connection->method('update')->willReturn(1);
 
         $sendSms = $this->createMock(SendSms::class);
         $sendSms->expects(self::never())->method('execute');
@@ -168,6 +169,7 @@ class SendAbandonedCartFallbackRemindersTest extends TestCase
                 'subtotal' => 150.0,
             ],
         ]);
+        $connection->method('update')->willReturn(1);
 
         $sendSms = $this->createMock(SendSms::class);
         $sendSms->expects(self::never())->method('execute');
@@ -185,6 +187,46 @@ class SendAbandonedCartFallbackRemindersTest extends TestCase
             $sendSms,
             $sendWhatsApp,
             $this->makeCronRunLogger($this->createStub(LoggerInterface::class))
+        );
+
+        $cron->execute();
+    }
+
+    /**
+     * Regression: the claim UPDATE is conditional (... AND fallback_sent_at IS NULL) - a
+     * concurrent overlapping run that already claimed this reminder reports 0 affected rows
+     * here, and this run must not send a second fallback for it.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteDoesNotSendWhenAnotherProcessAlreadyClaimedTheFallback(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            [
+                'log_entity_id' => 42,
+                'customer_id' => 5,
+                'customer_email' => 'jan@example.com',
+                'customer_firstname' => 'Jan',
+                'subtotal' => 150.0,
+            ],
+        ]);
+        $connection->method('update')->willReturn(0);
+
+        $sendSms = $this->createMock(SendSms::class);
+        $sendSms->expects(self::never())->method('execute');
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('info')->with(
+            self::stringContains('attempted 0 cross-channel abandoned-cart fallback(s)')
+        );
+
+        $cron = new SendAbandonedCartFallbackReminders(
+            $this->makeConfig(enabled: true),
+            $this->makeResourceConnection($connection),
+            $sendSms,
+            $this->createStub(SendWhatsApp::class),
+            $this->makeCronRunLogger($logger)
         );
 
         $cron->execute();

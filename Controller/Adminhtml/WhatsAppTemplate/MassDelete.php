@@ -5,9 +5,12 @@ namespace Ordo\Automation\Controller\Adminhtml\WhatsAppTemplate;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Ui\Component\MassAction\Filter;
+use Ordo\Automation\Controller\Adminhtml\Shared\RunsMassActionTrait;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate as WhatsAppTemplateResource;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate\CollectionFactory as WhatsAppTemplateCollectionFactory;
+use Ordo\Automation\Model\WhatsAppTemplate;
 
 /**
  * Grid mass-delete counterpart to the single-row delete already available from this grid's
@@ -25,6 +28,8 @@ use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate\CollectionFactory as Wh
  */
 class MassDelete extends AbstractWhatsAppTemplateAction implements HttpPostActionInterface
 {
+    use RunsMassActionTrait;
+
     public function __construct(
         Context $context,
         private readonly Filter $filter,
@@ -34,20 +39,19 @@ class MassDelete extends AbstractWhatsAppTemplateAction implements HttpPostActio
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function getMassActionCollection(): iterable
     {
-        $resultRedirect = $this->resultRedirectFactory->create();
-        $collection = $this->filter->getCollection($this->whatsAppTemplateCollectionFactory->create());
+        return $this->filter->getCollection($this->whatsAppTemplateCollectionFactory->create());
+    }
 
-        $count = 0;
-        foreach ($collection as $template) {
-            /** @var \Ordo\Automation\Model\WhatsAppTemplate $template */
-            $this->whatsAppTemplateResource->delete($template);
-            $count++;
-        }
+    protected function applyToEntity(object $entity): void
+    {
+        /** @var WhatsAppTemplate $entity */
+        $this->whatsAppTemplateResource->delete($entity);
+    }
 
-        $this->messageManager->addSuccessMessage(__('A total of %1 WhatsApp template(s) have been deleted.', $count));
-
-        return $resultRedirect->setPath('*/*/');
+    protected function getMassActionSuccessMessage(int $count): Phrase
+    {
+        return __('A total of %1 WhatsApp template(s) have been deleted.', $count);
     }
 }

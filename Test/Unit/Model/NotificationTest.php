@@ -76,6 +76,40 @@ class NotificationTest extends AbstractModelTestCase
         self::assertSame('2026-01-01 00:00:00', $model->getReadAt());
     }
 
+    public function testBelongsToMatchesOnCustomerId(): void
+    {
+        $model = $this->makeModel();
+        $model->setCustomerId(42);
+
+        self::assertTrue($model->belongsTo(42, ''));
+        self::assertFalse($model->belongsTo(43, ''));
+    }
+
+    public function testBelongsToMatchesOnVisitorId(): void
+    {
+        $model = $this->makeModel();
+        $model->setVisitorId('v1');
+
+        self::assertTrue($model->belongsTo(null, 'v1'));
+        self::assertFalse($model->belongsTo(null, 'someone-elses-visitor-id'));
+    }
+
+    public function testBelongsToNeverMatchesEmptyVisitorIdAgainstNullColumn(): void
+    {
+        $model = $this->makeModel();
+
+        self::assertFalse($model->belongsTo(null, ''));
+    }
+
+    public function testBelongsToFallsBackToVisitorIdWhenCustomerIdDiffers(): void
+    {
+        $model = $this->makeModel();
+        $model->setCustomerId(99);
+        $model->setVisitorId('v1');
+
+        self::assertTrue($model->belongsTo(42, 'v1'));
+    }
+
     public function testExpiresAtCanBeSet(): void
     {
         $model = $this->makeModel();

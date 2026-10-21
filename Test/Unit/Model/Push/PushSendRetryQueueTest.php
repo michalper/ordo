@@ -7,6 +7,7 @@ use Ordo\Automation\Model\Push\PushSendRetryQueue;
 use Ordo\Automation\Model\PushSendRetry;
 use Ordo\Automation\Model\PushSendRetryFactory;
 use Ordo\Automation\Model\ResourceModel\PushSendRetry as PushSendRetryResource;
+use Ordo\Automation\Model\Retry\RetryBackoff;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -31,7 +32,12 @@ class PushSendRetryQueueTest extends TestCase
         $resource = $this->createMock(PushSendRetryResource::class);
         $resource->expects(self::once())->method('save')->with($retry);
 
-        $queue = new PushSendRetryQueue($factory, $resource, $this->createStub(LoggerInterface::class));
+        $queue = new PushSendRetryQueue(
+            $factory,
+            $resource,
+            $this->createStub(LoggerInterface::class),
+            new RetryBackoff()
+        );
         $queue->enqueue(9, 42, 7, 'b', '{"title":"Hi"}', new \RuntimeException('boom'));
     }
 
@@ -44,7 +50,7 @@ class PushSendRetryQueueTest extends TestCase
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('error');
 
-        $queue = new PushSendRetryQueue($factory, $resource, $logger);
+        $queue = new PushSendRetryQueue($factory, $resource, $logger, new RetryBackoff());
 
         // Must not throw - a failure enqueuing the retry can't be allowed to crash the calling
         // PushSubscriptionSender.
@@ -55,7 +61,12 @@ class PushSendRetryQueueTest extends TestCase
     {
         $factory = $this->createStub(PushSendRetryFactory::class);
         $resource = $this->createStub(PushSendRetryResource::class);
-        $queue = new PushSendRetryQueue($factory, $resource, $this->createStub(LoggerInterface::class));
+        $queue = new PushSendRetryQueue(
+            $factory,
+            $resource,
+            $this->createStub(LoggerInterface::class),
+            new RetryBackoff()
+        );
 
         $attempt1 = strtotime($queue->nextRetryAt(1));
         $attempt2 = strtotime($queue->nextRetryAt(2));

@@ -68,57 +68,6 @@ class ClvCalculator
     ) {
     }
 
-    /**
-     * Average grand_total across the customer's non-canceled orders, or 0.0 with no orders.
-     */
-    public function getAverageOrderValue(int $customerId): float
-    {
-        $connection = $this->resourceConnection->getConnection();
-        $orderTable = $this->resourceConnection->getTableName('sales_order');
-
-        $row = $connection->fetchRow(
-            $connection->select()
-                ->from($orderTable, [
-                    'frequency' => 'COUNT(*)',
-                    'monetary' => 'SUM(grand_total)',
-                ])
-                ->where('customer_id = ?', $customerId)
-                ->where('state != ?', 'canceled')
-        );
-        /** @var array<string, mixed> $row */
-
-        $frequency = (int) ($row['frequency'] ?? 0);
-        if ($frequency === 0) {
-            return 0.0;
-        }
-
-        return (float) $row['monetary'] / $frequency;
-    }
-
-    /**
-     * Years since the customer's first non-canceled order, floored at getClvMinTenureMonths() so
-     * a very new customer's annualized frequency isn't inflated by a near-zero denominator. Null
-     * with no orders at all.
-     */
-    public function getTenureYears(int $customerId): ?float
-    {
-        $connection = $this->resourceConnection->getConnection();
-        $orderTable = $this->resourceConnection->getTableName('sales_order');
-
-        $firstOrderAt = $connection->fetchOne(
-            $connection->select()
-                ->from($orderTable, 'MIN(created_at)')
-                ->where('customer_id = ?', $customerId)
-                ->where('state != ?', 'canceled')
-        );
-
-        if (!$firstOrderAt) {
-            return null;
-        }
-
-        return $this->tenureYearsFromFirstOrderAt((string) $firstOrderAt);
-    }
-
     private function tenureYearsFromFirstOrderAt(string $firstOrderAt): float
     {
         $days = ($this->dateTime->gmtTimestamp() - strtotime($firstOrderAt)) / 86400;
@@ -156,9 +105,18 @@ class ClvCalculator
             return 0.0;
         }
 
-        $averageOrderValue = (float) $row['monetary'] / $frequency;
-        $tenureYears = $this->tenureYearsFromFirstOrderAt((string) $row['first_order_at']);
-        $annualFrequency = $frequency / $tenureYears;
+        return $this->projectClv($frequency, (float) $row['monetary'], (string) $row['first_order_at']);
+    }
+
+    /**
+     * The one CLV formula (class docblock): average order value x annualized purchase
+     * frequency x the configured projection window — shared by the single-customer and
+     * whole-base paths so the two can never drift apart.
+     */
+    private function projectClv(int $frequency, float $monetary, string $firstOrderAt): float
+    {
+        $averageOrderValue = $monetary / $frequency;
+        $annualFrequency = $frequency / $this->tenureYearsFromFirstOrderAt($firstOrderAt);
 
         return $averageOrderValue * $annualFrequency * $this->config->getClvProjectionYears();
     }
@@ -177,7 +135,6 @@ class ClvCalculator
 
         $scores = [];
         $offset = 0;
-        $projectionYears = $this->config->getClvProjectionYears();
 
         do {
             $rows = $connection->fetchAll(
@@ -197,20 +154,14 @@ class ClvCalculator
 
             /** @var array<string, mixed> $row */
             foreach ($rows as $row) {
-                $customerId = (int) $row['customer_id'];
-                $frequency = (int) $row['frequency'];
-                $firstOrderAt = $row['first_order_at'] ?? null;
-
-                if ($frequency === 0 || !$firstOrderAt) {
-                    $scores[$customerId] = 0.0;
-                    continue;
-                }
-
-                $averageOrderValue = (float) $row['monetary'] / $frequency;
-                $tenureYears = $this->tenureYearsFromFirstOrderAt((string) $firstOrderAt);
-                $annualFrequency = $frequency / $tenureYears;
-
-                $scores[$customerId] = $averageOrderValue * $annualFrequency * $projectionYears;
+                // frequency (COUNT(*) per group) is always >= 1 and first_order_at
+                // (MIN(created_at), a NOT NULL column) always set here — no zero-guard needed,
+                // unlike getProjectedClv()'s single-customer query, which CAN come back empty.
+                $scores[(int) $row['customer_id']] = $this->projectClv(
+                    (int) $row['frequency'],
+                    (float) $row['monetary'],
+                    (string) $row['first_order_at']
+                );
             }
 
             $offset += self::SCAN_PAGE_SIZE;
@@ -330,17 +281,6 @@ class ClvCalculator
         $table = $this->resourceConnection->getTableName('ordo_customer_clv_score');
 
         return (int) $connection->delete($table, ['customer_id IN (?)' => $customerIds]);
-    }
-
-    /**
-     * Projected CLV for one customer, read from the cached/stored scores. Null when the
-     * customer has no stored (or, with an empty table, no computable) score.
-     */
-    public function getClvScore(int $customerId): ?float
-    {
-        $scores = $this->getClvScores();
-
-        return $scores[$customerId] ?? null;
     }
 
     /**

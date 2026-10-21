@@ -36,24 +36,31 @@ class TrimExcessFreeGifts implements ObserverInterface
     {
         /** @var Quote $quote */
         $quote = $observer->getEvent()->getData('quote');
-        if (!$quote->getId()) {
+        $quoteId = (int) $quote->getId();
+        if (!$quoteId) {
             return;
         }
 
-        $giftRows = $this->giftItemCollectionFactory->create()->addQuoteFilter((int) $quote->getId());
-        if ($giftRows->getSize() === 0) {
+        // One SELECT per firing (count the loaded rows in PHP) instead of the old COUNT +
+        // SELECT pair — the rows are needed anyway whenever there's something to trim.
+        // Deliberately NOT memoized per quote: FreeGiftManagement adds gift rows outside this
+        // observer within the same request, so a remembered "zero gift rows" goes stale the
+        // moment a gift is selected and a later subtotal drop would never trim it (caught by
+        // FreeGiftManagementScenarioTest against a real quote).
+        $giftRows = $this->giftItemCollectionFactory->create()->addQuoteFilter($quoteId);
+        $rows = array_values($giftRows->getItems());
+        if ($rows === []) {
             return;
         }
 
         $earned = $this->config->isFreeGiftEnabled((int) $quote->getStoreId())
             ? $this->earnedSlots($this->currentSubtotal($quote))
             : 0;
-        $excess = $giftRows->getSize() - $earned;
+        $excess = count($rows) - $earned;
         if ($excess <= 0) {
             return;
         }
 
-        $rows = array_values($giftRows->getItems());
         for ($i = 0; $i < $excess; $i++) {
             $row = $rows[count($rows) - 1 - $i];
             try {

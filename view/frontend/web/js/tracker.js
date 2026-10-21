@@ -10,7 +10,7 @@
  * theme to call window.ordoTrack(eventType, eventKey) on PDP/PLP templates — there is no
  * automatic page-type detection here, since that varies by theme.
  *
- * Also runs this module's first-ever poll loop (see startPopupPolling below) when the
+ * Also runs this module's first-ever poll loop (see startPolling below) when the
  * "tracking > popup_enabled" config is on: a campaign's "Show Popup" action has no way to push
  * anything onto an already-open page, so the only way for "the moment a threshold is crossed, a
  * banner appears" to actually happen live is the browser periodically asking the server "is
@@ -83,6 +83,75 @@
     }
 
     /**
+     * The one close/dismiss "×" button used by every widget this file renders — same glyph and
+     * style everywhere, only the accessible label and the click behavior differ per widget.
+     */
+    function createCloseButton(ariaLabel, onClick) {
+        var close = document.createElement('button');
+        close.textContent = '×';
+        close.setAttribute('aria-label', ariaLabel);
+        close.setAttribute(
+            'style',
+            'position:absolute;top:6px;right:8px;border:none;background:none;font-size:18px;' +
+            'line-height:1;cursor:pointer;color:#666;'
+        );
+        close.onclick = onClick;
+        return close;
+    }
+
+    /**
+     * The one poll loop used by popup, notifications and survey — they differ only in which
+     * data-* attributes gate/tune them, which endpoint they ask, which response key carries the
+     * payload, and how it's rendered.
+     *
+     * Visibility-aware: a tick in a hidden tab returns early instead of fetching — nobody can see
+     * what it would render, and backgrounded tabs shouldn't keep hitting the server. The interval
+     * itself is never cleared, so polling resumes by itself on the next tick once the tab is
+     * visible again (guarded for ancient browsers with no Page Visibility API, matching this
+     * file's defensive style — those just keep polling unconditionally, the pre-existing behavior).
+     *
+     * @param {String} attrPrefix e.g. 'popup' → data-popup-enabled / data-popup-poll-interval
+     * @param {Number} defaultIntervalSeconds used when the interval attribute is missing/invalid
+     * @param {String} endpoint polled with ?visitor_id=...
+     * @param {String} responseKey the response-JSON key carrying the payload, falsy = nothing to show
+     * @param {Function} render called with the payload under responseKey
+     */
+    function startPolling(attrPrefix, defaultIntervalSeconds, endpoint, responseKey, render) {
+        if (!currentScript || currentScript.getAttribute('data-' + attrPrefix + '-enabled') !== '1') {
+            return;
+        }
+
+        var intervalSeconds = parseInt(currentScript.getAttribute('data-' + attrPrefix + '-poll-interval'), 10);
+        if (!intervalSeconds || intervalSeconds <= 0) {
+            intervalSeconds = defaultIntervalSeconds;
+        }
+
+        function poll() {
+            if (typeof document.hidden !== 'undefined' && document.hidden) {
+                return;
+            }
+
+            var url = endpoint + '?visitor_id=' + encodeURIComponent(getVisitorId());
+
+            fetch(url, { credentials: 'same-origin' })
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (data) {
+                    if (data && data[responseKey]) {
+                        render(data[responseKey]);
+                    }
+                })
+                .catch(function () {});
+        }
+
+        // Poll once shortly after load (not instantly — let the page settle) rather than waiting
+        // a full interval for the first check.
+        setTimeout(poll, 2000);
+        setInterval(poll, intervalSeconds * 1000);
+    }
+
+    /**
      * Minimal, dependency-free banner injection — no template engine, matching the rest of this
      * file. Only one banner shown at a time: if a poll returns a new popup while one is already
      * on screen, the old one is replaced rather than stacking.
@@ -126,51 +195,11 @@
             banner.appendChild(cta);
         }
 
-        var close = document.createElement('button');
-        close.textContent = '×';
-        close.setAttribute('aria-label', 'Close');
-        close.setAttribute(
-            'style',
-            'position:absolute;top:6px;right:8px;border:none;background:none;font-size:18px;' +
-            'line-height:1;cursor:pointer;color:#666;'
-        );
-        close.onclick = function () {
+        banner.appendChild(createCloseButton('Close', function () {
             banner.parentNode.removeChild(banner);
-        };
-        banner.appendChild(close);
+        }));
 
         document.body.appendChild(banner);
-    }
-
-    function pollForPopup() {
-        var url = POPUP_ENDPOINT + '?visitor_id=' + encodeURIComponent(getVisitorId());
-
-        fetch(url, { credentials: 'same-origin' })
-            .then(function (response) {
-                return response.json();
-            })
-            .then(function (data) {
-                if (data && data.popup) {
-                    renderPopup(data.popup);
-                }
-            })
-            .catch(function () {});
-    }
-
-    function startPopupPolling() {
-        if (!currentScript || currentScript.getAttribute('data-popup-enabled') !== '1') {
-            return;
-        }
-
-        var intervalSeconds = parseInt(currentScript.getAttribute('data-popup-poll-interval'), 10);
-        if (!intervalSeconds || intervalSeconds <= 0) {
-            intervalSeconds = 15;
-        }
-
-        // Poll once shortly after load (not instantly — let the page settle) rather than waiting
-        // a full interval for the first check.
-        setTimeout(pollForPopup, 2000);
-        setInterval(pollForPopup, intervalSeconds * 1000);
     }
 
     function getNotificationList() {
@@ -256,18 +285,9 @@
                 card.appendChild(cta);
             }
 
-            var close = document.createElement('button');
-            close.textContent = '×';
-            close.setAttribute('aria-label', 'Dismiss');
-            close.setAttribute(
-                'style',
-                'position:absolute;top:6px;right:8px;border:none;background:none;font-size:18px;' +
-                'line-height:1;cursor:pointer;color:#666;'
-            );
-            close.onclick = function () {
+            card.appendChild(createCloseButton('Dismiss', function () {
                 dismissNotification(notification.id, card);
-            };
-            card.appendChild(close);
+            }));
 
             list.appendChild(card);
         });
@@ -278,35 +298,6 @@
                 child.parentNode.removeChild(child);
             }
         });
-    }
-
-    function pollForNotifications() {
-        var url = NOTIFICATION_ENDPOINT + '?visitor_id=' + encodeURIComponent(getVisitorId());
-
-        fetch(url, { credentials: 'same-origin' })
-            .then(function (response) {
-                return response.json();
-            })
-            .then(function (data) {
-                if (data && data.notifications) {
-                    renderNotifications(data.notifications);
-                }
-            })
-            .catch(function () {});
-    }
-
-    function startNotificationPolling() {
-        if (!currentScript || currentScript.getAttribute('data-notification-enabled') !== '1') {
-            return;
-        }
-
-        var intervalSeconds = parseInt(currentScript.getAttribute('data-notification-poll-interval'), 10);
-        if (!intervalSeconds || intervalSeconds <= 0) {
-            intervalSeconds = 20;
-        }
-
-        setTimeout(pollForNotifications, 2000);
-        setInterval(pollForNotifications, intervalSeconds * 1000);
     }
 
     function submitSurveyResponse(surveyId, score, el) {
@@ -368,52 +359,14 @@
         }
         widget.appendChild(buttons);
 
-        var close = document.createElement('button');
-        close.textContent = '×';
-        close.setAttribute('aria-label', 'Close');
-        close.setAttribute(
-            'style',
-            'position:absolute;top:6px;right:8px;border:none;background:none;font-size:18px;' +
-            'line-height:1;cursor:pointer;color:#666;'
-        );
         // Closing without answering just hides it locally — the row stays delivered-unanswered
         // server-side and is swept up later by Cron\PruneSurveyPrompts, same as an ignored popup
         // is never re-shown.
-        close.onclick = function () {
+        widget.appendChild(createCloseButton('Close', function () {
             widget.parentNode.removeChild(widget);
-        };
-        widget.appendChild(close);
+        }));
 
         document.body.appendChild(widget);
-    }
-
-    function pollForSurvey() {
-        var url = SURVEY_ENDPOINT + '?visitor_id=' + encodeURIComponent(getVisitorId());
-
-        fetch(url, { credentials: 'same-origin' })
-            .then(function (response) {
-                return response.json();
-            })
-            .then(function (data) {
-                if (data && data.survey) {
-                    renderSurvey(data.survey);
-                }
-            })
-            .catch(function () {});
-    }
-
-    function startSurveyPolling() {
-        if (!currentScript || currentScript.getAttribute('data-nps-survey-enabled') !== '1') {
-            return;
-        }
-
-        var intervalSeconds = parseInt(currentScript.getAttribute('data-nps-survey-poll-interval'), 10);
-        if (!intervalSeconds || intervalSeconds <= 0) {
-            intervalSeconds = 25;
-        }
-
-        setTimeout(pollForSurvey, 2000);
-        setInterval(pollForSurvey, intervalSeconds * 1000);
     }
 
     function urlBase64ToUint8Array(base64Url) {
@@ -525,7 +478,7 @@
     window.ordoSubscribeToPush = subscribeToPush;
     window.ordoSubscribeToPriceWatch = subscribeToPriceWatch;
     track('page_view');
-    startPopupPolling();
-    startNotificationPolling();
-    startSurveyPolling();
+    startPolling('popup', 15, POPUP_ENDPOINT, 'popup', renderPopup);
+    startPolling('notification', 20, NOTIFICATION_ENDPOINT, 'notifications', renderNotifications);
+    startPolling('nps-survey', 25, SURVEY_ENDPOINT, 'survey', renderSurvey);
 })();

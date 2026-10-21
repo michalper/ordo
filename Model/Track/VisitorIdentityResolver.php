@@ -47,6 +47,18 @@ class VisitorIdentityResolver
         return $visitorId === '' && !$this->customerSession->isLoggedIn();
     }
 
+    /**
+     * The poll/dismiss/submit Track endpoints receive the visitor id as a request param from
+     * tracker.js rather than reading the cookie — same value, different transport. Non-string
+     * (absent, or an array from a crafted query) normalizes to '' = no visitor identity.
+     */
+    public function resolveVisitorIdFromParam(RequestInterface $request): string
+    {
+        $visitorId = $request->getParam('visitor_id');
+
+        return is_string($visitorId) ? $visitorId : '';
+    }
+
     public function resolveCustomerId(): ?int
     {
         return $this->customerSession->isLoggedIn() ? (int) $this->customerSession->getCustomerId() : null;

@@ -46,68 +46,6 @@ class ClvCalculatorTest extends TestCase
         return new ClvCalculator($resourceConnection, $dateTime, $config);
     }
 
-    public function testGetAverageOrderValueReturnsMonetaryOverFrequency(): void
-    {
-        $connection = $this->createStub(AdapterInterface::class);
-        $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchRow')->willReturn(['frequency' => '4', 'monetary' => '400.00']);
-
-        $calculator = $this->makeCalculator($connection);
-
-        self::assertSame(100.0, $calculator->getAverageOrderValue(42));
-    }
-
-    public function testGetAverageOrderValueReturnsZeroWhenNoOrders(): void
-    {
-        $connection = $this->createStub(AdapterInterface::class);
-        $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchRow')->willReturn(['frequency' => '0', 'monetary' => null]);
-
-        $calculator = $this->makeCalculator($connection);
-
-        self::assertSame(0.0, $calculator->getAverageOrderValue(42));
-    }
-
-    public function testGetTenureYearsComputesYearsSinceFirstOrder(): void
-    {
-        $now = 1700000000;
-        $oneYearAgo = date('Y-m-d H:i:s', $now - 365 * 86400);
-
-        $connection = $this->createStub(AdapterInterface::class);
-        $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchOne')->willReturn($oneYearAgo);
-
-        $calculator = $this->makeCalculator($connection, $now);
-
-        self::assertEqualsWithDelta(1.0, $calculator->getTenureYears(42), 0.01);
-    }
-
-    public function testGetTenureYearsReturnsNullWhenNoOrders(): void
-    {
-        $connection = $this->createStub(AdapterInterface::class);
-        $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchOne')->willReturn(false);
-
-        $calculator = $this->makeCalculator($connection);
-
-        self::assertNull($calculator->getTenureYears(42));
-    }
-
-    public function testGetTenureYearsIsFlooredAtConfiguredMinimum(): void
-    {
-        $now = 1700000000;
-        $yesterday = date('Y-m-d H:i:s', $now - 86400);
-
-        $connection = $this->createStub(AdapterInterface::class);
-        $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchOne')->willReturn($yesterday);
-
-        // Floor of 6 months = 0.5 years, well above 1 day's worth of raw tenure.
-        $calculator = $this->makeCalculator($connection, $now, 3, 6);
-
-        self::assertEqualsWithDelta(0.5, $calculator->getTenureYears(42), 0.001);
-    }
-
     public function testGetProjectedClvMultipliesAovByAnnualizedFrequencyByProjectionWindow(): void
     {
         $now = 1700000000;
@@ -160,18 +98,27 @@ class ClvCalculatorTest extends TestCase
         self::assertEqualsWithDelta(1200.0, $scores[42], 1.0);
     }
 
-    public function testComputeClvForAllCustomersScoresZeroWhenNoFrequencyOrFirstOrder(): void
+    /**
+     * The tenure floor (getClvMinTenureMonths) keeps a brand-new customer's first order from
+     * annualizing into a near-infinite run rate — a 1-day-old customer with one 100.00 order
+     * and a 6-month floor projects as 100 x (1 / 0.5y) x 3y = 600, not thousands.
+     */
+    public function testProjectionFloorsTenureAtTheConfiguredMinimum(): void
     {
+        $now = 1700000000;
+        $yesterday = date('Y-m-d H:i:s', $now - 86400);
+
         $connection = $this->createStub(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchAll')->willReturn([
-            ['customer_id' => '42', 'frequency' => '0', 'monetary' => null, 'first_order_at' => null],
+        $connection->method('fetchRow')->willReturn([
+            'frequency' => '1',
+            'monetary' => '100.00',
+            'first_order_at' => $yesterday,
         ]);
 
-        $calculator = $this->makeCalculator($connection);
-        $scores = $calculator->computeClvForAllCustomers();
+        $calculator = $this->makeCalculator($connection, $now, 3, 6);
 
-        self::assertSame(0.0, $scores[42]);
+        self::assertEqualsWithDelta(600.0, $calculator->getProjectedClv(42), 0.5);
     }
 
     public function testGetClvScoresReturnsCachedValueWithinTtl(): void
@@ -291,17 +238,6 @@ class ClvCalculatorTest extends TestCase
         $calculator = $this->makeCalculator($connection);
 
         self::assertSame(0, $calculator->resetScoresForCustomers([]));
-    }
-
-    public function testGetClvScoreReturnsNullWhenCustomerHasNoScore(): void
-    {
-        $connection = $this->createStub(AdapterInterface::class);
-        $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchAll')->willReturn([]);
-
-        $calculator = $this->makeCalculator($connection);
-
-        self::assertNull($calculator->getClvScore(99));
     }
 
     public function testGetAverageClvScoreReturnsZeroWithNoCustomers(): void

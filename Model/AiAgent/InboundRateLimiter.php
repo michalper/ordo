@@ -3,9 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\AiAgent;
 
-use Magento\Framework\App\CacheInterface;
-use Magento\Framework\Serialize\SerializerInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\RateLimit\CacheWindowCounter;
 
 /**
  * Fixed-window request counter for inbound AI-agent commerce endpoints, keyed by the
@@ -24,8 +23,7 @@ class InboundRateLimiter
     private const string CACHE_TAG = 'ORDO_AI_AGENT_RATE_LIMIT';
 
     public function __construct(
-        private readonly CacheInterface $cache,
-        private readonly SerializerInterface $serializer,
+        private readonly CacheWindowCounter $counter,
         private readonly Config $config
     ) {
     }
@@ -41,22 +39,12 @@ class InboundRateLimiter
             return true;
         }
 
-        $key = $this->cacheKey($identifier);
-        $cached = $this->cache->load($key);
-        $count = $cached !== false ? (int) $this->serializer->unserialize($cached) : 0;
-
-        if ($count >= $maxPerMinute) {
-            return false;
-        }
-
-        $this->cache->save(
-            (string) $this->serializer->serialize($count + 1),
-            $key,
-            [self::CACHE_TAG],
-            self::WINDOW_SECONDS
+        return $this->counter->hit(
+            $this->cacheKey($identifier),
+            $maxPerMinute,
+            self::WINDOW_SECONDS,
+            self::CACHE_TAG
         );
-
-        return true;
     }
 
     private function cacheKey(string $identifier): string

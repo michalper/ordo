@@ -6,10 +6,12 @@ namespace Ordo\Automation\Test\Unit\Controller\Track;
 use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\Controller\Result\Json;
 use Magento\Framework\Controller\Result\JsonFactory;
+use Magento\Framework\Stdlib\CookieManagerInterface;
 use Ordo\Automation\Controller\Track\DismissNotification;
 use Ordo\Automation\Model\Notification;
 use Ordo\Automation\Model\NotificationFactory;
 use Ordo\Automation\Model\ResourceModel\Notification as NotificationResource;
+use Ordo\Automation\Model\Track\VisitorIdentityResolver;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
@@ -40,7 +42,9 @@ class DismissNotificationTest extends AbstractFrontendActionTestCase
             $this->resultJsonFactory,
             $this->notificationFactory,
             $this->notificationResource,
-            $this->customerSession
+            // A real resolver over the stubbed session, so identity still flows from the same
+            // request params and session state the controller used to read inline.
+            new VisitorIdentityResolver($this->customerSession, $this->createStub(CookieManagerInterface::class))
         );
     }
 
@@ -87,10 +91,12 @@ class DismissNotificationTest extends AbstractFrontendActionTestCase
         ]);
         $this->customerSession->method('isLoggedIn')->willReturn(false);
 
-        $notification = $this->createStub(Notification::class);
+        $notification = $this->createMock(Notification::class);
         $notification->method('getId')->willReturn(5);
-        $notification->method('getCustomerId')->willReturn(null);
-        $notification->method('getVisitorId')->willReturn('someone-elses-visitor-id');
+        // The ownership rule itself lives in VisitorIdentityFieldsTrait::belongsTo() (covered in
+        // Test\Unit\Model\NotificationTest); here only that the controller honors it — and feeds
+        // it the resolver-derived identity, never a client-supplied customer_id.
+        $notification->expects(self::once())->method('belongsTo')->with(null, 'v1')->willReturn(false);
         $this->notificationFactory->method('create')->willReturn($notification);
 
         $this->notificationResource->expects(self::never())->method('save');
@@ -111,8 +117,7 @@ class DismissNotificationTest extends AbstractFrontendActionTestCase
 
         $notification = $this->createMock(Notification::class);
         $notification->method('getId')->willReturn(5);
-        $notification->method('getCustomerId')->willReturn(null);
-        $notification->method('getVisitorId')->willReturn('v1');
+        $notification->expects(self::once())->method('belongsTo')->with(null, 'v1')->willReturn(true);
         $notification->expects(self::once())->method('setReadAt')->with(self::callback('is_string'));
         $this->notificationFactory->method('create')->willReturn($notification);
 
@@ -135,7 +140,7 @@ class DismissNotificationTest extends AbstractFrontendActionTestCase
 
         $notification = $this->createMock(Notification::class);
         $notification->method('getId')->willReturn(5);
-        $notification->method('getCustomerId')->willReturn(42);
+        $notification->expects(self::once())->method('belongsTo')->with(42, '')->willReturn(true);
         $notification->expects(self::once())->method('setReadAt');
         $this->notificationFactory->method('create')->willReturn($notification);
 

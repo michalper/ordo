@@ -17,9 +17,10 @@ use Ordo\Automation\Model\CampaignCondition;
 use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
 use Ordo\Automation\Model\ContentBlock;
-use Ordo\Automation\Model\LoyaltyTierCalculator;
-use Ordo\Automation\Model\Segment;
-use Ordo\Automation\Model\WhatsAppTemplate;
+use Ordo\Automation\Model\Config\Source\EventType;
+use Ordo\Automation\Model\Config\Source\LoyaltyTier;
+use Ordo\Automation\Model\Config\Source\SegmentOptions;
+use Ordo\Automation\Model\Config\Source\WhatsAppTemplateOptions;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\Collection as ActionCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\Collection as ConditionCollection;
@@ -28,10 +29,6 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as TriggerCo
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\ContentBlock\Collection as ContentBlockCollection;
 use Ordo\Automation\Model\ResourceModel\ContentBlock\CollectionFactory as ContentBlockCollectionFactory;
-use Ordo\Automation\Model\ResourceModel\Segment\Collection as SegmentCollection;
-use Ordo\Automation\Model\ResourceModel\Segment\CollectionFactory as SegmentCollectionFactory;
-use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate\Collection as WhatsAppTemplateCollection;
-use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate\CollectionFactory as WhatsAppTemplateCollectionFactory;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
@@ -45,9 +42,10 @@ class FlowTest extends TestCase
     private ConditionPool $conditionPool;
     private ActionPool $actionPool;
     private ContentBlockCollectionFactory $contentBlockCollectionFactory;
-    private WhatsAppTemplateCollectionFactory $whatsAppTemplateCollectionFactory;
-    private SegmentCollectionFactory $segmentCollectionFactory;
-    private LoyaltyTierCalculator $loyaltyTierCalculator;
+    private WhatsAppTemplateOptions $whatsAppTemplateOptions;
+    private SegmentOptions $segmentOptions;
+    private LoyaltyTier $loyaltyTierOptions;
+    private EventType $eventTypeOptions;
 
     protected function setUp(): void
     {
@@ -60,17 +58,15 @@ class FlowTest extends TestCase
         $contentBlockCollection->method('addFieldToFilter')->willReturnSelf();
         $contentBlockCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
         $this->contentBlockCollectionFactory->method('create')->willReturn($contentBlockCollection);
-        $this->whatsAppTemplateCollectionFactory = $this->createStub(WhatsAppTemplateCollectionFactory::class);
-        $whatsAppTemplateCollection = $this->createStub(WhatsAppTemplateCollection::class);
-        $whatsAppTemplateCollection->method('addApprovedFilter')->willReturnSelf();
-        $whatsAppTemplateCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
-        $this->whatsAppTemplateCollectionFactory->method('create')->willReturn($whatsAppTemplateCollection);
-        $this->segmentCollectionFactory = $this->createStub(SegmentCollectionFactory::class);
-        $segmentCollection = $this->createStub(SegmentCollection::class);
-        $segmentCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
-        $this->segmentCollectionFactory->method('create')->willReturn($segmentCollection);
-        $this->loyaltyTierCalculator = $this->createStub(LoyaltyTierCalculator::class);
-        $this->loyaltyTierCalculator->method('getAllTiers')->willReturn([]);
+        $this->whatsAppTemplateOptions = $this->createStub(WhatsAppTemplateOptions::class);
+        $this->whatsAppTemplateOptions->method('toOptionArray')->willReturn([]);
+        $this->segmentOptions = $this->createStub(SegmentOptions::class);
+        $this->segmentOptions->method('toOptionArray')->willReturn([]);
+        $this->loyaltyTierOptions = $this->createStub(LoyaltyTier::class);
+        $this->loyaltyTierOptions->method('toOptionArray')->willReturn([]);
+        // The real class — it has no dependencies and its two hardcoded options are exactly
+        // what getEventTypeOptions() should surface.
+        $this->eventTypeOptions = new EventType();
         $this->triggerEventSource = $this->createStub(TriggerEvent::class);
         $this->triggerEventSource->method('toOptionArray')->willReturn([
             ['value' => 'order_placed', 'label' => __('Order Placed')],
@@ -101,9 +97,10 @@ class FlowTest extends TestCase
             $this->actionPool,
             new TypeLabels(),
             $this->contentBlockCollectionFactory,
-            $this->whatsAppTemplateCollectionFactory,
-            $this->segmentCollectionFactory,
-            $this->loyaltyTierCalculator,
+            $this->whatsAppTemplateOptions,
+            $this->segmentOptions,
+            $this->loyaltyTierOptions,
+            $this->eventTypeOptions,
             [],
             $this->createStub(JsonHelper::class),
             $this->createStub(DirectoryHelper::class)
@@ -507,17 +504,12 @@ class FlowTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
-    public function testGetWhatsAppTemplateOptionsMapsEntityIdToNameAndFiltersToApproved(): void
+    public function testGetWhatsAppTemplateOptionsFlattensTheSourceToAValueLabelMap(): void
     {
-        $template = $this->createStub(WhatsAppTemplate::class);
-        $template->method('getEntityId')->willReturn(3);
-        $template->method('getName')->willReturn('Order Shipped');
-
-        $whatsAppTemplateCollection = $this->createMock(WhatsAppTemplateCollection::class);
-        $whatsAppTemplateCollection->expects(self::once())->method('addApprovedFilter')->willReturnSelf();
-        $whatsAppTemplateCollection->method('getIterator')->willReturn(new \ArrayIterator([$template]));
-        $this->whatsAppTemplateCollectionFactory = $this->createStub(WhatsAppTemplateCollectionFactory::class);
-        $this->whatsAppTemplateCollectionFactory->method('create')->willReturn($whatsAppTemplateCollection);
+        $this->whatsAppTemplateOptions = $this->createStub(WhatsAppTemplateOptions::class);
+        $this->whatsAppTemplateOptions->method('toOptionArray')->willReturn([
+            ['value' => 3, 'label' => 'Order Shipped'],
+        ]);
 
         self::assertSame(
             [3 => 'Order Shipped'],
@@ -528,15 +520,10 @@ class FlowTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testGetFieldsConfigListsSendWhatsAppTemplateAndParamsFields(): void
     {
-        $template = $this->createStub(WhatsAppTemplate::class);
-        $template->method('getEntityId')->willReturn(3);
-        $template->method('getName')->willReturn('Order Shipped');
-
-        $whatsAppTemplateCollection = $this->createStub(WhatsAppTemplateCollection::class);
-        $whatsAppTemplateCollection->method('addApprovedFilter')->willReturnSelf();
-        $whatsAppTemplateCollection->method('getIterator')->willReturn(new \ArrayIterator([$template]));
-        $this->whatsAppTemplateCollectionFactory = $this->createStub(WhatsAppTemplateCollectionFactory::class);
-        $this->whatsAppTemplateCollectionFactory->method('create')->willReturn($whatsAppTemplateCollection);
+        $this->whatsAppTemplateOptions = $this->createStub(WhatsAppTemplateOptions::class);
+        $this->whatsAppTemplateOptions->method('toOptionArray')->willReturn([
+            ['value' => 3, 'label' => 'Order Shipped'],
+        ]);
 
         $config = $this->makeBlock()->getFieldsConfig()['action']['send_whatsapp'];
 
@@ -558,14 +545,10 @@ class FlowTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testGetSegmentOptionsMapsEntityIdToName(): void
     {
-        $segment = $this->createStub(Segment::class);
-        $segment->method('getEntityId')->willReturn(9);
-        $segment->method('getName')->willReturn('VIP customers');
-
-        $segmentCollection = $this->createStub(SegmentCollection::class);
-        $segmentCollection->method('getIterator')->willReturn(new \ArrayIterator([$segment]));
-        $this->segmentCollectionFactory = $this->createStub(SegmentCollectionFactory::class);
-        $this->segmentCollectionFactory->method('create')->willReturn($segmentCollection);
+        $this->segmentOptions = $this->createStub(SegmentOptions::class);
+        $this->segmentOptions->method('toOptionArray')->willReturn([
+            ['value' => 9, 'label' => 'VIP customers'],
+        ]);
 
         self::assertSame([9 => 'VIP customers'], $this->makeBlock()->getSegmentOptions());
     }
@@ -573,11 +556,10 @@ class FlowTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testGetLoyaltyTierOptionsMapsTierToLabel(): void
     {
-        $this->loyaltyTierCalculator = $this->createStub(LoyaltyTierCalculator::class);
-        $this->loyaltyTierCalculator->method('getAllTiers')->willReturn(['bronze', 'gold']);
-        $this->loyaltyTierCalculator->method('getTierLabel')->willReturnMap([
-            ['bronze', 'Bronze'],
-            ['gold', 'Gold'],
+        $this->loyaltyTierOptions = $this->createStub(LoyaltyTier::class);
+        $this->loyaltyTierOptions->method('toOptionArray')->willReturn([
+            ['value' => 'bronze', 'label' => 'Bronze'],
+            ['value' => 'gold', 'label' => 'Gold'],
         ]);
 
         self::assertSame(
@@ -589,13 +571,10 @@ class FlowTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testGetFieldsConfigListsInSegmentNotInSegmentLoyaltyTierNpsAndEventOccurredFields(): void
     {
-        $segment = $this->createStub(Segment::class);
-        $segment->method('getEntityId')->willReturn(9);
-        $segment->method('getName')->willReturn('VIP customers');
-        $segmentCollection = $this->createStub(SegmentCollection::class);
-        $segmentCollection->method('getIterator')->willReturn(new \ArrayIterator([$segment]));
-        $this->segmentCollectionFactory = $this->createStub(SegmentCollectionFactory::class);
-        $this->segmentCollectionFactory->method('create')->willReturn($segmentCollection);
+        $this->segmentOptions = $this->createStub(SegmentOptions::class);
+        $this->segmentOptions->method('toOptionArray')->willReturn([
+            ['value' => 9, 'label' => 'VIP customers'],
+        ]);
 
         $config = $this->makeBlock()->getFieldsConfig()['condition'];
 

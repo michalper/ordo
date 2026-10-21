@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Mftf\Helper;
 
+use Magento\Framework\HTTP\Client\Curl;
 use Magento\FunctionalTestingFramework\Helper\Helper;
 
 /**
@@ -25,12 +26,16 @@ class MailHogHelper extends Helper
             ? $mailhogUrl . '/api/v2/messages?limit=' . $limit
             : $mailhogUrl . '/api/v2/search?kind=to&query=' . rawurlencode($toAddress) . '&limit=' . $limit;
 
-        $response = @file_get_contents($endpoint);
-        if ($response === false) {
-            throw new \RuntimeException("Could not reach MailHog at {$mailhogUrl}");
+        // new Curl() rather than DI: MFTF instantiates helpers itself, outside Magento's object
+        // manager, and the class has no required constructor dependencies.
+        $curl = new Curl();
+        try {
+            $curl->get($endpoint);
+        } catch (\Exception $e) {
+            throw new \RuntimeException("Could not reach MailHog at {$mailhogUrl}", 0, $e);
         }
 
-        $data = json_decode($response, true);
+        $data = json_decode($curl->getBody(), true);
 
         return $data['items'] ?? [];
     }

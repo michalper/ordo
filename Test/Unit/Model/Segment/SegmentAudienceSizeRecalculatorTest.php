@@ -108,4 +108,93 @@ class SegmentAudienceSizeRecalculatorTest extends TestCase
 
         $recalculator->recalculateAll();
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRecalculateAllResolvesEverySegmentInsideOneResolverBatch(): void
+    {
+        $segmentOne = $this->createStub(Segment::class);
+        $segmentOne->method('getEntityId')->willReturn(1);
+        $segmentTwo = $this->createStub(Segment::class);
+        $segmentTwo->method('getEntityId')->willReturn(2);
+
+        $collection = $this->createStub(SegmentCollection::class);
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$segmentOne, $segmentTwo]));
+        $collectionFactory = $this->createStub(SegmentCollectionFactory::class);
+        $collectionFactory->method('create')->willReturn($collection);
+
+        $sequence = [];
+        $resolver = $this->createMock(SegmentMemberResolver::class);
+        $resolver->expects(self::once())->method('beginBatch')->willReturnCallback(
+            function () use (&$sequence): void {
+                $sequence[] = 'beginBatch';
+            }
+        );
+        $resolver->expects(self::once())->method('endBatch')->willReturnCallback(
+            function () use (&$sequence): void {
+                $sequence[] = 'endBatch';
+            }
+        );
+        $resolver->method('getMatchingCustomerIds')->willReturnCallback(
+            function (int $segmentId) use (&$sequence): array {
+                $sequence[] = 'resolve:' . $segmentId;
+                return [];
+            }
+        );
+
+        $dateTime = $this->createStub(DateTime::class);
+        $dateTime->method('gmtDate')->willReturn('2026-01-01 00:00:00');
+        $historyFactory = $this->createStub(SegmentAudienceSizeHistoryFactory::class);
+        $historyFactory->method('create')->willReturn($this->createStub(SegmentAudienceSizeHistory::class));
+
+        $recalculator = new SegmentAudienceSizeRecalculator(
+            $collectionFactory,
+            $this->createStub(SegmentResource::class),
+            $resolver,
+            $dateTime,
+            $historyFactory,
+            $this->createStub(SegmentAudienceSizeHistoryResource::class)
+        );
+
+        $recalculator->recalculateAll();
+
+        // Every resolve inside one batch: this is what keeps N RFM segments at one whole-base
+        // aggregate scan per cron tick instead of N.
+        self::assertSame(['beginBatch', 'resolve:1', 'resolve:2', 'endBatch'], $sequence);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRecalculateAllEndsTheBatchEvenWhenAResolveThrows(): void
+    {
+        $segment = $this->createStub(Segment::class);
+        $segment->method('getEntityId')->willReturn(1);
+
+        $collection = $this->createStub(SegmentCollection::class);
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$segment]));
+        $collectionFactory = $this->createStub(SegmentCollectionFactory::class);
+        $collectionFactory->method('create')->willReturn($collection);
+
+        $resolver = $this->createMock(SegmentMemberResolver::class);
+        $resolver->expects(self::once())->method('beginBatch');
+        // Without this, a thrown resolve would leave the resolver stuck in batch mode for the
+        // rest of the process's life — serving a stale snapshot to every later resolve.
+        $resolver->expects(self::once())->method('endBatch');
+        $resolver->method('getMatchingCustomerIds')->willThrowException(new \RuntimeException('boom'));
+
+        $dateTime = $this->createStub(DateTime::class);
+        $dateTime->method('gmtDate')->willReturn('2026-01-01 00:00:00');
+        $historyFactory = $this->createStub(SegmentAudienceSizeHistoryFactory::class);
+        $historyFactory->method('create')->willReturn($this->createStub(SegmentAudienceSizeHistory::class));
+
+        $recalculator = new SegmentAudienceSizeRecalculator(
+            $collectionFactory,
+            $this->createStub(SegmentResource::class),
+            $resolver,
+            $dateTime,
+            $historyFactory,
+            $this->createStub(SegmentAudienceSizeHistoryResource::class)
+        );
+
+        $this->expectException(\RuntimeException::class);
+        $recalculator->recalculateAll();
+    }
 }

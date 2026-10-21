@@ -72,13 +72,18 @@ class ScanReviewRequestDue
             // Claim (log) BEFORE dispatching, not after - a crash between a successful dispatch
             // and the log write must never cause a duplicate trigger on the next tick. If the
             // dispatch itself then fails, the claim is rolled back so this order is retried next
-            // run - same reasoning as every other reminder cron in this module.
+            // run. claim() (not a plain insert()) re-checks "already logged for this order"
+            // atomically - two overlapping runs can both pass the select's l.entity_id IS NULL
+            // filter before either inserts, so the select alone is only a pre-filter, not the
+            // actual guard against a double-dispatch.
             $logRow = [
                 'order_id' => $orderId,
                 'customer_id' => $customerId,
                 'dispatched_at' => date('Y-m-d H:i:s'),
             ];
-            $this->reminderLogStore->insert(self::LOG_TABLE, $logRow);
+            if (!$this->reminderLogStore->claim(self::LOG_TABLE, ['order_id = ?' => $orderId], $logRow)) {
+                continue;
+            }
 
             try {
                 $this->campaignDispatcher->dispatch(CampaignTriggerInterface::TRIGGER_REVIEW_REQUEST_DUE, [

@@ -15,6 +15,8 @@ use Ordo\Automation\Model\ResourceModel\Campaign\ScheduledAction as CampaignSche
  */
 class CampaignScheduledAction extends AbstractModel
 {
+    use ContextJsonFieldTrait;
+
     public const ENTITY_ID = 'entity_id';
     public const CAMPAIGN_ID = 'campaign_id';
     public const RESUME_ACTION_ID = 'resume_action_id';
@@ -50,41 +52,6 @@ class CampaignScheduledAction extends AbstractModel
         return $this;
     }
 
-    /**
-     * Null when the dispatch context that created this row had no identified customer (e.g. a
-     * purely order-scoped trigger) — Campaign\CampaignEntryGuard skips its check entirely in
-     * that case rather than deduping against nothing.
-     */
-    public function getCustomerId(): ?int
-    {
-        $value = $this->getData(self::CUSTOMER_ID);
-        return $value === null ? null : (int) $value;
-    }
-
-    public function setCustomerId(?int $customerId): self
-    {
-        $this->setData(self::CUSTOMER_ID, $customerId);
-        return $this;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function getContext(): array
-    {
-        $raw = (string) $this->getData(self::CONTEXT);
-        $decoded = $raw !== '' ? json_decode($raw, true) : [];
-        return is_array($decoded) ? $decoded : [];
-    }
-
-    /**
-     * @param array<string, mixed> $context
-     */
-    public function setContext(array $context): self
-    {
-        $this->setData(self::CONTEXT, (string) json_encode($context));
-        return $this;
-    }
 
     public function getRunAt(): string
     {

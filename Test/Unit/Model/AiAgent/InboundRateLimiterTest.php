@@ -4,8 +4,10 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Model\AiAgent;
 
 use Magento\Framework\App\CacheInterface;
+use Magento\Framework\Serialize\Serializer\Json as JsonSerializer;
 use Magento\Framework\Serialize\SerializerInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\RateLimit\CacheWindowCounter;
 use Ordo\Automation\Model\AiAgent\InboundRateLimiter;
 use PHPUnit\Framework\TestCase;
 
@@ -16,15 +18,13 @@ class InboundRateLimiterTest extends TestCase
         $config = $this->createStub(Config::class);
         $config->method('getAiAgentRateLimitPerMinute')->willReturn($maxPerMinute);
 
-        return new InboundRateLimiter($cache, $serializer, $config);
+        return new InboundRateLimiter(new CacheWindowCounter($cache, $serializer), $config);
     }
 
     public function testIsAllowedWhenNothingCachedYet(): void
     {
         $cache = $this->createMock(CacheInterface::class);
         $cache->method('load')->willReturn(false);
-        $serializer = $this->createStub(SerializerInterface::class);
-        $serializer->method('serialize')->willReturnCallback('serialize');
 
         $cache->expects(self::once())->method('save')->with(
             self::anything(),
@@ -33,46 +33,38 @@ class InboundRateLimiterTest extends TestCase
             60
         );
 
-        self::assertTrue($this->makeLimiter($cache, $serializer, 60)->isAllowed('keyhash'));
+        self::assertTrue($this->makeLimiter($cache, new JsonSerializer(), 60)->isAllowed('keyhash'));
     }
 
     public function testIsAllowedUnderTheCap(): void
     {
         $cache = $this->createMock(CacheInterface::class);
-        $cache->method('load')->willReturn(serialize(5));
-        $serializer = $this->createStub(SerializerInterface::class);
-        $serializer->method('unserialize')->willReturnCallback('unserialize');
-        $serializer->method('serialize')->willReturnCallback('serialize');
+        $cache->method('load')->willReturn(json_encode(5));
 
         $cache->expects(self::once())->method('save');
 
-        self::assertTrue($this->makeLimiter($cache, $serializer, 60)->isAllowed('keyhash'));
+        self::assertTrue($this->makeLimiter($cache, new JsonSerializer(), 60)->isAllowed('keyhash'));
     }
 
     public function testNotAllowedAtTheCap(): void
     {
         $cache = $this->createMock(CacheInterface::class);
-        $cache->method('load')->willReturn(serialize(60));
-        $serializer = $this->createStub(SerializerInterface::class);
-        $serializer->method('unserialize')->willReturnCallback('unserialize');
+        $cache->method('load')->willReturn(json_encode(60));
 
         $cache->expects(self::never())->method('save');
 
-        self::assertFalse($this->makeLimiter($cache, $serializer, 60)->isAllowed('keyhash'));
+        self::assertFalse($this->makeLimiter($cache, new JsonSerializer(), 60)->isAllowed('keyhash'));
     }
 
     public function testDifferentIdentifiersHaveIndependentBudgets(): void
     {
         $cache = $this->createStub(CacheInterface::class);
         $cache->method('load')->willReturnMap([
-            ['ordo_ai_agent_rl_' . hash('sha256', 'key-a'), serialize(60)],
+            ['ordo_ai_agent_rl_' . hash('sha256', 'key-a'), json_encode(60)],
             ['ordo_ai_agent_rl_' . hash('sha256', 'key-b'), false],
         ]);
-        $serializer = $this->createStub(SerializerInterface::class);
-        $serializer->method('unserialize')->willReturnCallback('unserialize');
-        $serializer->method('serialize')->willReturnCallback('serialize');
 
-        $limiter = $this->makeLimiter($cache, $serializer, 60);
+        $limiter = $this->makeLimiter($cache, new JsonSerializer(), 60);
 
         self::assertFalse($limiter->isAllowed('key-a'));
         self::assertTrue($limiter->isAllowed('key-b'));
@@ -87,8 +79,7 @@ class InboundRateLimiterTest extends TestCase
     {
         $cache = $this->createMock(CacheInterface::class);
         $cache->expects(self::never())->method('load');
-        $serializer = $this->createStub(SerializerInterface::class);
 
-        self::assertTrue($this->makeLimiter($cache, $serializer, 0)->isAllowed('keyhash'));
+        self::assertTrue($this->makeLimiter($cache, new JsonSerializer(), 0)->isAllowed('keyhash'));
     }
 }

@@ -3,19 +3,16 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Cron;
 
-use Magento\Framework\App\Area;
 use Magento\Framework\App\ResourceConnection;
-use Magento\Framework\Mail\Template\TransportBuilder;
-use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Quote\Model\QuoteFactory;
-use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Cron\CronRunLogger;
+use Ordo\Automation\Model\Cron\ReminderEmailSender;
+use Ordo\Automation\Model\Cron\ReminderLogStore;
 use Ordo\Automation\Model\Email\MessageIdGenerator;
-use Ordo\Automation\Model\Email\PendingMessageIdHolder;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
 
 /**
@@ -41,21 +38,19 @@ use Ordo\Automation\Model\Sms\MessageLogWriter;
 class SendAbandonedCartReminders
 {
     private const string XML_PATH_EMAIL_TEMPLATE = 'ordo_abandoned_cart_reminder';
-    private const string XML_PATH_EMAIL_SENDER = 'general';
+    private const string LOG_TABLE = 'ordo_abandoned_cart_reminder_log';
 
     public function __construct(
         private readonly Config $config,
         private readonly ResourceConnection $resourceConnection,
         private readonly QuoteFactory $quoteFactory,
-        private readonly TransportBuilder $transportBuilder,
-        private readonly StoreManagerInterface $storeManager,
-        private readonly StateInterface $inlineTranslation,
+        private readonly ReminderEmailSender $reminderEmailSender,
         private readonly CampaignDispatcher $campaignDispatcher,
         private readonly ConsentManager $consentManager,
         private readonly CronRunLogger $cronRunLogger,
         private readonly MessageIdGenerator $messageIdGenerator,
-        private readonly PendingMessageIdHolder $pendingMessageIdHolder,
-        private readonly MessageLogWriter $messageLogWriter
+        private readonly MessageLogWriter $messageLogWriter,
+        private readonly ReminderLogStore $reminderLogStore
     ) {
     }
 
@@ -72,7 +67,7 @@ class SendAbandonedCartReminders
 
         $connection = $this->resourceConnection->getConnection();
         $quoteTable = $this->resourceConnection->getTableName('quote');
-        $logTable = $this->resourceConnection->getTableName('ordo_abandoned_cart_reminder_log');
+        $logTable = $this->resourceConnection->getTableName(self::LOG_TABLE);
 
         $select = $connection->select()
             ->from(
@@ -107,7 +102,7 @@ class SendAbandonedCartReminders
         foreach ($rows as $row) {
             // A registered customer (guest quotes have no customer_id and aren't covered by the
             // consent register at all) who opted out of email must never receive THIS fixed
-            // reminder - it's sent directly via TransportBuilder, bypassing the campaign engine's
+            // reminder - it's sent directly via ReminderEmailSender, bypassing the campaign engine's
             // own per-action consent gate entirely, so it needs its own check here. The
             // cart_abandoned campaign trigger below is dispatched regardless: its own actions
             // (send_email/send_sms/send_push/send_whatsapp) already check ConsentManager
@@ -121,19 +116,26 @@ class SendAbandonedCartReminders
             // log write must never cause a duplicate reminder on the next tick. If the send
             // itself then fails, the claim is rolled back so this quote is retried next run.
             $reminderLogRow = $this->buildReminderLogRow((int) $row['entity_id']);
-            $this->logReminderSent($reminderLogRow);
+            $this->reminderLogStore->insert(self::LOG_TABLE, $reminderLogRow);
 
             try {
                 if ($hasEmailConsent) {
                     $messageLogId = $this->sendReminder($row);
                     if ($messageLogId !== null) {
-                        $this->setReminderLogMessageLogId($reminderLogRow, $messageLogId);
+                        // Fills in the message_log_id a successful sendReminder() only learns
+                        // after the claim row already exists (see this class's own docblock on
+                        // that column), matched by the exact claim values just inserted.
+                        $this->reminderLogStore->updateMatching(
+                            self::LOG_TABLE,
+                            $reminderLogRow,
+                            ['message_log_id' => $messageLogId]
+                        );
                     }
                 }
                 $this->dispatchCampaigns($row);
                 $sent++;
             } catch (\Throwable $e) {
-                $this->deleteReminderLog($reminderLogRow);
+                $this->reminderLogStore->deleteMatching(self::LOG_TABLE, $reminderLogRow);
                 $this->cronRunLogger->logFailure(
                     sprintf('send abandoned cart reminder for quote #%d', (int) $row['entity_id']),
                     $e
@@ -154,7 +156,6 @@ class SendAbandonedCartReminders
     private function sendReminder(array $row): ?int
     {
         $quote = $this->quoteFactory->create()->load((int) $row['entity_id']);
-        $store = $this->storeManager->getStore();
 
         $items = [];
         foreach ($quote->getAllVisibleItems() as $item) {
@@ -164,34 +165,23 @@ class SendAbandonedCartReminders
             ];
         }
 
-        $this->inlineTranslation->suspend();
-
         // Same Message-ID wiring Model\Campaign\Action\SendEmail uses - lets Controller\Email\
         // StatusCallback's SendGrid Event Webhook correlate a later "open" event back to this
         // exact send, which Cron\SendAbandonedCartFallbackReminders reads to decide whether to
         // fall back to SMS/WhatsApp.
         $messageId = $this->messageIdGenerator->generate();
-        $this->pendingMessageIdHolder->set($messageId);
 
-        try {
-            $transport = $this->transportBuilder
-                ->setTemplateIdentifier(self::XML_PATH_EMAIL_TEMPLATE)
-                ->setTemplateOptions(['area' => Area::AREA_FRONTEND, 'store' => $store->getId()])
-                ->setTemplateVars([
-                    'customer_name' => $row['customer_firstname'] ?: 'there',
-                    'cart_items' => $items,
-                    'cart_subtotal' => $row['subtotal'],
-                    'store' => $store,
-                ])
-                ->setFromByScope(self::XML_PATH_EMAIL_SENDER, $store->getId())
-                ->addTo($row['customer_email'], $row['customer_firstname'] ?: $row['customer_email'])
-                ->getTransport();
-
-            $transport->sendMessage();
-        } finally {
-            $this->pendingMessageIdHolder->consume();
-            $this->inlineTranslation->resume();
-        }
+        $this->reminderEmailSender->send(
+            self::XML_PATH_EMAIL_TEMPLATE,
+            [
+                'customer_name' => $row['customer_firstname'] ?: 'there',
+                'cart_items' => $items,
+                'cart_subtotal' => $row['subtotal'],
+            ],
+            $row['customer_email'],
+            $row['customer_firstname'] ?: $row['customer_email'],
+            messageId: $messageId
+        );
 
         if (empty($row['customer_id'])) {
             return null;
@@ -243,59 +233,5 @@ class SendAbandonedCartReminders
             'quote_id' => $quoteId,
             'sent_at' => date('Y-m-d H:i:s'),
         ];
-    }
-
-    /**
-     * @param array<string, mixed> $row
-     */
-    private function logReminderSent(array $row): void
-    {
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('ordo_abandoned_cart_reminder_log');
-
-        $connection->insert($table, $row);
-    }
-
-    /**
-     * Fills in the message_log_id a successful sendReminder() only learns after the claim row
-     * already exists (see this class's own docblock on that column) - matched the same way
-     * deleteReminderLog() matches its own row, by the exact claim values rather than a captured
-     * entity_id/lastInsertId().
-     *
-     * @param array<string, mixed> $row the exact same array passed to logReminderSent()
-     */
-    private function setReminderLogMessageLogId(array $row, int $messageLogId): void
-    {
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('ordo_abandoned_cart_reminder_log');
-
-        $where = [];
-        foreach ($row as $column => $value) {
-            $where[] = $connection->quoteInto($connection->quoteIdentifier($column) . ' = ?', $value);
-        }
-
-        $connection->update($table, ['message_log_id' => $messageLogId], implode(' AND ', $where));
-    }
-
-    /**
-     * Rolls back a claim row from logReminderSent() when the send it claimed then fails - see
-     * Model\Cron\ReminderLogStore::deleteMatching()'s own docblock for the same reasoning applied
-     * there (deletes by matching the exact row just inserted, not by a captured entity_id/
-     * lastInsertId() - AdapterInterface doesn't declare lastInsertId() at all, so relying on it
-     * would make this untestable without a real database connection).
-     *
-     * @param array<string, mixed> $row the exact same array just passed to logReminderSent()
-     */
-    private function deleteReminderLog(array $row): void
-    {
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('ordo_abandoned_cart_reminder_log');
-
-        $where = [];
-        foreach ($row as $column => $value) {
-            $where[] = $connection->quoteInto($connection->quoteIdentifier($column) . ' = ?', $value);
-        }
-
-        $connection->delete($table, implode(' AND ', $where));
     }
 }

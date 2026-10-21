@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Controller\Track;
 
-use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
@@ -13,6 +12,7 @@ use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ResourceModel\Notification\CollectionFactory as NotificationCollectionFactory;
+use Ordo\Automation\Model\Track\VisitorIdentityResolver;
 
 /**
  * Public, unauthenticated endpoint the frontend JS tracker polls, same trust model as
@@ -30,7 +30,7 @@ class Notification extends Action implements HttpGetActionInterface, CsrfAwareAc
         Context $context,
         private readonly JsonFactory $resultJsonFactory,
         private readonly NotificationCollectionFactory $notificationCollectionFactory,
-        private readonly CustomerSession $customerSession,
+        private readonly VisitorIdentityResolver $visitorIdentityResolver,
         private readonly Config $config
     ) {
         parent::__construct($context);
@@ -44,11 +44,10 @@ class Notification extends Action implements HttpGetActionInterface, CsrfAwareAc
             return $result->setData(['notifications' => []]);
         }
 
-        $visitorId = $this->getRequest()->getParam('visitor_id');
-        $visitorId = is_string($visitorId) ? $visitorId : '';
-        $customerId = $this->customerSession->isLoggedIn() ? (int) $this->customerSession->getCustomerId() : null;
+        $visitorId = $this->visitorIdentityResolver->resolveVisitorIdFromParam($this->getRequest());
+        $customerId = $this->visitorIdentityResolver->resolveCustomerId();
 
-        if ($visitorId === '' && $customerId === null) {
+        if ($this->visitorIdentityResolver->hasNoIdentity($visitorId)) {
             return $result->setData(['notifications' => []]);
         }
 

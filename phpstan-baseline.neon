@@ -19,14 +19,38 @@ parameters:
 			path: Block/Adminhtml/Campaign/Edit/Flow.php
 
 		-
+			message: '#^Cannot access offset ''label'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Block/Adminhtml/Campaign/Edit/Flow.php
+
+		-
 			message: '#^Cannot access offset ''output_1'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: Block/Adminhtml/Campaign/Edit/Flow.php
 
 		-
+			message: '#^Cannot access offset ''value'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Block/Adminhtml/Campaign/Edit/Flow.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Block/Adminhtml/Campaign/Edit/Flow.php
+
+		-
 			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, int given\.$#'
 			identifier: argument.type
+			count: 1
+			path: Block/Adminhtml/Campaign/Edit/Flow.php
+
+		-
+			message: '#^Possibly invalid array key type mixed\.$#'
+			identifier: offsetAccess.invalidOffset
 			count: 1
 			path: Block/Adminhtml/Campaign/Edit/Flow.php
 
@@ -119,6 +143,18 @@ parameters:
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: Console/Command/GenerateVapidKeysCommand.php
+
+		-
+			message: '#^Parameter \#1 \$loginUrl of method Magento\\Customer\\Model\\Session\:\:authenticate\(\) expects bool\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/AbstractCustomerAccountAction.php
+
+		-
+			message: '#^Parameter \#3 \$value of method Magento\\Framework\\App\\ActionFlag\:\:set\(\) expects string, true given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/AbstractCustomerAccountAction.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -1021,34 +1057,10 @@ parameters:
 			path: Controller/Email/StatusCallback.php
 
 		-
-			message: '#^Parameter \#1 \$loginUrl of method Magento\\Customer\\Model\\Session\:\:authenticate\(\) expects bool\|null, string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Offer/AbstractOfferAction.php
-
-		-
-			message: '#^Parameter \#3 \$value of method Magento\\Framework\\App\\ActionFlag\:\:set\(\) expects string, true given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Offer/AbstractOfferAction.php
-
-		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
 			path: Controller/Offer/Extend.php
-
-		-
-			message: '#^Parameter \#1 \$loginUrl of method Magento\\Customer\\Model\\Session\:\:authenticate\(\) expects bool\|null, string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Referral/AbstractReferralAction.php
-
-		-
-			message: '#^Parameter \#3 \$value of method Magento\\Framework\\App\\ActionFlag\:\:set\(\) expects string, true given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Controller/Referral/AbstractReferralAction.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
@@ -1114,12 +1126,6 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
-			path: Controller/Track/Popup.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
 			path: Controller/Track/RegisterPriceWatch.php
 
 		-
@@ -1131,7 +1137,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 2
+			count: 1
 			path: Controller/Track/Survey.php
 
 		-
@@ -1189,12 +1195,6 @@ parameters:
 			path: Controller/WhatsApp/Webhook.php
 
 		-
-			message: '#^Use service contracts to persist entities in favour of Ordo\\Automation\\Model\\ReorderCycle\:\:load\(\) method$#'
-			identifier: bitExpertMagento.abstractModelUseServiceContract
-			count: 1
-			path: Cron/CalculateReorderCycle.php
-
-		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 2
@@ -1215,6 +1215,12 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
+			count: 1
+			path: Cron/RunScheduledCampaignActions.php
+
+		-
+			message: '#^Parameter \#4 \$lookupMemo of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:resumeScheduledAction\(\) expects array\{enabled\?\: array\<int, bool\>, plan\?\: array\<string, array\{actions\: array\<int, Ordo\\Automation\\Model\\CampaignAction\>, start\: int\}\|null\>\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
 			count: 1
 			path: Cron/RunScheduledCampaignActions.php
 
@@ -1294,12 +1300,6 @@ parameters:
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
 			count: 3
-			path: Model/AbstractCampaignChildModel.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\AbstractCampaignChildModel\:\:getParams\(\) should return array\<string, mixed\> but returns array\<mixed\>\.$#'
-			identifier: return.type
-			count: 1
 			path: Model/AbstractCampaignChildModel.php
 
 		-
@@ -1507,18 +1507,6 @@ parameters:
 			path: Model/AiAgent/AiAgentQuoteResult.php
 
 		-
-			message: '#^Strict comparison using \!\=\= between string and false will always evaluate to true\.$#'
-			identifier: notIdentical.alwaysTrue
-			count: 1
-			path: Model/AiAgent/InboundRateLimiter.php
-
-		-
-			message: '#^Strict comparison using \!\=\= between string and false will always evaluate to true\.$#'
-			identifier: notIdentical.alwaysTrue
-			count: 1
-			path: Model/Approval/ApprovalRateLimiter.php
-
-		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
@@ -1701,7 +1689,7 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:delete\(\) expects Magento\\Framework\\Model\\AbstractModel, mixed given\.$#'
 			identifier: argument.type
-			count: 3
+			count: 1
 			path: Model/Campaign/CampaignSaveProcessor.php
 
 		-
@@ -1783,6 +1771,12 @@ parameters:
 			path: Model/Campaign/Condition/NpsScoreAtLeast.php
 
 		-
+			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''intval'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Campaign/Condition/NpsScoreAtLeast.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
@@ -1831,27 +1825,9 @@ parameters:
 			path: Model/Campaign/CustomerTimezoneResolver.php
 
 		-
-			message: '#^Cannot call method getDelayMinutes\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Model/Campaign/DataProvider.php
-
-		-
-			message: '#^Cannot call method getParamsJson\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 2
-			path: Model/Campaign/DataProvider.php
-
-		-
 			message: '#^Cannot call method getTriggerEvent\(\) on mixed\.$#'
 			identifier: method.nonObject
 			count: 1
-			path: Model/Campaign/DataProvider.php
-
-		-
-			message: '#^Cannot call method getType\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 2
 			path: Model/Campaign/DataProvider.php
 
 		-
@@ -1879,12 +1855,6 @@ parameters:
 			path: Model/Campaign/DataProvider.php
 
 		-
-			message: '#^Parameter \#1 \$json of function json_decode expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 2
-			path: Model/Campaign/DataProvider.php
-
-		-
 			message: '#^Property Ordo\\Automation\\Model\\Campaign\\DataProvider\:\:\$loadedData type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1907,12 +1877,6 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Model/CampaignAction.php
-
-		-
-			message: '#^Parameter \#1 \$items of method Ordo\\Automation\\Api\\Data\\CampaignActionSearchResultsInterface\:\:setItems\(\) expects array\<Ordo\\Automation\\Api\\Data\\CampaignActionInterface\>, array\<Magento\\Framework\\DataObject\> given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model/CampaignActionRepository.php
 
 		-
 			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:delete\(\) expects Magento\\Framework\\Model\\AbstractModel, Ordo\\Automation\\Api\\Data\\CampaignActionInterface given\.$#'
@@ -1939,18 +1903,6 @@ parameters:
 			path: Model/CampaignActionRetry.php
 
 		-
-			message: '#^Method Ordo\\Automation\\Model\\CampaignActionRetry\:\:getContext\(\) should return array\<string, mixed\> but returns array\<mixed\>\.$#'
-			identifier: return.type
-			count: 1
-			path: Model/CampaignActionRetry.php
-
-		-
-			message: '#^Parameter \#1 \$items of method Ordo\\Automation\\Api\\Data\\CampaignConditionSearchResultsInterface\:\:setItems\(\) expects array\<Ordo\\Automation\\Api\\Data\\CampaignConditionInterface\>, array\<Magento\\Framework\\DataObject\> given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model/CampaignConditionRepository.php
-
-		-
 			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:delete\(\) expects Magento\\Framework\\Model\\AbstractModel, Ordo\\Automation\\Api\\Data\\CampaignConditionInterface given\.$#'
 			identifier: argument.type
 			count: 1
@@ -1963,63 +1915,9 @@ parameters:
 			path: Model/CampaignConditionRepository.php
 
 		-
-			message: '#^Cannot call method getEntityId\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Model/CampaignDispatcher.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/CampaignDispatcher.php
-
-		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
 			count: 4
-			path: Model/CampaignDispatcher.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\CampaignDispatcher\:\:campaignIdsForTrigger\(\) should return array\<int, string\> but returns array\|bool\|float\|int\|string\|null\.$#'
-			identifier: return.type
-			count: 1
-			path: Model/CampaignDispatcher.php
-
-		-
-			message: '#^Parameter \#1 \$actionRow of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:runOneAction\(\) expects Ordo\\Automation\\Model\\CampaignAction, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model/CampaignDispatcher.php
-
-		-
-			message: '#^Parameter \#1 \$logic of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:conditionsSatisfied\(\) expects ''all''\|''any'', string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model/CampaignDispatcher.php
-
-		-
-			message: '#^Parameter \#2 \$actions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:runActionsFrom\(\) expects array\<Ordo\\Automation\\Model\\CampaignAction\>, array\<int, Ordo\\Automation\\Model\\CampaignAction\|Ordo\\Automation\\Model\\CampaignCondition\> given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model/CampaignDispatcher.php
-
-		-
-			message: '#^Parameter \#2 \$actions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:runActionsFrom\(\) expects array\<Ordo\\Automation\\Model\\CampaignAction\>, list\<mixed\> given\.$#'
-			identifier: argument.type
-			count: 2
-			path: Model/CampaignDispatcher.php
-
-		-
-			message: '#^Parameter \#2 \$conditions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:conditionsSatisfied\(\) expects array\<Ordo\\Automation\\Model\\CampaignCondition\>, array\<int, Ordo\\Automation\\Model\\CampaignAction\|Ordo\\Automation\\Model\\CampaignCondition\> given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model/CampaignDispatcher.php
-
-		-
-			message: '#^Parameter \#2 \$conditions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:conditionsSatisfied\(\) expects array\<Ordo\\Automation\\Model\\CampaignCondition\>, list\<mixed\> given\.$#'
-			identifier: argument.type
-			count: 1
 			path: Model/CampaignDispatcher.php
 
 		-
@@ -2030,6 +1928,18 @@ parameters:
 
 		-
 			message: '#^Parameter \#2 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/CampaignDispatcher.php
+
+		-
+			message: '#^Parameter \#3 \$loadConditions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:runCampaign\(\) expects callable\(\)\: array\<Ordo\\Automation\\Model\\CampaignCondition\>, Closure\(\)\: array\<int, Ordo\\Automation\\Model\\CampaignAction\|Ordo\\Automation\\Model\\CampaignCondition\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/CampaignDispatcher.php
+
+		-
+			message: '#^Parameter \#4 \$loadActions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:runCampaign\(\) expects callable\(\)\: array\<Ordo\\Automation\\Model\\CampaignAction\>, Closure\(\)\: array\<int, Ordo\\Automation\\Model\\CampaignAction\|Ordo\\Automation\\Model\\CampaignCondition\> given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Model/CampaignDispatcher.php
@@ -2073,19 +1983,13 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 3
+			count: 2
 			path: Model/CampaignScheduledAction.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
 			count: 3
-			path: Model/CampaignScheduledAction.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\CampaignScheduledAction\:\:getContext\(\) should return array\<string, mixed\> but returns array\<mixed\>\.$#'
-			identifier: return.type
-			count: 1
 			path: Model/CampaignScheduledAction.php
 
 		-
@@ -2121,13 +2025,13 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to float\.$#'
 			identifier: cast.double
-			count: 4
+			count: 3
 			path: Model/Clv/ClvCalculator.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 5
+			count: 4
 			path: Model/Clv/ClvCalculator.php
 
 		-
@@ -2409,7 +2313,7 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''intval'' given\.$#'
 			identifier: argument.type
-			count: 1
+			count: 2
 			path: Model/CustomerScoreManager.php
 
 		-
@@ -2739,7 +2643,7 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$name of method Magento\\Framework\\HTTP\\Client\\Curl\:\:setOption\(\) expects string, int given\.$#'
 			identifier: argument.type
-			count: 1
+			count: 2
 			path: Model/Http/JsonApiClient.php
 
 		-
@@ -3123,17 +3027,17 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 3
+			count: 2
 			path: Model/Queue/SegmentBulkActionConsumer.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 2
+			count: 1
 			path: Model/Queue/SegmentBulkActionConsumer.php
 
 		-
-			message: '#^Parameter \#3 \$params of method Ordo\\Automation\\Model\\Queue\\SegmentBulkActionConsumer\:\:applyAction\(\) expects array\<string, mixed\>, array given\.$#'
+			message: '#^Parameter \#2 \$params of method Ordo\\Automation\\Api\\Campaign\\ActionInterface\:\:execute\(\) expects array\<string, mixed\>, array given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Model/Queue/SegmentBulkActionConsumer.php
@@ -3149,6 +3053,12 @@ parameters:
 			identifier: cast.string
 			count: 2
 			path: Model/Queue/VisitorAggregationConsumer.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and false will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: Model/RateLimit/CacheWindowCounter.php
 
 		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''intval'' given\.$#'
@@ -3625,6 +3535,12 @@ parameters:
 			path: Model/Segment/SegmentMatcher.php
 
 		-
+			message: '#^Parameter \#1 \$specs of method Ordo\\Automation\\Model\\Condition\\ConditionGroupEvaluator\:\:evaluate\(\) expects array\<int, array\{type\: string, params\: array\<string, mixed\>\}\>, list\<array\{type\: string, params\: mixed\}\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Segment/SegmentMatcher.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
@@ -3679,12 +3595,6 @@ parameters:
 			path: Model/SegmentCondition.php
 
 		-
-			message: '#^Method Ordo\\Automation\\Model\\SegmentCondition\:\:getParams\(\) should return array\<string, mixed\> but returns array\<mixed\>\.$#'
-			identifier: return.type
-			count: 1
-			path: Model/SegmentCondition.php
-
-		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 2
@@ -3697,6 +3607,12 @@ parameters:
 			path: Model/SurveyPrompt.php
 
 		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Track/DeliveryClaimer.php
+
+		-
 			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getHeader\(\)\.$#'
 			identifier: method.notFound
 			count: 2
@@ -3707,6 +3623,12 @@ parameters:
 			identifier: method.notFound
 			count: 2
 			path: Model/Track/VisitorIdentityResolver.php
+
+		-
+			message: '#^Parameter \#1 \$rows of method Ordo\\Automation\\Model\\VisitorAggregator\:\:overThresholdTags\(\) expects array\<int, array\{event_type\: string, event_key\: string, occurrences\: int\|string\}\>, array given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Model/VisitorAggregator.php
 
 		-
 			message: '#^Method Ordo\\Automation\\Model\\VisitorTagManager\:\:getTags\(\) should return array\<string\> but returns array\.$#'
@@ -3725,12 +3647,6 @@ parameters:
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: Model/WhatsApp/WhatsAppSender.php
-
-		-
-			message: '#^Parameter \#1 \$name of method Magento\\Framework\\HTTP\\Client\\Curl\:\:setOption\(\) expects string, int given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model/WhatsApp/WhatsAppTemplateClient.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -3883,19 +3799,19 @@ parameters:
 			path: Observer/SendWelcomeEmail.php
 
 		-
-			message: '#^Parameter \#1 \$address of method Magento\\Framework\\Mail\\Template\\TransportBuilder\:\:addTo\(\) expects array\|string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Observer/SendWelcomeEmail.php
-
-		-
-			message: '#^Parameter \#2 \$name of method Magento\\Framework\\Mail\\Template\\TransportBuilder\:\:addTo\(\) expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Observer/SendWelcomeEmail.php
-
-		-
 			message: '#^Parameter \#2 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Observer/SendWelcomeEmail.php
+
+		-
+			message: '#^Parameter \#3 \$toAddress of method Ordo\\Automation\\Model\\Cron\\ReminderEmailSender\:\:send\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Observer/SendWelcomeEmail.php
+
+		-
+			message: '#^Parameter \#4 \$toName of method Ordo\\Automation\\Model\\Cron\\ReminderEmailSender\:\:send\(\) expects string, mixed given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Observer/SendWelcomeEmail.php
@@ -3958,18 +3874,6 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
-			path: Plugin/AdAudience/AdAudienceResourceAuditPlugin.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Plugin/ContentBlock/ContentBlockResourceAuditPlugin.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
 			path: Plugin/Email/SnapshotEmailTemplateVersion.php
 
 		-
@@ -3977,12 +3881,6 @@ parameters:
 			identifier: cast.string
 			count: 4
 			path: Plugin/Email/SnapshotEmailTemplateVersion.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Plugin/FreeGiftOffer/FreeGiftOfferResourceAuditPlugin.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -4006,13 +3904,7 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
-			path: Plugin/ScoreRule/ScoreRuleResourceAuditPlugin.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Plugin/WhatsAppTemplate/WhatsAppTemplateResourceAuditPlugin.php
+			path: Plugin/Shared/ResourceAuditPlugin.php
 
 		-
 			message: '#^Use service contracts to persist entities in favour of Magento\\Eav\\Model\\Entity\\Attribute\\AbstractAttribute\:\:save\(\) method$#'

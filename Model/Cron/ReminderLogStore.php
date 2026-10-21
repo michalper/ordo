@@ -97,6 +97,26 @@ class ReminderLogStore
     }
 
     /**
+     * Updates the claim row previously written by insert()/claim(), matched by the exact data
+     * that call wrote (not a captured entity_id/lastInsertId() - same reasoning as
+     * deleteMatching() below) - for callers that only learn a column's value after the claim row
+     * already exists, e.g. SendAbandonedCartReminders' message_log_id.
+     *
+     * @param array<string, mixed> $matchData the exact same array previously passed to insert()
+     * @param array<string, mixed> $data
+     */
+    public function updateMatching(string $table, array $matchData, array $data): void
+    {
+        $connection = $this->resourceConnection->getConnection();
+
+        $connection->update(
+            $this->resourceConnection->getTableName($table),
+            $data,
+            $this->buildWhereFromData($matchData)
+        );
+    }
+
+    /**
      * Rolls back a claim row written by insert() — every caller of insert() in this module now
      * writes the "already sent" row BEFORE calling the actual send (a claim, not an after-the-
      * fact log), so a crash between the insert and the send can never cause a duplicate send on
@@ -115,11 +135,21 @@ class ReminderLogStore
     {
         $connection = $this->resourceConnection->getConnection();
 
+        $connection->delete($this->resourceConnection->getTableName($table), $this->buildWhereFromData($data));
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function buildWhereFromData(array $data): string
+    {
+        $connection = $this->resourceConnection->getConnection();
+
         $where = [];
         foreach ($data as $column => $value) {
             $where[] = $connection->quoteInto($connection->quoteIdentifier($column) . ' = ?', $value);
         }
 
-        $connection->delete($this->resourceConnection->getTableName($table), implode(' AND ', $where));
+        return implode(' AND ', $where);
     }
 }

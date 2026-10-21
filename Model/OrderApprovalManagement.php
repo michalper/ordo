@@ -11,6 +11,7 @@ use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Config as OrderConfig;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
+use Magento\Store\Model\Store;
 use Ordo\Automation\Api\Data\OrderApprovalDecisionLinksInterface;
 use Ordo\Automation\Api\Data\OrderApprovalInterface;
 use Ordo\Automation\Api\OrderApprovalManagementInterface;
@@ -106,9 +107,8 @@ class OrderApprovalManagement implements OrderApprovalManagementInterface
         // Observer\HoldOrderForApproval::sendApprovalRequestEmail()'s own comment for the same
         // fix and the multi-store bug it closes.
         $order = $this->loadOrder($approval->getOrderId());
-        $baseUrl = rtrim((string) $order->getStore()->getBaseUrl(), '/');
 
-        return $this->buildDecisionLinks($baseUrl, (string) $approval->getToken());
+        return $this->buildDecisionLinks($order->getStore(), (string) $approval->getToken());
     }
 
     public function getDecisionLinksByIds(array $entityIds): array
@@ -137,32 +137,39 @@ class OrderApprovalManagement implements OrderApprovalManagementInterface
         $orders = $this->orderCollectionFactory->create();
         $orders->addFieldToFilter('entity_id', ['in' => array_unique(array_values($orderIdByApprovalId))]);
 
-        $baseUrlByOrderId = [];
+        $storeByOrderId = [];
         foreach ($orders as $order) {
             /** @var Order $order */
-            $baseUrlByOrderId[(int) $order->getEntityId()] = rtrim((string) $order->getStore()->getBaseUrl(), '/');
+            $storeByOrderId[(int) $order->getEntityId()] = $order->getStore();
         }
 
         $links = [];
         foreach ($approvals as $approval) {
             /** @var OrderApproval $approval */
             $entityId = (int) $approval->getEntityId();
-            $baseUrl = $baseUrlByOrderId[$orderIdByApprovalId[$entityId]] ?? null;
+            $store = $storeByOrderId[$orderIdByApprovalId[$entityId]] ?? null;
 
             // The referenced order no longer exists - shouldn't normally happen (foreign key),
             // but skip rather than build a broken link if it somehow does.
-            if ($baseUrl === null) {
+            if ($store === null) {
                 continue;
             }
 
-            $links[$entityId] = $this->buildDecisionLinks($baseUrl, (string) $approval->getToken());
+            $links[$entityId] = $this->buildDecisionLinks($store, (string) $approval->getToken());
         }
 
         return $links;
     }
 
-    private function buildDecisionLinks(string $baseUrl, string $token): OrderApprovalDecisionLinksInterface
+    /**
+     * The single place the approve/reject token-link URLs are spelled out - the email senders
+     * (Observer\HoldOrderForApproval, Cron\EscalateStalePendingApprovals) build theirs here too,
+     * so a route change can't leave the emails and the REST payload disagreeing.
+     */
+    public function buildDecisionLinks(Store $store, string $token): OrderApprovalDecisionLinksInterface
     {
+        $baseUrl = rtrim((string) $store->getBaseUrl(), '/');
+
         /** @var OrderApprovalDecisionLinks $links */
         $links = $this->decisionLinksFactory->create();
         $links->setApproveUrl($baseUrl . '/ordo/approval/approve/token/' . $token);

@@ -74,7 +74,7 @@ class ScanBackInStockAlertsTest extends TestCase
         $connection->method('fetchAll')->willReturn([
             ['entity_id' => 1, 'customer_id' => 5, 'product_id' => 10, 'last_known_in_stock' => 0],
         ]);
-        $connection->expects(self::once())->method('update');
+        $connection->expects(self::once())->method('update')->willReturn(1);
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -109,8 +109,15 @@ class ScanBackInStockAlertsTest extends TestCase
         $connection->method('fetchAll')->willReturn([
             ['entity_id' => 1, 'customer_id' => null, 'product_id' => 10, 'last_known_in_stock' => 0],
         ]);
-        $connection->expects(self::once())->method('update')
-            ->with(self::anything(), ['last_known_in_stock' => true], self::anything());
+        $connection->expects(self::once())->method('update')->with(
+            self::anything(),
+            self::callback(
+                static fn (array $data): bool => $data['last_known_in_stock'] === true
+                    && isset($data['last_scanned_at'])
+                    && !array_key_exists('notified_at', $data)
+            ),
+            self::anything()
+        );
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -145,7 +152,7 @@ class ScanBackInStockAlertsTest extends TestCase
                 'last_known_in_stock' => 0,
             ],
         ]);
-        $connection->expects(self::once())->method('update');
+        $connection->expects(self::once())->method('update')->willReturn(1);
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -186,6 +193,11 @@ class ScanBackInStockAlertsTest extends TestCase
         $connection->method('fetchAll')->willReturn([
             ['entity_id' => 1, 'customer_id' => 5, 'product_id' => 10, 'last_known_in_stock' => 1],
         ]);
+        // Unchanged snapshot (raw '1' vs salable true) - only the scan cursor is stamped.
+        $connection->expects(self::once())->method('update')
+            ->with(self::anything(), self::callback(
+                static fn (array $data): bool => array_keys($data) === ['last_scanned_at']
+            ), self::anything());
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -214,7 +226,11 @@ class ScanBackInStockAlertsTest extends TestCase
         $connection->method('fetchAll')->willReturn([
             ['entity_id' => 1, 'customer_id' => 5, 'product_id' => 10, 'last_known_in_stock' => 0],
         ]);
-        $connection->expects(self::never())->method('update');
+        // Still stamps the cursor - an orphaned row left unstamped would block the rotation.
+        $connection->expects(self::once())->method('update')
+            ->with(self::anything(), self::callback(
+                static fn (array $data): bool => array_keys($data) === ['last_scanned_at']
+            ), self::anything());
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -241,7 +257,7 @@ class ScanBackInStockAlertsTest extends TestCase
         $connection->method('fetchAll')->willReturn([
             ['entity_id' => 1, 'customer_id' => 5, 'product_id' => 10, 'last_known_in_stock' => 0],
         ]);
-        $connection->expects(self::exactly(2))->method('update');
+        $connection->expects(self::exactly(2))->method('update')->willReturn(1);
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);

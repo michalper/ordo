@@ -7,12 +7,12 @@ use Magento\Framework\App\Bootstrap;
 use Magento\Framework\ObjectManagerInterface;
 use Ordo\Automation\Cron\RetryFailedPushSends;
 use Ordo\Automation\Model\Push\PushSendRetryQueue;
-use Ordo\Automation\Model\Push\PushSender;
 use Ordo\Automation\Model\Push\PushSubscriptionSender;
 use Ordo\Automation\Model\PushSubscription;
 use Ordo\Automation\Model\PushSubscriptionFactory;
 use Ordo\Automation\Model\ResourceModel\PushSendRetry\CollectionFactory as PushSendRetryCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\PushSubscription as PushSubscriptionResource;
+use Ordo\Automation\Test\Integration\Fixture\FakePushSender;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -180,27 +180,5 @@ class RetryFailedPushSendsTest extends TestCase
         ]);
 
         $cron->execute();
-    }
-}
-
-/**
- * Stands in for a real push service - never makes a real HTTP call. Extends the real PushSender
- * (real Curl/Config/VapidTokenBuilder/WebPushCrypto/PushEndpointValidator/OutboundRateLimiter
- * dependencies from DI, all harmless to construct) and overrides only send() itself, the one
- * method that would otherwise make the real outbound HTTP request.
- */
-class FakePushSender extends PushSender
-{
-    public bool $shouldSucceed = true;
-
-    public int $callCount = 0;
-
-    public function send(PushSubscription $subscription, string $payloadJson): void
-    {
-        $this->callCount++;
-
-        if (!$this->shouldSucceed) {
-            throw new \RuntimeException('Simulated push service failure for integration test');
-        }
     }
 }

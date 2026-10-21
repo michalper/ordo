@@ -37,6 +37,14 @@ class VisitorEventLogger
             'created_at' => date('Y-m-d H:i:s'),
         ]);
 
+        // VisitorAggregator only ever aggregates rows WHERE event_key IS NOT NULL, so a keyless
+        // event (e.g. tracker.js's bare page_view) can never produce a tag — publishing an
+        // aggregation check for it would be one queue message plus one GROUP BY per page view
+        // for nothing. The row itself still matters (session stitching, pruning stats).
+        if ($eventKey === null) {
+            return;
+        }
+
         if ($customerId !== null) {
             $this->visitorAggregationPublisher->publishForCustomer($customerId);
         } else {

@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\WhatsApp;
 
-use Magento\Framework\HTTP\Client\Curl;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Http\JsonApiClient;
 
 /**
  * Submits a WhatsApp message template to Meta for approval, and polls its current status - the
@@ -18,10 +18,11 @@ use Ordo\Automation\Helper\Config;
 class WhatsAppTemplateClient
 {
     private const string API_VERSION = 'v20.0';
-    private const int TIMEOUT_SECONDS = 30;
+
+    private const string SERVICE_NAME = 'Meta Graph API';
 
     public function __construct(
-        private readonly Curl $curl,
+        private readonly JsonApiClient $jsonApiClient,
         private readonly Config $config
     ) {
     }
@@ -95,27 +96,10 @@ class WhatsAppTemplateClient
      */
     private function request(string $method, string $url, ?array $payload): array
     {
-        $this->curl->setTimeout(self::TIMEOUT_SECONDS);
-        $this->curl->setOption(CURLOPT_FOLLOWLOCATION, false);
-        $this->curl->addHeader('Content-Type', 'application/json');
-        $this->curl->addHeader('Authorization', 'Bearer ' . $this->config->getWhatsAppAccessToken());
+        $authHeader = ['Authorization' => 'Bearer ' . $this->config->getWhatsAppAccessToken()];
 
-        if ($method === 'GET') {
-            $this->curl->get($url);
-        } else {
-            $this->curl->post($url, (string) json_encode($payload));
-        }
-
-        $status = $this->curl->getStatus();
-        $responseBody = (string) $this->curl->getBody();
-
-        if ($status < 200 || $status >= 300) {
-            throw new \RuntimeException(
-                sprintf('Meta Graph API request to %s failed (HTTP %d): %s', $url, $status, $responseBody)
-            );
-        }
-
-        $decoded = json_decode($responseBody, true);
-        return is_array($decoded) ? $decoded : [];
+        return $method === 'GET'
+            ? $this->jsonApiClient->getJson($url, $authHeader, self::SERVICE_NAME)
+            : $this->jsonApiClient->postJson($url, $payload ?? [], $authHeader, self::SERVICE_NAME);
     }
 }

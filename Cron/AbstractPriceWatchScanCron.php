@@ -97,7 +97,12 @@ abstract class AbstractPriceWatchScanCron
             ->from($table, ['entity_id', 'customer_id', 'guest_email', 'product_id', $snapshotColumn])
             ->where('watch_type = ?', $this->watchType())
             ->where('notified_at IS NULL')
-            ->order('entity_id ASC')
+            // Rotating cursor, not a fixed 'entity_id ASC' page: rows with no change are never
+            // claimed, so a fixed order would rescan the same first batch every tick and starve
+            // every watch beyond it forever. Ordering by last_scanned_at (NULLs sort first under
+            // ASC - never-scanned rows go first) and stamping it on every scanned row rotates the
+            // whole table through the batch window.
+            ->order(['last_scanned_at ASC', 'entity_id ASC'])
             ->limit($batchSize);
 
         /**
@@ -152,6 +157,9 @@ abstract class AbstractPriceWatchScanCron
             $product = $this->productRepository->getById($productId);
         } catch (NoSuchEntityException) {
             // Product deleted since this watch was registered - nothing left to compare against.
+            // Still advance the cursor: left unstamped, this orphaned row would sit at the front
+            // of the last_scanned_at ASC order forever and shrink the usable batch window.
+            $this->updateRow($entityId, ['last_scanned_at' => date('Y-m-d H:i:s')]);
             return false;
         }
 
@@ -163,9 +171,13 @@ abstract class AbstractPriceWatchScanCron
         if ($isNotifiable && $customerId !== null) {
             // Claim (set notified_at) BEFORE dispatching, not after - a crash between a
             // successful dispatch and the claim write must never cause a duplicate trigger on
-            // the next tick. If the dispatch itself then fails, the claim is rolled back so this
-            // row is retried next run - same pattern as every other reminder cron in this module.
-            $this->claim($entityId, $newValue);
+            // the next tick. The claim is conditional (... WHERE notified_at IS NULL, affected
+            // rows checked): of two overlapping runs that both selected this row, only the one
+            // whose UPDATE actually matched may dispatch. If the dispatch itself then fails, the
+            // claim is rolled back so this row is retried next run.
+            if (!$this->claim($entityId, $newValue)) {
+                return false;
+            }
 
             try {
                 $this->campaignDispatcher->dispatch(
@@ -185,10 +197,12 @@ abstract class AbstractPriceWatchScanCron
 
         if ($isNotifiable && $guestEmail !== null) {
             // Only reachable when customer_id was null - the branch above already claims/returns
-            // for every notifiable row with a known customer. Same claim-before-send/
+            // for every notifiable row with a known customer. Same conditional-claim/
             // rollback-on-failure shape as that branch, just sent directly to the guest instead
             // of through the campaign engine.
-            $this->claim($entityId, $newValue);
+            if (!$this->claim($entityId, $newValue)) {
+                return false;
+            }
 
             try {
                 $this->guestPriceWatchNotifier->notify(
@@ -205,37 +219,64 @@ abstract class AbstractPriceWatchScanCron
             return true;
         }
 
-        // No notifiable change yet, or a guest watch with no email on file - just refresh the
-        // snapshot so the next scan compares against the product's current value.
-        $this->updateSnapshot($entityId, $newValue);
+        // No notifiable change yet, or a guest watch with no email on file - advance the cursor,
+        // and refresh the snapshot only when the observed value actually moved: most rows are
+        // unchanged on most ticks, and rewriting an identical snapshot is a pointless write.
+        $update = ['last_scanned_at' => date('Y-m-d H:i:s')];
+        if ($this->snapshotChanged($oldValue, $newValue)) {
+            $update[$snapshotColumn] = $newValue;
+        }
+        $this->updateRow($entityId, $update);
+
         return false;
     }
 
-    private function claim(int $entityId, mixed $newValue): void
+    /**
+     * @return bool true only when this process's conditional UPDATE actually claimed the row -
+     *   same affected-rows check as ResourceModel\Campaign\ScheduledAction::claim(); a concurrent
+     *   overlapping run that already set notified_at makes this return false, and the caller must
+     *   not dispatch.
+     */
+    private function claim(int $entityId, mixed $newValue): bool
     {
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName(self::TABLE);
+        $now = date('Y-m-d H:i:s');
 
-        $connection->update(
+        $affectedRows = (int) $connection->update(
             $table,
-            [$this->snapshotColumn() => $newValue, 'notified_at' => date('Y-m-d H:i:s')],
-            ['entity_id = ?' => $entityId]
+            [$this->snapshotColumn() => $newValue, 'notified_at' => $now, 'last_scanned_at' => $now],
+            $connection->quoteInto('entity_id = ?', $entityId) . ' AND notified_at IS NULL'
         );
+
+        return $affectedRows === 1;
     }
 
     private function unclaim(int $entityId): void
     {
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName(self::TABLE);
-
-        $connection->update($table, ['notified_at' => null], ['entity_id = ?' => $entityId]);
+        $this->updateRow($entityId, ['notified_at' => null]);
     }
 
-    private function updateSnapshot(int $entityId, mixed $newValue): void
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function updateRow(int $entityId, array $data): void
     {
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName(self::TABLE);
 
-        $connection->update($table, [$this->snapshotColumn() => $newValue], ['entity_id = ?' => $entityId]);
+        $connection->update($table, $data, ['entity_id = ?' => $entityId]);
+    }
+
+    private function snapshotChanged(mixed $oldValue, mixed $newValue): bool
+    {
+        if ($oldValue === null || $newValue === null) {
+            return $oldValue !== $newValue;
+        }
+
+        // Loose by design: $oldValue is the raw DB value ('100.0000', '1'), $newValue the typed
+        // PHP value (100.0, true) - a strict comparison would see every row as changed and
+        // rewrite every snapshot on every tick, which is exactly what this check avoids.
+        return $oldValue != $newValue;
     }
 }

@@ -84,6 +84,11 @@ class SendBrowseAbandonmentReminders
             ->group(['e.customer_id', 'e.event_key'])
             ->having('reminders_sent < ?', $maxReminders);
 
+        // Captured before the rows are fetched: any log row for the same customer/product with
+        // sent_at at/after this moment can only have been written by a concurrently overlapping
+        // run (this run's own select already counted everything older into reminders_sent).
+        $runStartedAt = date('Y-m-d H:i:s');
+
         /** @var array<int, BrowseAbandonedRow> $rows */
         $rows = $connection->fetchAll($select);
 
@@ -92,14 +97,27 @@ class SendBrowseAbandonmentReminders
             // Claim (log) BEFORE dispatching, not after - a crash between a successful dispatch
             // and the log write must never cause a duplicate trigger on the next tick. If the
             // dispatch itself then fails, the claim is rolled back so this row is retried next
-            // run - see ReminderLogStore::deleteMatching()'s docblock for the full reasoning,
-            // shared with every other reminder cron in this module.
+            // run. claim() (not a plain insert()) atomically re-checks that no overlapping run
+            // already claimed this customer/product since this run started - the select's HAVING
+            // cap alone is only a pre-filter: two overlapping runs can both count the same
+            // reminders_sent before either inserts, and both would dispatch.
             $reminderLogRow = [
                 'customer_id' => (int) $row['customer_id'],
                 'event_key' => (string) $row['event_key'],
                 'sent_at' => date('Y-m-d H:i:s'),
             ];
-            $this->reminderLogStore->insert(self::LOG_TABLE, $reminderLogRow);
+            $claimed = $this->reminderLogStore->claim(
+                self::LOG_TABLE,
+                [
+                    'customer_id = ?' => (int) $row['customer_id'],
+                    'event_key = ?' => (string) $row['event_key'],
+                    'sent_at >= ?' => $runStartedAt,
+                ],
+                $reminderLogRow
+            );
+            if (!$claimed) {
+                continue;
+            }
 
             try {
                 $this->campaignDispatcher->dispatch('browse_abandoned', [

@@ -8,11 +8,14 @@ use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Controller\Result\Json;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\DB\Adapter\AdapterInterface;
+use Magento\Framework\Stdlib\CookieManagerInterface;
 use Ordo\Automation\Controller\Track\Popup;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\PendingPopup;
 use Ordo\Automation\Model\ResourceModel\PendingPopup\Collection as PendingPopupCollection;
 use Ordo\Automation\Model\ResourceModel\PendingPopup\CollectionFactory as PendingPopupCollectionFactory;
+use Ordo\Automation\Model\Track\DeliveryClaimer;
+use Ordo\Automation\Model\Track\VisitorIdentityResolver;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
@@ -48,8 +51,11 @@ class PopupTest extends AbstractFrontendActionTestCase
             $this->makeContext(),
             $this->resultJsonFactory,
             $this->pendingPopupCollectionFactory,
-            $this->resourceConnection,
-            $this->customerSession,
+            // Real collaborators over the same stubs the controller used to hold directly, so
+            // every existing expectation (connection->update, session, request params) still
+            // exercises the full claim/identity path.
+            new DeliveryClaimer($this->resourceConnection),
+            new VisitorIdentityResolver($this->customerSession, $this->createStub(CookieManagerInterface::class)),
             $this->config
         );
     }

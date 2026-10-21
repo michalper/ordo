@@ -5,7 +5,6 @@ namespace Ordo\Automation\Test\Integration;
 
 use Magento\Framework\App\Bootstrap;
 use Magento\Framework\ObjectManagerInterface;
-use Ordo\Automation\Api\AdAudience\SyncClientInterface;
 use Ordo\Automation\Model\AdAudience;
 use Ordo\Automation\Model\AdAudience\PiiHasher;
 use Ordo\Automation\Model\AdAudience\SyncClientPool;
@@ -17,6 +16,7 @@ use Ordo\Automation\Model\ResourceModel\Segment\Condition as SegmentConditionRes
 use Ordo\Automation\Model\SegmentConditionFactory;
 use Ordo\Automation\Model\SegmentFactory;
 use Ordo\Automation\Cron\SyncAdAudiences;
+use Ordo\Automation\Test\Integration\Fixture\RecordingSyncClient;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -137,22 +137,5 @@ class SyncAdAudiencesTest extends TestCase
         $adAudienceResource->load($adAudience, $this->adAudienceId);
         self::assertSame(AdAudience::STATUS_SUCCESS, $adAudience->getLastSyncStatus());
         self::assertNotNull($adAudience->getLastSyncedAt());
-    }
-}
-
-/**
- * Records (externalAudienceId, hashedEmails) instead of calling a real ad platform - test-only
- * helper, same role RecordingTwilioSmsSender plays in CampaignSendSmsActionTest.
- */
-class RecordingSyncClient implements SyncClientInterface
-{
-    /** @var array<int, array{externalAudienceId: ?string, hashedEmails: array<int, string>}> */
-    public array $calls = [];
-
-    public function sync(?string $externalAudienceId, array $hashedEmails): ?string
-    {
-        $this->calls[] = ['externalAudienceId' => $externalAudienceId, 'hashedEmails' => $hashedEmails];
-
-        return null;
     }
 }

@@ -7,14 +7,11 @@ use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\DB\Select;
 use Ordo\Automation\Cron\CalculateReorderCycle;
-use Ordo\Automation\Model\ReorderCycle;
-use Ordo\Automation\Model\ReorderCycleFactory;
+use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle as ReorderCycleResource;
-use Ordo\Automation\Model\Cron\CronRunLogger;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
 
 class CalculateReorderCycleTest extends TestCase
 {
@@ -31,6 +28,39 @@ class CalculateReorderCycleTest extends TestCase
         return $select;
     }
 
+    private function makeConfig(int $minOrders = 3): Config
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('getReorderMinOrders')->willReturn($minOrders);
+
+        return $config;
+    }
+
+    private function makeResource(): ReorderCycleResource
+    {
+        $resource = $this->createStub(ReorderCycleResource::class);
+        $resource->method('getMainTable')->willReturn('ordo_reorder_cycle');
+
+        return $resource;
+    }
+
+    private function makeCron(
+        AdapterInterface $connection,
+        LoggerInterface $logger,
+        int $minOrders = 3
+    ): CalculateReorderCycle {
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        return new CalculateReorderCycle(
+            $resourceConnection,
+            $this->makeResource(),
+            $this->makeCronRunLogger($logger),
+            $this->makeConfig($minOrders)
+        );
+    }
+
     public function testExecuteSkipsCustomersBelowMinimumOrders(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
@@ -39,23 +69,33 @@ class CalculateReorderCycleTest extends TestCase
             ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-01-01 00:00:00'],
             ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-02-01 00:00:00'],
         ]);
-        $connection->expects(self::never())->method('insert');
-
-        $resourceConnection = $this->createStub(ResourceConnection::class);
-        $resourceConnection->method('getConnection')->willReturn($connection);
-        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
-
-        $reorderCycleFactory = $this->createMock(ReorderCycleFactory::class);
-        $reorderCycleFactory->expects(self::never())->method('create');
-
-        $reorderCycleResource = $this->createStub(ReorderCycleResource::class);
+        $connection->expects(self::never())->method('insertOnDuplicate');
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('info')->with(self::stringContains('0 reorder cycles'));
 
-$result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $this->makeCronRunLogger($logger)))->execute();
+        self::assertSame(0, $this->makeCron($connection, $logger)->execute());
+    }
 
-        self::assertSame(0, $result);
+    /**
+     * The threshold comes from the admin setting (Stores → Configuration → Ordo Automation →
+     * Reorder, "Minimum orders to detect a pattern"), not a hardcoded constant — a 3-order
+     * history that passes the default must be skipped when the merchant raises the bar to 4.
+     */
+    public function testExecuteRespectsTheConfiguredMinimumOrders(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-01-01 00:00:00'],
+            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-02-01 00:00:00'],
+            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-03-01 00:00:00'],
+        ]);
+        $connection->expects(self::never())->method('insertOnDuplicate');
+
+        $logger = $this->createStub(LoggerInterface::class);
+
+        self::assertSame(0, $this->makeCron($connection, $logger, 4)->execute());
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -68,31 +108,21 @@ $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, 
             ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-02-01 00:00:00'],
             ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-03-01 00:00:00'],
         ]);
-        $connection->method('fetchOne')->willReturn(false);
 
-        $resourceConnection = $this->createStub(ResourceConnection::class);
-        $resourceConnection->method('getConnection')->willReturn($connection);
-        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
-
-        $model = $this->createMock(ReorderCycle::class);
-        $model->expects(self::once())->method('addData')->with(self::callback(
-            fn (array $data) => $data['customer_id'] === 1 && $data['sku'] === 'SKU-1'
-        ));
-
-        $reorderCycleFactory = $this->createMock(ReorderCycleFactory::class);
-        $reorderCycleFactory->method('create')->willReturn($model);
-
-        $reorderCycleResource = $this->createMock(ReorderCycleResource::class);
-        $reorderCycleResource->method('getConnection')->willReturn($connection);
-        $reorderCycleResource->method('getMainTable')->willReturn('ordo_reorder_cycle');
-        $reorderCycleResource->expects(self::once())->method('save')->with($model);
+        $connection->expects(self::once())->method('insertOnDuplicate')->with(
+            'ordo_reorder_cycle',
+            self::callback(
+                fn (array $rows) => count($rows) === 1
+                    && $rows[0]['customer_id'] === 1
+                    && $rows[0]['sku'] === 'SKU-1'
+            ),
+            ['avg_interval_days', 'last_order_date', 'next_expected_date', 'orders_considered']
+        );
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('info')->with(self::stringContains('1 reorder cycles'));
 
-$result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $this->makeCronRunLogger($logger)))->execute();
-
-        self::assertSame(1, $result);
+        self::assertSame(1, $this->makeCron($connection, $logger)->execute());
     }
 
     /**
@@ -111,34 +141,20 @@ $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, 
             ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-01-21 00:00:00'],
             ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-01-31 00:00:00'],
         ]);
-        $connection->method('fetchOne')->willReturn(false);
 
-        $resourceConnection = $this->createStub(ResourceConnection::class);
-        $resourceConnection->method('getConnection')->willReturn($connection);
-        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
-
-        $model = $this->createMock(ReorderCycle::class);
-        $addData = [];
-        $model->method('addData')->willReturnCallback(function (array $data) use (&$addData, $model) {
-            $addData = $data;
-            return $model;
-        });
-
-        $reorderCycleFactory = $this->createStub(ReorderCycleFactory::class);
-        $reorderCycleFactory->method('create')->willReturn($model);
-
-        $reorderCycleResource = $this->createMock(ReorderCycleResource::class);
-        $reorderCycleResource->method('getConnection')->willReturn($connection);
-        $reorderCycleResource->method('getMainTable')->willReturn('ordo_reorder_cycle');
-        $reorderCycleResource->expects(self::once())->method('save')->with($model);
+        $upserted = [];
+        $connection->method('insertOnDuplicate')->willReturnCallback(
+            function (string $table, array $rows) use (&$upserted): int {
+                $upserted = array_merge($upserted, $rows);
+                return count($rows);
+            }
+        );
 
         $logger = $this->createStub(LoggerInterface::class);
 
-        $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $this->makeCronRunLogger($logger)))->execute();
-
-        self::assertSame(1, $result);
+        self::assertSame(1, $this->makeCron($connection, $logger)->execute());
         // Three 10-day intervals - the middle one directly (10), not an average of two.
-        self::assertSame(10, $addData['avg_interval_days']);
+        self::assertSame(10, $upserted[0]['avg_interval_days']);
     }
 
     public function testExecuteSkipsSameDayRepeatPurchases(): void
@@ -150,55 +166,12 @@ $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, 
             ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-01-01 11:00:00'],
             ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-01-01 12:00:00'],
         ]);
-        $connection->expects(self::never())->method('insert');
-
-        $resourceConnection = $this->createStub(ResourceConnection::class);
-        $resourceConnection->method('getConnection')->willReturn($connection);
-        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
-
-        $reorderCycleFactory = $this->createMock(ReorderCycleFactory::class);
-        $reorderCycleFactory->expects(self::never())->method('create');
-
-        $reorderCycleResource = $this->createMock(ReorderCycleResource::class);
-        $reorderCycleResource->expects(self::never())->method('save');
+        $connection->expects(self::never())->method('insertOnDuplicate');
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('info')->with(self::stringContains('0 reorder cycles'));
 
-        (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $this->makeCronRunLogger($logger)))->execute();
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testExecuteUpdatesExistingCycle(): void
-    {
-        $connection = $this->createMock(AdapterInterface::class);
-        $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchAll')->willReturn([
-            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-01-01 00:00:00'],
-            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-02-01 00:00:00'],
-            ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-03-01 00:00:00'],
-        ]);
-        $connection->method('fetchOne')->willReturn('9');
-
-        $resourceConnection = $this->createStub(ResourceConnection::class);
-        $resourceConnection->method('getConnection')->willReturn($connection);
-        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
-
-        $model = $this->createMock(ReorderCycle::class);
-        $model->method('load')->willReturnSelf();
-        $model->expects(self::once())->method('addData');
-
-        $reorderCycleFactory = $this->createMock(ReorderCycleFactory::class);
-        $reorderCycleFactory->method('create')->willReturn($model);
-
-        $reorderCycleResource = $this->createMock(ReorderCycleResource::class);
-        $reorderCycleResource->method('getConnection')->willReturn($connection);
-        $reorderCycleResource->method('getMainTable')->willReturn('ordo_reorder_cycle');
-        $reorderCycleResource->expects(self::once())->method('save')->with($model);
-
-        $logger = $this->createStub(LoggerInterface::class);
-
-        (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $this->makeCronRunLogger($logger)))->execute();
+        $this->makeCron($connection, $logger)->execute();
     }
 
     /**
@@ -219,28 +192,16 @@ $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, 
             ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-04-01 00:00:00'],
             ['customer_id' => 1, 'sku' => 'SKU-1', 'created_at' => '2026-12-27 00:00:00'],
         ]);
-        $connection->method('fetchOne')->willReturn(false);
 
-        $resourceConnection = $this->createStub(ResourceConnection::class);
-        $resourceConnection->method('getConnection')->willReturn($connection);
-        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
-
-        $model = $this->createMock(ReorderCycle::class);
-        $model->expects(self::once())->method('addData')->with(self::callback(
-            fn (array $data) => $data['avg_interval_days'] === 30
-        ));
-
-        $reorderCycleFactory = $this->createMock(ReorderCycleFactory::class);
-        $reorderCycleFactory->method('create')->willReturn($model);
-
-        $reorderCycleResource = $this->createMock(ReorderCycleResource::class);
-        $reorderCycleResource->method('getConnection')->willReturn($connection);
-        $reorderCycleResource->method('getMainTable')->willReturn('ordo_reorder_cycle');
-        $reorderCycleResource->expects(self::once())->method('save')->with($model);
+        $connection->expects(self::once())->method('insertOnDuplicate')->with(
+            self::anything(),
+            self::callback(fn (array $rows) => $rows[0]['avg_interval_days'] === 30),
+            self::anything()
+        );
 
         $logger = $this->createStub(LoggerInterface::class);
 
-        (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $this->makeCronRunLogger($logger)))->execute();
+        $this->makeCron($connection, $logger)->execute();
     }
 
     /**
@@ -270,15 +231,9 @@ $result = (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, 
         $connection->method('select')->willReturn($select);
         $connection->method('fetchAll')->willReturn([]);
 
-        $resourceConnection = $this->createStub(ResourceConnection::class);
-        $resourceConnection->method('getConnection')->willReturn($connection);
-        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
-
-        $reorderCycleFactory = $this->createStub(ReorderCycleFactory::class);
-        $reorderCycleResource = $this->createStub(ReorderCycleResource::class);
         $logger = $this->createStub(LoggerInterface::class);
 
-        (new CalculateReorderCycle($resourceConnection, $reorderCycleFactory, $reorderCycleResource, $this->makeCronRunLogger($logger)))->execute();
+        $this->makeCron($connection, $logger)->execute();
 
         self::assertNotNull($capturedCutoff, 'Expected a created_at >= ? cutoff to be applied.');
         // Roughly 730 days ago (within a minute of tolerance for test execution time) - not an

@@ -5,12 +5,12 @@
     <file>.</file>
 
     <exclude-pattern>vendor/*</exclude-pattern>
-    <!-- Test/Integration deliberately shells out to a real bin/magento subprocess (see
-         AGENTS.md) to drive the queue consumer against a real DB-backed queue in this
-         environment (no RabbitMQ) — Magento2.Security.InsecureFunction rightly flags exec()
-         in shipped module code, but this is test-harness code, not something that runs in a
-         live store. Same reasoning PHPStan's own config already applies (phpstan.neon excludes
-         Test/*). -->
+    <!-- Test/* is dev/CI tooling, not code that runs in a live store — same reasoning
+         PHPStan's own config already applies (phpstan.neon excludes Test/*). The Magento2
+         ruleset is aimed at shipped store code; applying it here would mostly flag accepted
+         test-code style (e.g. long fixture/assertion lines). Severity-10 violations in Test/
+         are still caught: `composer phpcs-marketplace-check` (and its CI step) scans the whole
+         repo, Test/ included, the way Adobe's Marketplace review does. -->
     <exclude-pattern>*/Test/*</exclude-pattern>
 
     <rule ref="Magento2">
@@ -31,11 +31,13 @@
         <exclude name="Magento2.Commenting.ClassPropertyPHPDocFormatting"/>
 
         <!--
-            Both real occurrences (Observer/TrimExcessFreeGifts.php, Model/FreeGiftManagement.php)
-            are intentionally empty with an inline comment explaining why (the quote item may
-            already be gone, and the stale marker row still needs cleaning up regardless) — a
-            deliberate, documented no-op, not a swallowed error. Verified individually, not
-            assumed safe.
+            Every occurrence (Observer/TrimExcessFreeGifts.php, Model/FreeGiftManagement.php,
+            Model/Campaign/CustomerTimezoneResolver.php, Model/Email/MessageIdGenerator.php,
+            Model/ProductFeed/ProductFeedCacheWriter.php) is a comment-only catch body explaining
+            its deliberate fallback (clean up the stale marker row regardless, fall back to the
+            store-default timezone, fall back to a "localhost" message-id domain, best-effort run
+            logging) — a documented no-op, not a swallowed error. Verified individually, not
+            assumed safe; re-verify any new occurrence before relying on this exclusion.
         -->
         <exclude name="Magento2.CodeAnalysis.EmptyBlock.DetectedCatch"/>
 

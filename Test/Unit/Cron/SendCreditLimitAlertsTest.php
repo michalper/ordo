@@ -22,6 +22,7 @@ use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\CreditLimitCalculator;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
+use Ordo\Automation\Model\Email\PendingMessageIdHolder;
 use Ordo\Automation\Model\Cron\ReminderLogStore;
 use Ordo\Automation\Model\CustomerMapBuilder;
 use Ordo\Automation\Model\SalesRepEmailContext;
@@ -222,7 +223,7 @@ class SendCreditLimitAlertsTest extends TestCase
                 $this->createStub(TransportBuilder::class),
                 $this->createStub(StoreManagerInterface::class),
                 $this->createStub(StateInterface::class)
-            ),
+            , new PendingMessageIdHolder()),
             $this->makeReminderLogStore($resourceConnection),
             $this->createStub(SalesRepEmailContext::class),
             $consentManager,
@@ -326,7 +327,7 @@ class SendCreditLimitAlertsTest extends TestCase
             $config,
             $calculator,
             $customerMapBuilder,
-            new ReminderEmailSender($transportBuilder, $storeManager, $this->createStub(StateInterface::class)),
+            new ReminderEmailSender($transportBuilder, $storeManager, $this->createStub(StateInterface::class), new PendingMessageIdHolder()),
             $this->makeReminderLogStore($resourceConnection),
             $salesRepEmailContext,
             $this->makeConsentManager(),
@@ -371,7 +372,7 @@ class SendCreditLimitAlertsTest extends TestCase
                 $this->createStub(TransportBuilder::class),
                 $this->createStub(StoreManagerInterface::class),
                 $this->createStub(StateInterface::class)
-            ),
+            , new PendingMessageIdHolder()),
             $this->makeReminderLogStore($resourceConnection),
             $this->createStub(SalesRepEmailContext::class),
             $this->makeConsentManager(),
@@ -413,7 +414,7 @@ class SendCreditLimitAlertsTest extends TestCase
             $config,
             $calculator,
             $customerMapBuilder,
-            new ReminderEmailSender($transportBuilder, $storeManager, $this->createStub(StateInterface::class)),
+            new ReminderEmailSender($transportBuilder, $storeManager, $this->createStub(StateInterface::class), new PendingMessageIdHolder()),
             $this->makeReminderLogStore($resourceConnection),
             $salesRepEmailContext,
             $this->makeConsentManager(),

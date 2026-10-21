@@ -27,7 +27,8 @@ class GuestPriceWatchNotifierTest extends TestCase
         $reminderEmailSender = new ReminderEmailSender(
             $transportBuilder,
             $storeManager,
-            $this->createStub(StateInterface::class)
+            $this->createStub(StateInterface::class),
+            new \Ordo\Automation\Model\Email\PendingMessageIdHolder()
         );
 
         return new GuestPriceWatchNotifier($reminderEmailSender);
