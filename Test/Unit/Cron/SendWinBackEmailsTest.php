@@ -20,6 +20,7 @@ use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\CustomerMapBuilder;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
+use Ordo\Automation\Model\Email\PendingMessageIdHolder;
 use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Model\TriggerOutcomeLogger;
 use Ordo\Automation\Model\Cron\CronRunLogger;
@@ -58,7 +59,7 @@ class SendWinBackEmailsTest extends TestCase
         $storeManager = $this->createStub(StoreManagerInterface::class);
         $storeManager->method('getStore')->willReturn($store);
 
-        return new ReminderEmailSender($transportBuilder, $storeManager, $this->createStub(StateInterface::class));
+        return new ReminderEmailSender($transportBuilder, $storeManager, $this->createStub(StateInterface::class), new PendingMessageIdHolder());
     }
 
     private function makeConsentManager(bool $hasConsent = true): ConsentManager

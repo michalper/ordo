@@ -36,6 +36,30 @@ class VisitorIdentityResolverTest extends TestCase
         self::assertSame('', $this->resolver->resolveVisitorId());
     }
 
+    public function testResolveVisitorIdFromParamReturnsStringParam(): void
+    {
+        $request = $this->createStub(Http::class);
+        $request->method('getParam')->willReturnMap([['visitor_id', 'visitor-1']]);
+
+        self::assertSame('visitor-1', $this->resolver->resolveVisitorIdFromParam($request));
+    }
+
+    public function testResolveVisitorIdFromParamNormalizesNonStringToEmpty(): void
+    {
+        $request = $this->createStub(Http::class);
+        $request->method('getParam')->willReturnMap([['visitor_id', ['crafted' => 'array']]]);
+
+        self::assertSame('', $this->resolver->resolveVisitorIdFromParam($request));
+    }
+
+    public function testResolveVisitorIdFromParamReturnsEmptyWhenAbsent(): void
+    {
+        $request = $this->createStub(Http::class);
+        $request->method('getParam')->willReturn(null);
+
+        self::assertSame('', $this->resolver->resolveVisitorIdFromParam($request));
+    }
+
     public function testHasNoIdentityIsTrueWhenNoVisitorIdAndNotLoggedIn(): void
     {
         $this->customerSession->method('isLoggedIn')->willReturn(false);

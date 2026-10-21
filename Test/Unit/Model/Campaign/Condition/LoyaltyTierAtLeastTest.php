@@ -79,4 +79,39 @@ class LoyaltyTierAtLeastTest extends TestCase
 
         self::assertFalse($this->condition->isSatisfied(['customer_id' => 42], ['tier' => 'gold']));
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResolveCustomerIdsUsesTheTierThresholdAgainstTheScoreTable(): void
+    {
+        $this->loyaltyTierCalculator->method('getTierRank')->willReturnMap([['gold', 2]]);
+        $this->loyaltyTierCalculator->method('getMinimumScoreForTier')->willReturnMap([['gold', 500]]);
+        $this->customerScoreManager->method('getCustomerIdsWithScoreAtLeast')->willReturnMap([[500, [4, 8]]]);
+
+        self::assertSame([4, 8], $this->condition->resolveCustomerIds(['tier' => 'gold']));
+    }
+
+    /**
+     * The Bronze floor covers every registered customer, including those without a score row
+     * (implicit score 0) the score-table join could never return.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResolveCustomerIdsForTheBronzeFloorCoversUnscoredCustomersToo(): void
+    {
+        $this->loyaltyTierCalculator->method('getTierRank')->willReturnMap([['bronze', 0]]);
+        $this->loyaltyTierCalculator->method('getMinimumScoreForTier')->willReturnMap([['bronze', null]]);
+        $this->customerScoreManager->method('getAllCustomerIds')->willReturn([1, 2, 3]);
+        $this->customerScoreManager->expects(self::never())->method('getCustomerIdsWithScoreAtLeast');
+
+        self::assertSame([1, 2, 3], $this->condition->resolveCustomerIds(['tier' => 'bronze']));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResolveCustomerIdsFailsClosedOnAnUnrecognizedTier(): void
+    {
+        $this->loyaltyTierCalculator->method('getTierRank')->willReturn(-1);
+        $this->customerScoreManager->expects(self::never())->method('getCustomerIdsWithScoreAtLeast');
+        $this->customerScoreManager->expects(self::never())->method('getAllCustomerIds');
+
+        self::assertSame([], $this->condition->resolveCustomerIds(['tier' => 'platinum']));
+    }
 }

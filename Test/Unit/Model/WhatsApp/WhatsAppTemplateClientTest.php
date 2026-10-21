@@ -5,6 +5,7 @@ namespace Ordo\Automation\Test\Unit\Model\WhatsApp;
 
 use Magento\Framework\HTTP\Client\Curl;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Http\JsonApiClient;
 use Ordo\Automation\Model\WhatsApp\WhatsAppTemplateClient;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
@@ -22,7 +23,9 @@ class WhatsAppTemplateClientTest extends TestCase
         $this->config->method('getWhatsAppAccessToken')->willReturn('access-token');
         $this->config->method('getWhatsAppBusinessAccountId')->willReturn('9876543210');
 
-        $this->client = new WhatsAppTemplateClient($this->curl, $this->config);
+        // A real JsonApiClient over the mocked Curl — the HTTP mechanics under test are the
+        // shared client's, exactly what production runs.
+        $this->client = new WhatsAppTemplateClient(new JsonApiClient($this->curl), $this->config);
     }
 
     #[AllowMockObjectsWithoutExpectations]

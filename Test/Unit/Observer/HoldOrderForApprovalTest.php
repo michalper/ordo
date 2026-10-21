@@ -9,16 +9,16 @@ use Magento\Framework\Api\AttributeInterface;
 use Magento\Framework\Event;
 use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\Exception\LocalizedException;
-use Magento\Framework\Mail\Template\TransportBuilder;
-use Magento\Framework\Mail\TransportInterface;
 use Magento\Framework\Math\Random;
-use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order as OrderResource;
 use Magento\Store\Model\Store;
+use Ordo\Automation\Api\Data\OrderApprovalDecisionLinksInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\OrderApproval;
 use Ordo\Automation\Model\OrderApprovalFactory;
+use Ordo\Automation\Model\OrderApprovalManagement;
 use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
 use Ordo\Automation\Observer\HoldOrderForApproval;
 use Ordo\Automation\Setup\Patch\Data\AddCustomerSpendLimitAttributes;
@@ -35,8 +35,8 @@ class HoldOrderForApprovalTest extends TestCase
     private OrderApprovalFactory $orderApprovalFactory;
     private OrderApprovalResource $orderApprovalResource;
     private Random $random;
-    private TransportBuilder $transportBuilder;
-    private StateInterface $inlineTranslation;
+    private ReminderEmailSender $reminderEmailSender;
+    private OrderApprovalManagement $orderApprovalManagement;
     private LoggerInterface $logger;
 
     protected function setUp(): void
@@ -48,8 +48,8 @@ class HoldOrderForApprovalTest extends TestCase
         $this->orderApprovalFactory = $this->createStub(OrderApprovalFactory::class);
         $this->orderApprovalResource = $this->createMock(OrderApprovalResource::class);
         $this->random = $this->createStub(Random::class);
-        $this->transportBuilder = $this->createStub(TransportBuilder::class);
-        $this->inlineTranslation = $this->createStub(StateInterface::class);
+        $this->reminderEmailSender = $this->createStub(ReminderEmailSender::class);
+        $this->orderApprovalManagement = $this->createStub(OrderApprovalManagement::class);
         $this->logger = $this->createMock(LoggerInterface::class);
     }
 
@@ -62,8 +62,8 @@ class HoldOrderForApprovalTest extends TestCase
             $this->orderApprovalFactory,
             $this->orderApprovalResource,
             $this->random,
-            $this->transportBuilder,
-            $this->inlineTranslation,
+            $this->reminderEmailSender,
+            $this->orderApprovalManagement,
             $this->logger
         );
     }
@@ -81,13 +81,44 @@ class HoldOrderForApprovalTest extends TestCase
     /**
      * @param \PHPUnit\Framework\MockObject\MockObject&Order $order
      */
-    private function stubOrderStore($order, int $websiteId = 1): void
+    private function stubOrderStore($order, int $websiteId = 1): Store
     {
         $store = $this->createStub(Store::class);
         $store->method('getWebsiteId')->willReturn($websiteId);
         $store->method('getId')->willReturn($websiteId);
         $store->method('getBaseUrl')->willReturn('https://example.com/');
         $order->method('getStore')->willReturn($store);
+
+        return $store;
+    }
+
+    private function expectApprovalEmailSentFor(Store $store, string $token, string $adminEmail): void
+    {
+        $links = $this->createStub(OrderApprovalDecisionLinksInterface::class);
+        $links->method('getApproveUrl')->willReturn('https://example.com/ordo/approval/approve/token/' . $token);
+        $links->method('getRejectUrl')->willReturn('https://example.com/ordo/approval/reject/token/' . $token);
+
+        $management = $this->createMock(OrderApprovalManagement::class);
+        $management->expects(self::once())->method('buildDecisionLinks')
+            ->with(self::identicalTo($store), $token)
+            ->willReturn($links);
+        $this->orderApprovalManagement = $management;
+
+        $sender = $this->createMock(ReminderEmailSender::class);
+        $sender->expects(self::once())->method('send')->with(
+            'ordo_order_approval_request',
+            [
+                'order_increment_id' => '000000007',
+                'order_total' => 500.0,
+                'customer_name' => 'Jan Kowalski',
+                'approve_url' => 'https://example.com/ordo/approval/approve/token/' . $token,
+                'reject_url' => 'https://example.com/ordo/approval/reject/token/' . $token,
+            ],
+            $adminEmail,
+            '',
+            self::identicalTo($store)
+        );
+        $this->reminderEmailSender = $sender;
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -160,7 +191,7 @@ class HoldOrderForApprovalTest extends TestCase
         $order->method('getCustomerFirstname')->willReturn('Jan');
         $order->method('getCustomerLastname')->willReturn('Kowalski');
         $order->expects(self::once())->method('setStatus')->with(AddPendingApprovalOrderStatus::STATUS_PENDING_APPROVAL);
-        $this->stubOrderStore($order);
+        $store = $this->stubOrderStore($order);
 
         $spendLimitAttr = $this->createStub(AttributeInterface::class);
         $spendLimitAttr->method('getValue')->willReturn('100');
@@ -191,15 +222,7 @@ class HoldOrderForApprovalTest extends TestCase
         $this->orderApprovalFactory->method('create')->willReturn($approval);
         $this->orderApprovalResource->expects(self::once())->method('save')->with($approval);
 
-        $this->transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
-        $this->transportBuilder->method('setTemplateOptions')->willReturnSelf();
-        $this->transportBuilder->method('setTemplateVars')->willReturnSelf();
-        $this->transportBuilder->method('setFromByScope')->willReturnSelf();
-        $this->transportBuilder->method('addTo')->willReturnSelf();
-
-        $transport = $this->createMock(TransportInterface::class);
-        $transport->expects(self::once())->method('sendMessage');
-        $this->transportBuilder->method('getTransport')->willReturn($transport);
+        $this->expectApprovalEmailSentFor($store, 'token123', 'admin@example.com');
 
         $this->makeObserverInstance()->execute($this->makeEventObserver($order));
     }
@@ -251,7 +274,7 @@ class HoldOrderForApprovalTest extends TestCase
         $order->method('getCustomerFirstname')->willReturn('Jan');
         $order->method('getCustomerLastname')->willReturn('Kowalski');
         $order->expects(self::once())->method('setStatus')->with(AddPendingApprovalOrderStatus::STATUS_PENDING_APPROVAL);
-        $this->stubOrderStore($order);
+        $store = $this->stubOrderStore($order);
 
         $spendLimitAttr = $this->createStub(AttributeInterface::class);
         $spendLimitAttr->method('getValue')->willReturn('100');
@@ -279,15 +302,7 @@ class HoldOrderForApprovalTest extends TestCase
         $this->orderApprovalFactory->method('create')->willReturn($approval);
         $this->orderApprovalResource->expects(self::once())->method('save')->with($approval);
 
-        $this->transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
-        $this->transportBuilder->method('setTemplateOptions')->willReturnSelf();
-        $this->transportBuilder->method('setTemplateVars')->willReturnSelf();
-        $this->transportBuilder->method('setFromByScope')->willReturnSelf();
-        $this->transportBuilder->method('addTo')->willReturnSelf();
-
-        $transport = $this->createMock(TransportInterface::class);
-        $transport->expects(self::once())->method('sendMessage');
-        $this->transportBuilder->method('getTransport')->willReturn($transport);
+        $this->expectApprovalEmailSentFor($store, 'token123', 'admin@example.com');
 
         $this->makeObserverInstance()->execute($this->makeEventObserver($order));
     }

@@ -128,6 +128,25 @@ class CustomerScoreManagerTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testGetAllCustomerIdsReturnsEveryCustomerEntityIdAsInt(): void
+    {
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchCol')->willReturn(['1', '2', '3']);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $manager = new CustomerScoreManager($resourceConnection);
+
+        self::assertSame([1, 2, 3], $manager->getAllCustomerIds());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetDemographicScoreReturnsStoredScore(): void
     {
         $select = $this->createStub(Select::class);

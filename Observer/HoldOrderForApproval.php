@@ -5,17 +5,16 @@ namespace Ordo\Automation\Observer;
 
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Api\Data\CustomerInterface;
-use Magento\Framework\App\Area;
 use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\Event\ObserverInterface;
-use Magento\Framework\Mail\Template\TransportBuilder;
 use Magento\Framework\Math\Random;
-use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order as OrderResource;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\OrderApproval;
 use Ordo\Automation\Model\OrderApprovalFactory;
+use Ordo\Automation\Model\OrderApprovalManagement;
 use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
 use Ordo\Automation\Setup\Patch\Data\AddCustomerSpendLimitAttributes;
 use Ordo\Automation\Setup\Patch\Data\AddPendingApprovalOrderStatus;
@@ -31,7 +30,6 @@ use Psr\Log\LoggerInterface;
 class HoldOrderForApproval implements ObserverInterface
 {
     private const string XML_PATH_EMAIL_TEMPLATE = 'ordo_order_approval_request';
-    private const string XML_PATH_EMAIL_SENDER = 'general';
 
     public function __construct(
         private readonly Config $config,
@@ -40,8 +38,8 @@ class HoldOrderForApproval implements ObserverInterface
         private readonly OrderApprovalFactory $orderApprovalFactory,
         private readonly OrderApprovalResource $orderApprovalResource,
         private readonly Random $random,
-        private readonly TransportBuilder $transportBuilder,
-        private readonly StateInterface $inlineTranslation,
+        private readonly ReminderEmailSender $reminderEmailSender,
+        private readonly OrderApprovalManagement $orderApprovalManagement,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -149,29 +147,21 @@ class HoldOrderForApproval implements ObserverInterface
         // not necessarily the store the order was actually placed on. On a multi-store install
         // that mismatch sent decision-link emails pointing at the wrong storefront's base URL.
         $store = $order->getStore();
-        $baseUrl = rtrim((string) $store->getBaseUrl(), '/');
+        $links = $this->orderApprovalManagement->buildDecisionLinks($store, $token);
 
-        $this->inlineTranslation->suspend();
-
-        $transport = $this->transportBuilder
-            ->setTemplateIdentifier(self::XML_PATH_EMAIL_TEMPLATE)
-            ->setTemplateOptions(['area' => Area::AREA_FRONTEND, 'store' => $store->getId()])
-            ->setTemplateVars([
+        $this->reminderEmailSender->send(
+            self::XML_PATH_EMAIL_TEMPLATE,
+            [
                 'order_increment_id' => $order->getIncrementId(),
                 'order_total' => $order->getGrandTotal(),
                 'customer_name' => trim(
                     $order->getCustomerFirstname() . ' ' . $order->getCustomerLastname()
                 ),
-                'approve_url' => $baseUrl . '/ordo/approval/approve/token/' . $token,
-                'reject_url' => $baseUrl . '/ordo/approval/reject/token/' . $token,
-                'store' => $store,
-            ])
-            ->setFromByScope(self::XML_PATH_EMAIL_SENDER, $store->getId())
-            ->addTo($adminEmail)
-            ->getTransport();
-
-        $transport->sendMessage();
-
-        $this->inlineTranslation->resume();
+                'approve_url' => $links->getApproveUrl(),
+                'reject_url' => $links->getRejectUrl(),
+            ],
+            $adminEmail,
+            store: $store
+        );
     }
 }

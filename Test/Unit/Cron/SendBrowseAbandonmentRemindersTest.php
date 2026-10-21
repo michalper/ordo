@@ -32,7 +32,7 @@ class SendBrowseAbandonmentRemindersTest extends TestCase
         return $select;
     }
 
-    private function makeConnection(array $rows): AdapterInterface
+    private function makeConnection(array $rows, int $concurrentClaimCount = 0): AdapterInterface
     {
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
@@ -41,6 +41,11 @@ class SendBrowseAbandonmentRemindersTest extends TestCase
             fn (string $text, $value) => str_replace('?', "'{$value}'", $text)
         );
         $connection->method('fetchAll')->willReturn($rows);
+        // ReminderLogStore::claim(): the GET_LOCK acquisition succeeds, and its re-check counts
+        // $concurrentClaimCount log rows written since this run started (0 = free to claim).
+        $connection->method('fetchOne')->willReturnCallback(
+            fn ($query) => is_string($query) && str_contains($query, 'GET_LOCK') ? 1 : $concurrentClaimCount
+        );
 
         return $connection;
     }
@@ -113,6 +118,36 @@ class SendBrowseAbandonmentRemindersTest extends TestCase
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('error');
+
+        $this->makeCron($config, $resourceConnection, $dispatcher, $logger)->execute();
+    }
+
+    /**
+     * Regression: a plain insert-then-dispatch let two overlapping runs (both counting the same
+     * reminders_sent before either logged) dispatch the same customer/product twice - the claim's
+     * atomic re-check for a log row written since this run started must make the loser skip.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteDoesNotDispatchWhenAConcurrentRunAlreadyClaimedTheRow(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isBrowseAbandonmentEnabled')->willReturn(true);
+        $config->method('getBrowseAbandonmentDelayMinutes')->willReturn(60);
+        $config->method('getBrowseAbandonmentMaxReminders')->willReturn(1);
+
+        $connection = $this->makeConnection(
+            [['customer_id' => 5, 'event_key' => 'SKU-1', 'reminders_sent' => 0]],
+            concurrentClaimCount: 1
+        );
+        $connection->expects(self::never())->method('insert');
+
+        $resourceConnection = $this->makeResourceConnection($connection);
+
+        $dispatcher = $this->createMock(CampaignDispatcher::class);
+        $dispatcher->expects(self::never())->method('dispatch');
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('info')->with(self::stringContains('0 browse abandonment triggers'));
 
         $this->makeCron($config, $resourceConnection, $dispatcher, $logger)->execute();
     }

@@ -179,6 +179,102 @@ class VisitorAggregatorTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testAggregateForCustomerSkipsTagsAlreadyHeldAndReadsExistingTagsOnce(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isTrackingEnabled')->willReturn(true);
+        $config->method('getTrackingViewThreshold')->willReturn(3);
+
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchAll')->willReturn([
+            ['event_type' => 'view_category', 'event_key' => '15', 'occurrences' => 3],
+            ['event_type' => 'view_category', 'event_key' => '16', 'occurrences' => 4],
+        ]);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        // A tag already held must not be re-added (addTag's own hasTag SELECT per held tag was
+        // the per-event hot-path cost this diff removed) — and the existing tags are read once
+        // for the whole aggregation, not once per row.
+        $tagManager = $this->createMock(CustomerTagManager::class);
+        $tagManager->expects(self::once())->method('getTags')->with(42)
+            ->willReturn(['viewed_view_category_15']);
+        $tagManager->expects(self::once())->method('addTag')->with(42, 'viewed_view_category_16');
+
+        $aggregator = $this->makeAggregator($config, $resourceConnection, $tagManager);
+        $aggregator->aggregateForCustomer(42);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAggregateForCustomerDoesNotReadExistingTagsWhenNothingCrossesTheThreshold(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isTrackingEnabled')->willReturn(true);
+        $config->method('getTrackingViewThreshold')->willReturn(3);
+
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchAll')->willReturn([
+            ['event_type' => 'view_category', 'event_key' => '15', 'occurrences' => 2],
+        ]);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $tagManager = $this->createMock(CustomerTagManager::class);
+        $tagManager->expects(self::never())->method('getTags');
+        $tagManager->expects(self::never())->method('addTag');
+
+        $aggregator = $this->makeAggregator($config, $resourceConnection, $tagManager);
+        $aggregator->aggregateForCustomer(42);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAggregateForVisitorSkipsTagsAlreadyHeld(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isTrackingEnabled')->willReturn(true);
+        $config->method('getTrackingViewThreshold')->willReturn(3);
+
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchAll')->willReturn([
+            ['event_type' => 'view_category', 'event_key' => '15', 'occurrences' => 3],
+        ]);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $visitorTagManager = $this->createMock(VisitorTagManager::class);
+        $visitorTagManager->expects(self::once())->method('getTags')->with('v1')
+            ->willReturn(['viewed_view_category_15']);
+        $visitorTagManager->expects(self::never())->method('addTag');
+
+        $aggregator = $this->makeAggregator($config, $resourceConnection, null, $visitorTagManager);
+        $aggregator->aggregateForVisitor('v1');
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testAggregateForVisitorSkipsRowBelowViewThreshold(): void
     {
         $config = $this->createStub(Config::class);

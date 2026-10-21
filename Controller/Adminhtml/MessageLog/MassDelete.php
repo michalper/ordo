@@ -6,7 +6,10 @@ namespace Ordo\Automation\Controller\Adminhtml\MessageLog;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Ui\Component\MassAction\Filter;
+use Ordo\Automation\Controller\Adminhtml\Shared\RunsMassActionTrait;
+use Ordo\Automation\Model\MessageLog;
 use Ordo\Automation\Model\ResourceModel\MessageLog as MessageLogResource;
 use Ordo\Automation\Model\ResourceModel\MessageLog\CollectionFactory as MessageLogCollectionFactory;
 
@@ -22,6 +25,8 @@ use Ordo\Automation\Model\ResourceModel\MessageLog\CollectionFactory as MessageL
  */
 class MassDelete extends Action implements HttpPostActionInterface
 {
+    use RunsMassActionTrait;
+
     public const ADMIN_RESOURCE = 'Ordo_Automation::message_log';
 
     public function __construct(
@@ -33,20 +38,19 @@ class MassDelete extends Action implements HttpPostActionInterface
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function getMassActionCollection(): iterable
     {
-        $resultRedirect = $this->resultRedirectFactory->create();
-        $collection = $this->filter->getCollection($this->messageLogCollectionFactory->create());
+        return $this->filter->getCollection($this->messageLogCollectionFactory->create());
+    }
 
-        $count = 0;
-        foreach ($collection as $messageLog) {
-            /** @var \Ordo\Automation\Model\MessageLog $messageLog */
-            $this->messageLogResource->delete($messageLog);
-            $count++;
-        }
+    protected function applyToEntity(object $entity): void
+    {
+        /** @var MessageLog $entity */
+        $this->messageLogResource->delete($entity);
+    }
 
-        $this->messageManager->addSuccessMessage(__('A total of %1 message log entry(s) have been deleted.', $count));
-
-        return $resultRedirect->setPath('*/*/');
+    protected function getMassActionSuccessMessage(int $count): Phrase
+    {
+        return __('A total of %1 message log entry(s) have been deleted.', $count);
     }
 }

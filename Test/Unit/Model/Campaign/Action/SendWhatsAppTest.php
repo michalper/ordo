@@ -55,6 +55,17 @@ class SendWhatsAppTest extends TestCase
         $this->frequencyCapGate = $this->createStub(FrequencyCapGate::class);
         $this->frequencyCapGate->method('allows')->willReturn(true);
         $this->messageSendRetryQueue = $this->createMock(MessageSendRetryQueue::class);
+        // Emulate the real enqueueOrRethrow() contract on the mock (rethrow on a retry
+        // attempt, delegate to enqueue() otherwise) so the tests below keep asserting against
+        // enqueue()/exceptions exactly as before the tail moved into the queue.
+        $this->messageSendRetryQueue->method('enqueueOrRethrow')->willReturnCallback(
+            function (string $type, array $context, array $params, \Throwable $e): void {
+                if (!empty($context[MessageSendRetryQueue::RETRY_CONTEXT_FLAG])) {
+                    throw $e;
+                }
+                $this->messageSendRetryQueue->enqueue($type, $context, $params, $e);
+            }
+        );
         $this->logger = $this->createMock(LoggerInterface::class);
     }
 

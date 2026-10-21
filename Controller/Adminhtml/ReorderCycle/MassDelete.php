@@ -6,7 +6,10 @@ namespace Ordo\Automation\Controller\Adminhtml\ReorderCycle;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Ui\Component\MassAction\Filter;
+use Ordo\Automation\Controller\Adminhtml\Shared\RunsMassActionTrait;
+use Ordo\Automation\Model\ReorderCycle;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle as ReorderCycleResource;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory as ReorderCycleCollectionFactory;
 
@@ -23,6 +26,8 @@ use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory as Reorde
  */
 class MassDelete extends Action implements HttpPostActionInterface
 {
+    use RunsMassActionTrait;
+
     public const ADMIN_RESOURCE = 'Ordo_Automation::reorder_cycle';
 
     public function __construct(
@@ -34,20 +39,19 @@ class MassDelete extends Action implements HttpPostActionInterface
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function getMassActionCollection(): iterable
     {
-        $resultRedirect = $this->resultRedirectFactory->create();
-        $collection = $this->filter->getCollection($this->reorderCycleCollectionFactory->create());
+        return $this->filter->getCollection($this->reorderCycleCollectionFactory->create());
+    }
 
-        $count = 0;
-        foreach ($collection as $reorderCycle) {
-            /** @var \Ordo\Automation\Model\ReorderCycle $reorderCycle */
-            $this->reorderCycleResource->delete($reorderCycle);
-            $count++;
-        }
+    protected function applyToEntity(object $entity): void
+    {
+        /** @var ReorderCycle $entity */
+        $this->reorderCycleResource->delete($entity);
+    }
 
-        $this->messageManager->addSuccessMessage(__('A total of %1 reorder cycle(s) have been deleted.', $count));
-
-        return $resultRedirect->setPath('*/*/');
+    protected function getMassActionSuccessMessage(int $count): Phrase
+    {
+        return __('A total of %1 reorder cycle(s) have been deleted.', $count);
     }
 }

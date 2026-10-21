@@ -803,7 +803,9 @@
             "variant": true
         },
         "index": {
-            "ORDO_MESSAGE_LOG_CAMPAIGN_ID_VARIANT": true
+            "ORDO_MESSAGE_LOG_CAMPAIGN_ID_VARIANT": true,
+            "ORDO_MESSAGE_LOG_CUSTOMER_ID_SENT_AT": true,
+            "ORDO_MESSAGE_LOG_TO_ADDRESS": true
         },
         "constraint": {
             "PRIMARY": true,
@@ -959,7 +961,8 @@
             "last_known_price": true,
             "last_known_in_stock": true,
             "created_at": true,
-            "notified_at": true
+            "notified_at": true,
+            "last_scanned_at": true
         },
         "index": {
             "ORDO_PRICE_WATCH_SUBSCRIPTION_PRODUCT_ID": true,

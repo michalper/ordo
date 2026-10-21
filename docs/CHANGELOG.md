@@ -5,7 +5,99 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Three registered segment condition types matched nobody at the set level** —
+  `clv_at_least`, `loyalty_tier_at_least` and `nps_score_at_least` were in the ConditionPool (so
+  per-customer SegmentMatcher evaluation worked) but fell into `SegmentMemberResolver`'s `default:`
+  arm and silently resolved to an empty set. Fixed at the mechanism level, not with three more
+  switch arms: new `Api\Campaign\BulkResolvableConditionInterface` lets a pool condition opt into
+  set-level resolution, the resolver's default arm delegates to the pool, and the three conditions
+  implement it (CLV via the precomputed `getClvScores()` snapshot, loyalty tier via the score-table
+  threshold query with a correct Bronze floor covering unscored customers, NPS via a latest-
+  answered-response self-join). A pool condition without the interface still fails closed with a
+  logged error.
+- **Price-drop/back-in-stock scan starvation** — `AbstractPriceWatchScanCron` re-scanned the same
+  first 200 `notified_at IS NULL` rows every tick (rewriting their snapshots) while watches past
+  #200 were never scanned. New `last_scanned_at` rotating cursor orders the scan, unchanged
+  snapshots skip the write, and the claim is now a conditional UPDATE checked for affected rows.
+- **Double-send safety in four crons** — `ScanReviewRequestDue`/`SendBrowseAbandonmentReminders`
+  inserted their "sent" log rows unconditionally and `AbstractPriceWatchScanCron`/
+  `SendAbandonedCartFallbackReminders` claimed via unconditional UPDATEs, so two overlapping runs
+  could both dispatch. All four now claim conditionally (ReminderLogStore::claim() /
+  affected-rows-checked UPDATE) before sending.
+- **Product feeds rendered placeholder images** — `CatalogFeedProductFetcher` never selected the
+  `image` attribute, so every Google/Meta/AI-agent feed item's image URL resolved to the
+  placeholder; also preloads url_rewrites (`addUrlRewrite()`) instead of one lookup per product.
+- **"Minimum orders to detect a pattern" admin setting was ignored** — `Cron\CalculateReorderCycle`
+  used a hardcoded constant; it now reads `Config::getReorderMinOrders()` (clamped to >= 2).
+- **Inbound webhook dispatched campaigns synchronously on the HTTP thread** —
+  `Controller\Webhook\Receive` now publishes to the queue like every observer-fed trigger
+  (ADR 0001); the "ok" response means "accepted and queued".
+- **Keyless `page_view` events published a useless aggregation message per page view** —
+  `VisitorEventLogger` only publishes when the event has an `event_key`, since the aggregator
+  ignores keyless rows by design.
+- **`ordo_message_log` had no index for its three per-customer readers** — new
+  (`customer_id`, `sent_at`) and `to_address` indexes; FrequencyCapManager (every send),
+  SendTimeOptimizer and AttributionCalculator were full-scanning the module's fastest-growing
+  table.
+
 ### Changed
+
+- **Whole-module simplification pass** (reuse/efficiency/altitude review, net ~-2400 lines) — the
+  bigger moves, each behavior-preserving unless noted above:
+  - The three persisted-retry stacks (campaign action / message send / push send) share one
+    skeleton: `Cron\AbstractRetryFailedCron`, claim/due-filter traits, one `Retry\RetryBackoff`
+    (ADR 0010). Tables and queues stay separate per ADRs 0003/0004.
+  - 32 admin edit-form button classes collapsed into 4 parametrized `Block\Adminhtml\Shared\Edit`
+    classes wired as this module's first virtualTypes (ADR 0009); same pattern then applied to the
+    5 copy-pasted resource audit plugins (one `Plugin\Shared\ResourceAuditPlugin`) and 11 empty
+    `Grid\Collection` subclasses (virtualTypes of SearchResult).
+  - Five MassDelete controllers and WhatsAppTemplate\Delete adopted the existing shared
+    mass-action/delete traits; Offer/Referral frontend abstracts merged into
+    `Controller\AbstractCustomerAccountAction`.
+  - `ReminderEmailSender::send()` grew optional store + Message-ID parameters (and a try/finally
+    so a failed send can't leave inline translation suspended) and replaced the four hand-rolled
+    copies in HoldOrderForApproval, EscalateStalePendingApprovals, SendWelcomeEmail and
+    SendAbandonedCartReminders; approve/reject URL building centralized in
+    `OrderApprovalManagement::buildDecisionLinks()`.
+  - Visitor-identity plumbing deduplicated: shared `VisitorTargetFilterTrait` for the
+    Notification/PendingPopup/SurveyPrompt collections, `VisitorIdentityFieldsTrait::belongsTo()`,
+    Track controllers routed through `VisitorIdentityResolver`, and the Popup/Survey
+    claim-on-hand-out loop extracted to `Model\Track\DeliveryClaimer`.
+  - `CampaignDispatcher`: one shared `runCampaign()` for the dispatch and scheduled-trigger paths,
+    params normalized once at the decode boundary (`Model\ParamsMap`, deleting three private
+    `asStringKeyedArray()` copies), and the scheduled-resume path memoizes its three per-campaign
+    lookups per cron run (a 10k-row backlog cost ~30k duplicate queries).
+  - `SegmentBulkActionConsumer` runs actions through the ActionPool registry instead of its own
+    inline `match`; `SegmentMemberResolver` gained `beginBatch()`/`endBatch()` so the 15-minute
+    recalculation cron (and the RFM grid column) computes one RFM snapshot per run instead of one
+    per segment; `RfmCalculator` whole-base scans use keyset pagination instead of quadratic
+    LIMIT/OFFSET over a GROUP BY.
+  - `AttributionCalculator` processes only not-yet-attributed orders, newest first, with batched
+    inserts (ADR 0011) — the hourly run previously redid the same oldest 1000 orders forever.
+  - `VisitorAggregator` reads existing tags once per aggregation and diffs in PHP instead of a
+    `hasTag()` SELECT per over-threshold row per event.
+  - `tracker.js`: the popup/notification/survey poll trio and close-button builders deduplicated
+    into shared helpers, polling skips ticks while `document.hidden` (first JS test coverage for
+    the file: 14 new cases).
+  - Smaller dedups: `Model\RateLimit\CacheWindowCounter` behind both inbound rate limiters,
+    `Model\ContextJsonFieldTrait` for the three context-persisting rows,
+    `JsonApiClient::getJson()` adopted by `WhatsAppTemplateClient`, `Flow` reuses the four
+    `Config\Source` option classes, CLV formula deduplicated behind `projectClv()` with
+    test-only public methods deleted, reorder-cycle upserts batched via `insertOnDuplicate`.
+  - `TrimExcessFreeGifts` collapses its COUNT+SELECT pair into one SELECT — an attempted
+    per-quote memo was reverted after `FreeGiftManagementScenarioTest` proved it skips a trim
+    when a gift is added mid-request.
+- **Adobe Commerce Marketplace EQP readiness** — all 16 severity-10 violations (every one in
+  `Test/`) fixed: integration tests run the queue consumer via `Magento\Framework\Shell` instead
+  of bare `exec()`, inline test fixture classes extracted to `Test/Integration/Fixture/` (merging
+  two identical SMS recorders), unit-test serializer stubs replaced with the real
+  `Serializer\Json`, MFTF's MailHog helper fetches via the HTTP client instead of
+  `@file_get_contents`. New `composer phpcs-marketplace-check` script + CI step runs the bare
+  `Magento2` standard exactly the way Adobe's review does (`--error-severity=10
+  --ignore-annotations`, whole repo including `Test/`). `docs/marketplace/` holds the submission
+  user guide (Markdown source + reportlab-generated PDF) and plain-text release notes.
 
 - **The `customer_id`/`visitor_id` accessor pair moved into `Model\VisitorIdentityFieldsTrait`** —
   `Notification`, `PendingPopup`, `SurveyPrompt` and `PriceWatch\PriceWatchSubscription` each carried

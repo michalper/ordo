@@ -7,6 +7,10 @@ use Magento\Framework\Model\ResourceModel\Db\Collection\AbstractCollection;
 use Ordo\Automation\Model\CampaignCondition as CampaignConditionModel;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition as CampaignConditionResource;
 
+/**
+ * @method \ArrayIterator<int, CampaignConditionModel> getIterator()
+ * @method CampaignConditionModel[] getItems()
+ */
 class Collection extends AbstractCollection
 {
     protected function _construct(): void

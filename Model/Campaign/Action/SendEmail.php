@@ -170,14 +170,9 @@ class SendEmail implements ActionInterface
                 $variant
             );
 
-            // A retry that fails again must be visible to Cron\RetryFailedMessageSends as a
-            // failure (see MessageSendRetryQueue::RETRY_CONTEXT_FLAG's own docblock) - rethrow
-            // instead of enqueuing a second, redundant retry row. Only the original dispatch path
-            // enqueues, so a failed send is never dropped without at least one persisted retry.
-            if (!empty($context[MessageSendRetryQueue::RETRY_CONTEXT_FLAG])) {
-                throw $e;
-            }
-            $this->messageSendRetryQueue->enqueue(self::ACTION_TYPE, $context, $params, $e);
+            // Rethrows on a retry attempt instead of enqueuing again - see
+            // MessageSendRetryQueue::enqueueOrRethrow()/RETRY_CONTEXT_FLAG.
+            $this->messageSendRetryQueue->enqueueOrRethrow(self::ACTION_TYPE, $context, $params, $e);
         } finally {
             $this->pendingMessageIdHolder->consume();
             $this->inlineTranslation->resume();

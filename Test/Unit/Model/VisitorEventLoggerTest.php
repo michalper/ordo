@@ -46,6 +46,28 @@ class VisitorEventLoggerTest extends TestCase
         $logger->log('v1', 'view_category', '15', null);
     }
 
+    /**
+     * A keyless event (tracker.js's bare page_view) can never produce a tag —
+     * VisitorAggregator only aggregates rows WHERE event_key IS NOT NULL — so the row is
+     * inserted but no aggregation message is published for it.
+     */
+    public function testLogWithoutEventKeyInsertsRowButPublishesNothing(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::once())->method('insert');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $publisher = $this->createMock(VisitorAggregationPublisher::class);
+        $publisher->expects(self::never())->method('publishForCustomer');
+        $publisher->expects(self::never())->method('publishForVisitor');
+
+        $logger = new VisitorEventLogger($resourceConnection, $publisher);
+        $logger->log('v1', 'page_view', null, 42);
+    }
+
     public function testAttributeVisitorToCustomerUpdatesAndPublishesForCustomer(): void
     {
         $connection = $this->createMock(AdapterInterface::class);

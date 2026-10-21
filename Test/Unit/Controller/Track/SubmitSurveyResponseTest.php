@@ -6,10 +6,12 @@ namespace Ordo\Automation\Test\Unit\Controller\Track;
 use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\Controller\Result\Json;
 use Magento\Framework\Controller\Result\JsonFactory;
+use Magento\Framework\Stdlib\CookieManagerInterface;
 use Ordo\Automation\Controller\Track\SubmitSurveyResponse;
 use Ordo\Automation\Model\ResourceModel\SurveyPrompt as SurveyPromptResource;
 use Ordo\Automation\Model\SurveyPrompt;
 use Ordo\Automation\Model\SurveyPromptFactory;
+use Ordo\Automation\Model\Track\VisitorIdentityResolver;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
@@ -40,7 +42,9 @@ class SubmitSurveyResponseTest extends AbstractFrontendActionTestCase
             $this->resultJsonFactory,
             $this->surveyPromptFactory,
             $this->surveyPromptResource,
-            $this->customerSession
+            // A real resolver over the stubbed session, so identity still flows from the same
+            // request params and session state the controller used to read inline.
+            new VisitorIdentityResolver($this->customerSession, $this->createStub(CookieManagerInterface::class))
         );
     }
 
@@ -129,11 +133,13 @@ class SubmitSurveyResponseTest extends AbstractFrontendActionTestCase
         ]);
         $this->customerSession->method('isLoggedIn')->willReturn(false);
 
-        $prompt = $this->createStub(SurveyPrompt::class);
+        $prompt = $this->createMock(SurveyPrompt::class);
         $prompt->method('getId')->willReturn(5);
         $prompt->method('getRespondedAt')->willReturn(null);
-        $prompt->method('getCustomerId')->willReturn(null);
-        $prompt->method('getVisitorId')->willReturn('someone-elses-visitor-id');
+        // The ownership rule itself lives in VisitorIdentityFieldsTrait::belongsTo() (covered in
+        // Test\Unit\Model\NotificationTest); here only that the controller honors it — and feeds
+        // it the resolver-derived identity, never a client-supplied customer_id.
+        $prompt->expects(self::once())->method('belongsTo')->with(null, 'v1')->willReturn(false);
         $this->surveyPromptFactory->method('create')->willReturn($prompt);
 
         $this->surveyPromptResource->expects(self::never())->method('save');
@@ -154,8 +160,7 @@ class SubmitSurveyResponseTest extends AbstractFrontendActionTestCase
         $prompt = $this->createMock(SurveyPrompt::class);
         $prompt->method('getId')->willReturn(5);
         $prompt->method('getRespondedAt')->willReturn(null);
-        $prompt->method('getCustomerId')->willReturn(null);
-        $prompt->method('getVisitorId')->willReturn('v1');
+        $prompt->expects(self::once())->method('belongsTo')->with(null, 'v1')->willReturn(true);
         $prompt->expects(self::once())->method('setScore')->with(8);
         $prompt->expects(self::once())->method('setRespondedAt')->with(self::callback('is_string'));
         $this->surveyPromptFactory->method('create')->willReturn($prompt);
@@ -179,7 +184,7 @@ class SubmitSurveyResponseTest extends AbstractFrontendActionTestCase
         $prompt = $this->createMock(SurveyPrompt::class);
         $prompt->method('getId')->willReturn(5);
         $prompt->method('getRespondedAt')->willReturn(null);
-        $prompt->method('getCustomerId')->willReturn(42);
+        $prompt->expects(self::once())->method('belongsTo')->with(42, '')->willReturn(true);
         $prompt->expects(self::once())->method('setScore')->with(0);
         $prompt->expects(self::once())->method('setRespondedAt');
         $this->surveyPromptFactory->method('create')->willReturn($prompt);

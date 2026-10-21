@@ -18,9 +18,9 @@ use Ordo\Automation\Model\Segment\SegmentMemberResolver;
  *
  * Evaluated segment-by-segment rather than customer-by-customer:
  * SegmentMemberResolver::getMatchingCustomerIds() computes one segment's whole matching set in
- * a handful of queries (with its own per-call RFM aggregate/percentile caching), so resolving
- * "N enabled segments x page of customers" costs N resolves total, not N x page-size point
- * checks against SegmentMatcher::isCustomerInSegment().
+ * a handful of queries (sharing one RFM aggregate/percentile snapshot across the page load via
+ * its beginBatch()/endBatch()), so resolving "N enabled segments x page of customers" costs N
+ * resolves total, not N x page-size point checks against SegmentMatcher::isCustomerInSegment().
  */
 class MatchingSegments extends Column
 {
@@ -87,17 +87,25 @@ class MatchingSegments extends Column
 
         $result = [];
 
-        /** @var \Ordo\Automation\Model\Segment $segment */
-        foreach ($segments as $segment) {
-            $segmentId = $segment->getEntityId();
+        // One RFM snapshot for the whole page load — per top-level resolve the resolver would
+        // otherwise re-run its whole-base aggregate/percentile scans once per enabled segment.
+        $this->segmentMemberResolver->beginBatch();
 
-            if ($segmentId === null) {
-                continue;
-            }
+        try {
+            /** @var \Ordo\Automation\Model\Segment $segment */
+            foreach ($segments as $segment) {
+                $segmentId = $segment->getEntityId();
 
-            foreach ($this->segmentMemberResolver->getMatchingCustomerIds($segmentId) as $customerId) {
-                $result[$customerId][] = $segment->getName();
+                if ($segmentId === null) {
+                    continue;
+                }
+
+                foreach ($this->segmentMemberResolver->getMatchingCustomerIds($segmentId) as $customerId) {
+                    $result[$customerId][] = $segment->getName();
+                }
             }
+        } finally {
+            $this->segmentMemberResolver->endBatch();
         }
 
         return $result;

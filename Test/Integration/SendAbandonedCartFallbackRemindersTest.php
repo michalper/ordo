@@ -23,6 +23,7 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign\Action\SendSms;
 use Ordo\Automation\Model\Campaign\Action\SendWhatsApp;
 use Ordo\Automation\Setup\Patch\Data\AddCustomerSmsPhoneAttribute;
+use Ordo\Automation\Test\Integration\Fixture\RecordingTwilioSmsSender;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -118,7 +119,7 @@ class SendAbandonedCartFallbackRemindersTest extends TestCase
         $messageLogId = $this->insertMessageLog();
         $reminderLogId = $this->insertReminderLog($messageLogId, sentHoursAgo: 2);
 
-        $recordingSender = self::$objectManager->create(FallbackRecordingTwilioSmsSender::class);
+        $recordingSender = self::$objectManager->create(RecordingTwilioSmsSender::class);
         $this->runCron($recordingSender);
 
         self::assertCount(1, $recordingSender->calls, 'An unopened reminder past the delay must fall back.');
@@ -138,7 +139,7 @@ class SendAbandonedCartFallbackRemindersTest extends TestCase
         $reminderLogId = $this->insertReminderLog($messageLogId, sentHoursAgo: 2);
         $this->insertOpenedEvent($messageLogId);
 
-        $recordingSender = self::$objectManager->create(FallbackRecordingTwilioSmsSender::class);
+        $recordingSender = self::$objectManager->create(RecordingTwilioSmsSender::class);
         $this->runCron($recordingSender);
 
         self::assertSame([], $recordingSender->calls, 'An already-opened reminder must never fall back.');
@@ -155,11 +156,11 @@ class SendAbandonedCartFallbackRemindersTest extends TestCase
         $messageLogId = $this->insertMessageLog();
         $reminderLogId = $this->insertReminderLog($messageLogId, sentHoursAgo: 2);
 
-        $firstSender = self::$objectManager->create(FallbackRecordingTwilioSmsSender::class);
+        $firstSender = self::$objectManager->create(RecordingTwilioSmsSender::class);
         $this->runCron($firstSender);
         self::assertCount(1, $firstSender->calls);
 
-        $secondSender = self::$objectManager->create(FallbackRecordingTwilioSmsSender::class);
+        $secondSender = self::$objectManager->create(RecordingTwilioSmsSender::class);
         $this->runCron($secondSender);
         self::assertSame([], $secondSender->calls, 'A reminder already claimed must never be attempted again.');
     }
@@ -172,7 +173,7 @@ class SendAbandonedCartFallbackRemindersTest extends TestCase
         // Sent 30 minutes ago - well inside the 1-hour delay this test configures.
         $reminderLogId = $this->insertReminderLog($messageLogId, sentMinutesAgo: 30);
 
-        $recordingSender = self::$objectManager->create(FallbackRecordingTwilioSmsSender::class);
+        $recordingSender = self::$objectManager->create(RecordingTwilioSmsSender::class);
         $this->runCron($recordingSender);
 
         self::assertSame([], $recordingSender->calls, 'A too-recent reminder is not due yet.');
@@ -295,7 +296,7 @@ class SendAbandonedCartFallbackRemindersTest extends TestCase
         return $value !== false && $value !== null ? (string) $value : null;
     }
 
-    private function runCron(FallbackRecordingTwilioSmsSender $recordingSender): void
+    private function runCron(RecordingTwilioSmsSender $recordingSender): void
     {
         $cronScopeConfig = self::$objectManager->create(MutableScopeConfig::class);
         $cronScopeConfig->setValue(
@@ -330,24 +331,5 @@ class SendAbandonedCartFallbackRemindersTest extends TestCase
             'sendWhatsApp' => self::$objectManager->get(SendWhatsApp::class),
         ]);
         $cron->execute();
-    }
-}
-
-/**
- * Records (toPhone, message) instead of calling the real Twilio API. Named distinctly from
- * CampaignSendSmsActionTest's own RecordingTwilioSmsSender (same role, same shape) since the
- * whole Test/Integration directory loads together in a real run - two classes of the same name
- * in the same namespace would fatal on redeclaration.
- */
-class FallbackRecordingTwilioSmsSender implements \Ordo\Automation\Model\Sms\SmsSenderInterface
-{
-    /** @var array<int, array{toPhone: string, message: string}> */
-    public array $calls = [];
-
-    public function send(string $toPhone, string $message): string
-    {
-        $this->calls[] = ['toPhone' => $toPhone, 'message' => $message];
-
-        return 'SM_recorded_test_sid';
     }
 }

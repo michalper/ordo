@@ -90,13 +90,6 @@ class OfferViewModelTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
-    public function testGetMaxSelfExtensionsReturnsConfigValue(): void
-    {
-        $this->config->method('getOfferMaxSelfExtensions')->willReturn(3);
-        self::assertSame(3, $this->makeViewModel()->getMaxSelfExtensions());
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
     public function testGetSelfExtensionDaysReturnsConfigValue(): void
     {
         $this->config->method('getOfferSelfExtensionDays')->willReturn(7);

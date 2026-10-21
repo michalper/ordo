@@ -950,22 +950,49 @@ class RfmCalculatorTest extends TestCase
     }
 
     /**
-     * Regression test for the ROADMAP.md Tier 4 "unbounded full-table scan" gap: getAllCustomerIds()
-     * used to run a single unbounded SELECT over the whole customer_entity table. It now pages
-     * through in SCAN_PAGE_SIZE (5,000) chunks, offsetting each call and stopping once a page
-     * comes back with fewer than a full page's worth of rows - proven here with a first page of
-     * exactly 5,000 ids (continues) followed by a second, partial page (stops).
+     * Records every where()/limit() call made on the stubbed Select, so the pagination tests
+     * below can assert the keyset-cursor shape (WHERE id > last seen, LIMIT without OFFSET).
+     *
+     * @param array<int, array<int, mixed>> $whereCalls
+     * @param array<int, array<int, mixed>> $limitCalls
+     */
+    private function makeRecordingSelect(array &$whereCalls, array &$limitCalls): Select
+    {
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+        $select->method('order')->willReturnSelf();
+        $select->method('where')->willReturnCallback(
+            function (mixed ...$args) use (&$whereCalls, $select): Select {
+                $whereCalls[] = $args;
+                return $select;
+            }
+        );
+        $select->method('limit')->willReturnCallback(
+            function (mixed ...$args) use (&$limitCalls, $select): Select {
+                $limitCalls[] = $args;
+                return $select;
+            }
+        );
+
+        return $select;
+    }
+
+    /**
+     * Regression test for the ROADMAP.md Tier 4 "unbounded full-table scan" gap, updated for the
+     * keyset cursor: getAllCustomerIds() pages through in SCAN_PAGE_SIZE (5,000) chunks via
+     * WHERE entity_id > <last id of the previous page> (never LIMIT/OFFSET, which re-walks every
+     * earlier row per page), stopping once a page comes back partial.
      */
     #[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
-    public function testGetAllCustomerIdsPagesThroughMultiplePagesWhenTheCustomerBaseExceedsOnePage(): void
+    public function testGetAllCustomerIdsPagesThroughMultiplePagesWithAKeysetCursor(): void
     {
         $firstPage = array_map('strval', range(1, 5000));
         $secondPage = ['5001', '5002'];
 
-        $select = $this->createStub(Select::class);
-        $select->method('from')->willReturnSelf();
-        $select->method('order')->willReturnSelf();
-        $select->method('limit')->willReturnSelf();
+        $whereCalls = [];
+        $limitCalls = [];
+        $select = $this->makeRecordingSelect($whereCalls, $limitCalls);
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($select);
@@ -979,13 +1006,19 @@ class RfmCalculatorTest extends TestCase
         self::assertCount(5002, $ids);
         self::assertSame(1, $ids[0]);
         self::assertSame(5002, $ids[5001]);
+        // (Trailing nulls are where()'s/limit()'s own defaulted params, as the mock records them.)
+        self::assertSame([['entity_id > ?', 0, null], ['entity_id > ?', 5000, null]], $whereCalls);
+        // A null offset is the point: a non-null second arg would mean OFFSET crept back in.
+        self::assertSame([[5000, null], [5000, null]], $limitCalls);
     }
 
     /**
-     * Same regression coverage as above, for getAggregatesForAllCustomers()'s pagination.
+     * Same regression coverage as above, for getAggregatesForAllCustomers()'s pagination: the
+     * cursor filters on the GROUP BY key itself (customer_id), so each page excludes exactly the
+     * groups already fetched instead of re-aggregating and skipping them via OFFSET.
      */
     #[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
-    public function testGetAggregatesForAllCustomersPagesThroughMultiplePagesWhenOrdersExceedOnePage(): void
+    public function testGetAggregatesForAllCustomersPagesThroughMultiplePagesWithAKeysetCursor(): void
     {
         $makeRow = fn (int $customerId): array => [
             'customer_id' => (string) $customerId,
@@ -996,12 +1029,9 @@ class RfmCalculatorTest extends TestCase
         $firstPage = array_map($makeRow, range(1, 5000));
         $secondPage = [$makeRow(5001)];
 
-        $select = $this->createStub(Select::class);
-        $select->method('from')->willReturnSelf();
-        $select->method('where')->willReturnSelf();
-        $select->method('group')->willReturnSelf();
-        $select->method('order')->willReturnSelf();
-        $select->method('limit')->willReturnSelf();
+        $whereCalls = [];
+        $limitCalls = [];
+        $select = $this->makeRecordingSelect($whereCalls, $limitCalls);
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($select);
@@ -1015,6 +1045,16 @@ class RfmCalculatorTest extends TestCase
         self::assertCount(5001, $aggregates);
         self::assertArrayHasKey(1, $aggregates);
         self::assertArrayHasKey(5001, $aggregates);
+        self::assertSame(
+            [
+                ['state != ?', 'canceled', null],
+                ['customer_id > ?', 0, null],
+                ['state != ?', 'canceled', null],
+                ['customer_id > ?', 5000, null],
+            ],
+            $whereCalls
+        );
+        self::assertSame([[5000, null], [5000, null]], $limitCalls);
     }
 
     public function testResetScoresForCustomersDeletesTheGivenCustomerIdsFromTheCacheTable(): void

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Campaign\Condition;
 
+use Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface;
 use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\CustomerScoreManager;
 use Ordo\Automation\Model\LoyaltyTierCalculator;
@@ -14,7 +15,7 @@ use Ordo\Automation\Model\LoyaltyTierCalculator;
  * a customer earning points via any existing mechanism (add_points action, demographic score
  * rules) moves between tiers automatically with no new bookkeeping.
  */
-class LoyaltyTierAtLeast implements ConditionInterface
+class LoyaltyTierAtLeast implements ConditionInterface, BulkResolvableConditionInterface
 {
     public function __construct(
         private readonly CustomerScoreManager $customerScoreManager,
@@ -34,5 +35,26 @@ class LoyaltyTierAtLeast implements ConditionInterface
         $score = $this->customerScoreManager->getScore($customerId);
 
         return $this->loyaltyTierCalculator->isAtLeast($score, $tier);
+    }
+
+    public function resolveCustomerIds(array $params): array
+    {
+        $tier = $params['tier'] ?? null;
+
+        if (!is_string($tier) || $this->loyaltyTierCalculator->getTierRank($tier) < 0) {
+            // Unrecognized tier fails closed, mirroring isAtLeast().
+            return [];
+        }
+
+        $minimumScore = $this->loyaltyTierCalculator->getMinimumScoreForTier($tier);
+
+        // The Bronze floor (null minimum) — and a Silver/Gold threshold a store configured at
+        // 0 or below — covers every registered customer, including those with no score row at
+        // all (implicit score 0), which the score-table join below could never return.
+        if ($minimumScore === null || $minimumScore <= 0) {
+            return $this->customerScoreManager->getAllCustomerIds();
+        }
+
+        return $this->customerScoreManager->getCustomerIdsWithScoreAtLeast($minimumScore);
     }
 }

@@ -6,11 +6,13 @@ namespace Ordo\Automation\Test\Unit\Controller\Track;
 use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\Controller\Result\Json;
 use Magento\Framework\Controller\Result\JsonFactory;
+use Magento\Framework\Stdlib\CookieManagerInterface;
 use Ordo\Automation\Controller\Track\Notification as NotificationController;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Notification;
 use Ordo\Automation\Model\ResourceModel\Notification\Collection as NotificationCollection;
 use Ordo\Automation\Model\ResourceModel\Notification\CollectionFactory as NotificationCollectionFactory;
+use Ordo\Automation\Model\Track\VisitorIdentityResolver;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
@@ -40,7 +42,9 @@ class NotificationTest extends AbstractFrontendActionTestCase
             $this->makeContext(),
             $this->resultJsonFactory,
             $this->notificationCollectionFactory,
-            $this->customerSession,
+            // A real resolver over the stubbed session: the tests still drive identity through
+            // the same request params and session state the controller used to read inline.
+            new VisitorIdentityResolver($this->customerSession, $this->createStub(CookieManagerInterface::class)),
             $this->config
         );
     }

@@ -893,6 +893,17 @@
             <column name="campaign_id"/>
             <column name="variant"/>
         </index>
+        <!-- FrequencyCapManager (every Send* action), SendTimeOptimizer, and
+             AttributionCalculator all filter by customer — without this, each was a full scan
+             of the module's fastest-growing table. -->
+        <index referenceId="ORDO_MESSAGE_LOG_CUSTOMER_ID_SENT_AT" indexType="btree">
+            <column name="customer_id"/>
+            <column name="sent_at"/>
+        </index>
+        <!-- InboundMessageProcessor looks rows up by the address a reply came from. -->
+        <index referenceId="ORDO_MESSAGE_LOG_TO_ADDRESS" indexType="btree">
+            <column name="to_address"/>
+        </index>
     </table>
 
     <table name="ordo_message_log_event" resource="default" engine="innodb" comment="One row per open/click event a delivery-status webhook reported for a given ordo_message_log row — a separate event log rather than another ordo_message_log.status value, since a single message can be opened/clicked more than once and funnel counting needs each stage counted independently rather than collapsed into one terminal status">
@@ -1029,6 +1040,7 @@
         <column xsi:type="boolean" name="last_known_in_stock" nullable="true" comment="Product's stock status the last time this subscription was registered or scanned - Cron\ScanBackInStockAlerts compares the current status against this"/>
         <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
         <column xsi:type="datetime" name="notified_at" nullable="true" comment="Set (claimed) right before a matching cron dispatches its campaign trigger for this row - crash-safe claim-before-send, same pattern as the reminder log tables"/>
+        <column xsi:type="timestamp" name="last_scanned_at" nullable="true" comment="Rotating scan cursor - stamped every time a scan cron reads this row. The scans order by it ascending (NULLs first), so every watch is eventually visited instead of the same first batch being rescanned forever"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>

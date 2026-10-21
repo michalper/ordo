@@ -42,6 +42,20 @@ class LoyaltyTierCalculatorTest extends TestCase
         self::assertSame(LoyaltyTierCalculator::GOLD, $calculator->getTierForScore(10000));
     }
 
+    public function testGetMinimumScoreForTierReturnsEachConfiguredThreshold(): void
+    {
+        [$calculator] = $this->makeCalculator(silverThreshold: 100, goldThreshold: 500);
+        self::assertSame(500, $calculator->getMinimumScoreForTier(LoyaltyTierCalculator::GOLD));
+        self::assertSame(100, $calculator->getMinimumScoreForTier(LoyaltyTierCalculator::SILVER));
+    }
+
+    public function testGetMinimumScoreForTierReturnsNullForTheBronzeFloorAndUnrecognizedTiers(): void
+    {
+        [$calculator] = $this->makeCalculator();
+        self::assertNull($calculator->getMinimumScoreForTier(LoyaltyTierCalculator::BRONZE));
+        self::assertNull($calculator->getMinimumScoreForTier('platinum'));
+    }
+
     public function testGetTierRankOrdersBronzeSilverGoldAscending(): void
     {
         [$calculator] = $this->makeCalculator();

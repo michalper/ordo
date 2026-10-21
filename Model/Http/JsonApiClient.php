@@ -42,6 +42,32 @@ class JsonApiClient
         }
         $this->curl->post($url, (string) json_encode($payload));
 
+        return $this->interpretResponse($url, $serviceName);
+    }
+
+    /**
+     * GET counterpart to postJson() — same mechanics, no body.
+     *
+     * @param array<string, string> $headers
+     * @return array<mixed>
+     */
+    public function getJson(string $url, array $headers, string $serviceName): array
+    {
+        $this->curl->setTimeout(self::TIMEOUT_SECONDS);
+        $this->curl->setOption(CURLOPT_FOLLOWLOCATION, false);
+        foreach ($headers as $name => $value) {
+            $this->curl->addHeader($name, $value);
+        }
+        $this->curl->get($url);
+
+        return $this->interpretResponse($url, $serviceName);
+    }
+
+    /**
+     * @return array<mixed>
+     */
+    private function interpretResponse(string $url, string $serviceName): array
+    {
         $status = $this->curl->getStatus();
         $responseBody = (string) $this->curl->getBody();
 

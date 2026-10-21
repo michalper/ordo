@@ -10,6 +10,7 @@ use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Controller\ResultInterface;
 use Magento\Framework\UrlInterface;
+use Ordo\Automation\Controller\AbstractCustomerAccountAction;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ReferralManager;
 
@@ -18,7 +19,7 @@ use Ordo\Automation\Model\ReferralManager;
  * ready-to-share link, as JSON - a theme wires this into My Account via a small AJAX call, same
  * "thin endpoint, no bespoke template" shape as this module's other Controller\Track\* trackers.
  */
-class MyCode extends AbstractReferralAction implements HttpGetActionInterface
+class MyCode extends AbstractCustomerAccountAction implements HttpGetActionInterface
 {
     public function __construct(
         Context $context,

@@ -14,8 +14,10 @@ use Ordo\Automation\Model\ResourceModel\MessageSendRetry as MessageSendRetryReso
  * Internal implementation detail, same "not a first-class thing to author" reasoning as
  * CampaignActionRetry.
  */
-class MessageSendRetry extends AbstractModel
+class MessageSendRetry extends AbstractModel implements RetryRecordInterface
 {
+    use ContextJsonFieldTrait;
+
     use RetryRecordFieldsTrait;
 
     public const ENTITY_ID = 'entity_id';
@@ -39,23 +41,6 @@ class MessageSendRetry extends AbstractModel
     public function setActionType(string $actionType): self
     {
         $this->setData(self::ACTION_TYPE, $actionType);
-        return $this;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function getContext(): array
-    {
-        return $this->decodeJson((string) $this->getData(self::CONTEXT));
-    }
-
-    /**
-     * @param array<string, mixed> $context
-     */
-    public function setContext(array $context): self
-    {
-        $this->setData(self::CONTEXT, (string) json_encode($context));
         return $this;
     }
 

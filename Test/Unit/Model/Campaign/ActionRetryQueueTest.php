@@ -7,6 +7,7 @@ use Ordo\Automation\Model\Campaign\ActionRetryQueue;
 use Ordo\Automation\Model\CampaignActionRetry;
 use Ordo\Automation\Model\CampaignActionRetryFactory;
 use Ordo\Automation\Model\ResourceModel\CampaignActionRetry as CampaignActionRetryResource;
+use Ordo\Automation\Model\Retry\RetryBackoff;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -29,7 +30,12 @@ class ActionRetryQueueTest extends TestCase
         $resource = $this->createMock(CampaignActionRetryResource::class);
         $resource->expects(self::once())->method('save')->with($retry);
 
-        $queue = new ActionRetryQueue($factory, $resource, $this->createStub(LoggerInterface::class));
+        $queue = new ActionRetryQueue(
+            $factory,
+            $resource,
+            $this->createStub(LoggerInterface::class),
+            new RetryBackoff()
+        );
         $queue->enqueue(3, 9, ['customer_id' => 1], new \RuntimeException('boom'));
     }
 
@@ -42,7 +48,7 @@ class ActionRetryQueueTest extends TestCase
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('error');
 
-        $queue = new ActionRetryQueue($factory, $resource, $logger);
+        $queue = new ActionRetryQueue($factory, $resource, $logger, new RetryBackoff());
 
         // Must not throw - a failure enqueuing the retry can't be allowed to crash the calling cron.
         $queue->enqueue(3, 9, [], new \RuntimeException('boom'));
@@ -52,7 +58,12 @@ class ActionRetryQueueTest extends TestCase
     {
         $factory = $this->createStub(CampaignActionRetryFactory::class);
         $resource = $this->createStub(CampaignActionRetryResource::class);
-        $queue = new ActionRetryQueue($factory, $resource, $this->createStub(LoggerInterface::class));
+        $queue = new ActionRetryQueue(
+            $factory,
+            $resource,
+            $this->createStub(LoggerInterface::class),
+            new RetryBackoff()
+        );
 
         $attempt1 = strtotime($queue->nextRetryAt(1));
         $attempt2 = strtotime($queue->nextRetryAt(2));

@@ -29,7 +29,7 @@ class ScanReviewRequestDueTest extends TestCase
         return $select;
     }
 
-    private function makeConnection(array $rows): AdapterInterface
+    private function makeConnection(array $rows, int $alreadyLoggedCount = 0): AdapterInterface
     {
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
@@ -38,6 +38,11 @@ class ScanReviewRequestDueTest extends TestCase
             fn (string $text, $value) => str_replace('?', "'{$value}'", $text)
         );
         $connection->method('fetchAll')->willReturn($rows);
+        // ReminderLogStore::claim(): the GET_LOCK acquisition succeeds, and its re-check counts
+        // $alreadyLoggedCount matching log rows (0 = free to claim).
+        $connection->method('fetchOne')->willReturnCallback(
+            fn ($query) => is_string($query) && str_contains($query, 'GET_LOCK') ? 1 : $alreadyLoggedCount
+        );
 
         return $connection;
     }
@@ -109,6 +114,35 @@ class ScanReviewRequestDueTest extends TestCase
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('error');
+
+        $this->makeCron($config, $resourceConnection, $dispatcher, $logger)->execute();
+    }
+
+    /**
+     * Regression: a plain insert-then-dispatch let two overlapping runs (both selecting the same
+     * due orders before either logged) dispatch the same order twice - the claim's atomic
+     * re-check must make the losing run skip instead of inserting a second log row.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteDoesNotDispatchWhenOrderWasAlreadyClaimed(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isReviewRequestEnabled')->willReturn(true);
+        $config->method('getReviewRequestDelayDays')->willReturn(14);
+
+        $connection = $this->makeConnection(
+            [['order_id' => 42, 'customer_id' => 5]],
+            alreadyLoggedCount: 1
+        );
+        $connection->expects(self::never())->method('insert');
+
+        $resourceConnection = $this->makeResourceConnection($connection);
+
+        $dispatcher = $this->createMock(CampaignDispatcher::class);
+        $dispatcher->expects(self::never())->method('dispatch');
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('info')->with(self::stringContains('0 review request triggers'));
 
         $this->makeCron($config, $resourceConnection, $dispatcher, $logger)->execute();
     }

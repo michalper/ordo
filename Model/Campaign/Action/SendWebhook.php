@@ -87,12 +87,9 @@ class SendWebhook implements ActionInterface
                 $e->getMessage()
             ));
 
-            // See SendEmail's identical block / MessageSendRetryQueue::RETRY_CONTEXT_FLAG's own
-            // docblock for why this rethrows on a retry attempt instead of enqueuing again.
-            if (!empty($context[MessageSendRetryQueue::RETRY_CONTEXT_FLAG])) {
-                throw $e;
-            }
-            $this->messageSendRetryQueue->enqueue(self::ACTION_TYPE, $context, $params, $e);
+            // Rethrows on a retry attempt instead of enqueuing again - see
+            // MessageSendRetryQueue::enqueueOrRethrow()/RETRY_CONTEXT_FLAG.
+            $this->messageSendRetryQueue->enqueueOrRethrow(self::ACTION_TYPE, $context, $params, $e);
         }
     }
 

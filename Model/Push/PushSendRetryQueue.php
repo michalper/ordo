@@ -5,6 +5,7 @@ namespace Ordo\Automation\Model\Push;
 
 use Ordo\Automation\Model\PushSendRetryFactory;
 use Ordo\Automation\Model\ResourceModel\PushSendRetry as PushSendRetryResource;
+use Ordo\Automation\Model\Retry\RetryBackoff;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -14,10 +15,10 @@ use Psr\Log\LoggerInterface;
  * one subscription (previously that just wrote an ordo_message_log STATUS_FAILED row and moved
  * on); Cron\RetryFailedPushSends then owns re-attempting and rescheduling from there.
  *
- * Same backoff shape as Model\Campaign\MessageSendRetryQueue - a separate class rather than a
+ * Same backoff shape as Model\Campaign\MessageSendRetryQueue - a separate queue rather than a
  * shared one for the same reason that class gives for not sharing with ActionRetryQueue: these
- * retry structurally different things (a single subscription send vs. a whole campaign action),
- * even though the math is identical today.
+ * retry structurally different things (a single subscription send vs. a whole campaign action);
+ * only the backoff math itself is shared, via Model\Retry\RetryBackoff.
  */
 class PushSendRetryQueue
 {
@@ -28,7 +29,8 @@ class PushSendRetryQueue
     public function __construct(
         private readonly PushSendRetryFactory $pushSendRetryFactory,
         private readonly PushSendRetryResource $pushSendRetryResource,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly RetryBackoff $retryBackoff
     ) {
     }
 
@@ -65,11 +67,11 @@ class PushSendRetryQueue
     }
 
     /**
-     * Exponential backoff, same shape/constants as MessageSendRetryQueue::nextRetryAt().
+     * Exponential backoff - the math lives in Model\Retry\RetryBackoff (shared with the other
+     * retry queues), parametrized by this queue's own BASE/MAX constants.
      */
     public function nextRetryAt(int $attempts): string
     {
-        $delayMinutes = min(self::BASE_DELAY_MINUTES * (2 ** max(0, $attempts - 1)), self::MAX_DELAY_MINUTES);
-        return date('Y-m-d H:i:s', strtotime("+{$delayMinutes} minutes"));
+        return $this->retryBackoff->nextRetryAt($attempts, self::BASE_DELAY_MINUTES, self::MAX_DELAY_MINUTES);
     }
 }

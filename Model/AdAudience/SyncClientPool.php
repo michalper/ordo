@@ -24,12 +24,4 @@ class SyncClientPool
     {
         return $this->clients[$platform] ?? null;
     }
-
-    /**
-     * @return string[]
-     */
-    public function getAvailablePlatforms(): array
-    {
-        return array_keys($this->clients);
-    }
 }

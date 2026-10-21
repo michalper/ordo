@@ -20,6 +20,7 @@ use Ordo\Automation\Cron\TagReorderCycleAtRiskCustomers;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CustomerMapBuilder;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
+use Ordo\Automation\Model\Email\PendingMessageIdHolder;
 use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Setup\Patch\Data\AddSalesRepAttributes;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -53,7 +54,7 @@ class SendSalesRepDigestTest extends TestCase
 
     private function makeEmailSender(TransportBuilder $transportBuilder, StoreManagerInterface $storeManager): ReminderEmailSender
     {
-        return new ReminderEmailSender($transportBuilder, $storeManager, $this->createStub(StateInterface::class));
+        return new ReminderEmailSender($transportBuilder, $storeManager, $this->createStub(StateInterface::class), new PendingMessageIdHolder());
     }
 
     public function testExecuteSkipsWhenDigestDisabled(): void

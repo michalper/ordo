@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Condition;
 
+use Ordo\Automation\Model\ParamsMap;
+
 /**
  * Shared AND/OR/nested-group condition-list tree-walk - the part of ConditionGroupEvaluator and
  * SegmentMemberResolver that was STILL duplicated between them even after ConditionGroupEvaluator
@@ -81,7 +83,7 @@ class GroupWalker
             if (!is_array($item) || !isset($item['type']) || !is_string($item['type'])) {
                 continue;
             }
-            $specs[] = ['type' => $item['type'], 'params' => $this->asStringKeyedArray($item['params'] ?? [])];
+            $specs[] = ['type' => $item['type'], 'params' => ParamsMap::stringKeyed($item['params'] ?? [])];
         }
 
         if ($specs === []) {
@@ -89,28 +91,5 @@ class GroupWalker
         }
 
         return $this->walk($specs, $nestedLogic, $leafResolver, $strategy);
-    }
-
-    /**
-     * Normalizes a decoded-JSON value into a guaranteed array<string, mixed>, dropping any
-     * non-string key a hand-written 'group' params blob could otherwise contain - condition
-     * params are conceptually always a key-value map, never a list.
-     *
-     * @return array<string, mixed>
-     */
-    private function asStringKeyedArray(mixed $value): array
-    {
-        if (!is_array($value)) {
-            return [];
-        }
-
-        $result = [];
-        foreach ($value as $key => $item) {
-            if (is_string($key)) {
-                $result[$key] = $item;
-            }
-        }
-
-        return $result;
     }
 }

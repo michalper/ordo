@@ -5,6 +5,8 @@ namespace Ordo\Automation\Controller\Adminhtml\WhatsAppTemplate;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\Phrase;
+use Ordo\Automation\Controller\Adminhtml\Shared\DeletesEntityTrait;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate as WhatsAppTemplateResource;
 use Ordo\Automation\Model\WhatsAppTemplateFactory;
 
@@ -15,6 +17,8 @@ use Ordo\Automation\Model\WhatsAppTemplateFactory;
  */
 class Delete extends AbstractWhatsAppTemplateAction implements HttpPostActionInterface
 {
+    use DeletesEntityTrait;
+
     public function __construct(
         Context $context,
         private readonly WhatsAppTemplateFactory $whatsAppTemplateFactory,
@@ -23,26 +27,25 @@ class Delete extends AbstractWhatsAppTemplateAction implements HttpPostActionInt
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function deleteEntity(int $entityId): void
     {
-        $resultRedirect = $this->resultRedirectFactory->create();
-        $entityId = (int) $this->getRequest()->getParam('entity_id');
+        $template = $this->whatsAppTemplateFactory->create();
+        $this->whatsAppTemplateResource->load($template, $entityId);
+        $this->whatsAppTemplateResource->delete($template);
+    }
 
-        if (!$entityId) {
-            $this->messageManager->addErrorMessage(__('Missing WhatsApp template id.'));
-            return $resultRedirect->setPath('*/*/');
-        }
+    protected function getMissingIdMessage(): Phrase
+    {
+        return __('Missing WhatsApp template id.');
+    }
 
-        try {
-            $template = $this->whatsAppTemplateFactory->create();
-            $this->whatsAppTemplateResource->load($template, $entityId);
-            $this->whatsAppTemplateResource->delete($template);
+    protected function getDeletedMessage(): Phrase
+    {
+        return __('The WhatsApp template has been deleted.');
+    }
 
-            $this->messageManager->addSuccessMessage(__('The WhatsApp template has been deleted.'));
-        } catch (\Throwable $e) {
-            $this->messageManager->addErrorMessage(__('Could not delete the WhatsApp template: %1', $e->getMessage()));
-        }
-
-        return $resultRedirect->setPath('*/*/');
+    protected function getDeleteErrorMessage(\Throwable $e): Phrase
+    {
+        return __('Could not delete the WhatsApp template: %1', $e->getMessage());
     }
 }

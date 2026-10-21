@@ -13,7 +13,7 @@ use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Controller\ResultInterface;
 use Ordo\Automation\Api\Data\CampaignTriggerInterface;
 use Ordo\Automation\Helper\Config;
-use Ordo\Automation\Model\CampaignDispatcher;
+use Ordo\Automation\Model\Queue\CampaignDispatchPublisher;
 use Ordo\Automation\Model\Webhook\WebhookSignatureValidator;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -27,12 +27,10 @@ use Throwable;
  * an invalid or missing signature is rejected with 401 before the body is even decoded, so an
  * unauthenticated caller can never reach the campaign dispatcher.
  *
- * Dispatches synchronously (Model\CampaignDispatcher::dispatch() called directly), the same
- * shape Cron\SendAbandonedCartReminders/SendBrowseAbandonmentReminders already use - not routed
- * through the async queue (Model\Queue\CampaignDispatchConsumer) that order/customer/tag events
- * use. That's a deliberate MVP scope cut: a slow/misbehaving campaign chain on this endpoint could
- * make the HTTP response slow for the calling ERP/CRM/PIM, but keeps this first cut simple; moving
- * it onto the existing async publisher is a natural, isolated follow-up.
+ * Publishes to the async queue (Model\Queue\CampaignDispatchPublisher), the same path every
+ * observer-fed trigger uses (ADR 0001) — the HTTP response to the calling ERP/CRM/PIM never
+ * waits on condition/action evaluation. The "ok" response means "accepted and queued," not
+ * "campaigns ran" — same contract the other webhook controllers in this module already have.
  */
 class Receive extends Action implements HttpPostActionInterface, CsrfAwareActionInterface
 {
@@ -41,7 +39,7 @@ class Receive extends Action implements HttpPostActionInterface, CsrfAwareAction
         private readonly JsonFactory $resultJsonFactory,
         private readonly Config $config,
         private readonly WebhookSignatureValidator $signatureValidator,
-        private readonly CampaignDispatcher $campaignDispatcher,
+        private readonly CampaignDispatchPublisher $campaignDispatchPublisher,
         private readonly LoggerInterface $logger
     ) {
         parent::__construct($context);
@@ -70,13 +68,13 @@ class Receive extends Action implements HttpPostActionInterface, CsrfAwareAction
         }
 
         try {
-            $this->campaignDispatcher->dispatch(
+            $this->campaignDispatchPublisher->publish(
                 CampaignTriggerInterface::TRIGGER_WEBHOOK_RECEIVED,
                 ['webhook_payload' => $payload]
             );
         } catch (Throwable $e) {
             $this->logger->error(sprintf(
-                'Ordo_Automation: dispatching the webhook_received trigger failed: %s',
+                'Ordo_Automation: publishing the webhook_received trigger failed: %s',
                 $e->getMessage()
             ));
             return $result->setHttpResponseCode(500)->setData(['ok' => false]);

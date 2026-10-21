@@ -3,14 +3,13 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Cron;
 
-use Magento\Framework\App\Area;
-use Magento\Framework\Mail\Template\TransportBuilder;
-use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Cron\CronRunLogger;
+use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\OrderApproval;
+use Ordo\Automation\Model\OrderApprovalManagement;
 use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
 use Ordo\Automation\Model\ResourceModel\OrderApproval\CollectionFactory as OrderApprovalCollectionFactory;
 use Ordo\Automation\Model\TriggerOutcomeLogger;
@@ -28,15 +27,14 @@ use Ordo\Automation\Model\TriggerOutcomeLogger;
 class EscalateStalePendingApprovals
 {
     private const string XML_PATH_EMAIL_TEMPLATE = 'ordo_order_approval_escalation';
-    private const string XML_PATH_EMAIL_SENDER = 'general';
 
     public function __construct(
         private readonly Config $config,
         private readonly OrderApprovalCollectionFactory $orderApprovalCollectionFactory,
         private readonly OrderApprovalResource $orderApprovalResource,
         private readonly OrderCollectionFactory $orderCollectionFactory,
-        private readonly TransportBuilder $transportBuilder,
-        private readonly StateInterface $inlineTranslation,
+        private readonly ReminderEmailSender $reminderEmailSender,
+        private readonly OrderApprovalManagement $orderApprovalManagement,
         private readonly TriggerOutcomeLogger $triggerOutcomeLogger,
         private readonly CronRunLogger $cronRunLogger
     ) {
@@ -201,27 +199,18 @@ class EscalateStalePendingApprovals
         // Observer\HoldOrderForApproval::sendApprovalRequestEmail()'s own comment for the same
         // multi-store base-URL fix and why it matters here identically.
         $store = $order->getStore();
-        $baseUrl = rtrim((string) $store->getBaseUrl(), '/');
-        $token = $approval->getToken();
+        $links = $this->orderApprovalManagement->buildDecisionLinks($store, $approval->getToken());
 
-        $this->inlineTranslation->suspend();
-
-        $transport = $this->transportBuilder
-            ->setTemplateIdentifier(self::XML_PATH_EMAIL_TEMPLATE)
-            ->setTemplateOptions(['area' => Area::AREA_FRONTEND, 'store' => $store->getId()])
-            ->setTemplateVars([
+        $this->reminderEmailSender->send(
+            self::XML_PATH_EMAIL_TEMPLATE,
+            [
                 'order_increment_id' => $order->getIncrementId(),
                 'order_total' => $order->getGrandTotal(),
-                'approve_url' => $baseUrl . '/ordo/approval/approve/token/' . $token,
-                'reject_url' => $baseUrl . '/ordo/approval/reject/token/' . $token,
-                'store' => $store,
-            ])
-            ->setFromByScope(self::XML_PATH_EMAIL_SENDER, $store->getId())
-            ->addTo($recipient)
-            ->getTransport();
-
-        $transport->sendMessage();
-
-        $this->inlineTranslation->resume();
+                'approve_url' => $links->getApproveUrl(),
+                'reject_url' => $links->getRejectUrl(),
+            ],
+            $recipient,
+            store: $store
+        );
     }
 }

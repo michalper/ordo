@@ -62,6 +62,32 @@ class ReminderLogStoreTest extends TestCase
         $store->insert('ordo_offer_reminder_log', ['offer_id' => 9, 'reminder_type' => 'expiring_soon']);
     }
 
+    public function testUpdateMatchingUpdatesRowMatchedByExactInsertedData(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('quoteIdentifier')->willReturnCallback(fn (string $s) => "`{$s}`");
+        $connection->method('quoteInto')->willReturnCallback(
+            fn (string $text, $value) => str_replace('?', "'{$value}'", $text)
+        );
+        $connection->expects(self::once())->method('update')->with(
+            'ordo_abandoned_cart_reminder_log',
+            ['message_log_id' => 77],
+            "`quote_id` = '10' AND `sent_at` = '2026-01-01 00:00:00'"
+        );
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnArgument(0);
+
+        $store = new ReminderLogStore($resourceConnection);
+
+        $store->updateMatching(
+            'ordo_abandoned_cart_reminder_log',
+            ['quote_id' => 10, 'sent_at' => '2026-01-01 00:00:00'],
+            ['message_log_id' => 77]
+        );
+    }
+
     private function makeSelect(): Select
     {
         $select = $this->createStub(Select::class);

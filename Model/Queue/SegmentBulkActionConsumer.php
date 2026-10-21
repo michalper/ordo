@@ -4,14 +4,14 @@ declare(strict_types=1);
 namespace Ordo\Automation\Model\Queue;
 
 use Magento\Framework\Serialize\SerializerInterface;
-use Ordo\Automation\Model\CustomerScoreManager;
-use Ordo\Automation\Model\CustomerTagManager;
+use Ordo\Automation\Model\Campaign\ActionPool;
 use Psr\Log\LoggerInterface;
 
 /**
  * Consumer side of SegmentBulkActionPublisher — decodes the message and loops the already
- * resolved customer_ids, applying the requested action to each via the same single-customer
- * methods this module's cron jobs already call in a loop (see Cron\SendCreditLimitAlerts). One
+ * resolved customer_ids, applying the requested action to each through the same ActionPool
+ * registry CampaignDispatcher runs actions from, so the bulk path shares the registered
+ * action's own input validation instead of re-implementing add_tag/add_points inline. One
  * customer's failure is logged and skipped, never aborts the rest of the batch.
  */
 class SegmentBulkActionConsumer
@@ -20,8 +20,7 @@ class SegmentBulkActionConsumer
     public const ACTION_ADD_POINTS = 'add_points';
 
     public function __construct(
-        private readonly CustomerTagManager $customerTagManager,
-        private readonly CustomerScoreManager $customerScoreManager,
+        private readonly ActionPool $actionPool,
         private readonly SerializerInterface $serializer,
         private readonly LoggerInterface $logger
     ) {
@@ -41,11 +40,21 @@ class SegmentBulkActionConsumer
             return;
         }
 
+        $action = $this->actionPool->get($actionType);
+        if (!$action instanceof \Ordo\Automation\Api\Campaign\ActionInterface) {
+            $this->logger->error(sprintf(
+                'Ordo_Automation: dropped a segment bulk action message with unknown action type "%s".',
+                $actionType
+            ));
+            return;
+        }
+
         $applied = 0;
 
         foreach ($customerIds as $customerId) {
             try {
-                $this->applyAction($actionType, (int) $customerId, $params);
+                $context = ['customer_id' => (int) $customerId];
+                $action->execute($context, $params);
                 $applied++;
             } catch (\Throwable $e) {
                 $this->logger->error(sprintf(
@@ -63,20 +72,5 @@ class SegmentBulkActionConsumer
             $applied,
             count($customerIds)
         ));
-    }
-
-    /**
-     * @param array<string, mixed> $params
-     */
-    private function applyAction(string $actionType, int $customerId, array $params): void
-    {
-        match ($actionType) {
-            self::ACTION_ADD_TAG => $this->customerTagManager->addTag($customerId, (string) ($params['tag'] ?? '')),
-            self::ACTION_ADD_POINTS => $this->customerScoreManager->addPoints(
-                $customerId,
-                (int) ($params['points'] ?? 0)
-            ),
-            default => throw new \InvalidArgumentException(sprintf('Unknown bulk action type "%s".', $actionType)),
-        };
     }
 }

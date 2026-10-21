@@ -9,12 +9,12 @@
     </argument>
     <settings>
         <buttons>
-            <button name="back" class="Ordo\Automation\Block\Adminhtml\WhatsAppTemplate\Edit\BackButton"/>
-            <button name="delete" class="Ordo\Automation\Block\Adminhtml\WhatsAppTemplate\Edit\DeleteButton"/>
+            <button name="back" class="Ordo\Automation\Block\Adminhtml\Shared\Edit\BackButton"/>
+            <button name="delete" class="OrdoAutomationWhatsAppTemplateDeleteButton"/>
             <button name="refresh_status" class="Ordo\Automation\Block\Adminhtml\WhatsAppTemplate\Edit\RefreshStatusButton"/>
             <button name="submit_for_review" class="Ordo\Automation\Block\Adminhtml\WhatsAppTemplate\Edit\SubmitForReviewButton"/>
-            <button name="save" class="Ordo\Automation\Block\Adminhtml\WhatsAppTemplate\Edit\SaveButton"/>
-            <button name="save_and_continue" class="Ordo\Automation\Block\Adminhtml\WhatsAppTemplate\Edit\SaveAndContinueButton"/>
+            <button name="save" class="OrdoAutomationWhatsAppTemplateSaveButton"/>
+            <button name="save_and_continue" class="OrdoAutomationWhatsAppTemplateSaveAndContinueButton"/>
         </buttons>
         <namespace>ordo_whatsapptemplate_form</namespace>
         <dataScope>data</dataScope>

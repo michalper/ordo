@@ -41,6 +41,7 @@
         ],
         "cs-check": "php-cs-fixer fix --dry-run --diff",
         "phpcs-check": "phpcs",
+        "phpcs-marketplace-check": "phpcs --standard=Magento2 --extensions=php,phtml --error-severity=10 --warning-severity=0 --ignore-annotations --parallel=4 --ignore=vendor/*,node_modules/*,.magento_cache/* .",
         "rector-check": "rector process --dry-run"
     },
     "autoload": {

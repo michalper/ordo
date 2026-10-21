@@ -34,6 +34,7 @@ class SegmentMemberResolverTest extends TestCase
     private PurchasedProductResolver&\PHPUnit\Framework\MockObject\MockObject $purchasedProductResolver;
     private EventOccurredResolver&\PHPUnit\Framework\MockObject\MockObject $eventOccurredResolver;
     private ReorderCycleDriftCalculator&\PHPUnit\Framework\MockObject\MockObject $reorderCycleDriftCalculator;
+    private \Ordo\Automation\Model\Campaign\ConditionPool&\PHPUnit\Framework\MockObject\MockObject $conditionPool;
     private SegmentMemberResolver $resolver;
     private Segment $segmentStub;
 
@@ -52,6 +53,7 @@ class SegmentMemberResolverTest extends TestCase
         $this->purchasedProductResolver = $this->createMock(PurchasedProductResolver::class);
         $this->eventOccurredResolver = $this->createMock(EventOccurredResolver::class);
         $this->reorderCycleDriftCalculator = $this->createMock(ReorderCycleDriftCalculator::class);
+        $this->conditionPool = $this->createMock(\Ordo\Automation\Model\Campaign\ConditionPool::class);
 
         // willReturnCallback (not willReturn) so stubSegmentConditionLogic() can change what's
         // returned later in a test — PHPUnit stacks multiple ->method('create') stubs FIFO, so a
@@ -73,7 +75,8 @@ class SegmentMemberResolverTest extends TestCase
             $this->eventOccurredResolver,
             new GroupWalker(),
             new SetGroupCombineStrategy(),
-            $this->reorderCycleDriftCalculator
+            $this->reorderCycleDriftCalculator,
+            $this->conditionPool
         );
     }
 
@@ -500,6 +503,69 @@ class SegmentMemberResolverTest extends TestCase
         self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
     }
 
+    /**
+     * Regression test for the silent drift this delegation closed: clv_at_least,
+     * loyalty_tier_at_least and nps_score_at_least were registered in the ConditionPool (so
+     * per-customer SegmentMatcher evaluation worked) but hit this resolver's default arm and
+     * matched nobody. A pool condition implementing BulkResolvableConditionInterface now
+     * resolves through the pool without a dedicated switch arm.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPoolRegisteredBulkResolvableConditionResolvesThroughThePool(): void
+    {
+        $this->stubSegment(1, [['type' => 'clv_at_least', 'params' => ['amount' => '5000']]]);
+        $this->primeFactory();
+
+        $bulkCondition = $this->createMock(\Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface::class);
+        $bulkCondition->expects(self::once())
+            ->method('resolveCustomerIds')
+            ->with(['amount' => '5000'])
+            ->willReturn([7, 9]);
+
+        $poolCondition = new class($bulkCondition) implements
+            \Ordo\Automation\Api\Campaign\ConditionInterface,
+            \Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface {
+            public function __construct(
+                private readonly \Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface $inner
+            ) {
+            }
+
+            public function isSatisfied(array $context, array $params): bool
+            {
+                return false;
+            }
+
+            public function resolveCustomerIds(array $params): array
+            {
+                return $this->inner->resolveCustomerIds($params);
+            }
+        };
+
+        $this->conditionPool->method('get')->willReturnMap([['clv_at_least', $poolCondition]]);
+        $this->logger->expects(self::never())->method('error');
+
+        self::assertSame([7, 9], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    /**
+     * A pool-registered condition that does NOT opt into set-level resolution still fails
+     * closed with a logged error — being dispatchable per customer isn't enough to claim set
+     * membership silently.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPoolConditionWithoutBulkInterfaceStillFailsClosed(): void
+    {
+        $this->stubSegment(1, [['type' => 'pool_only_type', 'params' => []]]);
+        $this->primeFactory();
+
+        $poolOnly = $this->createStub(\Ordo\Automation\Api\Campaign\ConditionInterface::class);
+        $this->conditionPool->method('get')->willReturnMap([['pool_only_type', $poolOnly]]);
+
+        $this->logger->expects(self::once())->method('error');
+
+        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testAndIntersectionAcrossMultipleConditions(): void
     {
@@ -720,6 +786,62 @@ class SegmentMemberResolverTest extends TestCase
         $this->primeFactory();
 
         self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testBatchKeepsOneAggregatesSnapshotAcrossTopLevelResolves(): void
+    {
+        $this->stubSegment(1, [['type' => 'recency_days_at_most', 'params' => ['days' => '30']]]);
+        $this->stubSegment(2, [['type' => 'recency_days_at_most', 'params' => ['days' => '10']]]);
+        $this->primeFactory();
+
+        // The whole point of beginBatch(): N segments with RFM conditions, one whole-base
+        // aggregate query — not one per top-level resolve.
+        $this->rfmCalculator->expects(self::once())->method('getAggregatesForAllCustomers')->willReturn([
+            1 => ['frequency' => 1, 'monetary' => 1.0, 'recency_days' => 5],
+        ]);
+
+        $this->resolver->beginBatch();
+        try {
+            self::assertSame([1], $this->resolver->getMatchingCustomerIds(1));
+            self::assertSame([1], $this->resolver->getMatchingCustomerIds(2));
+        } finally {
+            $this->resolver->endBatch();
+        }
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testTopLevelResolvesOutsideABatchEachTakeAFreshSnapshot(): void
+    {
+        $this->stubSegment(1, [['type' => 'recency_days_at_most', 'params' => ['days' => '30']]]);
+        $this->stubSegment(2, [['type' => 'recency_days_at_most', 'params' => ['days' => '10']]]);
+        $this->primeFactory();
+
+        $this->rfmCalculator->expects(self::exactly(2))->method('getAggregatesForAllCustomers')->willReturn([
+            1 => ['frequency' => 1, 'monetary' => 1.0, 'recency_days' => 5],
+        ]);
+
+        self::assertSame([1], $this->resolver->getMatchingCustomerIds(1));
+        self::assertSame([1], $this->resolver->getMatchingCustomerIds(2));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testEndBatchRestoresThePerResolveSnapshotReset(): void
+    {
+        $this->stubSegment(1, [['type' => 'recency_days_at_most', 'params' => ['days' => '30']]]);
+        $this->stubSegment(2, [['type' => 'recency_days_at_most', 'params' => ['days' => '10']]]);
+        $this->primeFactory();
+
+        $this->rfmCalculator->expects(self::exactly(2))->method('getAggregatesForAllCustomers')->willReturn([
+            1 => ['frequency' => 1, 'monetary' => 1.0, 'recency_days' => 5],
+        ]);
+
+        $this->resolver->beginBatch();
+        self::assertSame([1], $this->resolver->getMatchingCustomerIds(1));
+        $this->resolver->endBatch();
+
+        // After endBatch(), an ad-hoc resolve must not keep serving the batch's snapshot.
+        self::assertSame([1], $this->resolver->getMatchingCustomerIds(2));
     }
 
     #[AllowMockObjectsWithoutExpectations]

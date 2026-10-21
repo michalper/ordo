@@ -37,11 +37,13 @@ class RfmCalculator
      * Bounds how many rows getAllCustomerIds()/getAggregatesForAllCustomers() pull into PHP per
      * round trip — without this, both ran a single unbounded SELECT over the whole customer_entity
      * / sales_order tables, exactly the "unbounded full-table scan" ROADMAP.md Tier 4 flags as a
-     * real memory-exhaustion risk on a large store. Paginated with ORDER BY entity_id/customer_id
-     * + LIMIT/OFFSET rather than a cursor, since both callers (computePercentileRanks() and
-     * SegmentMemberResolver) still need the complete id list / aggregate map in memory afterward
-     * to sort/rank against — pagination here bounds the SQL round-trip size, not the final PHP
-     * array, which percentile ranking inherently needs whole regardless.
+     * real memory-exhaustion risk on a large store. Paginated with a keyset cursor (WHERE
+     * entity_id/customer_id > last id seen + ORDER BY ... ASC + LIMIT) rather than LIMIT/OFFSET,
+     * which made MySQL re-walk every earlier row/group on each page — quadratic over the whole
+     * scan. Both callers (computePercentileRanks() and SegmentMemberResolver) still need the
+     * complete id list / aggregate map in memory afterward to sort/rank against — pagination here
+     * bounds the SQL round-trip size, not the final PHP array, which percentile ranking
+     * inherently needs whole regardless.
      */
     private const int SCAN_PAGE_SIZE = 5000;
 
@@ -126,7 +128,7 @@ class RfmCalculator
         $orderTable = $this->resourceConnection->getTableName('sales_order');
 
         $aggregates = [];
-        $offset = 0;
+        $lastCustomerId = 0;
 
         do {
             $rows = $connection->fetchAll(
@@ -138,15 +140,19 @@ class RfmCalculator
                         'last_order_at' => 'MAX(created_at)',
                     ])
                     ->where('state != ?', 'canceled')
-                    ->where('customer_id IS NOT NULL')
+                    // Keyset cursor on the GROUP BY key itself: filtering customer_id before
+                    // grouping excludes exactly the already-returned groups (also subsumes the
+                    // old customer_id IS NOT NULL — NULL > n is never true).
+                    ->where('customer_id > ?', $lastCustomerId)
                     ->group('customer_id')
                     ->order('customer_id ASC')
-                    ->limit(self::SCAN_PAGE_SIZE, $offset)
+                    ->limit(self::SCAN_PAGE_SIZE)
             );
 
             /** @var array<string, mixed> $row */
             foreach ($rows as $row) {
                 $customerId = (int) $row['customer_id'];
+                $lastCustomerId = $customerId;
                 $lastOrderAt = $row['last_order_at'] ?? null;
                 $recencyDays = null;
 
@@ -161,8 +167,6 @@ class RfmCalculator
                     'recency_days' => $recencyDays,
                 ];
             }
-
-            $offset += self::SCAN_PAGE_SIZE;
         } while (count($rows) === self::SCAN_PAGE_SIZE);
 
         return $aggregates;
@@ -492,21 +496,23 @@ class RfmCalculator
         $customerTable = $this->resourceConnection->getTableName('customer_entity');
 
         $ids = [];
-        $offset = 0;
+        $lastId = 0;
 
         do {
             $page = $connection->fetchCol(
                 $connection->select()
                     ->from($customerTable, 'entity_id')
+                    // Keyset cursor, same shape as getAggregatesForAllCustomers() — see
+                    // SCAN_PAGE_SIZE's doc for why not LIMIT/OFFSET.
+                    ->where('entity_id > ?', $lastId)
                     ->order('entity_id ASC')
-                    ->limit(self::SCAN_PAGE_SIZE, $offset)
+                    ->limit(self::SCAN_PAGE_SIZE)
             );
 
             foreach ($page as $id) {
-                $ids[] = (int) $id;
+                $lastId = (int) $id;
+                $ids[] = $lastId;
             }
-
-            $offset += self::SCAN_PAGE_SIZE;
         } while (count($page) === self::SCAN_PAGE_SIZE);
 
         return $ids;

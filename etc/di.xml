@@ -126,12 +126,12 @@
         </arguments>
     </type>
 
-    <type name="Ordo\Automation\Model\ResourceModel\PushSubscription\Grid\Collection">
+    <virtualType name="Ordo\Automation\Model\ResourceModel\PushSubscription\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
         <arguments>
             <argument name="mainTable" xsi:type="string">ordo_push_subscription</argument>
             <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\PushSubscription</argument>
         </arguments>
-    </type>
+    </virtualType>
 
     <type name="Ordo\Automation\Model\ResourceModel\PriceWatch\PriceWatchSubscription\Grid\Collection">
         <arguments>
@@ -140,19 +140,19 @@
         </arguments>
     </type>
 
-    <type name="Ordo\Automation\Model\ResourceModel\EmailTemplateVersion\Grid\Collection">
+    <virtualType name="Ordo\Automation\Model\ResourceModel\EmailTemplateVersion\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
         <arguments>
             <argument name="mainTable" xsi:type="string">ordo_email_template_version</argument>
             <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\EmailTemplateVersion</argument>
         </arguments>
-    </type>
+    </virtualType>
 
-    <type name="Ordo\Automation\Model\ResourceModel\LeadRoutingRule\Grid\Collection">
+    <virtualType name="Ordo\Automation\Model\ResourceModel\LeadRoutingRule\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
         <arguments>
             <argument name="mainTable" xsi:type="string">ordo_lead_routing_rule</argument>
             <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\LeadRoutingRule</argument>
         </arguments>
-    </type>
+    </virtualType>
 
     <type name="Ordo\Automation\Model\ResourceModel\ConversationMessage\Grid\Collection">
         <arguments>
@@ -161,12 +161,12 @@
         </arguments>
     </type>
 
-    <type name="Ordo\Automation\Model\ResourceModel\OrderApproval\Grid\Collection">
+    <virtualType name="Ordo\Automation\Model\ResourceModel\OrderApproval\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
         <arguments>
             <argument name="mainTable" xsi:type="string">ordo_order_approval</argument>
             <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\OrderApproval</argument>
         </arguments>
-    </type>
+    </virtualType>
 
     <type name="Ordo\Automation\Model\ResourceModel\Cron\CronRunLog\Grid\Collection">
         <arguments>
@@ -175,19 +175,19 @@
         </arguments>
     </type>
 
-    <type name="Ordo\Automation\Model\ResourceModel\ProductFeedRunLog\Grid\Collection">
+    <virtualType name="Ordo\Automation\Model\ResourceModel\ProductFeedRunLog\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
         <arguments>
             <argument name="mainTable" xsi:type="string">ordo_product_feed_run_log</argument>
             <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\ProductFeedRunLog</argument>
         </arguments>
-    </type>
+    </virtualType>
 
-    <type name="Ordo\Automation\Model\ResourceModel\AdminActionLog\Grid\Collection">
+    <virtualType name="Ordo\Automation\Model\ResourceModel\AdminActionLog\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
         <arguments>
             <argument name="mainTable" xsi:type="string">ordo_admin_action_log</argument>
             <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\AdminActionLog</argument>
         </arguments>
-    </type>
+    </virtualType>
 
     <type name="Ordo\Automation\Model\ResourceModel\MessageLog\Grid\Collection">
         <arguments>
@@ -203,33 +203,33 @@
         </arguments>
     </type>
 
-    <type name="Ordo\Automation\Model\ResourceModel\ContentBlock\Grid\Collection">
+    <virtualType name="Ordo\Automation\Model\ResourceModel\ContentBlock\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
         <arguments>
             <argument name="mainTable" xsi:type="string">ordo_content_block</argument>
             <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\ContentBlock</argument>
         </arguments>
-    </type>
+    </virtualType>
 
-    <type name="Ordo\Automation\Model\ResourceModel\AdAudience\Grid\Collection">
+    <virtualType name="Ordo\Automation\Model\ResourceModel\AdAudience\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
         <arguments>
             <argument name="mainTable" xsi:type="string">ordo_ad_audience</argument>
             <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\AdAudience</argument>
         </arguments>
-    </type>
+    </virtualType>
 
-    <type name="Ordo\Automation\Model\ResourceModel\WhatsAppTemplate\Grid\Collection">
+    <virtualType name="Ordo\Automation\Model\ResourceModel\WhatsAppTemplate\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
         <arguments>
             <argument name="mainTable" xsi:type="string">ordo_whatsapp_template</argument>
             <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\WhatsAppTemplate</argument>
         </arguments>
-    </type>
+    </virtualType>
 
-    <type name="Ordo\Automation\Model\ResourceModel\Segment\Grid\Collection">
+    <virtualType name="Ordo\Automation\Model\ResourceModel\Segment\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
         <arguments>
             <argument name="mainTable" xsi:type="string">ordo_segment</argument>
             <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\Segment</argument>
         </arguments>
-    </type>
+    </virtualType>
 
     <!--
         The RFM report grid has no entity table of its own — it reports over customer_entity, so
@@ -270,12 +270,12 @@
         </arguments>
     </type>
 
-    <type name="Ordo\Automation\Model\ResourceModel\FreeGiftOffer\Grid\Collection">
+    <virtualType name="Ordo\Automation\Model\ResourceModel\FreeGiftOffer\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
         <arguments>
             <argument name="mainTable" xsi:type="string">ordo_free_gift_offer</argument>
             <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\FreeGiftOffer</argument>
         </arguments>
-    </type>
+    </virtualType>
 
     <!--
         Campaign engine plug-in registry. Adding a new condition or action type never means

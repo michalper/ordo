@@ -13,7 +13,6 @@ use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\App\State;
 use Magento\Framework\Event as MagentoEvent;
 use Magento\Framework\Event\Observer as EventObserver;
-use Magento\Framework\MessageQueue\PublisherInterface;
 use Magento\Framework\ObjectManagerInterface;
 use Magento\Framework\Registry;
 use Magento\Store\Model\ScopeInterface;
@@ -26,6 +25,7 @@ use Ordo\Automation\Model\Referral;
 use Ordo\Automation\Model\ReferralManager;
 use Ordo\Automation\Observer\DispatchReferralConvertedCampaigns;
 use Ordo\Automation\Observer\RedeemReferralCode;
+use Ordo\Automation\Test\Integration\Fixture\RecordingPublisher;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -147,7 +147,7 @@ class ReferralProgramScenarioTest extends TestCase
         // this class's own docblock) - everything else is real.
         $orderId = $this->createOrder($referredCustomerId);
 
-        $recordingPublisher = new RecordingPublisherInterface();
+        $recordingPublisher = new RecordingPublisher();
         $publisher = self::$objectManager->create(CampaignDispatchPublisher::class, [
             'publisher' => $recordingPublisher,
         ]);
@@ -230,21 +230,5 @@ class ReferralProgramScenarioTest extends TestCase
         $this->orderIds[] = $orderId;
 
         return $orderId;
-    }
-}
-
-/**
- * Records (topic, body) instead of publishing to a real queue - the one collaborator this test
- * swaps, same "override just the risky collaborator" pattern every other Test/Integration file
- * already uses.
- */
-class RecordingPublisherInterface implements PublisherInterface
-{
-    /** @var array<int, array{topic: string, body: string}> */
-    public array $published = [];
-
-    public function publish($topicName, $data)
-    {
-        $this->published[] = ['topic' => $topicName, 'body' => (string) $data];
     }
 }

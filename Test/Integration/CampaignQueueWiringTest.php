@@ -7,6 +7,8 @@ use Magento\Framework\App\Bootstrap;
 use Magento\Framework\App\CacheInterface;
 use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
 use Magento\Framework\ObjectManagerInterface;
+use Magento\Framework\Shell;
+use Magento\Framework\Shell\CommandRenderer;
 use Ordo\Automation\Model\CampaignActionFactory;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\CampaignFactory;
@@ -208,20 +210,13 @@ class CampaignQueueWiringTest extends TestCase
 
         self::assertGreaterThan(0, $pendingCount, 'sanity check: our own just-published message must be pending');
 
-        $command = sprintf(
-            '%s %s/bin/magento queue:consumers:start %s --max-messages=%d 2>&1',
-            escapeshellarg(PHP_BINARY),
-            escapeshellarg(rtrim(BP, '/')),
-            escapeshellarg(self::CONSUMER_NAME),
-            $pendingCount
-        );
-
-        exec($command, $output, $exitCode);
-
-        self::assertSame(
-            0,
-            $exitCode,
-            'queue:consumers:start must exit cleanly; output: ' . implode("\n", $output)
+        // Shell::execute() throws on a non-zero exit, with the command output chained as the
+        // previous exception — a failed consumer run fails the test with that output attached.
+        // Constructed directly: Magento ships no global ShellInterface preference, so the
+        // object manager can't resolve the interface, and this is test-harness code anyway.
+        (new Shell(new CommandRenderer()))->execute(
+            '%s %s/bin/magento queue:consumers:start %s --max-messages=%s',
+            [PHP_BINARY, rtrim(BP, '/'), self::CONSUMER_NAME, (string) $pendingCount]
         );
     }
 }

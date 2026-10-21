@@ -34,6 +34,7 @@ use Ordo\Automation\Test\Unit\CatalogProductTestDouble;
 use Ordo\Automation\Test\Unit\QuoteItemTestDouble;
 use Ordo\Automation\Test\Unit\QuoteTestDouble;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+
 class FreeGiftManagementTest extends AbstractModelTestCase
 {
     private CartRepositoryInterface $cartRepository;

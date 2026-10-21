@@ -7,6 +7,10 @@ use Magento\Framework\Model\ResourceModel\Db\Collection\AbstractCollection;
 use Ordo\Automation\Model\CampaignAction as CampaignActionModel;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action as CampaignActionResource;
 
+/**
+ * @method \ArrayIterator<int, CampaignActionModel> getIterator()
+ * @method CampaignActionModel[] getItems()
+ */
 class Collection extends AbstractCollection
 {
     protected function _construct(): void

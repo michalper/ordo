@@ -16,20 +16,216 @@
 
     <!-- These five entities have no extracted SaveProcessor (unlike Campaign/Segment above), so
          each plugin targets its own ResourceModel::save() instead - see
-         Plugin\ContentBlock\ContentBlockResourceAuditPlugin's own docblock. -->
+         Plugin\Shared\ResourceAuditPlugin's own docblock. Each entity's plugin is a virtualType
+         of that one shared class, carrying only its entity_type label and audited-field list. -->
+    <virtualType name="OrdoAutomationContentBlockResourceAuditPlugin" type="Ordo\Automation\Plugin\Shared\ResourceAuditPlugin">
+        <arguments>
+            <argument name="entityType" xsi:type="string">content_block</argument>
+            <argument name="auditedFields" xsi:type="array">
+                <item name="0" xsi:type="string">name</item>
+                <item name="1" xsi:type="string">identifier</item>
+                <item name="2" xsi:type="string">type</item>
+                <item name="3" xsi:type="string">enabled</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationFreeGiftOfferResourceAuditPlugin" type="Ordo\Automation\Plugin\Shared\ResourceAuditPlugin">
+        <arguments>
+            <argument name="entityType" xsi:type="string">free_gift_offer</argument>
+            <argument name="auditedFields" xsi:type="array">
+                <item name="0" xsi:type="string">name</item>
+                <item name="1" xsi:type="string">enabled</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationScoreRuleResourceAuditPlugin" type="Ordo\Automation\Plugin\Shared\ResourceAuditPlugin">
+        <arguments>
+            <argument name="entityType" xsi:type="string">score_rule</argument>
+            <argument name="auditedFields" xsi:type="array">
+                <item name="0" xsi:type="string">attribute_code</item>
+                <item name="1" xsi:type="string">operator</item>
+                <item name="2" xsi:type="string">value</item>
+                <item name="3" xsi:type="string">points</item>
+                <item name="4" xsi:type="string">enabled</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationAdAudienceResourceAuditPlugin" type="Ordo\Automation\Plugin\Shared\ResourceAuditPlugin">
+        <arguments>
+            <argument name="entityType" xsi:type="string">ad_audience</argument>
+            <argument name="auditedFields" xsi:type="array">
+                <item name="0" xsi:type="string">name</item>
+                <item name="1" xsi:type="string">segment_id</item>
+                <item name="2" xsi:type="string">platform</item>
+                <item name="3" xsi:type="string">enabled</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationWhatsAppTemplateResourceAuditPlugin" type="Ordo\Automation\Plugin\Shared\ResourceAuditPlugin">
+        <arguments>
+            <argument name="entityType" xsi:type="string">whatsapp_template</argument>
+            <argument name="auditedFields" xsi:type="array">
+                <item name="0" xsi:type="string">name</item>
+                <item name="1" xsi:type="string">meta_template_name</item>
+                <item name="2" xsi:type="string">category</item>
+                <item name="3" xsi:type="string">language</item>
+                <item name="4" xsi:type="string">body_text</item>
+                <item name="5" xsi:type="string">status</item>
+            </argument>
+        </arguments>
+    </virtualType>
     <type name="Ordo\Automation\Model\ResourceModel\ContentBlock">
-        <plugin name="ordo_admin_action_log_content_block" type="Ordo\Automation\Plugin\ContentBlock\ContentBlockResourceAuditPlugin"/>
+        <plugin name="ordo_admin_action_log_content_block" type="OrdoAutomationContentBlockResourceAuditPlugin"/>
     </type>
     <type name="Ordo\Automation\Model\ResourceModel\FreeGiftOffer">
-        <plugin name="ordo_admin_action_log_free_gift_offer" type="Ordo\Automation\Plugin\FreeGiftOffer\FreeGiftOfferResourceAuditPlugin"/>
+        <plugin name="ordo_admin_action_log_free_gift_offer" type="OrdoAutomationFreeGiftOfferResourceAuditPlugin"/>
     </type>
     <type name="Ordo\Automation\Model\ResourceModel\ScoreRule">
-        <plugin name="ordo_admin_action_log_score_rule" type="Ordo\Automation\Plugin\ScoreRule\ScoreRuleResourceAuditPlugin"/>
+        <plugin name="ordo_admin_action_log_score_rule" type="OrdoAutomationScoreRuleResourceAuditPlugin"/>
     </type>
     <type name="Ordo\Automation\Model\ResourceModel\AdAudience">
-        <plugin name="ordo_admin_action_log_ad_audience" type="Ordo\Automation\Plugin\AdAudience\AdAudienceResourceAuditPlugin"/>
+        <plugin name="ordo_admin_action_log_ad_audience" type="OrdoAutomationAdAudienceResourceAuditPlugin"/>
     </type>
     <type name="Ordo\Automation\Model\ResourceModel\WhatsAppTemplate">
-        <plugin name="ordo_admin_action_log_whatsapp_template" type="Ordo\Automation\Plugin\WhatsAppTemplate\WhatsAppTemplateResourceAuditPlugin"/>
+        <plugin name="ordo_admin_action_log_whatsapp_template" type="OrdoAutomationWhatsAppTemplateResourceAuditPlugin"/>
     </type>
+
+    <!-- Admin edit-form toolbar buttons. The 32 per-entity button classes collapsed into four
+         parametrized classes under Block\Adminhtml\Shared\Edit; each entity's save /
+         save-and-continue / delete button is a virtualType of one of them, carrying only the
+         strings that actually differed (save label, form target, delete-confirm message).
+         These are this module's first virtualTypes: a virtualType is a named DI configuration
+         of an existing class, not a PHP class — the name below works in a ui_component form
+         XML's <button class="..."> attribute because Magento resolves it through
+         ButtonProviderFactory -> ObjectManager::create(), which maps virtualType names to
+         their base class. BackButton needs no per-entity strings, so the form XMLs reference
+         Ordo\Automation\Block\Adminhtml\Shared\Edit\BackButton directly. -->
+    <virtualType name="OrdoAutomationAdAudienceSaveButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\SaveButton">
+        <arguments>
+            <argument name="label" xsi:type="string">Save Ad Audience</argument>
+            <argument name="targetName" xsi:type="string">ordo_adaudience_form.ordo_adaudience_form</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationAdAudienceSaveAndContinueButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\SaveAndContinueButton">
+        <arguments>
+            <argument name="targetName" xsi:type="string">ordo_adaudience_form.ordo_adaudience_form</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationAdAudienceDeleteButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\DeleteButton">
+        <arguments>
+            <argument name="confirmMessage" xsi:type="string">Are you sure you want to delete this ad audience?</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationCampaignSaveButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\SaveButton">
+        <arguments>
+            <argument name="label" xsi:type="string">Save Campaign</argument>
+            <argument name="targetName" xsi:type="string">ordo_campaign_form.ordo_campaign_form</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationCampaignSaveAndContinueButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\SaveAndContinueButton">
+        <arguments>
+            <argument name="targetName" xsi:type="string">ordo_campaign_form.ordo_campaign_form</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationCampaignDeleteButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\DeleteButton">
+        <arguments>
+            <argument name="confirmMessage" xsi:type="string">Are you sure you want to delete this campaign?</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationContentBlockSaveButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\SaveButton">
+        <arguments>
+            <argument name="label" xsi:type="string">Save Content Block</argument>
+            <argument name="targetName" xsi:type="string">ordo_contentblock_form.ordo_contentblock_form</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationContentBlockSaveAndContinueButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\SaveAndContinueButton">
+        <arguments>
+            <argument name="targetName" xsi:type="string">ordo_contentblock_form.ordo_contentblock_form</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationContentBlockDeleteButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\DeleteButton">
+        <arguments>
+            <argument name="confirmMessage" xsi:type="string">Are you sure you want to delete this content block?</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationFreeGiftOfferSaveButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\SaveButton">
+        <arguments>
+            <argument name="label" xsi:type="string">Save Offer</argument>
+            <argument name="targetName" xsi:type="string">ordo_free_gift_offer_form.ordo_free_gift_offer_form</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationFreeGiftOfferSaveAndContinueButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\SaveAndContinueButton">
+        <arguments>
+            <argument name="targetName" xsi:type="string">ordo_free_gift_offer_form.ordo_free_gift_offer_form</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationFreeGiftOfferDeleteButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\DeleteButton">
+        <arguments>
+            <argument name="confirmMessage" xsi:type="string">Are you sure you want to delete this free gift offer?</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationLeadRoutingRuleSaveButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\SaveButton">
+        <arguments>
+            <argument name="label" xsi:type="string">Save Lead Routing Rule</argument>
+            <argument name="targetName" xsi:type="string">ordo_leadroutingrule_form.ordo_leadroutingrule_form</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationLeadRoutingRuleSaveAndContinueButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\SaveAndContinueButton">
+        <arguments>
+            <argument name="targetName" xsi:type="string">ordo_leadroutingrule_form.ordo_leadroutingrule_form</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationLeadRoutingRuleDeleteButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\DeleteButton">
+        <arguments>
+            <argument name="confirmMessage" xsi:type="string">Are you sure you want to delete this lead routing rule?</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationScoreRuleSaveButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\SaveButton">
+        <arguments>
+            <argument name="label" xsi:type="string">Save Score Rule</argument>
+            <argument name="targetName" xsi:type="string">ordo_scorerule_form.ordo_scorerule_form</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationScoreRuleSaveAndContinueButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\SaveAndContinueButton">
+        <arguments>
+            <argument name="targetName" xsi:type="string">ordo_scorerule_form.ordo_scorerule_form</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationScoreRuleDeleteButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\DeleteButton">
+        <arguments>
+            <argument name="confirmMessage" xsi:type="string">Are you sure you want to delete this score rule?</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationSegmentSaveButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\SaveButton">
+        <arguments>
+            <argument name="label" xsi:type="string">Save Segment</argument>
+            <argument name="targetName" xsi:type="string">ordo_segment_form.ordo_segment_form</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationSegmentSaveAndContinueButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\SaveAndContinueButton">
+        <arguments>
+            <argument name="targetName" xsi:type="string">ordo_segment_form.ordo_segment_form</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationSegmentDeleteButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\DeleteButton">
+        <arguments>
+            <argument name="confirmMessage" xsi:type="string">Are you sure you want to delete this segment?</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationWhatsAppTemplateSaveButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\SaveButton">
+        <arguments>
+            <argument name="label" xsi:type="string">Save Template</argument>
+            <argument name="targetName" xsi:type="string">ordo_whatsapptemplate_form.ordo_whatsapptemplate_form</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationWhatsAppTemplateSaveAndContinueButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\SaveAndContinueButton">
+        <arguments>
+            <argument name="targetName" xsi:type="string">ordo_whatsapptemplate_form.ordo_whatsapptemplate_form</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationWhatsAppTemplateDeleteButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\DeleteButton">
+        <arguments>
+            <argument name="confirmMessage" xsi:type="string">Are you sure you want to delete this WhatsApp template?</argument>
+        </arguments>
+    </virtualType>
 </config>

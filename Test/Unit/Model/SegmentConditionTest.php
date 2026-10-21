@@ -33,6 +33,14 @@ class SegmentConditionTest extends AbstractModelTestCase
         self::assertSame(['min' => '500'], $model->getParams());
     }
 
+    public function testGetParamsDropsNonStringKeys(): void
+    {
+        $model = $this->makeModel();
+        $model->setData('params', '{"min":"500","0":"smuggled"}');
+
+        self::assertSame(['min' => '500'], $model->getParams());
+    }
+
     public function testEntityIdRoundTrip(): void
     {
         $model = $this->makeModel();

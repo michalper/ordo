@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Segment;
 
+use Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface;
+use Ordo\Automation\Model\Campaign\ConditionPool;
 use Ordo\Automation\Model\Condition\GroupWalker;
 use Ordo\Automation\Model\Condition\SetGroupCombineStrategy;
 use Ordo\Automation\Model\CustomerScoreManager;
@@ -71,6 +73,14 @@ class SegmentMemberResolver
      */
     private ?array $reorderCycleDriftRatiosCache = null;
 
+    /**
+     * While true, top-level getMatchingCustomerIds() calls stop resetting the snapshot caches
+     * above, so a caller resolving many segments in one pass (the audience-size cron, the RFM
+     * grid's matching-segments column) pays for the RFM aggregate/percentile scans once, not once
+     * per segment. See beginBatch().
+     */
+    private bool $batchSnapshotActive = false;
+
     public function __construct(
         private readonly SegmentConditionCollectionFactory $segmentConditionCollectionFactory,
         private readonly CustomerTagManager $customerTagManager,
@@ -83,8 +93,38 @@ class SegmentMemberResolver
         private readonly EventOccurredResolver $eventOccurredResolver,
         private readonly GroupWalker $groupWalker,
         private readonly SetGroupCombineStrategy $combineStrategy,
-        private readonly ReorderCycleDriftCalculator $reorderCycleDriftCalculator
+        private readonly ReorderCycleDriftCalculator $reorderCycleDriftCalculator,
+        private readonly ConditionPool $conditionPool
     ) {
+    }
+
+    /**
+     * Keeps one RFM/drift snapshot across every getMatchingCustomerIds() call until endBatch() —
+     * for callers resolving all segments in one pass, where per-segment freshness is pointless
+     * (the underlying sales_order data won't meaningfully change mid-pass) and re-running the
+     * whole-base GROUP BY per segment is the dominant cost. Ad-hoc single resolves outside a
+     * batch keep the existing reset-per-top-level-call behavior. Always pair with endBatch()
+     * (try/finally) so a thrown resolve can't leave a long-lived process serving a stale snapshot.
+     */
+    public function beginBatch(): void
+    {
+        $this->batchSnapshotActive = true;
+        $this->resetSnapshotCaches();
+    }
+
+    public function endBatch(): void
+    {
+        $this->batchSnapshotActive = false;
+        // Also free the snapshot right away — in a long-lived process the next top-level resolve
+        // would reset it anyway, but holding a whole-customer-base map until then is pure waste.
+        $this->resetSnapshotCaches();
+    }
+
+    private function resetSnapshotCaches(): void
+    {
+        $this->aggregatesCache = null;
+        $this->percentileRanksCache = null;
+        $this->reorderCycleDriftRatiosCache = null;
     }
 
     /**
@@ -94,12 +134,11 @@ class SegmentMemberResolver
      */
     public function getMatchingCustomerIds(int $segmentId, array $visitedSegmentIds = []): array
     {
-        if ($visitedSegmentIds === []) {
+        if ($visitedSegmentIds === [] && !$this->batchSnapshotActive) {
             // Fresh top-level call (not a recursive in_segment hop) — start a new aggregates
-            // snapshot for this resolve. A recursive call keeps reusing the same one.
-            $this->aggregatesCache = null;
-            $this->percentileRanksCache = null;
-            $this->reorderCycleDriftRatiosCache = null;
+            // snapshot for this resolve. A recursive call keeps reusing the same one, and a
+            // batch (beginBatch()) keeps one snapshot across top-level calls too.
+            $this->resetSnapshotCaches();
         }
 
         $conditions = $this->segmentConditionCollectionFactory->create();
@@ -171,7 +210,21 @@ class SegmentMemberResolver
             case 'visitor_tag':
                 return [];
             default:
-                $this->logger->error(sprintf('Ordo_Automation: unknown segment condition type "%s".', $type));
+                // A type without its own arm above is still resolvable when its
+                // ConditionPool-registered class opts into set-level resolution — the same
+                // registry CampaignDispatcher and SegmentMatcher read, so a new condition
+                // type never needs this switch touched. This arm exists because three
+                // registered types (clv_at_least, loyalty_tier_at_least, nps_score_at_least)
+                // once drifted into matching nobody here silently.
+                $condition = $this->conditionPool->get($type);
+                if ($condition instanceof BulkResolvableConditionInterface) {
+                    return $condition->resolveCustomerIds($params);
+                }
+
+                $this->logger->error(sprintf(
+                    'Ordo_Automation: segment condition type "%s" is unknown or not resolvable at the set level.',
+                    $type
+                ));
                 return [];
         }
     }

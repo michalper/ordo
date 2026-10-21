@@ -30,9 +30,11 @@ use Ordo\Automation\Model\MessageLogEvent;
  *    this touch count for 61.8% and not 50%?"). Equal-weight has no such free parameter and is
  *    trivial to explain: "each of the N campaigns you interacted with before buying gets 1/N of
  *    the credit."
- * Recomputation is idempotent: existing rows for an order are deleted and reinserted every run, so
- * re-running never double-counts and a late-arriving click event is picked up on the next pass as
- * long as the order itself is still inside the recompute window.
+ * Each cron pass processes only orders with no attribution rows yet (anti-join, newest first), so
+ * re-running never double-counts and an order is attributed once, shortly after placement. An
+ * order whose window contained no click-throughs writes no rows and so stays a candidate — a click
+ * event logged late for it is still picked up on a later pass while it's inside the window. See
+ * ADR 0011 for the trade-off against the previous recompute-everything-every-run behavior.
  */
 class AttributionCalculator
 {
@@ -46,9 +48,10 @@ class AttributionCalculator
     }
 
     /**
-     * Recomputes attribution for every order placed within the attribution window, looking back
-     * over each order's own customer's campaign click-throughs inside that same window. Returns
-     * the number of orders processed (whether or not any campaign touch was found for them).
+     * Computes attribution for orders placed within the attribution window that have no
+     * attribution rows yet, looking back over each order's own customer's campaign click-throughs
+     * inside that same window. Returns the number of orders processed (whether or not any
+     * campaign touch was found for them).
      */
     public function computeForRecentOrders(): int
     {
@@ -63,6 +66,10 @@ class AttributionCalculator
          *     grand_total: string|float,
          *     created_at: string
          * }> $orders
+         * Anti-join: only orders not yet attributed. The old recompute-everything pass redid the
+         * same oldest-1000 orders every hour (one SELECT + DELETE + per-row INSERTs each) and,
+         * past the cap, never reached newer orders at all. Newest first so a fresh order is
+         * attributed on the next pass even while older zero-touch candidates still fill the cap.
          */
         $orders = $connection->fetchAll(
             $connection->select()
@@ -70,9 +77,15 @@ class AttributionCalculator
                     ['so' => $this->resourceConnection->getTableName('sales_order')],
                     ['entity_id', 'customer_id', 'grand_total', 'created_at']
                 )
+                ->joinLeft(
+                    ['ca' => $this->resourceConnection->getTableName('ordo_campaign_attribution')],
+                    'ca.order_id = so.entity_id',
+                    []
+                )
+                ->where('ca.order_id IS NULL')
                 ->where('so.customer_id IS NOT NULL')
                 ->where('so.created_at >= ?', $orderCutoff)
-                ->order('so.entity_id ASC')
+                ->order('so.entity_id DESC')
                 ->limit(self::MAX_ORDERS_PER_RUN)
         );
 
@@ -117,8 +130,8 @@ class AttributionCalculator
                 ->where('mle.created_at <= ?', $orderCreatedAt)
         );
 
-        $connection->delete($attributionTable, ['order_id = ?' => $orderId]);
-
+        // No delete needed: computeForRecentOrders()'s anti-join guarantees this order has no
+        // rows yet, and the unique (order_id, campaign_id) constraint backstops a double run.
         $touchCount = count($campaignIds);
         if ($touchCount === 0) {
             return;
@@ -127,32 +140,23 @@ class AttributionCalculator
         $revenueShare = round($grandTotal / $touchCount, 4);
         $now = date('Y-m-d H:i:s');
 
+        $rows = [];
         foreach ($campaignIds as $campaignId) {
-            $connection->insert($attributionTable, [
+            $rows[] = [
                 'order_id' => $orderId,
                 'campaign_id' => (int) $campaignId,
                 'customer_id' => $customerId,
                 'attributed_revenue' => $revenueShare,
                 'touch_count' => $touchCount,
                 'computed_at' => $now,
-            ]);
+            ];
         }
+
+        $connection->insertMultiple($attributionTable, $rows);
     }
 
     /**
-     * Total attributed revenue and touch count for one campaign.
-     *
-     * @return array{revenue: float, orders: int}
-     */
-    public function getAttributedRevenueForCampaign(int $campaignId): array
-    {
-        $totals = $this->getAttributedRevenueForCampaigns([$campaignId]);
-
-        return $totals[$campaignId] ?? ['revenue' => 0.0, 'orders' => 0];
-    }
-
-    /**
-     * Bulk counterpart of getAttributedRevenueForCampaign() — one query for every campaign_id
+     * Attributed revenue and touch count — one query for every campaign_id
      * on the current grid page, instead of one query per row (see Ui\Component\Listing\Column\
      * CampaignAttributedRevenue, this method's only caller today).
      *

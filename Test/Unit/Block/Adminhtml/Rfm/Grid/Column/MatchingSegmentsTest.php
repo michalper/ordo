@@ -134,6 +134,40 @@ class MatchingSegmentsTest extends TestCase
         self::assertSame('', $result['data']['items'][0]['matching_segments']);
     }
 
+    public function testPrepareDataSourceResolvesAllSegmentsInsideOneResolverBatch(): void
+    {
+        $this->segmentCollection->method('getIterator')->willReturn(new \ArrayIterator([
+            $this->stubSegment(1, 'VIP Customers'),
+            $this->stubSegment(2, 'Big Spenders'),
+        ]));
+
+        $sequence = [];
+        $resolver = $this->createMock(SegmentMemberResolver::class);
+        $resolver->expects(self::once())->method('beginBatch')->willReturnCallback(
+            function () use (&$sequence): void {
+                $sequence[] = 'beginBatch';
+            }
+        );
+        $resolver->expects(self::once())->method('endBatch')->willReturnCallback(
+            function () use (&$sequence): void {
+                $sequence[] = 'endBatch';
+            }
+        );
+        $resolver->method('getMatchingCustomerIds')->willReturnCallback(
+            function (int $segmentId) use (&$sequence): array {
+                $sequence[] = 'resolve:' . $segmentId;
+                return [];
+            }
+        );
+        $this->segmentMemberResolver = $resolver;
+
+        $column = $this->makeColumn();
+        $column->prepareDataSource(['data' => ['items' => [['entity_id' => 10]]]]);
+
+        // One RFM snapshot per page load — every per-segment resolve between begin and end.
+        self::assertSame(['beginBatch', 'resolve:1', 'resolve:2', 'endBatch'], $sequence);
+    }
+
     public function testPrepareDataSourceSkipsNonArrayItemsWithoutError(): void
     {
         $this->segmentCollection->method('getIterator')->willReturn(new \ArrayIterator([]));

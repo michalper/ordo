@@ -71,10 +71,21 @@ class ScanPriceDropAlertsTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('quoteInto')->willReturnCallback(
+            fn (string $text, $value) => str_replace('?', "'{$value}'", $text)
+        );
         $connection->method('fetchAll')->willReturn([
             ['entity_id' => 1, 'customer_id' => 5, 'product_id' => 10, 'last_known_price' => '100.0000'],
         ]);
-        $connection->expects(self::once())->method('update');
+        // The claim is conditional and stamps the rotating scan cursor alongside the snapshot.
+        $connection->expects(self::once())->method('update')->with(
+            self::anything(),
+            self::callback(
+                static fn (array $data): bool => $data['last_known_price'] === 80.0
+                    && isset($data['notified_at'], $data['last_scanned_at'])
+            ),
+            self::stringContains('notified_at IS NULL')
+        )->willReturn(1);
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -109,8 +120,58 @@ class ScanPriceDropAlertsTest extends TestCase
         $connection->method('fetchAll')->willReturn([
             ['entity_id' => 1, 'customer_id' => null, 'product_id' => 10, 'last_known_price' => '100.0000'],
         ]);
-        $connection->expects(self::once())->method('update')
-            ->with(self::anything(), ['last_known_price' => 80.0], self::anything());
+        $connection->expects(self::once())->method('update')->with(
+            self::anything(),
+            self::callback(
+                static fn (array $data): bool => $data['last_known_price'] === 80.0
+                    && isset($data['last_scanned_at'])
+                    && !array_key_exists('notified_at', $data)
+            ),
+            self::anything()
+        );
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $product = $this->createStub(Product::class);
+        $product->method('getFinalPrice')->willReturn(80.0);
+        $productRepository = $this->createStub(ProductRepositoryInterface::class);
+        $productRepository->method('getById')->willReturn($product);
+
+        $dispatcher = $this->createMock(CampaignDispatcher::class);
+        $dispatcher->expects(self::never())->method('dispatch');
+
+        $this->makeCron($config, $resourceConnection, $productRepository, $dispatcher)->execute();
+    }
+
+    /**
+     * A watch's very first scan has no prior snapshot to compare against - never notifiable
+     * (isNotifiableChange() requires a non-null old price), but the baseline must still be
+     * captured so the *next* scan has something real to compare. null !== a real price is a
+     * "changed" snapshot by snapshotChanged()'s own null-guard branch, not its loose != compare.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteCapturesTheBaselineSnapshotOnAWatchsFirstScan(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isPriceWatchEnabled')->willReturn(true);
+        $config->method('getPriceWatchScanBatchSize')->willReturn(200);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            ['entity_id' => 1, 'customer_id' => 5, 'product_id' => 10, 'last_known_price' => null],
+        ]);
+        $connection->expects(self::once())->method('update')->with(
+            self::anything(),
+            self::callback(
+                static fn (array $data): bool => $data['last_known_price'] === 80.0
+                    && isset($data['last_scanned_at'])
+                    && !array_key_exists('notified_at', $data)
+            ),
+            self::anything()
+        );
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -145,7 +206,7 @@ class ScanPriceDropAlertsTest extends TestCase
                 'last_known_price' => '100.0000',
             ],
         ]);
-        $connection->expects(self::once())->method('update');
+        $connection->expects(self::once())->method('update')->willReturn(1);
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -193,7 +254,7 @@ class ScanPriceDropAlertsTest extends TestCase
             ],
         ]);
         // Claim (1) then rollback (1) - never the "no-drop/guest" update path.
-        $connection->expects(self::exactly(2))->method('update');
+        $connection->expects(self::exactly(2))->method('update')->willReturn(1);
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -260,7 +321,11 @@ class ScanPriceDropAlertsTest extends TestCase
         $connection->method('fetchAll')->willReturn([
             ['entity_id' => 1, 'customer_id' => 5, 'product_id' => 10, 'last_known_price' => '100.0000'],
         ]);
-        $connection->expects(self::never())->method('update');
+        // Still stamps the cursor - an orphaned row left unstamped would block the rotation.
+        $connection->expects(self::once())->method('update')
+            ->with(self::anything(), self::callback(
+                static fn (array $data): bool => array_keys($data) === ['last_scanned_at']
+            ), self::anything());
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -288,7 +353,7 @@ class ScanPriceDropAlertsTest extends TestCase
             ['entity_id' => 1, 'customer_id' => 5, 'product_id' => 10, 'last_known_price' => '100.0000'],
         ]);
         // Claim (1) then rollback (1) - never the "no-drop/guest" update path.
-        $connection->expects(self::exactly(2))->method('update');
+        $connection->expects(self::exactly(2))->method('update')->willReturn(1);
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -306,5 +371,155 @@ class ScanPriceDropAlertsTest extends TestCase
         $logger->expects(self::once())->method('error');
 
         $this->makeCron($config, $resourceConnection, $productRepository, $dispatcher, $logger)->execute();
+    }
+
+    /**
+     * Regression: the claim UPDATE is conditional (... AND notified_at IS NULL) - a concurrent
+     * overlapping run that already claimed this row reports 0 affected rows here, and this run
+     * must not dispatch a second trigger for it.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteDoesNotDispatchWhenAnotherProcessAlreadyClaimedTheRow(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isPriceWatchEnabled')->willReturn(true);
+        $config->method('getPriceWatchScanBatchSize')->willReturn(200);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            ['entity_id' => 1, 'customer_id' => 5, 'product_id' => 10, 'last_known_price' => '100.0000'],
+        ]);
+        // Only the failed claim attempt - never a rollback (nothing was claimed by this run).
+        $connection->expects(self::once())->method('update')->willReturn(0);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $product = $this->createStub(Product::class);
+        $product->method('getFinalPrice')->willReturn(80.0);
+        $productRepository = $this->createStub(ProductRepositoryInterface::class);
+        $productRepository->method('getById')->willReturn($product);
+
+        $dispatcher = $this->createMock(CampaignDispatcher::class);
+        $dispatcher->expects(self::never())->method('dispatch');
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('info')->with(self::stringContains('0 price drop triggers'));
+
+        $this->makeCron($config, $resourceConnection, $productRepository, $dispatcher, $logger)->execute();
+    }
+
+    /**
+     * Same regression as the customer-path test above, for the guest branch - the two claim
+     * sites are separate conditional UPDATEs, each with its own "another process already won
+     * this row" outcome.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteDoesNotNotifyGuestWhenAnotherProcessAlreadyClaimedTheRow(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isPriceWatchEnabled')->willReturn(true);
+        $config->method('getPriceWatchScanBatchSize')->willReturn(200);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            [
+                'entity_id' => 1,
+                'customer_id' => null,
+                'guest_email' => 'guest@example.com',
+                'product_id' => 10,
+                'last_known_price' => '100.0000',
+            ],
+        ]);
+        $connection->expects(self::once())->method('update')->willReturn(0);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $product = $this->createStub(Product::class);
+        $product->method('getFinalPrice')->willReturn(80.0);
+        $productRepository = $this->createStub(ProductRepositoryInterface::class);
+        $productRepository->method('getById')->willReturn($product);
+
+        $guestNotifier = $this->createMock(GuestPriceWatchNotifier::class);
+        $guestNotifier->expects(self::never())->method('notify');
+
+        $this->makeCron(
+            $config,
+            $resourceConnection,
+            $productRepository,
+            $this->createStub(CampaignDispatcher::class),
+            guestNotifier: $guestNotifier
+        )->execute();
+    }
+
+    /**
+     * Regression: a fixed 'entity_id ASC' order rescanned the same first batch every tick and
+     * never reached watches beyond it - the scan must rotate on last_scanned_at (NULLs first).
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteOrdersScanByRotatingCursor(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isPriceWatchEnabled')->willReturn(true);
+        $config->method('getPriceWatchScanBatchSize')->willReturn(200);
+
+        $select = $this->createMock(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+        $select->expects(self::once())->method('order')
+            ->with(['last_scanned_at ASC', 'entity_id ASC'])->willReturnSelf();
+        $select->method('limit')->willReturnSelf();
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchAll')->willReturn([]);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $this->makeCron($config, $resourceConnection)->execute();
+    }
+
+    /**
+     * Regression: an unchanged row used to have its identical snapshot rewritten on every tick -
+     * now only the cursor is stamped, and the snapshot column is left out of the UPDATE.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteStampsCursorWithoutRewritingUnchangedSnapshot(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isPriceWatchEnabled')->willReturn(true);
+        $config->method('getPriceWatchScanBatchSize')->willReturn(200);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            ['entity_id' => 1, 'customer_id' => 5, 'product_id' => 10, 'last_known_price' => '100.0000'],
+        ]);
+        $connection->expects(self::once())->method('update')
+            ->with(self::anything(), self::callback(
+                static fn (array $data): bool => array_keys($data) === ['last_scanned_at']
+            ), self::anything());
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        // Same price as the snapshot ('100.0000' as the raw DB value) - no change to record.
+        $product = $this->createStub(Product::class);
+        $product->method('getFinalPrice')->willReturn(100.0);
+        $productRepository = $this->createStub(ProductRepositoryInterface::class);
+        $productRepository->method('getById')->willReturn($product);
+
+        $dispatcher = $this->createMock(CampaignDispatcher::class);
+        $dispatcher->expects(self::never())->method('dispatch');
+
+        $this->makeCron($config, $resourceConnection, $productRepository, $dispatcher)->execute();
     }
 }

@@ -11,6 +11,7 @@ use Magento\Framework\Controller\Result\Redirect;
 use Magento\Framework\Controller\ResultFactory;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Ordo\Automation\Controller\AbstractCustomerAccountAction;
 use Ordo\Automation\Model\OfferManagement;
 
 /**
@@ -18,7 +19,7 @@ use Ordo\Automation\Model\OfferManagement;
  * policy (Offer::canSelfExtend()) are enforced by OfferManagement::selfExtend() itself — this
  * controller just adapts that call to a POST form and flash messages.
  */
-class Extend extends AbstractOfferAction implements HttpPostActionInterface
+class Extend extends AbstractCustomerAccountAction implements HttpPostActionInterface
 {
     public function __construct(
         Context $context,

@@ -66,8 +66,12 @@ class SendAbandonedCartFallbackReminders
             // Claim first, same "must never re-attempt on the next tick regardless of outcome"
             // reasoning as the fixed reminder's own claim-before-send - a fallback send action's
             // own consent/frequency-cap checks may legitimately no-op it, and that's still a
-            // final answer for this reminder, not something to retry hourly.
-            $this->claimFallback((int) $row['log_entity_id']);
+            // final answer for this reminder, not something to retry hourly. The claim is
+            // conditional (... WHERE fallback_sent_at IS NULL, affected rows checked): of two
+            // overlapping runs that both selected this row, only the winner may send.
+            if (!$this->claimFallback((int) $row['log_entity_id'])) {
+                continue;
+            }
 
             $this->sendFallback($channel, $row);
             $attempted++;
@@ -126,16 +130,18 @@ class SendAbandonedCartFallbackReminders
         return $rows;
     }
 
-    private function claimFallback(int $logEntityId): void
+    private function claimFallback(int $logEntityId): bool
     {
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName('ordo_abandoned_cart_reminder_log');
 
-        $connection->update(
+        $affectedRows = (int) $connection->update(
             $table,
             ['fallback_sent_at' => date('Y-m-d H:i:s')],
-            $connection->quoteInto('entity_id = ?', $logEntityId)
+            $connection->quoteInto('entity_id = ?', $logEntityId) . ' AND fallback_sent_at IS NULL'
         );
+
+        return $affectedRows === 1;
     }
 
     /**

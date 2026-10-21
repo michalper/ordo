@@ -9,10 +9,10 @@
     </argument>
     <settings>
         <buttons>
-            <button name="back" class="Ordo\Automation\Block\Adminhtml\Campaign\Edit\BackButton"/>
-            <button name="delete" class="Ordo\Automation\Block\Adminhtml\Campaign\Edit\DeleteButton"/>
-            <button name="save" class="Ordo\Automation\Block\Adminhtml\Campaign\Edit\SaveButton"/>
-            <button name="save_and_continue" class="Ordo\Automation\Block\Adminhtml\Campaign\Edit\SaveAndContinueButton"/>
+            <button name="back" class="Ordo\Automation\Block\Adminhtml\Shared\Edit\BackButton"/>
+            <button name="delete" class="OrdoAutomationCampaignDeleteButton"/>
+            <button name="save" class="OrdoAutomationCampaignSaveButton"/>
+            <button name="save_and_continue" class="OrdoAutomationCampaignSaveAndContinueButton"/>
         </buttons>
         <namespace>ordo_campaign_form</namespace>
         <dataScope>data</dataScope>

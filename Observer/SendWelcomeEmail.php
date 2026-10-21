@@ -3,13 +3,10 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Observer;
 
-use Magento\Framework\App\Area;
 use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\Event\ObserverInterface;
-use Magento\Framework\Mail\Template\TransportBuilder;
-use Magento\Framework\Translate\Inline\StateInterface;
-use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\CustomerTagManager;
 use Psr\Log\LoggerInterface;
 
@@ -20,15 +17,12 @@ use Psr\Log\LoggerInterface;
 class SendWelcomeEmail implements ObserverInterface
 {
     private const string XML_PATH_EMAIL_TEMPLATE = 'ordo_welcome_email';
-    private const string XML_PATH_EMAIL_SENDER = 'general';
     public const TAG_NEW_CUSTOMER = 'new_customer';
 
     public function __construct(
         private readonly Config $config,
         private readonly CustomerTagManager $customerTagManager,
-        private readonly TransportBuilder $transportBuilder,
-        private readonly StoreManagerInterface $storeManager,
-        private readonly StateInterface $inlineTranslation,
+        private readonly ReminderEmailSender $reminderEmailSender,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -47,22 +41,12 @@ class SendWelcomeEmail implements ObserverInterface
         $this->customerTagManager->addTag((int) $customer->getId(), self::TAG_NEW_CUSTOMER);
 
         try {
-            $store = $this->storeManager->getStore();
-            $this->inlineTranslation->suspend();
-
-            $transport = $this->transportBuilder
-                ->setTemplateIdentifier(self::XML_PATH_EMAIL_TEMPLATE)
-                ->setTemplateOptions(['area' => Area::AREA_FRONTEND, 'store' => $store->getId()])
-                ->setTemplateVars([
-                    'customer_name' => $customer->getFirstname(),
-                    'store' => $store,
-                ])
-                ->setFromByScope(self::XML_PATH_EMAIL_SENDER, $store->getId())
-                ->addTo($customer->getEmail(), $customer->getFirstname())
-                ->getTransport();
-
-            $transport->sendMessage();
-            $this->inlineTranslation->resume();
+            $this->reminderEmailSender->send(
+                self::XML_PATH_EMAIL_TEMPLATE,
+                ['customer_name' => $customer->getFirstname()],
+                $customer->getEmail(),
+                $customer->getFirstname()
+            );
         } catch (\Throwable $e) {
             $this->logger->error(sprintf(
                 'Ordo_Automation: failed to send welcome email to customer #%d: %s',

@@ -134,7 +134,6 @@ class TrimExcessFreeGiftsTest extends TestCase
 
         $giftCollection = $this->createStub(GiftItemCollection::class);
         $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
-        $giftCollection->method('getSize')->willReturn(2);
         $giftCollection->method('getItems')->willReturn($rows);
         $this->giftItemCollectionFactory->method('create')->willReturn($giftCollection);
 
@@ -153,7 +152,7 @@ class TrimExcessFreeGiftsTest extends TestCase
     {
         $giftCollection = $this->createStub(GiftItemCollection::class);
         $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
-        $giftCollection->method('getSize')->willReturn(0);
+        $giftCollection->method('getItems')->willReturn([]);
         $this->giftItemCollectionFactory->method('create')->willReturn($giftCollection);
 
         $quote = $this->mockQuote();
@@ -191,7 +190,6 @@ class TrimExcessFreeGiftsTest extends TestCase
 
         $giftCollection = $this->createStub(GiftItemCollection::class);
         $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
-        $giftCollection->method('getSize')->willReturn(1);
         $giftCollection->method('getItems')->willReturn([$row]);
         $this->giftItemCollectionFactory->method('create')->willReturn($giftCollection);
 
@@ -227,7 +225,7 @@ class TrimExcessFreeGiftsTest extends TestCase
 
         $giftCollection = $this->createStub(GiftItemCollection::class);
         $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
-        $giftCollection->method('getSize')->willReturn(2);
+        $giftCollection->method('getItems')->willReturn([$this->giftItemRow(10), $this->giftItemRow(11)]);
         $this->giftItemCollectionFactory->method('create')->willReturn($giftCollection);
 
         $quote = $this->mockQuote();
@@ -261,7 +259,6 @@ class TrimExcessFreeGiftsTest extends TestCase
 
         $giftCollection = $this->createStub(GiftItemCollection::class);
         $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
-        $giftCollection->method('getSize')->willReturn(1);
         $giftCollection->method('getItems')->willReturn([$row]);
         $this->giftItemCollectionFactory->method('create')->willReturn($giftCollection);
 
@@ -289,7 +286,6 @@ class TrimExcessFreeGiftsTest extends TestCase
 
         $giftCollection = $this->createStub(GiftItemCollection::class);
         $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
-        $giftCollection->method('getSize')->willReturn(1);
         $giftCollection->method('getItems')->willReturn([$row]);
         $this->giftItemCollectionFactory->method('create')->willReturn($giftCollection);
 
@@ -298,6 +294,44 @@ class TrimExcessFreeGiftsTest extends TestCase
         $quote->method('getAllAddresses')->willReturn([$this->addressWithSubtotal(100.0)]);
         $quote->expects(self::once())->method('removeItem')->with(10);
 
+        $this->observer->execute($this->eventObserver($quote));
+    }
+
+    /**
+     * Regression guard against re-adding a per-quote "zero gift rows" memo: FreeGiftManagement
+     * adds gift rows outside this observer within the same request, so a second firing MUST
+     * re-query — a remembered zero would make a later subtotal drop skip the trim entirely
+     * (caught by FreeGiftManagementScenarioTest against a real quote).
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testEveryFiringReQueriesSoAGiftAddedMidRequestIsStillTrimmed(): void
+    {
+        // No enabled offers -> zero earned slots -> any gift row present must be trimmed.
+        $offerCollection = $this->createStub(OfferCollection::class);
+        $offerCollection->method('addEnabledFilter')->willReturn($offerCollection);
+        $offerCollection->method('getAllIds')->willReturn([]);
+        $this->offerCollectionFactory->method('create')->willReturn($offerCollection);
+
+        $row = $this->giftItemRow(10);
+
+        // First firing: giftless cart. Second firing: a gift row appeared mid-request.
+        $emptyCollection = $this->createStub(GiftItemCollection::class);
+        $emptyCollection->method('addQuoteFilter')->willReturn($emptyCollection);
+        $emptyCollection->method('getItems')->willReturn([]);
+        $giftCollection = $this->createStub(GiftItemCollection::class);
+        $giftCollection->method('addQuoteFilter')->willReturn($giftCollection);
+        $giftCollection->method('getItems')->willReturn([$row]);
+        $this->giftItemCollectionFactory->expects(self::exactly(2))->method('create')
+            ->willReturnOnConsecutiveCalls($emptyCollection, $giftCollection);
+
+        $quote = $this->mockQuote();
+        $quote->method('getId')->willReturn(42);
+        $quote->method('getAllAddresses')->willReturn([$this->addressWithSubtotal(100.0)]);
+        $quote->expects(self::once())->method('removeItem')->with(10);
+
+        $this->giftItemResource->expects(self::once())->method('delete')->with($row);
+
+        $this->observer->execute($this->eventObserver($quote));
         $this->observer->execute($this->eventObserver($quote));
     }
 }

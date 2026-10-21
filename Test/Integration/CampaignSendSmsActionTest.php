@@ -6,8 +6,8 @@ namespace Ordo\Automation\Test\Integration;
 use Magento\Framework\App\Bootstrap;
 use Magento\Framework\ObjectManagerInterface;
 use Ordo\Automation\Model\Campaign\Action\SendSms;
-use Ordo\Automation\Model\Sms\SmsSenderInterface;
 use Ordo\Automation\Setup\Patch\Data\AddCustomerSmsPhoneAttribute;
+use Ordo\Automation\Test\Integration\Fixture\RecordingTwilioSmsSender;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -128,23 +128,5 @@ class CampaignSendSmsActionTest extends TestCase
         $action->execute($context, ['message' => 'Your order shipped!']);
 
         self::assertSame([], $recordingSender->calls);
-    }
-}
-
-/**
- * Records (toPhone, message) instead of calling the real Twilio API — test-only helper, not
- * autoloaded outside Test/Integration, same role RecordingTransportBuilder plays in
- * CampaignSendEmailActionTest.
- */
-class RecordingTwilioSmsSender implements SmsSenderInterface
-{
-    /** @var array<int, array{toPhone: string, message: string}> */
-    public array $calls = [];
-
-    public function send(string $toPhone, string $message): string
-    {
-        $this->calls[] = ['toPhone' => $toPhone, 'message' => $message];
-
-        return 'SM_recorded_test_sid';
     }
 }

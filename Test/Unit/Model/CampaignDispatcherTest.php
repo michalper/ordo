@@ -823,6 +823,49 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->resumeScheduledAction(1, 11, []);
     }
 
+    /**
+     * Two due scheduled-action rows of the same (campaign, resume action) - the shape a delayed
+     * broadcast produces thousands of times over - must share one set of lookups when the caller
+     * passes one memo across both calls: one campaign-enabled query and one resume-row/action-list
+     * query pair, not one per row. Both rows' own actions still run.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResumeScheduledActionMemoizesPerCampaignLookupsAcrossASharedMemo(): void
+    {
+        $resumeAction = $this->createMock(CampaignAction::class);
+        $resumeAction->method('getEntityId')->willReturn(11);
+        $resumeAction->method('getSortOrder')->willReturn(20);
+        $resumeAction->method('getDelayMinutes')->willReturn(0);
+        $resumeAction->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $resumeAction->method('getParams')->willReturn([]);
+
+        $this->campaignCollectionFactory = $this->createMock(CampaignCollectionFactory::class);
+        $this->campaignCollectionFactory->expects(self::once())->method('create')
+            ->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+
+        $lookupCollection = $this->createStub(ActionCollection::class);
+        $lookupCollection->method('addFieldToFilter')->willReturnSelf();
+        $lookupCollection->method('getFirstItem')->willReturn($resumeAction);
+
+        $mainCollection = $this->createStub(ActionCollection::class);
+        $mainCollection->method('addCampaignFilter')->willReturnSelf();
+        $mainCollection->method('addFieldToFilter')->willReturnSelf();
+        $mainCollection->method('getIterator')->willReturn(new \ArrayIterator([$resumeAction]));
+
+        $this->actionCollectionFactory = $this->createMock(ActionCollectionFactory::class);
+        $this->actionCollectionFactory->expects(self::exactly(2))->method('create')
+            ->willReturnOnConsecutiveCalls($lookupCollection, $mainCollection);
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::exactly(2))->method('execute');
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $dispatcher = $this->makeDispatcher();
+        $lookupMemo = [];
+        $dispatcher->resumeScheduledAction(1, 11, ['customer_id' => 1], $lookupMemo);
+        $dispatcher->resumeScheduledAction(1, 11, ['customer_id' => 1], $lookupMemo);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testDispatchRunsActionWhenAnyConditionLogicHasOneSatisfiedCondition(): void
     {

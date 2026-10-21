@@ -72,6 +72,22 @@ class LoyaltyTierCalculator
     }
 
     /**
+     * The lowest score that lands in $tier, or null for the Bronze floor (every score — and
+     * every unscored customer — is at least Bronze). -1-rank (unrecognized) tiers have no
+     * minimum either, but callers should rank-check first via getTierRank(); this returns
+     * null for them too, so a caller that skips that check fails open to Bronze semantics
+     * rather than crashing.
+     */
+    public function getMinimumScoreForTier(string $tier): ?int
+    {
+        return match ($tier) {
+            self::GOLD => $this->config->getLoyaltyGoldThreshold(),
+            self::SILVER => $this->config->getLoyaltySilverThreshold(),
+            default => null,
+        };
+    }
+
+    /**
      * @return string[] bronze, silver, gold - in ascending order, for anything that needs to
      *   enumerate every tier (the admin dropdown source, the dashboard stat).
      */

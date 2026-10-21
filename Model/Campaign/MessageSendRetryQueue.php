@@ -5,6 +5,7 @@ namespace Ordo\Automation\Model\Campaign;
 
 use Ordo\Automation\Model\MessageSendRetryFactory;
 use Ordo\Automation\Model\ResourceModel\MessageSendRetry as MessageSendRetryResource;
+use Ordo\Automation\Model\Retry\RetryBackoff;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -14,9 +15,9 @@ use Psr\Log\LoggerInterface;
  * retries are exhausted (previously that just wrote an ordo_message_log STATUS_FAILED row and
  * moved on); Cron\RetryFailedMessageSends then owns re-attempting and rescheduling from there.
  *
- * Same backoff shape as Model\Campaign\ActionRetryQueue - a separate class rather than a shared
- * one because the two queues retry structurally different things (a scheduled-action resume vs.
- * a single channel send), even though the math is identical today.
+ * Same backoff shape as Model\Campaign\ActionRetryQueue - a separate queue rather than a shared
+ * one because the two retry structurally different things (a scheduled-action resume vs. a
+ * single channel send); only the backoff math itself is shared, via Model\Retry\RetryBackoff.
  */
 class MessageSendRetryQueue
 {
@@ -39,8 +40,28 @@ class MessageSendRetryQueue
     public function __construct(
         private readonly MessageSendRetryFactory $messageSendRetryFactory,
         private readonly MessageSendRetryResource $messageSendRetryResource,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly RetryBackoff $retryBackoff
     ) {
+    }
+
+    /**
+     * The one failure tail every Send* action shares: on the original dispatch path, persist a
+     * retry row; on a RETRY_CONTEXT_FLAG attempt, rethrow instead (see the flag's docblock
+     * above) so the retry cron sees the failure — and no second, redundant retry row is ever
+     * enqueued. Lives here, next to the flag it interprets, instead of four copies in the
+     * actions.
+     *
+     * @param array<string, mixed> $context
+     * @param array<string, mixed> $params
+     */
+    public function enqueueOrRethrow(string $actionType, array $context, array $params, \Throwable $error): void
+    {
+        if (!empty($context[self::RETRY_CONTEXT_FLAG])) {
+            throw $error;
+        }
+
+        $this->enqueue($actionType, $context, $params, $error);
     }
 
     /**
@@ -72,11 +93,11 @@ class MessageSendRetryQueue
     }
 
     /**
-     * Exponential backoff, same shape/constants as ActionRetryQueue::nextRetryAt().
+     * Exponential backoff - the math lives in Model\Retry\RetryBackoff (shared with the other
+     * retry queues), parametrized by this queue's own BASE/MAX constants.
      */
     public function nextRetryAt(int $attempts): string
     {
-        $delayMinutes = min(self::BASE_DELAY_MINUTES * (2 ** max(0, $attempts - 1)), self::MAX_DELAY_MINUTES);
-        return date('Y-m-d H:i:s', strtotime("+{$delayMinutes} minutes"));
+        return $this->retryBackoff->nextRetryAt($attempts, self::BASE_DELAY_MINUTES, self::MAX_DELAY_MINUTES);
     }
 }

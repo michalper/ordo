@@ -31,6 +31,38 @@ Full inventory: `Test/Mftf/SCENARIOS.md`. Open rows: `AutoPickCampaignSplitWinne
 
 - GitHub Wiki (`github.com/michalper/ordo/wiki`, source staged in `docs/wiki/`) — needs native PL review.
 
+## Adobe Commerce Marketplace listing
+
+Goal: get Ordo listed on `commercemarketplace.adobe.com`. Gap list against Adobe's Extension Quality
+Program (technical review guidelines + submission requirements), checked 2026-10-21 — work through in
+order:
+
+1. **Licensing decision** — Adobe requires OSL 3.0 + credit to Adobe, Inc. for extensions built on
+   Magento Open Source code; this repo is currently MIT (`LICENSE`, `composer.json`). Business/legal
+   call, not a mechanical edit — affects existing users of the module. Blocks everything else below.
+2. ~~**PDF user/setup guide**~~ — done: `docs/marketplace/USER-GUIDE.md` (source) and
+   `generate-pdf.py` (renders it) produce `Ordo-User-Guide.pdf` — install/config/feature overview,
+   linking out to each `docs/wiki/` page per feature, per Adobe's "PDF, or PDF linking to a wiki"
+   rule.
+3. ~~**Release notes formatted for the listing**~~ — done: `docs/marketplace/RELEASE-NOTES.md`, plain
+   text and merchant-facing (unlike `docs/CHANGELOG.md`'s internal PR-by-PR log) — add a new entry
+   above the current one for every future version submitted to the Marketplace.
+4. ~~**Marketplace Code Sniffer pass**~~ — done: zero severity-10 violations repo-wide (the 16
+   found — all in `Test/` — were fixed, not excluded), and `composer phpcs-marketplace-check`
+   now runs the exact EQP command as a CI step so it can't regress.
+5. **MFTF run under Marketplace's actual test conditions** — Varnish enabled, `deploy:mode:set
+   production`, on every PHP/Magento version combo the listing claims to support. `Test/Mftf/` exists
+   (see `Test/Mftf/SCENARIOS.md`) but has only been run in the `magento-ordo-test/` dev sandbox, not in
+   this configuration.
+6. **Package the zip** — `composer.json` already passes the mechanical checks (`type: magento2-module`,
+   no `extra.map`/`extra.magento-root-dir`, no forbidden `magento/*` requires, no stray `FIXME`/`TODO` in
+   source). Still need to confirm the packaged zip stays under the 30 MB limit.
+7. **Marketplace seller account** — Developer Portal account (individual or company), accept
+   Master/Developer Terms of Service, valid PayPal payout email, EU trader information (required —
+   maintainer is EU-based), pricing model decision (one-time vs. subscription, or free).
+8. **Listing content** — icon, description, at least two gallery screenshots, version compatibility,
+   optional demo video.
+
 ## Candidate new features
 
 Not prioritized against each other; listed for later scoping with the business/product side.
@@ -46,3 +78,12 @@ Not prioritized against each other; listed for later scoping with the business/p
 - **Per-topic preference granularity within a channel** — split a channel's opt-in further (e.g. "promotional"
   vs "product update" email) beyond today's per-channel consent. Confirm real merchant demand first. Medium
   scope.
+- **Merge the three storefront poll endpoints** (`/ordo/track/{popup,notification,survey}`) into one —
+  each open tab currently makes three separate requests on independent 15/20/25s timers, each a full
+  Magento bootstrap. The JS side already shares one `startPolling()` helper (and pauses on hidden
+  tabs); merging the endpoints is a frontend/backend contract change deferred from the 2026-10
+  simplification pass. Small scope.
+- **Single catalog walk for all product feeds** — `Cron\RefreshProductFeed` currently walks the whole
+  catalog once per generator per store (3x); feeding all registered generators from one paged walk
+  needs the `FeedGeneratorInterface::generate()` contract reshaped (deferred from the 2026-10
+  simplification pass for that reason). Small/medium scope.

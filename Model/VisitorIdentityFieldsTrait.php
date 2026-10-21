@@ -43,4 +43,19 @@ trait VisitorIdentityFieldsTrait
         $this->setData(self::VISITOR_ID, $visitorId);
         return $this;
     }
+
+    /**
+     * Ownership check for the public Track endpoints: a request may only act on a row that
+     * belongs to its own customer_id/visitor_id, so a visitor can't guess an id and dismiss or
+     * answer someone else's row. An empty visitor_id never matches — both columns are nullable,
+     * and NULL-row == ''-request must not count as ownership.
+     */
+    public function belongsTo(?int $customerId, string $visitorId): bool
+    {
+        if ($customerId !== null && $this->getCustomerId() === $customerId) {
+            return true;
+        }
+
+        return $visitorId !== '' && $this->getVisitorId() === $visitorId;
+    }
 }

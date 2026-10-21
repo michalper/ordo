@@ -113,6 +113,25 @@ class CustomerScoreManager
     }
 
     /**
+     * Id-list counterpart to countAllCustomers(), for the conditions whose threshold devolves
+     * to "every registered customer, scored or not" (a tier floor, a score threshold of 0) —
+     * a customer with no ordo_customer_score row has an implicit score of 0 and so can never
+     * come back from the score-table join in getCustomerIdsWithScoreAtLeast().
+     *
+     * @return int[]
+     */
+    public function getAllCustomerIds(): array
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $customerTable = $this->resourceConnection->getTableName('customer_entity');
+
+        return array_map(
+            'intval',
+            $connection->fetchCol($connection->select()->from($customerTable, 'entity_id'))
+        );
+    }
+
+    /**
      * Current sum of matching ordo_score_rule points for a customer — kept in a separate
      * table (ordo_customer_demographic_score) from the running score total, so
      * EvaluateCustomerScoreRules can compute a delta between the old and new sum instead of

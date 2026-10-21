@@ -44,22 +44,31 @@ class SegmentAudienceSizeRecalculator
         $now = $this->dateTime->gmtDate();
         $count = 0;
 
-        /** @var \Ordo\Automation\Model\Segment $segment */
-        foreach ($collection as $segment) {
-            $segmentId = (int) $segment->getEntityId();
-            $size = count($this->segmentMemberResolver->getMatchingCustomerIds($segmentId));
+        // One RFM snapshot for the whole pass — without this, every segment with an RFM condition
+        // re-runs the whole-base sales_order GROUP BY (the resolver resets its caches per
+        // top-level call).
+        $this->segmentMemberResolver->beginBatch();
 
-            $segment->setData('estimated_audience_size', $size);
-            $segment->setData('audience_size_computed_at', $now);
-            $this->segmentResource->save($segment);
+        try {
+            /** @var \Ordo\Automation\Model\Segment $segment */
+            foreach ($collection as $segment) {
+                $segmentId = (int) $segment->getEntityId();
+                $size = count($this->segmentMemberResolver->getMatchingCustomerIds($segmentId));
 
-            $historyEntry = $this->segmentAudienceSizeHistoryFactory->create();
-            $historyEntry->setSegmentId($segmentId);
-            $historyEntry->setAudienceSize($size);
-            $historyEntry->setComputedAt($now);
-            $this->segmentAudienceSizeHistoryResource->save($historyEntry);
+                $segment->setData('estimated_audience_size', $size);
+                $segment->setData('audience_size_computed_at', $now);
+                $this->segmentResource->save($segment);
 
-            $count++;
+                $historyEntry = $this->segmentAudienceSizeHistoryFactory->create();
+                $historyEntry->setSegmentId($segmentId);
+                $historyEntry->setAudienceSize($size);
+                $historyEntry->setComputedAt($now);
+                $this->segmentAudienceSizeHistoryResource->save($historyEntry);
+
+                $count++;
+            }
+        } finally {
+            $this->segmentMemberResolver->endBatch();
         }
 
         return $count;

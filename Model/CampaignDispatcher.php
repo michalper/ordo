@@ -121,23 +121,15 @@ class CampaignDispatcher
             return;
         }
 
-        $customerId = $this->customerIdFromContext($context);
-
         foreach ($campaignIds as $campaignId) {
             try {
-                if ($customerId !== null && $this->campaignEntryGuard->hasPendingEntry($campaignId, $customerId)) {
-                    // Already mid-flow (waiting on a delay_minutes resume) in this exact
-                    // campaign - skip re-entering it from scratch on this repeat trigger rather
-                    // than accumulating a second, independent action chain in parallel.
-                    continue;
-                }
-
-                $logic = $conditionLogicByCampaign[$campaignId] ?? 'all';
-                if (!$this->conditionsSatisfied($logic, $conditionsByCampaign[$campaignId] ?? [], $context)) {
-                    continue;
-                }
-
-                $this->runActionsFrom($campaignId, $actionsByCampaign[$campaignId] ?? [], 0, $context);
+                $this->runCampaign(
+                    $campaignId,
+                    $conditionLogicByCampaign[$campaignId] ?? 'all',
+                    static fn (): array => $conditionsByCampaign[$campaignId] ?? [],
+                    static fn (): array => $actionsByCampaign[$campaignId] ?? [],
+                    $context
+                );
             } catch (\Throwable $e) {
                 $this->logger->error(sprintf(
                     'Ordo_Automation: campaign #%d failed for trigger "%s": %s',
@@ -170,28 +162,25 @@ class CampaignDispatcher
             return;
         }
 
-        $customerId = $this->customerIdFromContext($context);
-        if ($customerId !== null && $this->campaignEntryGuard->hasPendingEntry($campaignId, $customerId)) {
-            // Already mid-flow in this exact campaign - see the identical guard in dispatch().
-            return;
-        }
-
-        $logic = (string) $campaign->getData('condition_logic') === 'any' ? 'any' : 'all';
-
+        // Unlike before this shared runCampaign() extraction, the entry-guard check now sits
+        // inside the try - a guard failure is logged and swallowed here exactly as it always was
+        // in dispatch(), instead of propagating up into the scheduled-trigger cron.
         try {
-            $conditionCollection = $this->campaignConditionCollectionFactory->create();
-            $conditionCollection->addCampaignFilter($campaignId);
-            $conditions = array_values(iterator_to_array($conditionCollection));
-
-            if (!$this->conditionsSatisfied($logic, $conditions, $context)) {
-                return;
-            }
-
-            $actionCollection = $this->campaignActionCollectionFactory->create();
-            $actionCollection->addCampaignFilter($campaignId);
-            $actions = array_values(iterator_to_array($actionCollection));
-
-            $this->runActionsFrom($campaignId, $actions, 0, $context);
+            $this->runCampaign(
+                $campaignId,
+                (string) $campaign->getData('condition_logic') === 'any' ? 'any' : 'all',
+                function () use ($campaignId): array {
+                    $conditionCollection = $this->campaignConditionCollectionFactory->create();
+                    $conditionCollection->addCampaignFilter($campaignId);
+                    return array_values(iterator_to_array($conditionCollection));
+                },
+                function () use ($campaignId): array {
+                    $actionCollection = $this->campaignActionCollectionFactory->create();
+                    $actionCollection->addCampaignFilter($campaignId);
+                    return array_values(iterator_to_array($actionCollection));
+                },
+                $context
+            );
         } catch (\Throwable $e) {
             $this->logger->error(sprintf(
                 'Ordo_Automation: scheduled campaign #%d failed: %s',
@@ -202,9 +191,43 @@ class CampaignDispatcher
     }
 
     /**
-     * @return array<int, string> enabled campaign ids with a trigger row for $triggerEvent,
-     *  mapped to that campaign's condition_logic ('all'/'any') — carrying it through the cache
-     *  here avoids a second per-campaign query just to read it back in dispatch().
+     * The per-campaign body dispatch() and dispatchScheduledTrigger() share: dedup guard,
+     * condition evaluation, action run. Conditions/actions come in as lazy loaders - not arrays -
+     * so a guard hit never loads either (dispatchScheduledTrigger() queries them per campaign),
+     * and so a loader failure lands in the caller's own per-campaign error boundary, keeping its
+     * original log wording. dispatch() just hands over its already-batch-loaded slices.
+     *
+     * @param 'all'|'any' $logic
+     * @param callable(): CampaignCondition[] $loadConditions
+     * @param callable(): CampaignAction[] $loadActions
+     * @param array<string, mixed> $context
+     */
+    private function runCampaign(
+        int $campaignId,
+        string $logic,
+        callable $loadConditions,
+        callable $loadActions,
+        array $context
+    ): void {
+        $customerId = $this->customerIdFromContext($context);
+        if ($customerId !== null && $this->campaignEntryGuard->hasPendingEntry($campaignId, $customerId)) {
+            // Already mid-flow (waiting on a delay_minutes resume) in this exact campaign - skip
+            // re-entering it from scratch rather than accumulating a second, independent action
+            // chain in parallel.
+            return;
+        }
+
+        if (!$this->conditionsSatisfied($logic, $loadConditions(), $context)) {
+            return;
+        }
+
+        $this->runActionsFrom($campaignId, $loadActions(), 0, $context);
+    }
+
+    /**
+     * @return array<int, 'all'|'any'> enabled campaign ids with a trigger row for
+     *  $triggerEvent, mapped to that campaign's condition_logic — carrying it through the
+     *  cache here avoids a second per-campaign query just to read it back in dispatch().
      */
     private function campaignIdsForTrigger(string $triggerEvent): array
     {
@@ -212,7 +235,16 @@ class CampaignDispatcher
         $cached = $this->cache->load($cacheKey);
 
         if ($cached !== false) {
-            return $this->serializer->unserialize($cached);
+            $decoded = $this->serializer->unserialize($cached);
+            // The cache round-trip erases the value type the writer below guarantees —
+            // re-normalizing on read keeps the 'all'|'any' contract honest even against a
+            // stale/foreign cache entry, at the cost of one array_map over a small map.
+            $logicByCampaign = [];
+            foreach (is_array($decoded) ? $decoded : [] as $campaignId => $logic) {
+                $logicByCampaign[(int) $campaignId] = $logic === 'any' ? 'any' : 'all';
+            }
+
+            return $logicByCampaign;
         }
 
         $triggers = $this->campaignTriggerCollectionFactory->create();
@@ -289,23 +321,74 @@ class CampaignDispatcher
      * $resumeActionId, once its delay_minutes has elapsed — Cron\RunScheduledCampaignActions's
      * only real job is finding due rows and calling this.
      *
+     * The three lookups behind a resume (campaign-enabled check, resume-row lookup, action list)
+     * are identical for every row of the same (campaign, resume action) — a delayed broadcast can
+     * mean thousands of such rows in one cron run. $lookupMemo caches them per caller: a caller
+     * processing many rows (the cron) passes ONE array across its whole run, keeping the memo's
+     * lifetime that of the caller's loop, never of this (potentially consumer-long-lived) object.
+     * Mid-run staleness (a campaign disabled between rows) is the accepted trade for ~3 queries
+     * per distinct campaign instead of per row.
+     *
      * @param array<string, mixed> $context
+     * @param array{
+     *     enabled?: array<int, bool>,
+     *     plan?: array<string, array{actions: array<int, CampaignAction>, start: int}|null>
+     * } $lookupMemo
      */
-    public function resumeScheduledAction(int $campaignId, int $resumeActionId, array $context): void
-    {
-        // Reported directly: disabling a campaign is documented as pausing it ("disable to pause
-        // it without deleting it" - README/CLAUDE.md), but a customer already parked mid-chain on
-        // a delay_minutes step would still get every remaining action run once this cron resumed
-        // them, since (unlike dispatch()/dispatchScheduledTrigger() above) nothing here re-checked
-        // the campaign was still enabled. Same "not found" shape as the resume-row guard below -
-        // the campaign existing but disabled isn't an error, just nothing left to resume into.
-        $campaigns = $this->campaignCollectionFactory->create();
-        $campaigns->addIdsFilter([$campaignId]);
-        $campaigns->addEnabledFilter();
-        if (!$campaigns->getFirstItem()->getId()) {
+    public function resumeScheduledAction(
+        int $campaignId,
+        int $resumeActionId,
+        array $context,
+        array &$lookupMemo = []
+    ): void {
+        $lookupMemo['enabled'][$campaignId] ??= $this->isCampaignEnabled($campaignId);
+        if (!$lookupMemo['enabled'][$campaignId]) {
             return;
         }
 
+        $planKey = $campaignId . ':' . $resumeActionId;
+        if (!array_key_exists($planKey, $lookupMemo['plan'] ?? [])) {
+            // array_key_exists, not ??=: a null plan ("nothing left to resume into") is itself a
+            // memoized answer, not a cache miss to re-query on every row.
+            $lookupMemo['plan'][$planKey] = $this->loadResumePlan($campaignId, $resumeActionId);
+        }
+
+        $plan = $lookupMemo['plan'][$planKey];
+        if ($plan === null) {
+            return;
+        }
+
+        // The action at the plan's start index is the one that WAS delayed — its wait is exactly
+        // what just elapsed to get here, so it must run unconditionally this time, not be
+        // re-scheduled again for another delay_minutes just because that column is still > 0 on
+        // the row. Only actions AFTER it go through the normal delay check.
+        $context['campaign_id'] = $campaignId;
+        $this->runOneAction($plan['actions'][$plan['start']], $context);
+        $this->runActionsFrom($campaignId, $plan['actions'], $plan['start'] + 1, $context);
+    }
+
+    private function isCampaignEnabled(int $campaignId): bool
+    {
+        // Reported directly: disabling a campaign is documented as pausing it ("disable to pause
+        // it without deleting it" - README/CLAUDE.md), but a customer already parked mid-chain on
+        // a delay_minutes step would still get every remaining action run once the resume cron
+        // reached them, since (unlike dispatch()/dispatchScheduledTrigger() above) nothing here
+        // re-checked the campaign was still enabled. Same "not found" shape as the resume-row
+        // guard in loadResumePlan() - existing but disabled isn't an error, just nothing to
+        // resume into.
+        $campaigns = $this->campaignCollectionFactory->create();
+        $campaigns->addIdsFilter([$campaignId]);
+        $campaigns->addEnabledFilter();
+
+        return (bool) $campaigns->getFirstItem()->getId();
+    }
+
+    /**
+     * @return array{actions: array<int, CampaignAction>, start: int}|null null when there is
+     *     nothing left to resume into
+     */
+    private function loadResumePlan(int $campaignId, int $resumeActionId): ?array
+    {
         // One small lookup for the resume row's own sort_order, so the main query below can be
         // filtered to "sort_order >= that" instead of loading every action in the campaign just
         // to linear-scan for the one entity_id we already know.
@@ -319,7 +402,7 @@ class CampaignDispatcher
         // The action (or the whole campaign) could have been deleted/edited between when this
         // was scheduled and now — nothing left to resume into, not an error.
         if ($resumeRow->getEntityId() === null) {
-            return;
+            return null;
         }
 
         $actions = $this->campaignActionCollectionFactory->create();
@@ -332,16 +415,10 @@ class CampaignDispatcher
         // the resume row itself still exists but no longer sorts as >= its own sort_order — e.g.
         // a concurrent edit between the two queries above.
         if ($startIndex === null) {
-            return;
+            return null;
         }
 
-        // The action at $startIndex is the one that WAS delayed — its wait is exactly what just
-        // elapsed to get here, so it must run unconditionally this time, not be re-scheduled
-        // again for another delay_minutes just because that column is still > 0 on the row.
-        // Only actions AFTER it go through the normal delay check.
-        $context['campaign_id'] = $campaignId;
-        $this->runOneAction($actions[$startIndex], $context);
-        $this->runActionsFrom($campaignId, $actions, $startIndex + 1, $context);
+        return ['actions' => $actions, 'start' => $startIndex];
     }
 
     /**
@@ -426,11 +503,16 @@ class CampaignDispatcher
                 continue;
             }
 
+            $rawParams = $spec['params'] ?? [];
+
             /** @var CampaignAction $actionRow */
             $actionRow = $this->campaignActionFactory->create();
             $actionRow->setCampaignId($campaignId)
                 ->setType($spec['type'])
-                ->setParamsJson((string) json_encode($this->asStringKeyedArray($spec['params'] ?? [])))
+                // Encoded as-is: the synthetic row's own getParams() re-decodes through
+                // ParamsMap, which drops whatever non-string keys a hand-written variant spec's
+                // params blob could contain - only "not an array at all" is handled here.
+                ->setParamsJson((string) json_encode(is_array($rawParams) ? $rawParams : []))
                 ->setSortOrder((int) $sortOrder)
                 ->setDelayMinutes(0);
             $variantActions[] = $actionRow;
@@ -475,30 +557,6 @@ class CampaignDispatcher
         }
 
         return $variants;
-    }
-
-    /**
-     * Normalizes a decoded-JSON split-variant action spec's params into a guaranteed
-     * array<string, mixed> before re-encoding it as a synthetic CampaignAction's params_json -
-     * a hand-written variant spec's "params" blob isn't guaranteed to be string-keyed the way a
-     * real CampaignAction row's own getParams() already is.
-     *
-     * @return array<string, mixed>
-     */
-    private function asStringKeyedArray(mixed $value): array
-    {
-        if (!is_array($value)) {
-            return [];
-        }
-
-        $result = [];
-        foreach ($value as $key => $item) {
-            if (is_string($key)) {
-                $result[$key] = $item;
-            }
-        }
-
-        return $result;
     }
 
     /**

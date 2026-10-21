@@ -387,6 +387,27 @@ class OrderApprovalManagementTest extends TestCase
         self::assertSame($links, $this->management->getDecisionLinksById(5));
     }
 
+    /**
+     * buildDecisionLinks() is public because the approval emails (Observer\HoldOrderForApproval,
+     * Cron\EscalateStalePendingApprovals) build their links here too - this pins the exact URL
+     * shape they all share.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testBuildDecisionLinksStripsTheTrailingSlashAndEmbedsTheToken(): void
+    {
+        $store = $this->createStub(Store::class);
+        $store->method('getBaseUrl')->willReturn('https://example.com/');
+
+        $links = $this->createMock(OrderApprovalDecisionLinks::class);
+        $links->expects(self::once())->method('setApproveUrl')
+            ->with('https://example.com/ordo/approval/approve/token/tok')->willReturnSelf();
+        $links->expects(self::once())->method('setRejectUrl')
+            ->with('https://example.com/ordo/approval/reject/token/tok')->willReturnSelf();
+        $this->decisionLinksFactory->method('create')->willReturn($links);
+
+        self::assertSame($links, $this->management->buildDecisionLinks($store, 'tok'));
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testGetDecisionLinksByIdsReturnsEmptyArrayForEmptyInputWithoutQuerying(): void
     {

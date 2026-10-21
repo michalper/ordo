@@ -72,7 +72,7 @@ class SegmentMatcher
         foreach ($conditions as $conditionRow) {
             $specs[] = [
                 'type' => (string) $conditionRow->getData('type'),
-                'params' => $this->asStringKeyedArray($conditionRow->getParams()),
+                'params' => $conditionRow->getParams(),
             ];
         }
 
@@ -82,29 +82,5 @@ class SegmentMatcher
             $context,
             'segment condition'
         );
-    }
-
-    /**
-     * Normalizes a decoded-JSON value (or a mixed-typed getParams() call - see the top-level
-     * caller above) into a guaranteed array<string, mixed>, dropping any non-string key a
-     * hand-written 'group' params blob could otherwise contain - condition params are
-     * conceptually always a key-value map, never a list.
-     *
-     * @return array<string, mixed>
-     */
-    private function asStringKeyedArray(mixed $value): array
-    {
-        if (!is_array($value)) {
-            return [];
-        }
-
-        $result = [];
-        foreach ($value as $key => $item) {
-            if (is_string($key)) {
-                $result[$key] = $item;
-            }
-        }
-
-        return $result;
     }
 }

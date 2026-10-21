@@ -19,6 +19,7 @@ class AttributionCalculatorTest extends TestCase
         $select->method('from')->willReturnSelf();
         $select->method('distinct')->willReturnSelf();
         $select->method('joinInner')->willReturnSelf();
+        $select->method('joinLeft')->willReturnSelf();
         $select->method('where')->willReturnSelf();
         $select->method('order')->willReturnSelf();
         $select->method('limit')->willReturnSelf();
@@ -58,7 +59,7 @@ class AttributionCalculatorTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
-    public function testComputeForRecentOrdersWithNoTouchesDeletesButDoesNotInsert(): void
+    public function testComputeForRecentOrdersWithNoTouchesWritesNothing(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturnCallback(fn () => $this->makeSelect());
@@ -66,8 +67,10 @@ class AttributionCalculatorTest extends TestCase
             ['entity_id' => '10', 'customer_id' => '42', 'grand_total' => '100.0000', 'created_at' => '2026-09-01 00:00:00'],
         ]);
         $connection->method('fetchCol')->willReturn([]);
-        $connection->expects(self::once())->method('delete')->with('ordo_campaign_attribution', ['order_id = ?' => 10]);
-        $connection->expects(self::never())->method('insert');
+        // The anti-join guarantees the order has no rows, so there's nothing to delete either —
+        // a zero-touch order simply stays a candidate for later passes.
+        $connection->expects(self::never())->method('delete');
+        $connection->expects(self::never())->method('insertMultiple');
 
         $calculator = new AttributionCalculator($this->makeResourceConnection($connection), $this->makeConfig());
 
@@ -75,7 +78,7 @@ class AttributionCalculatorTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
-    public function testComputeForRecentOrdersSplitsRevenueEquallyAcrossTouchedCampaigns(): void
+    public function testComputeForRecentOrdersSplitsRevenueEquallyAcrossTouchedCampaignsInOneBatchInsert(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturnCallback(fn () => $this->makeSelect());
@@ -85,10 +88,11 @@ class AttributionCalculatorTest extends TestCase
         $connection->method('fetchCol')->willReturn(['5', '9']);
 
         $inserted = [];
-        $connection->expects(self::exactly(2))->method('insert')->willReturnCallback(
-            function (string $table, array $data) use (&$inserted): int {
-                $inserted[] = $data;
-                return 1;
+        $connection->expects(self::once())->method('insertMultiple')->willReturnCallback(
+            function (string $table, array $rows) use (&$inserted): int {
+                self::assertSame('ordo_campaign_attribution', $table);
+                $inserted = $rows;
+                return count($rows);
             }
         );
 
@@ -103,6 +107,57 @@ class AttributionCalculatorTest extends TestCase
             self::assertSame(2, $row['touch_count']);
             self::assertContains($row['campaign_id'], [5, 9]);
         }
+    }
+
+    /**
+     * The skip-already-attributed behavior lives entirely in the order query's shape: a LEFT JOIN
+     * against ordo_campaign_attribution with "ca.order_id IS NULL" is what keeps an attributed
+     * order from ever being refetched (and re-split) — and newest-first ordering is what keeps a
+     * fresh order from starving behind an old zero-touch backlog at the per-run cap.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testComputeForRecentOrdersAntiJoinsAwayAlreadyAttributedOrdersNewestFirst(): void
+    {
+        // Not makeSelect(): PHPUnit serves the FIRST stub configured per method, so the recorders
+        // below must be the only joinLeft/where/order configuration this stub ever gets.
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('limit')->willReturnSelf();
+
+        $joinLeftCalls = [];
+        $select->method('joinLeft')->willReturnCallback(
+            function (mixed ...$args) use (&$joinLeftCalls, $select): Select {
+                $joinLeftCalls[] = $args;
+                return $select;
+            }
+        );
+        $whereCalls = [];
+        $select->method('where')->willReturnCallback(
+            function (mixed ...$args) use (&$whereCalls, $select): Select {
+                $whereCalls[] = $args[0];
+                return $select;
+            }
+        );
+        $orderCalls = [];
+        $select->method('order')->willReturnCallback(
+            function (mixed ...$args) use (&$orderCalls, $select): Select {
+                $orderCalls[] = $args[0];
+                return $select;
+            }
+        );
+
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchAll')->willReturn([]);
+
+        $calculator = new AttributionCalculator($this->makeResourceConnection($connection), $this->makeConfig());
+        $calculator->computeForRecentOrders();
+
+        self::assertCount(1, $joinLeftCalls);
+        self::assertSame(['ca' => 'ordo_campaign_attribution'], $joinLeftCalls[0][0]);
+        self::assertSame('ca.order_id = so.entity_id', $joinLeftCalls[0][1]);
+        self::assertContains('ca.order_id IS NULL', $whereCalls);
+        self::assertSame(['so.entity_id DESC'], $orderCalls);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -132,15 +187,4 @@ class AttributionCalculatorTest extends TestCase
         self::assertArrayNotHasKey(9, $totals);
     }
 
-    #[AllowMockObjectsWithoutExpectations]
-    public function testGetAttributedRevenueForCampaignFallsBackToZeroWhenAbsent(): void
-    {
-        $connection = $this->createMock(AdapterInterface::class);
-        $connection->method('select')->willReturnCallback(fn () => $this->makeSelect());
-        $connection->method('fetchAll')->willReturn([]);
-
-        $calculator = new AttributionCalculator($this->makeResourceConnection($connection), $this->makeConfig());
-
-        self::assertSame(['revenue' => 0.0, 'orders' => 0], $calculator->getAttributedRevenueForCampaign(5));
-    }
 }

@@ -5,10 +5,12 @@ namespace Ordo\Automation\Model;
 
 /**
  * The `attempts`/`last_error`/`next_retry_at` trio is identical, field-for-field, across every
- * "persisted retry row" model in this module (MessageSendRetry, PushSendRetry) - a trait rather
- * than a shared base class since these otherwise extend Magento's AbstractModel directly and
- * have no other common behavior worth a base class for. Each consuming class must still declare
- * its own ATTEMPTS/LAST_ERROR/NEXT_RETRY_AT constants (same value, `self::` resolves per-class).
+ * "persisted retry row" model in this module (CampaignActionRetry, MessageSendRetry,
+ * PushSendRetry) - a trait rather than a shared base class since these otherwise extend Magento's
+ * AbstractModel directly and have no other common behavior worth a base class for. Each consuming
+ * class must still declare its own ATTEMPTS/LAST_ERROR/NEXT_RETRY_AT constants (same value,
+ * `self::` resolves per-class), and declares `implements RetryRecordInterface`, which this trait
+ * fulfills, so the shared retry plumbing can type against the trio.
  */
 trait RetryRecordFieldsTrait
 {

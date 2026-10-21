@@ -3,16 +3,16 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Cron;
 
-use Magento\Framework\Mail\Template\TransportBuilder;
-use Magento\Framework\Mail\TransportInterface;
-use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order\Collection as OrderCollection;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
 use Magento\Store\Model\Store;
+use Ordo\Automation\Api\Data\OrderApprovalDecisionLinksInterface;
 use Ordo\Automation\Cron\EscalateStalePendingApprovals;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\OrderApproval;
+use Ordo\Automation\Model\OrderApprovalManagement;
 use Ordo\Automation\Model\ResourceModel\OrderApproval as OrderApprovalResource;
 use Ordo\Automation\Model\ResourceModel\OrderApproval\Collection as ApprovalCollection;
 use Ordo\Automation\Model\ResourceModel\OrderApproval\CollectionFactory as ApprovalCollectionFactory;
@@ -29,8 +29,8 @@ class EscalateStalePendingApprovalsTest extends TestCase
     private ApprovalCollectionFactory $approvalCollectionFactory;
     private OrderApprovalResource $orderApprovalResource;
     private OrderCollectionFactory $orderCollectionFactory;
-    private TransportBuilder $transportBuilder;
-    private StateInterface $inlineTranslation;
+    private ReminderEmailSender $reminderEmailSender;
+    private OrderApprovalManagement $orderApprovalManagement;
     private TriggerOutcomeLogger $triggerOutcomeLogger;
     private LoggerInterface $logger;
 
@@ -44,8 +44,8 @@ class EscalateStalePendingApprovalsTest extends TestCase
         $this->approvalCollectionFactory = $this->createMock(ApprovalCollectionFactory::class);
         $this->orderApprovalResource = $this->createMock(OrderApprovalResource::class);
         $this->orderCollectionFactory = $this->createMock(OrderCollectionFactory::class);
-        $this->transportBuilder = $this->createStub(TransportBuilder::class);
-        $this->inlineTranslation = $this->createStub(StateInterface::class);
+        $this->reminderEmailSender = $this->createStub(ReminderEmailSender::class);
+        $this->orderApprovalManagement = $this->createStub(OrderApprovalManagement::class);
         $this->triggerOutcomeLogger = $this->createStub(TriggerOutcomeLogger::class);
         $this->logger = $this->createMock(LoggerInterface::class);
     }
@@ -57,8 +57,8 @@ class EscalateStalePendingApprovalsTest extends TestCase
             $this->approvalCollectionFactory,
             $this->orderApprovalResource,
             $this->orderCollectionFactory,
-            $this->transportBuilder,
-            $this->inlineTranslation,
+            $this->reminderEmailSender,
+            $this->orderApprovalManagement,
             $this->triggerOutcomeLogger,
             $this->makeCronRunLogger($this->logger)
         );
@@ -140,18 +140,14 @@ class EscalateStalePendingApprovalsTest extends TestCase
         $orderCollection->method('getIterator')->willReturn(new \ArrayIterator([$order]));
         $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
 
-        $this->transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
-        $this->transportBuilder->method('setTemplateOptions')->willReturnSelf();
-        $this->transportBuilder->method('setTemplateVars')->willReturnSelf();
-        $this->transportBuilder->method('setFromByScope')->willReturnSelf();
+        $this->orderApprovalManagement->method('buildDecisionLinks')
+            ->willReturn($this->createStub(OrderApprovalDecisionLinksInterface::class));
         $sentTo = null;
-        $this->transportBuilder->method('addTo')->willReturnCallback(function ($to) use (&$sentTo) {
-            $sentTo = $to;
-            return $this->transportBuilder;
-        });
-
-        $transport = $this->createStub(TransportInterface::class);
-        $this->transportBuilder->method('getTransport')->willReturn($transport);
+        $this->reminderEmailSender->method('send')->willReturnCallback(
+            function (string $template, array $vars, string $to) use (&$sentTo): void {
+                $sentTo = $to;
+            }
+        );
 
         $this->orderApprovalResource->expects(self::once())->method('save')->with($approval);
 
@@ -368,15 +364,29 @@ class EscalateStalePendingApprovalsTest extends TestCase
         $orderCollection->method('getIterator')->willReturn(new \ArrayIterator([$order]));
         $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
 
-        $this->transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
-        $this->transportBuilder->method('setTemplateOptions')->willReturnSelf();
-        $this->transportBuilder->method('setTemplateVars')->willReturnSelf();
-        $this->transportBuilder->method('setFromByScope')->willReturnSelf();
-        $this->transportBuilder->method('addTo')->willReturnSelf();
+        $links = $this->createStub(OrderApprovalDecisionLinksInterface::class);
+        $links->method('getApproveUrl')->willReturn('https://example.com/ordo/approval/approve/token/tok');
+        $links->method('getRejectUrl')->willReturn('https://example.com/ordo/approval/reject/token/tok');
 
-        $transport = $this->createMock(TransportInterface::class);
-        $transport->expects(self::once())->method('sendMessage');
-        $this->transportBuilder->method('getTransport')->willReturn($transport);
+        $management = $this->createMock(OrderApprovalManagement::class);
+        $management->expects(self::once())->method('buildDecisionLinks')
+            ->with(self::identicalTo($store), 'tok')->willReturn($links);
+        $this->orderApprovalManagement = $management;
+
+        $sender = $this->createMock(ReminderEmailSender::class);
+        $sender->expects(self::once())->method('send')->with(
+            'ordo_order_approval_escalation',
+            [
+                'order_increment_id' => '000000007',
+                'order_total' => 150.0,
+                'approve_url' => 'https://example.com/ordo/approval/approve/token/tok',
+                'reject_url' => 'https://example.com/ordo/approval/reject/token/tok',
+            ],
+            'admin@example.com',
+            '',
+            self::identicalTo($store)
+        );
+        $this->reminderEmailSender = $sender;
 
         $this->orderApprovalResource->expects(self::once())->method('save')->with($approval);
         $this->logger->expects(self::once())->method('info')->with(self::stringContains('1 order approval escalations'));

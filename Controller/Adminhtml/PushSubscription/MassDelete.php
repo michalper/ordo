@@ -6,7 +6,10 @@ namespace Ordo\Automation\Controller\Adminhtml\PushSubscription;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Ui\Component\MassAction\Filter;
+use Ordo\Automation\Controller\Adminhtml\Shared\RunsMassActionTrait;
+use Ordo\Automation\Model\PushSubscription;
 use Ordo\Automation\Model\ResourceModel\PushSubscription as PushSubscriptionResource;
 use Ordo\Automation\Model\ResourceModel\PushSubscription\CollectionFactory as PushSubscriptionCollectionFactory;
 
@@ -18,6 +21,8 @@ use Ordo\Automation\Model\ResourceModel\PushSubscription\CollectionFactory as Pu
  */
 class MassDelete extends Action implements HttpPostActionInterface
 {
+    use RunsMassActionTrait;
+
     public const ADMIN_RESOURCE = 'Ordo_Automation::push_subscriptions';
 
     public function __construct(
@@ -29,20 +34,19 @@ class MassDelete extends Action implements HttpPostActionInterface
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function getMassActionCollection(): iterable
     {
-        $resultRedirect = $this->resultRedirectFactory->create();
-        $collection = $this->filter->getCollection($this->pushSubscriptionCollectionFactory->create());
+        return $this->filter->getCollection($this->pushSubscriptionCollectionFactory->create());
+    }
 
-        $count = 0;
-        foreach ($collection as $subscription) {
-            /** @var \Ordo\Automation\Model\PushSubscription $subscription */
-            $this->pushSubscriptionResource->delete($subscription);
-            $count++;
-        }
+    protected function applyToEntity(object $entity): void
+    {
+        /** @var PushSubscription $entity */
+        $this->pushSubscriptionResource->delete($entity);
+    }
 
-        $this->messageManager->addSuccessMessage(__('A total of %1 push subscription(s) have been deleted.', $count));
-
-        return $resultRedirect->setPath('*/*/');
+    protected function getMassActionSuccessMessage(int $count): Phrase
+    {
+        return __('A total of %1 push subscription(s) have been deleted.', $count);
     }
 }

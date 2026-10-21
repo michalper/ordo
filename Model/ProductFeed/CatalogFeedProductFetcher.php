@@ -71,7 +71,12 @@ class CatalogFeedProductFetcher
     {
         $collection = $this->productCollectionFactory->create();
         $collection->setStore($storeId);
-        $collection->addAttributeToSelect(['name', 'description', 'price']);
+        // 'image' must be selected for getImageUrl()'s helper to see the real file — without it
+        // every feed item's image resolved to the placeholder.
+        $collection->addAttributeToSelect(['name', 'description', 'price', 'image']);
+        // Preloads url_rewrite request paths for the page in one query — getProductUrl() per
+        // product otherwise does its own url_rewrite lookup each time.
+        $collection->addUrlRewrite();
         $collection->addAttributeToFilter('status', ['eq' => 1]);
         $collection->addAttributeToFilter('visibility', [
             'in' => [Visibility::VISIBILITY_BOTH, Visibility::VISIBILITY_IN_CATALOG, Visibility::VISIBILITY_IN_SEARCH],

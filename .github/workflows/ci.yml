@@ -176,3 +176,12 @@ jobs:
         # masking) an unformatted commit in CI. `composer cs-fix` (no dry-run) is what a
         # contributor runs locally to actually apply it.
         run: composer cs-check
+
+      - name: Run Adobe Commerce Marketplace's code sniffer (EQP gate)
+        # The bare `Magento2` ruleset, the way Adobe's Extension Quality Program technical review
+        # actually runs it — not this repo's own phpcs.xml.dist, which deliberately excludes a few
+        # rule families (see that file's comments) that aren't a correctness/security concern here.
+        # --error-severity=10 --warning-severity=0 matches EQP's own pass/fail bar: only severity-10
+        # findings block a Marketplace submission, so that's the only thing this step fails CI on.
+        # --ignore-annotations because EQP's scan ignores `phpcs:ignore` the same way.
+        run: composer phpcs-marketplace-check

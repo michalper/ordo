@@ -22,13 +22,4 @@ class SyncClientPoolTest extends TestCase
         self::assertNull((new SyncClientPool())->get('missing'));
     }
 
-    public function testGetAvailablePlatformsReturnsRegisteredKeys(): void
-    {
-        $pool = new SyncClientPool([
-            'google_ads' => $this->createStub(SyncClientInterface::class),
-            'meta' => $this->createStub(SyncClientInterface::class),
-        ]);
-
-        self::assertSame(['google_ads', 'meta'], $pool->getAvailablePlatforms());
-    }
 }
