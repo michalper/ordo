@@ -37,9 +37,10 @@ Goal: get Ordo listed on `commercemarketplace.adobe.com`. Gap list against Adobe
 Program (technical review guidelines + submission requirements), checked 2026-10-21 — work through in
 order:
 
-1. **Licensing decision** — Adobe requires OSL 3.0 + credit to Adobe, Inc. for extensions built on
-   Magento Open Source code; this repo is currently MIT (`LICENSE`, `composer.json`). Business/legal
-   call, not a mechanical edit — affects existing users of the module. Blocks everything else below.
+1. ~~**Licensing decision**~~ — done: switched MIT → OSL-3.0 (`LICENSE`, `composer.json`,
+   `README.md`/`README.pl.md`) with an Adobe, Inc. credit per Adobe's requirement. No installed
+   user base yet (module never publicly released — see memory), so no switching-cost concern;
+   left for last anyway since it was originally treated as a business/legal call.
 2. ~~**PDF user/setup guide**~~ — done: `docs/marketplace/USER-GUIDE.md` (source) and
    `generate-pdf.py` (renders it) produce `Ordo-User-Guide.pdf` — install/config/feature overview,
    linking out to each `docs/wiki/` page per feature, per Adobe's "PDF, or PDF linking to a wiki"

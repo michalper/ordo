@@ -17,21 +17,28 @@ use Ordo\Automation\Model\AdminActionLog\Recorder;
  * ResourceModel::save() instead. The Recorder::hasLoggedInAdmin() guard keeps non-admin
  * persistence (cron, consumers) out of the log.
  *
- * One parametrized class instead of a copy per entity: each audited entity is a virtualType of
- * this in etc/adminhtml/di.xml, carrying only its entity_type label and audited-field list —
- * same virtualType pattern as the Shared\Edit admin buttons (docs/adr/0009).
+ * One shared aroundSave() instead of a copy per entity: each audited entity is a thin, real
+ * subclass naming only its own entity_type label and audited-field list — NOT a virtualType.
+ * A virtualType was tried first (same pattern as the Shared\Edit admin buttons, docs/adr/0009)
+ * and failed `setup:di:compile` ("Plugin class ... doesn't exist"): unlike a ui_component
+ * button's `class` attribute (resolved via ObjectManager::create() at runtime), Magento's
+ * plugin-list compiler statically resolves a `<plugin type="...">` value and never found a
+ * single virtualType-as-plugin-type reference anywhere in core across 517 checked — real
+ * subclasses are the only pattern that's actually supported here.
  */
-class ResourceAuditPlugin
+abstract class AbstractResourceAuditPlugin
 {
-    /**
-     * @param string[] $auditedFields
-     */
     public function __construct(
-        private readonly Recorder $recorder,
-        private readonly string $entityType,
-        private readonly array $auditedFields
+        private readonly Recorder $recorder
     ) {
     }
+
+    abstract protected function entityType(): string;
+
+    /**
+     * @return string[]
+     */
+    abstract protected function auditedFields(): array;
 
     /**
      * @param callable(AbstractModel): AbstractDb $proceed
@@ -46,10 +53,10 @@ class ResourceAuditPlugin
         $result = $proceed($model);
 
         $this->recorder->record(
-            $this->entityType,
+            $this->entityType(),
             (int) $model->getId(),
             $isCreate ? AdminActionLog::ACTION_CREATE : AdminActionLog::ACTION_UPDATE,
-            $isCreate ? null : $this->recorder->diffFields($model, $this->auditedFields)
+            $isCreate ? null : $this->recorder->diffFields($model, $this->auditedFields())
         );
 
         return $result;
