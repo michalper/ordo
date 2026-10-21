@@ -145,6 +145,49 @@ class ScanPriceDropAlertsTest extends TestCase
         $this->makeCron($config, $resourceConnection, $productRepository, $dispatcher)->execute();
     }
 
+    /**
+     * A watch's very first scan has no prior snapshot to compare against - never notifiable
+     * (isNotifiableChange() requires a non-null old price), but the baseline must still be
+     * captured so the *next* scan has something real to compare. null !== a real price is a
+     * "changed" snapshot by snapshotChanged()'s own null-guard branch, not its loose != compare.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteCapturesTheBaselineSnapshotOnAWatchsFirstScan(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isPriceWatchEnabled')->willReturn(true);
+        $config->method('getPriceWatchScanBatchSize')->willReturn(200);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            ['entity_id' => 1, 'customer_id' => 5, 'product_id' => 10, 'last_known_price' => null],
+        ]);
+        $connection->expects(self::once())->method('update')->with(
+            self::anything(),
+            self::callback(
+                static fn (array $data): bool => $data['last_known_price'] === 80.0
+                    && isset($data['last_scanned_at'])
+                    && !array_key_exists('notified_at', $data)
+            ),
+            self::anything()
+        );
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $product = $this->createStub(Product::class);
+        $product->method('getFinalPrice')->willReturn(80.0);
+        $productRepository = $this->createStub(ProductRepositoryInterface::class);
+        $productRepository->method('getById')->willReturn($product);
+
+        $dispatcher = $this->createMock(CampaignDispatcher::class);
+        $dispatcher->expects(self::never())->method('dispatch');
+
+        $this->makeCron($config, $resourceConnection, $productRepository, $dispatcher)->execute();
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteNotifiesGuestWithCapturedEmailDirectlyOnRealDecrease(): void
     {
