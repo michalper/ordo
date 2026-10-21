@@ -34,8 +34,11 @@ Full inventory: `Test/Mftf/SCENARIOS.md`. Open rows: `AutoPickCampaignSplitWinne
 ## Adobe Commerce Marketplace listing
 
 Goal: get Ordo listed on `commercemarketplace.adobe.com`. Gap list against Adobe's Extension Quality
-Program (technical review guidelines + submission requirements), checked 2026-10-21 — work through in
-order:
+Program (technical review guidelines + submission requirements), checked 2026-10-21 — worked through in
+order; all 8 items below are done as of 2026-10-22. What's left is the actual submission click-through
+(create the listing from `LISTING-CONTENT.md`, upload the zip `build-submission-zip.sh` produces from a
+tagged release, submit both the Technical and Marketing review tracks) — a one-time action for whoever
+actually publishes, not something to pre-do here.
 
 1. ~~**Licensing decision**~~ — done: switched MIT → OSL-3.0 (`LICENSE`, `composer.json`,
    `README.md`/`README.pl.md`) with an Adobe, Inc. credit per Adobe's requirement. No installed
@@ -74,11 +77,21 @@ order:
    submitted `composer.json` for `name`/`type`/*`version`* with no VCS to derive one from — the
    script stamps a version (from the exact git tag HEAD must be on) into the packaged copy only,
    never into the tracked file. `composer validate` confirmed the packaged `composer.json` is valid.
-7. **Marketplace seller account** — Developer Portal account (individual or company), accept
-   Master/Developer Terms of Service, valid PayPal payout email, EU trader information (required —
-   maintainer is EU-based), pricing model decision (one-time vs. subscription, or free).
-8. **Listing content** — icon, description, at least two gallery screenshots, version compatibility,
-   optional demo video.
+7. ~~**Marketplace seller account**~~ — done: Developer Portal account, Master/Developer Terms accepted,
+   profile photo and Privacy Policy URL set (`docs/wiki/Privacy-Policy.md`, live on the GitHub wiki), PayPal
+   payout email set, Tax Forms completed (US/Poland tax treaty — moot either way since Ordo ships free).
+   EU Trader Information: answered "Yes" (maintainer chose to make listings available to EU users as a
+   sole trader, their own personal name/address as the trader info — publicly shown on EU-viewed listing
+   pages per the EU Digital Services Act, a tradeoff the maintainer was walked through and accepted
+   explicitly, not a default). Pricing model: free (confirmed by maintainer, decided at actual listing
+   creation time, not an account-level setting).
+8. ~~**Listing content**~~ — done: `docs/marketplace/LISTING-CONTENT.md` has the title, category, short
+   and long description (2,259 of the 25,989-character limit), version compatibility, and video decision
+   (none yet, optional) ready to paste into the submission form. `docs/marketplace/assets/icon.svg` /
+   `icon-512.png` — the same mark/gradient as the README hero and admin menu icon, no slogan or
+   Adobe/Magento branding, per Adobe's icon content rule. `docs/marketplace/screenshots/` has the 2
+   required gallery images, captured live from `magento-ordo-test/`'s Flow canvas (not saved as a real
+   campaign) rather than mocked up.
 
 ## Candidate new features
 

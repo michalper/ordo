@@ -22,6 +22,12 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   list. Stamps a `version` into the packaged `composer.json` only (never the tracked file, which
   deliberately carries none — versioning is by git tag) since Adobe's review statically checks
   for `name`/`type`/`version` with no VCS to derive one from.
+- **`docs/marketplace/LISTING-CONTENT.md` + `assets/icon.svg`/`icon-512.png` +
+  `screenshots/01-campaign-builder.jpg`/`02-trigger-condition-action.jpg`** (ROADMAP.md item 8) —
+  the Marketplace listing's title, category, short/long description, version compatibility, icon
+  (reuses the README hero/admin menu mark, no Adobe/Magento branding per Adobe's content rule),
+  and the two required gallery screenshots, captured live from the Flow canvas rather than mocked
+  up.
 
 ### Fixed
 
