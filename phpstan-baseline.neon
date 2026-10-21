@@ -3904,7 +3904,7 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
-			path: Plugin/Shared/ResourceAuditPlugin.php
+			path: Plugin/Shared/AbstractResourceAuditPlugin.php
 
 		-
 			message: '#^Use service contracts to persist entities in favour of Magento\\Eav\\Model\\Entity\\Attribute\\AbstractAttribute\:\:save\(\) method$#'
