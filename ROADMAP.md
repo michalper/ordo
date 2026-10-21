@@ -51,10 +51,21 @@ order:
 4. ~~**Marketplace Code Sniffer pass**~~ — done: zero severity-10 violations repo-wide (the 16
    found — all in `Test/` — were fixed, not excluded), and `composer phpcs-marketplace-check`
    now runs the exact EQP command as a CI step so it can't regress.
-5. **MFTF run under Marketplace's actual test conditions** — Varnish enabled, `deploy:mode:set
-   production`, on every PHP/Magento version combo the listing claims to support. `Test/Mftf/` exists
-   (see `Test/Mftf/SCENARIOS.md`) but has only been run in the `magento-ordo-test/` dev sandbox, not in
-   this configuration.
+5. ~~**MFTF run under Marketplace's actual test conditions**~~ — done: `magento-ordo-test/` got a
+   Varnish service (`docker/varnish/default.vcl`, Magento's own `varnish:vcl:generate` output) and
+   `deploy:mode:set production`; confirmed Varnish actually caches (`X-Magento-Cache-Debug: MISS`
+   → `HIT` → `HIT`, before and after the mode switch). Getting there required a clean
+   `setup:di:compile`, which caught two real bugs: the audit-plugin virtualTypes (item 4's
+   cleanup) don't resolve for Magento's plugin-list compiler the way the button virtualTypes do
+   (fixed — real subclasses again, see `docs/adr/0009`'s Consequences section), and
+   `Controller\Adminhtml\Customer360\Index` type-hinted the wrong `Context` class (a pre-existing
+   bug since #224, harmless in default mode, hard compile error in production — fixed). All three
+   of `Test/Mftf/SCENARIOS.md`'s key scenarios (`AdminCreateMultiTriggerCampaignTest`,
+   `AdminCreateCampaignWithConditionsAndActionsTest`, and the full-checkout
+   `AdminCampaignScenarioEndToEndTest` — previously never finished in this sandbox due to host
+   memory pressure, see `AGENTS.md`) pass under Varnish + production mode. Only ever run on one
+   PHP/Magento combo (whatever this sandbox has installed) — running the matrix across every
+   version the listing claims to support is for whoever actually submits.
 6. **Package the zip** — `composer.json` already passes the mechanical checks (`type: magento2-module`,
    no `extra.map`/`extra.magento-root-dir`, no forbidden `magento/*` requires, no stray `FIXME`/`TODO` in
    source). Still need to confirm the packaged zip stays under the 30 MB limit.
