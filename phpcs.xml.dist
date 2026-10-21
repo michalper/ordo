@@ -5,6 +5,7 @@
     <file>.</file>
 
     <exclude-pattern>vendor/*</exclude-pattern>
+    <exclude-pattern>node_modules/*</exclude-pattern>
     <!-- Test/* is dev/CI tooling, not code that runs in a live store — same reasoning
          PHPStan's own config already applies (phpstan.neon excludes Test/*). The Magento2
          ruleset is aimed at shipped store code; applying it here would mostly flag accepted

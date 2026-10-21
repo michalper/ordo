@@ -41,7 +41,7 @@ class SegmentBulkActionConsumer
         }
 
         $action = $this->actionPool->get($actionType);
-        if ($action === null) {
+        if (!$action instanceof \Ordo\Automation\Api\Campaign\ActionInterface) {
             $this->logger->error(sprintf(
                 'Ordo_Automation: dropped a segment bulk action message with unknown action type "%s".',
                 $actionType

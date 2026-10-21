@@ -52,7 +52,6 @@ class CampaignScheduledAction extends AbstractModel
         return $this;
     }
 
-
     public function getRunAt(): string
     {
         return (string) $this->getData(self::RUN_AT);

@@ -44,7 +44,6 @@ class MessageSendRetry extends AbstractModel implements RetryRecordInterface
         return $this;
     }
 
-
     /**
      * @return array<string, mixed>
      */
