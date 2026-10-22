@@ -99,12 +99,10 @@ class PriceWatchSubscriptionManager
         $collection->addFieldToFilter('customer_id', ['null' => true]);
         foreach ($collection as $subscription) {
             /** @var PriceWatchSubscription $subscription */
-            $existing = $this->findExisting(
-                (int) $subscription->getProductId(),
-                $subscription->getWatchType(),
-                $customerId,
-                null
-            );
+            $productId = $subscription->getProductId();
+            $watchType = $subscription->getWatchType();
+
+            $existing = $this->findExisting($productId, $watchType, $customerId, null);
             if ($existing->getId()) {
                 $this->priceWatchSubscriptionResource->delete($subscription);
                 continue;
