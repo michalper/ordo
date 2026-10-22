@@ -67,4 +67,18 @@ class PushEndpointValidatorTest extends TestCase
     {
         self::assertTrue($this->validator->isAllowed('https://fcm.googleapis.com/fcm/send/abc123'));
     }
+
+    /**
+     * resolvePinnedIp() is what PushSender pins its actual HTTP connection to via
+     * CURLOPT_RESOLVE - for an IP literal endpoint it must return that same literal back.
+     */
+    public function testResolvePinnedIpReturnsTheLiteralForAPublicIpEndpoint(): void
+    {
+        self::assertSame('203.0.113.5', $this->validator->resolvePinnedIp('https://203.0.113.5/push'));
+    }
+
+    public function testResolvePinnedIpReturnsNullForARejectedEndpoint(): void
+    {
+        self::assertNull($this->validator->resolvePinnedIp('https://169.254.169.254/latest/meta-data/'));
+    }
 }

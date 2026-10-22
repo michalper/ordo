@@ -38,7 +38,7 @@ class PushSenderTest extends TestCase
         $this->vapidTokenBuilder = $this->createMock(VapidTokenBuilder::class);
         $this->vapidTokenBuilder->method('buildAuthorizationHeader')->willReturn('vapid t=jwt, k=public-key');
         $this->pushEndpointValidator = $this->createStub(PushEndpointValidator::class);
-        $this->pushEndpointValidator->method('isAllowed')->willReturn(true);
+        $this->pushEndpointValidator->method('resolvePinnedIp')->willReturn('203.0.113.5');
 
         $base64Url = new BaseSixtyFourUrl();
         $this->sender = new PushSender(
@@ -147,7 +147,7 @@ class PushSenderTest extends TestCase
     public function testSendRejectsAnEndpointThatFailsRevalidation(): void
     {
         $this->pushEndpointValidator = $this->createStub(PushEndpointValidator::class);
-        $this->pushEndpointValidator->method('isAllowed')->willReturn(false);
+        $this->pushEndpointValidator->method('resolvePinnedIp')->willReturn(null);
         $this->sender = new PushSender(
             $this->curl,
             $this->config,

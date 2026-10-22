@@ -45,8 +45,13 @@ class PushSender
         // RegisterPushSubscription) - a campaign can fire long after a subscription was stored,
         // and DNS for an otherwise-legitimate-looking hostname could be repointed at an internal
         // address in the meantime (DNS rebinding). This is the request that actually leaves the
-        // server, so it's the one that must never be skipped.
-        if (!$this->pushEndpointValidator->isAllowed($endpoint)) {
+        // server, so it's the one that must never be skipped. resolvePinnedIp() (not isAllowed())
+        // because the IP validated here must be the exact one curl connects to below, via
+        // CURLOPT_RESOLVE - otherwise curl's own, independent DNS lookup for $endpoint could
+        // still land on a different (internal) address than the one just validated, defeating
+        // this check for a rebinding host with a short-TTL record that changes between the two.
+        $pinnedIp = $this->pushEndpointValidator->resolvePinnedIp($endpoint);
+        if ($pinnedIp === null) {
             throw new RuntimeException(
                 sprintf(
                     'Push subscription #%d has an endpoint that failed validation.',
@@ -70,13 +75,31 @@ class PushSender
 
         $this->rateLimiter->throttle('push', (float) $this->config->getPushMaxRequestsPerSecond());
 
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        $host = (string) parse_url($endpoint, PHP_URL_HOST);
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        $port = parse_url($endpoint, PHP_URL_PORT) ?? 443;
+        $resolveEntry = sprintf('%s:%d:%s', $host, $port, $pinnedIp);
+
         $this->curl->setTimeout(self::TIMEOUT_SECONDS);
         $this->curl->setOption(CURLOPT_FOLLOWLOCATION, false);
+        // Pins the connection to the exact IP just validated above - the curl client's own DNS
+        // resolution for $endpoint is never consulted, so it can't resolve $host differently
+        // (same hostname, different answer) between the validation above and this request.
+        $this->curl->setOption(CURLOPT_RESOLVE, [$resolveEntry]);
         $this->curl->addHeader('Content-Type', 'application/octet-stream');
         $this->curl->addHeader('Content-Encoding', 'aes128gcm');
         $this->curl->addHeader('TTL', (string) self::TTL_SECONDS);
         $this->curl->addHeader('Authorization', $authorization);
-        $this->curl->post($endpoint, $body);
+
+        try {
+            $this->curl->post($endpoint, $body);
+        } finally {
+            // This Curl client is a shared instance (reused across every subscription a campaign
+            // action sends to in the same request) - the pinned entry above must not leak into
+            // the next, unrelated endpoint's resolution. A "-host:port" entry removes it.
+            $this->curl->setOption(CURLOPT_RESOLVE, [sprintf('-%s:%d', $host, $port)]);
+        }
 
         $status = $this->curl->getStatus();
         if ($status === 404 || $status === 410) {

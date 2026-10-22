@@ -5,16 +5,18 @@ namespace Ordo\Automation\Model\PriceWatch;
 
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
+use Magento\Framework\Exception\AlreadyExistsException;
 use Ordo\Automation\Model\ResourceModel\PriceWatch\PriceWatchSubscription as PriceWatchSubscriptionResource;
 use Ordo\Automation\Model\ResourceModel\PriceWatch\PriceWatchSubscription\CollectionFactory;
 
 /**
  * CRUD for ordo_price_watch_subscription — idempotent by (customer_id or visitor_id) +
  * product_id + watch_type, same "look up first, update if found" shape
- * Push\PushSubscriptionManager uses for endpoint_hash, just without the AlreadyExistsException
- * race handling: a duplicate register() call here races on a unique index scoped to an
- * identity that's already known to the caller (session/cookie), not on server-generated data an
- * attacker could fabricate, so the window is narrower and re-registering is harmless either way.
+ * Push\PushSubscriptionManager uses for endpoint_hash. register()/unregister() don't need
+ * AlreadyExistsException race handling: both race on a unique index scoped to an identity
+ * already known to the caller (session/cookie), not on server-generated data an attacker could
+ * fabricate, so the window is narrower and re-registering is harmless either way.
+ * attributeVisitorToCustomer() is the exception — see its own docblock.
  */
 class PriceWatchSubscriptionManager
 {
@@ -84,7 +86,11 @@ class PriceWatchSubscriptionManager
 
     /**
      * Called by StitchVisitorIdentity on login, same shape as
-     * PushSubscriptionManager::attributeVisitorToCustomer().
+     * PushSubscriptionManager::attributeVisitorToCustomer() - except this table's unique index is
+     * (customer_id, product_id, watch_type), not a server-generated value like endpoint_hash, so
+     * a customer who already watches the same product/type under their own account (from an
+     * earlier logged-in session) collides with the anonymous visitor row being attributed here.
+     * The anonymous watch is redundant once that's true - drop it rather than let save() throw.
      */
     public function attributeVisitorToCustomer(string $visitorId, int $customerId): void
     {
@@ -93,8 +99,26 @@ class PriceWatchSubscriptionManager
         $collection->addFieldToFilter('customer_id', ['null' => true]);
         foreach ($collection as $subscription) {
             /** @var PriceWatchSubscription $subscription */
+            $existing = $this->findExisting(
+                (int) $subscription->getProductId(),
+                $subscription->getWatchType(),
+                $customerId,
+                null
+            );
+            if ($existing->getId()) {
+                $this->priceWatchSubscriptionResource->delete($subscription);
+                continue;
+            }
+
             $subscription->setCustomerId($customerId);
-            $this->priceWatchSubscriptionResource->save($subscription);
+            try {
+                $this->priceWatchSubscriptionResource->save($subscription);
+            } catch (AlreadyExistsException) {
+                // Another request attributed (or the customer re-registered) the same
+                // product/type between the check above and this save - the customer-owned row
+                // already covers it, so the now-redundant visitor row is dropped, not retried.
+                $this->priceWatchSubscriptionResource->delete($subscription);
+            }
         }
     }
 

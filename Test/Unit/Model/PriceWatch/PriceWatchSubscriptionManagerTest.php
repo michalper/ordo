@@ -36,7 +36,10 @@ class PriceWatchSubscriptionManagerTest extends TestCase
         );
     }
 
-    private function makeCollection(?PriceWatchSubscription $firstItem = null): PriceWatchSubscriptionCollection
+    /**
+     * @param PriceWatchSubscription[] $items
+     */
+    private function makeCollection(?PriceWatchSubscription $firstItem = null, array $items = []): PriceWatchSubscriptionCollection
     {
         $collection = $this->createStub(PriceWatchSubscriptionCollection::class);
         $collection->method('addFieldToFilter')->willReturnSelf();
@@ -47,7 +50,7 @@ class PriceWatchSubscriptionManagerTest extends TestCase
         $collection->method('getFirstItem')->willReturn(
             $firstItem ?? $this->createStub(PriceWatchSubscription::class)
         );
-        $collection->method('getIterator')->willReturn(new ArrayIterator([]));
+        $collection->method('getIterator')->willReturn(new ArrayIterator($items));
 
         return $collection;
     }
@@ -218,15 +221,36 @@ class PriceWatchSubscriptionManagerTest extends TestCase
     public function testAttributeVisitorToCustomerUpdatesEachMatchingRow(): void
     {
         $row = $this->createMock(PriceWatchSubscription::class);
-        $collection = $this->makeCollection();
-        $collection = $this->createStub(PriceWatchSubscriptionCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('addVisitorFilter')->willReturnSelf();
-        $collection->method('getIterator')->willReturn(new ArrayIterator([$row]));
+        $row->method('getProductId')->willReturn(5);
+        $row->method('getWatchType')->willReturn(PriceWatchSubscription::WATCH_TYPE_PRICE_DROP);
+        // makeCollection()'s own getFirstItem() default (an id-less stub) stands in for "the
+        // customer doesn't already have this product/type watched" - the collectionFactory
+        // mock below returns this same collection for every create() call, including the one
+        // inside findExisting()'s own duplicate check.
+        $collection = $this->makeCollection(items: [$row]);
         $this->collectionFactory->method('create')->willReturn($collection);
 
         $row->expects(self::once())->method('setCustomerId')->with(42);
         $this->resource->expects(self::once())->method('save')->with($row);
+
+        $this->manager->attributeVisitorToCustomer('visitor-1', 42);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAttributeVisitorToCustomerDeletesRowWhenCustomerAlreadyWatchesIt(): void
+    {
+        $row = $this->createMock(PriceWatchSubscription::class);
+        $row->method('getProductId')->willReturn(5);
+        $row->method('getWatchType')->willReturn(PriceWatchSubscription::WATCH_TYPE_PRICE_DROP);
+
+        $existingCustomerRow = $this->createStub(PriceWatchSubscription::class);
+        $existingCustomerRow->method('getId')->willReturn(99);
+        $collection = $this->makeCollection($existingCustomerRow, [$row]);
+        $this->collectionFactory->method('create')->willReturn($collection);
+
+        $row->expects(self::never())->method('setCustomerId');
+        $this->resource->expects(self::once())->method('delete')->with($row);
+        $this->resource->expects(self::never())->method('save');
 
         $this->manager->attributeVisitorToCustomer('visitor-1', 42);
     }

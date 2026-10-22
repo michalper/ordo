@@ -97,6 +97,40 @@ class ReminderLogStore
     }
 
     /**
+     * Same atomic claim as claim(), for a caller whose cap allows more than one send per
+     * $matchConditions (e.g. a configurable "max reminders per quote") rather than exactly one
+     * ever: claims (inserts) only while fewer than $limit matching rows already exist, under the
+     * same GET_LOCK() serialization, so two overlapping cron runs can't both pass the batch
+     * query's own "count < limit" eligibility check and then both insert, pushing the real count
+     * past $limit.
+     *
+     * @param array<string, int|string> $matchConditions same shape as countMatching()'s own $conditions
+     * @param array<string, mixed> $insertData
+     */
+    public function claimUnderLimit(string $table, array $matchConditions, int $limit, array $insertData): bool
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $lockName = substr(hash('sha256', 'ordo_reminder_claim_' . $table . json_encode($matchConditions)), 0, 60);
+
+        if (!(bool) $connection->fetchOne('SELECT GET_LOCK(?, 5)', [$lockName])) {
+            return false;
+        }
+
+        try {
+            if ($this->countMatching($table, $matchConditions) >= $limit) {
+                return false;
+            }
+
+            $this->insert($table, $insertData);
+
+            return true;
+        } finally {
+            // phpcs:ignore Magento2.SQL.RawQuery.FoundRawSql
+            $connection->query('SELECT RELEASE_LOCK(?)', [$lockName]);
+        }
+    }
+
+    /**
      * Updates the claim row previously written by insert()/claim(), matched by the exact data
      * that call wrote (not a captured entity_id/lastInsertId() - same reasoning as
      * deleteMatching() below) - for callers that only learn a column's value after the claim row

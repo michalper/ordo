@@ -115,8 +115,18 @@ class SendAbandonedCartReminders
             // Claim (log) BEFORE sending, not after - a crash between a successful send and the
             // log write must never cause a duplicate reminder on the next tick. If the send
             // itself then fails, the claim is rolled back so this quote is retried next run.
+            // claimUnderLimit() (not a plain insert()) re-checks "reminders_sent < maxReminders"
+            // atomically - the batch SELECT's own HAVING clause above is only a fast pre-filter,
+            // not the actual guard against two overlapping cron runs both inserting for this quote.
             $reminderLogRow = $this->buildReminderLogRow((int) $row['entity_id']);
-            $this->reminderLogStore->insert(self::LOG_TABLE, $reminderLogRow);
+            if (!$this->reminderLogStore->claimUnderLimit(
+                self::LOG_TABLE,
+                ['quote_id = ?' => (int) $row['entity_id']],
+                $maxReminders,
+                $reminderLogRow
+            )) {
+                continue;
+            }
 
             try {
                 if ($hasEmailConsent) {

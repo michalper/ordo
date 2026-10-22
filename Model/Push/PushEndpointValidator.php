@@ -18,16 +18,30 @@ class PushEndpointValidator
 {
     public function isAllowed(string $url): bool
     {
+        return $this->resolvePinnedIp($url) !== null;
+    }
+
+    /**
+     * Resolves and validates $url's host exactly as isAllowed() does, and additionally returns
+     * one of its validated public IPs for the caller (PushSender) to pin the actual HTTP
+     * connection to via CURLOPT_RESOLVE. Without this, this validator and the HTTP client each
+     * resolve the hostname independently, and a DNS answer that changes between the two lookups
+     * (DNS rebinding, TTL=0) can validate a public address here while the client's own, separate
+     * resolution connects to a private one moments later - defeating this check entirely despite
+     * it running "immediately before every send".
+     */
+    public function resolvePinnedIp(string $url): ?string
+    {
         // No Magento core alternative parses a URL into its component parts.
         // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         $parts = parse_url($url);
         if (!isset($parts['scheme'], $parts['host']) || strtolower($parts['scheme']) !== 'https') {
-            return false;
+            return null;
         }
 
         $host = $parts['host'];
         if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
-            return $this->isPublicIp($host);
+            return $this->isPublicIp($host) ? $host : null;
         }
 
         // Resolve the hostname ourselves rather than trusting it's what it looks like - every
@@ -43,17 +57,19 @@ class PushEndpointValidator
             restore_error_handler();
         }
         if ($records === false || $records === []) {
-            return false;
+            return null;
         }
 
+        $pinnedIp = null;
         foreach ($records as $record) {
             $ip = $record['ip'] ?? $record['ipv6'] ?? null;
             if (!is_string($ip) || !$this->isPublicIp($ip)) {
-                return false;
+                return null;
             }
+            $pinnedIp ??= $ip;
         }
 
-        return true;
+        return $pinnedIp;
     }
 
     /**

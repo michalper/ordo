@@ -43,6 +43,20 @@ class SendAbandonedCartRemindersTest extends TestCase
         return $select;
     }
 
+    /**
+     * ReminderLogStore::claimUnderLimit() wraps its count-check in GET_LOCK()/RELEASE_LOCK() - a
+     * raw SQL string first arg to fetchOne(), unlike the count query's own Select object - so the
+     * generic AdapterInterface mock these tests share needs to answer both distinctly. $countResult
+     * is what the plain insert() this class used to call never needed to care about: 0 = fewer
+     * than the configured max reminders already logged for this quote (claim proceeds to insert).
+     */
+    private function stubFetchOne(AdapterInterface $connection, int $countResult): void
+    {
+        $connection->method('fetchOne')->willReturnCallback(
+            fn ($query) => is_string($query) && str_contains($query, 'GET_LOCK') ? 1 : $countResult
+        );
+    }
+
     private function makeConsentManager(bool $hasConsent = true): ConsentManager
     {
         $consentManager = $this->createStub(ConsentManager::class);
@@ -84,6 +98,7 @@ class SendAbandonedCartRemindersTest extends TestCase
                 'subtotal' => 150.0,
             ],
         ]);
+        $this->stubFetchOne($connection, 0);
         $connection->expects(self::once())->method('insert');
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
@@ -129,9 +144,18 @@ class SendAbandonedCartRemindersTest extends TestCase
                 'subtotal' => 150.0,
             ],
         ]);
-        // The real ordo_message_log row this test's own MessageLogWriter stub "wrote" - looked
-        // up by provider_message_id right after, exactly as the real code does.
-        $connection->method('fetchOne')->willReturn('77');
+        // The first non-GET_LOCK fetchOne() is claimUnderLimit()'s own count check (0 = fewer
+        // than the configured max reminders already logged, claim proceeds); the second is the
+        // real ordo_message_log row this test's own MessageLogWriter stub "wrote", looked up by
+        // provider_message_id right after, exactly as the real code does.
+        $countCalls = 0;
+        $connection->method('fetchOne')->willReturnCallback(function ($query) use (&$countCalls) {
+            if (is_string($query) && str_contains($query, 'GET_LOCK')) {
+                return 1;
+            }
+            $countCalls++;
+            return $countCalls === 1 ? 0 : '77';
+        });
         $connection->expects(self::once())->method('update')->with(
             'ordo_abandoned_cart_reminder_log',
             ['message_log_id' => 77],
@@ -205,6 +229,7 @@ class SendAbandonedCartRemindersTest extends TestCase
         ]);
         // The claim still happens - the campaign trigger below still needs the same
         // claim-before-dispatch dedup/cap every other reminder cron relies on.
+        $this->stubFetchOne($connection, 0);
         $connection->expects(self::once())->method('insert');
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
@@ -296,6 +321,8 @@ class SendAbandonedCartRemindersTest extends TestCase
                 'subtotal' => 150.0,
             ],
         ]);
+
+        $this->stubFetchOne($connection, 0);
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
