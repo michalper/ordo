@@ -5,6 +5,45 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-10-22
+
+Verified before tagging: full unit suite green (2796 tests), `phpstan analyse` (level max) clean,
+`cs-check`/`phpcs-check`/`rector-check` clean.
+
+### Added (Marketplace submission tooling)
+
+- **`docs/marketplace/build-submission-zip.sh` now also excludes `.gitignore`/`.gitattributes`**
+  from the packaged zip — Adobe's technical review rejects a submission containing either
+  ("Deprecated File found"), found only by an actual failed submission, not documented on the
+  public guidelines pages.
+
+### Fixed
+
+- **`SendAbandonedCartReminders` double-send race** — the cron claimed its "already sent" log row
+  via a plain `insert()` instead of `ReminderLogStore::claim()`, so two overlapping cron runs
+  (a slow tick plus the next scheduled one, or a manual `cron:run` alongside the scheduler) could
+  both pass the eligibility check and both send the same recovery email. New
+  `ReminderLogStore::claimUnderLimit()` generalizes `claim()` for a cap greater than one send ever
+  (this cron's configurable "max reminders per quote").
+- **`PriceWatchSubscriptionManager::attributeVisitorToCustomer()` could break customer login** —
+  attributing an anonymous price-watch row to a customer who already watched the same
+  product/type under their own account (registered in an earlier logged-in session) hit the
+  table's `(customer_id, product_id, watch_type)` unique constraint, and the resulting
+  `AlreadyExistsException` propagated uncaught through the `customer_login` event — a correct
+  password failed to log the customer in. Now checks for the existing row first and drops the
+  now-redundant anonymous one, with the exception still caught as a race fallback.
+- **DNS-rebinding window in `PushSender`** — `PushEndpointValidator` and curl's own HTTP request
+  resolved a push endpoint's hostname independently, so a hostname with a short-TTL DNS record
+  could validate as public and then have curl connect to a private/internal address moments
+  later, defeating the SSRF check the code already claimed to provide. The connection is now
+  pinned to the validator's own resolved IP via `CURLOPT_RESOLVE`.
+
+## [1.2.0] - 2026-10-22
+
+Tagged without this entry at the time (a gap in the usual "cut the CHANGELOG entry before
+tagging" step); backfilled here from the commits actually included (`1.1.0..1.2.0`) once noticed
+while preparing 1.2.1.
+
 ### Changed (licensing)
 
 - **License switched from MIT to OSL-3.0** (ROADMAP.md "Adobe Commerce Marketplace listing" item
@@ -28,10 +67,6 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   (reuses the README hero/admin menu mark, no Adobe/Magento branding per Adobe's content rule,
   240×240 per the actual submission form's requirement), and the two required gallery
   screenshots, captured live from the Flow canvas rather than mocked up.
-- **`docs/marketplace/build-submission-zip.sh` now also excludes `.gitignore`/`.gitattributes`**
-  from the packaged zip — Adobe's technical review rejects a submission containing either
-  ("Deprecated File found"), found only by an actual failed submission, not documented on the
-  public guidelines pages.
 
 ### Fixed
 
