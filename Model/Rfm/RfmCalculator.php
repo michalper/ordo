@@ -96,7 +96,10 @@ class RfmCalculator
     }
 
     /**
-     * Sum of grand_total across the customer's non-canceled orders.
+     * Sum of base_grand_total across the customer's non-canceled orders — base currency, not
+     * order currency, same reasoning as CreditLimitCalculator's own base_total_due choice: a
+     * customer with orders placed under more than one currency (multi-store/website-currency
+     * install) would otherwise have unrelated currencies summed into one meaningless number.
      */
     public function getMonetaryTotal(int $customerId): float
     {
@@ -105,7 +108,7 @@ class RfmCalculator
 
         $total = $connection->fetchOne(
             $connection->select()
-                ->from($orderTable, 'SUM(grand_total)')
+                ->from($orderTable, 'SUM(base_grand_total)')
                 ->where('customer_id = ?', $customerId)
                 ->where('state != ?', 'canceled')
         );
@@ -136,7 +139,7 @@ class RfmCalculator
                     ->from($orderTable, [
                         'customer_id' => 'customer_id',
                         'frequency' => 'COUNT(*)',
-                        'monetary' => 'SUM(grand_total)',
+                        'monetary' => 'SUM(base_grand_total)',
                         'last_order_at' => 'MAX(created_at)',
                     ])
                     ->where('state != ?', 'canceled')

@@ -634,7 +634,7 @@ class RfmCalculatorTest extends TestCase
             self::identicalTo([
                 'customer_id' => 'customer_id',
                 'frequency' => 'COUNT(*)',
-                'monetary' => 'SUM(grand_total)',
+                'monetary' => 'SUM(base_grand_total)',
                 'last_order_at' => 'MAX(created_at)',
             ])
         )->willReturnSelf();

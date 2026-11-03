@@ -127,6 +127,11 @@ class CampaignOutcomeLogger
      * the null/no-split variant, since array keys can't be null) — null $campaignId aggregates
      * across every campaign instead, one row per campaign_id+variant pair.
      *
+     * revenue sums base_grand_total, not grand_total — same reasoning as
+     * CreditLimitCalculator's own base_total_due choice: a multi-store install can have orders
+     * placed under more than one currency, and summing the order-currency grand_total would mix
+     * them into one meaningless number.
+     *
      * @return array<int, array{
      *     campaign_id: int,
      *     variant: string|null,
@@ -148,7 +153,7 @@ class CampaignOutcomeLogger
                 'variant',
                 'sent' => 'COUNT(*)',
                 'converted' => 'SUM(CASE WHEN o.acted_at IS NOT NULL THEN 1 ELSE 0 END)',
-                'revenue' => 'SUM(so.grand_total)',
+                'revenue' => 'SUM(so.base_grand_total)',
             ])
             ->joinLeft(['so' => $orderTable], 'so.entity_id = o.order_id', [])
             ->group(['campaign_id', 'variant']);
