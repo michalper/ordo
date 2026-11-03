@@ -143,6 +143,10 @@ class SegmentAndRfmScenarioTest extends TestCase
         $connection->insert($table, [
             'customer_id' => $customerId,
             'grand_total' => $grandTotal,
+            // RfmCalculator sums base_grand_total, not grand_total (multi-currency-safe - see
+            // its own docblock) - a real order always has both populated identically in this
+            // single-currency test store, so this raw-insert fixture needs to set both too.
+            'base_grand_total' => $grandTotal,
             'state' => $state,
             'status' => $state,
             'store_id' => $storeId,
