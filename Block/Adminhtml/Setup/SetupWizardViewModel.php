@@ -70,7 +70,13 @@ class SetupWizardViewModel implements ArgumentInterface
      */
     public function isComplete(): bool
     {
-        return array_all($this->getSteps(), fn ($step) => $step['done']);
+        foreach ($this->getSteps() as $step) {
+            if (!$step['done']) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function isChannelConfigured(): bool

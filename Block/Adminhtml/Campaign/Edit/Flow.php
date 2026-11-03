@@ -599,7 +599,7 @@ class Flow extends Template
     public function getFlowDataJson(): string
     {
         $campaign = $this->getCampaign();
-        if (!$campaign || !$campaign->getEntityId()) {
+        if (!$campaign instanceof Campaign || !$campaign->getEntityId()) {
             return '{}';
         }
 

@@ -23,7 +23,7 @@ reorder reminders — because they never had access to that data.
 
 ## Requirements
 
-- PHP 8.4 or 8.5
+- PHP 8.3, 8.4, or 8.5
 - Adobe Commerce / Magento Open Source 2.4.8 or 2.4.9
 
 ## Installation

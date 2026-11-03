@@ -7,7 +7,7 @@ use Rector\Set\ValueObject\SetList;
 
 /**
  * Check-only in CI (`composer rector-check`, `rector process --dry-run`) — flags dead code and
- * missed PHP 8.4+ modernizations without rewriting anything automatically. Deliberately NOT
+ * missed PHP 8.3+ modernizations without rewriting anything automatically. Deliberately NOT
  * running type-declaration/strict-typing set lists here: this is a Magento 2 module, and rules
  * that add/narrow property or parameter types can conflict with Magento's own magic getters
  * (AbstractModel::__call), DI-generated interceptors, and plugin method signatures that must
@@ -35,7 +35,7 @@ return RectorConfig::configure()
         __DIR__ . '/Setup',
         __DIR__ . '/Ui',
     ])
-    ->withPhpSets(php84: true)
+    ->withPhpSets(php83: true)
     ->withSets([
         SetList::DEAD_CODE,
         SetList::CODE_QUALITY,
@@ -56,7 +56,7 @@ return RectorConfig::configure()
         // confirmed via a real phpcs run that magento/magento-coding-standard doesn't yet
         // recognize PHP 8.2's class-level `readonly` modifier syntax ("Readonly classes are not
         // supported in PHP 8.1 or earlier" — a real phpcs sniff gap, not a project PHP-version
-        // constraint; composer.json already requires >=8.4). Per-property `public readonly`
+        // constraint; composer.json already requires >=8.3). Per-property `public readonly`
         // stays exactly as this rule would otherwise rewrite it away from.
         \Rector\Php82\Rector\Class_\ReadOnlyClassRector::class,
     ]);

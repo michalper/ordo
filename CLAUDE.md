@@ -16,7 +16,7 @@ segmentation, lead scoring/RFM). See `README.md` for the full feature list.
 This repo is **module source only** — no `vendor/`, not a runnable Magento install. It's consumed by a
 real Magento instance via a Composer path repository (`"options": {"symlink": false}`, so changes here are
 *copied*, not symlinked — see `AGENTS.md`/`CONTRIBUTING.md` for the `composer update` refresh step). PHP
-`>=8.4 <8.6`, targets Magento 2.4.8/2.4.9.
+`>=8.3 <8.6`, targets Magento 2.4.8/2.4.9.
 
 ## Architecture decisions
 
@@ -39,7 +39,7 @@ composer phpcs-check # phpcs alone (phpcbf doesn't fix 100% of its own violation
 php -d memory_limit=2G vendor/bin/phpstan analyse --no-progress
 # If a change shifts the suppressed-error count, regenerate phpstan-baseline.neon — don't hand-edit it.
 
-# Dead code / PHP 8.4 modernization checks (report-only, deliberately skips Api/ — see rector.php)
+# Dead code / PHP 8.3 modernization checks (report-only, deliberately skips Api/ — see rector.php)
 composer rector-check   # rector process --dry-run
 
 # Unit tests — no live Magento needed beyond framework classes on Composer

@@ -409,7 +409,13 @@ class CampaignDispatcher
         $actions->addCampaignFilter($campaignId);
         $actions->addFieldToFilter('sort_order', ['gteq' => $resumeRow->getSortOrder()]);
         $actions = array_values(iterator_to_array($actions));
-        $startIndex = array_find_key($actions, fn ($actionRow) => (int) $actionRow->getEntityId() === $resumeActionId);
+        $startIndex = null;
+        foreach ($actions as $index => $actionRow) {
+            if ((int) $actionRow->getEntityId() === $resumeActionId) {
+                $startIndex = $index;
+                break;
+            }
+        }
 
         // Same "nothing left to resume into" guard as above, for the (very unlikely) case where
         // the resume row itself still exists but no longer sorts as >= its own sort_order — e.g.
