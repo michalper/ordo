@@ -19,6 +19,8 @@ class CampaignOutcomeLoggerTest extends TestCase
         $select->method('joinLeft')->willReturnSelf();
         $select->method('group')->willReturnSelf();
         $select->method('where')->willReturnSelf();
+        $select->method('order')->willReturnSelf();
+        $select->method('limit')->willReturnSelf();
 
         return $select;
     }
@@ -116,6 +118,67 @@ class CampaignOutcomeLoggerTest extends TestCase
             ],
             $stats[1]
         );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testCatchUpMissedConversionsAttributesEarliestRealOrderAfterSentAt(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            ['entity_id' => '101', 'customer_id' => '42', 'sent_at' => '2026-01-01 00:00:00'],
+        ]);
+        $connection->method('fetchRow')->willReturn(['entity_id' => '555']);
+        $connection->expects(self::once())->method('update')->with(
+            'ordo_campaign_outcome_log',
+            self::callback(fn (array $data): bool => $data['order_id'] === 555 && isset($data['acted_at'])),
+            self::callback(function (array $where): bool {
+                return $where['entity_id = ?'] === 101 && in_array('acted_at IS NULL', $where, true);
+            })
+        );
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $logger = new CampaignOutcomeLogger($resourceConnection);
+        self::assertSame(1, $logger->catchUpMissedConversions());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testCatchUpMissedConversionsSkipsRowsWithNoMatchingOrderYet(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            ['entity_id' => '101', 'customer_id' => '42', 'sent_at' => '2026-01-01 00:00:00'],
+        ]);
+        $connection->method('fetchRow')->willReturn(false);
+        $connection->expects(self::never())->method('update');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $logger = new CampaignOutcomeLogger($resourceConnection);
+        self::assertSame(0, $logger->catchUpMissedConversions());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testCatchUpMissedConversionsReturnsZeroWhenNothingIsUnacted(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([]);
+        $connection->expects(self::never())->method('fetchRow');
+        $connection->expects(self::never())->method('update');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $logger = new CampaignOutcomeLogger($resourceConnection);
+        self::assertSame(0, $logger->catchUpMissedConversions());
     }
 
     #[AllowMockObjectsWithoutExpectations]

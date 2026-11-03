@@ -61,6 +61,67 @@ class CampaignOutcomeLogger
     }
 
     /**
+     * Retroactively closes the race Observer\RecordCampaignOutcome can miss: campaign dispatch
+     * is async (Model\Queue\CampaignDispatchPublisher, no RabbitMQ guarantee under the default
+     * DB queue driver — see AGENTS.md), so a customer's own next real order can save (firing
+     * sales_order_save_after) BEFORE this table even has a 'sent' row for that observer to mark
+     * — nothing re-checks it afterward in that path, so the conversion would otherwise be
+     * silently and permanently lost (see docs/adr/0012-campaign-conversion-catch-up-cron.md,
+     * confirmed via a real local reproduction: sent=1/converted=0 forever once the send lands
+     * after the order it should have been matched to). Cron\CatchUpCampaignConversions calls
+     * this periodically: for every still-un-acted row within the lookback window, attribute the
+     * earliest real order the customer placed after sent_at — same first-plausible-match
+     * semantics as markActed() itself, just evaluated later instead of at order-save time, and
+     * with an explicit sent_at/created_at ordering check since (unlike the real-time observer)
+     * this can't assume "any un-acted row was necessarily sent before now".
+     *
+     * @return int How many rows were caught up (0 if nothing was missed).
+     */
+    public function catchUpMissedConversions(int $lookbackDays = self::DEFAULT_LOOKBACK_DAYS): int
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $outcomeTable = $this->resourceConnection->getTableName('ordo_campaign_outcome_log');
+        $orderTable = $this->resourceConnection->getTableName('sales_order');
+        $cutoff = date('Y-m-d H:i:s', (int) strtotime("-{$lookbackDays} days"));
+
+        /** @var array<int, array{entity_id: string|int, customer_id: string|int, sent_at: string}> $rows */
+        $rows = $connection->fetchAll(
+            $connection->select()
+                ->from($outcomeTable, ['entity_id', 'customer_id', 'sent_at'])
+                ->where('acted_at IS NULL')
+                ->where('sent_at >= ?', $cutoff)
+        );
+
+        $caughtUp = 0;
+        foreach ($rows as $row) {
+            $order = $connection->fetchRow(
+                $connection->select()
+                    ->from($orderTable, ['entity_id'])
+                    ->where('customer_id = ?', (int) $row['customer_id'])
+                    ->where('created_at > ?', $row['sent_at'])
+                    ->order('created_at ASC')
+                    ->limit(1)
+            );
+
+            if (!$order) {
+                continue;
+            }
+
+            $connection->update(
+                $outcomeTable,
+                ['acted_at' => date('Y-m-d H:i:s'), 'order_id' => (int) $order['entity_id']],
+                [
+                    'entity_id = ?' => (int) $row['entity_id'],
+                    'acted_at IS NULL',
+                ]
+            );
+            $caughtUp++;
+        }
+
+        return $caughtUp;
+    }
+
+    /**
      * Sent/converted/conversion_rate/revenue, grouped by variant (empty-string key '' used for
      * the null/no-split variant, since array keys can't be null) — null $campaignId aggregates
      * across every campaign instead, one row per campaign_id+variant pair.
