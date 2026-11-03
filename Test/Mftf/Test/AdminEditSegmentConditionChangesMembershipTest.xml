@@ -12,6 +12,11 @@
             <group value="segment"/>
         </annotations>
         <before>
+            <!-- See AdminCampaignTagAddedTriggerTest.xml's identical fix for the full story:
+                 Observer\EvaluateCustomerScoreRules no-ops unless this is on, it has no default
+                 value anywhere, and it's off on a fresh install - self-contained here rather than
+                 relying on another test in the same CI job leaving it on. -->
+            <magentoCLI command="config:set ordo_scoring/lead_scoring/enabled 1" stepKey="enableLeadScoring"/>
             <createData entity="SimpleProduct2" stepKey="createProduct"/>
             <createData entity="ApiSalesRule" stepKey="createRule"/>
             <!-- Requires cataloginventory_stock/catalog_product_price/catalog_product_attribute/
@@ -21,6 +26,7 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
+            <magentoCLI command="config:set ordo_scoring/lead_scoring/enabled 0" stepKey="disableLeadScoring"/>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
             <deleteData createDataKey="createRule" stepKey="deleteRule"/>

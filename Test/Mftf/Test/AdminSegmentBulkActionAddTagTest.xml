@@ -12,9 +12,15 @@
             <group value="segment"/>
         </annotations>
         <before>
+            <!-- See AdminCampaignTagAddedTriggerTest.xml's identical fix for the full story:
+                 Observer\EvaluateCustomerScoreRules no-ops unless this is on, it has no default
+                 value anywhere, and it's off on a fresh install - self-contained here rather than
+                 relying on another test in the same CI job leaving it on. -->
+            <magentoCLI command="config:set ordo_scoring/lead_scoring/enabled 1" stepKey="enableLeadScoring"/>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
+            <magentoCLI command="config:set ordo_scoring/lead_scoring/enabled 0" stepKey="disableLeadScoring"/>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
