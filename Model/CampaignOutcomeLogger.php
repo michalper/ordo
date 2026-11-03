@@ -94,6 +94,7 @@ class CampaignOutcomeLogger
 
         $caughtUp = 0;
         foreach ($rows as $row) {
+            /** @var array{entity_id: string|int}|false $order */
             $order = $connection->fetchRow(
                 $connection->select()
                     ->from($orderTable, ['entity_id'])
