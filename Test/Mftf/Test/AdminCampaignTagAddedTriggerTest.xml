@@ -12,10 +12,24 @@
             <group value="dashboard"/>
         </annotations>
         <before>
+            <!-- Observer\EvaluateCustomerScoreRules (what actually awards the score rule's
+                 points on customer_save_after, making the customer a genuine score_at_least
+                 segment member below) no-ops entirely unless this master switch is on — and it
+                 has no default value anywhere (no etc/config.xml), so it's off on a fresh
+                 install. Without this step the segment never has any matching member, the bulk
+                 action's own ".message-success" never appears (a ".message-warning" "No
+                 customers currently match this segment." shows instead), and this test fails at
+                 seeQueuedMessage below — a real, previously-undiscovered gap this session's own
+                 MFTF Vendor Supplied CI run caught (AdminSegmentBulkActionAddTagTest.xml's own
+                 identical reliance on score_at_least only happened to pass in that same run
+                 because an earlier test in the same CI job left this config enabled — not
+                 something this test can depend on in isolation). -->
+            <magentoCLI command="config:set ordo_scoring/lead_scoring/enabled 1" stepKey="enableLeadScoring"/>
             <createData entity="ApiSalesRule" stepKey="createRule"/>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
+            <magentoCLI command="config:set ordo_scoring/lead_scoring/enabled 0" stepKey="disableLeadScoring"/>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <deleteData createDataKey="createRule" stepKey="deleteRule"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
