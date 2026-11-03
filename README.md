@@ -66,6 +66,17 @@ access to that data.
 
 Every feature has its own config toggle under **Stores → Configuration → Ordo Automation** and its own cron job.
 
+## Compatibility
+
+- **Hyvä** — every storefront-facing piece (on-site tracking snippet, Web Push service worker, popup/notification/
+  survey widgets, the account-area "My Offers" page) is hand-written, dependency-free JavaScript and plain server-
+  rendered HTML — no jQuery, Knockout, `x-magento-init`, or RequireJS module anywhere in `view/frontend/`, so none
+  of it depends on Luma's JS stack. No separate `hyva-themes/*` compatibility module is needed. If your Hyvä
+  theme's own `tailwind.config.js` purges unused classes, add this module's `view/frontend` directory to its
+  `content` array so the few Tailwind utility classes in `offer/index.phtml` survive the build.
+- **Multi-store** — config reads, segment/scoring, and campaign matching are not yet fully store/website-scoped;
+  see [ROADMAP.md](ROADMAP.md) for the current gap list.
+
 ## Install
 
 ```bash

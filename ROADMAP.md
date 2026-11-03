@@ -36,16 +36,13 @@ is concentrated in multi-store; PHP 8.3 and Hyvä were mostly already fine or tr
    grand_total`, commit `bae15b5`): `CampaignOutcomeLogger::getStats()` and
    `RfmCalculator::getMonetaryTotal()`/`getAggregatesForAllCustomers()` now sum
    `base_grand_total`, same reasoning as `CreditLimitCalculator`'s existing `base_total_due` use.
-3. **Hyvä — write-up only, not yet done.** The scan found Ordo is already Hyvä-compatible by
-   design: every storefront JS/controller is vanilla `fetch`/DOM (`tracker.js`, `push-sw.js`), no
-   jQuery/Knockout/`x-magento-init`/RequireJS anywhere under `view/frontend/`, layout XML only
-   targets core cross-theme containers. The one soft spot: `view/frontend/templates/offer/index.phtml`
-   ("My Offers" account page) uses Luma CSS classes, so it renders functionally correct but
-   unstyled on Hyvä's Tailwind account pages. Remaining:
-   - Add Tailwind utility classes alongside the existing Luma ones in `offer/index.phtml` (or a
-     theme-conditional block) — cosmetic, not a rewrite.
-   - State "tested/compatible with Hyvä" in `README.md`/`README.pl.md` and
-     `docs/marketplace/USER-GUIDE.md` — this is answerable truthfully today, just not yet written.
+3. ~~**Hyvä**~~ — done: Ordo was already Hyvä-compatible by design (every storefront JS/controller
+   is vanilla `fetch`/DOM, no jQuery/Knockout/`x-magento-init`/RequireJS anywhere under
+   `view/frontend/`). Added Tailwind utility classes alongside the existing Luma ones in
+   `offer/index.phtml` (inert on Luma, styles the same markup on Hyvä) and a `## Compatibility`
+   section in `README.md`/`README.pl.md` plus `docs/marketplace/USER-GUIDE.md`'s Requirements,
+   including the caveat that a Hyvä theme purging unused Tailwind classes needs this module's
+   `view/frontend` added to its `tailwind.config.js` `content` array.
 4. **Multi-store store-scoped sends — not yet done.** `Observer\HoldOrderForApproval`/
    `Cron\EscalateStalePendingApprovals` already have the right pattern (resolve `$order->getStore()`,
    not Magento's ambient "current store"). Apply it everywhere else that still defaults to the

@@ -5,43 +5,49 @@
 $viewModel = $block->getData('view_model');
 $offers = $viewModel->getOffers();
 ?>
-<div class="block block-ordo-offers">
-    <div class="block-title">
+<!--
+    Luma classes (block, data table table-order-items, action extend primary, ...) style this on
+    Luma/blank; the lg:/text-*/px-*/py-* Tailwind utility classes alongside them are inert on Luma
+    (unknown classes, no effect) but style the same markup on Hyvä, which doesn't load Luma's CSS
+    at all - no separate hyva-themes/* compatibility module needed for a page this simple.
+-->
+<div class="block block-ordo-offers lg:mb-4">
+    <div class="block-title lg:mb-4 lg:text-lg lg:font-semibold">
         <strong><?= $escaper->escapeHtml(__('My Offers')) ?></strong>
     </div>
     <div class="block-content">
         <?php if (empty($offers)): ?>
             <p><?= $escaper->escapeHtml(__('You have no offers yet.')) ?></p>
         <?php else: ?>
-            <table class="data table table-order-items" id="ordo-offers-table">
-                <caption class="table-caption"><?= $escaper->escapeHtml(__('My Offers')) ?></caption>
+            <table class="data table table-order-items lg:w-full lg:border-collapse" id="ordo-offers-table">
+                <caption class="table-caption lg:sr-only"><?= $escaper->escapeHtml(__('My Offers')) ?></caption>
                 <thead>
                     <tr>
-                        <th scope="col" class="col reference"><?= $escaper->escapeHtml(__('Reference')) ?></th>
-                        <th scope="col" class="col status"><?= $escaper->escapeHtml(__('Status')) ?></th>
-                        <th scope="col" class="col total"><?= $escaper->escapeHtml(__('Total')) ?></th>
-                        <th scope="col" class="col expires"><?= $escaper->escapeHtml(__('Expires')) ?></th>
-                        <th scope="col" class="col actions"><?= $escaper->escapeHtml(__('Actions')) ?></th>
+                        <th scope="col" class="col reference lg:border-b lg:p-2 lg:text-left"><?= $escaper->escapeHtml(__('Reference')) ?></th>
+                        <th scope="col" class="col status lg:border-b lg:p-2 lg:text-left"><?= $escaper->escapeHtml(__('Status')) ?></th>
+                        <th scope="col" class="col total lg:border-b lg:p-2 lg:text-left"><?= $escaper->escapeHtml(__('Total')) ?></th>
+                        <th scope="col" class="col expires lg:border-b lg:p-2 lg:text-left"><?= $escaper->escapeHtml(__('Expires')) ?></th>
+                        <th scope="col" class="col actions lg:border-b lg:p-2 lg:text-left"><?= $escaper->escapeHtml(__('Actions')) ?></th>
                     </tr>
                 </thead>
                 <tbody>
                 <?php foreach ($offers as $offer): ?>
                     <tr>
-                        <td data-th="<?= $escaper->escapeHtmlAttr(__('Reference')) ?>">
+                        <td data-th="<?= $escaper->escapeHtmlAttr(__('Reference')) ?>" class="lg:border-b lg:p-2">
                             <?= $escaper->escapeHtml($offer->getReference()) ?>
                         </td>
-                        <td data-th="<?= $escaper->escapeHtmlAttr(__('Status')) ?>">
+                        <td data-th="<?= $escaper->escapeHtmlAttr(__('Status')) ?>" class="lg:border-b lg:p-2">
                             <?= $escaper->escapeHtml($offer->getStatus()) ?>
                         </td>
-                        <td data-th="<?= $escaper->escapeHtmlAttr(__('Total')) ?>">
+                        <td data-th="<?= $escaper->escapeHtmlAttr(__('Total')) ?>" class="lg:border-b lg:p-2">
                             <?= $escaper->escapeHtml(
                                 $offer->getCurrencyCode() . ' ' . number_format($offer->getTotal(), 2)
                             ) ?>
                         </td>
-                        <td data-th="<?= $escaper->escapeHtmlAttr(__('Expires')) ?>">
+                        <td data-th="<?= $escaper->escapeHtmlAttr(__('Expires')) ?>" class="lg:border-b lg:p-2">
                             <?= $escaper->escapeHtml($offer->getExpiresAt()) ?>
                         </td>
-                        <td data-th="<?= $escaper->escapeHtmlAttr(__('Actions')) ?>">
+                        <td data-th="<?= $escaper->escapeHtmlAttr(__('Actions')) ?>" class="lg:border-b lg:p-2">
                             <?php if ($viewModel->canSelfExtend($offer)): ?>
                                 <?php $extendLabel = __('Extend by %1 day(s)', $viewModel->getSelfExtensionDays()); ?>
                                 <form
@@ -50,7 +56,7 @@ $offers = $viewModel->getOffers();
                                 >
                                     <?= $block->getBlockHtml('formkey') ?>
                                     <input type="hidden" name="offer_id" value="<?= (int) $offer->getEntityId() ?>"/>
-                                    <button type="submit" class="action extend primary">
+                                    <button type="submit" class="action extend primary lg:rounded lg:bg-gray-800 lg:px-3 lg:py-1 lg:text-white">
                                         <span><?= $escaper->escapeHtml($extendLabel) ?></span>
                                     </button>
                                 </form>

@@ -25,6 +25,12 @@ reorder reminders — because they never had access to that data.
 
 - PHP 8.3, 8.4, or 8.5
 - Adobe Commerce / Magento Open Source 2.4.8 or 2.4.9
+- Frontend theme: Luma/blank, or Hyvä. Every storefront-facing piece (tracking snippet, Web Push
+  service worker, popup/notification/survey widgets, the "My Offers" account page) is vanilla
+  JavaScript and plain server-rendered HTML with no Luma-specific JS dependency, so it works on
+  Hyvä without a separate compatibility module. If your Hyvä theme purges unused Tailwind classes
+  at build time, add this module's `view/frontend` directory to its `tailwind.config.js` `content`
+  array.
 
 ## Installation
 

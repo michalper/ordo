@@ -62,6 +62,18 @@ strukturalnie nie widzą.
 
 Każda funkcja ma własny przełącznik w **Stores → Configuration → Ordo Automation** i własne zadanie cron.
 
+## Kompatybilność
+
+- **Hyvä** — każdy element po stronie sklepu (skrypt do śledzenia zachowań, service worker Web Push, widgety
+  popup/powiadomień/ankiet, strona "Moje oferty" w panelu klienta) to ręcznie pisany, bezzależnościowy JavaScript
+  i zwykły HTML renderowany po stronie serwera — żadnego jQuery, Knockout, `x-magento-init` ani modułu RequireJS
+  w `view/frontend/`, więc nic z tego nie opiera się na stosie JS Lumy. Nie jest potrzebny osobny moduł
+  kompatybilności `hyva-themes/*`. Jeśli Twój motyw Hyvä ma skonfigurowane czyszczenie nieużywanych klas w
+  `tailwind.config.js`, dodaj katalog `view/frontend` tego modułu do tablicy `content`, żeby kilka klas
+  narzędziowych Tailwinda w `offer/index.phtml` przetrwało build.
+- **Multi-store** — odczyty konfiguracji, segmentacja/scoring i dopasowywanie kampanii nie są jeszcze w pełni
+  przypisane do konkretnego store'u/witryny; aktualna lista braków jest w [ROADMAP.md](ROADMAP.md).
+
 ## Instalacja
 
 ```bash
