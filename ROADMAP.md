@@ -7,35 +7,6 @@ detail see [CHANGELOG.md](docs/CHANGELOG.md) and [VERIFICATION.md](VERIFICATION.
 Ownership split: B2B direction is scoped by the technical/architecture side (this repo's maintainer); B2C direction is
 scoped from real hands-on marketing automation experience.
 
-## MFTF `dashboard` group — lead_scoring config isn't self-contained per test
-
-Nightly MFTF run `github.com/michalper/ordo/actions/runs/41618312182` failed 3 tests in the
-`dashboard` group (`AdminDisableScoreRuleStopsContributingTest`, `AdminScoreRuleNotEqualsAndContainsOperatorsTest`,
-cascading data-key errors from both). Root cause: `AdminCampaignTagAddedTriggerTest.xml`'s own fix
-(commit `8705bde`, closing issue #261's lead-scoring gap — see that section below) correctly
-enables/disables `ordo_scoring/lead_scoring/enabled` around itself, but **9 of the 10 MFTF tests
-that create score rules never manage this config themselves** — they silently relied on whichever
-test happened to run first in the same CI job leaving it enabled. Turning it off in one test's
-`<after>` now starves any sibling that runs afterward and assumed it was still on.
-
-Confirmed via `grep -l "ordo/scorerule/new\|scorerule" Test/Mftf/Test/*.xml`, cross-checked against
-which already have a `lead_scoring` config:set — only `AdminCampaignTagAddedTriggerTest.xml` and
-`AdminLoyaltyTierAtLeastConditionTest.xml` do. Missing the same `config:set
-ordo_scoring/lead_scoring/enabled 1` in `<before>` / `0` in `<after>` pattern:
-
-- `AdminCampaignNpsSurveyActionTest.xml`
-- `AdminCampaignScoreAtLeastConditionTest.xml`
-- `AdminDeleteScoreRuleStopsContributingTest.xml`
-- `AdminEditSegmentConditionChangesMembershipTest.xml`
-- `AdminDisableScoreRuleStopsContributingTest.xml`
-- `AdminScoreRuleNotEqualsAndContainsOperatorsTest.xml`
-- `AdminSegmentBulkActionAddTagTest.xml`
-- `AdminSegmentBulkActionAddPointsTest.xml`
-- `AdminScoreThresholdCampaignTest.xml`
-
-Add the same pattern to all 9 (each test becomes self-contained regardless of execution order),
-verify the XML, then re-run (or wait for) the `dashboard` MFTF group to confirm green.
-
 ## Test coverage
 
 - Ad-audience sync (`Cron\SyncAdAudiences`) has no test against a real Google Ads/Meta account — request/response
