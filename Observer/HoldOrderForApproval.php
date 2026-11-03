@@ -46,13 +46,15 @@ class HoldOrderForApproval implements ObserverInterface
 
     public function execute(EventObserver $observer): void
     {
-        if (!$this->config->isOrderApprovalEnabled()) {
-            return;
-        }
-
         /** @var Order $order */
         $order = $observer->getEvent()->getOrder();
         if (!$order) {
+            return;
+        }
+
+        // This order's own store, not the ambient ScopeInterface::SCOPE_STORE default - same
+        // reasoning as sendApprovalRequestEmail()'s own $order->getStore() use below.
+        if (!$this->config->isOrderApprovalEnabled((int) $order->getStore()->getId())) {
             return;
         }
 

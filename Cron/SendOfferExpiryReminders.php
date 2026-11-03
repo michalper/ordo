@@ -11,6 +11,7 @@ use Ordo\Automation\Model\Cron\CronRunLogger;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\Cron\ReminderLogStore;
 use Ordo\Automation\Model\CustomerMapBuilder;
+use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\Offer;
 use Ordo\Automation\Model\ResourceModel\Offer\CollectionFactory as OfferCollectionFactory;
 use Ordo\Automation\Model\SalesRepEmailContext;
@@ -37,7 +38,8 @@ class SendOfferExpiryReminders
         private readonly SalesRepEmailContext $salesRepEmailContext,
         private readonly ConsentManager $consentManager,
         private readonly TriggerOutcomeLogger $triggerOutcomeLogger,
-        private readonly CronRunLogger $cronRunLogger
+        private readonly CronRunLogger $cronRunLogger,
+        private readonly CustomerStoreResolver $customerStoreResolver
     ) {
     }
 
@@ -108,7 +110,8 @@ class SendOfferExpiryReminders
                     self::XML_PATH_EMAIL_TEMPLATE,
                     $this->buildTemplateVars($offer, $customer),
                     $customer->getEmail(),
-                    $customer->getFirstname()
+                    $customer->getFirstname(),
+                    $this->emailSender->getStore($this->customerStoreResolver->resolveStoreId($customer))
                 );
                 $this->triggerOutcomeLogger->logSent(TriggerOutcomeLogger::TRIGGER_OFFER_EXPIRY, $customerId);
                 $sent++;

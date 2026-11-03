@@ -15,6 +15,7 @@ use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\Campaign\SendTimeOptimizationGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\Email\MessageIdGenerator;
 use Ordo\Automation\Model\Email\PendingMessageIdHolder;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
@@ -66,7 +67,8 @@ class SendEmail implements ActionInterface
         private readonly MessageLogWriter $messageLogWriter,
         private readonly SendRetrier $sendRetrier,
         private readonly MessageSendRetryQueue $messageSendRetryQueue,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly CustomerStoreResolver $customerStoreResolver
     ) {
     }
 
@@ -119,7 +121,11 @@ class SendEmail implements ActionInterface
             return;
         }
 
-        $store = $this->storeManager->getStore();
+        // The customer's own store, not Magento's ambient "current store" - in a cron/CLI
+        // dispatch context (which this always is, see ADR 0001) that ambient store is whatever
+        // happens to be first/default, wrong for any customer not actually on that store.
+        // getStore() falls back to the current store if the resolved id is null, same as before.
+        $store = $this->storeManager->getStore($this->customerStoreResolver->resolveStoreId($customer));
         $templateVars = array_merge(
             array_filter($context, is_scalar(...)),
             [

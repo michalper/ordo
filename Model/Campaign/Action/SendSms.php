@@ -11,6 +11,7 @@ use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
 use Ordo\Automation\Model\Sms\OptedOutException;
 use Ordo\Automation\Model\Sms\SmsSenderInterface;
@@ -58,7 +59,8 @@ class SendSms implements ActionInterface
         private readonly FrequencyCapGate $frequencyCapGate,
         private readonly SendRetrier $sendRetrier,
         private readonly MessageSendRetryQueue $messageSendRetryQueue,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly CustomerStoreResolver $customerStoreResolver
     ) {
     }
 
@@ -73,14 +75,17 @@ class SendSms implements ActionInterface
             return;
         }
 
-        if (!$this->config->isSmsEnabled()) {
-            $this->logger->debug('Ordo_Automation: send_sms action skipped, SMS sending is disabled in config.');
-            return;
-        }
-
         try {
             $customer = $this->customerRepository->getById($customerId);
         } catch (Throwable $e) {
+            return;
+        }
+
+        // The customer's own store, not Magento's ambient "current store" - see SendEmail's
+        // identical reasoning. Fetched before the config check (unlike before) specifically so
+        // this check is store-scoped too.
+        if (!$this->config->isSmsEnabled($this->customerStoreResolver->resolveStoreId($customer))) {
+            $this->logger->debug('Ordo_Automation: send_sms action skipped, SMS sending is disabled in config.');
             return;
         }
 

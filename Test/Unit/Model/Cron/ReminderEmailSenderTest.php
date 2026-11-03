@@ -122,6 +122,23 @@ class ReminderEmailSenderTest extends TestCase
         self::assertSame($store, $sender->getStore());
     }
 
+    public function testGetStoreWithAnIdResolvesThatSpecificStore(): void
+    {
+        $store = $this->createStub(Store::class);
+
+        $storeManager = $this->createMock(StoreManagerInterface::class);
+        $storeManager->expects(self::once())->method('getStore')->with(7)->willReturn($store);
+
+        $sender = new ReminderEmailSender(
+            $this->createStub(TransportBuilder::class),
+            $storeManager,
+            $this->createStub(StateInterface::class),
+            new PendingMessageIdHolder()
+        );
+
+        self::assertSame($store, $sender->getStore(7));
+    }
+
     /**
      * The optional Message-ID path: the id is held for Plugin\Email\EmailMessageMessageIdPlugin
      * exactly for the duration of the send, then consumed — even when the transport throws, so

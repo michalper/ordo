@@ -19,6 +19,7 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\CustomerMapBuilder;
+use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\Email\PendingMessageIdHolder;
 use Ordo\Automation\Model\CustomerTagManager;
@@ -72,6 +73,14 @@ class SendWinBackEmailsTest extends TestCase
         return $consentManager;
     }
 
+    private function makeCustomerStoreResolver(): CustomerStoreResolver
+    {
+        $resolver = $this->createStub(CustomerStoreResolver::class);
+        $resolver->method('resolveStoreId')->willReturn(null);
+
+        return $resolver;
+    }
+
     private function makeWorkingTransportBuilder(): TransportBuilder
     {
         $transportBuilder = $this->createStub(TransportBuilder::class);
@@ -116,7 +125,8 @@ class SendWinBackEmailsTest extends TestCase
             $emailSender,
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            $this->makeCronRunLogger($logger)
+            $this->makeCronRunLogger($logger),
+            $this->makeCustomerStoreResolver()
         ))->execute();
     }
 
@@ -179,7 +189,8 @@ class SendWinBackEmailsTest extends TestCase
             $this->makeEmailSender($transportBuilder),
             $consentManager,
             $this->createStub(TriggerOutcomeLogger::class),
-            $this->makeCronRunLogger($this->createStub(LoggerInterface::class))
+            $this->makeCronRunLogger($this->createStub(LoggerInterface::class)),
+            $this->makeCustomerStoreResolver()
         ))->execute();
     }
 
@@ -214,7 +225,8 @@ class SendWinBackEmailsTest extends TestCase
             $this->makeEmailSender($transportBuilder),
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            $this->makeCronRunLogger($logger)
+            $this->makeCronRunLogger($logger),
+            $this->makeCustomerStoreResolver()
         ))->execute();
     }
 
@@ -241,7 +253,8 @@ class SendWinBackEmailsTest extends TestCase
             $this->makeEmailSender($this->createStub(TransportBuilder::class)),
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            $this->makeCronRunLogger($logger)
+            $this->makeCronRunLogger($logger),
+            $this->makeCustomerStoreResolver()
         ))->execute();
     }
 
@@ -262,7 +275,8 @@ class SendWinBackEmailsTest extends TestCase
             $emailSender,
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            $this->makeCronRunLogger($this->createStub(LoggerInterface::class))
+            $this->makeCronRunLogger($this->createStub(LoggerInterface::class)),
+            $this->makeCustomerStoreResolver()
         );
     }
 }

@@ -9,6 +9,7 @@ use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Cron\CronRunLogger;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\CustomerMapBuilder;
+use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Model\TriggerOutcomeLogger;
 
@@ -29,7 +30,8 @@ class SendWinBackEmails
         private readonly ReminderEmailSender $emailSender,
         private readonly ConsentManager $consentManager,
         private readonly TriggerOutcomeLogger $triggerOutcomeLogger,
-        private readonly CronRunLogger $cronRunLogger
+        private readonly CronRunLogger $cronRunLogger,
+        private readonly CustomerStoreResolver $customerStoreResolver
     ) {
     }
 
@@ -76,7 +78,8 @@ class SendWinBackEmails
                     self::XML_PATH_EMAIL_TEMPLATE,
                     ['customer_name' => $customer->getFirstname()],
                     $customer->getEmail(),
-                    $customer->getFirstname()
+                    $customer->getFirstname(),
+                    $this->emailSender->getStore($this->customerStoreResolver->resolveStoreId($customer))
                 );
                 $this->triggerOutcomeLogger->logSent(TriggerOutcomeLogger::TRIGGER_WIN_BACK, $customerId);
                 $sent++;

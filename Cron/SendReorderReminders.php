@@ -11,6 +11,7 @@ use Ordo\Automation\Model\Cron\CronRunLogger;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\Cron\ReminderLogStore;
 use Ordo\Automation\Model\CustomerMapBuilder;
+use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\ReorderCycle;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory as ReorderCycleCollectionFactory;
 use Ordo\Automation\Model\SalesRepEmailContext;
@@ -35,7 +36,8 @@ class SendReorderReminders
         private readonly SalesRepEmailContext $salesRepEmailContext,
         private readonly ConsentManager $consentManager,
         private readonly TriggerOutcomeLogger $triggerOutcomeLogger,
-        private readonly CronRunLogger $cronRunLogger
+        private readonly CronRunLogger $cronRunLogger,
+        private readonly CustomerStoreResolver $customerStoreResolver
     ) {
     }
 
@@ -104,7 +106,8 @@ class SendReorderReminders
                     self::XML_PATH_EMAIL_TEMPLATE,
                     $this->buildTemplateVars($cycle, $customer),
                     $customer->getEmail(),
-                    $customer->getFirstname()
+                    $customer->getFirstname(),
+                    $this->emailSender->getStore($this->customerStoreResolver->resolveStoreId($customer))
                 );
                 $this->triggerOutcomeLogger->logSent(TriggerOutcomeLogger::TRIGGER_REORDER_REMINDER, $customerId);
                 $sent++;

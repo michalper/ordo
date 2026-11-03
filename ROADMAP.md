@@ -43,24 +43,21 @@ is concentrated in multi-store; PHP 8.3 and Hyvä were mostly already fine or tr
    section in `README.md`/`README.pl.md` plus `docs/marketplace/USER-GUIDE.md`'s Requirements,
    including the caveat that a Hyvä theme purging unused Tailwind classes needs this module's
    `view/frontend` added to its `tailwind.config.js` `content` array.
-4. **Multi-store store-scoped sends — not yet done.** `Observer\HoldOrderForApproval`/
-   `Cron\EscalateStalePendingApprovals` already have the right pattern (resolve `$order->getStore()`,
-   not Magento's ambient "current store"). Apply it everywhere else that still defaults to the
-   ambient store, which in a cron/CLI context is arbitrary (first/default store) — wrong for any
-   customer not on that store:
-   - `Model/Campaign/Action/SendEmail.php:~121` — `$store = $this->storeManager->getStore();`
-     takes no argument; resolve the customer's/order's actual store and pass it to
-     `setTemplateOptions()`/`setFromByScope()`.
-   - `Model/Campaign/Action/SendSms.php` — no store resolution at all for its `Helper\Config` reads.
-   - `Model/Cron/ReminderEmailSender.php` and its callers (`SendReorderReminders`,
-     `SendAbandonedCartReminders`, `SendWinBackEmails`, `SendOfferExpiryReminders`,
-     `SendCreditLimitAlerts`, `SendSalesRepDigest`) — each should resolve its own row's real store
-     before calling it, instead of relying on the default.
-   - `Cron/SendReorderReminders.php` / `Cron/SendAbandonedCartReminders.php` `execute()` — several
-     `Helper\Config` reads (`isReorderReminderEnabled()`, `getAbandonedCartDelayMinutes()`, etc.)
-     gate/configure the whole batch with one global value instead of per-customer's resolved store.
-   - `Observer/HoldOrderForApproval.php` — `isOrderApprovalEnabled()` itself is still called with
-     no store id, even though the email-link code right next to it already resolves one.
+4. ~~**Multi-store store-scoped sends**~~ — done (`docs/adr/0013-store-scoped-customer-facing-sends.md`):
+   `SendEmail`/`SendSms` and the `SendReorderReminders`/`SendWinBackEmails`/`SendOfferExpiryReminders`/
+   `SendCreditLimitAlerts` reminder crons now resolve the recipient customer's own store (via new
+   `Model\CustomerStoreResolver`, needed because `CustomerInterface::getStoreId()` has no return
+   type and can come back as a numeric string - confirmed via a real integration-test `TypeError`)
+   instead of Magento's ambient "current store" or an un-scoped config read.
+   `SendAbandonedCartReminders` uses the abandoned quote's own store id directly.
+   `Observer\HoldOrderForApproval::isOrderApprovalEnabled()` now also receives the order's own
+   store id. `Cron\SendSalesRepDigest` is deliberately left as-is (see the ADR: it aggregates
+   across potentially many different customers' stores into one per-rep digest, so there's no
+   single customer store to resolve for it). Two integration test fixtures
+   (`CampaignSendSmsActionTest`, `SendAbandonedCartFallbackRemindersTest`) needed a matching fix:
+   they set `ordo_channels/sms/enabled` via `MutableScopeConfig::setValue(..., SCOPE_STORE)` with
+   no explicit scope code, which only ever worked by coincidence against the previous, un-scoped
+   production read.
 5. **Campaign/segment/score-rule website scoping — explicitly deferred, not a quick fix.**
    `ordo_campaign`, `ordo_segment`, `ordo_score_rule` have no `store_id`/`website_id` column at
    all — a campaign or segment matches identically regardless of which store/website a customer

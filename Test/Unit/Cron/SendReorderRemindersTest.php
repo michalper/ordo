@@ -21,6 +21,7 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\CustomerMapBuilder;
+use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\Email\PendingMessageIdHolder;
 use Ordo\Automation\Model\Cron\ReminderLogStore;
@@ -107,6 +108,14 @@ class SendReorderRemindersTest extends TestCase
         );
 
         return $consentManager;
+    }
+
+    private function makeCustomerStoreResolver(): CustomerStoreResolver
+    {
+        $resolver = $this->createStub(CustomerStoreResolver::class);
+        $resolver->method('resolveStoreId')->willReturn(null);
+
+        return $resolver;
     }
 
     public function testExecuteSkipsWhenDisabled(): void
@@ -244,7 +253,8 @@ class SendReorderRemindersTest extends TestCase
             $this->createStub(SalesRepEmailContext::class),
             $consentManager,
             $this->createStub(TriggerOutcomeLogger::class),
-            $this->makeCronRunLogger($this->createStub(LoggerInterface::class))
+            $this->makeCronRunLogger($this->createStub(LoggerInterface::class)),
+            $this->makeCustomerStoreResolver()
         ))->execute();
     }
 
@@ -347,7 +357,8 @@ class SendReorderRemindersTest extends TestCase
             $this->createStub(SalesRepEmailContext::class),
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            $this->makeCronRunLogger($logger)
+            $this->makeCronRunLogger($logger),
+            $this->makeCustomerStoreResolver()
         ))->execute();
     }
 
@@ -397,7 +408,8 @@ class SendReorderRemindersTest extends TestCase
             $this->createStub(SalesRepEmailContext::class),
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            $this->makeCronRunLogger($logger)
+            $this->makeCronRunLogger($logger),
+            $this->makeCustomerStoreResolver()
         ))->execute();
     }
 
@@ -439,7 +451,8 @@ class SendReorderRemindersTest extends TestCase
             $salesRepEmailContext,
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            $this->makeCronRunLogger($logger ?? $this->createStub(LoggerInterface::class))
+            $this->makeCronRunLogger($logger ?? $this->createStub(LoggerInterface::class)),
+            $this->makeCustomerStoreResolver()
         );
     }
 }

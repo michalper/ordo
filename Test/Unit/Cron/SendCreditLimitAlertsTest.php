@@ -25,6 +25,7 @@ use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\Email\PendingMessageIdHolder;
 use Ordo\Automation\Model\Cron\ReminderLogStore;
 use Ordo\Automation\Model\CustomerMapBuilder;
+use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\SalesRepEmailContext;
 use Ordo\Automation\Model\TriggerOutcomeLogger;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -108,6 +109,14 @@ class SendCreditLimitAlertsTest extends TestCase
         );
 
         return $consentManager;
+    }
+
+    private function makeCustomerStoreResolver(): CustomerStoreResolver
+    {
+        $resolver = $this->createStub(CustomerStoreResolver::class);
+        $resolver->method('resolveStoreId')->willReturn(null);
+
+        return $resolver;
     }
 
     public function testExecuteSkipsWhenDisabled(): void
@@ -228,7 +237,8 @@ class SendCreditLimitAlertsTest extends TestCase
             $this->createStub(SalesRepEmailContext::class),
             $consentManager,
             $this->createStub(TriggerOutcomeLogger::class),
-            $this->makeCronRunLogger($this->createStub(LoggerInterface::class))
+            $this->makeCronRunLogger($this->createStub(LoggerInterface::class)),
+            $this->makeCustomerStoreResolver()
         ))->execute();
     }
 
@@ -332,7 +342,8 @@ class SendCreditLimitAlertsTest extends TestCase
             $salesRepEmailContext,
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            $this->makeCronRunLogger($logger)
+            $this->makeCronRunLogger($logger),
+            $this->makeCustomerStoreResolver()
         ))->execute();
     }
 
@@ -377,7 +388,8 @@ class SendCreditLimitAlertsTest extends TestCase
             $this->createStub(SalesRepEmailContext::class),
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            $this->makeCronRunLogger($logger)
+            $this->makeCronRunLogger($logger),
+            $this->makeCustomerStoreResolver()
         ))->execute();
     }
 
@@ -419,7 +431,8 @@ class SendCreditLimitAlertsTest extends TestCase
             $salesRepEmailContext,
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
-            $this->makeCronRunLogger($logger ?? $this->createStub(LoggerInterface::class))
+            $this->makeCronRunLogger($logger ?? $this->createStub(LoggerInterface::class)),
+            $this->makeCustomerStoreResolver()
         );
     }
 }

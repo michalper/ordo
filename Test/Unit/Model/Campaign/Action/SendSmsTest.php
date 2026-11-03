@@ -15,6 +15,7 @@ use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
 use Ordo\Automation\Model\Sms\OptedOutException;
 use Ordo\Automation\Model\Sms\SmsSenderInterface;
@@ -33,6 +34,7 @@ class SendSmsTest extends TestCase
     private FrequencyCapGate $frequencyCapGate;
     private MessageSendRetryQueue&\PHPUnit\Framework\MockObject\MockObject $messageSendRetryQueue;
     private LoggerInterface $logger;
+    private CustomerStoreResolver $customerStoreResolver;
 
     protected function setUp(): void
     {
@@ -40,6 +42,8 @@ class SendSmsTest extends TestCase
         $this->smsSender = $this->createMock(SmsSenderInterface::class);
         $this->config = $this->createMock(Config::class);
         $this->messageLogWriter = $this->createMock(MessageLogWriter::class);
+        $this->customerStoreResolver = $this->createStub(CustomerStoreResolver::class);
+        $this->customerStoreResolver->method('resolveStoreId')->willReturn(null);
         $this->consentManager = $this->createStub(ConsentManager::class);
         $this->consentManager->method('hasConsent')->willReturn(true);
         $this->quietHoursGate = $this->createStub(QuietHoursGate::class);
@@ -75,7 +79,8 @@ class SendSmsTest extends TestCase
             $this->frequencyCapGate,
             new SendRetrier(1),
             $this->messageSendRetryQueue,
-            $this->logger
+            $this->logger,
+            $this->customerStoreResolver
         );
     }
 
@@ -213,11 +218,27 @@ class SendSmsTest extends TestCase
     {
         $this->config = $this->createMock(Config::class);
         $this->config->method('isSmsEnabled')->willReturn(false);
+        $this->customerRepository->method('getById')->willReturn($this->customerWithPhone('+15551234567'));
 
-        $this->customerRepository->expects(self::never())->method('getById');
         $this->smsSender->expects(self::never())->method('send');
         $this->logger->expects(self::never())->method('error');
         $this->logger->expects(self::once())->method('debug');
+
+        $context = ['customer_id' => 42];
+        $this->makeAction()->execute($context, ['message' => 'hello']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteChecksSmsEnabledForTheCustomersOwnStore(): void
+    {
+        $customer = $this->customerWithPhone('+15551234567');
+        $this->customerRepository->method('getById')->willReturn($customer);
+
+        $this->customerStoreResolver = $this->createMock(CustomerStoreResolver::class);
+        $this->customerStoreResolver->expects(self::once())->method('resolveStoreId')->with($customer)->willReturn(7);
+
+        $this->config = $this->createMock(Config::class);
+        $this->config->expects(self::once())->method('isSmsEnabled')->with(7)->willReturn(false);
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['message' => 'hello']);

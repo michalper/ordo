@@ -190,6 +190,7 @@ class SendAbandonedCartReminders
             ],
             $row['customer_email'],
             $row['customer_firstname'] ?: $row['customer_email'],
+            store: $this->reminderEmailSender->getStore((int) $quote->getStoreId()),
             messageId: $messageId
         );
 

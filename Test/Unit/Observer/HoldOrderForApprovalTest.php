@@ -124,13 +124,16 @@ class HoldOrderForApprovalTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsWhenApprovalDisabled(): void
     {
-        $config = $this->createStub(Config::class);
-        $config->method('isOrderApprovalEnabled')->willReturn(false);
+        $order = $this->createMock(Order::class);
+        $this->stubOrderStore($order, websiteId: 1);
+
+        $config = $this->createMock(Config::class);
+        $config->expects(self::once())->method('isOrderApprovalEnabled')->with(1)->willReturn(false);
         $this->config = $config;
 
         $this->customerRepository->expects(self::never())->method('getById');
 
-        $this->makeObserverInstance()->execute($this->makeEventObserver(null));
+        $this->makeObserverInstance()->execute($this->makeEventObserver($order));
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -166,6 +169,7 @@ class HoldOrderForApprovalTest extends TestCase
         $order = $this->createMock(Order::class);
         $order->method('getCustomerId')->willReturn(null);
         $order->method('getCustomerEmail')->willReturn('');
+        $this->stubOrderStore($order);
 
         $this->customerRepository->expects(self::never())->method('getById');
         $this->customerRepository->expects(self::never())->method('get');
@@ -232,6 +236,7 @@ class HoldOrderForApprovalTest extends TestCase
     {
         $order = $this->createMock(Order::class);
         $order->method('getCustomerId')->willReturn(42);
+        $this->stubOrderStore($order);
 
         $this->customerRepository->method('getById')->willThrowException(new LocalizedException(__('missing')));
         $this->orderResource->expects(self::never())->method('save');
@@ -245,6 +250,7 @@ class HoldOrderForApprovalTest extends TestCase
         $order = $this->createMock(Order::class);
         $order->method('getCustomerId')->willReturn(42);
         $order->method('getGrandTotal')->willReturn(50.0);
+        $this->stubOrderStore($order);
 
         $spendLimitAttr = $this->createStub(AttributeInterface::class);
         $spendLimitAttr->method('getValue')->willReturn('100');
@@ -314,7 +320,19 @@ class HoldOrderForApprovalTest extends TestCase
         $order->method('getCustomerId')->willReturn(42);
         $order->method('getGrandTotal')->willReturn(500.0);
         $order->method('getEntityId')->willReturn(7);
-        $order->method('getStore')->willThrowException(new \RuntimeException('no store'));
+        // First call is the new isOrderApprovalEnabled() store-scoping check - must succeed so
+        // execution actually reaches sendApprovalRequestEmail(), whose OWN getStore() call (the
+        // second one) is what this test means to fail.
+        $validStore = $this->createStub(Store::class);
+        $validStore->method('getId')->willReturn(1);
+        $storeCalls = 0;
+        $order->method('getStore')->willReturnCallback(function () use (&$storeCalls, $validStore) {
+            $storeCalls++;
+            if ($storeCalls === 1) {
+                return $validStore;
+            }
+            throw new \RuntimeException('no store');
+        });
 
         $spendLimitAttr = $this->createStub(AttributeInterface::class);
         $spendLimitAttr->method('getValue')->willReturn('100');

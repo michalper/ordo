@@ -61,8 +61,21 @@ class CampaignSendSmsActionTest extends TestCase
      */
     private function createConfigWithSmsEnabled(): \Ordo\Automation\Helper\Config
     {
+        // Scoped to the real default store's own id, not left scope-code-less - SendSms now
+        // resolves the actual customer's store (CustomerStoreResolver) instead of the ambient
+        // ScopeInterface::SCOPE_STORE default, so this must be set under the SAME store id the
+        // test customer below actually resolves to, or isSmsEnabled($storeId) looks this up
+        // under a scope code that was never set.
+        $storeId = (int) self::$objectManager->get(\Magento\Store\Model\StoreManagerInterface::class)
+            ->getStore()->getId();
+
         $scopeConfig = self::$objectManager->create(\Magento\Framework\App\MutableScopeConfig::class);
-        $scopeConfig->setValue('ordo_channels/sms/enabled', 1, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+        $scopeConfig->setValue(
+            'ordo_channels/sms/enabled',
+            1,
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
 
         return self::$objectManager->create(\Ordo\Automation\Helper\Config::class, [
             'scopeConfig' => $scopeConfig,

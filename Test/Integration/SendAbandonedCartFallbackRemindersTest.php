@@ -316,8 +316,16 @@ class SendAbandonedCartFallbackRemindersTest extends TestCase
         );
         $cronConfig = self::$objectManager->create(Config::class, ['scopeConfig' => $cronScopeConfig]);
 
+        // Scoped to the real default store's own id, not left scope-code-less - SendSms now
+        // resolves the actual customer's store (CustomerStoreResolver) instead of the ambient
+        // ScopeInterface::SCOPE_STORE default, so this must be set under the SAME store id the
+        // test customer resolves to, or isSmsEnabled($storeId) looks this up under a scope code
+        // that was never set - see CampaignSendSmsActionTest's identical fix.
+        $storeId = (int) self::$objectManager->get(\Magento\Store\Model\StoreManagerInterface::class)
+            ->getStore()->getId();
+
         $smsScopeConfig = self::$objectManager->create(MutableScopeConfig::class);
-        $smsScopeConfig->setValue('ordo_channels/sms/enabled', 1, ScopeInterface::SCOPE_STORE);
+        $smsScopeConfig->setValue('ordo_channels/sms/enabled', 1, ScopeInterface::SCOPE_STORE, $storeId);
         $smsConfig = self::$objectManager->create(Config::class, ['scopeConfig' => $smsScopeConfig]);
 
         $sendSms = self::$objectManager->create(SendSms::class, [

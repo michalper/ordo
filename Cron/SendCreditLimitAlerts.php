@@ -12,6 +12,7 @@ use Ordo\Automation\Model\Cron\CronRunLogger;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\Cron\ReminderLogStore;
 use Ordo\Automation\Model\CustomerMapBuilder;
+use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\SalesRepEmailContext;
 use Ordo\Automation\Model\TriggerOutcomeLogger;
 
@@ -36,7 +37,8 @@ class SendCreditLimitAlerts
         private readonly SalesRepEmailContext $salesRepEmailContext,
         private readonly ConsentManager $consentManager,
         private readonly TriggerOutcomeLogger $triggerOutcomeLogger,
-        private readonly CronRunLogger $cronRunLogger
+        private readonly CronRunLogger $cronRunLogger,
+        private readonly CustomerStoreResolver $customerStoreResolver
     ) {
     }
 
@@ -172,7 +174,8 @@ class SendCreditLimitAlerts
                 'is_within_limit' => $band < self::OVER_LIMIT_BAND,
             ], $this->salesRepEmailContext->getForLoadedCustomer($customer)),
             $customer->getEmail(),
-            $customer->getFirstname()
+            $customer->getFirstname(),
+            $this->emailSender->getStore($this->customerStoreResolver->resolveStoreId($customer))
         );
     }
 

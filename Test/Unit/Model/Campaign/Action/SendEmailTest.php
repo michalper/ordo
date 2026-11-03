@@ -19,6 +19,7 @@ use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\Campaign\SendTimeOptimizationGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\Email\MessageIdGenerator;
 use Ordo\Automation\Model\Email\PendingMessageIdHolder;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
@@ -42,6 +43,7 @@ class SendEmailTest extends TestCase
     private MessageSendRetryQueue&\PHPUnit\Framework\MockObject\MockObject $messageSendRetryQueue;
     private LoggerInterface $logger;
     private StoreInterface $store;
+    private CustomerStoreResolver $customerStoreResolver;
 
     protected function setUp(): void
     {
@@ -50,6 +52,8 @@ class SendEmailTest extends TestCase
         $this->storeManager = $this->createStub(StoreManagerInterface::class);
         $this->inlineTranslation = $this->createMock(StateInterface::class);
         $this->consentManager = $this->createStub(ConsentManager::class);
+        $this->customerStoreResolver = $this->createStub(CustomerStoreResolver::class);
+        $this->customerStoreResolver->method('resolveStoreId')->willReturn(null);
         $this->consentManager->method('hasConsent')->willReturn(true);
         $this->sendTimeOptimizationGate = $this->createStub(SendTimeOptimizationGate::class);
         $this->sendTimeOptimizationGate->method('allows')->willReturn(true);
@@ -96,7 +100,8 @@ class SendEmailTest extends TestCase
             $this->messageLogWriter,
             new SendRetrier(1),
             $this->messageSendRetryQueue,
-            $this->logger
+            $this->logger,
+            $this->customerStoreResolver
         );
     }
 
@@ -183,6 +188,32 @@ class SendEmailTest extends TestCase
         $this->pendingMessageIdHolder->expects(self::once())->method('consume');
         $this->messageLogWriter->expects(self::once())->method('recordSent')
             ->with('email', 42, 'jan@example.com', '<abc123@example.com>');
+
+        $context = ['customer_id' => 42];
+        $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteResolvesTheCustomersOwnStoreNotTheAmbientCurrentStore(): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getFirstname')->willReturn('Jan');
+        $customer->method('getEmail')->willReturn('jan@example.com');
+        $this->customerRepository->method('getById')->willReturnMap([[42, $customer]]);
+
+        $this->customerStoreResolver = $this->createMock(CustomerStoreResolver::class);
+        $this->customerStoreResolver->expects(self::once())->method('resolveStoreId')->with($customer)->willReturn(7);
+
+        $this->storeManager = $this->createMock(StoreManagerInterface::class);
+        $this->storeManager->expects(self::once())->method('getStore')->with(7)->willReturn($this->store);
+
+        $this->transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
+        $this->transportBuilder->method('setTemplateOptions')->willReturnSelf();
+        $this->transportBuilder->method('setTemplateVars')->willReturnSelf();
+        $this->transportBuilder->method('setFromByScope')->willReturnSelf();
+        $this->transportBuilder->method('addTo')->willReturnSelf();
+        $transport = $this->createStub(TransportInterface::class);
+        $this->transportBuilder->method('getTransport')->willReturn($transport);
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);

@@ -33,12 +33,14 @@ class ReminderEmailSender
     }
 
     /**
-     * The current store — exposed so a caller can fold store-dependent values (e.g. via
-     * SalesRepEmailContext::getForCustomer()) into $templateVars before calling send().
+     * $storeId resolves a specific store (typically the recipient customer's own
+     * getStoreId()) — exposed so a caller can fold store-dependent values into $templateVars
+     * before calling send(), using the SAME store send() itself will use. Falls back to
+     * Magento's ambient current store when null, same as before this parameter existed.
      */
-    public function getStore(): StoreInterface
+    public function getStore(?int $storeId = null): StoreInterface
     {
-        return $this->storeManager->getStore();
+        return $this->storeManager->getStore($storeId);
     }
 
     /**
