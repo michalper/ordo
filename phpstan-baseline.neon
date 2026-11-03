@@ -1605,7 +1605,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 3
+			count: 4
 			path: Model/Campaign/Action/SendEmail.php
 
 		-
@@ -1629,7 +1629,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 3
+			count: 4
 			path: Model/Campaign/Action/SendSms.php
 
 		-
@@ -1653,7 +1653,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 4
+			count: 5
 			path: Model/Campaign/Action/SendWhatsApp.php
 
 		-
@@ -3713,6 +3713,12 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Observer/DispatchCustomerRegisteredCampaigns.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Observer/DispatchOrderPlacedCampaigns.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'

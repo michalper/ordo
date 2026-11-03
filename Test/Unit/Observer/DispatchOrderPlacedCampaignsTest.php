@@ -18,6 +18,7 @@ class DispatchOrderPlacedCampaignsTest extends TestCase
         $order->method('getCustomerId')->willReturn(42);
         $order->method('getGrandTotal')->willReturn(99.5);
         $order->method('getIncrementId')->willReturn('000000123');
+        $order->method('getEntityId')->willReturn(123);
 
         $event = new Event(['order' => $order]);
 
@@ -29,6 +30,7 @@ class DispatchOrderPlacedCampaignsTest extends TestCase
             'customer_id' => 42,
             'order_total' => 99.5,
             'order_increment_id' => '000000123',
+            'order_id' => 123,
         ]);
 
         (new DispatchOrderPlacedCampaigns($publisher))->execute($observer);

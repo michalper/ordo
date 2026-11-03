@@ -37,6 +37,8 @@ class CampaignOutcomeLoggerTest extends TestCase
                     && isset($data['sent_at']);
             })
         );
+        $connection->expects(self::never())->method('fetchRow');
+        $connection->expects(self::never())->method('update');
 
         $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -44,6 +46,97 @@ class CampaignOutcomeLoggerTest extends TestCase
 
         $logger = new CampaignOutcomeLogger($resourceConnection);
         $logger->logSent(5, 'b', 42);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testLogSentWithTriggerOrderIdMarksAnAlreadyExistingLaterOrderAsConverted(): void
+    {
+        $select = $this->createMock(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('order')->willReturnSelf();
+        $select->method('limit')->willReturnSelf();
+        $seenWhereConditions = [];
+        $select->expects(self::exactly(2))->method('where')->willReturnCallback(
+            function (string $condition, mixed $value) use ($select, &$seenWhereConditions) {
+                $seenWhereConditions[$condition] = $value;
+                return $select;
+            }
+        );
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->expects(self::once())->method('insert');
+        $connection->expects(self::once())->method('fetchRow')->willReturn(['entity_id' => '555']);
+        $connection->expects(self::once())->method('update')->with(
+            'ordo_campaign_outcome_log',
+            self::callback(fn (array $data): bool => $data['order_id'] === 555 && isset($data['acted_at'])),
+            self::callback(fn (array $where): bool => $where['customer_id = ?'] === 42)
+        );
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $logger = new CampaignOutcomeLogger($resourceConnection);
+        // triggerOrderId=100 is the order whose own dispatch produced this send - a DIFFERENT,
+        // already-existing, LATER order #555 for the same customer is what gets credited.
+        $logger->logSent(5, null, 42, 100);
+
+        self::assertSame(42, $seenWhereConditions['customer_id = ?'] ?? null);
+        self::assertSame(100, $seenWhereConditions['entity_id > ?'] ?? null);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testLogSentWithTriggerOrderIdDoesNothingWhenNoLaterOrderExistsYet(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchRow')->willReturn(false);
+        $connection->expects(self::never())->method('update');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $logger = new CampaignOutcomeLogger($resourceConnection);
+        $logger->logSent(5, null, 42, 100);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testLogSentWithTriggerOrderIdDoesNotCreditAnOlderOrder(): void
+    {
+        // The exact bug this method must never reintroduce: a plain "entity_id != $triggerOrderId"
+        // exclusion would match the customer's OWN FIRST, already-attributed order when this same
+        // campaign re-dispatches for their SECOND order - entity_id > $triggerOrderId is what
+        // actually enforces "later order only".
+        $select = $this->createMock(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('order')->willReturnSelf();
+        $select->method('limit')->willReturnSelf();
+        $seenWhereConditions = [];
+        $select->expects(self::exactly(2))->method('where')->willReturnCallback(
+            function (string $condition, mixed $value) use ($select, &$seenWhereConditions) {
+                $seenWhereConditions[$condition] = $value;
+                return $select;
+            }
+        );
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        // No order with entity_id > 200 exists yet (order #100 is older, order #200 is itself) -
+        // fetchRow correctly returns nothing, so no update happens.
+        $connection->method('fetchRow')->willReturn(false);
+        $connection->expects(self::never())->method('update');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $logger = new CampaignOutcomeLogger($resourceConnection);
+        $logger->logSent(5, null, 42, 200);
+
+        self::assertSame(42, $seenWhereConditions['customer_id = ?'] ?? null);
+        self::assertSame(200, $seenWhereConditions['entity_id > ?'] ?? null);
     }
 
     public function testMarkActedUpdatesMostRecentUnactedRow(): void
@@ -118,67 +211,6 @@ class CampaignOutcomeLoggerTest extends TestCase
             ],
             $stats[1]
         );
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testCatchUpMissedConversionsAttributesEarliestRealOrderAfterSentAt(): void
-    {
-        $connection = $this->createMock(AdapterInterface::class);
-        $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchAll')->willReturn([
-            ['entity_id' => '101', 'customer_id' => '42', 'sent_at' => '2026-01-01 00:00:00'],
-        ]);
-        $connection->method('fetchRow')->willReturn(['entity_id' => '555']);
-        $connection->expects(self::once())->method('update')->with(
-            'ordo_campaign_outcome_log',
-            self::callback(fn (array $data): bool => $data['order_id'] === 555 && isset($data['acted_at'])),
-            self::callback(function (array $where): bool {
-                return $where['entity_id = ?'] === 101 && in_array('acted_at IS NULL', $where, true);
-            })
-        );
-
-        $resourceConnection = $this->createStub(ResourceConnection::class);
-        $resourceConnection->method('getConnection')->willReturn($connection);
-        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
-
-        $logger = new CampaignOutcomeLogger($resourceConnection);
-        self::assertSame(1, $logger->catchUpMissedConversions());
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testCatchUpMissedConversionsSkipsRowsWithNoMatchingOrderYet(): void
-    {
-        $connection = $this->createMock(AdapterInterface::class);
-        $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchAll')->willReturn([
-            ['entity_id' => '101', 'customer_id' => '42', 'sent_at' => '2026-01-01 00:00:00'],
-        ]);
-        $connection->method('fetchRow')->willReturn(false);
-        $connection->expects(self::never())->method('update');
-
-        $resourceConnection = $this->createStub(ResourceConnection::class);
-        $resourceConnection->method('getConnection')->willReturn($connection);
-        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
-
-        $logger = new CampaignOutcomeLogger($resourceConnection);
-        self::assertSame(0, $logger->catchUpMissedConversions());
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testCatchUpMissedConversionsReturnsZeroWhenNothingIsUnacted(): void
-    {
-        $connection = $this->createMock(AdapterInterface::class);
-        $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchAll')->willReturn([]);
-        $connection->expects(self::never())->method('fetchRow');
-        $connection->expects(self::never())->method('update');
-
-        $resourceConnection = $this->createStub(ResourceConnection::class);
-        $resourceConnection->method('getConnection')->willReturn($connection);
-        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
-
-        $logger = new CampaignOutcomeLogger($resourceConnection);
-        self::assertSame(0, $logger->catchUpMissedConversions());
     }
 
     #[AllowMockObjectsWithoutExpectations]

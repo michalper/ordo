@@ -26,7 +26,29 @@ class CampaignOutcomeLogger
     ) {
     }
 
-    public function logSent(int $campaignId, ?string $variant, int $customerId): void
+    /**
+     * $triggerOrderId, when given, is the real order whose own dispatch produced this send (the
+     * order_placed/referral_converted trigger's own context carries it) — closes the race
+     * Observer\RecordCampaignOutcome can otherwise miss: campaign dispatch is async
+     * (Model\Queue\CampaignDispatchPublisher, no RabbitMQ guarantee under the default DB queue
+     * driver — see AGENTS.md), so by the time THIS send actually lands, the customer's own next
+     * real order can already have saved (and fired sales_order_save_after) BEFORE this row even
+     * existed for that observer to mark — nothing re-checks an un-acted row afterward in that
+     * path, so a genuine conversion would otherwise be silently and permanently lost (confirmed
+     * via a real local reproduction: sent=1/converted=0 forever once the send lands after the
+     * order it should have been matched to; see docs/adr/0012-campaign-conversion-write-time-
+     * catch-up.md). Checking right here, at write time, closes the gap at zero lag and zero
+     * steady-state cost — no polling cron needed, since this is the one and only place a 'sent'
+     * row is ever created (see that ADR for the earlier, rejected polling-cron approach and why).
+     *
+     * Matches an order with entity_id STRICTLY GREATER than $triggerOrderId, not just "any other
+     * order" — Magento's own auto-increment order ids mean "greater" means "placed later", which
+     * is what "conversion" actually requires. A plain exclusion (entity_id != $triggerOrderId)
+     * would wrongly match an OLDER order too - e.g. the same campaign's own later re-dispatch for
+     * a second order would otherwise immediately (and wrongly) credit itself with the customer's
+     * FIRST, already-attributed order, double-crediting a conversion that already happened.
+     */
+    public function logSent(int $campaignId, ?string $variant, int $customerId, ?int $triggerOrderId = null): void
     {
         $connection = $this->resourceConnection->getConnection();
         $connection->insert($this->resourceConnection->getTableName('ordo_campaign_outcome_log'), [
@@ -35,6 +57,25 @@ class CampaignOutcomeLogger
             'customer_id' => $customerId,
             'sent_at' => date('Y-m-d H:i:s'),
         ]);
+
+        if ($triggerOrderId === null) {
+            return;
+        }
+
+        $orderTable = $this->resourceConnection->getTableName('sales_order');
+        /** @var array{entity_id: string|int}|false $order */
+        $order = $connection->fetchRow(
+            $connection->select()
+                ->from($orderTable, ['entity_id'])
+                ->where('customer_id = ?', $customerId)
+                ->where('entity_id > ?', $triggerOrderId)
+                ->order('entity_id ASC')
+                ->limit(1)
+        );
+
+        if ($order) {
+            $this->markActed($customerId, (int) $order['entity_id']);
+        }
     }
 
     /**
@@ -58,68 +99,6 @@ class CampaignOutcomeLogger
                 'sent_at >= ?' => $cutoff,
             ]
         );
-    }
-
-    /**
-     * Retroactively closes the race Observer\RecordCampaignOutcome can miss: campaign dispatch
-     * is async (Model\Queue\CampaignDispatchPublisher, no RabbitMQ guarantee under the default
-     * DB queue driver — see AGENTS.md), so a customer's own next real order can save (firing
-     * sales_order_save_after) BEFORE this table even has a 'sent' row for that observer to mark
-     * — nothing re-checks it afterward in that path, so the conversion would otherwise be
-     * silently and permanently lost (see docs/adr/0012-campaign-conversion-catch-up-cron.md,
-     * confirmed via a real local reproduction: sent=1/converted=0 forever once the send lands
-     * after the order it should have been matched to). Cron\CatchUpCampaignConversions calls
-     * this periodically: for every still-un-acted row within the lookback window, attribute the
-     * earliest real order the customer placed after sent_at — same first-plausible-match
-     * semantics as markActed() itself, just evaluated later instead of at order-save time, and
-     * with an explicit sent_at/created_at ordering check since (unlike the real-time observer)
-     * this can't assume "any un-acted row was necessarily sent before now".
-     *
-     * @return int How many rows were caught up (0 if nothing was missed).
-     */
-    public function catchUpMissedConversions(int $lookbackDays = self::DEFAULT_LOOKBACK_DAYS): int
-    {
-        $connection = $this->resourceConnection->getConnection();
-        $outcomeTable = $this->resourceConnection->getTableName('ordo_campaign_outcome_log');
-        $orderTable = $this->resourceConnection->getTableName('sales_order');
-        $cutoff = date('Y-m-d H:i:s', (int) strtotime("-{$lookbackDays} days"));
-
-        /** @var array<int, array{entity_id: string|int, customer_id: string|int, sent_at: string}> $rows */
-        $rows = $connection->fetchAll(
-            $connection->select()
-                ->from($outcomeTable, ['entity_id', 'customer_id', 'sent_at'])
-                ->where('acted_at IS NULL')
-                ->where('sent_at >= ?', $cutoff)
-        );
-
-        $caughtUp = 0;
-        foreach ($rows as $row) {
-            /** @var array{entity_id: string|int}|false $order */
-            $order = $connection->fetchRow(
-                $connection->select()
-                    ->from($orderTable, ['entity_id'])
-                    ->where('customer_id = ?', (int) $row['customer_id'])
-                    ->where('created_at > ?', $row['sent_at'])
-                    ->order('created_at ASC')
-                    ->limit(1)
-            );
-
-            if (!$order) {
-                continue;
-            }
-
-            $connection->update(
-                $outcomeTable,
-                ['acted_at' => date('Y-m-d H:i:s'), 'order_id' => (int) $order['entity_id']],
-                [
-                    'entity_id = ?' => (int) $row['entity_id'],
-                    'acted_at IS NULL',
-                ]
-            );
-            $caughtUp++;
-        }
-
-        return $caughtUp;
     }
 
     /**

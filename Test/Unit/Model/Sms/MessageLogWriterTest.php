@@ -111,7 +111,7 @@ class MessageLogWriterTest extends TestCase
         $this->messageLogResource->expects(self::once())->method('save')->with($log);
 
         $campaignOutcomeLogger = $this->createMock(CampaignOutcomeLogger::class);
-        $campaignOutcomeLogger->expects(self::once())->method('logSent')->with(5, 'b', 42);
+        $campaignOutcomeLogger->expects(self::once())->method('logSent')->with(5, 'b', 42, null);
         $writer = new MessageLogWriter(
             $this->messageLogFactory,
             $this->messageLogResource,
@@ -123,6 +123,25 @@ class MessageLogWriterTest extends TestCase
 
         self::assertSame(5, $log->getCampaignId());
         self::assertSame('b', $log->getVariant());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRecordSentPassesTriggerOrderIdThroughToCampaignOutcomeLogger(): void
+    {
+        $log = $this->makeLog();
+        $this->messageLogFactory->expects(self::once())->method('create')->willReturn($log);
+        $this->messageLogResource->expects(self::once())->method('save')->with($log);
+
+        $campaignOutcomeLogger = $this->createMock(CampaignOutcomeLogger::class);
+        $campaignOutcomeLogger->expects(self::once())->method('logSent')->with(5, 'b', 42, 777);
+        $writer = new MessageLogWriter(
+            $this->messageLogFactory,
+            $this->messageLogResource,
+            $campaignOutcomeLogger,
+            $this->logger
+        );
+
+        $writer->recordSent('email', 42, 'jane@example.com', 'msg-1', 5, 'b', 777);
     }
 
     public function testRecordSentSwallowsAndLogsWhenCampaignOutcomeLoggerThrows(): void

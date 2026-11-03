@@ -67,6 +67,7 @@ class SendSms implements ActionInterface
         $customerId = (int) ($context['customer_id'] ?? 0);
         $campaignId = isset($context['campaign_id']) ? (int) $context['campaign_id'] : null;
         $variant = isset($context['ordo_split_variant']) ? (string) $context['ordo_split_variant'] : null;
+        $triggerOrderId = isset($context['order_id']) ? (int) $context['order_id'] : null;
         if ($customerId <= 0) {
             $this->logger->error('Ordo_Automation: send_sms action is missing customer_id in context.');
             return;
@@ -149,7 +150,8 @@ class SendSms implements ActionInterface
                 $phone,
                 $providerMessageId,
                 $campaignId,
-                $variant
+                $variant,
+                $triggerOrderId
             );
         } catch (OptedOutException $e) {
             // Expected, routine outcome (Twilio's own STOP/opt-out handling) — not a delivery

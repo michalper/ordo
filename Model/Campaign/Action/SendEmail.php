@@ -76,6 +76,7 @@ class SendEmail implements ActionInterface
         $templateIdentifier = (string) ($params['template'] ?? '');
         $campaignId = isset($context['campaign_id']) ? (int) $context['campaign_id'] : null;
         $variant = isset($context['ordo_split_variant']) ? (string) $context['ordo_split_variant'] : null;
+        $triggerOrderId = isset($context['order_id']) ? (int) $context['order_id'] : null;
 
         if ($customerId <= 0 || $templateIdentifier === '') {
             $this->logger->error(
@@ -154,7 +155,8 @@ class SendEmail implements ActionInterface
                 $customer->getEmail(),
                 '<' . $messageId . '>',
                 $campaignId,
-                $variant
+                $variant,
+                $triggerOrderId
             );
         } catch (\Throwable $e) {
             $this->logger->error(sprintf(

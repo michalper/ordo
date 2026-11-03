@@ -27,6 +27,11 @@ class DispatchOrderPlacedCampaigns implements ObserverInterface
             'customer_id' => (int) $order->getCustomerId(),
             'order_total' => (float) $order->getGrandTotal(),
             'order_increment_id' => $order->getIncrementId(),
+            // The real order this exact send's own dispatch is for - Model\CampaignOutcomeLogger
+            // ::logSent() excludes it when checking whether the customer already has a LATER
+            // order to credit as the conversion, so this order can never spuriously count as its
+            // own conversion.
+            'order_id' => (int) $order->getEntityId(),
         ]);
     }
 }

@@ -24,13 +24,21 @@ class MessageLogWriter
     ) {
     }
 
+    /**
+     * $triggerOrderId, when given, is the real order whose own dispatch produced this send (the
+     * order_placed/referral_converted trigger's own context carries it as 'order_id') - passed
+     * straight through to CampaignOutcomeLogger::logSent() so it can immediately check whether
+     * the customer already has a later order by the time this (possibly delayed) send actually
+     * lands - see that method's own docblock for why.
+     */
     public function recordSent(
         string $channel,
         ?int $customerId,
         string $toAddress,
         ?string $providerMessageId,
         ?int $campaignId = null,
-        ?string $variant = null
+        ?string $variant = null,
+        ?int $triggerOrderId = null
     ): void {
         $log = $this->messageLogFactory->create();
         $log->setChannel($channel)
@@ -48,7 +56,7 @@ class MessageLogWriter
         // add_tag) never produces a spurious campaign-outcome row.
         if ($campaignId !== null && $customerId !== null) {
             try {
-                $this->campaignOutcomeLogger->logSent($campaignId, $variant, $customerId);
+                $this->campaignOutcomeLogger->logSent($campaignId, $variant, $customerId, $triggerOrderId);
             } catch (\Throwable $e) {
                 $this->logger->error(
                     sprintf('Ordo_Automation: failed to write ordo_campaign_outcome_log row: %s', $e->getMessage())
