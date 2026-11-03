@@ -20,6 +20,66 @@ scoped from real hands-on marketing automation experience.
 Full inventory: `Test/Mftf/SCENARIOS.md`. Open rows: `AutoPickCampaignSplitWinner` (§28) and
 `SendAbandonedCartFallbackReminders` (§11), unit-tested only, no MFTF/Integration yet.
 
+## GitHub issue #261 — PHP 8.3 / Hyvä / multi-store / performance
+
+A real pre-adoption inquiry (`github.com/michalper/ordo/issues/261`, Wayfarer.cz) asking before
+trying Ordo: production references, PHP 8.3 support, Hyvä frontend compatibility, multi-store
+support, catalog-scale performance, and long-term maintenance. Working through points 2–5 with
+actual code, not just a reply. Full gap analysis (3 parallel codebase scans) found the real work
+is concentrated in multi-store; PHP 8.3 and Hyvä were mostly already fine or trivial.
+
+1. ~~**PHP 8.3 floor**~~ — done (`fix(ci): pin rector to 2.8.3, lower PHP floor to 8.3`, commit
+   `d56c026`): `composer.json` dropped to `>=8.3 <8.6`, the only 3 call sites using PHP-8.4-only
+   `array_find_key`/`array_all`/`array_any` rewritten to plain `foreach`, `rector.php`'s
+   `withPhpSets` switched to `php83`. Docs (`CLAUDE.md`, README badges, `USER-GUIDE.md`) updated.
+2. ~~**Multi-currency revenue sum**~~ — done (`fix(multi-currency): sum base_grand_total, not
+   grand_total`, commit `bae15b5`): `CampaignOutcomeLogger::getStats()` and
+   `RfmCalculator::getMonetaryTotal()`/`getAggregatesForAllCustomers()` now sum
+   `base_grand_total`, same reasoning as `CreditLimitCalculator`'s existing `base_total_due` use.
+3. **Hyvä — write-up only, not yet done.** The scan found Ordo is already Hyvä-compatible by
+   design: every storefront JS/controller is vanilla `fetch`/DOM (`tracker.js`, `push-sw.js`), no
+   jQuery/Knockout/`x-magento-init`/RequireJS anywhere under `view/frontend/`, layout XML only
+   targets core cross-theme containers. The one soft spot: `view/frontend/templates/offer/index.phtml`
+   ("My Offers" account page) uses Luma CSS classes, so it renders functionally correct but
+   unstyled on Hyvä's Tailwind account pages. Remaining:
+   - Add Tailwind utility classes alongside the existing Luma ones in `offer/index.phtml` (or a
+     theme-conditional block) — cosmetic, not a rewrite.
+   - State "tested/compatible with Hyvä" in `README.md`/`README.pl.md` and
+     `docs/marketplace/USER-GUIDE.md` — this is answerable truthfully today, just not yet written.
+4. **Multi-store store-scoped sends — not yet done.** `Observer\HoldOrderForApproval`/
+   `Cron\EscalateStalePendingApprovals` already have the right pattern (resolve `$order->getStore()`,
+   not Magento's ambient "current store"). Apply it everywhere else that still defaults to the
+   ambient store, which in a cron/CLI context is arbitrary (first/default store) — wrong for any
+   customer not on that store:
+   - `Model/Campaign/Action/SendEmail.php:~121` — `$store = $this->storeManager->getStore();`
+     takes no argument; resolve the customer's/order's actual store and pass it to
+     `setTemplateOptions()`/`setFromByScope()`.
+   - `Model/Campaign/Action/SendSms.php` — no store resolution at all for its `Helper\Config` reads.
+   - `Model/Cron/ReminderEmailSender.php` and its callers (`SendReorderReminders`,
+     `SendAbandonedCartReminders`, `SendWinBackEmails`, `SendOfferExpiryReminders`,
+     `SendCreditLimitAlerts`, `SendSalesRepDigest`) — each should resolve its own row's real store
+     before calling it, instead of relying on the default.
+   - `Cron/SendReorderReminders.php` / `Cron/SendAbandonedCartReminders.php` `execute()` — several
+     `Helper\Config` reads (`isReorderReminderEnabled()`, `getAbandonedCartDelayMinutes()`, etc.)
+     gate/configure the whole batch with one global value instead of per-customer's resolved store.
+   - `Observer/HoldOrderForApproval.php` — `isOrderApprovalEnabled()` itself is still called with
+     no store id, even though the email-link code right next to it already resolves one.
+5. **Campaign/segment/score-rule website scoping — explicitly deferred, not a quick fix.**
+   `ordo_campaign`, `ordo_segment`, `ordo_score_rule` have no `store_id`/`website_id` column at
+   all — a campaign or segment matches identically regardless of which store/website a customer
+   is on. Real new feature (admin multiselect + linking table, mirroring Magento core's
+   `salesrule_website`, plus `CampaignDispatcher`/`SegmentMemberResolver` filtering) with real
+   design surface (empty selection = "all websites"? cache-tag interaction?) — write it up as its
+   own ADR + separate implementation pass, don't rush it into this issue's response.
+6. **Performance — no code needed, just say so.** Every catalog-touching cron/controller already
+   batches correctly (`CatalogFeedProductFetcher::fetchByPage()` at 500, `AbstractPriceWatchScanCron`'s
+   `LIMIT` + rotating cursor, SKU autocomplete's `setPageSize(20)`). Worth stating in the issue
+   reply, not worth any speculative code change.
+7. **Reply to #261 itself** — nothing posted yet. Once 3–6 above are far enough along, draft a
+   reply covering all six of the asker's original questions (including #1, production references,
+   and #6, roadmap/maintenance — both honest "not yet" answers, not silence) for the maintainer to
+   review before posting.
+
 ## Admin UX
 
 - Add `exportButton` to `ordo_adminactionlog_listing.xml`, `ordo_cronrunlog_listing.xml`,
