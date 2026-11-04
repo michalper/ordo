@@ -3085,25 +3085,24 @@
                     these always comes up empty.
                 -->
                 <!--
-                    formElement="textarea", not "input" - reported directly against a real
-                    screenshot: a single-line <input> truncated this sentence-length warning to
-                    an unreadable fragment, since Magento UI inputs never wrap. A disabled
-                    textarea does (same precedent as params_json/group_conditions_json above),
-                    and the ordo-segment-event-only-warning CSS class (segment-form.css) strips
-                    its box chrome down to plain italic text, matching the nested-group JS
-                    equivalent's own .ordo-group-event-only-warning treatment.
+                    Reported directly against a real screenshot, twice: first that a single-line
+                    <input> truncated this sentence-length warning to an unreadable fragment, then
+                    (after switching to a textarea) that a permanently-visible text block was too
+                    much real estate for what's genuinely just a caveat - "a tiny lightbulb/info
+                    icon you hover or click" instead. <tooltip> is this form's own existing
+                    mechanism for exactly that (see the "Websites" field above) - no label, no
+                    visible control, just the tooltip's own (i) icon. The underlying <input> still
+                    exists (disabled, no visible value) purely because every registered field needs
+                    *some* formElement; ordo-segment-event-only-warning (segment-form.css) hides it.
                 -->
-                <field name="event_only_warning" formElement="textarea" sortOrder="28">
-                    <argument name="data" xsi:type="array">
-                        <item name="config" xsi:type="array">
-                            <item name="default" xsi:type="string">This condition only has an effect inside a Campaign's trigger conditions - used inside a Segment, it never matches any customer.</item>
-                        </item>
-                    </argument>
+                <field name="event_only_warning" formElement="input" sortOrder="28">
                     <settings>
                         <dataType>text</dataType>
-                        <label translate="true">Note</label>
                         <visible>false</visible>
                         <disabled>true</disabled>
+                        <tooltip>
+                            <description>This condition only has an effect inside a Campaign's trigger conditions - used inside a Segment, it never matches any customer.</description>
+                        </tooltip>
                     </settings>
                 </field>
             </container>

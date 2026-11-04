@@ -1,4 +1,15 @@
-.ordo-dashboard {
+/*
+ * Reported directly against a real screenshot: the setup-wizard banner's own "Open Setup Guide"
+ * button rendered with an invisible (transparent) background - .ordo-btn-primary's `background:
+ * var(--ordo-primary)` was resolving to nothing. Root cause, confirmed live via
+ * getComputedStyle().getPropertyValue('--ordo-primary'): these custom properties were scoped to
+ * `.ordo-dashboard` (the root wrapper of dashboard/index.phtml specifically), not `:root` -  so
+ * any element that uses this file's own `.ordo-btn`/color tokens but isn't a descendant of that
+ * one wrapper (the setup-wizard banner is a sibling block, not nested inside it - see
+ * ordo_dashboard_index.xml) silently got no value at all. `:root`, matching the established,
+ * working precedent segment-form.css's own color-token block already uses.
+ */
+:root {
   --ordo-border: var(--ordo-color-border);
   --ordo-text-muted: var(--ordo-color-muted);
   --ordo-primary: var(--ordo-color-primary);
