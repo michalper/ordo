@@ -45,6 +45,7 @@ class CampaignSaveProcessor
         'sku', 'category_id', 'scheduled_at', 'cron_expression', 'variants',
         'segment_id', 'tier', 'event_type', 'event_key', 'within_days',
         'prompt', 'fallback', 'use_optimal_send_time', 'ratio_at_least',
+        'campaign_id', 'engagement_type', 'engagement_within_days',
     ];
 
     /**

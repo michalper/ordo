@@ -32,6 +32,7 @@ class TypeLabels
         'purchased_sku' => 'Purchased Product (SKU)',
         'purchased_category' => 'Purchased From Category',
         'event_occurred' => 'Event Occurred (cart/wishlist add)',
+        'message_engaged' => 'Opened/Clicked Campaign',
         'reorder_cycle_at_risk' => 'Reorder Cycle At Risk (drift ratio at least)',
     ];
 

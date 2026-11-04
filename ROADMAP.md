@@ -190,11 +190,26 @@ coupon/channel/device/geography.
   since trigger matching is fully data-driven). No new action class — `send_email` (optionally
   chained after `generate_coupon`) already covers a recovery/win-back send. New
   "Canceled Order Recovery" starter template in the admin Flow builder.
-- **Email open/click tracking** — a tracking pixel + wrapped links for `send_email`, feeding a new
-  segment condition ("opened/clicked campaign X") and per-campaign open/click-rate reporting, parity
-  with the sent/converted tracking that already exists. Medium scope — pixel-based open tracking
-  undercounts in practice (mail-client image caching/proxying), a known industry limitation, not a
-  reason to skip click tracking too.
+- ~~**Email open/click tracking**~~ — turned out mostly already done (schema, SendGrid Event
+  Webhook handling, per-campaign open/click-rate reporting all shipped earlier, in `32a2955`); the
+  only real gap was a segment/campaign condition reading that data, now done — see
+  `docs/adr/0016-message-engagement-condition.md`. New `message_engaged` condition
+  (`Model\Campaign\Condition\MessageEngaged`), usable from both the campaign Drawflow canvas and
+  the segment editor.
+- **Message log retention policy** — `ordo_message_log`/`ordo_message_log_event` have no pruning
+  cron at all today (unlike `ordo_visitor_event`'s `Cron\PruneVisitorEvents`), so these rows,
+  including open/click engagement data, accumulate forever. Flagged while building the
+  `message_engaged` condition above (`docs/adr/0016`), deliberately not fixed there. Small scope —
+  likely a `PruneMessageLog`-style cron plus a new retention-days config key, mirroring
+  `Helper\Config::getTrackingRetentionDays()`.
+- **Group the condition-type dropdown into categories** — reported directly against a real
+  screenshot: the segment/campaign-Flow condition picker is one flat, ~20-item list (`Has Tag`,
+  `Order Total ≥`, `Opened/Clicked Campaign`, ...), not great UX for finding the right one.
+  `Model\Config\Source\ConditionType`/`ConditionTypeWithGroup` generate it from
+  `ConditionPool::getAvailableTypes()`; Magento_Ui's `select` component supports `optgroup`-style
+  nesting (`{"label": "Category", "value": [...]}`), so this is a source-class change, not a new
+  UI component. Needs a sensible grouping scheme decided first (e.g. order history / audience &
+  segments / behavior & events / engagement & score). Small/medium scope.
 - **Automated anomaly/insight alerts** — a periodic cron flagging notable deviations (a channel's
   revenue dropping, a coupon/campaign outperforming others). More speculative than the rest of this
   list — needs real usage data to pick sane thresholds before committing to a design, so lowest

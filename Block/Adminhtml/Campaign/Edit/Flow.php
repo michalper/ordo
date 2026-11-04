@@ -17,8 +17,10 @@ use Ordo\Automation\Model\Campaign\TypeLabels;
 use Ordo\Automation\Model\CampaignAction;
 use Ordo\Automation\Model\CampaignCondition;
 use Ordo\Automation\Model\CampaignTrigger;
+use Ordo\Automation\Model\Config\Source\CampaignOptions;
 use Ordo\Automation\Model\Config\Source\EventType;
 use Ordo\Automation\Model\Config\Source\LoyaltyTier;
+use Ordo\Automation\Model\Config\Source\MessageEngagementType;
 use Ordo\Automation\Model\Config\Source\SegmentOptions;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
 use Ordo\Automation\Model\Config\Source\WhatsAppTemplateOptions;
@@ -61,6 +63,8 @@ class Flow extends Template
         private readonly SegmentOptions $segmentOptions,
         private readonly LoyaltyTier $loyaltyTierOptions,
         private readonly EventType $eventTypeOptions,
+        private readonly CampaignOptions $campaignOptions,
+        private readonly MessageEngagementType $messageEngagementTypeOptions,
         array $data = [],
         ?JsonHelper $jsonHelper = null,
         ?DirectoryHelper $directoryHelper = null
@@ -221,6 +225,28 @@ class Flow extends Template
     }
 
     /**
+     * entity_id => name for every campaign (ALL of them, not just enabled — see the Source
+     * class) — options for the message_engaged condition's campaign_id field.
+     *
+     * @return array<int|string, string>
+     */
+    public function getCampaignOptions(): array
+    {
+        return $this->toMap($this->campaignOptions);
+    }
+
+    /**
+     * "opened"/"clicked" => human-readable label — options for the message_engaged condition's
+     * event_type field.
+     *
+     * @return array<int|string, string>
+     */
+    public function getMessageEngagementTypeOptions(): array
+    {
+        return $this->toMap($this->messageEngagementTypeOptions);
+    }
+
+    /**
      * The canvas renders plain value => label maps; the admin form's Source classes return
      * OptionSourceInterface's list-of-pairs shape. One flattener instead of each option getter
      * re-querying what its Source class already queries.
@@ -318,6 +344,19 @@ class Flow extends Template
                     ],
                     ['name' => 'event_key', 'label' => (string) __('SKU (optional)')],
                     ['name' => 'within_days', 'label' => (string) __('Within days')],
+                ],
+                'message_engaged' => [
+                    [
+                        'name' => 'campaign_id',
+                        'label' => (string) __('Campaign'),
+                        'options' => $this->getCampaignOptions(),
+                    ],
+                    [
+                        'name' => 'engagement_type',
+                        'label' => (string) __('Opened or clicked'),
+                        'options' => $this->getMessageEngagementTypeOptions(),
+                    ],
+                    ['name' => 'engagement_within_days', 'label' => (string) __('Within days')],
                 ],
             ],
             'action' => [

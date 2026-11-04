@@ -17,8 +17,10 @@ use Ordo\Automation\Model\CampaignCondition;
 use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
 use Ordo\Automation\Model\ContentBlock;
+use Ordo\Automation\Model\Config\Source\CampaignOptions;
 use Ordo\Automation\Model\Config\Source\EventType;
 use Ordo\Automation\Model\Config\Source\LoyaltyTier;
+use Ordo\Automation\Model\Config\Source\MessageEngagementType;
 use Ordo\Automation\Model\Config\Source\SegmentOptions;
 use Ordo\Automation\Model\Config\Source\WhatsAppTemplateOptions;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\Collection as ActionCollection;
@@ -46,6 +48,8 @@ class FlowTest extends TestCase
     private SegmentOptions $segmentOptions;
     private LoyaltyTier $loyaltyTierOptions;
     private EventType $eventTypeOptions;
+    private CampaignOptions $campaignOptions;
+    private MessageEngagementType $messageEngagementTypeOptions;
 
     protected function setUp(): void
     {
@@ -67,6 +71,10 @@ class FlowTest extends TestCase
         // The real class — it has no dependencies and its two hardcoded options are exactly
         // what getEventTypeOptions() should surface.
         $this->eventTypeOptions = new EventType();
+        $this->campaignOptions = $this->createStub(CampaignOptions::class);
+        $this->campaignOptions->method('toOptionArray')->willReturn([]);
+        // Also real/no dependencies, same reasoning as eventTypeOptions above.
+        $this->messageEngagementTypeOptions = new MessageEngagementType();
         $this->triggerEventSource = $this->createStub(TriggerEvent::class);
         $this->triggerEventSource->method('toOptionArray')->willReturn([
             ['value' => 'order_placed', 'label' => __('Order Placed')],
@@ -101,6 +109,8 @@ class FlowTest extends TestCase
             $this->segmentOptions,
             $this->loyaltyTierOptions,
             $this->eventTypeOptions,
+            $this->campaignOptions,
+            $this->messageEngagementTypeOptions,
             [],
             $this->createStub(JsonHelper::class),
             $this->createStub(DirectoryHelper::class)
