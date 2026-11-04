@@ -650,8 +650,12 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor initCampaignFlowEditor()',
         const $select = global.$('.ordo-flow-fields select[data-field="content_block_id"]');
 
         assert.strictEqual($select.length, 1);
-        assert.strictEqual($select.find('option').length, 2);
-        assert.strictEqual($select.find('option').eq(0).text(), 'Block A');
+        // 3, not 2: buildSelectOptionsHtml() always prepends a "-- Please Select --" placeholder
+        // (own option, not selected unless the field's own value is blank) ahead of the field's
+        // real options, so a 0-option-selected <select> never renders as an unlabeled empty box.
+        assert.strictEqual($select.find('option').length, 3);
+        assert.strictEqual($select.find('option').eq(0).text(), '-- Please Select --');
+        assert.strictEqual($select.find('option').eq(1).text(), 'Block A');
     });
 
     QUnit.test('a field descriptor with a "notice" renders a hint under the input', function (assert) {
