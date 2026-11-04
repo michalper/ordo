@@ -11,6 +11,15 @@
         <observer name="ordo_automation_dispatch_order_placed_campaigns" instance="Ordo\Automation\Observer\DispatchOrderPlacedCampaigns"/>
         <observer name="ordo_automation_dispatch_referral_converted_campaigns" instance="Ordo\Automation\Observer\DispatchReferralConvertedCampaigns"/>
     </event>
+    <!-- order_cancel_after is Magento core's own event (dispatched by
+         \Magento\Sales\Model\Order::cancel()), not module-specific like ordo_customer_tag_added
+         below - fires for every real cancellation path: the admin "Cancel" button, the REST/SOAP
+         cancel API, and this module's own Model\OrderApprovalManagement::rejectByToken(). Unlike
+         sales_order_place_after, a canceled order is always already persisted, so there's no
+         unpopulated-entity_id trap to avoid here. -->
+    <event name="order_cancel_after">
+        <observer name="ordo_automation_dispatch_order_canceled_campaigns" instance="Ordo\Automation\Observer\DispatchOrderCanceledCampaigns"/>
+    </event>
     <!-- RecordTriggerOutcome/RecordCampaignOutcome are on sales_order_save_after, NOT
          sales_order_place_after like their sibling observers above - see each class's own
          docblock for why: \Magento\Sales\Model\Order::place() (which sales_order_place_after

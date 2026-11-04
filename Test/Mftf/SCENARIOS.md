@@ -46,6 +46,7 @@ cases separately from the type-by-type ones.
 | Trigger                   | Fired from                                                                    | Status                                            |
 |---------------------------|-------------------------------------------------------------------------------|---------------------------------------------------|
 | `order_placed`            | `Observer/DispatchOrderPlacedCampaigns.php` (`sales_order_place_after`)       | ✅ `AdminCampaignScenarioEndToEndTest`            |
+| `order_canceled`          | `Observer/DispatchOrderCanceledCampaigns.php` (`order_cancel_after`, Magento core) | ✅ `AdminCampaignOrderCanceledTriggerTest`   |
 | `customer_registered`     | `Observer/DispatchCustomerRegisteredCampaigns.php`                            | ✅ `AdminCampaignCustomerRegisteredTriggerTest`   |
 | `tag_added`               | `Observer/DispatchTagAddedCampaigns.php` (`ordo_customer_tag_added`)          | ✅ `AdminCampaignTagAddedTriggerTest`             |
 | `cart_abandoned`          | `Cron/SendAbandonedCartReminders.php`'s own dispatch, not a live observer     | ✅ `AdminSendAbandonedCartReminderAndTriggerTest` |

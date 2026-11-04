@@ -17,6 +17,17 @@ interface CampaignTriggerInterface
     public const PARAMS = 'params';
 
     public const TRIGGER_ORDER_PLACED = 'order_placed';
+
+    /**
+     * Fires from Observer\DispatchOrderCanceledCampaigns on Magento core's own order_cancel_after
+     * event (dispatched by \Magento\Sales\Model\Order::cancel()) - covers the admin "Cancel"
+     * button, the REST/SOAP cancel API, and this module's own
+     * Model\OrderApprovalManagement::rejectByToken(), which all go through cancel(). Context
+     * carries the same keys as TRIGGER_ORDER_PLACED ("customer_id", "order_total",
+     * "order_increment_id", "order_id") so existing {{var ...}} email templates work unchanged
+     * regardless of which of the two triggers fired a campaign.
+     */
+    public const TRIGGER_ORDER_CANCELED = 'order_canceled';
     public const TRIGGER_CUSTOMER_REGISTERED = 'customer_registered';
     public const TRIGGER_TAG_ADDED = 'tag_added';
     public const TRIGGER_CART_ABANDONED = 'cart_abandoned';

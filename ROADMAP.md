@@ -181,9 +181,12 @@ coupon/channel/device/geography.
 - **Product performance report** — per-SKU views/purchases/abandon-rate; the co-purchase affinity data
   already computed live by `Model\Recommendation\ProductRecommender` (for the `AddProductRecommendations`
   campaign action) could be exposed as its own report too, not just fed into emails. Medium scope.
-- **Order-canceled trigger + recovery action** — new `Observer\DispatchOrderCanceledCampaigns` on
-  `sales_order_cancel_after`, mirroring the existing `DispatchOrderPlacedCampaigns` pattern, so a
-  recovery campaign can actually react to a cancellation. Small/medium scope.
+- ~~**Order-canceled trigger + recovery action**~~ — done: new `TRIGGER_ORDER_CANCELED` trigger,
+  `Observer\DispatchOrderCanceledCampaigns` on Magento core's own `order_cancel_after` event
+  (mirrors `DispatchOrderPlacedCampaigns`'s pattern; `CampaignDispatcher` needed zero changes,
+  since trigger matching is fully data-driven). No new action class — `send_email` (optionally
+  chained after `generate_coupon`) already covers a recovery/win-back send. New
+  "Canceled Order Recovery" starter template in the admin Flow builder.
 - **Email open/click tracking** — a tracking pixel + wrapped links for `send_email`, feeding a new
   segment condition ("opened/clicked campaign X") and per-campaign open/click-rate reporting, parity
   with the sent/converted tracking that already exists. Medium scope — pixel-based open tracking

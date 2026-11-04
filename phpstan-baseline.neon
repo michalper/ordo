@@ -3778,6 +3778,12 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
+			path: Observer/DispatchOrderCanceledCampaigns.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
 			path: Observer/DispatchOrderPlacedCampaigns.php
 
 		-

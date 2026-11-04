@@ -16,6 +16,7 @@ class TriggerEventTest extends TestCase
         self::assertSame(
             [
                 CampaignTriggerInterface::TRIGGER_ORDER_PLACED,
+                CampaignTriggerInterface::TRIGGER_ORDER_CANCELED,
                 CampaignTriggerInterface::TRIGGER_CUSTOMER_REGISTERED,
                 CampaignTriggerInterface::TRIGGER_TAG_ADDED,
                 CampaignTriggerInterface::TRIGGER_CART_ABANDONED,

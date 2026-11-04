@@ -1009,6 +1009,14 @@ define([
                         { kind: 'action', type: 'generate_coupon' }
                     ]
                 },
+                order_canceled_recovery: {
+                    label: 'Canceled Order Recovery',
+                    nodes: [
+                        { kind: 'trigger', type: 'order_canceled' },
+                        { kind: 'action', type: 'generate_coupon' },
+                        { kind: 'action', type: 'send_email' }
+                    ]
+                },
                 tagged_customer_followup: {
                     label: 'Follow Up on Tagged Customers',
                     nodes: [

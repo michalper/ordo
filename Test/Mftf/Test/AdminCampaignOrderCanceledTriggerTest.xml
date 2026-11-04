@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCampaignOrderCanceledTriggerTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Campaign engine"/>
+            <title value="Canceling a real order dispatches a campaign built on the order_canceled trigger"/>
+            <description value="Covers SCENARIOS.md #1a's order_canceled row. Mirrors AdminCampaignFunnelReflectsRealSendAndConversionTest's shape (build in the real admin Drawflow canvas, trigger a real send, read the real Funnel widget) but for Observer\DispatchOrderCanceledCampaigns, which fires on Magento core's own order_cancel_after event (Magento\Sales\Model\Order::cancel()) rather than a module-owned one. Places a REAL order through storefront checkout, cancels it through the REAL admin order view page (CancelPendingOrderActionGroup, the same path the admin 'Cancel' button and OrderManagement::cancel() API use), runs the real async queue consumer (DB-queue driver, no RabbitMQ - see AGENTS.md), and asserts the resulting send on the campaign's own Funnel widget."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="campaign3"/>
+        </annotations>
+        <before>
+            <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: the campaign - trigger=order_canceled, action=send_email. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Order Canceled Trigger Test Campaign" stepKey="fillName"/>
+        <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
+        <executeJS function="window.ordoFlowTestHook.buildChain([
+            {kind: 'trigger', type: 'order_canceled'},
+            {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'Sorry to see your order canceled.', delay_minutes: '0'}}
+        ]);" stepKey="buildFlowGraph"/>
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
+
+        <!-- Step 2: a REAL order, through REAL storefront checkout, as the REAL customer created
+             above - same shape as AdminCampaignScenarioEndToEndTest, which this test otherwise
+             diverges from completely once the order exists. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <!-- Same selector as AdminOrderUnderSpendLimitNotHeldTest: canViewOrder() is true for this
+             ordinary, never-held order, so the success page renders a plain order-number link,
+             not the HELD-order span variant another selector would be needed for. -->
+        <waitForElementVisible selector="{{CheckoutSuccessMainSection.orderNumber22}}" stepKey="waitForOrderNumber"/>
+        <grabTextFrom selector="{{CheckoutSuccessMainSection.orderNumber22}}" stepKey="grabOrderNumber"/>
+
+        <!-- order_placed also dispatches for this order (unrelated to this test's own
+             order_canceled campaign, which doesn't match order_placed), draining it now so it
+             can't leak into a later test's own queue consumption, same reasoning as
+             AdminOrderUnderSpendLimitNotHeldTest's own drain call. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainOrderPlacedDispatch"/>
+
+        <!-- Step 3: cancel the REAL order through the REAL admin order view page - the same path
+             the admin "Cancel" button and OrderManagement::cancel() both use, and the one that
+             dispatches Magento core's own order_cancel_after event
+             Observer\DispatchOrderCanceledCampaigns listens for. -->
+        <actionGroup ref="OpenOrderByIdActionGroup" stepKey="openOrderViewPage">
+            <argument name="orderId" value="{$grabOrderNumber}"/>
+        </actionGroup>
+        <actionGroup ref="CancelPendingOrderActionGroup" stepKey="cancelOrder"/>
+
+        <!-- Step 4: this install has no RabbitMQ (DB queue driver only - see AGENTS.md), so
+             nothing consumes the order_canceled dispatch message until a consumer actually runs. -->
+        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+
+        <!-- Step 5: the real Funnel widget on the campaign edit page - sent=1 proves
+             DispatchOrderCanceledCampaigns really published, the real consumer really ran
+             send_email, and Model\Sms\MessageLogWriter::recordSent() really wrote the outcome row
+             the Funnel widget reads, exactly as AdminCampaignFunnelReflectsRealSendAndConversionTest
+             proves for order_placed. No second order follows the cancellation here, so there's
+             nothing for Observer\RecordCampaignOutcome to mark converted - converted stays 0, not
+             asserted either way since this test is about the trigger firing, not the funnel's
+             conversion math (already covered by the order_placed test). -->
+        <amOnPage url="admin/ordo/campaign/edit/entity_id/{$grabCampaignId}" stepKey="goToCampaignEditPage"/>
+        <waitForPageLoad stepKey="waitForCampaignEditPage"/>
+        <waitForElementVisible selector=".ordo-campaign-funnel table" stepKey="waitForFunnelTable"/>
+        <see selector=".ordo-campaign-funnel table tbody tr td:nth-child(1)" userInput="1" stepKey="seeSentCountIsOne"/>
+
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
+    </test>
+</tests>
