@@ -1,0 +1,37 @@
+<?php
+/**
+ * @var \Ordo\Automation\Block\Adminhtml\Campaign\Library $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+?>
+<div class="ordo-campaign-library">
+    <p class="ordo-campaign-library-intro">
+        <?= $escaper->escapeHtml(__(
+            'Pick a curated starting point instead of building a campaign from scratch - '
+            . 'each one creates a disabled campaign on the Flow canvas with its trigger, '
+            . 'conditions, and actions already set up, ready to review and enable.'
+        )) ?>
+    </p>
+    <div class="ordo-campaign-library-grid">
+        <?php foreach ($block->getTemplates() as $template): ?>
+            <div class="ordo-campaign-library-card">
+                <strong class="ordo-campaign-library-card-name">
+                    <?= $escaper->escapeHtml($template['name']) ?>
+                </strong>
+                <p class="ordo-campaign-library-card-description">
+                    <?= $escaper->escapeHtml($template['description']) ?>
+                </p>
+                <form action="<?= $escaper->escapeUrl($block->getImportUrl()) ?>" method="post">
+                    <?= $block->getBlockHtml('formkey') ?>
+                    <input type="hidden" name="template_id" value="<?= $escaper->escapeHtmlAttr($template['id']) ?>">
+                    <button type="submit" class="action-primary">
+                        <span><?= $escaper->escapeHtml(__('Use this Template')) ?></span>
+                    </button>
+                </form>
+            </div>
+        <?php endforeach; ?>
+    </div>
+    <a class="action-secondary ordo-campaign-library-back" href="<?= $escaper->escapeUrl($block->getBackUrl()) ?>">
+        <span><?= $escaper->escapeHtml(__('Back to Campaigns')) ?></span>
+    </a>
+</div>

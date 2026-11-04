@@ -157,9 +157,23 @@ actually publishes, not something to pre-do here.
 
 Not prioritized against each other; listed for later scoping with the business/product side.
 
-- **Campaign template library** — curated gallery of ready-to-use campaign starting points (welcome series,
-  cart abandonment, win-back, VIP upsell), picked and adapted instead of built from scratch.
-  `Model\Campaign\CampaignImporter` already accepts the needed JSON shape. Medium scope, B2C/B2B.
+- ~~**Campaign template library**~~ — shipped, see `docs/adr/0020-campaign-template-library.md`.
+  New `Model\Campaign\TemplateLibrary` + a gallery page (`Controller/Adminhtml/Campaign/Library.php`,
+  reachable from the campaign grid's new "Browse Template Library" button) hand curated payloads
+  straight to the existing `CampaignImporter::import()`. Only 3 of the 4 originally-named
+  templates shipped — **win-back is not buildable with this engine's current primitives**:
+  `recurring_schedule`/`scheduled_at` triggers fire once per campaign on a schedule with no
+  `customer_id` in context at all (`Model\Campaign\ScheduledTriggerScanner::fire()`), so every
+  per-customer condition/action on a template built that way would silently never fire. A working
+  win-back template needs a new per-customer recency-based trigger primitive in the engine itself
+  — real engine work, not something to fold into a template-library pass. Found and fixed a real,
+  separate, pre-existing bug along the way: `ordo_campaign_importform_index.xml` and
+  `ordo_segment_importform_index.xml` both had the wrong layout handle filename (an extra,
+  incorrect `_index` suffix no other single-word-action layout file in this module has), so the
+  "Import Campaign"/"Import Segment" pages' own upload form had never actually rendered through
+  the real admin UI — caught only because copying that same (wrong) naming convention for this
+  feature's own new page broke identically. Both renamed to the correct
+  `ordo_campaign_importform.xml`/`ordo_segment_importform.xml`.
 - **Email template drafts** — version history is done (`Model\EmailTemplateVersion`, snapshot-on-save +
   restore). What's left: editing a template's content as a separate draft without touching the live
   version `send_email` already reads, then publishing it when ready. Medium scope.

@@ -1,0 +1,54 @@
+/*
+ * Campaign template library gallery (Controller\Adminhtml\Campaign\Library). Card-grid look
+ * matches dashboard.css's own .ordo-nav-card precedent (same border/radius/hover treatment),
+ * reusing the shared color tokens from _tokens.css directly - :root, not scoped to a wrapper
+ * class, per dashboard.css's own comment on why that specific mistake made a real button
+ * invisible before (custom properties scoped to .ordo-dashboard weren't visible to a sibling
+ * block outside it).
+ */
+:root {
+    --ordo-library-border: var(--ordo-color-border);
+    --ordo-library-radius: 10px;
+}
+
+.ordo-campaign-library-intro {
+    max-width: 640px;
+    margin: 0 0 20px;
+    color: var(--ordo-color-muted);
+    font-size: var(--ordo-font-base);
+}
+
+.ordo-campaign-library-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.ordo-campaign-library-card {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid var(--ordo-library-border);
+    border-radius: var(--ordo-library-radius);
+    padding: 18px;
+}
+
+.ordo-campaign-library-card-name {
+    display: block;
+    font-size: var(--ordo-font-md);
+    font-weight: var(--ordo-weight-medium);
+    color: var(--ordo-color-ink);
+    margin-bottom: 8px;
+}
+
+.ordo-campaign-library-card-description {
+    flex: 1 0 auto;
+    color: var(--ordo-color-muted);
+    font-size: var(--ordo-font-sm);
+    margin: 0 0 16px;
+}
+
+.ordo-campaign-library-card form {
+    margin: 0;
+}

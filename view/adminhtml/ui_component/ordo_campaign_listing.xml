@@ -26,6 +26,11 @@
                 <class>secondary</class>
                 <label translate="true">Import Campaign</label>
             </button>
+            <button name="library">
+                <url path="*/*/library"/>
+                <class>secondary</class>
+                <label translate="true">Browse Template Library</label>
+            </button>
         </buttons>
     </settings>
 
