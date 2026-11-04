@@ -25,9 +25,12 @@
  * collectNodeFields()'s `[data-field]` search would otherwise wrongly fold them into the row.
  */
 define([
-    'jquery'
+    'jquery',
+    'mage/translate'
 ], function ($) {
     'use strict';
+
+    var $t = $.mage.__;
 
     /**
      * @param {jQuery} $container
@@ -49,7 +52,8 @@ define([
             $chips.empty();
             tags.forEach(function (tag) {
                 var $chip = $('<span class="ordo-tag-chip"></span>').text(tag),
-                    $remove = $('<button type="button" class="ordo-tag-chip-remove" aria-label="Remove tag">×</button>');
+                    $remove = $('<button type="button" class="ordo-tag-chip-remove" aria-label="' +
+                        $('<div>').text($t('Remove tag')).html() + '">×</button>');
 
                 $remove.on('click', function () {
                     removeTag(tag);
@@ -143,7 +147,8 @@ define([
 
         var $chipList = $('<div class="ordo-tag-chip-list"></div>'),
             $inputWrap = $('<div class="ordo-tag-chip-input-wrap"></div>'),
-            $input = $('<input type="text" class="ordo-tag-chip-input" placeholder="Add a tag…">');
+            $input = $('<input type="text" class="ordo-tag-chip-input" placeholder="' +
+                $('<div>').text($t('Add a tag…')).html() + '">');
 
         $input.on('keydown', onInputKeydown);
         $input.on('input', onInput);

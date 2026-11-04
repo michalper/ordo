@@ -53,6 +53,7 @@
 }
 
 .ordo-tag-chip-input {
+    display: block;
     width: 100%;
     box-sizing: border-box;
     /* Explicit, not inherited - this file is shared by the campaign Flow canvas (whose own
@@ -63,6 +64,20 @@
        just invisible, not a missing-text bug. */
     color: #2b2b2b;
     background: #fff;
+    /* Reported directly against a real screenshot: with no border/radius/padding of its own,
+       this fell back to the browser's own stark default text-input chrome - jarring next to
+       every sibling field on the Flow canvas (.ordo-flow-field-input, .ordo-flow-type-select),
+       which all share this same 5px radius + 6px/8px padding. A visible border (none of those
+       sibling fields have one, relying on the gradient card for contrast instead) is kept here
+       specifically because this input also has to read clearly sitting on the segment form's
+       plain white page, which has no such background to set it apart from.
+       Font-size matches --ordo-font-xs to match the Flow canvas's own compact node styling
+       (.ordo-flow-field-input), not the browser's default ~16px, since an input notably larger
+       than its own TAGS/MATCH siblings would be its own visual mismatch. */
+    font-size: var(--ordo-font-xs);
+    padding: 6px 8px;
+    border: 1px solid var(--ordo-color-border);
+    border-radius: 5px;
 }
 
 .ordo-tag-chip-suggest {

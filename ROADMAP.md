@@ -285,15 +285,13 @@ coupon/channel/device/geography.
 
   Combined scope: medium (one new source for `rule_id`, one new source for `template`, two cheap
   reuses, one autocomplete-regex extension).
-- **`campaign-flow-editor.js` has no i18n at all** — reported directly while fixing an unrelated
-  bug in it (the empty-`<select>` placeholder). 15+ hardcoded English UI strings (`Exit Full
-  Screen`, `Send test`, `Weight`, validation messages, starter-template labels, the new
-  `-- Please Select --` placeholder) never go through translation, unlike the rest of this
-  module's admin UI (`__()`/`translate="true"` server-side, `i18n/*.csv` for `en_US`/`pl_PL`/
-  `de_DE`/`fr_FR`). The mechanism already exists and works elsewhere in this module
-  (`view/adminhtml/web/js/buy-x-get-y-calculator.js` uses `mage/translate`'s `$.mage.__`) — this
-  file just never adopted it. Medium scope: wrap every hardcoded string, add the new `i18n/*.csv`
-  rows for all 4 shipped locales.
+- ~~`campaign-flow-editor.js` has no i18n at all~~ — shipped (see ADR 0019): wrapped all 33
+  hardcoded strings in `campaign-flow-editor.js` plus 2 in `tag-chip-editor.js`, and — found only
+  by verifying against a real Polish admin session, not visible from the diff alone — fixed the
+  much bigger pre-existing gap it exposed: every condition/action type label and condition-category
+  group name (`Model\Campaign\TypeLabels`, 33 labels + 5 categories) had never been translated at
+  all, plus 3 missing `TagMatchMode`/"Match" CSV rows from ADR 0018. 73 new phrase keys added
+  across all 11 translated locale CSVs.
 - **Automated anomaly/insight alerts** — a periodic cron flagging notable deviations (a channel's
   revenue dropping, a coupon/campaign outperforming others). More speculative than the rest of this
   list — needs real usage data to pick sane thresholds before committing to a design, so lowest

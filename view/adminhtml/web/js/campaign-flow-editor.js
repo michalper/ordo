@@ -253,9 +253,12 @@ define([
     'uiRegistry',
     'drawflow',
     'Ordo_Automation/js/tag-chip-editor',
+    'mage/translate',
     'domReady!'
 ], function ($, registry, Drawflow, tagChipEditor) {
     'use strict';
+
+    var $t = $.mage.__;
 
     /**
      * @param {String} term
@@ -322,7 +325,8 @@ define([
                     action.type = $(this).val();
                     onChange();
                 }),
-            $paramsTextarea = $('<textarea class="ordo-flow-variant-action-params" placeholder="Params (JSON)"></textarea>')
+            $paramsTextarea = $('<textarea class="ordo-flow-variant-action-params" placeholder="' +
+                escapeHtml($t('Params (JSON)')) + '"></textarea>')
                 .val(Object.keys(action.params).length ? JSON.stringify(action.params) : '')
                 .on('input', function () {
                     var raw = $(this).val().trim();
@@ -336,7 +340,8 @@ define([
                     }
                     onChange();
                 }),
-            $removeButton = $('<button type="button" class="ordo-flow-variant-action-remove" title="Remove action" aria-label="Remove action">&times;</button>')
+            $removeButton = $('<button type="button" class="ordo-flow-variant-action-remove" title="' +
+                escapeHtml($t('Remove action')) + '" aria-label="' + escapeHtml($t('Remove action')) + '">&times;</button>')
                 .on('click', onRemove);
 
         return $('<div class="ordo-flow-variant-action-row"></div>')
@@ -355,24 +360,26 @@ define([
      * @return {jQuery}
      */
     function renderVariantBlock(variant, typesConfig, onChange, onRemove) {
-        var $keyInput = $('<input type="text" class="ordo-flow-variant-key" placeholder="Variant key, e.g. a">')
+        var $keyInput = $('<input type="text" class="ordo-flow-variant-key" placeholder="' +
+                escapeHtml($t('Variant key, e.g. a')) + '">')
                 .val(variant.key)
                 .on('input', function () {
                     variant.key = $(this).val();
                     onChange();
                 }),
-            $weightInput = $('<input type="number" min="0" class="ordo-flow-variant-weight" placeholder="Weight">')
+            $weightInput = $('<input type="number" min="0" class="ordo-flow-variant-weight" placeholder="' +
+                escapeHtml($t('Weight')) + '">')
                 .val(variant.weight)
                 .on('input', function () {
                     variant.weight = Number($(this).val()) || 0;
                     onChange();
                 }),
             $removeVariantButton = $(
-                '<button type="button" class="ordo-flow-variant-remove">' + escapeHtml('Remove variant') + '</button>'
+                '<button type="button" class="ordo-flow-variant-remove">' + escapeHtml($t('Remove variant')) + '</button>'
             ).on('click', onRemove),
             $actionsList = $('<div class="ordo-flow-variant-actions"></div>'),
             $addActionButton = $(
-                '<button type="button" class="ordo-flow-variant-action-add">' + escapeHtml('+ Add action') + '</button>'
+                '<button type="button" class="ordo-flow-variant-action-add">' + escapeHtml($t('+ Add action')) + '</button>'
             );
 
         function renderActions() {
@@ -397,8 +404,8 @@ define([
 
         return $('<div class="ordo-flow-variant-block"></div>').append(
             $('<div class="ordo-flow-variant-head"></div>').append(
-                '<label>' + escapeHtml('Key') + '</label>', $keyInput,
-                '<label>' + escapeHtml('Weight') + '</label>', $weightInput,
+                '<label>' + escapeHtml($t('Key')) + '</label>', $keyInput,
+                '<label>' + escapeHtml($t('Weight')) + '</label>', $weightInput,
                 $removeVariantButton
             ),
             $actionsList,
@@ -427,7 +434,7 @@ define([
             $hidden = $('<input type="hidden" class="ordo-flow-field-input" data-field="' + fieldName + '">'),
             $items = $('<div class="ordo-flow-variant-items"></div>'),
             $addVariantButton = $(
-                '<button type="button" class="ordo-flow-variant-add">' + escapeHtml('+ Add variant') + '</button>'
+                '<button type="button" class="ordo-flow-variant-add">' + escapeHtml($t('+ Add variant')) + '</button>'
             );
 
         function sync() {
@@ -624,7 +631,7 @@ define([
                 // a live query (e.g. CampaignOptions) legitimately returns none yet on a fresh
                 // install - with no placeholder, a 0-option <select> renders as an unlabeled,
                 // unusably tiny empty box, indistinguishable from broken.
-                var html = '<option value="">' + $('<div>').text('-- Please Select --').html() + '</option>';
+                var html = '<option value="">' + $('<div>').text($t('-- Please Select --')).html() + '</option>';
 
                 Object.keys(field.options).forEach(function (optionValue) {
                     var selectedAttr = String(value) === String(optionValue) ? ' selected="selected"' : '';
@@ -722,7 +729,8 @@ define([
                     // its own — the type select's value IS the whole payload — so unlike
                     // condition/action, an unmapped trigger type gets nothing here rather than a
                     // JSON fallback textarea nobody would ever need to fill in.
-                    html += '<label class="ordo-flow-field-label">Params (JSON) — advanced, no dedicated fields for this type</label>' +
+                    html += '<label class="ordo-flow-field-label">' +
+                        escapeHtml($t('Params (JSON) — advanced, no dedicated fields for this type')) + '</label>' +
                         '<textarea class="ordo-flow-params-textarea" data-field="params_json">' +
                         $('<div>').text(Object.keys(params ?? {}).length ? JSON.stringify(params) : '').html() +
                         '</textarea>';
@@ -820,7 +828,7 @@ define([
             // yet) rather than leaving them enabled with an empty history array.
             pushHistory();
 
-            var KIND_LABELS = { trigger: 'Trigger', condition: 'Condition', action: 'Action' },
+            var KIND_LABELS = { trigger: $t('Trigger'), condition: $t('Condition'), action: $t('Action') },
                 KIND_TYPE_LISTS = { trigger: 'triggers', condition: 'conditions', action: 'actions' };
 
             /**
@@ -845,7 +853,7 @@ define([
                     // below can read data-field="delay_minutes" the same way regardless of
                     // whether the node came from the server or the palette.
                     delayHtml = kind === 'action'
-                        ? '<label class="ordo-flow-field-label">Delay (minutes)</label>' +
+                        ? '<label class="ordo-flow-field-label">' + escapeHtml($t('Delay (minutes)')) + '</label>' +
                             '<input type="text" class="ordo-flow-field-input" data-field="delay_minutes" value="0">'
                         : '',
                     // Only action nodes can ever be test-sent (testSendChannelForActionType()
@@ -855,8 +863,8 @@ define([
                     // pattern renderFields() itself uses for per-type markup.
                     testSendHtml = kind === 'action'
                         ? '<button type="button" class="ordo-flow-test-send" title="' +
-                            escapeHtml('Send a test message using this node’s current fields') +
-                            '">' + escapeHtml('Send test') + '</button>'
+                            escapeHtml($t('Send a test message using this node’s current fields')) +
+                            '">' + escapeHtml($t('Send test')) + '</button>'
                         : '';
 
                 // `data-kind` (not a class) is what collectRows() below matches on — Drawflow
@@ -869,8 +877,10 @@ define([
                 return '<div class="ordo-flow-node" data-kind="' + kind + '" data-params="{}">' +
                     '<div class="ordo-flow-node-head"><span>' + label + '</span>' +
                     testSendHtml +
-                    '<button type="button" class="ordo-flow-duplicate" title="Duplicate" aria-label="Duplicate">&#10697;</button>' +
-                    '<button type="button" class="ordo-flow-delete" title="Remove" aria-label="Remove">&times;</button></div>' +
+                    '<button type="button" class="ordo-flow-duplicate" title="' + escapeHtml($t('Duplicate')) +
+                        '" aria-label="' + escapeHtml($t('Duplicate')) + '">&#10697;</button>' +
+                    '<button type="button" class="ordo-flow-delete" title="' + escapeHtml($t('Remove')) +
+                        '" aria-label="' + escapeHtml($t('Remove')) + '">&times;</button></div>' +
                     '<select class="ordo-flow-type-select">' + optionsHtml + '</select>' +
                     delayHtml +
                     '<div class="ordo-flow-fields"></div>' +
@@ -985,7 +995,7 @@ define([
                     })
                     .then(function (data) {
                         var success = Boolean(data?.success),
-                            message = data?.message ? data.message : 'The test send failed.';
+                            message = data?.message ? data.message : $t('The test send failed.');
 
                         $result.text(message)
                             .toggleClass('ordo-flow-test-send-result-success', success)
@@ -993,7 +1003,7 @@ define([
                             .show();
                     })
                     .catch(function () {
-                        $result.text('The test send failed.')
+                        $result.text($t('The test send failed.'))
                             .removeClass('ordo-flow-test-send-result-success')
                             .addClass('ordo-flow-test-send-result-error')
                             .show();
@@ -1037,21 +1047,21 @@ define([
              */
             var FLOW_TEMPLATES = {
                 abandoned_cart: {
-                    label: 'Abandoned Cart Recovery',
+                    label: $t('Abandoned Cart Recovery'),
                     nodes: [
                         { kind: 'trigger', type: 'cart_abandoned' },
                         { kind: 'action', type: 'send_email' }
                     ]
                 },
                 welcome_new_customer: {
-                    label: 'Welcome New Customer',
+                    label: $t('Welcome New Customer'),
                     nodes: [
                         { kind: 'trigger', type: 'customer_registered' },
                         { kind: 'action', type: 'send_email' }
                     ]
                 },
                 post_purchase_coupon: {
-                    label: 'Post-Purchase Thank You + Coupon',
+                    label: $t('Post-Purchase Thank You + Coupon'),
                     nodes: [
                         { kind: 'trigger', type: 'order_placed' },
                         { kind: 'action', type: 'send_email' },
@@ -1059,7 +1069,7 @@ define([
                     ]
                 },
                 order_canceled_recovery: {
-                    label: 'Canceled Order Recovery',
+                    label: $t('Canceled Order Recovery'),
                     nodes: [
                         { kind: 'trigger', type: 'order_canceled' },
                         { kind: 'action', type: 'generate_coupon' },
@@ -1067,7 +1077,7 @@ define([
                     ]
                 },
                 tagged_customer_followup: {
-                    label: 'Follow Up on Tagged Customers',
+                    label: $t('Follow Up on Tagged Customers'),
                     nodes: [
                         { kind: 'trigger', type: 'tag_added' },
                         { kind: 'condition', type: 'tag' },
@@ -1245,8 +1255,8 @@ define([
                 // in this file: .ordo-flow-duplicate/.ordo-flow-delete/.ordo-flow-variant-action-remove).
                 $wrapper.find('[data-flow-action="fullscreen"]')
                     .text(isFullscreen ? '⤡' : '⛶')
-                    .attr('title', isFullscreen ? 'Exit Full Screen' : 'Full Screen')
-                    .attr('aria-label', isFullscreen ? 'Exit Full Screen' : 'Full Screen');
+                    .attr('title', isFullscreen ? $t('Exit Full Screen') : $t('Full Screen'))
+                    .attr('aria-label', isFullscreen ? $t('Exit Full Screen') : $t('Full Screen'));
 
                 fitCanvasToView();
             });
@@ -1358,8 +1368,8 @@ define([
                 // (unlike the standalone Template Test Send page's own <input>), so a full modal
                 // for one text field would be more chrome than the task warrants.
                 to = window.prompt(channel === 'whatsapp' || channel === 'sms'
-                    ? 'Send a test message to (E.164 phone number, e.g. +15551234567):'
-                    : 'Send a test email to:');
+                    ? $t('Send a test message to (E.164 phone number, e.g. +15551234567):')
+                    : $t('Send a test email to:'));
 
                 if (!to) {
                     return;
@@ -1601,11 +1611,11 @@ define([
                 });
 
                 if (!triggerIds.length) {
-                    errors.push('The flow needs at least one Trigger — right now nothing would ever start it.');
+                    errors.push($t('The flow needs at least one Trigger — right now nothing would ever start it.'));
                 }
 
                 if (!hasAction) {
-                    errors.push('The flow needs at least one Action — right now it wouldn\'t do anything.');
+                    errors.push($t('The flow needs at least one Action — right now it wouldn\'t do anything.'));
                 }
 
                 if (!triggerIds.length) {
@@ -1625,12 +1635,12 @@ define([
                         disconnectedIds = findDisconnectedNodeIds(exported, groups, primaryRoot);
 
                     if (disconnectedIds.length) {
-                        errors.push(
+                        errors.push($t(
                             'This flow has more than one Trigger chain that never connect to each ' +
                             'other (highlighted). A campaign\'s triggers must all lead into the ' +
                             'same shared sequence of conditions/actions — connect them together, ' +
                             'or build the other one as a separate campaign.'
-                        );
+                        ));
                         badNodeIds = badNodeIds.concat(disconnectedIds);
                     }
                 }());
@@ -1682,11 +1692,11 @@ define([
                 // message for the ids it added, avoiding two overlapping error lines for what a
                 // merchant would see as one problem (e.g. loading a second, disconnected template).
                 if (badNodeIds.length > badNodeCountBeforeReachabilityCheck) {
-                    errors.push(
+                    errors.push($t(
                         'Every node must be connected from a Trigger all the way through to an ' +
                         'Action — the highlighted node(s) are either disconnected or a condition ' +
                         'that doesn\'t lead anywhere.'
-                    );
+                    ));
                 }
 
                 return { errors: errors, badNodeIds: badNodeIds };
@@ -1784,7 +1794,7 @@ define([
                         actions: collectRows('action')
                     });
 
-                    $button.text('Saving…');
+                    $button.text($t('Saving…'));
                     provider.save();
                 });
             });
