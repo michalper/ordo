@@ -382,7 +382,7 @@ class SegmentAndRfmScenarioTest extends TestCase
         $campaignId = $this->createCampaign($triggerEvent);
         $this->addCondition($campaignId, 'in_segment', ['segment_id' => (string) $segmentId]);
         $resultTag = 'segment-member-' . uniqid('', true);
-        $this->addAction($campaignId, 'add_tag', ['tag' => $resultTag]);
+        $this->addAction($campaignId, 'add_tag', ['tags' => [$resultTag]]);
         $this->tagsToClean[] = ['customerId' => $memberCustomerId, 'tag' => $resultTag];
         $this->cache->clean([CampaignDispatcher::CACHE_TAG]);
 

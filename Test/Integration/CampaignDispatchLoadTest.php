@@ -110,9 +110,9 @@ class CampaignDispatchLoadTest extends TestCase
 
         for ($i = 0; $i < self::CAMPAIGN_COUNT; $i++) {
             $campaignId = $this->createCampaign($triggerEvent);
-            $this->addCondition($campaignId, 'tag', ['tag' => $eligibilityTag]);
+            $this->addCondition($campaignId, 'tag', ['tags' => [$eligibilityTag]]);
             $resultTag = sprintf('load-result-%d-%s', $i, uniqid('', true));
-            $this->addAction($campaignId, 'add_tag', ['tag' => $resultTag]);
+            $this->addAction($campaignId, 'add_tag', ['tags' => [$resultTag]]);
             $resultTags[] = $resultTag;
         }
 
@@ -172,7 +172,7 @@ class CampaignDispatchLoadTest extends TestCase
         $triggerEvent = 'test_load_cron_' . uniqid('', true);
         $campaignId = $this->createCampaign($triggerEvent);
         $delayedTag = 'load-cron-delayed-' . uniqid('', true);
-        $delayedActionId = $this->addAction($campaignId, 'add_tag', ['tag' => $delayedTag], 0, 1440);
+        $delayedActionId = $this->addAction($campaignId, 'add_tag', ['tags' => [$delayedTag]], 0, 1440);
 
         $scheduledFactory = self::$objectManager->get(CampaignScheduledActionFactory::class);
         $scheduledResource = self::$objectManager->get(CampaignScheduledActionResource::class);

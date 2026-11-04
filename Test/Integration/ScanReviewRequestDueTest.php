@@ -211,7 +211,7 @@ class ScanReviewRequestDueTest extends TestCase
         $action->setData([
             'campaign_id' => $campaignId,
             'type' => 'add_tag',
-            'params' => json_encode(['tag' => $resultTag]),
+            'params' => json_encode(['tags' => [$resultTag]]),
             'sort_order' => 0,
         ]);
         $actionResource->save($action);

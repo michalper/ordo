@@ -139,7 +139,7 @@ class CampaignQueueWiringTest extends TestCase
         $action->setData([
             'campaign_id' => $campaignId,
             'type' => 'add_tag',
-            'params' => json_encode(['tag' => $tag]),
+            'params' => json_encode(['tags' => [$tag]]),
             'sort_order' => 0,
             'delay_minutes' => 0,
         ]);

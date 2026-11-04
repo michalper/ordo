@@ -251,7 +251,7 @@ class CampaignVisitorPopupScenarioTest extends TestCase
         $tag = 'vip-' . uniqid('', true);
 
         $campaignId = $this->createCampaign('visitor_tag_added');
-        $this->addCondition($campaignId, 'visitor_tag', ['tag' => $tag]);
+        $this->addCondition($campaignId, 'visitor_tag', ['tags' => [$tag]]);
         $this->addAction($campaignId, 'popup', [
             'headline' => 'Welcome back!',
             'body' => 'We saved something for you.',

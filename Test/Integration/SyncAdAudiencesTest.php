@@ -106,7 +106,7 @@ class SyncAdAudiencesTest extends TestCase
         $condition = $conditionFactory->create();
         $condition->setSegmentId($this->segmentId);
         $condition->setType('tag');
-        $condition->setParamsJson(json_encode(['tag' => $tag]));
+        $condition->setParamsJson(json_encode(['tags' => [$tag]]));
         $condition->setSortOrder(0);
         $conditionResource->save($condition);
 

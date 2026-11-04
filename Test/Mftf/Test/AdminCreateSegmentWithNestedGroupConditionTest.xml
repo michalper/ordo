@@ -37,8 +37,8 @@
         <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addTopLevelConditionRow"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForTopLevelConditionRow"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="tag" stepKey="selectTopLevelConditionType"/>
-        <waitForElementVisible selector="[name='conditions[conditions][0][tag]']" stepKey="waitForTagField"/>
-        <fillField selector="[name='conditions[conditions][0][tag]']" userInput="vip" stepKey="fillTagValue"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][tags]']" stepKey="waitForTagField"/>
+        <fillField selector="[name='conditions[conditions][0][tags]']" userInput='["vip"]' stepKey="fillTagValue"/>
 
         <!-- Row 1: the nested group. Selecting "group" must render segment-group-modal.js's
              inline panel directly under this row's own "Group matches" selector - no popup ever

@@ -262,9 +262,9 @@ class CampaignDispatchScenarioTest extends TestCase
 
         $triggerEvent = 'test_tag_condition_' . uniqid('', true);
         $campaignId = $this->createCampaign($triggerEvent);
-        $this->addCondition($campaignId, 'tag', ['tag' => $tag]);
+        $this->addCondition($campaignId, 'tag', ['tags' => [$tag]]);
         $resultTag = 'result-' . uniqid('', true);
-        $this->addAction($campaignId, 'add_tag', ['tag' => $resultTag]);
+        $this->addAction($campaignId, 'add_tag', ['tags' => [$resultTag]]);
         $this->tagsToClean[] = ['customerId' => $customerId, 'tag' => $resultTag];
         $this->flushCampaignCache();
 
@@ -280,9 +280,9 @@ class CampaignDispatchScenarioTest extends TestCase
 
         $triggerEvent = 'test_tag_condition_fail_' . uniqid('', true);
         $campaignId = $this->createCampaign($triggerEvent);
-        $this->addCondition($campaignId, 'tag', ['tag' => 'never-added-' . uniqid('', true)]);
+        $this->addCondition($campaignId, 'tag', ['tags' => ['never-added-' . uniqid('', true)]]);
         $resultTag = 'result-' . uniqid('', true);
-        $this->addAction($campaignId, 'add_tag', ['tag' => $resultTag]);
+        $this->addAction($campaignId, 'add_tag', ['tags' => [$resultTag]]);
         $this->flushCampaignCache();
 
         $this->dispatcher->dispatch($triggerEvent, ['customer_id' => $customerId]);
@@ -299,7 +299,7 @@ class CampaignDispatchScenarioTest extends TestCase
         $campaignId = $this->createCampaign($triggerEvent);
         $this->addCondition($campaignId, 'order_total_gte', ['amount' => '100']);
         $resultTag = 'big-spender-' . uniqid('', true);
-        $this->addAction($campaignId, 'add_tag', ['tag' => $resultTag]);
+        $this->addAction($campaignId, 'add_tag', ['tags' => [$resultTag]]);
         $this->flushCampaignCache();
 
         $this->dispatcher->dispatch($triggerEvent, ['customer_id' => $customerId, 'order_total' => 50.0]);
@@ -321,10 +321,10 @@ class CampaignDispatchScenarioTest extends TestCase
 
         $triggerEvent = 'test_multi_condition_' . uniqid('', true);
         $campaignId = $this->createCampaign($triggerEvent);
-        $this->addCondition($campaignId, 'tag', ['tag' => $tag], 0);
+        $this->addCondition($campaignId, 'tag', ['tags' => [$tag]], 0);
         $this->addCondition($campaignId, 'order_total_gte', ['amount' => '100'], 1);
         $resultTag = 'qualified-' . uniqid('', true);
-        $this->addAction($campaignId, 'add_tag', ['tag' => $resultTag]);
+        $this->addAction($campaignId, 'add_tag', ['tags' => [$resultTag]]);
         $this->flushCampaignCache();
 
         // Has the tag but not the order total — AND must fail.
@@ -348,11 +348,11 @@ class CampaignDispatchScenarioTest extends TestCase
         $brokenCampaignId = $this->createCampaign($triggerEvent);
         $this->addCondition($brokenCampaignId, 'this_type_does_not_exist', []);
         $neverTag = 'never-' . uniqid('', true);
-        $this->addAction($brokenCampaignId, 'add_tag', ['tag' => $neverTag]);
+        $this->addAction($brokenCampaignId, 'add_tag', ['tags' => [$neverTag]]);
 
         $healthyCampaignId = $this->createCampaign($triggerEvent);
         $healthyTag = 'healthy-' . uniqid('', true);
-        $this->addAction($healthyCampaignId, 'add_tag', ['tag' => $healthyTag]);
+        $this->addAction($healthyCampaignId, 'add_tag', ['tags' => [$healthyTag]]);
 
         $this->flushCampaignCache();
 
@@ -443,7 +443,7 @@ class CampaignDispatchScenarioTest extends TestCase
         $campaignId = $this->createCampaign($triggerEvent);
         $this->addCondition($campaignId, 'score_at_least', ['threshold' => '50']);
         $resultTag = 'high-scorer-' . uniqid('', true);
-        $this->addAction($campaignId, 'add_tag', ['tag' => $resultTag]);
+        $this->addAction($campaignId, 'add_tag', ['tags' => [$resultTag]]);
         $this->tagsToClean[] = ['customerId' => $customerId, 'tag' => $resultTag];
         $this->flushCampaignCache();
 
@@ -469,8 +469,8 @@ class CampaignDispatchScenarioTest extends TestCase
         $campaignId = $this->createCampaign($triggerEvent);
         $immediateTag = 'immediate-' . uniqid('', true);
         $delayedTag = 'delayed-' . uniqid('', true);
-        $this->addAction($campaignId, 'add_tag', ['tag' => $immediateTag], 0, 0);
-        $this->addAction($campaignId, 'add_tag', ['tag' => $delayedTag], 1, 1440);
+        $this->addAction($campaignId, 'add_tag', ['tags' => [$immediateTag]], 0, 0);
+        $this->addAction($campaignId, 'add_tag', ['tags' => [$delayedTag]], 1, 1440);
         $this->flushCampaignCache();
 
         $this->dispatcher->dispatch($triggerEvent, ['customer_id' => $customerId]);
@@ -519,7 +519,7 @@ class CampaignDispatchScenarioTest extends TestCase
         $triggerResource->save($secondTrigger);
 
         $tag = 'multi-trigger-' . uniqid('', true);
-        $this->addAction($campaignId, 'add_tag', ['tag' => $tag]);
+        $this->addAction($campaignId, 'add_tag', ['tags' => [$tag]]);
         $this->flushCampaignCache();
 
         $this->dispatcher->dispatch($eventB, ['customer_id' => $customerId]);
@@ -539,7 +539,7 @@ class CampaignDispatchScenarioTest extends TestCase
         $triggerEvent = 'test_cache_' . uniqid('', true);
         $campaignId = $this->createCampaign($triggerEvent);
         $tag = 'cached-run-' . uniqid('', true);
-        $this->addAction($campaignId, 'add_tag', ['tag' => $tag]);
+        $this->addAction($campaignId, 'add_tag', ['tags' => [$tag]]);
         $this->flushCampaignCache();
 
         $this->dispatcher->dispatch($triggerEvent, ['customer_id' => $customerId]);

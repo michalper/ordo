@@ -46,7 +46,7 @@
         <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addConditionRowTwo"/>
         <waitForElementVisible selector="[name='conditions[conditions][1][type]']" stepKey="waitForConditionRowTwo"/>
         <selectOption selector="[name='conditions[conditions][1][type]']" userInput="tag" stepKey="selectConditionTypeTwo"/>
-        <fillField selector="[name='conditions[conditions][1][tag]']" userInput="vip" stepKey="fillConditionParamsTwo"/>
+        <fillField selector="[name='conditions[conditions][1][tags]']" userInput='["vip"]' stepKey="fillConditionParamsTwo"/>
 
         <waitForElementClickable selector="#save" stepKey="waitForClickSaveClickable"/>
         <click selector="#save" stepKey="clickSave"/>

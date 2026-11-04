@@ -121,7 +121,7 @@ class SegmentBulkActionQueueWiringTest extends TestCase
         $condition = $conditionFactory->create();
         $condition->setSegmentId($this->segmentId);
         $condition->setType('tag');
-        $condition->setParamsJson(json_encode(['tag' => $this->tag]));
+        $condition->setParamsJson(json_encode(['tags' => [$this->tag]]));
         $condition->setSortOrder(0);
         $conditionResource->save($condition);
 
