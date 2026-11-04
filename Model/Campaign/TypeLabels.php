@@ -74,6 +74,7 @@ class TypeLabels
             'send_push' => (string) __('Send Push'),
             'split' => (string) __('A/B Split Test'),
             'generate_ai_content' => (string) __('Generate AI Content (Ollama)'),
+            'send_webhook' => (string) __('Send Webhook'),
         ];
     }
 
