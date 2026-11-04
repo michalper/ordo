@@ -80,4 +80,52 @@ class VisitorTagManager
                 ->where('visitor_id = ?', $visitorId)
         );
     }
+
+    /**
+     * Has at least one of the given tags - the "any" match mode for VisitorHasTag.
+     *
+     * @param string[] $tags
+     */
+    public function hasAnyTag(string $visitorId, array $tags): bool
+    {
+        if ($tags === []) {
+            return false;
+        }
+
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('ordo_visitor_tag');
+
+        $count = $connection->fetchOne(
+            $connection->select()
+                ->from($table, 'COUNT(*)')
+                ->where('visitor_id = ?', $visitorId)
+                ->where('tag IN (?)', $tags)
+        );
+
+        return (int) $count > 0;
+    }
+
+    /**
+     * Has every one of the given tags - the "all" match mode for VisitorHasTag.
+     *
+     * @param string[] $tags
+     */
+    public function hasAllTags(string $visitorId, array $tags): bool
+    {
+        if ($tags === []) {
+            return false;
+        }
+
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('ordo_visitor_tag');
+
+        $matched = (int) $connection->fetchOne(
+            $connection->select()
+                ->from($table, 'COUNT(DISTINCT tag)')
+                ->where('visitor_id = ?', $visitorId)
+                ->where('tag IN (?)', $tags)
+        );
+
+        return $matched >= count(array_unique($tags));
+    }
 }

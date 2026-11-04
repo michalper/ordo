@@ -110,6 +110,42 @@ class CustomerTagManager implements CustomerTagManagementInterface
     }
 
     /**
+     * Distinct existing tag values matching a search term - backs the admin autocomplete
+     * (Controller\Adminhtml\TagSearch) for the Has Tag / Visitor Has Tag / add_tag fields, so a
+     * merchant picks from real values instead of retyping one that already exists with a typo.
+     * Intentionally does not also search ordo_visitor_tag - Visitor Has Tag's own suggestions
+     * come from the same customer-tag vocabulary a merchant already uses everywhere else (tags
+     * added by Visitor Has Tag-adjacent crons/actions overwhelmingly end up as customer tags too
+     * once a visitor converts), and a merged query would need a second table scan for a dataset
+     * this module's own tagging crons never actually keep disjoint in practice.
+     *
+     * @return string[]
+     */
+    public function searchTags(string $term, int $limit = 20): array
+    {
+        if ($term === '') {
+            return [];
+        }
+
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('ordo_customer_tag');
+
+        // distinct() is called as its own statement, not chained - 'DISTINCT tag' as a bare
+        // column string gets backtick-quoted as a literal identifier ("DISTINCT"."tag") instead
+        // of being parsed as SQL, producing a real "column not found" error (confirmed against a
+        // real database, not just a lint concern) - same reasoning as having()'s own comment in
+        // getCustomerIdsWithAllTags() below for why it isn't chained either.
+        $select = $connection->select()
+            ->from($table, 'tag')
+            ->where('tag LIKE ?', '%' . $term . '%')
+            ->order('tag ASC')
+            ->limit($limit);
+        $select->distinct();
+
+        return $connection->fetchCol($select);
+    }
+
+    /**
      * All customers currently carrying a given tag — the basic building block for targeting
      * a campaign at a segment ("send this to everyone tagged 'vip'").
      *
@@ -133,5 +169,115 @@ class CustomerTagManager implements CustomerTagManagementInterface
         );
 
         return array_map('intval', $ids);
+    }
+
+    /**
+     * Has at least one of the given tags - the "any" match mode for HasTag.
+     *
+     * @param string[] $tags
+     */
+    public function hasAnyTag(int $customerId, array $tags): bool
+    {
+        if ($tags === []) {
+            return false;
+        }
+
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('ordo_customer_tag');
+
+        $count = $connection->fetchOne(
+            $connection->select()
+                ->from($table, 'COUNT(*)')
+                ->where('customer_id = ?', $customerId)
+                ->where('tag IN (?)', $tags)
+        );
+
+        return (int) $count > 0;
+    }
+
+    /**
+     * Has every one of the given tags - the "all" match mode for HasTag.
+     *
+     * @param string[] $tags
+     */
+    public function hasAllTags(int $customerId, array $tags): bool
+    {
+        if ($tags === []) {
+            return false;
+        }
+
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('ordo_customer_tag');
+
+        $matched = (int) $connection->fetchOne(
+            $connection->select()
+                ->from($table, 'COUNT(DISTINCT tag)')
+                ->where('customer_id = ?', $customerId)
+                ->where('tag IN (?)', $tags)
+        );
+
+        return $matched >= count(array_unique($tags));
+    }
+
+    /**
+     * Set-level counterpart of hasAnyTag() - every customer carrying at least one of the given
+     * tags, for HasTag::resolveCustomerIds() (BulkResolvableConditionInterface).
+     *
+     * @param string[] $tags
+     * @return int[]
+     */
+    public function getCustomerIdsWithAnyTag(array $tags): array
+    {
+        if ($tags === []) {
+            return [];
+        }
+
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('ordo_customer_tag');
+        $customerTable = $this->resourceConnection->getTableName('customer_entity');
+
+        // distinct() as its own statement - see searchTags()'s own comment on why a bare
+        // "DISTINCT column" string in from()'s column argument is a real SQL error, not chained
+        // here for the same reason having() isn't chained in getCustomerIdsWithAllTags() below.
+        $select = $connection->select()
+            ->from(['t' => $table], 'customer_id')
+            ->join(['c' => $customerTable], 't.customer_id = c.entity_id', [])
+            ->where('t.tag IN (?)', $tags);
+        $select->distinct();
+
+        $ids = $connection->fetchCol($select);
+
+        return array_map('intval', $ids);
+    }
+
+    /**
+     * Set-level counterpart of hasAllTags() - every customer carrying every one of the given
+     * tags, for HasTag::resolveCustomerIds() (BulkResolvableConditionInterface).
+     *
+     * @param string[] $tags
+     * @return int[]
+     */
+    public function getCustomerIdsWithAllTags(array $tags): array
+    {
+        if ($tags === []) {
+            return [];
+        }
+
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('ordo_customer_tag');
+        $customerTable = $this->resourceConnection->getTableName('customer_entity');
+
+        // having() is called as its own statement, not chained - Magento's Select overrides
+        // where()/group()/join() to return self (Select), but inherits having() unchanged from
+        // Zend_Db_Select, so chaining it would narrow $select's own static type to the parent
+        // class and break fetchCol()'s Select|string parameter type.
+        $select = $connection->select()
+            ->from(['t' => $table], 'customer_id')
+            ->join(['c' => $customerTable], 't.customer_id = c.entity_id', [])
+            ->where('t.tag IN (?)', $tags)
+            ->group('t.customer_id');
+        $select->having('COUNT(DISTINCT t.tag) >= ?', count(array_unique($tags)));
+
+        return array_map('intval', $connection->fetchCol($select));
     }
 }

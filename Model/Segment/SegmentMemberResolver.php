@@ -9,7 +9,6 @@ use Ordo\Automation\Model\Campaign\ConditionPool;
 use Ordo\Automation\Model\Condition\GroupWalker;
 use Ordo\Automation\Model\Condition\SetGroupCombineStrategy;
 use Ordo\Automation\Model\CustomerScoreManager;
-use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Model\Event\EventOccurredResolver;
 use Ordo\Automation\Model\Purchase\PurchasedProductResolver;
 use Ordo\Automation\Model\ReorderCycle\ReorderCycleDriftCalculator;
@@ -85,7 +84,6 @@ class SegmentMemberResolver
 
     public function __construct(
         private readonly SegmentConditionCollectionFactory $segmentConditionCollectionFactory,
-        private readonly CustomerTagManager $customerTagManager,
         private readonly CustomerScoreManager $customerScoreManager,
         private readonly RfmCalculator $rfmCalculator,
         private readonly SegmentFactory $segmentFactory,
@@ -224,8 +222,6 @@ class SegmentMemberResolver
     private function resolveCondition(string $type, array $params, array $visitedSegmentIds): array
     {
         switch ($type) {
-            case 'tag':
-                return $this->resolveTag($params);
             case 'score_at_least':
                 return $this->resolveScoreAtLeast($params);
             case 'recency_days_at_most':
@@ -273,21 +269,6 @@ class SegmentMemberResolver
                 ));
                 return [];
         }
-    }
-
-    /**
-     * @param array<string, mixed> $params
-     * @return int[]
-     */
-    private function resolveTag(array $params): array
-    {
-        $tag = $params['tag'] ?? null;
-
-        if (!is_string($tag) || $tag === '') {
-            return [];
-        }
-
-        return $this->customerTagManager->getCustomerIdsWithTag($tag);
     }
 
     /**

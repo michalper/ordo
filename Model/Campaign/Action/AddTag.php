@@ -7,7 +7,9 @@ use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Model\CustomerTagManager;
 
 /**
- * Params: {"tag": "vip"}. Context must include "customer_id".
+ * Params: {"tags": ["vip", "loyal"]}. Context must include "customer_id". Adds every tag in the
+ * list - no match_mode here, that's a condition-only concept (what you check for), not something
+ * an action (what you do) needs.
  */
 class AddTag implements ActionInterface
 {
@@ -19,12 +21,17 @@ class AddTag implements ActionInterface
     public function execute(array &$context, array $params): void
     {
         $customerId = (int) ($context['customer_id'] ?? 0);
-        $tag = (string) ($params['tag'] ?? '');
+        $tags = $params['tags'] ?? [];
 
-        if ($customerId <= 0 || $tag === '') {
+        if ($customerId <= 0 || !is_array($tags)) {
             return;
         }
 
-        $this->customerTagManager->addTag($customerId, $tag);
+        foreach ($tags as $tag) {
+            $tag = trim((string) $tag);
+            if ($tag !== '') {
+                $this->customerTagManager->addTag($customerId, $tag);
+            }
+        }
     }
 }

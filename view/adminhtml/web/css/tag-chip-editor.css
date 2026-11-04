@@ -1,0 +1,82 @@
+/**
+ * tag-chip-editor.js's own chip/suggestion-dropdown styling - shared by both the segment editor
+ * (segment-tag-multiselect.js) and the campaign Flow builder's add_tag/Has Tag/Visitor Has Tag
+ * fields (campaign-flow-editor.js), so it's its own file rather than bolted onto either page's
+ * own segment-form.css/campaign-form.css. Deliberately not reusing .ordo-picker-chip's own
+ * styling (free-gift-offer-form.css) - that's a single, read-only, SKU-shaped confirmation chip
+ * with no remove button, the wrong shape for a removable multi-chip list.
+ */
+
+.ordo-tag-chip-editor {
+    display: block;
+}
+
+.ordo-tag-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.ordo-tag-chip-list:empty {
+    margin-bottom: 0;
+}
+
+.ordo-tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 6px 3px 10px;
+    background: #f5f1fe;
+    border-radius: 999px;
+    font-size: var(--ordo-font-sm);
+    color: var(--ordo-color-ink);
+}
+
+.ordo-tag-chip-remove {
+    border: none;
+    background: none;
+    padding: 0;
+    margin: 0;
+    font-size: var(--ordo-font-md);
+    line-height: 1;
+    color: var(--ordo-color-muted);
+    cursor: pointer;
+}
+
+.ordo-tag-chip-remove:hover {
+    color: var(--ordo-color-ink);
+}
+
+.ordo-tag-chip-input-wrap {
+    position: relative;
+}
+
+.ordo-tag-chip-input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.ordo-tag-chip-suggest {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    background: #fff;
+    border: 1px solid var(--ordo-color-border);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(27, 31, 42, 0.12);
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.ordo-tag-chip-suggest-row {
+    padding: 6px 10px;
+    font-size: var(--ordo-font-sm);
+    cursor: pointer;
+}
+
+.ordo-tag-chip-suggest-row:hover {
+    background: #f5f1fe;
+}

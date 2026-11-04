@@ -212,27 +212,37 @@
    select next to it (flex-grow: 1, nothing else competing for the line's space) grew to fill
    nearly the entire row, leaving the actual SKU/category input squeezed into a disconnected
    sliver at the far right - reported directly against a real screenshot. */
-[data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="tag"]),
 [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="amount"]),
 [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="threshold"]),
 [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="days"]),
 [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="count"]),
 [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="percentile"]),
 [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="sku"]),
-[data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="category_id"]) {
+[data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="category_id"]),
+[data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="match_mode"]) {
     flex: 1 1 160px;
     min-width: 0;
 }
 
+/* tags (the Has Tag/Visitor Has Tag/add_tag chip editor - see tag-chip-editor.js) needs
+   meaningfully more room than a plain short text input: a flex-wrap chip list plus its own
+   add-a-tag input, not a single short value. Same squeeze bug as sku/category_id above would
+   otherwise reproduce here too - reported directly against a real screenshot. */
+[data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="tags"]) {
+    flex: 2 1 260px;
+    min-width: 0;
+}
+
 [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="type"]) select,
-[data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="tag"]) input,
 [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="amount"]) input,
 [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="threshold"]) input,
 [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="days"]) input,
 [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="count"]) input,
 [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="percentile"]) input,
 [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="sku"]) input,
-[data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="category_id"]) select {
+[data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="category_id"]) select,
+[data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="match_mode"]) select,
+[data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="tags"]) .ordo-tag-chip-editor-mount {
     width: 100%;
     box-sizing: border-box;
 }

@@ -252,9 +252,31 @@ define([
     'jquery',
     'uiRegistry',
     'drawflow',
+    'Ordo_Automation/js/tag-chip-editor',
     'domReady!'
-], function ($, registry, Drawflow) {
+], function ($, registry, Drawflow, tagChipEditor) {
     'use strict';
+
+    /**
+     * @param {String} term
+     * @return {Promise<Array<String>>}
+     */
+    function searchTags(term) {
+        var searchUrl = (window.BASE_URL || '') + 'tag/search';
+
+        return fetch(searchUrl + '?term=' + encodeURIComponent(term), {credentials: 'same-origin'})
+            .then(function (response) {
+                return response.ok ? response.json() : {items: []};
+            })
+            .then(function (data) {
+                return (data?.items || []).map(function (item) {
+                    return item.tag;
+                });
+            })
+            .catch(function () {
+                return [];
+            });
+    }
 
     /**
      * @param {String} raw
@@ -655,6 +677,23 @@ define([
                             return;
                         }
 
+                        // Same placeholder-now/enhance-after-$fields.html() shape as variant_list
+                        // just above - a chip editor needs live DOM/event wiring a plain HTML
+                        // string can't carry either. The hidden input is the field's own real
+                        // `[data-field]` value holder (see tag-chip-editor.js's own docblock);
+                        // the visible chip/input UI tag-chip-editor.js builds around it carries
+                        // no data-field of its own.
+                        if (field.type === 'tag_multiselect') {
+                            html += '<div class="ordo-flow-tag-editor" data-tag-editor="' + field.name + '"></div>' +
+                                '<input type="hidden" class="ordo-flow-field-input" data-field="' + field.name +
+                                '" value="' + $('<div>').text(JSON.stringify(params?.[field.name] || [])).html() + '">';
+                            if (field.notice) {
+                                html += '<span class="ordo-flow-field-notice">' +
+                                    $('<div>').text(field.notice).html() + '</span>';
+                            }
+                            return;
+                        }
+
                         // A field descriptor carrying a non-empty "options" map (e.g. the
                         // add_dynamic_content action's content_block_id, built server-side in
                         // Flow::getContentBlockOptions()) renders as a <select> instead of a
@@ -698,15 +737,21 @@ define([
                 // mid-loop.
                 if (descriptors.length) {
                     descriptors.forEach(function (field) {
-                        if (field.type !== 'variant_list') {
-                            return;
+                        if (field.type === 'variant_list') {
+                            renderVariantEditor(
+                                $fields.find('[data-variant-editor="' + field.name + '"]'),
+                                field.name,
+                                params?.[field.name],
+                                typesConfig
+                            );
+                        } else if (field.type === 'tag_multiselect') {
+                            tagChipEditor.mount(
+                                $fields.find('[data-tag-editor="' + field.name + '"]'),
+                                params?.[field.name] || [],
+                                $fields.find('input[data-field="' + field.name + '"]'),
+                                searchTags
+                            );
                         }
-                        renderVariantEditor(
-                            $fields.find('[data-variant-editor="' + field.name + '"]'),
-                            field.name,
-                            params?.[field.name],
-                            typesConfig
-                        );
                     });
                 }
             }

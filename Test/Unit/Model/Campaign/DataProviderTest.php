@@ -120,6 +120,54 @@ class DataProviderTest extends TestCase
         self::assertSame($data, $provider->getData());
     }
 
+    /**
+     * Regression test: the generic merge above (`$rowData += $decoded`) puts a real PHP array
+     * under 'tags'/'variants' for a saved tag/visitor_tag/add_tag or split row - the dynamicRows
+     * fields they feed (ordo_campaign_form.xml's own plain text-valued Knockout observables) need
+     * a JSON-encoded string, the same shape the client posts back. Only reachable through the
+     * collapsible "Campaign Information" section underneath the Flow canvas (which has its own
+     * separate read path - see Flow::getFlowDataJson()), but still a real round-trip gap.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetDataRestringifiesTagsAndVariantsArraysBackIntoJson(): void
+    {
+        $campaign = $this->createStub(Campaign::class);
+        $campaign->method('getData')->willReturn(['entity_id' => 3, 'name' => 'Welcome']);
+        $campaign->method('getEntityId')->willReturn(3);
+
+        $collection = $this->createStub(CampaignCollection::class);
+        $collection->method('getItems')->willReturn([$campaign]);
+
+        $conditionRow = $this->createStub(CampaignCondition::class);
+        $conditionRow->method('getType')->willReturn('tag');
+        $conditionRow->method('getParamsJson')->willReturn(json_encode(['tags' => ['vip'], 'match_mode' => 'any']));
+        $conditionCollection = $this->createStub(ConditionCollection::class);
+        $conditionCollection->method('addCampaignFilter');
+        $conditionCollection->method('getIterator')->willReturn(new \ArrayIterator([$conditionRow]));
+        $this->conditionCollectionFactory->method('create')->willReturn($conditionCollection);
+
+        $actionRow = $this->createStub(CampaignAction::class);
+        $actionRow->method('getType')->willReturn('split');
+        $actionRow->method('getParamsJson')->willReturn(json_encode(['variants' => [['weight' => 1]]]));
+        $actionRow->method('getDelayMinutes')->willReturn(0);
+        $actionCollection = $this->createStub(ActionCollection::class);
+        $actionCollection->method('addCampaignFilter');
+        $actionCollection->method('getIterator')->willReturn(new \ArrayIterator([$actionRow]));
+        $this->actionCollectionFactory->method('create')->willReturn($actionCollection);
+
+        $this->dataPersistor->method('get')->willReturn(null);
+
+        $data = $this->makeProvider($collection)->getData();
+
+        $conditionRowData = $data[3]['conditions']['conditions'][0];
+        $actionRowData = $data[3]['actions']['actions'][0];
+
+        self::assertSame(['vip'], json_decode($conditionRowData['tags'], true));
+        self::assertIsString($conditionRowData['tags']);
+        self::assertSame([['weight' => 1]], json_decode($actionRowData['variants'], true));
+        self::assertIsString($actionRowData['variants']);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testGetDataKeepsParamsJsonOnlyWhenDecodeFails(): void
     {

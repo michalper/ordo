@@ -21,6 +21,7 @@ use Ordo\Automation\Model\Config\Source\CampaignOptions;
 use Ordo\Automation\Model\Config\Source\EventType;
 use Ordo\Automation\Model\Config\Source\LoyaltyTier;
 use Ordo\Automation\Model\Config\Source\MessageEngagementType;
+use Ordo\Automation\Model\Config\Source\TagMatchMode;
 use Ordo\Automation\Model\Config\Source\SegmentOptions;
 use Ordo\Automation\Model\Config\Source\WhatsAppTemplateOptions;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\Collection as ActionCollection;
@@ -50,6 +51,7 @@ class FlowTest extends TestCase
     private EventType $eventTypeOptions;
     private CampaignOptions $campaignOptions;
     private MessageEngagementType $messageEngagementTypeOptions;
+    private TagMatchMode $tagMatchModeOptions;
 
     protected function setUp(): void
     {
@@ -75,6 +77,7 @@ class FlowTest extends TestCase
         $this->campaignOptions->method('toOptionArray')->willReturn([]);
         // Also real/no dependencies, same reasoning as eventTypeOptions above.
         $this->messageEngagementTypeOptions = new MessageEngagementType();
+        $this->tagMatchModeOptions = new TagMatchMode();
         $this->triggerEventSource = $this->createStub(TriggerEvent::class);
         $this->triggerEventSource->method('toOptionArray')->willReturn([
             ['value' => 'order_placed', 'label' => __('Order Placed')],
@@ -111,6 +114,7 @@ class FlowTest extends TestCase
             $this->eventTypeOptions,
             $this->campaignOptions,
             $this->messageEngagementTypeOptions,
+            $this->tagMatchModeOptions,
             [],
             $this->createStub(JsonHelper::class),
             $this->createStub(DirectoryHelper::class)
@@ -386,7 +390,14 @@ class FlowTest extends TestCase
         $config = $this->makeBlock()->getFieldsConfig();
 
         self::assertSame(
-            [['name' => 'tag', 'label' => 'Tag']],
+            [
+                ['name' => 'tags', 'label' => 'Tags', 'type' => 'tag_multiselect'],
+                [
+                    'name' => 'match_mode',
+                    'label' => 'Match',
+                    'options' => ['any' => 'Has ANY of these tags', 'all' => 'Has ALL of these tags'],
+                ],
+            ],
             $config['condition']['tag']
         );
         self::assertSame(

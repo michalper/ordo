@@ -104,4 +104,61 @@ class VisitorTagManagerTest extends TestCase
         $manager = new VisitorTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
         self::assertSame(['vip', 'reorder'], $manager->getTags('v1'));
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testHasAnyTagReturnsTrueWhenCountPositive(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchOne')->willReturn(1);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $manager = new VisitorTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
+        self::assertTrue($manager->hasAnyTag('v1', ['vip', 'loyal']));
+    }
+
+    public function testHasAnyTagReturnsFalseForEmptyTagsWithoutQuerying(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::never())->method('select');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+
+        $manager = new VisitorTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
+        self::assertFalse($manager->hasAnyTag('v1', []));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testHasAllTagsReturnsTrueWhenEveryTagMatched(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchOne')->willReturn(2);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $manager = new VisitorTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
+        self::assertTrue($manager->hasAllTags('v1', ['vip', 'loyal']));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testHasAllTagsReturnsFalseWhenOnlySomeTagsMatched(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchOne')->willReturn(1);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $manager = new VisitorTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
+        self::assertFalse($manager->hasAllTags('v1', ['vip', 'loyal']));
+    }
 }

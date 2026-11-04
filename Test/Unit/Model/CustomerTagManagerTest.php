@@ -19,6 +19,10 @@ class CustomerTagManagerTest extends TestCase
         $select->method('from')->willReturnSelf();
         $select->method('join')->willReturnSelf();
         $select->method('where')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+        $select->method('having')->willReturnSelf();
+        $select->method('order')->willReturnSelf();
+        $select->method('limit')->willReturnSelf();
 
         return $select;
     }
@@ -146,5 +150,119 @@ class CustomerTagManagerTest extends TestCase
 
         $manager = new CustomerTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
         self::assertSame([], $manager->getCustomerIdsWithTagFromSet([], 'inactive'));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testHasAnyTagReturnsTrueWhenCountPositive(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchOne')->willReturn(1);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $manager = new CustomerTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
+        self::assertTrue($manager->hasAnyTag(42, ['vip', 'loyal']));
+    }
+
+    public function testHasAnyTagReturnsFalseForEmptyTagsWithoutQuerying(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::never())->method('select');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+
+        $manager = new CustomerTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
+        self::assertFalse($manager->hasAnyTag(42, []));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testHasAllTagsReturnsTrueWhenEveryTagMatched(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchOne')->willReturn(2);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $manager = new CustomerTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
+        self::assertTrue($manager->hasAllTags(42, ['vip', 'loyal']));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testHasAllTagsReturnsFalseWhenOnlySomeTagsMatched(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchOne')->willReturn(1);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $manager = new CustomerTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
+        self::assertFalse($manager->hasAllTags(42, ['vip', 'loyal']));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetCustomerIdsWithAnyTagReturnsIntArray(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchCol')->willReturn(['1', '2']);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $manager = new CustomerTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
+        self::assertSame([1, 2], $manager->getCustomerIdsWithAnyTag(['vip', 'loyal']));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetCustomerIdsWithAllTagsReturnsIntArray(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchCol')->willReturn(['2']);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $manager = new CustomerTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
+        self::assertSame([2], $manager->getCustomerIdsWithAllTags(['vip', 'loyal']));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSearchTagsReturnsColumn(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchCol')->willReturn(['vip', 'vip-gold']);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $manager = new CustomerTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
+        self::assertSame(['vip', 'vip-gold'], $manager->searchTags('vip'));
+    }
+
+    public function testSearchTagsReturnsEmptyArrayForEmptyTermWithoutQuerying(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::never())->method('select');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+
+        $manager = new CustomerTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
+        self::assertSame([], $manager->searchTags(''));
     }
 }

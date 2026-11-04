@@ -226,16 +226,65 @@ coupon/channel/device/geography.
   appends as a flat trailing option alongside the groups). The Drawflow Flow canvas's own
   condition palette is unaffected — it doesn't read `ConditionType` at all, it already has
   collapsible sections and a search box.
-- **Tag field as a select/autocomplete of real existing tags, not free text** — reported directly
-  against a real screenshot: `tag`/`event_key`-adjacent `tag` fields (`Has Tag`, `Visitor Has Tag`,
-  the `add_tag` campaign action) are plain text inputs today, no autocomplete, easy to typo a tag
-  that silently never matches anything. Not a fixed enum though — tags come from system constants
-  (`CustomerTagManager`'s own `TAG_*` callers: `TagReorderCycleAtRiskCustomers`, `TagInactiveCustomers`,
-  `SendWinBackEmails`, `SendWelcomeEmail`, ...) *and* arbitrary strings a merchant can type into the
-  `add_tag` action, so a closed dropdown would be wrong — needs a live-query select/autocomplete of
-  `DISTINCT tag FROM ordo_customer_tag` (same house pattern as `CampaignOptions`/`SegmentOptions`:
-  list real existing values, not a hardcoded enum), while still allowing free entry for a
-  brand-new tag that doesn't exist yet. Small/medium scope.
+- ~~**Tag field as a select/autocomplete of real existing tags, not free text**~~ — done, see
+  `docs/adr/0018-tag-field-multiselect.md`. Went further than the original ask: asked to choose
+  between autocomplete-only and full multiselect, the user picked multiselect with a per-condition
+  ANY/ALL match mode. `Has Tag`/`Visitor Has Tag`/`add_tag` all now use a removable-chip editor
+  (`Ordo_Automation/js/tag-chip-editor.js`) with live autocomplete suggestions
+  (`Controller/Adminhtml/Tag/Search.php`, a new shared endpoint deliberately NOT namespaced per
+  feature — see the ADR for why) and free entry for a brand-new tag. `HasTag` migrated onto
+  `BulkResolvableConditionInterface`, replacing a hardcoded switch arm in `SegmentMemberResolver`.
+  Caught and fixed two real `Magento\Framework\DB\Select` API bugs along the way (a bare `DISTINCT`
+  column string being quoted as a literal identifier; `having()` not being type-safe to chain) and
+  a real saved-tags-don't-reload-on-edit bug in both `Model\Campaign\DataProvider` and
+  `Model\Segment\DataProvider` — all confirmed against real data before shipping, not just reasoned
+  about. One related gap found and deliberately NOT fixed in this pass, logged separately below:
+  every select-type dedicated field (`tier`, `event_type`, `engagement_type`, and now `match_mode`)
+  leaks its default value into every condition/action row's saved params regardless of that row's
+  own type — pre-existing, harmless to correctness, but untidy.
+- **Dedicated-field merge leaks every select field's default into every row's params** — found
+  while verifying the tag multiselect work above (see `docs/adr/0018`'s own "known, accepted gap"
+  section for the full detail): `CampaignSaveProcessor`/`SegmentSaveProcessor`'s
+  `normalizeRowParams()` merges a condition/action row's WHOLE set of dedicated field values,
+  including ones irrelevant to that row's own type, because Magento_Ui's dynamicRows always posts
+  every field's current value regardless of switcherConfig visibility. Text inputs default to
+  empty (skipped, no visible symptom) but a `<select>` always has something selected, so
+  `tier`/`event_type`/`engagement_type`/`match_mode`'s default leaks into unrelated rows' saved
+  `params_json` — e.g. a `monetary_total_at_least` condition's saved params end up with a useless
+  `tier: "bronze"` key nobody asked for. Each condition class only reads the keys it cares about,
+  so this doesn't break anything today, just leaves untidy data. Fix needs the merge loop to only
+  consider fields relevant to the row's own `type` (a lookup table keyed by type, not a flat list
+  of every dedicated field name across every type) — a real, separate change touching both save
+  processors. Small/medium scope.
+- **Five more free-text fields with the same "references real data, no autocomplete" shape the
+  tag field had** — found by a dedicated survey while scoping the tag multiselect work above (see
+  `docs/adr/0018`). Not done in this pass; grouped here as one roadmap entry, not five, since
+  several share a fix:
+  - `event_key` ("SKU (optional)") — `event_occurred` condition, used in both `Flow.php` (campaign
+    canvas) and `ordo_segment_form.xml` (segment editor). Semantically identical to the already-
+    autocompleted `sku` field but not matched by `segment-sku-autocomplete.js`'s own field-name
+    regex (only matches `[sku]`). One shared fix, 2 consumers.
+  - `rule_id` ("Cart price rule ID") — `generate_coupon` campaign action and the dynamic content
+    block's rule-based product source. Plain numeric text, zero select anywhere referencing
+    `salesrule`. Risky: `GenerateCoupon::execute()` catches a bad `rule_id` and only logs — the
+    send silently proceeds with no coupon. One new source (list active cart price rules,
+    `CampaignOptions`-style), 2 consumers.
+  - `category_id` in `ordo_contentblock_form.xml`'s category-based source — plain text even though
+    this exact field already has a proper select elsewhere in the module
+    (`Model\Config\Source\Category`, used by `ordo_segment_form.xml`'s `PurchasedCategory`
+    condition). Cheapest fix of the batch: just reuse the existing source class.
+  - `template` ("Email template identifier") on the `send_email` action — plain text referencing
+    either an XML-registered template or a custom admin-saved one, no source class (unlike
+    WhatsApp, which already has `WhatsAppTemplateOptions`). Risky the same way `rule_id` is:
+    `TransportBuilder::getTransport()` throws on a bad identifier, caught and only logged — the
+    campaign silently never emails.
+  - `fallback_whatsapp_template_id` (`etc/adminhtml/system.xml`, Abandoned Cart Recovery) —
+    easiest fix of the whole list: `Model\Config\Source\WhatsAppTemplateOptions` already exists
+    and is already used for this exact lookup in `send_whatsapp`'s own `template_id` field, just
+    needs `source_model` wired into this one config field instead of a free digit-only text input.
+
+  Combined scope: medium (one new source for `rule_id`, one new source for `template`, two cheap
+  reuses, one autocomplete-regex extension).
 - **`campaign-flow-editor.js` has no i18n at all** — reported directly while fixing an unrelated
   bug in it (the empty-`<select>` placeholder). 15+ hardcoded English UI strings (`Exit Full
   Screen`, `Send test`, `Weight`, validation messages, starter-template labels, the new

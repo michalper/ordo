@@ -39,7 +39,7 @@ class CampaignSaveProcessor
      * textarea is only needed for a condition/action type that doesn't have one yet.
      */
     private const array DEDICATED_PARAM_FIELDS = [
-        'tag', 'amount', 'rule_id', 'prefix', 'template', 'message',
+        'tags', 'match_mode', 'amount', 'rule_id', 'prefix', 'template', 'message',
         'headline', 'body', 'cta_label', 'cta_url', 'points', 'threshold',
         'content_block_id', 'output_key', 'days', 'count', 'percentile', 'question',
         'sku', 'category_id', 'scheduled_at', 'cron_expression', 'variants',
@@ -50,13 +50,13 @@ class CampaignSaveProcessor
 
     /**
      * Dedicated fields whose posted value is itself JSON (an array/object), not a plain scalar -
-     * the split action's own 'variants' field is the only one today
-     * (campaign-flow-editor.js's renderVariantEditor() serializes its whole in-memory model into
-     * one hidden input, same as `params_json` itself, just under its own dedicated key instead of
-     * replacing the whole params blob). Every other DEDICATED_PARAM_FIELDS entry is a plain
-     * string, stored as-is.
+     * the split action's own 'variants' field (campaign-flow-editor.js's renderVariantEditor()
+     * serializes its whole in-memory model into one hidden input, same as `params_json` itself,
+     * just under its own dedicated key instead of replacing the whole params blob) and 'tags'
+     * (tag-chip-editor.js does the same for its chip list). Every other DEDICATED_PARAM_FIELDS
+     * entry is a plain string, stored as-is.
      */
-    private const array JSON_DEDICATED_PARAM_FIELDS = ['variants'];
+    private const array JSON_DEDICATED_PARAM_FIELDS = ['variants', 'tags'];
 
     public function __construct(
         private readonly CampaignFactory $campaignFactory,

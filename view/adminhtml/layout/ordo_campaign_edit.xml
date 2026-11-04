@@ -5,6 +5,7 @@
         <css src="Ordo_Automation::lib/drawflow/drawflow.min.css"/>
         <css src="Ordo_Automation::css/flow.css"/>
         <css src="Ordo_Automation::css/campaign-form.css"/>
+        <css src="Ordo_Automation::css/tag-chip-editor.css"/>
     </head>
     <body>
         <referenceContainer name="content">

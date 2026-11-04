@@ -1903,15 +1903,9 @@ parameters:
 			path: Model/Campaign/DataProvider.php
 
 		-
-			message: '#^Method Ordo\\Automation\\Model\\Campaign\\DataProvider\:\:loadActionRows\(\) should return array\<int, array\<string, mixed\>\> but returns list\<array\<mixed\>\>\.$#'
-			identifier: return.type
-			count: 1
-			path: Model/Campaign/DataProvider.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\Campaign\\DataProvider\:\:loadChildRows\(\) should return array\<int, array\<string, mixed\>\> but returns list\<array\<mixed\>\>\.$#'
-			identifier: return.type
-			count: 1
+			message: '#^Parameter \#1 \$rowData of method Ordo\\Automation\\Model\\Campaign\\DataProvider\:\:restringifyJsonDedicatedFields\(\) expects array\<string, mixed\>, array\<mixed\> given\.$#'
+			identifier: argument.type
+			count: 2
 			path: Model/Campaign/DataProvider.php
 
 		-
@@ -2395,9 +2389,15 @@ parameters:
 			path: Model/CustomerTagManager.php
 
 		-
+			message: '#^Method Ordo\\Automation\\Model\\CustomerTagManager\:\:searchTags\(\) should return array\<string\> but returns array\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/CustomerTagManager.php
+
+		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''intval'' given\.$#'
 			identifier: argument.type
-			count: 2
+			count: 4
 			path: Model/CustomerTagManager.php
 
 		-
@@ -3583,12 +3583,6 @@ parameters:
 			path: Model/Segment/DataProvider.php
 
 		-
-			message: '#^Method Ordo\\Automation\\Model\\Segment\\DataProvider\:\:buildLeafRowData\(\) should return array\<string, mixed\> but returns array\<mixed\>\.$#'
-			identifier: return.type
-			count: 1
-			path: Model/Segment/DataProvider.php
-
-		-
 			message: '#^Method Ordo\\Automation\\Model\\Segment\\DataProvider\:\:getData\(\) should return array\<int, array\<string, mixed\>\> but returns array\.$#'
 			identifier: return.type
 			count: 1
@@ -3597,6 +3591,12 @@ parameters:
 		-
 			message: '#^Method Ordo\\Automation\\Model\\Segment\\DataProvider\:\:loadWebsiteIds\(\) should return array\<int\> but returns list\.$#'
 			identifier: return.type
+			count: 1
+			path: Model/Segment/DataProvider.php
+
+		-
+			message: '#^Parameter \#1 \$rowData of method Ordo\\Automation\\Model\\Segment\\DataProvider\:\:restringifyJsonDedicatedFields\(\) expects array\<string, mixed\>, array\<mixed\> given\.$#'
+			identifier: argument.type
 			count: 1
 			path: Model/Segment/DataProvider.php
 

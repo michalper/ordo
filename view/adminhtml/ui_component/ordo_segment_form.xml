@@ -153,7 +153,7 @@
                                 <rule name="0">
                                     <value>tag</value>
                                     <actions><action name="0">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">true</param>
@@ -278,7 +278,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">true</param></params></action></actions>
                                 </rule>
                                 <rule name="1">
                                     <value>order_total_gte</value>
@@ -289,7 +289,7 @@
                                                 <param name="0" xsi:type="boolean">true</param>
                                             </params>
                                         </action><action name="1">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -408,12 +408,12 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="2">
                                     <value>visitor_tag</value>
                                     <actions><action name="0">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">true</param>
@@ -538,12 +538,12 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">true</param></params></action></actions>
                                 </rule>
                                 <rule name="3">
                                     <value>score_at_least</value>
                                     <actions><action name="0">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -668,12 +668,12 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="4">
                                     <value>recency_days_at_most</value>
                                     <actions><action name="0">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -798,12 +798,12 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="5">
                                     <value>order_frequency_at_least</value>
                                     <actions><action name="0">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -928,12 +928,12 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="6">
                                     <value>monetary_total_at_least</value>
                                     <actions><action name="0">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -1058,12 +1058,12 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="7">
                                     <value>recency_percentile_at_least</value>
                                     <actions><action name="0">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -1188,12 +1188,12 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="8">
                                     <value>order_frequency_percentile_at_least</value>
                                     <actions><action name="0">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -1318,12 +1318,12 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="9">
                                     <value>monetary_percentile_at_least</value>
                                     <actions><action name="0">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -1448,7 +1448,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <!--
                                     The 3 types with no dedicated field yet (in_segment,
@@ -1463,7 +1463,7 @@
                                 <rule name="10">
                                     <value>in_segment</value>
                                     <actions><action name="0">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -1588,12 +1588,12 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="11">
                                     <value>loyalty_tier_at_least</value>
                                     <actions><action name="0">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -1718,12 +1718,12 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="12">
                                     <value>nps_score_at_least</value>
                                     <actions><action name="0">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -1848,12 +1848,12 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="13">
                                     <value>group</value>
                                     <actions><action name="0">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -1978,12 +1978,12 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="14">
                                     <value>purchased_sku</value>
                                     <actions><action name="0">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -2108,12 +2108,12 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="15">
                                     <value>purchased_category</value>
                                     <actions><action name="0">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -2238,7 +2238,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <!--
                                     not_in_segment: same params shape (segment_id) as in_segment
@@ -2250,7 +2250,7 @@
                                 <rule name="16">
                                     <value>not_in_segment</value>
                                     <actions><action name="0">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -2375,7 +2375,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <!--
                                     event_occurred: the only type whose dedicated fields are
@@ -2386,7 +2386,7 @@
                                 <rule name="17">
                                     <value>event_occurred</value>
                                     <actions><action name="0">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -2511,7 +2511,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="18">
                                     <value>reorder_cycle_at_risk</value>
@@ -2594,7 +2594,7 @@
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
                                         </action><action name="13">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -2641,12 +2641,12 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="19">
                                     <value>message_engaged</value>
                                     <actions><action name="0">
-                                            <target>${ $.parentName }.tag</target>
+                                            <target>${ $.parentName }.tags</target>
                                             <callback>visible</callback>
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
@@ -2771,7 +2771,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">true</param>
                                             </params>
-                                        </action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
 </rules>
                         </switcherConfig>
@@ -2784,12 +2784,32 @@
                         </select>
                     </formElements>
                 </field>
-                <field name="tag" formElement="input" sortOrder="15">
+                <field name="tags" formElement="input" sortOrder="15">
                     <settings>
                         <dataType>text</dataType>
-                        <label translate="true">Tag</label>
+                        <label translate="true">Tags</label>
                         <visible>false</visible>
                     </settings>
+                </field>
+                <!--
+                    Visible only alongside "tags" (rules 0 "tag" and 2 "visitor_tag" below) - a
+                    plain native select is enough here (no new JS needed, same "options map renders
+                    a <select>" mechanism every other select field already uses): "any"/"all" are
+                    the whole option set, never a live query.
+                -->
+                <field name="match_mode" formElement="select" sortOrder="15.5">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Match</label>
+                        <visible>false</visible>
+                    </settings>
+                    <formElements>
+                        <select>
+                            <settings>
+                                <options class="Ordo\Automation\Model\Config\Source\TagMatchMode"/>
+                            </settings>
+                        </select>
+                    </formElements>
                 </field>
                 <field name="amount" formElement="input" sortOrder="16">
                     <settings>

@@ -161,7 +161,7 @@ class CampaignSaveProcessorTest extends TestCase
 
         $condition = $this->createMock(CampaignCondition::class);
         $condition->expects(self::once())->method('setData')->with(self::callback(
-            fn (array $data) => $data['type'] === 'has_tag' && json_decode($data['params'], true) === ['tag' => 'vip']
+            fn (array $data) => $data['type'] === 'has_tag' && json_decode($data['params'], true) === ['tags' => ['vip']]
         ));
         $this->campaignConditionFactory->method('create')->willReturn($condition);
         $this->campaignConditionResource->expects(self::once())->method('save')->with($condition);
@@ -171,7 +171,7 @@ class CampaignSaveProcessorTest extends TestCase
         $action = $this->createMock(CampaignAction::class);
         $action->expects(self::once())->method('setData')->with(self::callback(
             fn (array $data) => $data['type'] === 'tag_customer'
-                && json_decode($data['params'], true) === ['tag' => 'reordered']
+                && json_decode($data['params'], true) === ['tags' => ['reordered']]
                 && $data['delay_minutes'] === 60
         ));
         $this->campaignActionFactory->method('create')->willReturn($action);
@@ -184,8 +184,8 @@ class CampaignSaveProcessorTest extends TestCase
             'name' => 'Welcome',
             'enabled' => '1',
             'triggers' => ['triggers' => [['trigger_event' => 'customer_registered']]],
-            'conditions' => ['conditions' => [['type' => 'has_tag', 'tag' => 'vip', 'params_json' => '']]],
-            'actions' => ['actions' => [['type' => 'tag_customer', 'tag' => 'reordered', 'params_json' => '', 'delay_minutes' => '60']]],
+            'conditions' => ['conditions' => [['type' => 'has_tag', 'tags' => '["vip"]', 'params_json' => '']]],
+            'actions' => ['actions' => [['type' => 'tag_customer', 'tags' => '["reordered"]', 'params_json' => '', 'delay_minutes' => '60']]],
         ]);
 
         self::assertSame($campaign, $result);

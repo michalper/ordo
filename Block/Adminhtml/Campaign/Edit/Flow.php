@@ -22,6 +22,7 @@ use Ordo\Automation\Model\Config\Source\EventType;
 use Ordo\Automation\Model\Config\Source\LoyaltyTier;
 use Ordo\Automation\Model\Config\Source\MessageEngagementType;
 use Ordo\Automation\Model\Config\Source\SegmentOptions;
+use Ordo\Automation\Model\Config\Source\TagMatchMode;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
 use Ordo\Automation\Model\Config\Source\WhatsAppTemplateOptions;
 use Ordo\Automation\Model\ContentBlock;
@@ -65,6 +66,7 @@ class Flow extends Template
         private readonly EventType $eventTypeOptions,
         private readonly CampaignOptions $campaignOptions,
         private readonly MessageEngagementType $messageEngagementTypeOptions,
+        private readonly TagMatchMode $tagMatchModeOptions,
         array $data = [],
         ?JsonHelper $jsonHelper = null,
         ?DirectoryHelper $directoryHelper = null
@@ -247,6 +249,29 @@ class Flow extends Template
     }
 
     /**
+     * @return array<int|string, string>
+     */
+    public function getTagMatchModeOptions(): array
+    {
+        return $this->toMap($this->tagMatchModeOptions);
+    }
+
+    /**
+     * Shared by the 'tag' and 'visitor_tag' condition types - identical field set (see those
+     * entries' own single dedicated "tags" form field, same reasoning the two condition classes
+     * themselves already shared one field name for).
+     *
+     * @return array<int, array<string, string|array<int|string, string>>>
+     */
+    private function getTagConditionFields(): array
+    {
+        return [
+            ['name' => 'tags', 'label' => (string) __('Tags'), 'type' => 'tag_multiselect'],
+            ['name' => 'match_mode', 'label' => (string) __('Match'), 'options' => $this->getTagMatchModeOptions()],
+        ];
+    }
+
+    /**
      * The canvas renders plain value => label maps; the admin form's Source classes return
      * OptionSourceInterface's list-of-pairs shape. One flattener instead of each option getter
      * re-querying what its Source class already queries.
@@ -301,9 +326,9 @@ class Flow extends Template
                 ],
             ],
             'condition' => [
-                'tag' => [['name' => 'tag', 'label' => (string) __('Tag')]],
+                'tag' => $this->getTagConditionFields(),
                 'order_total_gte' => [['name' => 'amount', 'label' => (string) __('Minimum order total')]],
-                'visitor_tag' => [['name' => 'tag', 'label' => (string) __('Tag')]],
+                'visitor_tag' => $this->getTagConditionFields(),
                 'score_at_least' => [['name' => 'threshold', 'label' => (string) __('Minimum score')]],
                 'in_segment' => [
                     [
@@ -360,7 +385,7 @@ class Flow extends Template
                 ],
             ],
             'action' => [
-                'add_tag' => [['name' => 'tag', 'label' => (string) __('Tag')]],
+                'add_tag' => [['name' => 'tags', 'label' => (string) __('Tags'), 'type' => 'tag_multiselect']],
                 'add_points' => [['name' => 'points', 'label' => (string) __('Points')]],
                 'generate_coupon' => [
                     ['name' => 'rule_id', 'label' => (string) __('Cart price rule ID')],

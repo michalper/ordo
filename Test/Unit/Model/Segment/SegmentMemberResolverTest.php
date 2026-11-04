@@ -9,7 +9,6 @@ use Magento\Framework\DB\Select;
 use Ordo\Automation\Model\Condition\GroupWalker;
 use Ordo\Automation\Model\Condition\SetGroupCombineStrategy;
 use Ordo\Automation\Model\CustomerScoreManager;
-use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Model\Event\EventOccurredResolver;
 use Ordo\Automation\Model\Purchase\PurchasedProductResolver;
 use Ordo\Automation\Model\ReorderCycle\ReorderCycleDriftCalculator;
@@ -31,7 +30,6 @@ use Psr\Log\LoggerInterface;
 class SegmentMemberResolverTest extends TestCase
 {
     private SegmentConditionCollectionFactory&\PHPUnit\Framework\MockObject\MockObject $collectionFactory;
-    private CustomerTagManager&\PHPUnit\Framework\MockObject\MockObject $customerTagManager;
     private CustomerScoreManager&\PHPUnit\Framework\MockObject\MockObject $customerScoreManager;
     private RfmCalculator&\PHPUnit\Framework\MockObject\MockObject $rfmCalculator;
     private SegmentFactory&\PHPUnit\Framework\MockObject\MockObject $segmentFactory;
@@ -52,7 +50,6 @@ class SegmentMemberResolverTest extends TestCase
     protected function setUp(): void
     {
         $this->collectionFactory = $this->createMock(SegmentConditionCollectionFactory::class);
-        $this->customerTagManager = $this->createMock(CustomerTagManager::class);
         $this->customerScoreManager = $this->createMock(CustomerScoreManager::class);
         $this->rfmCalculator = $this->createMock(RfmCalculator::class);
         $this->segmentFactory = $this->createMock(SegmentFactory::class);
@@ -83,7 +80,6 @@ class SegmentMemberResolverTest extends TestCase
     {
         return new SegmentMemberResolver(
             $this->collectionFactory,
-            $this->customerTagManager,
             $this->customerScoreManager,
             $this->rfmCalculator,
             $this->segmentFactory,
@@ -123,6 +119,38 @@ class SegmentMemberResolverTest extends TestCase
         $segment = $this->createStub(Segment::class);
         $segment->method('getConditionLogic')->willReturn($logic);
         $this->segmentStub = $segment;
+    }
+
+    /**
+     * 'tag' resolves via HasTag::resolveCustomerIds() (BulkResolvableConditionInterface), reached
+     * through ConditionPool rather than a dedicated switch arm - see HasTagTest for coverage of
+     * HasTag's own ANY/ALL param-reading logic; these tests only exercise
+     * SegmentMemberResolver's own composition/caching/AND-OR behavior, so the stub condition
+     * doesn't need to validate its params, just hand back a fixed result.
+     *
+     * @param int[] $customerIds
+     */
+    private function stubTagCondition(array $customerIds): void
+    {
+        $condition = new class($customerIds) implements
+            \Ordo\Automation\Api\Campaign\ConditionInterface,
+            \Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface {
+            public function __construct(private readonly array $customerIds)
+            {
+            }
+
+            public function isSatisfied(array $context, array $params): bool
+            {
+                return false;
+            }
+
+            public function resolveCustomerIds(array $params): array
+            {
+                return $this->customerIds;
+            }
+        };
+
+        $this->conditionPool->method('get')->willReturnMap([['tag', $condition]]);
     }
 
     /**
@@ -176,7 +204,7 @@ class SegmentMemberResolverTest extends TestCase
         $this->stubSegment(1, [['type' => 'tag', 'params' => ['tag' => 'vip']]]);
         $this->primeFactory();
 
-        $this->customerTagManager->method('getCustomerIdsWithTag')->willReturnMap([['vip', [1, 2]]]);
+        $this->stubTagCondition([1, 2]);
 
         self::assertSame([1, 2], $this->resolver->getMatchingCustomerIds(1));
     }
@@ -187,7 +215,7 @@ class SegmentMemberResolverTest extends TestCase
         $this->stubSegment(1, [['type' => 'tag', 'params' => ['tag' => 'vip']]]);
         $this->primeFactory();
 
-        $this->customerTagManager->method('getCustomerIdsWithTag')->willReturnMap([['vip', [1, 2, 3]]]);
+        $this->stubTagCondition([1, 2, 3]);
 
         // A fresh mock, not a second ->method('create') on setUp()'s own - PHPUnit matches
         // configured behaviors in configuration order for an unlimited (any()) matcher, so a
@@ -219,7 +247,7 @@ class SegmentMemberResolverTest extends TestCase
         $this->stubSegment(1, [['type' => 'tag', 'params' => ['tag' => 'vip']]]);
         $this->primeFactory();
 
-        $this->customerTagManager->method('getCustomerIdsWithTag')->willReturnMap([['vip', [1, 2]]]);
+        $this->stubTagCondition([1, 2]);
 
         // No website rows configured (setUp()'s default) - the resource connection must never
         // even be touched, confirming the common/unscoped case pays no extra query.
@@ -512,7 +540,7 @@ class SegmentMemberResolverTest extends TestCase
         $this->stubSegment(2, [['type' => 'tag', 'params' => ['tag' => 'vip']]]);
         $this->primeFactory();
 
-        $this->customerTagManager->method('getCustomerIdsWithTag')->willReturnMap([['vip', [9]]]);
+        $this->stubTagCondition([9]);
 
         self::assertSame([9], $this->resolver->getMatchingCustomerIds(1));
     }
@@ -533,7 +561,7 @@ class SegmentMemberResolverTest extends TestCase
         $this->stubSegment(2, [['type' => 'tag', 'params' => ['tag' => 'vip']]]);
         $this->primeFactory();
 
-        $this->customerTagManager->method('getCustomerIdsWithTag')->willReturnMap([['vip', [9]]]);
+        $this->stubTagCondition([9]);
         $this->rfmCalculator->method('getAllCustomerIds')->willReturn([5, 9, 20]);
 
         self::assertSame([5, 20], $this->resolver->getMatchingCustomerIds(1));
@@ -660,7 +688,7 @@ class SegmentMemberResolverTest extends TestCase
         ]);
         $this->primeFactory();
 
-        $this->customerTagManager->method('getCustomerIdsWithTag')->willReturn([1, 2, 3]);
+        $this->stubTagCondition([1, 2, 3]);
         $this->customerScoreManager->method('getCustomerIdsWithScoreAtLeast')->willReturn([2, 3, 4]);
 
         self::assertSame([2, 3], array_values($this->resolver->getMatchingCustomerIds(1)));
@@ -675,7 +703,7 @@ class SegmentMemberResolverTest extends TestCase
         ]);
         $this->primeFactory();
 
-        $this->customerTagManager->method('getCustomerIdsWithTag')->willReturn([]);
+        $this->stubTagCondition([]);
         $this->customerScoreManager->expects(self::never())->method('getCustomerIdsWithScoreAtLeast');
 
         self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
@@ -694,7 +722,7 @@ class SegmentMemberResolverTest extends TestCase
         ]);
         $this->primeFactory();
 
-        $this->customerTagManager->method('getCustomerIdsWithTag')->willReturn([1, 2]);
+        $this->stubTagCondition([1, 2]);
         $this->customerScoreManager->method('getCustomerIdsWithScoreAtLeast')->willReturn([3, 4]);
         $this->logger->expects(self::never())->method('error');
 
@@ -789,7 +817,7 @@ class SegmentMemberResolverTest extends TestCase
         ]);
         $this->primeFactory();
 
-        $this->customerTagManager->method('getCustomerIdsWithTag')->willReturn([1, 2]);
+        $this->stubTagCondition([1, 2]);
         $this->customerScoreManager->method('getCustomerIdsWithScoreAtLeast')->willReturn([2, 3]);
 
         self::assertSame([1, 2, 3], array_values($this->resolver->getMatchingCustomerIds(1)));
@@ -807,7 +835,7 @@ class SegmentMemberResolverTest extends TestCase
         ]);
         $this->primeFactory();
 
-        $this->customerTagManager->method('getCustomerIdsWithTag')->willReturn([1]);
+        $this->stubTagCondition([1]);
         $this->logger->expects(self::once())->method('error');
 
         self::assertSame([1], $this->resolver->getMatchingCustomerIds(1));
@@ -834,7 +862,7 @@ class SegmentMemberResolverTest extends TestCase
         ]);
         $this->primeFactory();
 
-        $this->customerTagManager->method('getCustomerIdsWithTag')->willReturn([2, 3]);
+        $this->stubTagCondition([2, 3]);
         $this->customerScoreManager->method('getCustomerIdsWithScoreAtLeast')->willReturnMap([
             [999, []],
             [1, [2]],

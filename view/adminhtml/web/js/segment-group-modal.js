@@ -82,10 +82,19 @@ define([
      */
     var EVENT_ONLY_TYPES = new Set(['order_total_gte', 'visitor_tag']);
 
+    // 'tags' is list-valued (comma-separated in this modal's own simpler single-input editor,
+    // unlike the top-level condition row's full chip-autocomplete widget - see
+    // tag-chip-editor.js) - readRows()/renderValueField() special-case this one key to split/join
+    // instead of treating it as a plain string. match_mode isn't exposed here at all: this
+    // modal's nested rows always default to "any" (Model\Campaign\Condition\HasTag/VisitorHasTag
+    // read match_mode's own absence as "any"), matching the common case rather than adding a
+    // second value field to a UI that was deliberately kept to one field per row.
+    var LIST_VALUE_KEYS = new Set(['tags']);
+
     var VALUE_FIELD_BY_TYPE = {
-        tag: {key: 'tag', label: 'Tag'},
+        tag: {key: 'tags', label: 'Tags (comma-separated)'},
         order_total_gte: {key: 'amount', label: 'Amount'},
-        visitor_tag: {key: 'tag', label: 'Tag'},
+        visitor_tag: {key: 'tags', label: 'Tags (comma-separated)'},
         score_at_least: {key: 'threshold', label: 'Minimum score'},
         recency_days_at_most: {key: 'days', label: 'Recency (days since last order, at most)'},
         order_frequency_at_least: {key: 'count', label: 'Order count, at least'},
@@ -165,9 +174,14 @@ define([
             $select.val(existingValue).appendTo($valueWrap);
             $valueWrap.data('valueKey', field.key);
         } else if (field) {
+            var existing = existingParams[field.key],
+                displayValue = LIST_VALUE_KEYS.has(field.key) && Array.isArray(existing)
+                    ? existing.join(', ')
+                    : (existing || '');
+
             $('<label></label>').text(field.label).appendTo($valueWrap);
             $('<input type="text" class="admin__control-text ordo-group-value-input">')
-                .val(existingParams[field.key] || '')
+                .val(displayValue)
                 .appendTo($valueWrap);
             $valueWrap.data('valueKey', field.key);
         } else {
@@ -275,7 +289,12 @@ define([
                 // same null/undefined-safe behavior $.trim() had for a possibly-empty .val().
                 var value = String($valueWrap.find('input, select').val() ?? '').trim();
 
-                if (value !== '') {
+                if (value !== '' && LIST_VALUE_KEYS.has(valueKey)) {
+                    var tags = value.split(',').map(function (t) { return t.trim(); }).filter(Boolean);
+                    if (tags.length) {
+                        params[valueKey] = tags;
+                    }
+                } else if (value !== '') {
                     params[valueKey] = value;
                 }
             } else {

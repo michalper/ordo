@@ -175,6 +175,27 @@ class DataProvider extends AbstractDataProvider
             $rowData += $decoded;
         }
 
+        return $this->restringifyJsonDedicatedFields($rowData);
+    }
+
+    /**
+     * SegmentSaveProcessor::JSON_DEDICATED_PARAM_FIELDS's own list, array-valued dedicated
+     * fields - the spread above (`$rowData += $decoded`) puts a real PHP array under 'tags' for
+     * the tag/visitor_tag condition types, but the dynamicRows field it feeds
+     * (ordo_segment_form.xml's own "tags" field, a plain text-valued Knockout observable, and the
+     * JS that hides/enhances it into a chip editor) needs a JSON-encoded string, the same shape
+     * the client posts back - without this, re-opening a saved tag condition silently shows no
+     * tags at all, confirmed directly against a real saved segment.
+     *
+     * @param array<string, mixed> $rowData
+     * @return array<string, mixed>
+     */
+    private function restringifyJsonDedicatedFields(array $rowData): array
+    {
+        if (isset($rowData['tags']) && is_array($rowData['tags'])) {
+            $rowData['tags'] = json_encode($rowData['tags']) ?: '[]';
+        }
+
         return $rowData;
     }
 }

@@ -31,10 +31,17 @@ class SegmentSaveProcessor
      * ConditionPool's condition types actually read.
      */
     private const array DEDICATED_PARAM_FIELDS = [
-        'tag', 'amount', 'threshold', 'days', 'count', 'percentile', 'sku', 'category_id',
-        'event_type', 'event_key', 'within_days', 'segment_id', 'tier', 'ratio_at_least',
-        'campaign_id', 'engagement_type', 'engagement_within_days',
+        'tags', 'match_mode', 'amount', 'threshold', 'days', 'count', 'percentile', 'sku',
+        'category_id', 'event_type', 'event_key', 'within_days', 'segment_id', 'tier',
+        'ratio_at_least', 'campaign_id', 'engagement_type', 'engagement_within_days',
     ];
+
+    /**
+     * Dedicated fields whose posted value is itself JSON (an array), not a plain scalar - mirrors
+     * Model\Campaign\CampaignSaveProcessor's own JSON_DEDICATED_PARAM_FIELDS (currently just its
+     * 'variants'; this form has no variant_list field, so 'tags' is the first entry here).
+     */
+    private const array JSON_DEDICATED_PARAM_FIELDS = ['tags'];
 
     /**
      * Applies to both the top-level conditions list and a single group's own nested list - the
@@ -206,9 +213,17 @@ class SegmentSaveProcessor
 
         foreach (self::DEDICATED_PARAM_FIELDS as $field) {
             $value = trim((string) ($row[$field] ?? ''));
-            if ($value !== '') {
-                $params[$field] = $value;
+            if ($value === '') {
+                continue;
             }
+
+            if (in_array($field, self::JSON_DEDICATED_PARAM_FIELDS, true)) {
+                $decoded = json_decode($value, true);
+                $params[$field] = is_array($decoded) ? $decoded : [];
+                continue;
+            }
+
+            $params[$field] = $value;
         }
 
         // json_encode([]) is the JSON array literal "[]", not the empty JSON OBJECT "{}" a

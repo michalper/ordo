@@ -121,7 +121,7 @@ class DataProvider extends AbstractDataProvider
                 $rowData += $decoded;
             }
 
-            $rows[] = $rowData;
+            $rows[] = $this->restringifyJsonDedicatedFields($rowData);
         }
 
         return $rows;
@@ -155,10 +155,34 @@ class DataProvider extends AbstractDataProvider
                 $rowData += $decoded;
             }
 
-            $rows[] = $rowData;
+            $rows[] = $this->restringifyJsonDedicatedFields($rowData);
         }
 
         return $rows;
+    }
+
+    /**
+     * CampaignSaveProcessor::JSON_DEDICATED_PARAM_FIELDS's own list, array-valued dedicated
+     * fields - the spread above (`$rowData += $decoded`) puts a real PHP array under these keys,
+     * but the dynamicRows fields that feed (ordo_campaign_form.xml's own plain text-valued
+     * Knockout observables) need a JSON-encoded string, the same shape the client posts back -
+     * without this, re-opening a saved split action's variants, or a tag/visitor_tag/add_tag
+     * row's tags, would show empty in this form's own raw dynamicRows view (the Flow canvas has
+     * its own separate read path - see Flow::getFlowDataJson() - so this specifically only
+     * affects the collapsible "Campaign Information" section underneath it).
+     *
+     * @param array<string, mixed> $rowData
+     * @return array<string, mixed>
+     */
+    private function restringifyJsonDedicatedFields(array $rowData): array
+    {
+        foreach (['tags', 'variants'] as $field) {
+            if (isset($rowData[$field]) && is_array($rowData[$field])) {
+                $rowData[$field] = json_encode($rowData[$field]) ?: '[]';
+            }
+        }
+
+        return $rowData;
     }
 
     /**

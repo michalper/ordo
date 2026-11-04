@@ -99,6 +99,43 @@ class DataProviderTest extends TestCase
         self::assertSame($data, $provider->getData());
     }
 
+    /**
+     * Regression test: the generic merge above (`$rowData += $decoded`) puts a real PHP array
+     * under 'tags' for a saved tag/visitor_tag condition - the dynamicRows field it feeds
+     * (ordo_segment_form.xml's own "tags" field, a plain text-valued Knockout observable
+     * segment-tag-multiselect.js enhances into a chip editor) needs a JSON-encoded string, the
+     * same shape the client posts back. Without restringifyJsonDedicatedFields(), re-opening a
+     * saved tag condition showed no tags at all - confirmed directly against a real saved
+     * segment, not just this test.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetDataRestringifiesTagsArrayBackIntoJsonForTheDynamicRowsField(): void
+    {
+        $segment = $this->createStub(Segment::class);
+        $segment->method('getData')->willReturn(['entity_id' => 1, 'name' => 'VIP customers']);
+        $segment->method('getEntityId')->willReturn(1);
+
+        $collection = $this->createStub(SegmentCollection::class);
+        $collection->method('getItems')->willReturn([$segment]);
+
+        $conditionRow = $this->createStub(SegmentCondition::class);
+        $conditionRow->method('getType')->willReturn('tag');
+        $conditionRow->method('getParamsJson')->willReturn(json_encode(['tags' => ['vip', 'loyal'], 'match_mode' => 'all']));
+        $conditionCollection = $this->createStub(ConditionCollection::class);
+        $conditionCollection->method('addSegmentFilter')->willReturnSelf();
+        $conditionCollection->method('getIterator')->willReturn(new \ArrayIterator([$conditionRow]));
+        $this->conditionCollectionFactory->method('create')->willReturn($conditionCollection);
+
+        $this->dataPersistor->method('get')->willReturn(null);
+
+        $data = $this->makeProvider($collection)->getData();
+        $rowData = $data[1]['conditions']['conditions'][0];
+
+        self::assertSame(['vip', 'loyal'], json_decode($rowData['tags'], true));
+        self::assertIsString($rowData['tags']);
+        self::assertSame('all', $rowData['match_mode']);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testGetDataMapsGroupRowIntoGroupLogicAndNestedConditions(): void
     {
