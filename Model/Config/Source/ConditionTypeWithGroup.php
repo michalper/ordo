@@ -29,7 +29,7 @@ class ConditionTypeWithGroup implements OptionSourceInterface
     }
 
     /**
-     * @return array<int, array{value: string, label: string|\Magento\Framework\Phrase}>
+     * @return array<int, array{value: string, label: string|\Magento\Framework\Phrase}|array{value: array<int, array{value: string, label: string}>, label: string}>
      */
     public function toOptionArray(): array
     {

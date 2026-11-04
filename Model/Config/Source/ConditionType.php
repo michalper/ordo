@@ -11,6 +11,13 @@ use Ordo\Automation\Model\Campaign\TypeLabels;
  * The dropdown is generated from ConditionPool::getAvailableTypes() — i.e. from whatever is
  * actually registered in di.xml — so this never drifts out of sync with what the dispatcher
  * can resolve. Adding a condition type makes it show up here automatically.
+ *
+ * Grouped by TypeLabels::conditionCategory() into Magento_Ui's native <optgroup> shape (a
+ * nested array as a "value" means "this is a group header", see
+ * Magento_Ui/js/lib/knockout/bindings/optgroup.js - the same OptionSourceInterface array shape
+ * every other option source already returns, just with one level of nesting) - reported
+ * directly against a real screenshot: one flat ~20-item list wasn't great UX for finding the
+ * right condition.
  */
 class ConditionType implements OptionSourceInterface
 {
@@ -21,13 +28,21 @@ class ConditionType implements OptionSourceInterface
     }
 
     /**
-     * @return array<int, array{value: string, label: string}>
+     * @return array<int, array{value: string, label: string}|array{value: array<int, array{value: string, label: string}>, label: string}>
      */
     public function toOptionArray(): array
     {
-        $options = [];
+        $typesByCategory = [];
         foreach ($this->conditionPool->getAvailableTypes() as $type) {
-            $options[] = ['value' => $type, 'label' => $this->typeLabels->conditionLabel($type)];
+            $category = $this->typeLabels->conditionCategory($type);
+            $typesByCategory[$category][] = ['value' => $type, 'label' => $this->typeLabels->conditionLabel($type)];
+        }
+
+        $options = [];
+        foreach ($this->typeLabels->conditionCategoryOrder() as $category) {
+            if (!empty($typesByCategory[$category])) {
+                $options[] = ['value' => $typesByCategory[$category], 'label' => $category];
+            }
         }
 
         return $options;

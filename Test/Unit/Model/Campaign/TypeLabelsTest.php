@@ -62,4 +62,21 @@ class TypeLabelsTest extends TestCase
     {
         self::assertSame('Add Product Recommendations', (new TypeLabels())->actionLabel('add_product_recommendations'));
     }
+
+    public function testConditionCategoryUsesKnownMapping(): void
+    {
+        self::assertSame('Order & Purchase History', (new TypeLabels())->conditionCategory('order_total_gte'));
+    }
+
+    public function testConditionCategoryFallsBackToOtherForAnUnmappedType(): void
+    {
+        self::assertSame('Other', (new TypeLabels())->conditionCategory('custom_condition'));
+    }
+
+    public function testConditionCategoryOrderEndsWithOther(): void
+    {
+        $order = (new TypeLabels())->conditionCategoryOrder();
+
+        self::assertSame('Other', end($order));
+    }
 }

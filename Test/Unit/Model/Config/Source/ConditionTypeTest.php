@@ -10,14 +10,39 @@ use PHPUnit\Framework\TestCase;
 
 class ConditionTypeTest extends TestCase
 {
-    public function testToOptionArrayReflectsPool(): void
+    public function testToOptionArrayGroupsAKnownTypeUnderItsOwnCategory(): void
+    {
+        $pool = new ConditionPool(['tag' => $this->createStub(\Ordo\Automation\Api\Campaign\ConditionInterface::class)]);
+        $source = new ConditionType($pool, new TypeLabels());
+
+        self::assertSame(
+            [['value' => [['value' => 'tag', 'label' => 'Has Tag']], 'label' => 'Tags & Behavior']],
+            $source->toOptionArray()
+        );
+    }
+
+    public function testToOptionArrayGroupsAnUnmappedTypeUnderOther(): void
     {
         $pool = new ConditionPool(['has_tag' => $this->createStub(\Ordo\Automation\Api\Campaign\ConditionInterface::class)]);
         $source = new ConditionType($pool, new TypeLabels());
 
         self::assertSame(
-            [['value' => 'has_tag', 'label' => 'Has Tag']],
+            [['value' => [['value' => 'has_tag', 'label' => 'Has Tag']], 'label' => 'Other']],
             $source->toOptionArray()
+        );
+    }
+
+    public function testToOptionArrayListsCategoriesInTheDefinedOrder(): void
+    {
+        $pool = new ConditionPool([
+            'in_segment' => $this->createStub(\Ordo\Automation\Api\Campaign\ConditionInterface::class),
+            'tag' => $this->createStub(\Ordo\Automation\Api\Campaign\ConditionInterface::class),
+        ]);
+        $source = new ConditionType($pool, new TypeLabels());
+
+        self::assertSame(
+            ['Tags & Behavior', 'Segments'],
+            array_column($source->toOptionArray(), 'label')
         );
     }
 

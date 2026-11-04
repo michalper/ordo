@@ -53,9 +53,67 @@ class TypeLabels
         'generate_ai_content' => 'Generate AI Content (Ollama)',
     ];
 
+    /**
+     * Groups for the condition type picker (Model\Config\Source\ConditionType) - reported
+     * directly against a real screenshot: one flat ~20-item <select> wasn't great UX for finding
+     * the right condition. A type not listed here falls into DEFAULT_CONDITION_CATEGORY, same
+     * "never needs to be exhaustive" resilience as humanize() gives an unmapped type's label.
+     */
+    private const array CONDITION_CATEGORIES = [
+        'tag' => 'Tags & Behavior',
+        'visitor_tag' => 'Tags & Behavior',
+        'event_occurred' => 'Tags & Behavior',
+        'order_total_gte' => 'Order & Purchase History',
+        'recency_days_at_most' => 'Order & Purchase History',
+        'order_frequency_at_least' => 'Order & Purchase History',
+        'monetary_total_at_least' => 'Order & Purchase History',
+        'recency_percentile_at_least' => 'Order & Purchase History',
+        'order_frequency_percentile_at_least' => 'Order & Purchase History',
+        'monetary_percentile_at_least' => 'Order & Purchase History',
+        'purchased_sku' => 'Order & Purchase History',
+        'purchased_category' => 'Order & Purchase History',
+        'reorder_cycle_at_risk' => 'Order & Purchase History',
+        'score_at_least' => 'Score & Engagement',
+        'loyalty_tier_at_least' => 'Score & Engagement',
+        'nps_score_at_least' => 'Score & Engagement',
+        'clv_at_least' => 'Score & Engagement',
+        'message_engaged' => 'Score & Engagement',
+        'in_segment' => 'Segments',
+        'not_in_segment' => 'Segments',
+    ];
+
+    private const string DEFAULT_CONDITION_CATEGORY = 'Other';
+
+    /**
+     * Display order for the groups above - CONDITION_CATEGORIES is unordered (a plain lookup
+     * map), so this is the one place that actually decides category order in the rendered
+     * dropdown. DEFAULT_CONDITION_CATEGORY last, so an unmapped custom condition type doesn't
+     * jump ahead of the categories this module actually curated.
+     */
+    private const array CONDITION_CATEGORY_ORDER = [
+        'Tags & Behavior',
+        'Order & Purchase History',
+        'Score & Engagement',
+        'Segments',
+        self::DEFAULT_CONDITION_CATEGORY,
+    ];
+
     public function conditionLabel(string $type): string
     {
         return self::CONDITION_LABELS[$type] ?? $this->humanize($type);
+    }
+
+    public function conditionCategory(string $type): string
+    {
+        return self::CONDITION_CATEGORIES[$type] ?? self::DEFAULT_CONDITION_CATEGORY;
+    }
+
+    /**
+     * @return string[]
+     */
+    public function conditionCategoryOrder(): array
+    {
+        return self::CONDITION_CATEGORY_ORDER;
     }
 
     public function actionLabel(string $type): string

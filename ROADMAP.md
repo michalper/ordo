@@ -202,14 +202,19 @@ coupon/channel/device/geography.
   `message_engaged` condition above (`docs/adr/0016`), deliberately not fixed there. Small scope —
   likely a `PruneMessageLog`-style cron plus a new retention-days config key, mirroring
   `Helper\Config::getTrackingRetentionDays()`.
-- **Group the condition-type dropdown into categories** — reported directly against a real
-  screenshot: the segment/campaign-Flow condition picker is one flat, ~20-item list (`Has Tag`,
-  `Order Total ≥`, `Opened/Clicked Campaign`, ...), not great UX for finding the right one.
-  `Model\Config\Source\ConditionType`/`ConditionTypeWithGroup` generate it from
-  `ConditionPool::getAvailableTypes()`; Magento_Ui's `select` component supports `optgroup`-style
-  nesting (`{"label": "Category", "value": [...]}`), so this is a source-class change, not a new
-  UI component. Needs a sensible grouping scheme decided first (e.g. order history / audience &
-  segments / behavior & events / engagement & score). Small/medium scope.
+- ~~**Group the condition-type dropdown into categories**~~ — done. Reported directly against a
+  real screenshot: the segment editor's condition picker was one flat ~20-item `<select>` (`Has
+  Tag`, `Order Total ≥`, `Opened/Clicked Campaign`, ...). `Model\Campaign\TypeLabels` gained
+  `conditionCategory()`/`conditionCategoryOrder()` (4 categories: Tags & Behavior, Order &
+  Purchase History, Score & Engagement, Segments — every registered type mapped, so the fallback
+  "Other" bucket is unused today but still there for a future/custom type), and
+  `Model\Config\Source\ConditionType::toOptionArray()` nests them into Magento_Ui's native
+  `optgroup` binding shape (`Magento_Ui/js/lib/knockout/bindings/optgroup.js` — a nested array as
+  a `value` is already a group header, zero new JS/UI component needed).
+  `Model\Config\Source\ConditionTypeWithGroup`'s synthetic "Group" entry needed no change (still
+  appends as a flat trailing option alongside the groups). The Drawflow Flow canvas's own
+  condition palette is unaffected — it doesn't read `ConditionType` at all, it already has
+  collapsible sections and a search box.
 - **Automated anomaly/insight alerts** — a periodic cron flagging notable deviations (a channel's
   revenue dropping, a coupon/campaign outperforming others). More speculative than the rest of this
   list — needs real usage data to pick sane thresholds before committing to a design, so lowest
