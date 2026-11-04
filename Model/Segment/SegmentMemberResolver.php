@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Segment;
 
+use Magento\Framework\App\ResourceConnection;
 use Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface;
 use Ordo\Automation\Model\Campaign\ConditionPool;
 use Ordo\Automation\Model\Condition\GroupWalker;
@@ -14,6 +15,7 @@ use Ordo\Automation\Model\Purchase\PurchasedProductResolver;
 use Ordo\Automation\Model\ReorderCycle\ReorderCycleDriftCalculator;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\CollectionFactory as SegmentConditionCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Segment\Website\CollectionFactory as SegmentWebsiteCollectionFactory;
 use Ordo\Automation\Model\Rfm\RfmCalculator;
 use Ordo\Automation\Model\SegmentFactory;
 use Psr\Log\LoggerInterface;
@@ -94,7 +96,9 @@ class SegmentMemberResolver
         private readonly GroupWalker $groupWalker,
         private readonly SetGroupCombineStrategy $combineStrategy,
         private readonly ReorderCycleDriftCalculator $reorderCycleDriftCalculator,
-        private readonly ConditionPool $conditionPool
+        private readonly ConditionPool $conditionPool,
+        private readonly SegmentWebsiteCollectionFactory $segmentWebsiteCollectionFactory,
+        private readonly ResourceConnection $resourceConnection
     ) {
     }
 
@@ -167,7 +171,49 @@ class SegmentMemberResolver
         );
 
         /** @var int[] $result */
-        return $result;
+        return $this->filterByWebsite($segmentId, $result);
+    }
+
+    /**
+     * Drops any resolved customer id not on one of this segment's own configured websites - a
+     * segment with NO website rows (the common case) is unscoped and this is a no-op, see
+     * docs/adr/0014. Applied to every top-level AND recursive (in_segment/not_in_segment) call,
+     * so a nested segment's own website scope applies to its own member set exactly the same way
+     * its own conditions do - resolveInSegment()/resolveNotInSegment() both go through
+     * getMatchingCustomerIds() again, so this never needs calling from more than one place.
+     *
+     * @param int[] $customerIds
+     * @return int[]
+     */
+    private function filterByWebsite(int $segmentId, array $customerIds): array
+    {
+        if ($customerIds === []) {
+            return $customerIds;
+        }
+
+        $websiteIds = [];
+        $websiteRows = $this->segmentWebsiteCollectionFactory->create();
+        $websiteRows->addSegmentFilter($segmentId);
+        foreach ($websiteRows as $row) {
+            /** @var \Ordo\Automation\Model\SegmentWebsite $row */
+            $websiteIds[] = $row->getWebsiteId();
+        }
+
+        if ($websiteIds === []) {
+            return $customerIds;
+        }
+
+        $connection = $this->resourceConnection->getConnection();
+        $customerTable = $this->resourceConnection->getTableName('customer_entity');
+
+        $matching = $connection->fetchCol(
+            $connection->select()
+                ->from($customerTable, 'entity_id')
+                ->where('entity_id IN (?)', $customerIds)
+                ->where('website_id IN (?)', $websiteIds)
+        );
+
+        return array_map('intval', $matching);
     }
 
     /**

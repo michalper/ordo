@@ -7,11 +7,16 @@ use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition as SegmentConditionResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\Collection as SegmentConditionCollection;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\CollectionFactory as SegmentConditionCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Segment\Website as SegmentWebsiteResource;
+use Ordo\Automation\Model\ResourceModel\Segment\Website\Collection as SegmentWebsiteCollection;
+use Ordo\Automation\Model\ResourceModel\Segment\Website\CollectionFactory as SegmentWebsiteCollectionFactory;
 use Ordo\Automation\Model\Segment;
 use Ordo\Automation\Model\Segment\SegmentSaveProcessor;
 use Ordo\Automation\Model\SegmentCondition;
 use Ordo\Automation\Model\SegmentConditionFactory;
 use Ordo\Automation\Model\SegmentFactory;
+use Ordo\Automation\Model\SegmentWebsite;
+use Ordo\Automation\Model\SegmentWebsiteFactory;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
@@ -22,6 +27,9 @@ class SegmentSaveProcessorTest extends TestCase
     private SegmentConditionFactory $segmentConditionFactory;
     private SegmentConditionResource $segmentConditionResource;
     private SegmentConditionCollectionFactory $segmentConditionCollectionFactory;
+    private SegmentWebsiteFactory $segmentWebsiteFactory;
+    private SegmentWebsiteResource $segmentWebsiteResource;
+    private SegmentWebsiteCollectionFactory $segmentWebsiteCollectionFactory;
 
     protected function setUp(): void
     {
@@ -30,6 +38,10 @@ class SegmentSaveProcessorTest extends TestCase
         $this->segmentConditionFactory = $this->createMock(SegmentConditionFactory::class);
         $this->segmentConditionResource = $this->createMock(SegmentConditionResource::class);
         $this->segmentConditionCollectionFactory = $this->createStub(SegmentConditionCollectionFactory::class);
+        $this->segmentWebsiteFactory = $this->createMock(SegmentWebsiteFactory::class);
+        $this->segmentWebsiteResource = $this->createMock(SegmentWebsiteResource::class);
+        $this->segmentWebsiteCollectionFactory = $this->createStub(SegmentWebsiteCollectionFactory::class);
+        $this->segmentWebsiteCollectionFactory->method('create')->willReturn($this->emptyWebsiteCollection());
     }
 
     private function makeProcessor(): SegmentSaveProcessor
@@ -39,7 +51,10 @@ class SegmentSaveProcessorTest extends TestCase
             $this->segmentResource,
             $this->segmentConditionFactory,
             $this->segmentConditionResource,
-            $this->segmentConditionCollectionFactory
+            $this->segmentConditionCollectionFactory,
+            $this->segmentWebsiteFactory,
+            $this->segmentWebsiteResource,
+            $this->segmentWebsiteCollectionFactory
         );
     }
 
@@ -49,6 +64,22 @@ class SegmentSaveProcessorTest extends TestCase
         $collection->method('addSegmentFilter')->willReturnSelf();
         $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
         return $collection;
+    }
+
+    /**
+     * @param SegmentWebsite[] $rows
+     */
+    private function makeWebsiteCollection(array $rows = []): SegmentWebsiteCollection
+    {
+        $collection = $this->createStub(SegmentWebsiteCollection::class);
+        $collection->method('addSegmentFilter')->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator($rows));
+        return $collection;
+    }
+
+    private function emptyWebsiteCollection(): SegmentWebsiteCollection
+    {
+        return $this->makeWebsiteCollection([]);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -377,5 +408,61 @@ class SegmentSaveProcessorTest extends TestCase
         $this->expectExceptionMessage('db down');
 
         $processor->process(['entity_id' => 3, 'name' => 'VIP customers']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessSavesPostedWebsiteIdsDeduplicatingAndSkippingInvalidValues(): void
+    {
+        $processor = $this->makeProcessor();
+
+        $segment = $this->createStub(Segment::class);
+        $segment->method('getEntityId')->willReturn(7);
+        $this->segmentFactory->method('create')->willReturn($segment);
+
+        $this->segmentConditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+
+        $savedWebsiteIds = [];
+        $this->segmentWebsiteFactory->method('create')->willReturnCallback(function () use (&$savedWebsiteIds) {
+            $website = $this->createMock(SegmentWebsite::class);
+            $website->method('setData')->willReturnCallback(function (array $data) use ($website, &$savedWebsiteIds) {
+                self::assertSame(7, $data['segment_id']);
+                $savedWebsiteIds[] = $data['website_id'];
+                return $website;
+            });
+            return $website;
+        });
+        $this->segmentWebsiteResource->expects(self::exactly(2))->method('save');
+
+        $processor->process([
+            'entity_id' => 7,
+            'website_ids' => [1, 2, '2', 0, -1],
+        ]);
+
+        self::assertSame([1, 2], $savedWebsiteIds);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessDeletesExistingWebsiteRowsWhenNoneArePosted(): void
+    {
+        $segment = $this->createStub(Segment::class);
+        $segment->method('getEntityId')->willReturn(7);
+        $this->segmentFactory->method('create')->willReturn($segment);
+
+        $this->segmentConditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+
+        $existingWebsite = $this->createMock(SegmentWebsite::class);
+        $this->segmentWebsiteCollectionFactory = $this->createStub(SegmentWebsiteCollectionFactory::class);
+        $this->segmentWebsiteCollectionFactory->method('create')
+            ->willReturn($this->makeWebsiteCollection([$existingWebsite]));
+
+        $this->segmentWebsiteResource->expects(self::once())->method('delete')->with($existingWebsite);
+        $this->segmentWebsiteFactory->expects(self::never())->method('create');
+
+        // makeProcessor() must come after reassigning segmentWebsiteCollectionFactory above -
+        // the constructor captures that property's value at call time, and a second
+        // ->method('create') on the same double never overrides setUp()'s first one.
+        $processor = $this->makeProcessor();
+
+        $processor->process(['entity_id' => 7]);
     }
 }

@@ -11,17 +11,22 @@ use Ordo\Automation\Model\ResourceModel\Segment\Collection as SegmentCollection;
 use Ordo\Automation\Model\ResourceModel\Segment\CollectionFactory as SegmentCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\Collection as ConditionCollection;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\CollectionFactory as ConditionCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Segment\Website\Collection as WebsiteCollection;
+use Ordo\Automation\Model\ResourceModel\Segment\Website\CollectionFactory as WebsiteCollectionFactory;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 class DataProviderTest extends TestCase
 {
     private ConditionCollectionFactory $conditionCollectionFactory;
+    private WebsiteCollectionFactory $websiteCollectionFactory;
     private DataPersistorInterface $dataPersistor;
 
     protected function setUp(): void
     {
         $this->conditionCollectionFactory = $this->createStub(ConditionCollectionFactory::class);
+        $this->websiteCollectionFactory = $this->createStub(WebsiteCollectionFactory::class);
+        $this->websiteCollectionFactory->method('create')->willReturn($this->makeEmptyWebsiteCollection());
         $this->dataPersistor = $this->createMock(DataPersistorInterface::class);
     }
 
@@ -36,6 +41,7 @@ class DataProviderTest extends TestCase
             'entity_id',
             $collectionFactory,
             $this->conditionCollectionFactory,
+            $this->websiteCollectionFactory,
             $this->dataPersistor
         );
     }
@@ -43,6 +49,15 @@ class DataProviderTest extends TestCase
     private function makeEmptyConditionCollection(): ConditionCollection
     {
         $collection = $this->createStub(ConditionCollection::class);
+        $collection->method('addSegmentFilter')->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
+
+        return $collection;
+    }
+
+    private function makeEmptyWebsiteCollection(): WebsiteCollection
+    {
+        $collection = $this->createStub(WebsiteCollection::class);
         $collection->method('addSegmentFilter')->willReturnSelf();
         $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
 

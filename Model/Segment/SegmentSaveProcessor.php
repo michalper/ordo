@@ -6,9 +6,12 @@ namespace Ordo\Automation\Model\Segment;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition as SegmentConditionResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\CollectionFactory as SegmentConditionCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Segment\Website as SegmentWebsiteResource;
+use Ordo\Automation\Model\ResourceModel\Segment\Website\CollectionFactory as SegmentWebsiteCollectionFactory;
 use Ordo\Automation\Model\Segment;
 use Ordo\Automation\Model\SegmentConditionFactory;
 use Ordo\Automation\Model\SegmentFactory;
+use Ordo\Automation\Model\SegmentWebsiteFactory;
 
 /**
  * Persists the segment row plus its condition child rows in one request — same
@@ -46,7 +49,10 @@ class SegmentSaveProcessor
         private readonly SegmentResource $segmentResource,
         private readonly SegmentConditionFactory $segmentConditionFactory,
         private readonly SegmentConditionResource $segmentConditionResource,
-        private readonly SegmentConditionCollectionFactory $segmentConditionCollectionFactory
+        private readonly SegmentConditionCollectionFactory $segmentConditionCollectionFactory,
+        private readonly SegmentWebsiteFactory $segmentWebsiteFactory,
+        private readonly SegmentWebsiteResource $segmentWebsiteResource,
+        private readonly SegmentWebsiteCollectionFactory $segmentWebsiteCollectionFactory
     ) {
     }
 
@@ -72,11 +78,46 @@ class SegmentSaveProcessor
 
         /** @var array<int, array<string, mixed>> $conditionRows */
         $conditionRows = (array) ($data['conditions']['conditions'] ?? []);
+        $websiteIds = (array) ($data['website_ids'] ?? []);
 
         $this->segmentResource->save($segment);
         $this->saveConditions((int) $segment->getEntityId(), $conditionRows);
+        $this->saveWebsites((int) $segment->getEntityId(), $websiteIds);
 
         return $segment;
+    }
+
+    /**
+     * No rows at all means unscoped (matches customers on every website) - see docs/adr/0014 -
+     * so an empty posted selection (the common case; most installs are single-website) correctly
+     * leaves this segment with zero website rows rather than writing anything. Mirrors
+     * Model\Campaign\CampaignSaveProcessor::saveWebsites() exactly.
+     *
+     * @param array<int, string|int> $websiteIds
+     */
+    private function saveWebsites(int $segmentId, array $websiteIds): void
+    {
+        $existingWebsites = $this->segmentWebsiteCollectionFactory->create();
+        $existingWebsites->addSegmentFilter($segmentId);
+        foreach ($existingWebsites as $existing) {
+            $this->segmentWebsiteResource->delete($existing);
+        }
+
+        $seen = [];
+        foreach ($websiteIds as $websiteId) {
+            $websiteId = (int) $websiteId;
+            if ($websiteId <= 0 || isset($seen[$websiteId])) {
+                continue;
+            }
+            $seen[$websiteId] = true;
+
+            $website = $this->segmentWebsiteFactory->create();
+            $website->setData([
+                'segment_id' => $segmentId,
+                'website_id' => $websiteId,
+            ]);
+            $this->segmentWebsiteResource->save($website);
+        }
     }
 
     /**

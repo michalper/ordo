@@ -196,6 +196,21 @@
             "ORDO_SEGMENT_CONDITION_SEGMENT_ID_ORDO_SEGMENT_ENTITY_ID": true
         }
     },
+    "ordo_segment_website": {
+        "column": {
+            "entity_id": true,
+            "segment_id": true,
+            "website_id": true
+        },
+        "index": {
+            "ORDO_SEGMENT_WEBSITE_WEBSITE_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_SEGMENT_WEBSITE_SEGMENT_ID_ORDO_SEGMENT_ENTITY_ID": true,
+            "ORDO_SEGMENT_WEBSITE_SEGMENT_ID_WEBSITE_ID": true
+        }
+    },
     "ordo_segment_audience_size_history": {
         "column": {
             "entity_id": true,

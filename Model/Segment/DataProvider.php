@@ -7,6 +7,7 @@ use Magento\Framework\App\Request\DataPersistorInterface;
 use Magento\Ui\DataProvider\AbstractDataProvider;
 use Ordo\Automation\Model\ResourceModel\Segment\CollectionFactory as SegmentCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\CollectionFactory as SegmentConditionCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Segment\Website\CollectionFactory as SegmentWebsiteCollectionFactory;
 
 /**
  * Feeds the segment edit form, including its one dynamicRows section (conditions) — same
@@ -26,6 +27,7 @@ class DataProvider extends AbstractDataProvider
         $requestFieldName,
         SegmentCollectionFactory $collectionFactory,
         private readonly SegmentConditionCollectionFactory $segmentConditionCollectionFactory,
+        private readonly SegmentWebsiteCollectionFactory $segmentWebsiteCollectionFactory,
         private readonly DataPersistorInterface $dataPersistor,
         array $meta = [],
         array $data = []
@@ -57,6 +59,7 @@ class DataProvider extends AbstractDataProvider
             // stay empty on an existing segment's edit reload (confirmed via a real CI run: the
             // dynamicRows component itself reported visible=true, elems.length=0).
             $segmentData['conditions'] = ['conditions' => $this->loadConditionRows($segmentId)];
+            $segmentData['website_ids'] = $this->loadWebsiteIds($segmentId);
 
             $this->loadedData[$segmentId] = $segmentData;
         }
@@ -84,6 +87,22 @@ class DataProvider extends AbstractDataProvider
      * instead — see ordo_segment_form.xml's own group_logic/group_conditions fields and
      * Model\Segment\SegmentSaveProcessor::normalizeGroupRow(), the save-side counterpart.
      *
+     * @return int[]
+     */
+    private function loadWebsiteIds(int $segmentId): array
+    {
+        $collection = $this->segmentWebsiteCollectionFactory->create();
+        $collection->addSegmentFilter($segmentId);
+
+        $websiteIds = [];
+        foreach ($collection as $row) {
+            $websiteIds[] = $row->getWebsiteId();
+        }
+
+        return $websiteIds;
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     private function loadConditionRows(int $segmentId): array

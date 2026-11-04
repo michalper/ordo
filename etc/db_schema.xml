@@ -216,6 +216,25 @@
         </index>
     </table>
 
+    <table name="ordo_segment_website" resource="default" engine="innodb" comment="One website this segment is scoped to - a segment with no rows here is unscoped (matches customers on every website, the default/backward-compatible behavior for a segment that predates this table), see docs/adr/0014">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="segment_id" padding="10" unsigned="true" nullable="false" comment="ordo_segment.entity_id"/>
+        <column xsi:type="smallint" name="website_id" padding="5" unsigned="true" nullable="false" comment="store_website.website_id — no FK into core tables, same reasoning as ordo_campaign_website.website_id"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="ORDO_SEGMENT_WEBSITE_SEGMENT_ID_SEGMENT_ENTITY_ID"
+                    table="ordo_segment_website" column="segment_id"
+                    referenceTable="ordo_segment" referenceColumn="entity_id" onDelete="CASCADE"/>
+        <constraint xsi:type="unique" referenceId="ORDO_SEGMENT_WEBSITE_SEGMENT_ID_WEBSITE_ID">
+            <column name="segment_id"/>
+            <column name="website_id"/>
+        </constraint>
+        <index referenceId="ORDO_SEGMENT_WEBSITE_WEBSITE_ID" indexType="btree">
+            <column name="website_id"/>
+        </index>
+    </table>
+
     <table name="ordo_segment_audience_size_history" resource="default" engine="innodb" comment="Append-only snapshot history for ordo_segment.estimated_audience_size - one row per Model\Segment\SegmentAudienceSizeRecalculator pass, per segment. Closes the how-has-this-segment-grown-or-shrunk-over-the-last-3-months gap, where ordo_segment itself only ever holds the latest snapshot.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="segment_id" padding="10" unsigned="true" nullable="false" comment="ordo_segment.entity_id"/>

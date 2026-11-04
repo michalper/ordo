@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Model\Segment;
 
+use Magento\Framework\App\ResourceConnection;
+use Magento\Framework\DB\Adapter\AdapterInterface;
+use Magento\Framework\DB\Select;
 use Ordo\Automation\Model\Condition\GroupWalker;
 use Ordo\Automation\Model\Condition\SetGroupCombineStrategy;
 use Ordo\Automation\Model\CustomerScoreManager;
@@ -13,11 +16,14 @@ use Ordo\Automation\Model\ReorderCycle\ReorderCycleDriftCalculator;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\Collection as SegmentConditionCollection;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\CollectionFactory as SegmentConditionCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Segment\Website\Collection as SegmentWebsiteCollection;
+use Ordo\Automation\Model\ResourceModel\Segment\Website\CollectionFactory as SegmentWebsiteCollectionFactory;
 use Ordo\Automation\Model\Rfm\RfmCalculator;
 use Ordo\Automation\Model\Segment;
 use Ordo\Automation\Model\Segment\SegmentMemberResolver;
 use Ordo\Automation\Model\SegmentCondition;
 use Ordo\Automation\Model\SegmentFactory;
+use Ordo\Automation\Model\SegmentWebsite;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -35,6 +41,8 @@ class SegmentMemberResolverTest extends TestCase
     private EventOccurredResolver&\PHPUnit\Framework\MockObject\MockObject $eventOccurredResolver;
     private ReorderCycleDriftCalculator&\PHPUnit\Framework\MockObject\MockObject $reorderCycleDriftCalculator;
     private \Ordo\Automation\Model\Campaign\ConditionPool&\PHPUnit\Framework\MockObject\MockObject $conditionPool;
+    private SegmentWebsiteCollectionFactory&\PHPUnit\Framework\MockObject\MockObject $segmentWebsiteCollectionFactory;
+    private ResourceConnection&\PHPUnit\Framework\MockObject\MockObject $resourceConnection;
     private SegmentMemberResolver $resolver;
     private Segment $segmentStub;
 
@@ -54,6 +62,11 @@ class SegmentMemberResolverTest extends TestCase
         $this->eventOccurredResolver = $this->createMock(EventOccurredResolver::class);
         $this->reorderCycleDriftCalculator = $this->createMock(ReorderCycleDriftCalculator::class);
         $this->conditionPool = $this->createMock(\Ordo\Automation\Model\Campaign\ConditionPool::class);
+        $this->segmentWebsiteCollectionFactory = $this->createMock(SegmentWebsiteCollectionFactory::class);
+        // No segment in any pre-existing test below is website-scoped unless a test explicitly
+        // overrides this - the common case, keeps every test in this file unaffected.
+        $this->segmentWebsiteCollectionFactory->method('create')->willReturn($this->makeWebsiteCollection([]));
+        $this->resourceConnection = $this->createMock(ResourceConnection::class);
 
         // willReturnCallback (not willReturn) so stubSegmentConditionLogic() can change what's
         // returned later in a test — PHPUnit stacks multiple ->method('create') stubs FIFO, so a
@@ -63,7 +76,12 @@ class SegmentMemberResolverTest extends TestCase
         $this->segmentFactory->method('create')->willReturnCallback(fn () => $this->segmentStub);
         $this->stubSegmentConditionLogic('all');
 
-        $this->resolver = new SegmentMemberResolver(
+        $this->resolver = $this->makeResolver();
+    }
+
+    private function makeResolver(): SegmentMemberResolver
+    {
+        return new SegmentMemberResolver(
             $this->collectionFactory,
             $this->customerTagManager,
             $this->customerScoreManager,
@@ -76,8 +94,28 @@ class SegmentMemberResolverTest extends TestCase
             new GroupWalker(),
             new SetGroupCombineStrategy(),
             $this->reorderCycleDriftCalculator,
-            $this->conditionPool
+            $this->conditionPool,
+            $this->segmentWebsiteCollectionFactory,
+            $this->resourceConnection
         );
+    }
+
+    /**
+     * @param SegmentWebsite[] $rows
+     */
+    private function makeWebsiteCollection(array $rows): SegmentWebsiteCollection
+    {
+        $collection = $this->createStub(SegmentWebsiteCollection::class);
+        $collection->method('addSegmentFilter')->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator($rows));
+        return $collection;
+    }
+
+    private function makeWebsiteRow(int $websiteId): SegmentWebsite
+    {
+        $row = $this->createStub(SegmentWebsite::class);
+        $row->method('getWebsiteId')->willReturn($websiteId);
+        return $row;
     }
 
     private function stubSegmentConditionLogic(string $logic): void
@@ -139,6 +177,53 @@ class SegmentMemberResolverTest extends TestCase
         $this->primeFactory();
 
         $this->customerTagManager->method('getCustomerIdsWithTag')->willReturnMap([['vip', [1, 2]]]);
+
+        self::assertSame([1, 2], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testWebsiteScopedSegmentKeepsOnlyCustomersOnAMatchingWebsite(): void
+    {
+        $this->stubSegment(1, [['type' => 'tag', 'params' => ['tag' => 'vip']]]);
+        $this->primeFactory();
+
+        $this->customerTagManager->method('getCustomerIdsWithTag')->willReturnMap([['vip', [1, 2, 3]]]);
+
+        // A fresh mock, not a second ->method('create') on setUp()'s own - PHPUnit matches
+        // configured behaviors in configuration order for an unlimited (any()) matcher, so a
+        // second willReturn() on the same double never overrides the first.
+        $this->segmentWebsiteCollectionFactory = $this->createMock(SegmentWebsiteCollectionFactory::class);
+        $this->segmentWebsiteCollectionFactory->method('create')
+            ->willReturn($this->makeWebsiteCollection([$this->makeWebsiteRow(5)]));
+        $this->resolver = $this->makeResolver();
+
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        // Only customers 1 and 3 are really on website 5 - the DB join is the authority here,
+        // not a PHP-side filter, so the stub result is what decides the assertion below.
+        $connection->method('fetchCol')->willReturn(['1', '3']);
+
+        $this->resourceConnection->method('getConnection')->willReturn($connection);
+        $this->resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        self::assertSame([1, 3], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testUnscopedSegmentIsUnaffectedByTheWebsiteFilter(): void
+    {
+        $this->stubSegment(1, [['type' => 'tag', 'params' => ['tag' => 'vip']]]);
+        $this->primeFactory();
+
+        $this->customerTagManager->method('getCustomerIdsWithTag')->willReturnMap([['vip', [1, 2]]]);
+
+        // No website rows configured (setUp()'s default) - the resource connection must never
+        // even be touched, confirming the common/unscoped case pays no extra query.
+        $this->resourceConnection->expects(self::never())->method('getConnection');
 
         self::assertSame([1, 2], $this->resolver->getMatchingCustomerIds(1));
     }

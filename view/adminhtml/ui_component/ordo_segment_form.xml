@@ -74,6 +74,23 @@
                 </checkbox>
             </formElements>
         </field>
+        <field name="website_ids" formElement="multiselect" sortOrder="30">
+            <settings>
+                <dataType>number</dataType>
+                <label translate="true">Websites</label>
+                <dataScope>website_ids</dataScope>
+                <tooltip>
+                    <description>Leave empty to match customers on every website.</description>
+                </tooltip>
+            </settings>
+            <formElements>
+                <multiselect>
+                    <settings>
+                        <options class="Ordo\Automation\Model\Config\Source\Website"/>
+                    </settings>
+                </multiselect>
+            </formElements>
+        </field>
     </fieldset>
 
     <fieldset name="conditions_fieldset">
