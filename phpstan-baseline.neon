@@ -289,6 +289,12 @@ parameters:
 			path: Controller/Adminhtml/Campaign/ImportForm.php
 
 		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Controller/Adminhtml/Campaign/ImportFromLibrary.php
+
+		-
 			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -299,6 +305,18 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/Campaign/Index.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Controller/Adminhtml/Campaign/Library.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/Campaign/Library.php
 
 		-
 			message: '#^Method Ordo\\Automation\\Controller\\Adminhtml\\Campaign\\NewAction\:\:execute\(\) should return Magento\\Framework\\App\\ResponseInterface\|Magento\\Framework\\Controller\\ResultInterface but returns null\.$#'
@@ -1249,26 +1267,8 @@ parameters:
 			path: Cron/RunScheduledCampaignActions.php
 
 		-
-			message: '#^Comparison operation "\<" between 0 and 20 is always true\.$#'
-			identifier: smaller.alwaysTrue
-			count: 1
-			path: Cron/RunScheduledCampaignActions.php
-
-		-
 			message: '#^Parameter \#4 \$lookupMemo of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:resumeScheduledAction\(\) expects array\{enabled\?\: array\<int, bool\>, plan\?\: array\<string, array\{actions\: array\<int, Ordo\\Automation\\Model\\CampaignAction\>, start\: int\}\|null\>\}, array\<string, mixed\> given\.$#'
 			identifier: argument.type
-			count: 1
-			path: Cron/RunScheduledCampaignActions.php
-
-		-
-			message: '#^Property Ordo\\Automation\\Cron\\RunScheduledCampaignActions\:\:\$logger is never read, only written\.$#'
-			identifier: property.onlyWritten
-			count: 1
-			path: Cron/RunScheduledCampaignActions.php
-
-		-
-			message: '#^Unreachable statement \- code above always terminates\.$#'
-			identifier: deadCode.unreachable
 			count: 1
 			path: Cron/RunScheduledCampaignActions.php
 
