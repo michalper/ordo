@@ -45,6 +45,7 @@ class TypeLabels
             'not_in_segment' => (string) __('Not In Segment'),
             'loyalty_tier_at_least' => (string) __('Loyalty Tier At Least'),
             'nps_score_at_least' => (string) __('NPS Score At Least'),
+            'clv_at_least' => (string) __('CLV At Least'),
             'purchased_sku' => (string) __('Purchased Product (SKU)'),
             'purchased_category' => (string) __('Purchased From Category'),
             'event_occurred' => (string) __('Event Occurred (cart/wishlist add)'),
