@@ -215,6 +215,25 @@ coupon/channel/device/geography.
   appends as a flat trailing option alongside the groups). The Drawflow Flow canvas's own
   condition palette is unaffected — it doesn't read `ConditionType` at all, it already has
   collapsible sections and a search box.
+- **Tag field as a select/autocomplete of real existing tags, not free text** — reported directly
+  against a real screenshot: `tag`/`event_key`-adjacent `tag` fields (`Has Tag`, `Visitor Has Tag`,
+  the `add_tag` campaign action) are plain text inputs today, no autocomplete, easy to typo a tag
+  that silently never matches anything. Not a fixed enum though — tags come from system constants
+  (`CustomerTagManager`'s own `TAG_*` callers: `TagReorderCycleAtRiskCustomers`, `TagInactiveCustomers`,
+  `SendWinBackEmails`, `SendWelcomeEmail`, ...) *and* arbitrary strings a merchant can type into the
+  `add_tag` action, so a closed dropdown would be wrong — needs a live-query select/autocomplete of
+  `DISTINCT tag FROM ordo_customer_tag` (same house pattern as `CampaignOptions`/`SegmentOptions`:
+  list real existing values, not a hardcoded enum), while still allowing free entry for a
+  brand-new tag that doesn't exist yet. Small/medium scope.
+- **`campaign-flow-editor.js` has no i18n at all** — reported directly while fixing an unrelated
+  bug in it (the empty-`<select>` placeholder). 15+ hardcoded English UI strings (`Exit Full
+  Screen`, `Send test`, `Weight`, validation messages, starter-template labels, the new
+  `-- Please Select --` placeholder) never go through translation, unlike the rest of this
+  module's admin UI (`__()`/`translate="true"` server-side, `i18n/*.csv` for `en_US`/`pl_PL`/
+  `de_DE`/`fr_FR`). The mechanism already exists and works elsewhere in this module
+  (`view/adminhtml/web/js/buy-x-get-y-calculator.js` uses `mage/translate`'s `$.mage.__`) — this
+  file just never adopted it. Medium scope: wrap every hardcoded string, add the new `i18n/*.csv`
+  rows for all 4 shipped locales.
 - **Automated anomaly/insight alerts** — a periodic cron flagging notable deviations (a channel's
   revenue dropping, a coupon/campaign outperforming others). More speculative than the rest of this
   list — needs real usage data to pick sane thresholds before committing to a design, so lowest

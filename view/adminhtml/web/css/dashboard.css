@@ -444,7 +444,10 @@ body.ordo-campaign-index #add:hover {
 }
 
 /* Dashboard banner (setup_wizard_banner.phtml) - only rendered while at least one step is
-   still undone, so a fully set-up install never sees it again. */
+   still undone, so a fully set-up install never sees it again. A soft tint, not a solid fill:
+   --ordo-color-accent is a saturated indigo meant for buttons/badges (see its other usages, all
+   `color`/border, never a full-panel `background`) - using it as this banner's background left
+   dark title/body text almost unreadable against it. Left border carries the accent instead. */
 .ordo-setup-wizard-banner {
   display: flex;
   align-items: center;
@@ -453,8 +456,10 @@ body.ordo-campaign-index #add:hover {
   margin-bottom: 20px;
   padding: 14px 20px;
   border: 1px solid var(--ordo-border);
+  border-left: 3px solid var(--ordo-color-accent);
   border-radius: 8px;
-  background: var(--ordo-color-accent, #f5f3ff);
+  background: #f5f3ff;
 }
 
+.ordo-setup-wizard-banner strong { color: var(--ordo-color-ink); }
 .ordo-setup-wizard-banner p { margin: 2px 0 0; color: var(--ordo-text-muted); font-size: var(--ordo-font-base); }

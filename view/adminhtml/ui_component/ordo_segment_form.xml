@@ -2985,6 +2985,9 @@
                         <select>
                             <settings>
                                 <options class="Ordo\Automation\Model\Config\Source\CampaignOptions"/>
+                                <!-- Same reasoning as segment_id's own caption above - zero
+                                     campaigns saved yet is a real, legitimate state. -->
+                                <caption translate="true">-- Please Select --</caption>
                             </settings>
                         </select>
                     </formElements>
@@ -3038,6 +3041,14 @@
                         <select>
                             <settings>
                                 <options class="Ordo\Automation\Model\Config\Source\SegmentOptions"/>
+                                <!-- Reported directly against a real screenshot: with zero other
+                                     segments saved yet, SegmentOptions legitimately returns [],
+                                     and with no caption a <select> with 0 real <option>s renders
+                                     as an unlabeled, unusably tiny empty box, indistinguishable
+                                     from broken. A caption is always a real, permanent <option>
+                                     (unlike a placeholder attribute), so this fixes the field in
+                                     every state, not just the zero-segments one. -->
+                                <caption translate="true">-- Please Select --</caption>
                             </settings>
                         </select>
                     </formElements>
@@ -3073,7 +3084,16 @@
                     that instead of letting a marketer wonder why an AND-segment using one of
                     these always comes up empty.
                 -->
-                <field name="event_only_warning" formElement="input" sortOrder="28">
+                <!--
+                    formElement="textarea", not "input" - reported directly against a real
+                    screenshot: a single-line <input> truncated this sentence-length warning to
+                    an unreadable fragment, since Magento UI inputs never wrap. A disabled
+                    textarea does (same precedent as params_json/group_conditions_json above),
+                    and the ordo-segment-event-only-warning CSS class (segment-form.css) strips
+                    its box chrome down to plain italic text, matching the nested-group JS
+                    equivalent's own .ordo-group-event-only-warning treatment.
+                -->
+                <field name="event_only_warning" formElement="textarea" sortOrder="28">
                     <argument name="data" xsi:type="array">
                         <item name="config" xsi:type="array">
                             <item name="default" xsi:type="string">This condition only has an effect inside a Campaign's trigger conditions - used inside a Segment, it never matches any customer.</item>

@@ -538,6 +538,39 @@ td:has(> [data-index="group_logic"]) {
  * top-level row (see that field's own comment), just rendered by JS here since nested group
  * rows aren't backed by ui-component fields at all.
  */
+/*
+ * Top-level-row counterpart of .ordo-group-event-only-warning above, for the real
+ * ui-component textarea (ordo_segment_form.xml's "event_only_warning" field) - strips its box
+ * chrome (border/background/resize handle) down to the same plain italic muted text, wide
+ * enough and tall enough that the full sentence actually reads instead of truncating in a
+ * single-line input. Targeted by its rendered name attribute, not a class - confirmed
+ * Magento_Ui's own textarea.html template (this Magento version) has no `css: getCss()` binding
+ * at all, so an <additionalClasses> entry in the XML is silently never applied to a textarea
+ * field; the name attribute is reliably set via the same template's own `attr: {name:
+ * inputName}` binding instead.
+ */
+textarea[name$="[event_only_warning]"] {
+    /* !important on width/min-height: a more specific Magento base rule
+       (.admin__field-control .admin__control-textarea or similar) was winning the cascade
+       against this attribute selector otherwise, clamping width to the default ~90px even
+       though min-height alone (no competing rule at that property) applied fine. Confirmed via
+       the live computed style, not guessed. */
+    width: 260px !important;
+    /* Fits the full two-sentence warning text at this width without scrolling or clipping -
+       reported directly against a real screenshot that showed it still cut off at a shorter
+       height. */
+    min-height: 145px !important;
+    resize: none;
+    overflow: hidden;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    color: var(--ordo-muted);
+    font-size: 11px;
+    font-style: italic;
+    padding: 4px 0;
+}
+
 .ordo-group-event-only-warning {
     color: var(--ordo-muted);
     font-size: 11px;

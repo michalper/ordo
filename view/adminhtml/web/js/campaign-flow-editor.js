@@ -598,7 +598,11 @@ define([
              * @return {String}
              */
             function buildSelectOptionsHtml(field, value) {
-                var html = '';
+                // Reported directly against a real screenshot: a field whose options come from
+                // a live query (e.g. CampaignOptions) legitimately returns none yet on a fresh
+                // install - with no placeholder, a 0-option <select> renders as an unlabeled,
+                // unusably tiny empty box, indistinguishable from broken.
+                var html = '<option value="">' + $('<div>').text('-- Please Select --').html() + '</option>';
 
                 Object.keys(field.options).forEach(function (optionValue) {
                     var selectedAttr = String(value) === String(optionValue) ? ' selected="selected"' : '';
