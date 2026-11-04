@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">ordo_productperformance_listing.ordo_productperformance_listing_data_source</item>
+        </item>
+    </argument>
+    <settings>
+        <spinner>ordo_productperformance_columns</spinner>
+        <deps>
+            <dep>ordo_productperformance_listing.ordo_productperformance_listing_data_source</dep>
+        </deps>
+        <buttons>
+            <button name="back_to_dashboard">
+                <url path="ordo/dashboard/index"/>
+                <class>back</class>
+                <label translate="true">Back to Dashboard</label>
+            </button>
+        </buttons>
+    </settings>
+
+    <dataSource name="ordo_productperformance_listing_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider</argument>
+            <argument name="name" xsi:type="string">ordo_productperformance_listing_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">entity_id</argument>
+            <argument name="requestFieldName" xsi:type="string">entity_id</argument>
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="update_url" xsi:type="url" path="mui/index/render"/>
+                </item>
+            </argument>
+        </argument>
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/grid/provider</item>
+            </item>
+        </argument>
+    </dataSource>
+
+    <!--
+        Read-only - no mass actions. view_count/purchase_count/abandon_rate are select-list
+        aliases over joined aggregates (same reasoning as ordo_rfm_listing.xml's own comment),
+        sortable but not filterable.
+    -->
+    <columns name="ordo_productperformance_columns">
+        <column name="entity_id">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Product ID</label>
+            </settings>
+        </column>
+        <column name="sku">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">SKU</label>
+            </settings>
+        </column>
+        <column name="view_count">
+            <settings>
+                <sorting>desc</sorting>
+                <label translate="true">Views</label>
+            </settings>
+        </column>
+        <column name="purchase_count">
+            <settings>
+                <label translate="true">Purchases</label>
+            </settings>
+        </column>
+        <column name="abandon_rate" class="Magento\Ui\Component\Listing\Columns\Column">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Abandon Rate (store-wide, not per-visitor)</label>
+                <sortable>true</sortable>
+            </settings>
+        </column>
+    </columns>
+</listing>

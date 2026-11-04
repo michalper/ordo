@@ -459,6 +459,18 @@
             "PRIMARY": true
         }
     },
+    "ordo_product_performance": {
+        "column": {
+            "entity_id": true,
+            "sku": true,
+            "view_count": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_PRODUCT_PERFORMANCE_SKU": true
+        }
+    },
     "ordo_visitor_tag": {
         "column": {
             "entity_id": true,

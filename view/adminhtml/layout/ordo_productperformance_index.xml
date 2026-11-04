@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <css src="Ordo_Automation::css/_tokens.css"/>
+        <css src="Ordo_Automation::css/dashboard.css"/>
+    </head>
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="ordo_productperformance_listing_intro"
+                   template="Ordo_Automation::listing_intro.phtml" before="ordo_productperformance_listing">
+                <arguments>
+                    <argument name="intro_text" xsi:type="string">View and purchase counts per product, with a store-wide abandon rate (not a per-visitor funnel — a guest who never logs in can't be matched between a view and a purchase). Views only cover the last few days by design (see Stores → Configuration → Ordo Automation for the on-site tracking retention window) and are counted incrementally, so a brand-new view may take up to 30 minutes to appear here.</argument>
+                </arguments>
+            </block>
+            <uiComponent name="ordo_productperformance_listing"/>
+        </referenceContainer>
+    </body>
+</page>

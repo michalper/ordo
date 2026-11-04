@@ -528,6 +528,19 @@
         </index>
     </table>
 
+    <table name="ordo_product_performance" resource="default" engine="innodb" comment="Running per-SKU view count, kept current by Cron\CalculateProductPerformance reading ordo_visitor_event incrementally before PruneVisitorEvents deletes it - purchase counts are joined live from sales_order_item at report time instead (that data is never pruned, so it needs no table of its own), see Model\ResourceModel\ProductPerformance\Grid\Collection.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="sku" nullable="false" length="64" comment="Product SKU, matches ordo_visitor_event.event_key for a product_view row"/>
+        <column xsi:type="int" name="view_count" padding="10" unsigned="true" nullable="false" default="0" comment="Running count of product_view events seen for this SKU"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="ORDO_PRODUCT_PERFORMANCE_SKU">
+            <column name="sku"/>
+        </constraint>
+    </table>
+
     <table name="ordo_visitor_tag" resource="default" engine="innodb" comment="Behavioral tags for anonymous, never-logged-in visitors — the same segmentation primitive as ordo_customer_tag, keyed by visitor_id instead of customer_id since an anonymous visitor has no customer row to attach to yet">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="visitor_id" nullable="false" length="64" comment="Anonymous first-party cookie value, matches ordo_visitor_event.visitor_id"/>

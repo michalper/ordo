@@ -178,9 +178,12 @@ coupon/channel/device/geography.
 
 - **Revenue/channel analytics report** — revenue broken down by new vs. returning customer, coupon,
   campaign, country/city, device — none of this is surfaced today. Medium/large scope.
-- **Product performance report** — per-SKU views/purchases/abandon-rate; the co-purchase affinity data
-  already computed live by `Model\Recommendation\ProductRecommender` (for the `AddProductRecommendations`
-  campaign action) could be exposed as its own report too, not just fed into emails. Medium scope.
+- ~~**Product performance report**~~ — done, see `docs/adr/0015-product-performance-report.md`.
+  Per-SKU views (materialized by a new incremental `Cron\CalculateProductPerformance`, since the
+  source `ordo_visitor_event` rows are pruned after ~7 days) and purchases (live-joined from
+  `sales_order_item`, never pruned) in a new read-only admin report
+  (`ordo/productperformance/index`), with a store-wide abandon rate — not a per-visitor funnel,
+  which the data model can't support honestly (no `visitor_id` on `sales_order` anywhere).
 - ~~**Order-canceled trigger + recovery action**~~ — done: new `TRIGGER_ORDER_CANCELED` trigger,
   `Observer\DispatchOrderCanceledCampaigns` on Magento core's own `order_cancel_after` event
   (mirrors `DispatchOrderPlacedCampaigns`'s pattern; `CampaignDispatcher` needed zero changes,
