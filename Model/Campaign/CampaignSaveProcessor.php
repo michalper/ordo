@@ -10,6 +10,7 @@ use Ordo\Automation\Model\CampaignConditionFactory;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\CampaignFactory;
 use Ordo\Automation\Model\CampaignTriggerFactory;
+use Ordo\Automation\Model\CampaignWebsiteFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action as CampaignActionResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as CampaignActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign as CampaignResource;
@@ -17,6 +18,8 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Condition as CampaignConditionR
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as CampaignConditionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger as CampaignTriggerResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as CampaignTriggerCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign\Website as CampaignWebsiteResource;
+use Ordo\Automation\Model\ResourceModel\Campaign\Website\CollectionFactory as CampaignWebsiteCollectionFactory;
 
 /**
  * Persists the campaign row plus its trigger/condition/action child rows in one request. Child
@@ -66,6 +69,9 @@ class CampaignSaveProcessor
         private readonly CampaignActionFactory $campaignActionFactory,
         private readonly CampaignActionResource $campaignActionResource,
         private readonly CampaignActionCollectionFactory $campaignActionCollectionFactory,
+        private readonly CampaignWebsiteFactory $campaignWebsiteFactory,
+        private readonly CampaignWebsiteResource $campaignWebsiteResource,
+        private readonly CampaignWebsiteCollectionFactory $campaignWebsiteCollectionFactory,
         private readonly CacheInterface $cache
     ) {
     }
@@ -96,6 +102,8 @@ class CampaignSaveProcessor
         $conditionRows = (array) ($data['conditions']['conditions'] ?? []);
         /** @var array<int, array<string, mixed>> $actionRows */
         $actionRows = (array) ($data['actions']['actions'] ?? []);
+        /** @var array<int, string|int> $websiteIds */
+        $websiteIds = (array) ($data['website_ids'] ?? []);
 
         $this->campaignResource->save($campaign);
         $this->saveTriggers((int) $campaign->getEntityId(), $triggerRows);
@@ -104,6 +112,7 @@ class CampaignSaveProcessor
             $conditionRows,
             $actionRows
         );
+        $this->saveWebsites((int) $campaign->getEntityId(), $websiteIds);
 
         // This is the admin UI's actual write path for triggers/enabled status — it saves
         // child rows via the resource models directly, not CampaignRepository — so
@@ -195,6 +204,38 @@ class CampaignSaveProcessor
                 'delay_minutes' => max(0, (int) ($row['delay_minutes'] ?? 0)),
             ]);
             $this->campaignActionResource->save($action);
+        }
+    }
+
+    /**
+     * No rows at all means unscoped (matches every website) - see docs/adr/0014 - so an empty
+     * posted selection (the common case; most installs are single-website) correctly leaves
+     * this campaign with zero website rows rather than writing anything.
+     *
+     * @param array<int, string|int> $websiteIds
+     */
+    private function saveWebsites(int $campaignId, array $websiteIds): void
+    {
+        $existingWebsites = $this->campaignWebsiteCollectionFactory->create();
+        $existingWebsites->addCampaignFilter($campaignId);
+        foreach ($existingWebsites as $existing) {
+            $this->campaignWebsiteResource->delete($existing);
+        }
+
+        $seen = [];
+        foreach ($websiteIds as $websiteId) {
+            $websiteId = (int) $websiteId;
+            if ($websiteId <= 0 || isset($seen[$websiteId])) {
+                continue;
+            }
+            $seen[$websiteId] = true;
+
+            $website = $this->campaignWebsiteFactory->create();
+            $website->setData([
+                'campaign_id' => $campaignId,
+                'website_id' => $websiteId,
+            ]);
+            $this->campaignWebsiteResource->save($website);
         }
     }
 

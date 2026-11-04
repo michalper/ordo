@@ -16,6 +16,8 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Condition\Collection as Conditi
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as ConditionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as TriggerCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign\Website\Collection as WebsiteCollection;
+use Ordo\Automation\Model\ResourceModel\Campaign\Website\CollectionFactory as WebsiteCollectionFactory;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
@@ -24,6 +26,7 @@ class DataProviderTest extends TestCase
     private TriggerCollectionFactory $triggerCollectionFactory;
     private ConditionCollectionFactory $conditionCollectionFactory;
     private ActionCollectionFactory $actionCollectionFactory;
+    private WebsiteCollectionFactory $websiteCollectionFactory;
     private DataPersistorInterface $dataPersistor;
 
     protected function setUp(): void
@@ -32,6 +35,8 @@ class DataProviderTest extends TestCase
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeEmptyTriggerCollection());
         $this->conditionCollectionFactory = $this->createStub(ConditionCollectionFactory::class);
         $this->actionCollectionFactory = $this->createStub(ActionCollectionFactory::class);
+        $this->websiteCollectionFactory = $this->createStub(WebsiteCollectionFactory::class);
+        $this->websiteCollectionFactory->method('create')->willReturn($this->makeEmptyWebsiteCollection());
         $this->dataPersistor = $this->createMock(DataPersistorInterface::class);
     }
 
@@ -48,6 +53,7 @@ class DataProviderTest extends TestCase
             $this->triggerCollectionFactory,
             $this->conditionCollectionFactory,
             $this->actionCollectionFactory,
+            $this->websiteCollectionFactory,
             $this->dataPersistor
         );
     }
@@ -55,6 +61,15 @@ class DataProviderTest extends TestCase
     private function makeEmptyTriggerCollection(): TriggerCollection
     {
         $collection = $this->createStub(TriggerCollection::class);
+        $collection->method('addCampaignFilter');
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
+
+        return $collection;
+    }
+
+    private function makeEmptyWebsiteCollection(): WebsiteCollection
+    {
+        $collection = $this->createStub(WebsiteCollection::class);
         $collection->method('addCampaignFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
 

@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Model;
 
+use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\App\CacheInterface;
 use Magento\Framework\Serialize\Serializer\Json as JsonSerializer;
 use Ordo\Automation\Api\Campaign\ActionInterface;
@@ -18,9 +20,11 @@ use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\CampaignScheduledAction;
 use Ordo\Automation\Model\CampaignScheduledActionFactory;
 use Ordo\Automation\Model\CampaignTrigger;
+use Ordo\Automation\Model\CampaignWebsite;
 use Ordo\Automation\Model\Condition\BooleanGroupCombineStrategy;
 use Ordo\Automation\Model\Condition\ConditionGroupEvaluator;
 use Ordo\Automation\Model\Condition\GroupWalker;
+use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\Collection as ActionCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Collection as CampaignCollection;
@@ -30,6 +34,8 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as 
 use Ordo\Automation\Model\ResourceModel\Campaign\ScheduledAction as CampaignScheduledActionResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as TriggerCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign\Website\Collection as WebsiteCollection;
+use Ordo\Automation\Model\ResourceModel\Campaign\Website\CollectionFactory as WebsiteCollectionFactory;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -49,6 +55,9 @@ class CampaignDispatcherTest extends TestCase
     private CampaignEntryGuard&\PHPUnit\Framework\MockObject\MockObject $campaignEntryGuard;
     private CacheInterface $cache;
     private LoggerInterface $logger;
+    private WebsiteCollectionFactory $campaignWebsiteCollectionFactory;
+    private CustomerRepositoryInterface $customerRepository;
+    private CustomerStoreResolver $customerStoreResolver;
 
     protected function setUp(): void
     {
@@ -56,6 +65,12 @@ class CampaignDispatcherTest extends TestCase
         $this->triggerCollectionFactory = $this->createMock(TriggerCollectionFactory::class);
         $this->conditionCollectionFactory = $this->createMock(ConditionCollectionFactory::class);
         $this->actionCollectionFactory = $this->createMock(ActionCollectionFactory::class);
+        // No campaign in any test below is website-scoped unless a test explicitly overrides
+        // this - the common case, and keeps every pre-existing test in this file unaffected.
+        $this->campaignWebsiteCollectionFactory = $this->createStub(WebsiteCollectionFactory::class);
+        $this->campaignWebsiteCollectionFactory->method('create')->willReturn($this->makeWebsiteCollection([]));
+        $this->customerRepository = $this->createStub(CustomerRepositoryInterface::class);
+        $this->customerStoreResolver = $this->createStub(CustomerStoreResolver::class);
         $this->campaignActionFactory = $this->createStub(CampaignActionFactory::class);
         $this->campaignActionFactory->method('create')->willReturnCallback(fn () => $this->makeRealCampaignAction());
         $this->campaignScheduledActionFactory = $this->createMock(CampaignScheduledActionFactory::class);
@@ -103,7 +118,10 @@ class CampaignDispatcherTest extends TestCase
             $this->campaignEntryGuard,
             $this->cache,
             new JsonSerializer(),
-            $this->logger
+            $this->logger,
+            $this->campaignWebsiteCollectionFactory,
+            $this->customerRepository,
+            $this->customerStoreResolver
         );
     }
 
@@ -158,6 +176,27 @@ class CampaignDispatcherTest extends TestCase
         return $collection;
     }
 
+    /**
+     * @param CampaignWebsite[] $rows
+     */
+    private function makeWebsiteCollection(array $rows): WebsiteCollection
+    {
+        $collection = $this->createStub(WebsiteCollection::class);
+        $collection->method('addCampaignIdsFilter')->willReturn($collection);
+        $collection->method('getIterator')->willReturn(new \ArrayIterator($rows));
+
+        return $collection;
+    }
+
+    private function makeCampaignWebsiteRow(int $campaignId, int $websiteId): CampaignWebsite
+    {
+        $row = $this->createStub(CampaignWebsite::class);
+        $row->method('getCampaignId')->willReturn($campaignId);
+        $row->method('getWebsiteId')->willReturn($websiteId);
+
+        return $row;
+    }
+
     private function makeCampaign(int $id, string $conditionLogic = 'all'): \Ordo\Automation\Model\Campaign
     {
         $campaign = $this->createStub(\Ordo\Automation\Model\Campaign::class);
@@ -181,6 +220,85 @@ class CampaignDispatcherTest extends TestCase
 
         $action = $this->createMock(ActionInterface::class);
         $action->expects(self::once())->method('execute')->with(self::anything(), ['tag' => 'vip']);
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
+    }
+
+    /**
+     * @param CampaignWebsite[] $rows
+     */
+    private function stubCampaignWebsites(array $rows): void
+    {
+        // A fresh stub, not a second ->method('create') on the one from setUp() - PHPUnit
+        // matches configured behaviors in configuration order for an unlimited (any()) matcher,
+        // so a second willReturn() on the same double never overrides the first.
+        $this->campaignWebsiteCollectionFactory = $this->createStub(WebsiteCollectionFactory::class);
+        $this->campaignWebsiteCollectionFactory->method('create')->willReturn($this->makeWebsiteCollection($rows));
+    }
+
+    private function stubCustomerWebsite(int $customerId, ?int $websiteId): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+        $this->customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $this->customerRepository->expects(self::once())->method('getById')->with($customerId)->willReturn($customer);
+        $this->customerStoreResolver = $this->createMock(CustomerStoreResolver::class);
+        $this->customerStoreResolver->expects(self::once())->method('resolveWebsiteId')->with($customer)
+            ->willReturn($websiteId);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchRunsAWebsiteScopedCampaignWhenTheCustomersWebsiteMatches(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+        $this->stubCampaignWebsites([$this->makeCampaignWebsiteRow(1, 5)]);
+        $this->stubCustomerWebsite(1, 5);
+
+        $actionRow = $this->createMock(CampaignAction::class);
+        $actionRow->method('getCampaignId')->willReturn(1);
+        $actionRow->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $actionRow->method('getParams')->willReturn(['tag' => 'vip']);
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$actionRow]));
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute');
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchSkipsAWebsiteScopedCampaignWhenTheCustomerIsOnADifferentWebsite(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->stubCampaignWebsites([$this->makeCampaignWebsiteRow(1, 5)]);
+        $this->stubCustomerWebsite(1, 7);
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::never())->method('execute');
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchSkipsAWebsiteScopedCampaignWhenTheCustomersWebsiteCannotBeResolved(): void
+    {
+        // Fails closed, same philosophy as an unknown condition/action type - can't verify the
+        // scope condition, so this campaign doesn't run, rather than running for everyone.
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->stubCampaignWebsites([$this->makeCampaignWebsiteRow(1, 5)]);
+        $this->customerRepository = $this->createStub(CustomerRepositoryInterface::class);
+        $this->customerRepository->method('getById')->willThrowException(
+            new \Magento\Framework\Exception\NoSuchEntityException(__('no such customer'))
+        );
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::never())->method('execute');
         $this->actionPool = new ActionPool(['tag_customer' => $action]);
 
         $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);

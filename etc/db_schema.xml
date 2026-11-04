@@ -360,6 +360,25 @@
         </index>
     </table>
 
+    <table name="ordo_campaign_website" resource="default" engine="innodb" comment="One website this campaign is scoped to - a campaign with no rows here is unscoped (matches every website, the default/backward-compatible behavior for a campaign that predates this table), see docs/adr/0014">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id"/>
+        <column xsi:type="smallint" name="website_id" padding="5" unsigned="true" nullable="false" comment="store_website.website_id — no FK into core tables, same reasoning as every other cross-module reference in this module (a row here must survive the website it references being removed, and vice versa)"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="ORDO_CAMPAIGN_WEBSITE_CAMPAIGN_ID_CAMPAIGN_ENTITY_ID"
+                    table="ordo_campaign_website" column="campaign_id"
+                    referenceTable="ordo_campaign" referenceColumn="entity_id" onDelete="CASCADE"/>
+        <constraint xsi:type="unique" referenceId="ORDO_CAMPAIGN_WEBSITE_CAMPAIGN_ID_WEBSITE_ID">
+            <column name="campaign_id"/>
+            <column name="website_id"/>
+        </constraint>
+        <index referenceId="ORDO_CAMPAIGN_WEBSITE_WEBSITE_ID" indexType="btree">
+            <column name="website_id"/>
+        </index>
+    </table>
+
     <table name="ordo_campaign_scheduled_action" resource="default" engine="innodb" comment="A paused campaign action chain waiting on a delay_minutes step — CampaignDispatcher stops running its actions synchronously the moment it reaches one with a delay and writes one of these instead of blocking. Cron\RunScheduledCampaignActions resumes the chain (starting at, and including, resume_action_id) once run_at has passed.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id"/>

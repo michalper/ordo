@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model;
 
+use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\App\CacheInterface;
 use Magento\Framework\Serialize\SerializerInterface;
 use Ordo\Automation\Model\Campaign\ActionPool;
@@ -14,6 +15,7 @@ use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCo
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as CampaignConditionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\ScheduledAction as CampaignScheduledActionResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as CampaignTriggerCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign\Website\CollectionFactory as CampaignWebsiteCollectionFactory;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -83,7 +85,10 @@ class CampaignDispatcher
         private readonly CampaignEntryGuard $campaignEntryGuard,
         private readonly CacheInterface $cache,
         private readonly SerializerInterface $serializer,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly CampaignWebsiteCollectionFactory $campaignWebsiteCollectionFactory,
+        private readonly CustomerRepositoryInterface $customerRepository,
+        private readonly CustomerStoreResolver $customerStoreResolver
     ) {
     }
 
@@ -93,6 +98,12 @@ class CampaignDispatcher
     public function dispatch(string $triggerEvent, array $context): void
     {
         $conditionLogicByCampaign = $this->campaignIdsForTrigger($triggerEvent);
+
+        if ($conditionLogicByCampaign === []) {
+            return;
+        }
+
+        $conditionLogicByCampaign = $this->filterByWebsite($conditionLogicByCampaign, $context);
 
         if ($conditionLogicByCampaign === []) {
             return;
@@ -274,6 +285,71 @@ class CampaignDispatcher
         );
 
         return $conditionLogicByCampaign;
+    }
+
+    /**
+     * Drops any candidate campaign that's website-scoped (has at least one ordo_campaign_website
+     * row) but doesn't include the triggering customer's own website — a campaign with NO rows
+     * at all is unscoped (matches every website, the default/backward-compatible behavior; see
+     * docs/adr/0014) and is never touched here. Deliberately NOT baked into
+     * campaignIdsForTrigger()'s own cached payload (which is keyed only by $triggerEvent, shared
+     * across every customer/website that fires it) — this runs as a cheap extra filter AFTER
+     * that cache hit/miss, against the already-narrowed candidate set, so none of the existing
+     * cache-invalidation call sites for that cached lookup need to change.
+     *
+     * @param array<int, 'all'|'any'> $conditionLogicByCampaign
+     * @param array<string, mixed> $context
+     * @return array<int, 'all'|'any'>
+     */
+    private function filterByWebsite(array $conditionLogicByCampaign, array $context): array
+    {
+        $websiteRows = $this->campaignWebsiteCollectionFactory->create()
+            ->addCampaignIdsFilter(array_keys($conditionLogicByCampaign));
+
+        $websiteIdsByCampaign = [];
+        foreach ($websiteRows as $row) {
+            /** @var CampaignWebsite $row */
+            $websiteIdsByCampaign[$row->getCampaignId()][] = $row->getWebsiteId();
+        }
+
+        if ($websiteIdsByCampaign === []) {
+            // None of this trigger's candidate campaigns are website-scoped at all (by far the
+            // common case) - skip resolving the customer's own website for nothing.
+            return $conditionLogicByCampaign;
+        }
+
+        $customerWebsiteId = $this->customerWebsiteIdFromContext($context);
+
+        foreach ($websiteIdsByCampaign as $campaignId => $websiteIds) {
+            // Can't verify a website-scoped campaign's own scope condition without a resolved
+            // customer website id - fails closed (skip, don't run) for THAT campaign, same
+            // "can't verify, don't run" philosophy as an unknown condition/action type, rather
+            // than silently running every website-scoped campaign for everyone.
+            if ($customerWebsiteId === null || !in_array($customerWebsiteId, $websiteIds, true)) {
+                unset($conditionLogicByCampaign[$campaignId]);
+            }
+        }
+
+        return $conditionLogicByCampaign;
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function customerWebsiteIdFromContext(array $context): ?int
+    {
+        $customerId = $this->customerIdFromContext($context);
+        if ($customerId === null) {
+            return null;
+        }
+
+        try {
+            $customer = $this->customerRepository->getById($customerId);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return $this->customerStoreResolver->resolveWebsiteId($customer);
     }
 
     /**

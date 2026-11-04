@@ -2041,6 +2041,12 @@ parameters:
 			path: Model/CampaignTriggerRepository.php
 
 		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 3
+			path: Model/CampaignWebsite.php
+
+		-
 			message: '#^Cannot cast mixed to float\.$#'
 			identifier: cast.double
 			count: 3
@@ -3233,6 +3239,12 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Model/ResourceModel/Campaign/Trigger/Collection.php
+
+		-
+			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/ResourceModel/Campaign/Website/Collection.php
 
 		-
 			message: '#^Cannot call method quoteInto\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'

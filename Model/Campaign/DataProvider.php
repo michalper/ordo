@@ -10,6 +10,7 @@ use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCo
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\Collection as CampaignConditionCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as CampaignConditionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as CampaignTriggerCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign\Website\CollectionFactory as CampaignWebsiteCollectionFactory;
 
 /**
  * Feeds the campaign edit form, including the three dynamicRows sections (triggers,
@@ -33,6 +34,7 @@ class DataProvider extends AbstractDataProvider
         private readonly CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory,
         private readonly CampaignConditionCollectionFactory $campaignConditionCollectionFactory,
         private readonly CampaignActionCollectionFactory $campaignActionCollectionFactory,
+        private readonly CampaignWebsiteCollectionFactory $campaignWebsiteCollectionFactory,
         private readonly DataPersistorInterface $dataPersistor,
         array $meta = [],
         array $data = []
@@ -71,6 +73,10 @@ class DataProvider extends AbstractDataProvider
                 $campaignId
             )];
             $campaignData['actions'] = ['actions' => $this->loadActionRows($campaignId)];
+            // Flat, not double-nested like the dynamicRows sections above - website_ids is a
+            // plain multiselect field (dataScope: website_ids), same shape Magento core's own
+            // Cart Price Rule form uses for the same field name.
+            $campaignData['website_ids'] = $this->loadWebsiteIds($campaignId);
 
             $this->loadedData[$campaignId] = $campaignData;
         }
@@ -169,5 +175,21 @@ class DataProvider extends AbstractDataProvider
         }
 
         return $rows;
+    }
+
+    /**
+     * @return int[]
+     */
+    private function loadWebsiteIds(int $campaignId): array
+    {
+        $collection = $this->campaignWebsiteCollectionFactory->create();
+        $collection->addCampaignFilter($campaignId);
+
+        $websiteIds = [];
+        foreach ($collection as $row) {
+            $websiteIds[] = $row->getWebsiteId();
+        }
+
+        return $websiteIds;
     }
 }

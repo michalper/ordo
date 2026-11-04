@@ -14,6 +14,8 @@ use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\CampaignFactory;
 use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\CampaignTriggerFactory;
+use Ordo\Automation\Model\CampaignWebsite;
+use Ordo\Automation\Model\CampaignWebsiteFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign as CampaignResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action as CampaignActionResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\Collection as ActionCollection;
@@ -24,6 +26,9 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as 
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger as CampaignTriggerResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as TriggerCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign\Website as CampaignWebsiteResource;
+use Ordo\Automation\Model\ResourceModel\Campaign\Website\Collection as WebsiteCollection;
+use Ordo\Automation\Model\ResourceModel\Campaign\Website\CollectionFactory as WebsiteCollectionFactory;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
@@ -40,6 +45,9 @@ class CampaignSaveProcessorTest extends TestCase
     private CampaignActionFactory $campaignActionFactory;
     private CampaignActionResource $campaignActionResource;
     private ActionCollectionFactory $actionCollectionFactory;
+    private CampaignWebsiteFactory $campaignWebsiteFactory;
+    private CampaignWebsiteResource $campaignWebsiteResource;
+    private WebsiteCollectionFactory $websiteCollectionFactory;
     private CacheInterface $cache;
 
     protected function setUp(): void
@@ -55,6 +63,10 @@ class CampaignSaveProcessorTest extends TestCase
         $this->campaignActionFactory = $this->createMock(CampaignActionFactory::class);
         $this->campaignActionResource = $this->createMock(CampaignActionResource::class);
         $this->actionCollectionFactory = $this->createStub(ActionCollectionFactory::class);
+        $this->campaignWebsiteFactory = $this->createMock(CampaignWebsiteFactory::class);
+        $this->campaignWebsiteResource = $this->createMock(CampaignWebsiteResource::class);
+        $this->websiteCollectionFactory = $this->createStub(WebsiteCollectionFactory::class);
+        $this->websiteCollectionFactory->method('create')->willReturn($this->emptyWebsiteCollection());
         $this->cache = $this->createMock(CacheInterface::class);
     }
 
@@ -72,6 +84,9 @@ class CampaignSaveProcessorTest extends TestCase
             $this->campaignActionFactory,
             $this->campaignActionResource,
             $this->actionCollectionFactory,
+            $this->campaignWebsiteFactory,
+            $this->campaignWebsiteResource,
+            $this->websiteCollectionFactory,
             $this->cache
         );
     }
@@ -98,6 +113,22 @@ class CampaignSaveProcessorTest extends TestCase
         $collection->method('addCampaignFilter');
         $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
         return $collection;
+    }
+
+    /**
+     * @param CampaignWebsite[] $rows
+     */
+    private function makeWebsiteCollection(array $rows = []): WebsiteCollection
+    {
+        $collection = $this->createStub(WebsiteCollection::class);
+        $collection->method('addCampaignFilter');
+        $collection->method('getIterator')->willReturn(new \ArrayIterator($rows));
+        return $collection;
+    }
+
+    private function emptyWebsiteCollection(): WebsiteCollection
+    {
+        return $this->makeWebsiteCollection([]);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -635,5 +666,71 @@ class CampaignSaveProcessorTest extends TestCase
         $this->expectExceptionMessage('db down');
 
         $processor->process(['entity_id' => 3, 'name' => 'Welcome']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessSavesPostedWebsiteIdsDeduplicatingAndSkippingInvalidValues(): void
+    {
+        $processor = $this->makeProcessor();
+
+        $campaign = $this->createStub(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(7);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
+        $this->conditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+        $this->actionCollectionFactory->method('create')->willReturn($this->emptyActionCollection());
+
+        $savedWebsiteIds = [];
+        $this->campaignWebsiteFactory->method('create')->willReturnCallback(function () use (&$savedWebsiteIds) {
+            $website = $this->createMock(CampaignWebsite::class);
+            $website->method('setData')->willReturnCallback(function (array $data) use ($website, &$savedWebsiteIds) {
+                self::assertSame(7, $data['campaign_id']);
+                $savedWebsiteIds[] = $data['website_id'];
+                return $website;
+            });
+            return $website;
+        });
+        $this->campaignWebsiteResource->expects(self::exactly(2))->method('save');
+
+        // '2' (string, a dupe of 2), 0, and -1 must all be skipped - only real, distinct,
+        // positive ids get a row.
+        $processor->process([
+            'entity_id' => 7,
+            'website_ids' => [1, 2, '2', 0, -1],
+        ]);
+
+        self::assertSame([1, 2], $savedWebsiteIds);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessDeletesExistingWebsiteRowsWhenNoneArePosted(): void
+    {
+        $campaign = $this->createStub(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(7);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
+        $this->conditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+        $this->actionCollectionFactory->method('create')->willReturn($this->emptyActionCollection());
+
+        $existingWebsite = $this->createMock(CampaignWebsite::class);
+        // A fresh stub, not a second ->method('create') on the one from setUp() - PHPUnit
+        // matches configured behaviors in configuration order for an unlimited (any()) matcher,
+        // so a second willReturn() on the same double never overrides the first.
+        $this->websiteCollectionFactory = $this->createStub(WebsiteCollectionFactory::class);
+        $this->websiteCollectionFactory->method('create')
+            ->willReturn($this->makeWebsiteCollection([$existingWebsite]));
+
+        $this->campaignWebsiteResource->expects(self::once())->method('delete')->with($existingWebsite);
+        $this->campaignWebsiteFactory->expects(self::never())->method('create');
+
+        // makeProcessor() must come after the websiteCollectionFactory reassignment above, since
+        // the constructor captures that property's value at call time.
+        $processor = $this->makeProcessor();
+
+        // No 'website_ids' key at all - the common, single-website-install case - leaves the
+        // campaign unscoped (matches every website), not scoped to zero.
+        $processor->process(['entity_id' => 7]);
     }
 }

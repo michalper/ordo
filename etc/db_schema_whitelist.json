@@ -974,5 +974,20 @@
             "ORDO_PRICE_WATCH_SUBSCRIPTION_CUSTOMER_ID_PRODUCT_ID_WATCH_TYPE": true,
             "ORDO_PRICE_WATCH_SUBSCRIPTION_VISITOR_ID_PRODUCT_ID_WATCH_TYPE": true
         }
+    },
+    "ordo_campaign_website": {
+        "column": {
+            "entity_id": true,
+            "campaign_id": true,
+            "website_id": true
+        },
+        "index": {
+            "ORDO_CAMPAIGN_WEBSITE_WEBSITE_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_CAMPAIGN_WEBSITE_CAMPAIGN_ID_ORDO_CAMPAIGN_ENTITY_ID": true,
+            "ORDO_CAMPAIGN_WEBSITE_CAMPAIGN_ID_WEBSITE_ID": true
+        }
     }
 }

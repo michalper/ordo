@@ -37,4 +37,28 @@ class CustomerStoreResolverTest extends TestCase
 
         self::assertNull((new CustomerStoreResolver())->resolveStoreId($customer));
     }
+
+    public function testResolveWebsiteIdCastsANumericStringToInt(): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getWebsiteId')->willReturn('3');
+
+        self::assertSame(3, (new CustomerStoreResolver())->resolveWebsiteId($customer));
+    }
+
+    public function testResolveWebsiteIdPassesThroughARealInt(): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getWebsiteId')->willReturn(3);
+
+        self::assertSame(3, (new CustomerStoreResolver())->resolveWebsiteId($customer));
+    }
+
+    public function testResolveWebsiteIdKeepsNullAsNullNotZero(): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getWebsiteId')->willReturn(null);
+
+        self::assertNull((new CustomerStoreResolver())->resolveWebsiteId($customer));
+    }
 }

@@ -74,6 +74,25 @@
                 </checkbox>
             </formElements>
         </field>
+        <!-- Leave empty for "every website" (the default/backward-compatible behavior for a
+             campaign with no rows in ordo_campaign_website yet) - see docs/adr/0014. -->
+        <field name="website_ids" formElement="multiselect" sortOrder="40">
+            <settings>
+                <dataType>number</dataType>
+                <label translate="true">Websites</label>
+                <dataScope>website_ids</dataScope>
+                <tooltip>
+                    <description>Leave empty to apply to every website.</description>
+                </tooltip>
+            </settings>
+            <formElements>
+                <multiselect>
+                    <settings>
+                        <options class="Ordo\Automation\Model\Config\Source\Website"/>
+                    </settings>
+                </multiselect>
+            </formElements>
+        </field>
     </fieldset>
 
     <!-- Hidden, not removed: same reasoning as conditions_fieldset/actions_fieldset below — the
