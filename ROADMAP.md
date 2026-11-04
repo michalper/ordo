@@ -205,12 +205,14 @@ coupon/channel/device/geography.
   `docs/adr/0016-message-engagement-condition.md`. New `message_engaged` condition
   (`Model\Campaign\Condition\MessageEngaged`), usable from both the campaign Drawflow canvas and
   the segment editor.
-- **Message log retention policy** — `ordo_message_log`/`ordo_message_log_event` have no pruning
-  cron at all today (unlike `ordo_visitor_event`'s `Cron\PruneVisitorEvents`), so these rows,
-  including open/click engagement data, accumulate forever. Flagged while building the
-  `message_engaged` condition above (`docs/adr/0016`), deliberately not fixed there. Small scope —
-  likely a `PruneMessageLog`-style cron plus a new retention-days config key, mirroring
-  `Helper\Config::getTrackingRetentionDays()`.
+- ~~**Message log retention policy**~~ — done. New `Cron\PruneMessageLog` (default 180 days,
+  mirrors `Cron\PruneVisitorEvents`'s shape exactly) deletes old `ordo_message_log` rows;
+  `ordo_message_log_event` rows are deleted automatically via that table's own `ON DELETE CASCADE`
+  foreign key, no separate delete needed. New `Stores → Configuration → Ordo Automation →
+  Communication Channels → Message Log Retention` config group
+  (`Helper\Config::getMessageLogRetentionDays()`) — its own comment warns against setting it
+  below a `message_engaged` condition's `within_days`, or that condition silently stops seeing
+  older engagement once the backing rows are pruned.
 - ~~**Group the condition-type dropdown into categories**~~ — done. Reported directly against a
   real screenshot: the segment editor's condition picker was one flat ~20-item `<select>` (`Has
   Tag`, `Order Total ≥`, `Opened/Clicked Campaign`, ...). `Model\Campaign\TypeLabels` gained

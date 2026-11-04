@@ -43,6 +43,9 @@
         <job name="ordo_automation_prune_visitor_events" instance="Ordo\Automation\Cron\PruneVisitorEvents" method="execute">
             <schedule>0 4 * * *</schedule>
         </job>
+        <job name="ordo_automation_prune_message_log" instance="Ordo\Automation\Cron\PruneMessageLog" method="execute">
+            <schedule>0 5 * * *</schedule>
+        </job>
         <!-- Same cadence as ordo_automation_send_browse_abandonment_reminders, another consumer
              of ordo_visitor_event - hours of margin ahead of the once-daily 04:00 prune above, so
              no view is ever deleted before CalculateProductPerformance counts it. -->

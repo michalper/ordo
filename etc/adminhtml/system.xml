@@ -561,8 +561,15 @@
                                 <depends><field id="enabled">1</field></depends>
                             </field>
                         </group>
-            
-                        
+
+                        <group id="message_log" translate="label" type="text" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">
+                            <label>Message Log Retention</label>
+                            <field id="retention_days" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Delete sent messages older than this many days</label>
+                                <comment>Applies to ordo_message_log (every sms/email/whatsapp send this module made) and its open/click event rows — both channel-generic, shared across sms/email/whatsapp. Keep this at or above any "within days" window used by a message_engaged segment/campaign condition, or that condition will silently stop being able to see older engagement.</comment>
+                                <validate>validate-digits validate-greater-than-zero</validate>
+                            </field>
+                        </group>
 
         </section>
         <section id="ordo_tracking" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">

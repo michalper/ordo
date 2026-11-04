@@ -167,6 +167,8 @@ class Config
     private const string XML_PATH_QUIET_HOURS_START_HOUR = 'ordo_channels/quiet_hours/start_hour';
     private const string XML_PATH_QUIET_HOURS_END_HOUR = 'ordo_channels/quiet_hours/end_hour';
 
+    private const string XML_PATH_MESSAGE_LOG_RETENTION_DAYS = 'ordo_channels/message_log/retention_days';
+
     public function __construct(
         private readonly ScopeConfigInterface $scopeConfig,
         private readonly EncryptorInterface $encryptor
@@ -1112,6 +1114,11 @@ class Config
     public function getFrequencyCapWindowHours(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_FREQUENCY_CAP_WINDOW_HOURS, 24, $storeId);
+    }
+
+    public function getMessageLogRetentionDays(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_MESSAGE_LOG_RETENTION_DAYS, 180, $storeId);
     }
 
     /**
