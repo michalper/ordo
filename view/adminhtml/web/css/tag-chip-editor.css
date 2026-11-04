@@ -55,6 +55,14 @@
 .ordo-tag-chip-input {
     width: 100%;
     box-sizing: border-box;
+    /* Explicit, not inherited - this file is shared by the campaign Flow canvas (whose own
+       .ordo-flow-node cards set a white color for their own labels/headers on a colored
+       gradient background) and the segment form (plain dark-on-white page chrome). Without
+       this, the input silently inherited white-on-white on the Flow canvas specifically -
+       confirmed directly: typed text was really there (readable via the input's own .value),
+       just invisible, not a missing-text bug. */
+    color: #2b2b2b;
+    background: #fff;
 }
 
 .ordo-tag-chip-suggest {
