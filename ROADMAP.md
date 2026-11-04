@@ -163,8 +163,36 @@ Not prioritized against each other; listed for later scoping with the business/p
 - **Email template drafts** — version history is done (`Model\EmailTemplateVersion`, snapshot-on-save +
   restore). What's left: editing a template's content as a separate draft without touching the live
   version `send_email` already reads, then publishing it when ready. Medium scope.
-- **Cross-campaign revenue/LTV comparison view** — ranks/compares campaigns against each other, or does
-  cohort/LTV analysis over time, on top of the existing per-campaign funnel view. Medium scope.
+- **Cross-campaign revenue/LTV comparison view, and cohort/retention analysis** — ranks/compares
+  campaigns against each other, or groups customers by first-purchase month/campaign and tracks how
+  their repeat-purchase rate evolves over time, on top of the existing per-campaign funnel view and
+  `RfmCalculator`/`ClvCalculator`. Medium scope.
+
+**The five items below are analytics/reporting gap ideas** (see issue #261 for the original
+multi-store/performance thread this grew out of). Ordo's automation side (triggered sends,
+segmentation, cross-sell via `ProductRecommender`, customer profiles via `Customer360`) is already
+fairly complete; the real gap is on the analytics/reporting side, where Ordo's dashboard today is
+operational (job health, campaign counts) rather than a BI view, and
+`CampaignOutcomeLogger::getStats()` only gives per-campaign sent/converted/revenue, no breakdown by
+coupon/channel/device/geography.
+
+- **Revenue/channel analytics report** — revenue broken down by new vs. returning customer, coupon,
+  campaign, country/city, device — none of this is surfaced today. Medium/large scope.
+- **Product performance report** — per-SKU views/purchases/abandon-rate; the co-purchase affinity data
+  already computed live by `Model\Recommendation\ProductRecommender` (for the `AddProductRecommendations`
+  campaign action) could be exposed as its own report too, not just fed into emails. Medium scope.
+- **Order-canceled trigger + recovery action** — new `Observer\DispatchOrderCanceledCampaigns` on
+  `sales_order_cancel_after`, mirroring the existing `DispatchOrderPlacedCampaigns` pattern, so a
+  recovery campaign can actually react to a cancellation. Small/medium scope.
+- **Email open/click tracking** — a tracking pixel + wrapped links for `send_email`, feeding a new
+  segment condition ("opened/clicked campaign X") and per-campaign open/click-rate reporting, parity
+  with the sent/converted tracking that already exists. Medium scope — pixel-based open tracking
+  undercounts in practice (mail-client image caching/proxying), a known industry limitation, not a
+  reason to skip click tracking too.
+- **Automated anomaly/insight alerts** — a periodic cron flagging notable deviations (a channel's
+  revenue dropping, a coupon/campaign outperforming others). More speculative than the rest of this
+  list — needs real usage data to pick sane thresholds before committing to a design, so lowest
+  priority of this batch. Medium/large scope.
 - **Per-topic preference granularity within a channel** — split a channel's opt-in further (e.g. "promotional"
   vs "product update" email) beyond today's per-channel consent. Confirm real merchant demand first. Medium
   scope.
