@@ -33,6 +33,7 @@
                 <resource id="Ordo_Automation::email_template_versioning" title="Ordo Automation Email Template Versioning" translate="title" sortOrder="700"/>
                 <resource id="Ordo_Automation::customer_360" title="Ordo Automation Customer 360" translate="title" sortOrder="710"/>
                 <resource id="Ordo_Automation::product_performance" title="Ordo Automation Product Performance" translate="title" sortOrder="720"/>
+                <resource id="Ordo_Automation::revenue_analytics" title="Ordo Automation Revenue Analytics" translate="title" sortOrder="730"/>
             </resource>
         </resources>
     </acl>

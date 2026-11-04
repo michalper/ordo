@@ -109,6 +109,7 @@
                 <item name="ordo_segment_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Segment\Grid\Collection</item>
                 <item name="ordo_rfm_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Rfm\Grid\Collection</item>
                 <item name="ordo_productperformance_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\ProductPerformance\Grid\Collection</item>
+                <item name="ordo_revenueanalytics_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\RevenueAnalytics\Grid\Collection</item>
                 <item name="ordo_scorerule_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\ScoreRule\Grid\Collection</item>
                 <item name="ordo_contentblock_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\ContentBlock\Grid\Collection</item>
                 <item name="ordo_messagelog_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\MessageLog\Grid\Collection</item>

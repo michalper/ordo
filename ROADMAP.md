@@ -176,8 +176,17 @@ operational (job health, campaign counts) rather than a BI view, and
 `CampaignOutcomeLogger::getStats()` only gives per-campaign sent/converted/revenue, no breakdown by
 coupon/channel/device/geography.
 
-- **Revenue/channel analytics report** — revenue broken down by new vs. returning customer, coupon,
-  campaign, country/city, device — none of this is surfaced today. Medium/large scope.
+- ~~**Revenue/channel analytics report**~~ — done, see
+  `docs/adr/0017-revenue-channel-analytics-report.md`. New read-only `ordo/revenueanalytics/index`
+  report, one row per order: revenue, coupon code, the campaign credited with the conversion (if
+  any — a `joinLeft` to `ordo_campaign_outcome_log`, deduped to one campaign per order since
+  `markActed()` can credit an order to more than one), billing country/city (`sales_order_address`,
+  never joined by this module before), and new-vs-returning (a derived `MIN(entity_id)`-per-customer
+  subselect). Device was dropped, not faked — same reasoning as the product performance report's
+  own per-visitor-funnel gap: nothing in this codebase or a stock Magento install tracks order-level
+  device, and there's no join path to add it after the fact. Coupon-to-Ordo-campaign attribution is
+  also a known gap (`Model\CouponGenerator` marks a code identically to core's own mass-generator) —
+  the report shows the code as used, not its origin.
 - ~~**Product performance report**~~ — done, see `docs/adr/0015-product-performance-report.md`.
   Per-SKU views (materialized by a new incremental `Cron\CalculateProductPerformance`, since the
   source `ordo_visitor_event` rows are pruned after ~7 days) and purchases (live-joined from
