@@ -5,6 +5,37 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-04
+
+Closes out GitHub issue #261's multi-store/multi-website gap list (see `ROADMAP.md` item 5 and
+`docs/adr/0013`/`0014`).
+
+### Added
+
+- **Website-scoping for campaigns, segments, and score rules** (issue #261, ROADMAP item 5) — each
+  can now be optionally restricted to one or more websites on a multi-website install via a new
+  admin multiselect field; leaving it empty keeps the existing behavior (matches customers on
+  every website), so upgrading installs are unaffected. See `docs/adr/0014` for the design
+  (plain per-entity linking tables, not Magento core's EntityManager pattern).
+
+### Fixed
+
+- **Customer-facing sends used the wrong store on multi-store installs** (issue #261) — every
+  campaign action and reminder cron resolved `StoreManagerInterface::getStore()` with no
+  argument (Magento's ambient "current store", arbitrary in a cron/CLI context) instead of the
+  recipient customer's own store, producing the wrong template locale/sender/store-scoped
+  config. New `Model\CustomerStoreResolver` resolves it correctly everywhere a customer email/SMS
+  is sent. See `docs/adr/0013`.
+- **Revenue/RFM figures summed the wrong currency column** (issue #261) — `CampaignOutcomeLogger`'s
+  revenue stat and `RfmCalculator`'s monetary figures summed order-currency `grand_total`, mixing
+  unrelated currencies on a multi-currency install. Both now sum `base_grand_total`, matching how
+  `CreditLimitCalculator` already handled this for used-credit totals.
+- **A customer's own next order could permanently lose its campaign-conversion credit** — if the
+  async campaign dispatch hadn't logged its "sent" row yet by the time the customer's order saved,
+  the conversion was never retroactively attributed. `CampaignOutcomeLogger::logSent()` now checks
+  for an already-placed later order at write time and credits it immediately, with zero added
+  steady-state cost (see `docs/adr/0012`).
+
 ## [1.2.1] - 2026-10-22
 
 Verified before tagging: full unit suite green (2796 tests), `phpstan analyse` (level max) clean,
