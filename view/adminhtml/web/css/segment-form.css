@@ -550,6 +550,28 @@ input[name$="[event_only_warning]"] {
     display: none;
 }
 
+/*
+ * The event_only_warning tooltip's own popup was rendering partly behind the "Segment matches"
+ * strip above it - reported directly against two real screenshots, the second confirming a
+ * z-index bump alone (first attempt) didn't fix it: live elementFromPoint() testing at the
+ * overlap pixel kept resolving to the strip's own .admin__field ancestor even after the tooltip
+ * had a higher computed z-index than Magento's own default (1), meaning something in this
+ * particular dynamicRows nesting puts the two in stacking contexts a simple z-index bump doesn't
+ * reliably settle - not worth more time proving exactly which ancestor does it. Sidesteps the
+ * question entirely instead: Magento's own default (`bottom: 3.8rem`) opens the popup UPWARD,
+ * toward the strip above the row. Opening it DOWNWARD instead (there's open space below this
+ * row, before "Add Condition") means it can never overlap that strip regardless of stacking
+ * order. Keeps the z-index bump too, as a harmless second line of defense. Scoped to this one
+ * field's own tooltip via data-index (the field.html template's own `attr: {'data-index':
+ * index}` on the wrapping .admin__field) - the Websites field's own tooltip above has no such
+ * overlap problem and should keep Magento's default upward placement.
+ */
+[data-index="event_only_warning"] .admin__field-tooltip-content {
+    z-index: 100;
+    top: 3.8rem;
+    bottom: auto;
+}
+
 .ordo-group-event-only-warning {
     color: var(--ordo-muted);
     font-size: 11px;
