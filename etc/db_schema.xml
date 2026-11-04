@@ -783,6 +783,25 @@
         </constraint>
     </table>
 
+    <table name="ordo_score_rule_website" resource="default" engine="innodb" comment="One website this score rule is scoped to - a rule with no rows here is unscoped (matches customers on every website, the default/backward-compatible behavior for a rule that predates this table), see docs/adr/0014">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="score_rule_id" padding="10" unsigned="true" nullable="false" comment="ordo_score_rule.entity_id"/>
+        <column xsi:type="smallint" name="website_id" padding="5" unsigned="true" nullable="false" comment="store_website.website_id — no FK into core tables, same reasoning as ordo_campaign_website.website_id"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="ORDO_SCORE_RULE_WEBSITE_SCORE_RULE_ID_SCORE_RULE_ENTITY_ID"
+                    table="ordo_score_rule_website" column="score_rule_id"
+                    referenceTable="ordo_score_rule" referenceColumn="entity_id" onDelete="CASCADE"/>
+        <constraint xsi:type="unique" referenceId="ORDO_SCORE_RULE_WEBSITE_SCORE_RULE_ID_WEBSITE_ID">
+            <column name="score_rule_id"/>
+            <column name="website_id"/>
+        </constraint>
+        <index referenceId="ORDO_SCORE_RULE_WEBSITE_WEBSITE_ID" indexType="btree">
+            <column name="website_id"/>
+        </index>
+    </table>
+
     <table name="ordo_lead_routing_rule" resource="default" engine="innodb" comment="Rule matching a qualifying customer to a pool of sales reps, assigned round-robin at real-time qualification (registration or lead score threshold crossed) - see Observer AssignLeadRoutingRule">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="name" nullable="false" length="255" comment="Admin-facing rule name"/>

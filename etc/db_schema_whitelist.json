@@ -692,6 +692,21 @@
             "PRIMARY": true
         }
     },
+    "ordo_score_rule_website": {
+        "column": {
+            "entity_id": true,
+            "score_rule_id": true,
+            "website_id": true
+        },
+        "index": {
+            "ORDO_SCORE_RULE_WEBSITE_WEBSITE_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_SCORE_RULE_WEBSITE_SCORE_RULE_ID_ORDO_SCORE_RULE_ENTITY_ID": true,
+            "ORDO_SCORE_RULE_WEBSITE_SCORE_RULE_ID_WEBSITE_ID": true
+        }
+    },
     "ordo_customer_demographic_score": {
         "column": {
             "customer_id": true,

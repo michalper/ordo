@@ -6,6 +6,7 @@ namespace Ordo\Automation\Model\ScoreRule;
 use Magento\Framework\App\Request\DataPersistorInterface;
 use Magento\Ui\DataProvider\AbstractDataProvider;
 use Ordo\Automation\Model\ResourceModel\ScoreRule\CollectionFactory as ScoreRuleCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\ScoreRule\Website\CollectionFactory as ScoreRuleWebsiteCollectionFactory;
 
 /**
  * Feeds the score rule edit form. Flat entity, no child rows — simpler than
@@ -24,6 +25,7 @@ class DataProvider extends AbstractDataProvider
         $primaryFieldName,
         $requestFieldName,
         ScoreRuleCollectionFactory $collectionFactory,
+        private readonly ScoreRuleWebsiteCollectionFactory $scoreRuleWebsiteCollectionFactory,
         private readonly DataPersistorInterface $dataPersistor,
         array $meta = [],
         array $data = []
@@ -45,7 +47,10 @@ class DataProvider extends AbstractDataProvider
 
         foreach ($this->collection->getItems() as $scoreRule) {
             $ruleId = (int) $scoreRule->getEntityId();
-            $this->loadedData[$ruleId] = $scoreRule->getData();
+            /** @var array<string, mixed> $ruleData */
+            $ruleData = $scoreRule->getData();
+            $ruleData['website_ids'] = $this->loadWebsiteIds($ruleId);
+            $this->loadedData[$ruleId] = $ruleData;
         }
 
         /** @var array<string, mixed>|null $persisted */
@@ -59,5 +64,21 @@ class DataProvider extends AbstractDataProvider
         }
 
         return $this->loadedData;
+    }
+
+    /**
+     * @return int[]
+     */
+    private function loadWebsiteIds(int $scoreRuleId): array
+    {
+        $collection = $this->scoreRuleWebsiteCollectionFactory->create();
+        $collection->addScoreRuleFilter($scoreRuleId);
+
+        $websiteIds = [];
+        foreach ($collection as $row) {
+            $websiteIds[] = $row->getWebsiteId();
+        }
+
+        return $websiteIds;
     }
 }

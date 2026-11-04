@@ -58,13 +58,15 @@ is concentrated in multi-store; PHP 8.3 and Hyvä were mostly already fine or tr
    they set `ordo_channels/sms/enabled` via `MutableScopeConfig::setValue(..., SCOPE_STORE)` with
    no explicit scope code, which only ever worked by coincidence against the previous, un-scoped
    production read.
-5. **Campaign/segment/score-rule website scoping — explicitly deferred, not a quick fix.**
-   `ordo_campaign`, `ordo_segment`, `ordo_score_rule` have no `store_id`/`website_id` column at
-   all — a campaign or segment matches identically regardless of which store/website a customer
-   is on. Real new feature (admin multiselect + linking table, mirroring Magento core's
-   `salesrule_website`, plus `CampaignDispatcher`/`SegmentMemberResolver` filtering) with real
-   design surface (empty selection = "all websites"? cache-tag interaction?) — write it up as its
-   own ADR + separate implementation pass, don't rush it into this issue's response.
+5. ~~**Campaign/segment/score-rule website scoping**~~ — done, see
+   `docs/adr/0014-website-scoping-link-tables.md`. `ordo_campaign`/`ordo_segment`/
+   `ordo_score_rule` each got their own linking table (`*_website`), an admin multiselect
+   (`Model\Config\Source\Website`, shared across all three), and a filter at the point each
+   entity actually matches a customer — `CampaignDispatcher::filterByWebsite()`,
+   `SegmentMemberResolver::filterByWebsite()`, `ScoreRuleEvaluator`'s own guard. Empty selection
+   = unscoped (matches every website), the backward-compatible default for every entity that
+   predates these tables — a deliberate departure from Magento core's own `salesrule_website`/
+   EntityManager pattern, explained in the ADR.
 6. **Performance — no code needed, just say so.** Every catalog-touching cron/controller already
    batches correctly (`CatalogFeedProductFetcher::fetchByPage()` at 500, `AbstractPriceWatchScanCron`'s
    `LIMIT` + rotating cursor, SKU autocomplete's `setPageSize(20)`). Worth stating in the issue

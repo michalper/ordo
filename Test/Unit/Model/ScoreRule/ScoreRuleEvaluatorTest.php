@@ -5,25 +5,55 @@ namespace Ordo\Automation\Test\Unit\Model\ScoreRule;
 
 use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\Api\AttributeInterface;
+use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\ResourceModel\ScoreRule\Collection as ScoreRuleCollection;
 use Ordo\Automation\Model\ResourceModel\ScoreRule\CollectionFactory as ScoreRuleCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\ScoreRule\Website\Collection as ScoreRuleWebsiteCollection;
+use Ordo\Automation\Model\ResourceModel\ScoreRule\Website\CollectionFactory as ScoreRuleWebsiteCollectionFactory;
 use Ordo\Automation\Model\ScoreRule;
 use Ordo\Automation\Model\ScoreRule\ScoreRuleEvaluator;
+use Ordo\Automation\Model\ScoreRuleWebsite;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 class ScoreRuleEvaluatorTest extends TestCase
 {
     private ScoreRuleCollectionFactory $collectionFactory;
+    private ScoreRuleWebsiteCollectionFactory $scoreRuleWebsiteCollectionFactory;
+    private CustomerStoreResolver $customerStoreResolver;
+    private int $ruleIdSequence = 1;
 
     protected function setUp(): void
     {
         $this->collectionFactory = $this->createMock(ScoreRuleCollectionFactory::class);
+        $this->scoreRuleWebsiteCollectionFactory = $this->createStub(ScoreRuleWebsiteCollectionFactory::class);
+        $this->scoreRuleWebsiteCollectionFactory->method('create')->willReturn($this->makeWebsiteCollection([]));
+        $this->customerStoreResolver = $this->createStub(CustomerStoreResolver::class);
+    }
+
+    /**
+     * @param ScoreRuleWebsite[] $rows
+     */
+    private function makeWebsiteCollection(array $rows): ScoreRuleWebsiteCollection
+    {
+        $collection = $this->createStub(ScoreRuleWebsiteCollection::class);
+        $collection->method('addScoreRuleIdsFilter')->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator($rows));
+        return $collection;
+    }
+
+    private function makeWebsiteRow(int $scoreRuleId, int $websiteId): ScoreRuleWebsite
+    {
+        $row = $this->createStub(ScoreRuleWebsite::class);
+        $row->method('getScoreRuleId')->willReturn($scoreRuleId);
+        $row->method('getWebsiteId')->willReturn($websiteId);
+        return $row;
     }
 
     private function makeRule(string $attributeCode, string $operator, string $value, int $points): ScoreRule
     {
         $rule = $this->createStub(ScoreRule::class);
+        $rule->method('getEntityId')->willReturn($this->ruleIdSequence++);
         $rule->method('getAttributeCode')->willReturn($attributeCode);
         $rule->method('getOperator')->willReturn($operator);
         $rule->method('getValue')->willReturn($value);
@@ -43,7 +73,11 @@ class ScoreRuleEvaluatorTest extends TestCase
 
         $this->collectionFactory->method('create')->willReturn($collection);
 
-        return new ScoreRuleEvaluator($this->collectionFactory);
+        return new ScoreRuleEvaluator(
+            $this->collectionFactory,
+            $this->scoreRuleWebsiteCollectionFactory,
+            $this->customerStoreResolver
+        );
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -169,8 +203,57 @@ class ScoreRuleEvaluatorTest extends TestCase
 
         $this->collectionFactory->method('create')->willReturn($collection);
 
-        $evaluator = new ScoreRuleEvaluator($this->collectionFactory);
+        $evaluator = new ScoreRuleEvaluator(
+            $this->collectionFactory,
+            $this->scoreRuleWebsiteCollectionFactory,
+            $this->customerStoreResolver
+        );
 
         self::assertSame(10, $evaluator->getMatchingRulePoints($customer));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testWebsiteScopedRuleMatchesWhenTheCustomersWebsiteIsIncluded(): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getGroupId')->willReturn(1);
+
+        $rule = $this->makeRule('group_id', 'equals', '1', 10);
+        $ruleId = (int) $rule->getEntityId();
+
+        // A fresh stub, not a second ->method('create') on setUp()'s own - PHPUnit matches
+        // configured behaviors in configuration order for an unlimited (any()) matcher, so a
+        // second willReturn() on the same double never overrides the first.
+        $this->scoreRuleWebsiteCollectionFactory = $this->createStub(ScoreRuleWebsiteCollectionFactory::class);
+        $this->scoreRuleWebsiteCollectionFactory->method('create')
+            ->willReturn($this->makeWebsiteCollection([$this->makeWebsiteRow($ruleId, 5)]));
+        $this->customerStoreResolver = $this->createStub(CustomerStoreResolver::class);
+        $this->customerStoreResolver->method('resolveWebsiteId')->willReturn(5);
+
+        $evaluator = $this->makeEvaluator([$rule]);
+
+        self::assertSame(10, $evaluator->getMatchingRulePoints($customer));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testWebsiteScopedRuleIsSkippedWhenTheCustomerIsOnADifferentWebsite(): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getGroupId')->willReturn(1);
+
+        $rule = $this->makeRule('group_id', 'equals', '1', 10);
+        $ruleId = (int) $rule->getEntityId();
+
+        // A fresh stub, not a second ->method('create') on setUp()'s own - same reasoning as
+        // the matching-website test above.
+        $this->scoreRuleWebsiteCollectionFactory = $this->createStub(ScoreRuleWebsiteCollectionFactory::class);
+        $this->scoreRuleWebsiteCollectionFactory->method('create')
+            ->willReturn($this->makeWebsiteCollection([$this->makeWebsiteRow($ruleId, 5)]));
+        $this->customerStoreResolver = $this->createStub(CustomerStoreResolver::class);
+        $this->customerStoreResolver->method('resolveWebsiteId')->willReturn(7);
+
+        $evaluator = $this->makeEvaluator([$rule]);
+
+        self::assertSame(0, $evaluator->getMatchingRulePoints($customer));
     }
 }

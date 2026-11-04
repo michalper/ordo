@@ -6,6 +6,8 @@ namespace Ordo\Automation\Test\Unit\Model\ScoreRule;
 use Magento\Framework\App\Request\DataPersistorInterface;
 use Ordo\Automation\Model\ResourceModel\ScoreRule\Collection as ScoreRuleCollection;
 use Ordo\Automation\Model\ResourceModel\ScoreRule\CollectionFactory as ScoreRuleCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\ScoreRule\Website\Collection as ScoreRuleWebsiteCollection;
+use Ordo\Automation\Model\ResourceModel\ScoreRule\Website\CollectionFactory as ScoreRuleWebsiteCollectionFactory;
 use Ordo\Automation\Model\ScoreRule;
 use Ordo\Automation\Model\ScoreRule\DataProvider;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -14,10 +16,21 @@ use PHPUnit\Framework\TestCase;
 class DataProviderTest extends TestCase
 {
     private DataPersistorInterface $dataPersistor;
+    private ScoreRuleWebsiteCollectionFactory $scoreRuleWebsiteCollectionFactory;
 
     protected function setUp(): void
     {
         $this->dataPersistor = $this->createMock(DataPersistorInterface::class);
+        $this->scoreRuleWebsiteCollectionFactory = $this->createStub(ScoreRuleWebsiteCollectionFactory::class);
+        $this->scoreRuleWebsiteCollectionFactory->method('create')->willReturn($this->emptyWebsiteCollection());
+    }
+
+    private function emptyWebsiteCollection(): ScoreRuleWebsiteCollection
+    {
+        $collection = $this->createStub(ScoreRuleWebsiteCollection::class);
+        $collection->method('addScoreRuleFilter')->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
+        return $collection;
     }
 
     private function makeProvider(ScoreRuleCollection $collection): DataProvider
@@ -30,6 +43,7 @@ class DataProviderTest extends TestCase
             'entity_id',
             'entity_id',
             $collectionFactory,
+            $this->scoreRuleWebsiteCollectionFactory,
             $this->dataPersistor
         );
     }
@@ -49,7 +63,7 @@ class DataProviderTest extends TestCase
         $provider = $this->makeProvider($collection);
         $data = $provider->getData();
 
-        self::assertSame(['entity_id' => 3, 'attribute_code' => 'group_id'], $data[3]);
+        self::assertSame(['entity_id' => 3, 'attribute_code' => 'group_id', 'website_ids' => []], $data[3]);
 
         // Second call must hit the cached $loadedData branch, not reload from the collection.
         self::assertSame($data, $provider->getData());
