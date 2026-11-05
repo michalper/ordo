@@ -17,8 +17,17 @@ scoped from real hands-on marketing automation experience.
 
 ### MFTF/scenario coverage
 
-Full inventory: `Test/Mftf/SCENARIOS.md`. Open rows: `AutoPickCampaignSplitWinner` (§28) and
-`SendAbandonedCartFallbackReminders` (§11), unit-tested only, no MFTF/Integration yet.
+Full inventory: `Test/Mftf/SCENARIOS.md`. ~~Open rows: `AutoPickCampaignSplitWinner` (§28) and
+`SendAbandonedCartFallbackReminders` (§11), unit-tested only, no MFTF/Integration yet.~~ — stale,
+already closed by commit `4870131` (PR #239, 2026-09-26): both have real
+`Test/Integration/AutoPickCampaignSplitWinnerTest`/`SendAbandonedCartFallbackRemindersTest`
+(real DB rows, real cron `execute()`, only the outbound SMS/WhatsApp provider call faked) and are
+marked ✅ in SCENARIOS.md's own §11/§28 rows and its "Suggested next batch" closing note. Neither
+needs an MFTF test on top - same reasoning SCENARIOS.md already gives for `send_sms`/`send_push`/
+`SyncAdAudiences`: no admin-rendered page or grid reflects a split-test winner decision or a
+fallback SMS/WhatsApp send, so there's nothing browser-observable for MFTF to assert on; an
+Integration test exercising the real scan/claim/dispatch path is the correct and complete coverage
+for this shape. This bullet was left behind when PR #239 landed - nothing further to do here.
 
 ## GitHub issue #261 — PHP 8.3 / Hyvä / multi-store / performance
 
