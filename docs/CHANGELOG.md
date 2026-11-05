@@ -61,6 +61,15 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   only dedicated-field inputs for a type with `getFieldsConfig()` descriptors, no `params_json`
   fallback) silently never saved their template/title/url at all. Both fixed together; verified
   against the real running admin, not just unit tests.
+- **`match_mode`'s `sortOrder="15.5"` in `ordo_campaign_form.xml`/`ordo_segment_form.xml` broke
+  every page rendering that ui_component** — `Magento_Ui`'s `sortOrder` attribute is `xs:integer`,
+  so a fresh CI install's XSD validation 500'd on `campaign/new`/`segment/new` entirely (silent in
+  this sandbox, where a stale cached merge masked it). Introduced in the tag-match-mode commit,
+  only caught by the scheduled MFTF suite (`gh run view 42007849068`), which had been failing for
+  this reason since. Fixed to `sortOrder="16"`, tied with the existing `amount` field — harmless,
+  same as the several other intentional ties in the same field list (mutually-exclusive condition
+  types never render at once). Verified the real admin loads both pages clean (no XSD error in
+  `var/log/system.log`) after a full `setup:di:compile`/cache:flush, not just a partial refresh.
 - **Five free-text fields referencing real data had no autocomplete/select** (ROADMAP.md
   "Candidate new features") — `event_key` (`event_occurred` condition) now shares the `sku`
   field's autocomplete; `rule_id` (`generate_coupon`, content block) and `template` (`send_email`)

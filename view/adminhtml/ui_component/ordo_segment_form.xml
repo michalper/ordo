@@ -2797,7 +2797,7 @@
                     a <select>" mechanism every other select field already uses): "any"/"all" are
                     the whole option set, never a live query.
                 -->
-                <field name="match_mode" formElement="select" sortOrder="15.5">
+                <field name="match_mode" formElement="select" sortOrder="16">
                     <settings>
                         <dataType>text</dataType>
                         <label translate="true">Match</label>

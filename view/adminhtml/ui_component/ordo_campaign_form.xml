@@ -2088,7 +2088,7 @@
                     ordo_segment_form.xml's identical field for the full reasoning (this form
                     mirrors that one's switcherConfig shape exactly for every shared field name).
                 -->
-                <field name="match_mode" formElement="select" sortOrder="15.5">
+                <field name="match_mode" formElement="select" sortOrder="16">
                     <settings>
                         <dataType>text</dataType>
                         <label translate="true">Match</label>
