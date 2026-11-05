@@ -8,7 +8,7 @@ use Ordo\Automation\Model\ResourceModel\SurveyPrompt as SurveyPromptResource;
 
 /**
  * A single-question 0-10 satisfaction/NPS prompt queued by a campaign's "nps_survey" action,
- * waiting to be claimed by Controller\Track\Survey on the target visitor/customer's next poll —
+ * waiting to be claimed by Controller\Track\Poll on the target visitor/customer's next poll —
  * same claim-before-use pattern as PendingPopup. Unlike PendingPopup, the same row also holds
  * the eventual response (score/responded_at), set once by Controller\Track\SubmitSurveyResponse.
  */

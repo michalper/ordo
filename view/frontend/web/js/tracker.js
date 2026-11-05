@@ -23,12 +23,10 @@
     var COOKIE_NAME = 'ordo_visitor_id';
     var COOKIE_DAYS = 365;
     var ENDPOINT = '/ordo/track/event';
-    var POPUP_ENDPOINT = '/ordo/track/popup';
+    var POLL_ENDPOINT = '/ordo/track/poll';
     var POPUP_BANNER_ID = 'ordo-popup-banner';
-    var NOTIFICATION_ENDPOINT = '/ordo/track/notification';
     var DISMISS_NOTIFICATION_ENDPOINT = '/ordo/track/dismissnotification';
     var NOTIFICATION_LIST_ID = 'ordo-notification-list';
-    var SURVEY_ENDPOINT = '/ordo/track/survey';
     var SUBMIT_SURVEY_ENDPOINT = '/ordo/track/submitsurveyresponse';
     var SURVEY_PROMPT_ID = 'ordo-survey-prompt';
 
@@ -100,9 +98,11 @@
     }
 
     /**
-     * The one poll loop used by popup, notifications and survey — they differ only in which
-     * data-* attributes gate/tune them, which endpoint they ask, which response key carries the
-     * payload, and how it's rendered.
+     * The single poll loop for popup, notifications and survey — these used to be three separate
+     * loops, one per concern, each hitting its own endpoint on its own timer (15/20/25s). Merged
+     * into one /ordo/track/poll request (Controller\Track\Poll, see ADR 0024) gated by one
+     * data-poll-enabled/data-poll-interval pair instead of three, so an open tab makes one request
+     * per tick instead of three.
      *
      * Visibility-aware: a tick in a hidden tab returns early instead of fetching — nobody can see
      * what it would render, and backgrounded tabs shouldn't keep hitting the server. The interval
@@ -110,18 +110,15 @@
      * visible again (guarded for ancient browsers with no Page Visibility API, matching this
      * file's defensive style — those just keep polling unconditionally, the pre-existing behavior).
      *
-     * @param {String} attrPrefix e.g. 'popup' → data-popup-enabled / data-popup-poll-interval
-     * @param {Number} defaultIntervalSeconds used when the interval attribute is missing/invalid
-     * @param {String} endpoint polled with ?visitor_id=...
-     * @param {String} responseKey the response-JSON key carrying the payload, falsy = nothing to show
-     * @param {Function} render called with the payload under responseKey
+     * @param {Number} defaultIntervalSeconds used when data-poll-interval is missing/invalid
+     * @param {Function} render called with the whole parsed response body each tick that returns one
      */
-    function startPolling(attrPrefix, defaultIntervalSeconds, endpoint, responseKey, render) {
-        if (!currentScript || currentScript.getAttribute('data-' + attrPrefix + '-enabled') !== '1') {
+    function startPolling(defaultIntervalSeconds, render) {
+        if (!currentScript || currentScript.getAttribute('data-poll-enabled') !== '1') {
             return;
         }
 
-        var intervalSeconds = parseInt(currentScript.getAttribute('data-' + attrPrefix + '-poll-interval'), 10);
+        var intervalSeconds = parseInt(currentScript.getAttribute('data-poll-interval'), 10);
         if (!intervalSeconds || intervalSeconds <= 0) {
             intervalSeconds = defaultIntervalSeconds;
         }
@@ -131,15 +128,15 @@
                 return;
             }
 
-            var url = endpoint + '?visitor_id=' + encodeURIComponent(getVisitorId());
+            var url = POLL_ENDPOINT + '?visitor_id=' + encodeURIComponent(getVisitorId());
 
             fetch(url, { credentials: 'same-origin' })
                 .then(function (response) {
                     return response.json();
                 })
                 .then(function (data) {
-                    if (data && data[responseKey]) {
-                        render(data[responseKey]);
+                    if (data) {
+                        render(data);
                     }
                 })
                 .catch(function () {});
@@ -149,6 +146,24 @@
         // a full interval for the first check.
         setTimeout(poll, 2000);
         setInterval(poll, intervalSeconds * 1000);
+    }
+
+    /**
+     * Dispatches one merged /ordo/track/poll response to each concern's own render function - a
+     * concern's key is only ever present when its own feature is enabled server-side (Controller\
+     * Track\Poll), and falsy (missing/null/empty array) means nothing new to show, same per-concern
+     * truthy gate each standalone endpoint used to apply itself before this merge.
+     */
+    function renderPollResponse(data) {
+        if (data.popup) {
+            renderPopup(data.popup);
+        }
+        if (data.notifications) {
+            renderNotifications(data.notifications);
+        }
+        if (data.survey) {
+            renderSurvey(data.survey);
+        }
     }
 
     /**
@@ -478,7 +493,5 @@
     window.ordoSubscribeToPush = subscribeToPush;
     window.ordoSubscribeToPriceWatch = subscribeToPriceWatch;
     track('page_view');
-    startPolling('popup', 15, POPUP_ENDPOINT, 'popup', renderPopup);
-    startPolling('notification', 20, NOTIFICATION_ENDPOINT, 'notifications', renderNotifications);
-    startPolling('nps-survey', 25, SURVEY_ENDPOINT, 'survey', renderSurvey);
+    startPolling(15, renderPollResponse);
 })();

@@ -10,7 +10,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Params: {"question": "..."}. Same queue-and-poll delivery shape as ShowPopup — queues a row in
- * ordo_survey_prompt that Controller\Track\Survey hands out the next time the target's browser
+ * ordo_survey_prompt that Controller\Track\Poll hands out the next time the target's browser
  * polls (view/frontend/web/js/tracker.js), since there is no synchronous way to push something
  * onto a page from inside a campaign dispatch.
  *

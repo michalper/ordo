@@ -17,7 +17,7 @@ use Ordo\Automation\Model\Track\VisitorIdentityResolver;
 /**
  * Public, unauthenticated POST endpoint the frontend JS tracker calls when the visitor
  * dismisses a persistent notification banner - the only way an ordo_notification row's
- * read_at ever gets set (see Controller\Track\Notification's own doc on why it never claims
+ * read_at ever gets set (see Controller\Track\Poll's own doc on why it never claims
  * anything itself).
  *
  * Ownership is checked before dismissing (VisitorIdentityFieldsTrait::belongsTo()) - a request

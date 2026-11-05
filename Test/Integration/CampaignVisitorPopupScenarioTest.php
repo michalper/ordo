@@ -31,7 +31,7 @@ use PHPUnit\Framework\TestCase;
  * real visitor event aggregation into a visitor tag, real dispatch of the visitor_tag_added
  * trigger, a real "visitor_tag" condition, and a real "popup" action — all the way to a real
  * ordo_pending_popup row, then a real claim of that row through the exact query/UPDATE
- * Controller\Track\Popup uses, against a real database (not a mocked SQL builder, which can't
+ * Controller\Track\Poll uses, against a real database (not a mocked SQL builder, which can't
  * prove the OR-across-columns filter and the conditional UPDATE actually behave as intended in
  * real MySQL).
  *

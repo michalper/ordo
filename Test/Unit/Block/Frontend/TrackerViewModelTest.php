@@ -25,52 +25,49 @@ class TrackerViewModelTest extends TestCase
         self::assertFalse((new TrackerViewModel($config))->isTrackingEnabled());
     }
 
-    public function testIsPopupEnabledReflectsConfig(): void
+    public function testIsPollEnabledReturnsFalseWhenAllThreeConcernsAreDisabled(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isPopupEnabled')->willReturn(false);
+        $config->method('isNotificationEnabled')->willReturn(false);
+        $config->method('isNpsSurveyEnabled')->willReturn(false);
+
+        self::assertFalse((new TrackerViewModel($config))->isPollEnabled());
+    }
+
+    public function testIsPollEnabledReturnsTrueWhenOnlyOneConcernIsEnabled(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isPopupEnabled')->willReturn(false);
+        $config->method('isNotificationEnabled')->willReturn(true);
+        $config->method('isNpsSurveyEnabled')->willReturn(false);
+
+        self::assertTrue((new TrackerViewModel($config))->isPollEnabled());
+    }
+
+    public function testGetPollIntervalSecondsReturnsTheFastestEnabledConcernsInterval(): void
     {
         $config = $this->createStub(Config::class);
         $config->method('isPopupEnabled')->willReturn(true);
-
-        self::assertTrue((new TrackerViewModel($config))->isPopupEnabled());
-    }
-
-    public function testGetPopupPollIntervalSecondsReflectsConfig(): void
-    {
-        $config = $this->createStub(Config::class);
-        $config->method('getPopupPollIntervalSeconds')->willReturn(20);
-
-        self::assertSame(20, (new TrackerViewModel($config))->getPopupPollIntervalSeconds());
-    }
-
-    public function testIsNotificationEnabledReflectsConfig(): void
-    {
-        $config = $this->createStub(Config::class);
+        $config->method('getPopupPollIntervalSeconds')->willReturn(15);
         $config->method('isNotificationEnabled')->willReturn(true);
-
-        self::assertTrue((new TrackerViewModel($config))->isNotificationEnabled());
-    }
-
-    public function testGetNotificationPollIntervalSecondsReflectsConfig(): void
-    {
-        $config = $this->createStub(Config::class);
-        $config->method('getNotificationPollIntervalSeconds')->willReturn(25);
-
-        self::assertSame(25, (new TrackerViewModel($config))->getNotificationPollIntervalSeconds());
-    }
-
-    public function testIsNpsSurveyEnabledReflectsConfig(): void
-    {
-        $config = $this->createStub(Config::class);
+        $config->method('getNotificationPollIntervalSeconds')->willReturn(5);
         $config->method('isNpsSurveyEnabled')->willReturn(true);
+        $config->method('getNpsSurveyPollIntervalSeconds')->willReturn(25);
 
-        self::assertTrue((new TrackerViewModel($config))->isNpsSurveyEnabled());
+        self::assertSame(5, (new TrackerViewModel($config))->getPollIntervalSeconds());
     }
 
-    public function testGetNpsSurveyPollIntervalSecondsReflectsConfig(): void
+    public function testGetPollIntervalSecondsIgnoresDisabledConcernsOwnInterval(): void
     {
         $config = $this->createStub(Config::class);
-        $config->method('getNpsSurveyPollIntervalSeconds')->willReturn(30);
+        $config->method('isPopupEnabled')->willReturn(true);
+        $config->method('getPopupPollIntervalSeconds')->willReturn(15);
+        $config->method('isNotificationEnabled')->willReturn(false);
+        $config->method('getNotificationPollIntervalSeconds')->willReturn(1);
+        $config->method('isNpsSurveyEnabled')->willReturn(false);
 
-        self::assertSame(30, (new TrackerViewModel($config))->getNpsSurveyPollIntervalSeconds());
+        self::assertSame(15, (new TrackerViewModel($config))->getPollIntervalSeconds());
     }
 
     public function testIsPushEnabledReflectsConfig(): void

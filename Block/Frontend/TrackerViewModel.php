@@ -18,34 +18,40 @@ class TrackerViewModel implements ArgumentInterface
         return $this->config->isTrackingEnabled();
     }
 
-    public function isPopupEnabled(): bool
+    /**
+     * Whether the single merged /ordo/track/poll request (Controller\Track\Poll, see ADR 0024)
+     * should run at all - true the moment any one of popup/notification/NPS survey is enabled,
+     * since all three now share one request regardless of which individual concern(s) are on.
+     */
+    public function isPollEnabled(): bool
     {
-        return $this->config->isPopupEnabled();
+        return $this->config->isPopupEnabled()
+            || $this->config->isNotificationEnabled()
+            || $this->config->isNpsSurveyEnabled();
     }
 
-    public function getPopupPollIntervalSeconds(): int
+    /**
+     * The three features used to each have their own configurable poll interval (15/20/25s
+     * defaults) driving three separate timers. Merged into one request, there is only one timer
+     * left to configure - the fastest of whichever concerns are actually enabled, so no enabled
+     * feature polls less often than its own admin-configured interval asked for. Polling a
+     * disabled (or more patient) feature's data slightly more often than strictly necessary is
+     * free, since it now rides the same single request either way.
+     */
+    public function getPollIntervalSeconds(): int
     {
-        return $this->config->getPopupPollIntervalSeconds();
-    }
+        $intervals = [];
+        if ($this->config->isPopupEnabled()) {
+            $intervals[] = $this->config->getPopupPollIntervalSeconds();
+        }
+        if ($this->config->isNotificationEnabled()) {
+            $intervals[] = $this->config->getNotificationPollIntervalSeconds();
+        }
+        if ($this->config->isNpsSurveyEnabled()) {
+            $intervals[] = $this->config->getNpsSurveyPollIntervalSeconds();
+        }
 
-    public function isNotificationEnabled(): bool
-    {
-        return $this->config->isNotificationEnabled();
-    }
-
-    public function getNotificationPollIntervalSeconds(): int
-    {
-        return $this->config->getNotificationPollIntervalSeconds();
-    }
-
-    public function isNpsSurveyEnabled(): bool
-    {
-        return $this->config->isNpsSurveyEnabled();
-    }
-
-    public function getNpsSurveyPollIntervalSeconds(): int
-    {
-        return $this->config->getNpsSurveyPollIntervalSeconds();
+        return $intervals === [] ? $this->config->getPopupPollIntervalSeconds() : min($intervals);
     }
 
     public function isPushEnabled(): bool

@@ -13,7 +13,7 @@ use Psr\Log\LoggerInterface;
  * as ShowPopup, reusing the same dedicated admin fields (ordo_campaign_form.xml's switcherConfig
  * shows headline/body/cta_label/cta_url for this action type too). The real difference from
  * ShowPopup is entirely server-side: this queues a row in ordo_notification, not
- * ordo_pending_popup, which Controller\Track\Notification returns on EVERY poll (not
+ * ordo_pending_popup, which Controller\Track\Poll returns on EVERY poll (not
  * claimed-and-gone) until the visitor/customer dismisses it or it expires - a persistent,
  * non-modal banner instead of a one-shot popup.
  *

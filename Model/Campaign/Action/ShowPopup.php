@@ -14,7 +14,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Params: {"headline": "...", "body": "...", "cta_label": "...", "cta_url": "..."}. Unlike every
  * other action, this doesn't send anything itself — it queues a row in ordo_pending_popup that
- * Controller\Track\Popup hands out the next time the target's browser polls
+ * Controller\Track\Poll hands out the next time the target's browser polls
  * (view/frontend/web/js/tracker.js), because there is no synchronous way to push something onto
  * a page from inside a campaign dispatch.
  *

@@ -404,11 +404,20 @@ coupon/channel/device/geography.
 - **Per-topic preference granularity within a channel** — split a channel's opt-in further (e.g. "promotional"
   vs "product update" email) beyond today's per-channel consent. Confirm real merchant demand first. Medium
   scope.
-- **Merge the three storefront poll endpoints** (`/ordo/track/{popup,notification,survey}`) into one —
-  each open tab currently makes three separate requests on independent 15/20/25s timers, each a full
-  Magento bootstrap. The JS side already shares one `startPolling()` helper (and pauses on hidden
-  tabs); merging the endpoints is a frontend/backend contract change deferred from the 2026-10
-  simplification pass. Small scope.
+- ~~**Merge the three storefront poll endpoints**~~ — done, see
+  `docs/adr/0024-merge-storefront-poll-endpoints.md`. The three GET controllers
+  (`Controller\Track\{Popup,Notification,Survey}`) collapsed into one, `Controller\Track\Poll`
+  (`GET /ordo/track/poll`), returning `{"popup", "notifications", "survey"}` in a single JSON
+  body — each concern keeps its exact pre-merge semantics (popup/survey claim-once via
+  `Model\Track\DeliveryClaimer`, notifications never claimed). `tracker.js`'s three
+  `startPolling()` loops collapsed into one, gated by one `data-poll-enabled`/`data-poll-interval`
+  pair (the interval is the minimum of whichever concerns are actually enabled, so none polls less
+  often than its own admin-configured interval). `DismissNotification`/`SubmitSurveyResponse`
+  (POST, state-mutating, triggered by an explicit click, never on a timer) were out of scope and
+  untouched. Verified against the real running sandbox: loaded a real storefront page and
+  confirmed, via the browser's own network panel, exactly one `/ordo/track/poll` request fires per
+  tick instead of three, with the correct combined response body. `docs/wiki/API-Reference.md`
+  (Polish and English) updated for the merged endpoint.
 - ~~**Single catalog walk for all product feeds**~~ — done, see
   `docs/adr/0022-single-catalog-walk-for-product-feeds.md`. `FeedGeneratorInterface::generate(int
   $storeId): array` became three steps (`startFeed()`/`addProduct()`/`finishFeed()`), and new

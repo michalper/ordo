@@ -62,28 +62,21 @@ curl -X POST "https://twoj-sklep.pl/ordo/track/event" \
   -d "event_key=24-MB01"
 ```
 
-### `GET /ordo/track/popup?visitor_id=...`
+### `GET /ordo/track/poll?visitor_id=...`
 
-Odpytuje o jednorazowy popup zakolejkowany przez akcję kampanii `show_popup`. **Konsumuje**
-wynik — ten sam popup nigdy nie wróci drugi raz (claim-before-deliver), więc trzeba pollować
-regularnie (natywny klient robi to co 25s, pierwszy raz po 2s).
+Odpytuje o wszystko naraz — jednorazowy popup (akcja kampanii `show_popup`), wszystkie
+nieprzeczytane trwałe powiadomienia (`show_notification`) i jednorazową ankietę NPS/satysfakcji
+(`nps_survey`) — scalone w jeden endpoint, żeby klient robił jedno zapytanie na tick zamiast
+trzech. `popup` i `survey` **konsumują** wynik — ten sam obiekt nigdy nie wróci drugi raz
+(claim-before-deliver), więc trzeba pollować regularnie (natywny klient robi to z jednym
+wspólnym interwałem, pierwszy raz po 2s). `notifications` **nie konsumuje** niczego — ten sam
+zestaw wraca przy każdym poll, aż zostanie jawnie odrzucony. Klucz, którego funkcja jest
+wyłączona po stronie sklepu, jest całkowicie pomijany w odpowiedzi.
 
-Odpowiedź: `{"popup": {"headline": "...", "body": "...", "cta_label": "...", "cta_url": "..."} | null}`.
-
-```bash
-curl "https://twoj-sklep.pl/ordo/track/popup?visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69"
-```
-
-### `GET /ordo/track/notification?visitor_id=...`
-
-Odpytuje o **wszystkie** nieprzeczytane, nieprzedawnione trwałe powiadomienia (akcja kampanii
-`show_notification`). W odróżnieniu od popupu, **nie konsumuje** niczego — ten sam zestaw wraca
-przy każdym poll, aż zostanie jawnie odrzucony.
-
-Odpowiedź: `{"notifications": [{"id": 123, "headline": "...", "body": "...", "cta_label": "...", "cta_url": "..."}]}`.
+Odpowiedź: `{"popup": {"headline": "...", "body": "...", "cta_label": "...", "cta_url": "..."} | null, "notifications": [{"id": 123, "headline": "...", "body": "...", "cta_label": "...", "cta_url": "..."}], "survey": {"id": 456, "question": "..."} | null}`.
 
 ```bash
-curl "https://twoj-sklep.pl/ordo/track/notification?visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69"
+curl "https://twoj-sklep.pl/ordo/track/poll?visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69"
 ```
 
 ### `POST /ordo/track/dismissnotification`
@@ -104,17 +97,6 @@ curl -X POST "https://twoj-sklep.pl/ordo/track/dismissnotification" \
   -d "notification_id=123"
 ```
 
-### `GET /ordo/track/survey?visitor_id=...`
-
-Odpytuje o jednorazową ankietę NPS/satysfakcji (akcja kampanii `nps_survey`). Claim-before-deliver,
-jak popup.
-
-Odpowiedź: `{"survey": {"id": 456, "question": "..."} | null}`.
-
-```bash
-curl "https://twoj-sklep.pl/ordo/track/survey?visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69"
-```
-
 ### `POST /ordo/track/submitsurveyresponse`
 
 Zapisuje odpowiedź na ankietę.
@@ -122,7 +104,7 @@ Zapisuje odpowiedź na ankietę.
 | Parametr | Typ | Wymagany | Opis |
 |---|---|---|---|
 | `visitor_id` | string | tak (dla anonimowego) | |
-| `survey_id` | int | tak | `id` z odpowiedzi endpointu `survey` |
+| `survey_id` | int | tak | `id` obiektu `survey` z odpowiedzi endpointu pollingu |
 | `score` | int | tak | 0-10 |
 
 Odpowiedź: `{"ok": true}` albo `{"ok": false}` — odrzucane gdy ankieta już odpowiedziana, nie
@@ -333,12 +315,12 @@ await fetch('/ordo/track/event', {
   body: new URLSearchParams({visitor_id: visitorId, event_type: 'product_view', event_key: sku}),
 });
 
-// 3. Pollowanie popupu (co 25s, pierwszy raz po 2s)
+// 3. Pollowanie popupu/powiadomień/ankiety jednym zapytaniem (co 15s, pierwszy raz po 2s)
 setInterval(async () => {
-  const res = await fetch(`/ordo/track/popup?visitor_id=${visitorId}`);
+  const res = await fetch(`/ordo/track/poll?visitor_id=${visitorId}`);
   const {popup} = await res.json();
   if (popup) renderPopup(popup);
-}, 25000);
+}, 15000);
 ```
 
 ---
@@ -405,28 +387,21 @@ curl -X POST "https://your-store.com/ordo/track/event" \
   -d "event_key=24-MB01"
 ```
 
-### `GET /ordo/track/popup?visitor_id=...`
+### `GET /ordo/track/poll?visitor_id=...`
 
-Polls for a one-shot popup queued by a campaign's `show_popup` action. This **consumes** the
-result — the same popup is never returned twice (claim-before-deliver), so poll regularly (the
-bundled client polls every 25s, first poll after 2s).
+Polls for everything at once — a one-shot popup (a campaign's `show_popup` action), every unread
+persistent notification (`show_notification`), and a one-shot NPS/satisfaction survey
+(`nps_survey`) — merged into a single endpoint so a client makes one request per tick instead of
+three. `popup` and `survey` **consume** their result — the same one is never returned twice
+(claim-before-deliver), so poll regularly (the bundled client polls once at a single shared
+interval, first poll after 2s). `notifications` does **not** consume anything — the same set comes
+back on every poll until explicitly dismissed. A key whose underlying feature is disabled
+store-side is omitted from the response entirely.
 
-Response: `{"popup": {"headline": "...", "body": "...", "cta_label": "...", "cta_url": "..."} | null}`.
-
-```bash
-curl "https://your-store.com/ordo/track/popup?visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69"
-```
-
-### `GET /ordo/track/notification?visitor_id=...`
-
-Polls for **every** unread, unexpired persistent notification (a campaign's `show_notification`
-action). Unlike the popup endpoint, this does **not** consume anything — the same set comes back
-on every poll until explicitly dismissed.
-
-Response: `{"notifications": [{"id": 123, "headline": "...", "body": "...", "cta_label": "...", "cta_url": "..."}]}`.
+Response: `{"popup": {"headline": "...", "body": "...", "cta_label": "...", "cta_url": "..."} | null, "notifications": [{"id": 123, "headline": "...", "body": "...", "cta_label": "...", "cta_url": "..."}], "survey": {"id": 456, "question": "..."} | null}`.
 
 ```bash
-curl "https://your-store.com/ordo/track/notification?visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69"
+curl "https://your-store.com/ordo/track/poll?visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69"
 ```
 
 ### `POST /ordo/track/dismissnotification`
@@ -447,17 +422,6 @@ curl -X POST "https://your-store.com/ordo/track/dismissnotification" \
   -d "notification_id=123"
 ```
 
-### `GET /ordo/track/survey?visitor_id=...`
-
-Polls for a one-shot NPS/satisfaction survey (a campaign's `nps_survey` action).
-Claim-before-deliver, same as the popup endpoint.
-
-Response: `{"survey": {"id": 456, "question": "..."} | null}`.
-
-```bash
-curl "https://your-store.com/ordo/track/survey?visitor_id=f56fc64a-6e7c-416c-bd66-67c1aa10be69"
-```
-
 ### `POST /ordo/track/submitsurveyresponse`
 
 Records a survey answer.
@@ -465,7 +429,7 @@ Records a survey answer.
 | Param | Type | Required | Notes |
 |---|---|---|---|
 | `visitor_id` | string | yes (for anonymous visitors) | |
-| `survey_id` | int | yes | the `id` from the `survey` endpoint's response |
+| `survey_id` | int | yes | the `id` of the `survey` object in the poll endpoint's response |
 | `score` | int | yes | 0-10 |
 
 Response: `{"ok": true}` or `{"ok": false}` — rejected if the survey was already answered,
@@ -675,10 +639,10 @@ await fetch('/ordo/track/event', {
   body: new URLSearchParams({visitor_id: visitorId, event_type: 'product_view', event_key: sku}),
 });
 
-// 3. Poll for a popup (every 25s, first poll after 2s)
+// 3. Poll for a popup/notifications/survey in one request (every 15s, first poll after 2s)
 setInterval(async () => {
-  const res = await fetch(`/ordo/track/popup?visitor_id=${visitorId}`);
+  const res = await fetch(`/ordo/track/poll?visitor_id=${visitorId}`);
   const {popup} = await res.json();
   if (popup) renderPopup(popup);
-}, 25000);
+}, 15000);
 ```

@@ -10,7 +10,7 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  * Backdates a real, already-delivered ordo_pending_popup row's delivered_at past
  * Cron\PrunePendingPopups' 24-hour grace window, and confirms the row is genuinely gone
  * afterwards — no MFTF-reachable UI/API sets delivered_at directly (it's set purely by
- * Controller\Track\Popup's own claim-on-poll logic), same reasoning as OrderBackdateHelper/
+ * Controller\Track\Poll's own claim-on-poll logic), same reasoning as OrderBackdateHelper/
  * CronScheduleHelper for their own tables.
  */
 class PendingPopupTestHelper extends Helper

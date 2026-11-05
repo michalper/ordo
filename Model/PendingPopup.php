@@ -8,7 +8,7 @@ use Ordo\Automation\Model\ResourceModel\PendingPopup as PendingPopupResource;
 
 /**
  * A popup/banner queued by a campaign's "popup" action, waiting to be claimed by
- * Controller\Track\Popup on the target visitor/customer's next poll. Internal implementation
+ * Controller\Track\Poll on the target visitor/customer's next poll. Internal implementation
  * detail of the on-site channel, not exposed via its own REST resource — same reasoning as
  * CampaignScheduledAction.
  */

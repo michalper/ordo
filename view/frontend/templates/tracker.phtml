@@ -7,12 +7,8 @@ $viewModel = $block->getData('view_model');
 <?php if ($viewModel->isTrackingEnabled()): ?>
 <script
     src="<?= $escaper->escapeUrl($block->getViewFileUrl('Ordo_Automation::js/tracker.js')) ?>"
-    data-popup-enabled="<?= $viewModel->isPopupEnabled() ? '1' : '0' ?>"
-    data-popup-poll-interval="<?= (int) $viewModel->getPopupPollIntervalSeconds() ?>"
-    data-notification-enabled="<?= $viewModel->isNotificationEnabled() ? '1' : '0' ?>"
-    data-notification-poll-interval="<?= (int) $viewModel->getNotificationPollIntervalSeconds() ?>"
-    data-nps-survey-enabled="<?= $viewModel->isNpsSurveyEnabled() ? '1' : '0' ?>"
-    data-nps-survey-poll-interval="<?= (int) $viewModel->getNpsSurveyPollIntervalSeconds() ?>"
+    data-poll-enabled="<?= $viewModel->isPollEnabled() ? '1' : '0' ?>"
+    data-poll-interval="<?= (int) $viewModel->getPollIntervalSeconds() ?>"
     data-push-enabled="<?= $viewModel->isPushEnabled() ? '1' : '0' ?>"
     data-push-vapid-public-key="<?= $escaper->escapeHtmlAttr($viewModel->getVapidPublicKey()) ?>"
 ></script>

@@ -104,102 +104,74 @@ QUnit.module('Ordo_Automation/js/tracker (polling)', function () {
         assert.strictEqual(new URLSearchParams(env.fetchCalls[0].options.body).get('event_type'), 'page_view');
     });
 
-    QUnit.test('no polling starts when no feature is enabled on the script tag', function (assert) {
+    QUnit.test('no polling starts when data-poll-enabled is not "1"', function (assert) {
         const env = loadTracker();
 
         assert.deepEqual(env.timeouts, []);
         assert.deepEqual(env.intervals, []);
     });
 
-    QUnit.test('each enabled feature polls at its own default interval, first poll 2s after load', function (assert) {
-        const env = loadTracker({
-            'data-popup-enabled': '1',
-            'data-notification-enabled': '1',
-            'data-nps-survey-enabled': '1'
-        });
+    QUnit.test('polling starts at the default interval, first poll 2s after load', function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
 
-        assert.deepEqual(env.timeouts.map(function (t) { return t.ms; }), [2000, 2000, 2000]);
-        assert.deepEqual(env.intervals.map(function (i) { return i.ms; }), [15000, 20000, 25000]);
+        assert.deepEqual(env.timeouts.map(function (t) { return t.ms; }), [2000]);
+        assert.deepEqual(env.intervals.map(function (i) { return i.ms; }), [15000]);
     });
 
-    QUnit.test('a data-*-poll-interval attribute overrides the default; an invalid one falls back', function (assert) {
-        const env = loadTracker({
-            'data-popup-enabled': '1',
-            'data-popup-poll-interval': '7',
-            'data-notification-enabled': '1',
-            'data-notification-poll-interval': '0',
-            'data-nps-survey-enabled': '1',
-            'data-nps-survey-poll-interval': 'soon'
-        });
+    QUnit.test('a data-poll-interval attribute overrides the default; an invalid one falls back', function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1', 'data-poll-interval': '7' });
 
-        assert.deepEqual(env.intervals.map(function (i) { return i.ms; }), [7000, 20000, 25000]);
+        assert.deepEqual(env.intervals.map(function (i) { return i.ms; }), [7000]);
+
+        const envZero = loadTracker({ 'data-poll-enabled': '1', 'data-poll-interval': '0' });
+        assert.deepEqual(envZero.intervals.map(function (i) { return i.ms; }), [15000]);
+
+        const envInvalid = loadTracker({ 'data-poll-enabled': '1', 'data-poll-interval': 'soon' });
+        assert.deepEqual(envInvalid.intervals.map(function (i) { return i.ms; }), [15000]);
     });
 
-    QUnit.test('a feature whose enabled attribute is not "1" does not poll even with others enabled', function (assert) {
-        const env = loadTracker({
-            'data-popup-enabled': '0',
-            'data-notification-enabled': '1'
+    QUnit.test('one poll tick renders popup, notifications and survey from a single merged response', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+
+        env.setPollResponse({
+            popup: { headline: 'Hi there', body: 'A deal for you' },
+            notifications: [{ id: 5, headline: 'Back in stock' }],
+            survey: { id: 9, question: 'How likely…?' }
         });
-
-        assert.strictEqual(env.intervals.length, 1);
-        assert.strictEqual(env.intervals[0].ms, 20000);
-    });
-
-    QUnit.test('a popup poll tick asks the popup endpoint with the visitor id and renders the banner', async function (assert) {
-        const env = loadTracker({ 'data-popup-enabled': '1' });
-
-        env.setPollResponse({ popup: { headline: 'Hi there', body: 'A deal for you' } });
         env.intervals[0].fn();
         await flush();
 
-        assert.strictEqual(env.fetchCalls.length, 2, 'page_view + one poll');
+        assert.strictEqual(env.fetchCalls.length, 2, 'page_view + one merged poll, not three');
         const pollUrl = env.fetchCalls[1].url;
-        assert.true(pollUrl.indexOf('/ordo/track/popup?visitor_id=') === 0, 'polls ' + pollUrl);
+        assert.true(pollUrl.indexOf('/ordo/track/poll?visitor_id=') === 0, 'polls ' + pollUrl);
         assert.deepEqual(env.fetchCalls[1].options, { credentials: 'same-origin' });
 
         const banner = env.dom.window.document.getElementById('ordo-popup-banner');
-        assert.true(!!banner, 'banner rendered');
+        assert.true(!!banner, 'popup banner rendered');
         assert.true(banner.textContent.indexOf('Hi there') !== -1);
+
+        const card = env.dom.window.document.getElementById('ordo-notification-5');
+        assert.true(!!card, 'notification card rendered');
+        assert.true(card.textContent.indexOf('Back in stock') !== -1);
+
+        const widget = env.dom.window.document.getElementById('ordo-survey-prompt');
+        assert.true(!!widget, 'survey prompt rendered');
+        assert.true(widget.textContent.indexOf('How likely…?') !== -1);
     });
 
-    QUnit.test('a poll tick whose response has no payload under its key renders nothing', async function (assert) {
-        const env = loadTracker({ 'data-popup-enabled': '1' });
+    QUnit.test('a poll tick whose response has no key for a concern renders nothing for it', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
 
-        env.setPollResponse({ somethingElse: true });
+        env.setPollResponse({ notifications: [] });
         env.intervals[0].fn();
         await flush();
 
         assert.strictEqual(env.dom.window.document.getElementById('ordo-popup-banner'), null);
-    });
-
-    QUnit.test('a notification poll tick renders cards from the notifications key', async function (assert) {
-        const env = loadTracker({ 'data-notification-enabled': '1' });
-
-        env.setPollResponse({ notifications: [{ id: 5, headline: 'Back in stock' }] });
-        env.intervals[0].fn();
-        await flush();
-
-        assert.true(env.fetchCalls[1].url.indexOf('/ordo/track/notification?visitor_id=') === 0);
-        const card = env.dom.window.document.getElementById('ordo-notification-5');
-        assert.true(!!card, 'card rendered');
-        assert.true(card.textContent.indexOf('Back in stock') !== -1);
-    });
-
-    QUnit.test('a survey poll tick renders the prompt from the survey key', async function (assert) {
-        const env = loadTracker({ 'data-nps-survey-enabled': '1' });
-
-        env.setPollResponse({ survey: { id: 9, question: 'How likely…?' } });
-        env.intervals[0].fn();
-        await flush();
-
-        assert.true(env.fetchCalls[1].url.indexOf('/ordo/track/survey?visitor_id=') === 0);
-        const widget = env.dom.window.document.getElementById('ordo-survey-prompt');
-        assert.true(!!widget, 'prompt rendered');
-        assert.true(widget.textContent.indexOf('How likely…?') !== -1);
+        assert.strictEqual(env.dom.window.document.getElementById('ordo-survey-prompt'), null);
     });
 
     QUnit.test('a poll tick in a hidden tab skips the fetch; the next visible tick fetches again', async function (assert) {
-        const env = loadTracker({ 'data-popup-enabled': '1' });
+        const env = loadTracker({ 'data-poll-enabled': '1' });
         const document = env.dom.window.document;
 
         setHidden(document, true);
@@ -214,11 +186,11 @@ QUnit.module('Ordo_Automation/js/tracker (polling)', function () {
         await flush();
 
         assert.strictEqual(env.fetchCalls.length, 2, 'polling resumed once the tab was visible again');
-        assert.true(env.fetchCalls[1].url.indexOf('/ordo/track/popup?visitor_id=') === 0);
+        assert.true(env.fetchCalls[1].url.indexOf('/ordo/track/poll?visitor_id=') === 0);
     });
 
     QUnit.test('a tick still fetches when the browser has no Page Visibility API at all', async function (assert) {
-        const env = loadTracker({ 'data-popup-enabled': '1' });
+        const env = loadTracker({ 'data-poll-enabled': '1' });
 
         // typeof document.hidden === 'undefined' — the pre-visibility-API browser case.
         setHidden(env.dom.window.document, undefined);
@@ -229,7 +201,7 @@ QUnit.module('Ordo_Automation/js/tracker (polling)', function () {
     });
 
     QUnit.test('the popup close button removes the banner', async function (assert) {
-        const env = loadTracker({ 'data-popup-enabled': '1' });
+        const env = loadTracker({ 'data-poll-enabled': '1' });
         const document = env.dom.window.document;
 
         env.setPollResponse({ popup: { headline: 'Hi there' } });
@@ -245,7 +217,7 @@ QUnit.module('Ordo_Automation/js/tracker (polling)', function () {
     });
 
     QUnit.test('the notification dismiss button removes the card and reports the dismissal', async function (assert) {
-        const env = loadTracker({ 'data-notification-enabled': '1' });
+        const env = loadTracker({ 'data-poll-enabled': '1' });
         const document = env.dom.window.document;
 
         env.setPollResponse({ notifications: [{ id: 5, headline: 'Back in stock' }] });
@@ -263,7 +235,7 @@ QUnit.module('Ordo_Automation/js/tracker (polling)', function () {
     });
 
     QUnit.test('the survey close button hides the prompt without submitting a response', async function (assert) {
-        const env = loadTracker({ 'data-nps-survey-enabled': '1' });
+        const env = loadTracker({ 'data-poll-enabled': '1' });
         const document = env.dom.window.document;
 
         env.setPollResponse({ survey: { id: 9, question: 'How likely…?' } });
