@@ -48,5 +48,11 @@ class SubmitForReviewButtonTest extends TestCase
         self::assertSame(40, $data['sort_order']);
         self::assertStringContainsString('entity_id/5', $data['on_click']);
         self::assertStringStartsWith('deleteConfirm(', $data['on_click']);
+        self::assertStringContainsString(
+            '{data: {}}',
+            $data['on_click'],
+            'Must submit a real POST (deleteConfirm\'s 3-arg form) - SubmitForReview is '
+            . 'HttpPostActionInterface-only, so the 2-arg form\'s plain GET 404s before dispatch.'
+        );
     }
 }

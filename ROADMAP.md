@@ -82,18 +82,16 @@ is concentrated in multi-store; PHP 8.3 and Hyvä were mostly already fine or tr
   `ordo_orderapproval_listing.xml`, `ordo_productfeedrunlog_listing.xml`.
 - Add responsive breakpoints to `campaign-form.css`, `segment-form.css`, `whatsapp-template-form.css`,
   `free-gift-offer-form.css` — check at tablet width first, they already lean on `flex-wrap` throughout.
-- **`WhatsAppTemplate\Edit\SubmitForReviewButton`/`RefreshStatusButton` 404 when clicked** — found
-  while fixing the identical bug in `Shared\Edit\DeleteButton` and this module's new
-  `EmailTemplateDraft\Edit\PublishButton` (see `docs/adr/0021-email-template-drafts.md`): both call
-  `deleteConfirm('message', 'url')` (2 args), which navigates via a plain GET
-  (`mage/adminhtml/globals.js`'s `setLocation()`). Their own controllers
-  (`SubmitForReview`/`RefreshStatus`) implement `HttpPostActionInterface` only, so
-  `app/etc/di.xml`'s HTTP-method map rejects the GET before it dispatches — a 404, not a
-  framework quirk. Fix is mechanical: add a third `{data: {}}` argument (`mage/dataPost.js`'s
-  real-POST-with-form_key form), same as the already-fixed `DeleteButton`/`PublishButton`. Not
-  fixed here since it's unrelated to email template drafts — a real, pre-existing, user-facing
-  bug (these buttons have likely never worked when clicked from a WhatsApp template's own edit
-  page) nonetheless.
+- ~~**`WhatsAppTemplate\Edit\SubmitForReviewButton`/`RefreshStatusButton` 404 when clicked**~~ —
+  done. Same fix as `Shared\Edit\DeleteButton`/`EmailTemplateDraft\Edit\PublishButton` (see
+  `docs/adr/0021-email-template-drafts.md`): both called `deleteConfirm('message', 'url')`
+  (2 args), which navigates via a plain GET (`mage/adminhtml/globals.js`'s `setLocation()`); their
+  controllers (`SubmitForReview`/`RefreshStatus`) implement `HttpPostActionInterface` only, so
+  `app/etc/di.xml`'s HTTP-method map rejected the GET before it dispatched — a 404. Fixed by
+  adding the third `{data: {}}` argument (`mage/dataPost.js`'s real-POST-with-form_key form).
+  Verified in a real browser: both buttons now reach their controllers (`RefreshStatus` surfaces
+  its own "nothing to refresh yet" business-logic message; `SubmitForReview` makes a real outbound
+  Graph API call and surfaces *that* error) instead of 404ing.
 - **No field anywhere documents what a WhatsApp template's `{{1}}`, `{{2}}`, ... positional
   placeholders actually mean for that specific template** — raised directly by a user looking at
   the `send_whatsapp` action's body-text notice (`Block/Adminhtml/WhatsAppTemplate` form). The

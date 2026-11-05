@@ -45,9 +45,9 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   implements `HttpPostActionInterface` only, so that GET was rejected before ever dispatching.
   This means the edit-form Delete button had likely never worked for *any* entity when clicked
   from the entity's own edit page (only the grid's row-action Delete, a correct AJAX POST, ever
-  worked). Fixed at the shared class. A closely related instance in `WhatsAppTemplate`'s own
-  `SubmitForReviewButton`/`RefreshStatusButton` was found but deliberately left unfixed as
-  out-of-scope — logged to ROADMAP.md.
+  worked). Fixed at the shared class, and in `WhatsAppTemplate\Edit\SubmitForReviewButton`/
+  `RefreshStatusButton`, which had the identical bug — verified in a real browser that both now
+  reach their controllers instead of 404ing.
 - **29 i18n CSV rows had `\n` line endings instead of this repo's `\r\n`** — a mixed-line-ending
   slip from the email template drafts work, normalized back across all locale files.
 
