@@ -5,7 +5,6 @@ namespace Ordo\Automation\Test\Unit\Model\ProductFeed;
 
 use Magento\Catalog\Helper\Image as CatalogImageHelper;
 use Magento\Catalog\Model\Product;
-use Magento\Catalog\Model\ResourceModel\Product\Collection as ProductCollection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Magento\Directory\Model\Currency;
 use Magento\Store\Model\Store;
@@ -28,6 +27,8 @@ class AiAgentFeedGeneratorTest extends TestCase
     {
         $this->productCollectionFactory = $this->createMock(ProductCollectionFactory::class);
         $this->catalogImageHelper = $this->createMock(CatalogImageHelper::class);
+        $this->catalogImageHelper->method('init')->willReturnSelf();
+        $this->catalogImageHelper->method('getUrl')->willReturn('https://example.test/media/1.jpg');
 
         $baseCurrency = $this->createStub(Currency::class);
         $baseCurrency->method('convert')->willReturnCallback(fn (float $price) => $price);
@@ -73,19 +74,6 @@ class AiAgentFeedGeneratorTest extends TestCase
         self::assertTrue($this->generator->isEnabled(3));
     }
 
-    private function makeCollection(array $products): ProductCollection
-    {
-        $collection = $this->createStub(ProductCollection::class);
-        $collection->method('setStore')->willReturnSelf();
-        $collection->method('addAttributeToSelect')->willReturnSelf();
-        $collection->method('addAttributeToFilter')->willReturnSelf();
-        $collection->method('addFinalPrice')->willReturnSelf();
-        $collection->method('joinField')->willReturnSelf();
-        $collection->method('getIterator')->willReturn(new \ArrayIterator($products));
-
-        return $collection;
-    }
-
     private function makeProduct(
         string $sku,
         string $name,
@@ -113,12 +101,10 @@ class AiAgentFeedGeneratorTest extends TestCase
         $inStockProduct = $this->makeProduct('SKU1', 'Product One', 'https://example.test/p1.html', 19.99, true);
         $outOfStockProduct = $this->makeProduct('SKU2', 'Product Two', 'https://example.test/p2.html', 29.5, false);
 
-        $this->productCollectionFactory->method('create')
-            ->willReturn($this->makeCollection([$inStockProduct, $outOfStockProduct]));
-        $this->catalogImageHelper->method('init')->willReturnSelf();
-        $this->catalogImageHelper->method('getUrl')->willReturn('https://example.test/media/1.jpg');
-
-        $result = $this->generator->generate(1);
+        $this->generator->startFeed(1);
+        $this->generator->addProduct($inStockProduct);
+        $this->generator->addProduct($outOfStockProduct);
+        $result = $this->generator->finishFeed();
         $decoded = json_decode($result['content'], true);
 
         self::assertSame(2, $result['productCount']);
@@ -133,13 +119,20 @@ class AiAgentFeedGeneratorTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testGenerateSkipsProductWithNoResolvableImage(): void
     {
-        $product = $this->makeProduct('SKU1', 'Product One', 'https://example.test/p1.html', 19.99, true);
-
-        $this->productCollectionFactory->method('create')->willReturn($this->makeCollection([$product]));
+        $this->catalogImageHelper = $this->createMock(CatalogImageHelper::class);
         $this->catalogImageHelper->method('init')->willReturnSelf();
         $this->catalogImageHelper->method('getUrl')->willReturn(null);
+        $this->generator = new AiAgentFeedGenerator(
+            new CatalogFeedProductFetcher($this->productCollectionFactory, $this->catalogImageHelper),
+            $this->storeManager,
+            $this->config
+        );
 
-        $result = $this->generator->generate(1);
+        $product = $this->makeProduct('SKU1', 'Product One', 'https://example.test/p1.html', 19.99, true);
+
+        $this->generator->startFeed(1);
+        $this->generator->addProduct($product);
+        $result = $this->generator->finishFeed();
 
         self::assertSame(0, $result['productCount']);
     }
@@ -153,9 +146,9 @@ class AiAgentFeedGeneratorTest extends TestCase
         $product->method('getProductUrl')->willReturn('https://example.test/p1.html');
         $product->method('getFinalPrice')->willReturn(0.0);
 
-        $this->productCollectionFactory->method('create')->willReturn($this->makeCollection([$product]));
-
-        $result = $this->generator->generate(1);
+        $this->generator->startFeed(1);
+        $this->generator->addProduct($product);
+        $result = $this->generator->finishFeed();
 
         self::assertSame(0, $result['productCount']);
     }
@@ -163,9 +156,8 @@ class AiAgentFeedGeneratorTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testGenerateReturnsEmptyFeedWhenNoProducts(): void
     {
-        $this->productCollectionFactory->method('create')->willReturn($this->makeCollection([]));
-
-        $result = $this->generator->generate(1);
+        $this->generator->startFeed(1);
+        $result = $this->generator->finishFeed();
 
         self::assertSame(0, $result['productCount']);
         self::assertSame(['products' => []], json_decode($result['content'], true));
@@ -197,11 +189,10 @@ class AiAgentFeedGeneratorTest extends TestCase
         );
 
         $product = $this->makeProduct('SKU1', 'Product One', 'https://example.test/p1.html', 100.0, true);
-        $this->productCollectionFactory->method('create')->willReturn($this->makeCollection([$product]));
-        $this->catalogImageHelper->method('init')->willReturnSelf();
-        $this->catalogImageHelper->method('getUrl')->willReturn('https://example.test/media/1.jpg');
 
-        $result = $this->generator->generate(1);
+        $this->generator->startFeed(1);
+        $this->generator->addProduct($product);
+        $result = $this->generator->finishFeed();
         $decoded = json_decode($result['content'], true);
 
         self::assertSame(90.0, (float) $decoded['products'][0]['price']);

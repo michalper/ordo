@@ -8,8 +8,9 @@ namespace Ordo\Automation\Api\ProductFeed;
  * code in di.xml (Model\ProductFeed\FeedGeneratorPool) — same "interface + pool, keyed by string
  * code, wired via di.xml" shape as Api\AdAudience\SyncClientInterface/
  * Model\AdAudience\SyncClientPool. Cron\RefreshProductFeed and Controller\Adminhtml\ProductFeed\
- * RefreshNow only ever depend on this interface and the pool, never on a concrete generator, so
- * adding a third format never means touching either of them.
+ * RefreshNow only ever depend on this interface, the pool, and Model\ProductFeed\
+ * ProductFeedRefresher (which owns the actual catalog walk — see its own class doc), never on a
+ * concrete generator, so adding a third format never means touching any of them.
  */
 interface FeedGeneratorInterface
 {
@@ -33,9 +34,33 @@ interface FeedGeneratorInterface
     public function isEnabled(int $storeId): bool;
 
     /**
+     * Resets this generator's own per-store state (store/currency scope, item accumulator, any
+     * format header) ahead of a batch of addProduct() calls for $storeId. ProductFeedRefresher
+     * calls this once per store, before the ONE shared catalog walk every enabled generator reads
+     * from starts feeding it products — see ADR 0022 for why generate() became three steps
+     * instead of one: every registered format scopes the catalog identically (enabled,
+     * catalog/search-visible), so walking it once and offering each product to every active
+     * generator replaced each generator walking the whole catalog separately.
+     *
      * @param int $storeId Which store's price/currency/base-URL scope (and store-scoped feed
-     *   config) to generate the feed for.
+     *   config) this batch is for.
+     */
+    public function startFeed(int $storeId): void;
+
+    /**
+     * Offered once per product from the shared catalog walk startFeed() was just called ahead of.
+     * Implementations decide their own per-product skip rules here (missing price/image/required
+     * field) — the walk itself scopes every generator identically, so a skip here is a
+     * format-specific business rule, not a catalog filter.
+     */
+    public function addProduct(\Magento\Catalog\Model\Product $product): void;
+
+    /**
+     * Called once per store, after every product from that store's walk has been offered via
+     * addProduct() — finalizes and returns the accumulated feed body. Must not be called without
+     * a preceding startFeed(), and the next startFeed() call resets the state this reads.
+     *
      * @return array{content: string, productCount: int}
      */
-    public function generate(int $storeId): array;
+    public function finishFeed(): array;
 }

@@ -396,7 +396,20 @@ coupon/channel/device/geography.
   Magento bootstrap. The JS side already shares one `startPolling()` helper (and pauses on hidden
   tabs); merging the endpoints is a frontend/backend contract change deferred from the 2026-10
   simplification pass. Small scope.
-- **Single catalog walk for all product feeds** — `Cron\RefreshProductFeed` currently walks the whole
-  catalog once per generator per store (3x); feeding all registered generators from one paged walk
-  needs the `FeedGeneratorInterface::generate()` contract reshaped (deferred from the 2026-10
-  simplification pass for that reason). Small/medium scope.
+- ~~**Single catalog walk for all product feeds**~~ — done, see
+  `docs/adr/0022-single-catalog-walk-for-product-feeds.md`. `FeedGeneratorInterface::generate(int
+  $storeId): array` became three steps (`startFeed()`/`addProduct()`/`finishFeed()`), and new
+  `Model\ProductFeed\ProductFeedRefresher` — now shared by `Cron\RefreshProductFeed` and
+  `Controller\Adminhtml\ProductFeed\RefreshNow`, replacing their own duplicated double loop —
+  walks `CatalogFeedProductFetcher::fetchByPage($storeId)` exactly once per store, offering each
+  product to every enabled generator instead of each generator re-walking the whole catalog
+  itself. A generator that throws mid-walk is dropped from that store's batch without disturbing
+  the others, preserving the old "one format's failure doesn't affect another's cached feed"
+  guarantee. Verified against the real sandbox, not just unit tests: enabled all three formats,
+  ran the real cron against the real DB with MySQL's general query log on, and confirmed exactly
+  one `catalog_product_entity`/`cataloginventory_stock_item` collection query per store (previously
+  3) while all three feeds still cached correct, real content (`ordo_product_feed_cache`,
+  `product_count` matching the real catalog) and the public feed route still served it
+  (`/ordo/productfeed/index` → 200). Also added `CatalogFeedProductFetcherTest` (previously no
+  dedicated test existed for the paging logic — it had only ever been exercised indirectly,
+  duplicated across all three generators' own tests).

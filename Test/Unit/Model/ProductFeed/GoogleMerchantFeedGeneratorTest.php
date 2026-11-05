@@ -5,7 +5,6 @@ namespace Ordo\Automation\Test\Unit\Model\ProductFeed;
 
 use Magento\Catalog\Helper\Image as CatalogImageHelper;
 use Magento\Catalog\Model\Product;
-use Magento\Catalog\Model\ResourceModel\Product\Collection as ProductCollection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Magento\Directory\Model\Currency;
 use Magento\Store\Model\Store;
@@ -28,6 +27,8 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
     {
         $this->productCollectionFactory = $this->createMock(ProductCollectionFactory::class);
         $this->catalogImageHelper = $this->createMock(CatalogImageHelper::class);
+        $this->catalogImageHelper->method('init')->willReturnSelf();
+        $this->catalogImageHelper->method('getUrl')->willReturn('https://example.test/media/catalog/product/1.jpg');
 
         $baseCurrency = $this->createStub(Currency::class);
         // Identity conversion by default (base currency == display currency) - the dedicated
@@ -78,19 +79,6 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
         self::assertTrue($this->generator->isEnabled(3));
     }
 
-    private function makeCollection(array $products): ProductCollection
-    {
-        $collection = $this->createStub(ProductCollection::class);
-        $collection->method('setStore')->willReturnSelf();
-        $collection->method('addAttributeToSelect')->willReturnSelf();
-        $collection->method('addAttributeToFilter')->willReturnSelf();
-        $collection->method('addFinalPrice')->willReturnSelf();
-        $collection->method('joinField')->willReturnSelf();
-        $collection->method('getIterator')->willReturn(new \ArrayIterator($products));
-
-        return $collection;
-    }
-
     private function makeProduct(
         string $sku,
         string $name,
@@ -118,12 +106,10 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
         $inStockProduct = $this->makeProduct('SKU1', 'Product One', 'https://example.test/product-one.html', 19.99, true);
         $outOfStockProduct = $this->makeProduct('SKU2', 'Product Two', 'https://example.test/product-two.html', 29.5, false);
 
-        $this->productCollectionFactory->method('create')
-            ->willReturn($this->makeCollection([$inStockProduct, $outOfStockProduct]));
-        $this->catalogImageHelper->method('init')->willReturnSelf();
-        $this->catalogImageHelper->method('getUrl')->willReturn('https://example.test/media/catalog/product/1.jpg');
-
-        $result = $this->generator->generate(1);
+        $this->generator->startFeed(1);
+        $this->generator->addProduct($inStockProduct);
+        $this->generator->addProduct($outOfStockProduct);
+        $result = $this->generator->finishFeed();
 
         self::assertSame(2, $result['productCount']);
         self::assertStringContainsString('<g:id>SKU1</g:id>', $result['content']);
@@ -163,11 +149,10 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
         );
 
         $product = $this->makeProduct('SKU1', 'Product One', 'https://example.test/product-one.html', 100.0, true);
-        $this->productCollectionFactory->method('create')->willReturn($this->makeCollection([$product]));
-        $this->catalogImageHelper->method('init')->willReturnSelf();
-        $this->catalogImageHelper->method('getUrl')->willReturn('https://example.test/media/1.jpg');
 
-        $result = $this->generator->generate(1);
+        $this->generator->startFeed(1);
+        $this->generator->addProduct($product);
+        $result = $this->generator->finishFeed();
 
         self::assertStringContainsString('<g:price>90.00 EUR</g:price>', $result['content']);
     }
@@ -175,13 +160,20 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testGenerateSkipsProductWithNoResolvableImage(): void
     {
-        $product = $this->makeProduct('SKU1', 'Product One', 'https://example.test/product-one.html', 19.99, true);
-
-        $this->productCollectionFactory->method('create')->willReturn($this->makeCollection([$product]));
+        $this->catalogImageHelper = $this->createMock(CatalogImageHelper::class);
         $this->catalogImageHelper->method('init')->willReturnSelf();
         $this->catalogImageHelper->method('getUrl')->willReturn(null);
+        $this->generator = new GoogleMerchantFeedGenerator(
+            new CatalogFeedProductFetcher($this->productCollectionFactory, $this->catalogImageHelper),
+            $this->storeManager,
+            $this->config
+        );
 
-        $result = $this->generator->generate(1);
+        $product = $this->makeProduct('SKU1', 'Product One', 'https://example.test/product-one.html', 19.99, true);
+
+        $this->generator->startFeed(1);
+        $this->generator->addProduct($product);
+        $result = $this->generator->finishFeed();
 
         self::assertSame(0, $result['productCount']);
         self::assertStringNotContainsString('SKU1', $result['content']);
@@ -196,9 +188,9 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
         $product->method('getProductUrl')->willReturn('https://example.test/product-one.html');
         $product->method('getFinalPrice')->willReturn(0.0);
 
-        $this->productCollectionFactory->method('create')->willReturn($this->makeCollection([$product]));
-
-        $result = $this->generator->generate(1);
+        $this->generator->startFeed(1);
+        $this->generator->addProduct($product);
+        $result = $this->generator->finishFeed();
 
         self::assertSame(0, $result['productCount']);
     }
@@ -206,52 +198,10 @@ class GoogleMerchantFeedGeneratorTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testGenerateReturnsEmptyFeedWhenNoProducts(): void
     {
-        $this->productCollectionFactory->method('create')->willReturn($this->makeCollection([]));
-
-        $result = $this->generator->generate(1);
+        $this->generator->startFeed(1);
+        $result = $this->generator->finishFeed();
 
         self::assertSame(0, $result['productCount']);
         self::assertStringContainsString('<channel>', $result['content']);
-    }
-
-    /**
-     * Regression test for the ROADMAP.md Tier 4 "unbounded ... single-pass memory build" gap:
-     * generate() used to load the whole catalog collection in one shot - now it pages through it,
-     * setCurPage()-ing and clear()-ing the SAME collection object across pages rather than loading
-     * everything at once.
-     */
-    #[AllowMockObjectsWithoutExpectations]
-    public function testGeneratePagesThroughMultiplePagesOfTheSameCollection(): void
-    {
-        $pageOneProducts = [$this->makeProduct('SKU1', 'Product One', 'https://example.test/p1.html', 10.0, true)];
-        $pageTwoProducts = [$this->makeProduct('SKU2', 'Product Two', 'https://example.test/p2.html', 20.0, true)];
-
-        $collection = $this->createMock(ProductCollection::class);
-        $collection->method('setStore')->willReturnSelf();
-        $collection->method('addAttributeToSelect')->willReturnSelf();
-        $collection->method('addAttributeToFilter')->willReturnSelf();
-        $collection->method('addFinalPrice')->willReturnSelf();
-        $collection->method('joinField')->willReturnSelf();
-        $collection->expects(self::once())->method('setPageSize')->with(500);
-        $collection->expects(self::exactly(2))->method('setCurPage')->with(self::logicalOr(1, 2));
-        $collection->expects(self::exactly(2))->method('load');
-        $collection->expects(self::exactly(2))->method('clear');
-        $collection->method('getLastPageNumber')->willReturn(2);
-
-        $seenPages = 0;
-        $collection->method('getIterator')->willReturnCallback(function () use (&$seenPages, $pageOneProducts, $pageTwoProducts) {
-            $seenPages++;
-            return new \ArrayIterator($seenPages === 1 ? $pageOneProducts : $pageTwoProducts);
-        });
-
-        $this->productCollectionFactory->expects(self::once())->method('create')->willReturn($collection);
-        $this->catalogImageHelper->method('init')->willReturnSelf();
-        $this->catalogImageHelper->method('getUrl')->willReturn('https://example.test/media/1.jpg');
-
-        $result = $this->generator->generate(1);
-
-        self::assertSame(2, $result['productCount']);
-        self::assertStringContainsString('<g:id>SKU1</g:id>', $result['content']);
-        self::assertStringContainsString('<g:id>SKU2</g:id>', $result['content']);
     }
 }

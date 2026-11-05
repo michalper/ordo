@@ -31,6 +31,12 @@ class MetaCatalogFeedGenerator implements FeedGeneratorInterface
         'id', 'title', 'description', 'availability', 'condition', 'price', 'link', 'image_link', 'brand',
     ];
 
+    private string $currencyCode = '';
+    private \Magento\Directory\Model\Currency $baseCurrency;
+    private string $defaultBrand = '';
+    /** @var array<int, array<int, string>> */
+    private array $rows = [];
+
     public function __construct(
         private readonly CatalogFeedProductFetcher $productFetcher,
         private readonly StoreManagerInterface $storeManager,
@@ -53,35 +59,34 @@ class MetaCatalogFeedGenerator implements FeedGeneratorInterface
         return $this->config->isMetaCatalogFeedEnabled($storeId);
     }
 
-    /**
-     * @param int $storeId Which store's price/currency/base-URL scope (and default-brand
-     *   config) to generate the feed for.
-     * @return array{content: string, productCount: int}
-     */
-    public function generate(int $storeId): array
+    public function startFeed(int $storeId): void
     {
         /** @var \Magento\Store\Model\Store $store getBaseCurrency()/getCurrentCurrencyCode()
          *  aren't declared on StoreInterface, only the concrete Store model — same real-world
          *  usage as GoogleMerchantFeedGenerator. */
         $store = $this->storeManager->getStore($storeId);
-        $currencyCode = $store->getCurrentCurrencyCode();
-        $baseCurrency = $store->getBaseCurrency();
-        $defaultBrand = $this->config->getMetaCatalogFeedDefaultBrand($storeId);
+        $this->currencyCode = $store->getCurrentCurrencyCode();
+        $this->baseCurrency = $store->getBaseCurrency();
+        $this->defaultBrand = $this->config->getMetaCatalogFeedDefaultBrand($storeId);
+        $this->rows = [];
+    }
 
-        $rows = [];
-        foreach ($this->productFetcher->fetchByPage($storeId) as $product) {
-            $row = $this->renderRow($product, $baseCurrency, $currencyCode, $defaultBrand);
-            if ($row !== null) {
-                $rows[] = $row;
-            }
+    public function addProduct(\Magento\Catalog\Model\Product $product): void
+    {
+        $row = $this->renderRow($product, $this->baseCurrency, $this->currencyCode, $this->defaultBrand);
+        if ($row !== null) {
+            $this->rows[] = $row;
         }
+    }
 
+    public function finishFeed(): array
+    {
         $lines = [$this->toCsvLine(self::CSV_HEADER)];
-        foreach ($rows as $row) {
+        foreach ($this->rows as $row) {
             $lines[] = $this->toCsvLine($row);
         }
 
-        return ['content' => implode("\r\n", $lines) . "\r\n", 'productCount' => count($rows)];
+        return ['content' => implode("\r\n", $lines) . "\r\n", 'productCount' => count($this->rows)];
     }
 
     /**

@@ -24,6 +24,11 @@ class AiAgentFeedGenerator implements FeedGeneratorInterface
 {
     public const string FEED_CODE = 'ai_agent';
 
+    private string $currencyCode = '';
+    private \Magento\Directory\Model\Currency $baseCurrency;
+    /** @var array<int, array<string, mixed>> */
+    private array $items = [];
+
     public function __construct(
         private readonly CatalogFeedProductFetcher $productFetcher,
         private readonly StoreManagerInterface $storeManager,
@@ -46,32 +51,33 @@ class AiAgentFeedGenerator implements FeedGeneratorInterface
         return $this->config->isAiAgentEnabled($storeId);
     }
 
-    /**
-     * @return array{content: string, productCount: int}
-     */
-    public function generate(int $storeId): array
+    public function startFeed(int $storeId): void
     {
         /** @var \Magento\Store\Model\Store $store getCurrentCurrencyCode() isn't declared on
          *  StoreInterface, only the concrete Store model — same real-world usage as
          *  GoogleMerchantFeedGenerator. */
         $store = $this->storeManager->getStore($storeId);
-        $currencyCode = $store->getCurrentCurrencyCode();
-        $baseCurrency = $store->getBaseCurrency();
+        $this->currencyCode = $store->getCurrentCurrencyCode();
+        $this->baseCurrency = $store->getBaseCurrency();
+        $this->items = [];
+    }
 
-        $items = [];
-        foreach ($this->productFetcher->fetchByPage($storeId) as $product) {
-            $item = $this->renderItem($product, $baseCurrency, $currencyCode);
-            if ($item !== null) {
-                $items[] = $item;
-            }
+    public function addProduct(\Magento\Catalog\Model\Product $product): void
+    {
+        $item = $this->renderItem($product, $this->baseCurrency, $this->currencyCode);
+        if ($item !== null) {
+            $this->items[] = $item;
         }
+    }
 
+    public function finishFeed(): array
+    {
         $content = (string) json_encode(
-            ['products' => $items],
+            ['products' => $this->items],
             JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
         );
 
-        return ['content' => $content, 'productCount' => count($items)];
+        return ['content' => $content, 'productCount' => count($this->items)];
     }
 
     /**

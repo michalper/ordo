@@ -23,6 +23,16 @@ class GoogleMerchantFeedGenerator implements FeedGeneratorInterface
 {
     public const string FEED_CODE = 'google_merchant';
 
+    private int $storeId = 0;
+    // The concrete Store, not StoreInterface - getCurrentCurrencyCode()/getBaseUrl() below aren't
+    // declared on the interface, only the concrete model (same reasoning the old local @var
+    // annotation gave before this became a property across startFeed()/finishFeed() calls).
+    private \Magento\Store\Model\Store $store;
+    private string $currencyCode = '';
+    private \Magento\Directory\Model\Currency $baseCurrency;
+    /** @var array<int, string> */
+    private array $items = [];
+
     public function __construct(
         private readonly CatalogFeedProductFetcher $productFetcher,
         private readonly StoreManagerInterface $storeManager,
@@ -45,39 +55,38 @@ class GoogleMerchantFeedGenerator implements FeedGeneratorInterface
         return $this->config->isShoppingFeedEnabled($storeId);
     }
 
-    /**
-     * @param int $storeId Which store's price/currency/base-URL scope (and
-     *   Config::getShoppingFeedTitle()/getShoppingFeedDescription() store-scoped config) to
-     *   generate the feed for — see Cron\RefreshProductFeed, which now calls this once per
-     *   store instead of once for the whole install.
-     * @return array{content: string, productCount: int}
-     */
-    public function generate(int $storeId): array
+    public function startFeed(int $storeId): void
     {
-        /** @var \Magento\Store\Model\Store $store getCurrentCurrencyCode() isn't declared on
-         *  StoreInterface, only the concrete Store model — same real-world usage as core's own
-         *  currency-formatting code throughout Magento. */
+        $this->storeId = $storeId;
+        /** @var \Magento\Store\Model\Store $store getCurrentCurrencyCode()/getBaseUrl() aren't
+         *  declared on StoreInterface, only the concrete Store model — same real-world usage as
+         *  core's own currency-formatting code throughout Magento. */
         $store = $this->storeManager->getStore($storeId);
-        $currencyCode = $store->getCurrentCurrencyCode();
-        $baseCurrency = $store->getBaseCurrency();
+        $this->store = $store;
+        $this->currencyCode = $store->getCurrentCurrencyCode();
+        $this->baseCurrency = $store->getBaseCurrency();
+        $this->items = [];
+    }
 
-        $items = [];
-        foreach ($this->productFetcher->fetchByPage($storeId) as $product) {
-            $item = $this->renderItem($product, $baseCurrency, $currencyCode);
-            if ($item !== null) {
-                $items[] = $item;
-            }
+    public function addProduct(\Magento\Catalog\Model\Product $product): void
+    {
+        $item = $this->renderItem($product, $this->baseCurrency, $this->currencyCode);
+        if ($item !== null) {
+            $this->items[] = $item;
         }
+    }
 
+    public function finishFeed(): array
+    {
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
             . '<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0"><channel>'
-            . '<title>' . $this->escape($this->config->getShoppingFeedTitle($storeId)) . '</title>'
-            . '<link>' . $this->escape($store->getBaseUrl()) . '</link>'
-            . '<description>' . $this->escape($this->config->getShoppingFeedDescription($storeId)) . '</description>'
-            . implode('', $items)
+            . '<title>' . $this->escape($this->config->getShoppingFeedTitle($this->storeId)) . '</title>'
+            . '<link>' . $this->escape($this->store->getBaseUrl()) . '</link>'
+            . '<description>' . $this->escape($this->config->getShoppingFeedDescription($this->storeId)) . '</description>'
+            . implode('', $this->items)
             . '</channel></rss>';
 
-        return ['content' => $xml, 'productCount' => count($items)];
+        return ['content' => $xml, 'productCount' => count($this->items)];
     }
 
     private function renderItem(
