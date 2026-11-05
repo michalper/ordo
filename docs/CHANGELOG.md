@@ -28,6 +28,11 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   mean for that template; surfaced automatically in the `send_whatsapp` campaign action's own
   template picker (`Model\Config\Source\WhatsAppTemplateOptions`) so configuring the action
   never depends on remembering what the template's author meant.
+- **Responsive breakpoints for `segment-form.css`/`free-gift-offer-form.css`** (ROADMAP.md
+  "Admin UX") — a new `@media (max-width: 1024px)` block in each trims the relevant flex-wrap
+  columns' `flex-basis` values proportionally, so more columns still fit on one line before
+  wrapping on a tablet-width screen. `campaign-form.css`/`whatsapp-template-form.css` have no
+  multi-column layout at all, so there was nothing to add a breakpoint to for those two.
 
 ### Fixed
 

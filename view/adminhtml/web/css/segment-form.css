@@ -763,6 +763,11 @@ input[name$="[event_only_warning]"] {
     max-height: 220px;
     overflow-y: auto;
     min-width: 240px;
+    /* min-width alone never shrinks below 240px regardless of viewport - on a narrow tablet
+       screen that can run the dropdown past the card's own right edge. Capping it at the same
+       240px normally, but letting it shrink on anything narrower than that plus a small margin,
+       keeps the dropdown inside the viewport without changing its size on any wider screen. */
+    max-width: min(240px, calc(100vw - 32px));
 }
 
 .ordo-sku-suggest-row {
@@ -799,4 +804,39 @@ input[name$="[event_only_warning]"] {
     background: #fdf0ef;
     border: 1px solid #e6a19c;
     color: var(--ordo-danger);
+}
+
+/* Tablet-width pass (ROADMAP.md "Admin UX"). Checked at a real 950px browser window: the
+   conditions row itself stays within the page's own content column with no horizontal overflow
+   (confirmed via getBoundingClientRect(), not just eyeballing a screenshot), both before and
+   after this block - the condition rows above already lean on flex-wrap + min-width: 0 to shrink/
+   wrap gracefully at any width. This block only trims the per-column flex-basis values down
+   proportionally on top of that, so more columns still fit on one line before wrapping (every
+   basis here was already a shrinkable flex-grow target, not a hard minimum, so this can only
+   reduce wrapping, not introduce new overflow). Unrelated, pre-existing finding from the same
+   check: every row in this dynamicRows list is missing its own delete button entirely (not a
+   styling issue - the element isn't in the DOM at all, at any width) - see ROADMAP.md. */
+@media (max-width: 1024px) {
+    [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="type"]) {
+        flex-basis: 180px;
+    }
+
+    [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="amount"]),
+    [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="threshold"]),
+    [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="days"]),
+    [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="count"]),
+    [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="percentile"]),
+    [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="sku"]),
+    [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="category_id"]),
+    [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="match_mode"]) {
+        flex-basis: 130px;
+    }
+
+    [data-index="conditions"].admin__dynamic-rows tr.data-row td:has([data-index="tags"]) {
+        flex-basis: 200px;
+    }
+
+    [data-index="conditions"].admin__dynamic-rows {
+        --ordo-gap: 12px;
+    }
 }

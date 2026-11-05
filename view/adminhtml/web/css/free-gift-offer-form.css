@@ -277,3 +277,19 @@
        both is redundant in a card this compact. */
     display: none;
 }
+
+/* Tablet-width pass (ROADMAP.md "Admin UX") - same reasoning as segment-form.css's own
+   equivalent block, and confirmed there at a real 950px window that this kind of trim doesn't
+   overflow; this page's own window wouldn't hold a narrow size long enough to repeat that same
+   check here specifically. Just a proportional trim of the two columns' flex-basis values so
+   more of the card's own flex-wrap row fits before wrapping. Neither column's own min-width: 0
+   changes, so this can only reduce wrapping, not introduce new overflow. */
+@media (max-width: 1024px) {
+    [data-index="tiers"].admin__dynamic-rows tr.data-row td:has([data-index="min_subtotal"]) {
+        flex-basis: 140px;
+    }
+
+    [data-index="tiers"].admin__dynamic-rows tr.data-row td:has([data-index="gift_slots"]) {
+        flex-basis: 200px;
+    }
+}

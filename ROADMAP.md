@@ -83,8 +83,25 @@ is concentrated in multi-store; PHP 8.3 and Hyvä were mostly already fine or tr
 - ~~Add `exportButton` to `ordo_adminactionlog_listing.xml`, `ordo_cronrunlog_listing.xml`,
   `ordo_orderapproval_listing.xml`, `ordo_productfeedrunlog_listing.xml`~~ — already done (commit
   `dd42acaf`, PR #216, 2026-09-25); this bullet was stale bookkeeping, not an open gap.
-- Add responsive breakpoints to `campaign-form.css`, `segment-form.css`, `whatsapp-template-form.css`,
-  `free-gift-offer-form.css` — check at tablet width first, they already lean on `flex-wrap` throughout.
+- ~~Add responsive breakpoints to `campaign-form.css`, `segment-form.css`, `whatsapp-template-form.css`,
+  `free-gift-offer-form.css`~~ — done for the two that actually have anything to adapt
+  (`segment-form.css`, `free-gift-offer-form.css`): a new `@media (max-width: 1024px)` block in
+  each trims the relevant columns' `flex-basis` values proportionally, so more of a flex-wrap row
+  still fits on one line before wrapping. `campaign-form.css`/`whatsapp-template-form.css` have no
+  multi-column layout at all (checked directly — neither file has a single `flex-wrap` rule), so
+  there was nothing to add a breakpoint to. Checked at a real 950px browser window (not just read
+  from the CSS): the conditions row itself stays within its content column with no horizontal
+  overflow, before and after this change.
+- **Found while checking the above: every row in the Conditions `dynamicRows` list (both
+  `ordo_campaign_form.xml`'s classic editor and `ordo_segment_form.xml`) is missing its own delete
+  button entirely** — not a styling/overlap issue, the element genuinely isn't in the DOM at any
+  width, confirmed with 1 and 2 rows present, for multiple condition types. The CSS written for it
+  (`tr.data-row td:last-child .action-delete` and friends, `segment-form.css`/`campaign-form.css`)
+  is dead code targeting an element that no longer renders. The Free Gift Offer form's own Tiers
+  `dynamicRows` list (same technique, `free-gift-offer-form.css`) still has a working delete
+  (trash icon) button, so this is scoped to Conditions specifically, not every `dynamicRows` list
+  in the module. Once added, a condition can't currently be removed from either form without
+  discarding the whole campaign/segment and starting over.
 - ~~**`WhatsAppTemplate\Edit\SubmitForReviewButton`/`RefreshStatusButton` 404 when clicked**~~ —
   done. Same fix as `Shared\Edit\DeleteButton`/`EmailTemplateDraft\Edit\PublishButton` (see
   `docs/adr/0021-email-template-drafts.md`): both called `deleteConfirm('message', 'url')`
