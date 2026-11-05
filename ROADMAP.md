@@ -80,8 +80,9 @@ is concentrated in multi-store; PHP 8.3 and Hyvä were mostly already fine or tr
 
 ## Admin UX
 
-- Add `exportButton` to `ordo_adminactionlog_listing.xml`, `ordo_cronrunlog_listing.xml`,
-  `ordo_orderapproval_listing.xml`, `ordo_productfeedrunlog_listing.xml`.
+- ~~Add `exportButton` to `ordo_adminactionlog_listing.xml`, `ordo_cronrunlog_listing.xml`,
+  `ordo_orderapproval_listing.xml`, `ordo_productfeedrunlog_listing.xml`~~ — already done (commit
+  `dd42acaf`, PR #216, 2026-09-25); this bullet was stale bookkeeping, not an open gap.
 - Add responsive breakpoints to `campaign-form.css`, `segment-form.css`, `whatsapp-template-form.css`,
   `free-gift-offer-form.css` — check at tablet width first, they already lean on `flex-wrap` throughout.
 - ~~**`WhatsAppTemplate\Edit\SubmitForReviewButton`/`RefreshStatusButton` 404 when clicked**~~ —
