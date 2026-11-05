@@ -1115,3 +1115,7 @@
 "Views, purchases and abandon rate per product","Visualizaciones, compras y tasa de abandono por producto"
 "Revenue Analytics","Análisis de ingresos"
 "Revenue by order, coupon, campaign, country/city and new vs. returning customer","Ingresos por pedido, cupón, campaña, país/ciudad y cliente nuevo frente a recurrente"
+"Only used when the fallback channel above is WhatsApp - send_whatsapp always sends an approved template message, never free text, so only APPROVED templates are offered here.","Solo se usa cuando el canal de respaldo anterior es WhatsApp: send_whatsapp siempre envía un mensaje de plantilla aprobado, nunca texto libre, por lo que aquí solo se ofrecen plantillas APROBADAS."
+"Email template","Plantilla de correo electrónico"
+"Cart price rule","Regla de precio del carrito"
+"Leave blank to match any product. Start typing to search the catalog.","Déjelo en blanco para que coincida con cualquier producto. Empiece a escribir para buscar en el catálogo."

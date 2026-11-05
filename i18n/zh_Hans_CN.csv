@@ -1115,3 +1115,7 @@
 "Views, purchases and abandon rate per product","按商品统计的浏览量、购买量和放弃率"
 "Revenue Analytics","收入分析"
 "Revenue by order, coupon, campaign, country/city and new vs. returning customer","按订单、优惠券、活动、国家/城市以及新客户与回头客划分的收入"
+"Only used when the fallback channel above is WhatsApp - send_whatsapp always sends an approved template message, never free text, so only APPROVED templates are offered here.","仅当上述后备渠道为 WhatsApp 时才会使用 — send_whatsapp 始终发送已批准的模板消息，绝不发送自由文本，因此此处仅提供已批准的模板。"
+"Email template","电子邮件模板"
+"Cart price rule","购物车价格规则"
+"Leave blank to match any product. Start typing to search the catalog.","留空以匹配任何产品。开始输入即可搜索目录。"

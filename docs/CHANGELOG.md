@@ -61,6 +61,13 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   only dedicated-field inputs for a type with `getFieldsConfig()` descriptors, no `params_json`
   fallback) silently never saved their template/title/url at all. Both fixed together; verified
   against the real running admin, not just unit tests.
+- **Five free-text fields referencing real data had no autocomplete/select** (ROADMAP.md
+  "Candidate new features") — `event_key` (`event_occurred` condition) now shares the `sku`
+  field's autocomplete; `rule_id` (`generate_coupon`, content block) and `template` (`send_email`)
+  are now selects backed by two new sources, `Model\Config\Source\CartPriceRuleOptions` and
+  `Model\Config\Source\EmailTemplateOptions`; `category_id` (content block) and
+  `fallback_whatsapp_template_id` (`etc/adminhtml/system.xml`) now reuse the module's existing
+  `Category`/`WhatsAppTemplateOptions` sources instead of plain text/digit inputs.
 
 - **`campaign-flow-editor.js` and `Model\Campaign\TypeLabels` had no i18n at all** — all 33
   hardcoded JS strings plus 2 in `tag-chip-editor.js` wrapped in `__()`/`$t()`, and the much

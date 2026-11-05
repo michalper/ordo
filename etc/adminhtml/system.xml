@@ -72,10 +72,10 @@
                                 <source_model>Ordo\Automation\Model\Config\Source\AbandonedCartFallbackChannel</source_model>
                                 <depends><field id="fallback_enabled">1</field></depends>
                             </field>
-                            <field id="fallback_whatsapp_template_id" translate="label comment" type="text" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>WhatsApp template ID</label>
-                                <comment>Only used when the fallback channel above is WhatsApp - send_whatsapp always sends an approved template message, never free text, so an entity_id from Marketing &gt; WhatsApp Templates is required.</comment>
-                                <validate>validate-digits</validate>
+                            <field id="fallback_whatsapp_template_id" translate="label comment" type="select" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>WhatsApp template</label>
+                                <comment>Only used when the fallback channel above is WhatsApp - send_whatsapp always sends an approved template message, never free text, so only APPROVED templates are offered here.</comment>
+                                <source_model>Ordo\Automation\Model\Config\Source\WhatsAppTemplateOptions</source_model>
                                 <depends><field id="fallback_enabled">1</field></depends>
                             </field>
                         </group>

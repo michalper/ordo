@@ -299,35 +299,38 @@ coupon/channel/device/geography.
   fixed together; verified against the real running admin (a crafted POST to the real
   `ordo/campaign/save` endpoint, not just unit tests): the leak is gone and
   `send_whatsapp`'s `template_id`/`params` now save correctly.
-- **Five more free-text fields with the same "references real data, no autocomplete" shape the
-  tag field had** — found by a dedicated survey while scoping the tag multiselect work above (see
-  `docs/adr/0018`). Not done in this pass; grouped here as one roadmap entry, not five, since
-  several share a fix:
-  - `event_key` ("SKU (optional)") — `event_occurred` condition, used in both `Flow.php` (campaign
-    canvas) and `ordo_segment_form.xml` (segment editor). Semantically identical to the already-
-    autocompleted `sku` field but not matched by `segment-sku-autocomplete.js`'s own field-name
-    regex (only matches `[sku]`). One shared fix, 2 consumers.
-  - `rule_id` ("Cart price rule ID") — `generate_coupon` campaign action and the dynamic content
-    block's rule-based product source. Plain numeric text, zero select anywhere referencing
-    `salesrule`. Risky: `GenerateCoupon::execute()` catches a bad `rule_id` and only logs — the
-    send silently proceeds with no coupon. One new source (list active cart price rules,
-    `CampaignOptions`-style), 2 consumers.
-  - `category_id` in `ordo_contentblock_form.xml`'s category-based source — plain text even though
-    this exact field already has a proper select elsewhere in the module
-    (`Model\Config\Source\Category`, used by `ordo_segment_form.xml`'s `PurchasedCategory`
-    condition). Cheapest fix of the batch: just reuse the existing source class.
-  - `template` ("Email template identifier") on the `send_email` action — plain text referencing
-    either an XML-registered template or a custom admin-saved one, no source class (unlike
-    WhatsApp, which already has `WhatsAppTemplateOptions`). Risky the same way `rule_id` is:
-    `TransportBuilder::getTransport()` throws on a bad identifier, caught and only logged — the
-    campaign silently never emails.
-  - `fallback_whatsapp_template_id` (`etc/adminhtml/system.xml`, Abandoned Cart Recovery) —
-    easiest fix of the whole list: `Model\Config\Source\WhatsAppTemplateOptions` already exists
-    and is already used for this exact lookup in `send_whatsapp`'s own `template_id` field, just
-    needs `source_model` wired into this one config field instead of a free digit-only text input.
+- ~~Five more free-text fields with the same "references real data, no autocomplete" shape the
+  tag field had~~ — shipped, all five:
+  - `event_key` ("SKU (optional)") on the `event_occurred` condition now gets the same
+    autocomplete the `sku` field already had, in both `Flow.php`'s canvas and
+    `ordo_segment_form.xml`/`ordo_campaign_form.xml`'s classic editors — one shared fix
+    (`segment-sku-autocomplete.js`'s field-name regex now matches `[sku]` or `[event_key]`), two
+    consumers.
+  - `rule_id` ("Cart price rule") on `generate_coupon` and the content block's rule-based source
+    is now a proper select, backed by a new `Model\Config\Source\CartPriceRuleOptions` (active
+    rules that actually use a coupon code, excluding "No Coupon" rules). Wired into
+    `ordo_campaign_form.xml`, `ordo_contentblock_form.xml`, and `Flow.php`'s canvas.
+  - `category_id` in `ordo_contentblock_form.xml` now reuses the existing
+    `Model\Config\Source\Category` source instead of a plain text input.
+  - `template` ("Email template") on `send_email` is now a select, backed by a new
+    `Model\Config\Source\EmailTemplateOptions` combining every XML-registered default template
+    (`Magento\Email\Model\Template\Config::getAvailableTemplates()`, not scoped to this module)
+    with every admin-saved/customized DB row. Wired into `ordo_campaign_form.xml` and `Flow.php`'s
+    canvas.
+  - `fallback_whatsapp_template_id` (`etc/adminhtml/system.xml`, Abandoned Cart Recovery) now
+    reuses the existing `Model\Config\Source\WhatsAppTemplateOptions`, same as `send_whatsapp`'s
+    own `template_id` field.
 
-  Combined scope: medium (one new source for `rule_id`, one new source for `template`, two cheap
-  reuses, one autocomplete-regex extension).
+  Verified against the real running admin: created a real active, coupon-based cart price rule and
+  confirmed it appears in both the Flow canvas's and the content block form's `rule_id`
+  selects; confirmed the `send_email` canvas field lists both a DB-saved template and core XML
+  defaults; confirmed `event_key`'s autocomplete fires a real `segment/productsearch` request and
+  fills in a real SKU on selection, in the segment editor; confirmed the WhatsApp template system
+  config field renders as a select with the translated label/comment. Caught along the way: the
+  JS/CSV changes weren't visible in this `production`-mode sandbox until
+  `setup:static-content:deploy -f pl_PL -a adminhtml` was re-run and `pub/static`'s stale copy was
+  cleared — a plain `composer update`/cache-flush isn't enough for JS-side changes outside
+  developer mode.
 - ~~`campaign-flow-editor.js` has no i18n at all~~ — shipped (see ADR 0019): wrapped all 33
   hardcoded strings in `campaign-flow-editor.js` plus 2 in `tag-chip-editor.js`, and — found only
   by verifying against a real Polish admin session, not visible from the diff alone — fixed the

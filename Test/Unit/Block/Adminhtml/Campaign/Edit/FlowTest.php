@@ -18,6 +18,8 @@ use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
 use Ordo\Automation\Model\ContentBlock;
 use Ordo\Automation\Model\Config\Source\CampaignOptions;
+use Ordo\Automation\Model\Config\Source\CartPriceRuleOptions;
+use Ordo\Automation\Model\Config\Source\EmailTemplateOptions;
 use Ordo\Automation\Model\Config\Source\EventType;
 use Ordo\Automation\Model\Config\Source\LoyaltyTier;
 use Ordo\Automation\Model\Config\Source\MessageEngagementType;
@@ -52,6 +54,8 @@ class FlowTest extends TestCase
     private CampaignOptions $campaignOptions;
     private MessageEngagementType $messageEngagementTypeOptions;
     private TagMatchMode $tagMatchModeOptions;
+    private CartPriceRuleOptions $cartPriceRuleOptions;
+    private EmailTemplateOptions $emailTemplateOptions;
 
     protected function setUp(): void
     {
@@ -78,6 +82,10 @@ class FlowTest extends TestCase
         // Also real/no dependencies, same reasoning as eventTypeOptions above.
         $this->messageEngagementTypeOptions = new MessageEngagementType();
         $this->tagMatchModeOptions = new TagMatchMode();
+        $this->cartPriceRuleOptions = $this->createStub(CartPriceRuleOptions::class);
+        $this->cartPriceRuleOptions->method('toOptionArray')->willReturn([]);
+        $this->emailTemplateOptions = $this->createStub(EmailTemplateOptions::class);
+        $this->emailTemplateOptions->method('toOptionArray')->willReturn([]);
         $this->triggerEventSource = $this->createStub(TriggerEvent::class);
         $this->triggerEventSource->method('toOptionArray')->willReturn([
             ['value' => 'order_placed', 'label' => __('Order Placed')],
@@ -115,6 +123,8 @@ class FlowTest extends TestCase
             $this->campaignOptions,
             $this->messageEngagementTypeOptions,
             $this->tagMatchModeOptions,
+            $this->cartPriceRuleOptions,
+            $this->emailTemplateOptions,
             [],
             $this->createStub(JsonHelper::class),
             $this->createStub(DirectoryHelper::class)
@@ -402,7 +412,7 @@ class FlowTest extends TestCase
         );
         self::assertSame(
             [
-                ['name' => 'rule_id', 'label' => 'Cart price rule ID'],
+                ['name' => 'rule_id', 'label' => 'Cart price rule', 'options' => []],
                 ['name' => 'prefix', 'label' => 'Coupon code prefix'],
             ],
             $config['action']['generate_coupon']
@@ -572,6 +582,32 @@ class FlowTest extends TestCase
         ]);
 
         self::assertSame([9 => 'VIP customers'], $this->makeBlock()->getSegmentOptions());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetCartPriceRuleOptionsMapsRuleIdToName(): void
+    {
+        $this->cartPriceRuleOptions = $this->createStub(CartPriceRuleOptions::class);
+        $this->cartPriceRuleOptions->method('toOptionArray')->willReturn([
+            ['value' => 5, 'label' => '10% Off'],
+        ]);
+
+        self::assertSame([5 => '10% Off'], $this->makeBlock()->getCartPriceRuleOptions());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetEmailTemplateOptionsMapsIdentifierToLabel(): void
+    {
+        $this->emailTemplateOptions = $this->createStub(EmailTemplateOptions::class);
+        $this->emailTemplateOptions->method('toOptionArray')->willReturn([
+            ['value' => 'ordo_campaign_generic', 'label' => 'Generic Campaign Email'],
+            ['value' => 12, 'label' => 'Custom Welcome'],
+        ]);
+
+        self::assertSame(
+            ['ordo_campaign_generic' => 'Generic Campaign Email', 12 => 'Custom Welcome'],
+            $this->makeBlock()->getEmailTemplateOptions()
+        );
     }
 
     #[AllowMockObjectsWithoutExpectations]

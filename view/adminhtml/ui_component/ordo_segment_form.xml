@@ -2965,7 +2965,7 @@
                     <settings>
                         <dataType>text</dataType>
                         <label translate="true">SKU (optional)</label>
-                        <notice translate="true">Leave blank to match any product.</notice>
+                        <notice translate="true">Leave blank to match any product. Start typing to search the catalog.</notice>
                         <visible>false</visible>
                     </settings>
                 </field>

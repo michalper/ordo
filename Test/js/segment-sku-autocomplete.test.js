@@ -35,13 +35,15 @@ function flushPromises() {
 }
 
 QUnit.module('Ordo_Automation/js/segment-sku-autocomplete', function () {
-    QUnit.test('isSkuField() matches a top-level condition row\'s sku field, nothing else', function (assert) {
+    QUnit.test('isSkuField() matches a top-level condition row\'s sku or event_key field, nothing else', function (assert) {
         const api = loadModule(MODULE_PATH);
 
         assert.true(api.isSkuField(global.$('<input name="conditions[conditions][2][sku]">')));
         assert.true(api.isSkuField(global.$('<input name="conditions[conditions][0][sku]">')));
+        assert.true(api.isSkuField(global.$('<input name="conditions[conditions][3][event_key]">')));
         assert.false(api.isSkuField(global.$('<input name="conditions[conditions][2][tag]">')));
         assert.false(api.isSkuField(global.$('<input name="conditions[conditions][2][category_id]">')));
+        assert.false(api.isSkuField(global.$('<input name="conditions[conditions][2][event_type]">')));
         assert.false(api.isSkuField(global.$('<input>')));
     });
 

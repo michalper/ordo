@@ -403,19 +403,33 @@
                 </select>
             </formElements>
         </field>
-        <field name="category_id" formElement="input" sortOrder="54">
+        <field name="category_id" formElement="select" sortOrder="54">
             <settings>
                 <dataType>text</dataType>
-                <label translate="true">Category ID</label>
+                <label translate="true">Category</label>
                 <visible>false</visible>
             </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options class="Ordo\Automation\Model\Config\Source\Category"/>
+                    </settings>
+                </select>
+            </formElements>
         </field>
-        <field name="rule_id" formElement="input" sortOrder="55">
+        <field name="rule_id" formElement="select" sortOrder="55">
             <settings>
                 <dataType>text</dataType>
-                <label translate="true">Cart Price Rule ID</label>
+                <label translate="true">Cart Price Rule</label>
                 <visible>false</visible>
             </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options class="Ordo\Automation\Model\Config\Source\CartPriceRuleOptions"/>
+                    </settings>
+                </select>
+            </formElements>
         </field>
         <field name="product_feed_item_count" formElement="input" sortOrder="56">
             <argument name="data" xsi:type="array">

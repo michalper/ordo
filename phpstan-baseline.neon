@@ -2128,6 +2128,18 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
+			path: Model/Config/Source/CartPriceRuleOptions.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/Config/Source/CartPriceRuleOptions.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
 			path: Model/Config/Source/Category.php
 
 		-
@@ -2147,6 +2159,30 @@ parameters:
 			identifier: cast.string
 			count: 2
 			path: Model/Config/Source/CustomerAttribute.php
+
+		-
+			message: '#^Cannot access offset ''label'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/Config/Source/EmailTemplateOptions.php
+
+		-
+			message: '#^Cannot access offset ''value'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/Config/Source/EmailTemplateOptions.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Config/Source/EmailTemplateOptions.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
+			path: Model/Config/Source/EmailTemplateOptions.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'

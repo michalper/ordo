@@ -1,19 +1,23 @@
 /**
- * SKU autocomplete for the Segment/Campaign "Purchased Product (SKU)" condition's dedicated `sku`
- * field - a trimmed version of free-gift-offer-form.js's own autocomplete half (search-as-you-type
- * dropdown of matching products), reusing the exact same search idiom (plain fetch(),
- * mousedown-before-blur row selection - see that file's own comments for why each of those choices
- * exists) against this module's own Segment-namespaced endpoint
- * (Controller/Adminhtml/Segment/ProductSearch.php) instead of cross-calling FreeGiftOffer's.
+ * SKU autocomplete for the Segment/Campaign dynamicRows editor's two SKU-shaped dedicated fields:
+ * `sku` (the "Purchased Product (SKU)" condition) and `event_key` (the `event_occurred`
+ * condition's own optional "SKU (optional)" field - semantically identical to `sku`, just a
+ * different dedicated field name since the two conditions were added separately; ROADMAP.md
+ * tracked this gap before it had autocomplete at all). A trimmed version of
+ * free-gift-offer-form.js's own autocomplete half (search-as-you-type dropdown of matching
+ * products), reusing the exact same search idiom (plain fetch(), mousedown-before-blur row
+ * selection - see that file's own comments for why each of those choices exists) against this
+ * module's own Segment-namespaced endpoint (Controller/Adminhtml/Segment/ProductSearch.php)
+ * instead of cross-calling FreeGiftOffer's.
  *
  * The debounced input handling the two files once held in common now lives in
  * Ordo_Automation/js/sku-suggest (see its own docblock); everything below is this page's own half -
  * its endpoint, its field-name predicate, its dropdown markup, its focusout handling.
  *
- * Deliberately NOT the bulk "+ Choose from Catalog" modal / chip-rendering half of that file: a
- * purchased_sku condition has exactly one SKU value per condition row, not a repeatable list, so
- * there's nothing to bulk-add and no second value to show a persistent chip for once the field
- * already displays the SKU itself.
+ * Deliberately NOT the bulk "+ Choose from Catalog" modal / chip-rendering half of that file:
+ * neither of these two conditions take more than one SKU value per condition row, so there's
+ * nothing to bulk-add and no second value to show a persistent chip for once the field already
+ * displays the SKU itself.
  */
 /**
  * @param {jQuery} $el
@@ -22,7 +26,7 @@
 function isSkuField($el) {
     var name = $el.attr('name') || '';
 
-    return /^conditions\[conditions]\[\d+]\[sku]$/.test(name);
+    return /^conditions\[conditions]\[\d+]\[(sku|event_key)]$/.test(name);
 }
 
 define([

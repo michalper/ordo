@@ -2270,7 +2270,7 @@
                     <settings>
                         <dataType>text</dataType>
                         <label translate="true">SKU (optional)</label>
-                        <notice translate="true">Leave blank to match any product.</notice>
+                        <notice translate="true">Leave blank to match any product. Start typing to search the catalog.</notice>
                         <visible>false</visible>
                     </settings>
                 </field>
@@ -2802,12 +2802,19 @@
                         <visible>false</visible>
                     </settings>
                 </field>
-                <field name="rule_id" formElement="input" sortOrder="16">
+                <field name="rule_id" formElement="select" sortOrder="16">
                     <settings>
                         <dataType>text</dataType>
-                        <label translate="true">Cart price rule ID</label>
+                        <label translate="true">Cart price rule</label>
                         <visible>false</visible>
                     </settings>
+                    <formElements>
+                        <select>
+                            <settings>
+                                <options class="Ordo\Automation\Model\Config\Source\CartPriceRuleOptions"/>
+                            </settings>
+                        </select>
+                    </formElements>
                 </field>
                 <field name="prefix" formElement="input" sortOrder="17">
                     <settings>
@@ -2816,12 +2823,19 @@
                         <visible>false</visible>
                     </settings>
                 </field>
-                <field name="template" formElement="input" sortOrder="18">
+                <field name="template" formElement="select" sortOrder="18">
                     <settings>
                         <dataType>text</dataType>
-                        <label translate="true">Email template identifier</label>
+                        <label translate="true">Email template</label>
                         <visible>false</visible>
                     </settings>
+                    <formElements>
+                        <select>
+                            <settings>
+                                <options class="Ordo\Automation\Model\Config\Source\EmailTemplateOptions"/>
+                            </settings>
+                        </select>
+                    </formElements>
                 </field>
                 <field name="message" formElement="textarea" sortOrder="19">
                     <settings>

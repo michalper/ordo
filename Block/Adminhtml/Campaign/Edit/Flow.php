@@ -18,6 +18,8 @@ use Ordo\Automation\Model\CampaignAction;
 use Ordo\Automation\Model\CampaignCondition;
 use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\Config\Source\CampaignOptions;
+use Ordo\Automation\Model\Config\Source\CartPriceRuleOptions;
+use Ordo\Automation\Model\Config\Source\EmailTemplateOptions;
 use Ordo\Automation\Model\Config\Source\EventType;
 use Ordo\Automation\Model\Config\Source\LoyaltyTier;
 use Ordo\Automation\Model\Config\Source\MessageEngagementType;
@@ -67,6 +69,8 @@ class Flow extends Template
         private readonly CampaignOptions $campaignOptions,
         private readonly MessageEngagementType $messageEngagementTypeOptions,
         private readonly TagMatchMode $tagMatchModeOptions,
+        private readonly CartPriceRuleOptions $cartPriceRuleOptions,
+        private readonly EmailTemplateOptions $emailTemplateOptions,
         array $data = [],
         ?JsonHelper $jsonHelper = null,
         ?DirectoryHelper $directoryHelper = null
@@ -202,6 +206,29 @@ class Flow extends Template
     public function getSegmentOptions(): array
     {
         return $this->toMap($this->segmentOptions);
+    }
+
+    /**
+     * rule_id => rule name - the generate_coupon action's own rule_id field, and the content
+     * block product feed's rule-based source (Model\Config\Source\CartPriceRuleOptions - same
+     * active/uses-a-coupon filter either way).
+     *
+     * @return array<int|string, string>
+     */
+    public function getCartPriceRuleOptions(): array
+    {
+        return $this->toMap($this->cartPriceRuleOptions);
+    }
+
+    /**
+     * template identifier (string code or numeric DB id) => label - the send_email action's own
+     * template field (Model\Config\Source\EmailTemplateOptions).
+     *
+     * @return array<int|string, string>
+     */
+    public function getEmailTemplateOptions(): array
+    {
+        return $this->toMap($this->emailTemplateOptions);
     }
 
     /**
@@ -388,11 +415,19 @@ class Flow extends Template
                 'add_tag' => [['name' => 'tags', 'label' => (string) __('Tags'), 'type' => 'tag_multiselect']],
                 'add_points' => [['name' => 'points', 'label' => (string) __('Points')]],
                 'generate_coupon' => [
-                    ['name' => 'rule_id', 'label' => (string) __('Cart price rule ID')],
+                    [
+                        'name' => 'rule_id',
+                        'label' => (string) __('Cart price rule'),
+                        'options' => $this->getCartPriceRuleOptions(),
+                    ],
                     ['name' => 'prefix', 'label' => (string) __('Coupon code prefix')],
                 ],
                 'send_email' => [
-                    ['name' => 'template', 'label' => (string) __('Email template identifier')],
+                    [
+                        'name' => 'template',
+                        'label' => (string) __('Email template'),
+                        'options' => $this->getEmailTemplateOptions(),
+                    ],
                     ['name' => 'message', 'label' => (string) __('Message')],
                     [
                         'name' => 'use_optimal_send_time',
