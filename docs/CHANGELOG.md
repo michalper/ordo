@@ -5,6 +5,34 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- **Curated campaign template library** (ROADMAP.md "Candidate new features") — new
+  `Model\Campaign\TemplateLibrary` with 3 ready-to-use starting points (Welcome Series, Cart
+  Abandonment Follow-up, VIP Upsell), a gallery page (`Controller/Adminhtml/Campaign/Library.php`,
+  reachable from the campaign grid's new "Browse Template Library" button) that hands a chosen
+  template's payload straight to the existing `CampaignImporter::import()`. Every imported
+  template starts `enabled: false` so the admin can review/fill in merchant-specific fields
+  (`rule_id`, email copy) before anything sends. Win-back was deliberately not included — it's
+  not buildable with the engine's current primitives, see `docs/adr/0020`.
+
+### Fixed
+
+- **`campaign-flow-editor.js` and `Model\Campaign\TypeLabels` had no i18n at all** — all 33
+  hardcoded JS strings plus 2 in `tag-chip-editor.js` wrapped in `__()`/`$t()`, and the much
+  bigger pre-existing gap this exposed: every condition/action type label and condition-category
+  group name (33 labels + 5 categories, including `clv_at_least` and `send_webhook`, which had no
+  label at all in any language) had never been translated. 73 new phrase keys added across all 11
+  translated locale CSVs. See `docs/adr/0019`.
+- **`ordo_campaign_importform_index.xml`/`ordo_segment_importform_index.xml` had the wrong layout
+  handle filename** — an extra, incorrect `_index` suffix no other single-action layout file in
+  this module has, meaning the "Import Campaign"/"Import Segment" pages' own upload form had never
+  actually rendered through the real admin UI since they shipped. Found while building the
+  template library's own gallery page the same (wrong) way. Both renamed to the correct
+  `ordo_campaign_importform.xml`/`ordo_segment_importform.xml`.
+- **`.ordo-tag-chip-input` had no real styling** — fell back to stark browser-default input
+  chrome; now matches the border/padding/radius of its sibling admin fields.
+
 ## [1.3.0] - 2026-11-04
 
 Closes out GitHub issue #261's multi-store/multi-website gap list (see `ROADMAP.md` item 5 and
