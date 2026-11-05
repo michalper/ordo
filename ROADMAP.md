@@ -94,13 +94,17 @@ is concentrated in multi-store; PHP 8.3 and Hyvä were mostly already fine or tr
   Verified in a real browser: both buttons now reach their controllers (`RefreshStatus` surfaces
   its own "nothing to refresh yet" business-logic message; `SubmitForReview` makes a real outbound
   Graph API call and surfaces *that* error) instead of 404ing.
-- **No field anywhere documents what a WhatsApp template's `{{1}}`, `{{2}}`, ... positional
-  placeholders actually mean for that specific template** — raised directly by a user looking at
-  the `send_whatsapp` action's body-text notice (`Block/Adminhtml/WhatsAppTemplate` form). The
-  mapping only exists in whoever configured the campaign's own memory; the template's `name` field
-  is admin-facing only (not sent to Meta) but today holds just a label, not a placeholder legend.
-  Needs product scoping (e.g. a free-text "placeholder legend" field on the template, or validating
-  the campaign action's own `params` count against the template's `{{N}}` count at save time).
+- ~~No field anywhere documents what a WhatsApp template's `{{1}}`, `{{2}}`, ... positional
+  placeholders actually mean for that specific template~~ — shipped: new nullable
+  `placeholder_legend` text column on `ordo_whatsapp_template`, a free-text field on the
+  WhatsApp Template edit form ("e.g. `{{1}} = first name, {{2}} = order number`"), and
+  `Model\Config\Source\WhatsAppTemplateOptions` now appends it to the template's label wherever
+  that option list is used — the `send_whatsapp` action's `template_id` picker in `Flow.php`'s
+  canvas, the only consumer. Chose this over validating `params` count against the template's
+  `{{N}}` count at save time (the other option this item originally floated): a count check
+  catches a mismatch but still leaves the admin guessing what each slot *means*, which was the
+  actual complaint. Verified against the real admin: a template saved with a legend shows
+  `"Name (legend text)"` in the campaign canvas's own template dropdown.
 
 ## Documentation
 

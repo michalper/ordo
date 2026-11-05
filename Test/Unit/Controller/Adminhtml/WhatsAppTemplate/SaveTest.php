@@ -53,6 +53,7 @@ class SaveTest extends AbstractAdminActionTestCase
             'category' => 'utility',
             'language' => 'en_US',
             'body_text' => 'Hi {{1}}, your order {{2}} shipped',
+            'placeholder_legend' => '{{1}} = first name, {{2}} = order number',
         ];
         $this->request->method('getPostValue')->willReturn($postData);
         $this->request->method('getParam')->willReturnMap([['back', null]]);
@@ -68,6 +69,8 @@ class SaveTest extends AbstractAdminActionTestCase
         $template->expects(self::once())->method('setCategory')->with('utility');
         $template->expects(self::once())->method('setLanguage')->with('en_US');
         $template->expects(self::once())->method('setBodyText')->with('Hi {{1}}, your order {{2}} shipped');
+        $template->expects(self::once())->method('setPlaceholderLegend')
+            ->with('{{1}} = first name, {{2}} = order number');
         $template->expects(self::once())->method('setStatus')->with(WhatsAppTemplate::STATUS_DRAFT);
         $template->expects(self::once())->method('setMetaTemplateId')->with(null);
         $template->expects(self::once())->method('setRejectionReason')->with(null);

@@ -1119,3 +1119,5 @@
 "Email template","Шаблон електронного листа"
 "Cart price rule","Правило ціни кошика"
 "Leave blank to match any product. Start typing to search the catalog.","Залиште порожнім, щоб відповідати будь-якому товару. Почніть вводити текст для пошуку в каталозі."
+"Placeholder legend (optional)","Легенда плейсхолдерів (необов'язково)"
+"What each {{1}}, {{2}}, ... above actually means for this template, e.g. ""{{1}} = first name, {{2}} = order number"" - shown next to this template everywhere a campaign's ""Send WhatsApp"" action picks it, so configuring the action does not depend on remembering what you meant here.","Що означає кожен плейсхолдер {{1}}, {{2}}, ... вище для цього шаблону, наприклад «{{1}} = ім'я, {{2}} = номер замовлення» — відображається поруч із цим шаблоном усюди, де дія кампанії «Надіслати WhatsApp» вибирає його, тому налаштування дії не залежить від запам'ятовування того, що ви мали на увазі тут."

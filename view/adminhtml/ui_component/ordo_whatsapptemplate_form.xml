@@ -112,6 +112,13 @@
                 </validation>
             </settings>
         </field>
+        <field name="placeholder_legend" formElement="textarea" sortOrder="55">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Placeholder legend (optional)</label>
+                <notice translate="true">What each {{1}}, {{2}}, ... above actually means for this template, e.g. "{{1}} = first name, {{2}} = order number" - shown next to this template everywhere a campaign's "Send WhatsApp" action picks it, so configuring the action does not depend on remembering what you meant here.</notice>
+            </settings>
+        </field>
         <field name="status" formElement="input" sortOrder="60">
             <settings>
                 <dataType>text</dataType>

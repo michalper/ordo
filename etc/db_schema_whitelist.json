@@ -949,6 +949,7 @@
             "category": true,
             "language": true,
             "body_text": true,
+            "placeholder_legend": true,
             "meta_template_id": true,
             "status": true,
             "rejection_reason": true,

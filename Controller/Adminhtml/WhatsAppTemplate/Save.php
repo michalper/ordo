@@ -44,6 +44,11 @@ class Save extends AbstractWhatsAppTemplateAction implements HttpPostActionInter
             $template->setCategory((string) ($data['category'] ?? ''));
             $template->setLanguage((string) ($data['language'] ?? 'en_US'));
             $template->setBodyText((string) ($data['body_text'] ?? ''));
+            $template->setPlaceholderLegend(
+                trim((string) ($data['placeholder_legend'] ?? '')) !== ''
+                    ? trim((string) $data['placeholder_legend'])
+                    : null
+            );
 
             // Editing the actual template text after it was already submitted/approved/rejected
             // invalidates whatever Meta has on file - back to draft, needs SubmitForReview again,

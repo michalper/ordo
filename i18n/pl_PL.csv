@@ -1119,3 +1119,5 @@
 "Email template","Szablon e-maila"
 "Cart price rule","Reguła cenowa koszyka"
 "Leave blank to match any product. Start typing to search the catalog.","Pozostaw puste, aby dopasować każdy produkt. Zacznij pisać, aby przeszukać katalog."
+"Placeholder legend (optional)","Legenda placeholderów (opcjonalnie)"
+"What each {{1}}, {{2}}, ... above actually means for this template, e.g. ""{{1}} = first name, {{2}} = order number"" - shown next to this template everywhere a campaign's ""Send WhatsApp"" action picks it, so configuring the action does not depend on remembering what you meant here.","Co oznacza każdy z powyższych placeholderów {{1}}, {{2}}, ... dla tego szablonu, np. „{{1}} = imię, {{2}} = numer zamówienia” — widoczne przy tym szablonie wszędzie tam, gdzie wybiera go akcja kampanii „Wyślij WhatsApp”, więc konfigurowanie akcji nie wymaga pamiętania, co miałeś na myśli tutaj."

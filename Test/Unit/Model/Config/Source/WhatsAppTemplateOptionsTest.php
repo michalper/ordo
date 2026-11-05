@@ -18,6 +18,7 @@ class WhatsAppTemplateOptionsTest extends TestCase
         $templateA = $this->createStub(WhatsAppTemplate::class);
         $templateA->method('getEntityId')->willReturn(1);
         $templateA->method('getName')->willReturn('Order Shipped');
+        $templateA->method('getPlaceholderLegend')->willReturn(null);
 
         $collection = $this->createMock(WhatsAppTemplateCollection::class);
         $collection->expects(self::once())->method('addApprovedFilter')->willReturnSelf();
@@ -30,6 +31,28 @@ class WhatsAppTemplateOptionsTest extends TestCase
 
         self::assertSame([
             ['value' => 1, 'label' => 'Order Shipped'],
+        ], $options);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testToOptionArrayAppendsThePlaceholderLegendWhenSet(): void
+    {
+        $templateA = $this->createStub(WhatsAppTemplate::class);
+        $templateA->method('getEntityId')->willReturn(1);
+        $templateA->method('getName')->willReturn('Order Shipped');
+        $templateA->method('getPlaceholderLegend')->willReturn('{{1}} = first name, {{2}} = order number');
+
+        $collection = $this->createStub(WhatsAppTemplateCollection::class);
+        $collection->method('addApprovedFilter')->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$templateA]));
+
+        $collectionFactory = $this->createStub(WhatsAppTemplateCollectionFactory::class);
+        $collectionFactory->method('create')->willReturn($collection);
+
+        $options = (new WhatsAppTemplateOptions($collectionFactory))->toOptionArray();
+
+        self::assertSame([
+            ['value' => 1, 'label' => 'Order Shipped ({{1}} = first name, {{2}} = order number)'],
         ], $options);
     }
 }

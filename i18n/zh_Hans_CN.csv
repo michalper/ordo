@@ -1119,3 +1119,5 @@
 "Email template","电子邮件模板"
 "Cart price rule","购物车价格规则"
 "Leave blank to match any product. Start typing to search the catalog.","留空以匹配任何产品。开始输入即可搜索目录。"
+"Placeholder legend (optional)","占位符说明（可选）"
+"What each {{1}}, {{2}}, ... above actually means for this template, e.g. ""{{1}} = first name, {{2}} = order number"" - shown next to this template everywhere a campaign's ""Send WhatsApp"" action picks it, so configuring the action does not depend on remembering what you meant here.","上面的每个占位符 {{1}}、{{2}}、... 对此模板的具体含义，例如""{{1}} = 名字，{{2}} = 订单号"" — 在营销活动的""发送 WhatsApp""操作选择此模板的任何地方都会显示在旁边，因此配置该操作时无需记住您此处的意图。"

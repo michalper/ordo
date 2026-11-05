@@ -1119,3 +1119,5 @@
 "Email template","E-mailsjabloon"
 "Cart price rule","Winkelwagen-prijsregel"
 "Leave blank to match any product. Start typing to search the catalog.","Laat leeg om elk product te matchen. Begin te typen om de catalogus te doorzoeken."
+"Placeholder legend (optional)","Plaatshouderlegenda (optioneel)"
+"What each {{1}}, {{2}}, ... above actually means for this template, e.g. ""{{1}} = first name, {{2}} = order number"" - shown next to this template everywhere a campaign's ""Send WhatsApp"" action picks it, so configuring the action does not depend on remembering what you meant here.","Wat elke bovenstaande plaatshouder {{1}}, {{2}}, ... voor deze sjabloon betekent, bijv. ""{{1}} = voornaam, {{2}} = bestelnummer"" - wordt getoond naast deze sjabloon overal waar de campagneactie ""WhatsApp verzenden"" deze kiest, zodat het configureren van de actie niet afhangt van het onthouden van wat u hier bedoelde."

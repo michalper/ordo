@@ -56,6 +56,18 @@ class WhatsAppTemplateTest extends AbstractModelTestCase
         self::assertSame('Hi {{1}}, your order {{2}} shipped', $model->getBodyText());
     }
 
+    public function testPlaceholderLegendRoundTrip(): void
+    {
+        $model = $this->makeModel();
+        self::assertNull($model->getPlaceholderLegend());
+
+        $model->setPlaceholderLegend('{{1}} = first name, {{2}} = order number');
+        self::assertSame('{{1}} = first name, {{2}} = order number', $model->getPlaceholderLegend());
+
+        $model->setPlaceholderLegend(null);
+        self::assertNull($model->getPlaceholderLegend());
+    }
+
     public function testMetaTemplateIdRoundTrip(): void
     {
         $model = $this->makeModel();

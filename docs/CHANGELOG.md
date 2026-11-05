@@ -23,6 +23,11 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   `docs/adr/0021`.
 - **Czech (`cs_CZ`) added as a supported locale** — real pre-adoption interest (GitHub issue #261,
   a Czech company) prompted adding it alongside the other machine-translated locales.
+- **WhatsApp template placeholder legend** (ROADMAP.md "Admin UX") — new optional
+  `placeholder_legend` field on the WhatsApp Template form documenting what `{{1}}`, `{{2}}`, ...
+  mean for that template; surfaced automatically in the `send_whatsapp` campaign action's own
+  template picker (`Model\Config\Source\WhatsAppTemplateOptions`) so configuring the action
+  never depends on remembering what the template's author meant.
 
 ### Fixed
 

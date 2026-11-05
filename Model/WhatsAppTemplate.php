@@ -89,6 +89,18 @@ class WhatsAppTemplate extends AbstractModel
         return $this;
     }
 
+    public function getPlaceholderLegend(): ?string
+    {
+        $value = $this->getData('placeholder_legend');
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setPlaceholderLegend(?string $placeholderLegend): self
+    {
+        $this->setData('placeholder_legend', $placeholderLegend);
+        return $this;
+    }
+
     public function getMetaTemplateId(): ?string
     {
         $value = $this->getData('meta_template_id');

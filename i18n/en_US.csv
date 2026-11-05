@@ -345,3 +345,5 @@
 "Email template","Email template"
 "Cart price rule","Cart price rule"
 "Leave blank to match any product. Start typing to search the catalog.","Leave blank to match any product. Start typing to search the catalog."
+"Placeholder legend (optional)","Placeholder legend (optional)"
+"What each {{1}}, {{2}}, ... above actually means for this template, e.g. ""{{1}} = first name, {{2}} = order number"" - shown next to this template everywhere a campaign's ""Send WhatsApp"" action picks it, so configuring the action does not depend on remembering what you meant here.","What each {{1}}, {{2}}, ... above actually means for this template, e.g. ""{{1}} = first name, {{2}} = order number"" - shown next to this template everywhere a campaign's ""Send WhatsApp"" action picks it, so configuring the action does not depend on remembering what you meant here."
