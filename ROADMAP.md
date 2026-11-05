@@ -82,6 +82,25 @@ is concentrated in multi-store; PHP 8.3 and Hyvä were mostly already fine or tr
   `ordo_orderapproval_listing.xml`, `ordo_productfeedrunlog_listing.xml`.
 - Add responsive breakpoints to `campaign-form.css`, `segment-form.css`, `whatsapp-template-form.css`,
   `free-gift-offer-form.css` — check at tablet width first, they already lean on `flex-wrap` throughout.
+- **`WhatsAppTemplate\Edit\SubmitForReviewButton`/`RefreshStatusButton` 404 when clicked** — found
+  while fixing the identical bug in `Shared\Edit\DeleteButton` and this module's new
+  `EmailTemplateDraft\Edit\PublishButton` (see `docs/adr/0021-email-template-drafts.md`): both call
+  `deleteConfirm('message', 'url')` (2 args), which navigates via a plain GET
+  (`mage/adminhtml/globals.js`'s `setLocation()`). Their own controllers
+  (`SubmitForReview`/`RefreshStatus`) implement `HttpPostActionInterface` only, so
+  `app/etc/di.xml`'s HTTP-method map rejects the GET before it dispatches — a 404, not a
+  framework quirk. Fix is mechanical: add a third `{data: {}}` argument (`mage/dataPost.js`'s
+  real-POST-with-form_key form), same as the already-fixed `DeleteButton`/`PublishButton`. Not
+  fixed here since it's unrelated to email template drafts — a real, pre-existing, user-facing
+  bug (these buttons have likely never worked when clicked from a WhatsApp template's own edit
+  page) nonetheless.
+- **No field anywhere documents what a WhatsApp template's `{{1}}`, `{{2}}`, ... positional
+  placeholders actually mean for that specific template** — raised directly by a user looking at
+  the `send_whatsapp` action's body-text notice (`Block/Adminhtml/WhatsAppTemplate` form). The
+  mapping only exists in whoever configured the campaign's own memory; the template's `name` field
+  is admin-facing only (not sent to Meta) but today holds just a label, not a placeholder legend.
+  Needs product scoping (e.g. a free-text "placeholder legend" field on the template, or validating
+  the campaign action's own `params` count against the template's `{{N}}` count at save time).
 
 ## Documentation
 
@@ -174,9 +193,15 @@ Not prioritized against each other; listed for later scoping with the business/p
   the real admin UI — caught only because copying that same (wrong) naming convention for this
   feature's own new page broke identically. Both renamed to the correct
   `ordo_campaign_importform.xml`/`ordo_segment_importform.xml`.
-- **Email template drafts** — version history is done (`Model\EmailTemplateVersion`, snapshot-on-save +
-  restore). What's left: editing a template's content as a separate draft without touching the live
-  version `send_email` already reads, then publishing it when ready. Medium scope.
+- ~~**Email template drafts**~~ — done, see `docs/adr/0021-email-template-drafts.md`. New
+  `Model\EmailTemplateDraft` (table `ordo_email_template_draft`, one open draft per
+  `email_template.template_id`, DB-enforced via a unique constraint) lets an admin edit a
+  template's subject/content/styles separately from the live row `send_email` reads.
+  `Controller\Adminhtml\EmailTemplateDraft\Publish` copies the draft onto the live template and
+  saves it through the real `Magento\Email\Model\ResourceModel\Template` - the same
+  save-through-core-resource-model trick `EmailTemplateVersion\MassRestore` already uses - so
+  publishing automatically takes a fresh "before publish" snapshot via the existing
+  `SnapshotEmailTemplateVersion` plugin when versioning is enabled, then deletes the draft row.
 - **Cross-campaign revenue/LTV comparison view, and cohort/retention analysis** — ranks/compares
   campaigns against each other, or groups customers by first-purchase month/campaign and tracks how
   their repeat-purchase rate evolves over time, on top of the existing per-campaign funnel view and

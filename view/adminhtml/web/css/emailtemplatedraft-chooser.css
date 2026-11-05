@@ -1,0 +1,26 @@
+/*
+ * Email template draft chooser (Controller\Adminhtml\EmailTemplateDraft\Index) - a single
+ * select+button row above the drafts grid, reusing _tokens.css's shared custom properties the
+ * same way campaign-library.css does.
+ */
+.ordo-email-template-draft-chooser {
+    margin-bottom: 20px;
+}
+
+.ordo-email-template-draft-chooser-intro,
+.ordo-email-template-draft-chooser-empty {
+    max-width: 640px;
+    margin: 0 0 12px;
+    color: var(--ordo-color-muted);
+    font-size: var(--ordo-font-base);
+}
+
+.ordo-email-template-draft-chooser-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ordo-email-template-draft-chooser-form select {
+    min-width: 260px;
+}

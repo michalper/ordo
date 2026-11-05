@@ -338,6 +338,12 @@ $segmentNavDesc = __(
                     'icon' => 'message',
                 ],
                 [
+                    'url' => $block->getUrl('ordo/emailtemplatedraft/index'),
+                    'title' => __('Email Template Drafts'),
+                    'desc' => __('Edit an email template as a draft without touching what send_email currently sends, then publish when ready'),
+                    'icon' => 'inbox',
+                ],
+                [
                     'url' => $block->getUrl('ordo/adaudience/index'),
                     'title' => __('Ad Audiences'),
                     'desc' => __('Sync a segment as a Google Ads / Meta remarketing audience'),

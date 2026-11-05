@@ -32,8 +32,16 @@ class DeleteButton extends GenericButton implements ButtonProviderInterface
         return [
             'label' => __('Delete'),
             'class' => 'delete',
+            // deleteConfirm's 2-argument form (no postData) navigates via a plain GET
+            // (mage/adminhtml/globals.js's setLocation()) - every entity's Delete controller in
+            // this module implements HttpPostActionInterface only, so app/etc/di.xml's HTTP
+            // method map rejects that GET before it ever reaches the controller, 404ing every
+            // edit-form Delete button in this module. The 3-argument form (mage/dataPost.js)
+            // builds and submits a real POST form instead, with form_key auto-attached - same
+            // pattern Magento\Backend\Block\Widget\Form\Container::_construct() uses for core's
+            // own generic Delete button. Found by actually clicking Delete in a real browser.
             'on_click' => sprintf(
-                "deleteConfirm('%s', '%s')",
+                "deleteConfirm('%s', '%s', {data: {}})",
                 __($this->confirmMessage),
                 $this->getUrl('*/*/delete', ['entity_id' => $this->getEntityId()])
             ),

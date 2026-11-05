@@ -174,4 +174,20 @@
             <argument name="confirmMessage" xsi:type="string">Are you sure you want to delete this WhatsApp template?</argument>
         </arguments>
     </virtualType>
+    <virtualType name="OrdoAutomationEmailTemplateDraftSaveButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\SaveButton">
+        <arguments>
+            <argument name="label" xsi:type="string">Save Draft</argument>
+            <argument name="targetName" xsi:type="string">ordo_emailtemplatedraft_form.ordo_emailtemplatedraft_form</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationEmailTemplateDraftSaveAndContinueButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\SaveAndContinueButton">
+        <arguments>
+            <argument name="targetName" xsi:type="string">ordo_emailtemplatedraft_form.ordo_emailtemplatedraft_form</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="OrdoAutomationEmailTemplateDraftDeleteButton" type="Ordo\Automation\Block\Adminhtml\Shared\Edit\DeleteButton">
+        <arguments>
+            <argument name="confirmMessage" xsi:type="string">Are you sure you want to delete this email template draft?</argument>
+        </arguments>
+    </virtualType>
 </config>

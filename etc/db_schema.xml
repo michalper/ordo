@@ -96,6 +96,22 @@
         </index>
     </table>
 
+    <table name="ordo_email_template_draft" resource="default" engine="innodb" comment="One in-progress edit of a Magento email_template row's content, kept separate from the live row send_email reads until explicitly published - at most one open draft per template_id.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="template_id" padding="10" unsigned="true" nullable="false" comment="email_template.template_id this is a draft of"/>
+        <column xsi:type="varchar" name="template_code" nullable="false" length="150" comment="Live template's Template Name, snapshotted for grid display"/>
+        <column xsi:type="varchar" name="template_subject" nullable="false" length="200" comment="Draft Template Subject"/>
+        <column xsi:type="text" name="template_text" nullable="false" comment="Draft Template Content"/>
+        <column xsi:type="text" name="template_styles" nullable="true" comment="Draft Template Styles"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="ORDO_EMAIL_TEMPLATE_DRAFT_TEMPLATE_ID">
+            <column name="template_id"/>
+        </constraint>
+    </table>
+
     <table name="ordo_referral_code" resource="default" engine="innodb" comment="One shareable referral code per customer, generated on first request">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>

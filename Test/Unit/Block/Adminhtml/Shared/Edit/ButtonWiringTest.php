@@ -39,6 +39,11 @@ class ButtonWiringTest extends TestCase
             'saveLabel' => 'Save Content Block',
             'confirmMessage' => 'Are you sure you want to delete this content block?',
         ],
+        'ordo_emailtemplatedraft_form' => [
+            'entity' => 'EmailTemplateDraft',
+            'saveLabel' => 'Save Draft',
+            'confirmMessage' => 'Are you sure you want to delete this email template draft?',
+        ],
         'ordo_free_gift_offer_form' => [
             'entity' => 'FreeGiftOffer',
             'saveLabel' => 'Save Offer',
@@ -88,8 +93,9 @@ class ButtonWiringTest extends TestCase
             }
         }
 
-        // 8 entity forms x 4 shared buttons + RefreshRss, RefreshStatus and SubmitForReview.
-        self::assertSame(35, $buttonsSeen);
+        // 9 entity forms x 4 shared buttons + RefreshRss, RefreshStatus, SubmitForReview and
+        // EmailTemplateDraft's own one-off PublishButton.
+        self::assertSame(40, $buttonsSeen);
     }
 
     /**

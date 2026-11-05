@@ -69,6 +69,21 @@
             "ORDO_REVIEW_REQUEST_LOG_ORDER_ID": true
         }
     },
+    "ordo_email_template_draft": {
+        "column": {
+            "entity_id": true,
+            "template_id": true,
+            "template_code": true,
+            "template_subject": true,
+            "template_text": true,
+            "template_styles": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_EMAIL_TEMPLATE_DRAFT_TEMPLATE_ID": true
+        }
+    },
     "ordo_email_template_version": {
         "column": {
             "entity_id": true,

@@ -47,5 +47,12 @@ class DeleteButtonTest extends TestCase
         self::assertSame(20, $data['sort_order']);
         self::assertStringContainsString('Are you sure you want to delete this campaign?', $data['on_click']);
         self::assertStringContainsString('entity_id/5', $data['on_click']);
+        self::assertStringContainsString(
+            '{data: {}}',
+            $data['on_click'],
+            'Delete must submit a real POST (deleteConfirm\'s 3-arg form) - every entity\'s Delete '
+            . 'controller is HttpPostActionInterface-only, so the 2-arg form\'s plain GET 404s '
+            . 'before reaching the controller.'
+        );
     }
 }

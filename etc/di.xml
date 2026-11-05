@@ -124,6 +124,7 @@
                 <item name="ordo_pushsubscription_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\PushSubscription\Grid\Collection</item>
                 <item name="ordo_pricewatch_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\PriceWatch\PriceWatchSubscription\Grid\Collection</item>
                 <item name="ordo_emailtemplateversion_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\EmailTemplateVersion\Grid\Collection</item>
+                <item name="ordo_emailtemplatedraft_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\EmailTemplateDraft\Grid\Collection</item>
             </argument>
         </arguments>
     </type>
@@ -146,6 +147,13 @@
         <arguments>
             <argument name="mainTable" xsi:type="string">ordo_email_template_version</argument>
             <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\EmailTemplateVersion</argument>
+        </arguments>
+    </virtualType>
+
+    <virtualType name="Ordo\Automation\Model\ResourceModel\EmailTemplateDraft\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">ordo_email_template_draft</argument>
+            <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\EmailTemplateDraft</argument>
         </arguments>
     </virtualType>
 

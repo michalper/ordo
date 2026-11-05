@@ -1,0 +1,33 @@
+<?php
+/**
+ * @var \Ordo\Automation\Block\Adminhtml\EmailTemplateDraft\Chooser $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+$templates = $block->getUndraftedTemplates();
+?>
+<div class="ordo-email-template-draft-chooser">
+    <p class="ordo-email-template-draft-chooser-intro">
+        <?= $escaper->escapeHtml(__(
+            'Start a new draft from a live email template. Templates that already have an open '
+            . 'draft are not listed here - edit the existing draft instead.'
+        )) ?>
+    </p>
+    <?php if ($templates): ?>
+        <form class="ordo-email-template-draft-chooser-form" action="<?= $escaper->escapeUrl($block->getNewDraftUrl()) ?>" method="get">
+            <select name="template_id">
+                <?php foreach ($templates as $template): ?>
+                    <option value="<?= $escaper->escapeHtmlAttr((string) $template['id']) ?>">
+                        <?= $escaper->escapeHtml($template['code']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <button type="submit" class="action-primary">
+                <span><?= $escaper->escapeHtml(__('Start Draft')) ?></span>
+            </button>
+        </form>
+    <?php else: ?>
+        <p class="ordo-email-template-draft-chooser-empty">
+            <?= $escaper->escapeHtml(__('Every email template already has an open draft.')) ?>
+        </p>
+    <?php endif; ?>
+</div>
