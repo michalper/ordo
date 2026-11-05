@@ -4511,3 +4511,9 @@ parameters:
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: Ui/Component/Listing/Column/EmailTemplateDraftActions.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Controller/Adminhtml/Shared/DeletesEntityTrait.php
