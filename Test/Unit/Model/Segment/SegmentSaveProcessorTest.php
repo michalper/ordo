@@ -236,6 +236,41 @@ class SegmentSaveProcessorTest extends TestCase
     }
 
     /**
+     * Regression test: the merge used to consider every dedicated field across every type, not
+     * just the ones the row's own type actually reads, because Magento_Ui's dynamicRows always
+     * posts every field's current value even when switcherConfig hides it for that row's type -
+     * mirrors Model\Campaign\CampaignSaveProcessorTest's own identical regression test.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessDoesNotLeakUnrelatedDedicatedFieldsIntoARowsParams(): void
+    {
+        $processor = $this->makeProcessor();
+
+        $segment = $this->createMock(Segment::class);
+        $segment->method('getEntityId')->willReturn(1);
+        $this->segmentFactory->method('create')->willReturn($segment);
+
+        $condition = $this->createMock(SegmentCondition::class);
+        $condition->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => $data['type'] === 'monetary_total_at_least'
+                && json_decode($data['params'], true) === ['amount' => '100']
+        ));
+        $this->segmentConditionFactory->method('create')->willReturn($condition);
+        $this->segmentConditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+
+        $processor->process([
+            'conditions' => ['conditions' => [[
+                'type' => 'monetary_total_at_least',
+                'amount' => '100',
+                // Posted anyway by dynamicRows even though this row's own type never reads it -
+                // a loyalty_tier_at_least-only field that must not leak into these saved params.
+                'tier' => 'bronze',
+                'params_json' => '',
+            ]]],
+        ]);
+    }
+
+    /**
      * Regression test for the ROADMAP.md "Group condition editor's JSON fallback ... no
      * validation feedback" work: in_segment/not_in_segment/loyalty_tier_at_least now have real
      * dedicated fields (segment_id/tier) instead of requiring a hand-typed params_json.

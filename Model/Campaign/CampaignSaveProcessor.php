@@ -34,18 +34,73 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Website\CollectionFactory as Ca
 class CampaignSaveProcessor
 {
     /**
-     * Dedicated per-type fields the form posts (see ordo_campaign_form.xml switcherConfig) —
-     * whichever of these are non-empty for a row get merged into its params, so the raw JSON
-     * textarea is only needed for a condition/action type that doesn't have one yet.
+     * Which dedicated fields are actually relevant to each condition type - keyed by type, not a
+     * flat list, so normalizeRowParams() only merges a field into a row's params when that row's
+     * own type actually reads it. A flat list used to merge ANY non-empty dedicated field into
+     * EVERY row regardless of type, because Magento_Ui's dynamicRows always posts every field's
+     * current value even when switcherConfig hides it for that row's type - e.g. a
+     * monetary_total_at_least condition's saved params picked up a useless tier: "bronze" key
+     * nobody asked for, just because some other row on the same form happened to be a
+     * loyalty_tier_at_least condition. Verified against every Model\Campaign\Condition\*.php
+     * class's own real params reads, not just Block\Adminhtml\Campaign\Edit\Flow::getFieldsConfig()
+     * (which turned out to be missing several registered types entirely).
      */
-    private const array DEDICATED_PARAM_FIELDS = [
-        'tags', 'match_mode', 'amount', 'rule_id', 'prefix', 'template', 'message',
-        'headline', 'body', 'cta_label', 'cta_url', 'points', 'threshold',
-        'content_block_id', 'output_key', 'days', 'count', 'percentile', 'question',
-        'sku', 'category_id', 'scheduled_at', 'cron_expression', 'variants',
-        'segment_id', 'tier', 'event_type', 'event_key', 'within_days',
-        'prompt', 'fallback', 'use_optimal_send_time', 'ratio_at_least',
-        'campaign_id', 'engagement_type', 'engagement_within_days',
+    private const array CONDITION_FIELDS_BY_TYPE = [
+        'tag' => ['tags', 'match_mode'],
+        'order_total_gte' => ['amount'],
+        'visitor_tag' => ['tags', 'match_mode'],
+        'score_at_least' => ['threshold'],
+        'recency_days_at_most' => ['days'],
+        'order_frequency_at_least' => ['count'],
+        'monetary_total_at_least' => ['amount'],
+        'recency_percentile_at_least' => ['percentile'],
+        'order_frequency_percentile_at_least' => ['percentile'],
+        'monetary_percentile_at_least' => ['percentile'],
+        'reorder_cycle_at_risk' => ['ratio_at_least'],
+        'clv_at_least' => ['amount'],
+        'in_segment' => ['segment_id'],
+        'not_in_segment' => ['segment_id'],
+        'loyalty_tier_at_least' => ['tier'],
+        'nps_score_at_least' => ['threshold'],
+        'purchased_sku' => ['sku'],
+        'purchased_category' => ['category_id'],
+        'event_occurred' => ['event_type', 'event_key', 'within_days'],
+        'message_engaged' => ['campaign_id', 'engagement_type', 'engagement_within_days'],
+    ];
+
+    /**
+     * Same reasoning as CONDITION_FIELDS_BY_TYPE, for actions. Adding 'template_id'/'params'
+     * (send_whatsapp) and 'title'/'url' (send_push) here isn't just closing the leak - those four
+     * field names were missing from the old flat list entirely, so send_whatsapp/send_push
+     * configured via the Flow canvas (which renders only their dedicated-field inputs, no
+     * params_json fallback - see campaign-flow-editor.js's renderFields()) silently lost that
+     * configuration on every save. 'split' has no ActionPool entry (CampaignDispatcher::runSplit()
+     * handles it directly) but still flows through this same save path.
+     */
+    private const array ACTION_FIELDS_BY_TYPE = [
+        'add_tag' => ['tags'],
+        'send_email' => ['template', 'message', 'use_optimal_send_time'],
+        'generate_coupon' => ['rule_id', 'prefix'],
+        'popup' => ['headline', 'body', 'cta_label', 'cta_url'],
+        'add_points' => ['points'],
+        'add_product_recommendations' => ['count'],
+        'add_dynamic_content' => ['content_block_id', 'output_key'],
+        'send_sms' => ['message'],
+        'notify' => ['headline', 'body', 'cta_label', 'cta_url'],
+        'nps_survey' => ['question'],
+        'send_whatsapp' => ['template_id', 'params'],
+        'send_push' => ['title', 'body', 'url'],
+        'generate_ai_content' => ['prompt', 'output_key', 'fallback'],
+        'split' => ['variants'],
+    ];
+
+    /**
+     * Model\Campaign\ScheduledTriggerScanner is the only reader of either of these - every other
+     * trigger type has no params of its own.
+     */
+    private const array TRIGGER_FIELDS_BY_TYPE = [
+        'scheduled_at' => ['scheduled_at'],
+        'recurring_schedule' => ['cron_expression'],
     ];
 
     /**
@@ -53,8 +108,9 @@ class CampaignSaveProcessor
      * the split action's own 'variants' field (campaign-flow-editor.js's renderVariantEditor()
      * serializes its whole in-memory model into one hidden input, same as `params_json` itself,
      * just under its own dedicated key instead of replacing the whole params blob) and 'tags'
-     * (tag-chip-editor.js does the same for its chip list). Every other DEDICATED_PARAM_FIELDS
-     * entry is a plain string, stored as-is.
+     * (tag-chip-editor.js does the same for its chip list). Every other field named in
+     * CONDITION_FIELDS_BY_TYPE/ACTION_FIELDS_BY_TYPE/TRIGGER_FIELDS_BY_TYPE is a plain string,
+     * stored as-is.
      */
     private const array JSON_DEDICATED_PARAM_FIELDS = ['variants', 'tags'];
 
@@ -150,7 +206,7 @@ class CampaignSaveProcessor
             $trigger->setData([
                 'campaign_id' => $campaignId,
                 'trigger_event' => $triggerEvent,
-                'params' => $this->normalizeRowParams($row),
+                'params' => $this->normalizeRowParams($row, self::TRIGGER_FIELDS_BY_TYPE[$triggerEvent] ?? []),
             ]);
             $this->campaignTriggerResource->save($trigger);
         }
@@ -174,11 +230,12 @@ class CampaignSaveProcessor
                 continue;
             }
 
+            $type = (string) $row['type'];
             $condition = $this->campaignConditionFactory->create();
             $condition->setData([
                 'campaign_id' => $campaignId,
-                'type' => (string) $row['type'],
-                'params' => $this->normalizeRowParams($row),
+                'type' => $type,
+                'params' => $this->normalizeRowParams($row, self::CONDITION_FIELDS_BY_TYPE[$type] ?? []),
                 'sort_order' => $sortOrder++,
             ]);
             $this->campaignConditionResource->save($condition);
@@ -196,11 +253,12 @@ class CampaignSaveProcessor
                 continue;
             }
 
+            $type = (string) $row['type'];
             $action = $this->campaignActionFactory->create();
             $action->setData([
                 'campaign_id' => $campaignId,
-                'type' => (string) $row['type'],
-                'params' => $this->normalizeRowParams($row),
+                'type' => $type,
+                'params' => $this->normalizeRowParams($row, self::ACTION_FIELDS_BY_TYPE[$type] ?? []),
                 'sort_order' => $sortOrder++,
                 'delay_minutes' => max(0, (int) ($row['delay_minutes'] ?? 0)),
             ]);
@@ -241,18 +299,22 @@ class CampaignSaveProcessor
     }
 
     /**
-     * Starts from whatever was typed in the JSON textarea (if valid), then overlays any
-     * dedicated fields present on the row — dedicated fields win over the JSON textarea on
+     * Starts from whatever was typed in the JSON textarea (if valid), then overlays whichever of
+     * $relevantFields are present on the row — dedicated fields win over the JSON textarea on
      * key conflicts, since a stale/copy-pasted JSON blob shouldn't silently override a field
-     * the admin just filled in and can see.
+     * the admin just filled in and can see. $relevantFields is the row's own type's entry from
+     * CONDITION_FIELDS_BY_TYPE/ACTION_FIELDS_BY_TYPE/TRIGGER_FIELDS_BY_TYPE (or [] for an
+     * unmapped type) - never the full field set, so a field some other type's row happens to have
+     * posted a value for never leaks into this row's params.
      *
      * @param array<string, mixed> $row
+     * @param array<int, string> $relevantFields
      */
-    private function normalizeRowParams(array $row): string
+    private function normalizeRowParams(array $row, array $relevantFields): string
     {
         $params = $this->parseJson((string) ($row['params_json'] ?? ''));
 
-        foreach (self::DEDICATED_PARAM_FIELDS as $field) {
+        foreach ($relevantFields as $field) {
             $value = trim((string) ($row[$field] ?? ''));
             if ($value === '') {
                 continue;

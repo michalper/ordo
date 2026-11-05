@@ -50,6 +50,17 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   reach their controllers instead of 404ing.
 - **29 i18n CSV rows had `\n` line endings instead of this repo's `\r\n`** — a mixed-line-ending
   slip from the email template drafts work, normalized back across all locale files.
+- **`CampaignSaveProcessor`/`SegmentSaveProcessor` leaked unrelated dedicated-field values into a
+  row's saved params** (ROADMAP.md "Candidate new features") — `normalizeRowParams()` used to
+  merge every dedicated form field across every type, not just the ones the row's own type
+  reads, because Magento_Ui's dynamicRows always posts every field regardless of switcherConfig
+  visibility; fixed with a `type => [relevant fields]` lookup verified against every real
+  condition/action class's own params reads. **Found a second, more serious bug this way**:
+  `send_whatsapp`'s `template_id`/`params` and `send_push`'s `title`/`url` were missing from the
+  old flat field list entirely, so those actions configured via the Flow canvas (which renders
+  only dedicated-field inputs for a type with `getFieldsConfig()` descriptors, no `params_json`
+  fallback) silently never saved their template/title/url at all. Both fixed together; verified
+  against the real running admin, not just unit tests.
 
 - **`campaign-flow-editor.js` and `Model\Campaign\TypeLabels` had no i18n at all** — all 33
   hardcoded JS strings plus 2 in `tag-chip-editor.js` wrapped in `__()`/`$t()`, and the much

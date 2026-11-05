@@ -16,10 +16,10 @@ use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\CampaignTriggerFactory;
 use Ordo\Automation\Model\CampaignWebsite;
 use Ordo\Automation\Model\CampaignWebsiteFactory;
-use Ordo\Automation\Model\ResourceModel\Campaign as CampaignResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action as CampaignActionResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\Collection as ActionCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Campaign as CampaignResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition as CampaignConditionResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\Collection as ConditionCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as ConditionCollectionFactory;
@@ -161,7 +161,7 @@ class CampaignSaveProcessorTest extends TestCase
 
         $condition = $this->createMock(CampaignCondition::class);
         $condition->expects(self::once())->method('setData')->with(self::callback(
-            fn (array $data) => $data['type'] === 'has_tag' && json_decode($data['params'], true) === ['tags' => ['vip']]
+            fn (array $data) => $data['type'] === 'tag' && json_decode($data['params'], true) === ['tags' => ['vip']]
         ));
         $this->campaignConditionFactory->method('create')->willReturn($condition);
         $this->campaignConditionResource->expects(self::once())->method('save')->with($condition);
@@ -170,7 +170,7 @@ class CampaignSaveProcessorTest extends TestCase
 
         $action = $this->createMock(CampaignAction::class);
         $action->expects(self::once())->method('setData')->with(self::callback(
-            fn (array $data) => $data['type'] === 'tag_customer'
+            fn (array $data) => $data['type'] === 'add_tag'
                 && json_decode($data['params'], true) === ['tags' => ['reordered']]
                 && $data['delay_minutes'] === 60
         ));
@@ -184,8 +184,8 @@ class CampaignSaveProcessorTest extends TestCase
             'name' => 'Welcome',
             'enabled' => '1',
             'triggers' => ['triggers' => [['trigger_event' => 'customer_registered']]],
-            'conditions' => ['conditions' => [['type' => 'has_tag', 'tags' => '["vip"]', 'params_json' => '']]],
-            'actions' => ['actions' => [['type' => 'tag_customer', 'tags' => '["reordered"]', 'params_json' => '', 'delay_minutes' => '60']]],
+            'conditions' => ['conditions' => [['type' => 'tag', 'tags' => '["vip"]', 'params_json' => '']]],
+            'actions' => ['actions' => [['type' => 'add_tag', 'tags' => '["reordered"]', 'params_json' => '', 'delay_minutes' => '60']]],
         ]);
 
         self::assertSame($campaign, $result);
@@ -377,7 +377,7 @@ class CampaignSaveProcessorTest extends TestCase
 
         $action = $this->createMock(CampaignAction::class);
         $action->expects(self::once())->method('setData')->with(self::callback(
-            fn (array $data) => json_decode($data['params'], true) === [
+            fn (array $data) => json_decode($data['params'], true) == [
                 'output_key' => 'ai_content_html',
                 'prompt' => 'Write a greeting for {{customer_first_name}}',
                 'fallback' => 'Welcome back!',
@@ -395,6 +395,107 @@ class CampaignSaveProcessorTest extends TestCase
                 'fallback' => 'Welcome back!',
                 'params_json' => '',
             ]]],
+        ]);
+    }
+
+    /**
+     * Regression test: send_whatsapp/send_push have dedicated fields in
+     * Block\Adminhtml\Campaign\Edit\Flow::getFieldsConfig() (template_id/params, title/url), and
+     * campaign-flow-editor.js's renderFields() renders ONLY those dedicated-field inputs for a
+     * type with descriptors - no params_json fallback at all. Those four field names were
+     * missing from the old flat DEDICATED_PARAM_FIELDS list entirely, so a send_whatsapp or
+     * send_push action configured via the Flow canvas silently lost its template_id/params or
+     * title/url on every save, with no error and nothing in params_json to notice the loss in.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessPersistsSendWhatsAppAndSendPushActionFields(): void
+    {
+        $processor = $this->makeProcessor();
+
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(1);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
+        $this->conditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+        $this->actionCollectionFactory->method('create')->willReturn($this->emptyActionCollection());
+
+        $whatsAppAction = $this->createMock(CampaignAction::class);
+        $whatsAppAction->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => $data['type'] === 'send_whatsapp' && json_decode($data['params'], true) == [
+                'template_id' => '3',
+                'params' => 'John,ORD-1234',
+            ]
+        ));
+        $pushAction = $this->createMock(CampaignAction::class);
+        $pushAction->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => $data['type'] === 'send_push' && json_decode($data['params'], true) == [
+                'body' => 'Your order shipped',
+                'title' => 'Order update',
+                'url' => '/sales/order/view',
+            ]
+        ));
+        $this->campaignActionFactory->method('create')->willReturnOnConsecutiveCalls($whatsAppAction, $pushAction);
+        $this->campaignActionResource->expects(self::exactly(2))->method('save');
+
+        $processor->process([
+            'conditions' => ['conditions' => []],
+            'actions' => ['actions' => [
+                [
+                    'type' => 'send_whatsapp',
+                    'template_id' => '3',
+                    'params' => 'John,ORD-1234',
+                    'params_json' => '',
+                ],
+                [
+                    'type' => 'send_push',
+                    'title' => 'Order update',
+                    'body' => 'Your order shipped',
+                    'url' => '/sales/order/view',
+                    'params_json' => '',
+                ],
+            ]],
+        ]);
+    }
+
+    /**
+     * Regression test: the merge used to consider every dedicated field across every type, not
+     * just the ones the row's own type actually reads, because Magento_Ui's dynamicRows always
+     * posts every field's current value even when switcherConfig hides it for that row's type.
+     * A monetary_total_at_least condition's saved params could end up with a useless tier
+     * value nobody asked for just because some other row on the same form happened to be a
+     * loyalty_tier_at_least condition.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessDoesNotLeakUnrelatedDedicatedFieldsIntoARowsParams(): void
+    {
+        $processor = $this->makeProcessor();
+
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(1);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
+        $this->actionCollectionFactory->method('create')->willReturn($this->emptyActionCollection());
+
+        $condition = $this->createMock(CampaignCondition::class);
+        $condition->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => $data['type'] === 'monetary_total_at_least'
+                && json_decode($data['params'], true) === ['amount' => '100']
+        ));
+        $this->campaignConditionFactory->method('create')->willReturn($condition);
+        $this->conditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+
+        $processor->process([
+            'conditions' => ['conditions' => [[
+                'type' => 'monetary_total_at_least',
+                'amount' => '100',
+                // Posted anyway by dynamicRows even though this row's own type never reads it -
+                // a loyalty_tier_at_least-only field that must not leak into these saved params.
+                'tier' => 'bronze',
+                'params_json' => '',
+            ]]],
+            'actions' => ['actions' => []],
         ]);
     }
 

@@ -71,10 +71,12 @@ is concentrated in multi-store; PHP 8.3 and Hyvä were mostly already fine or tr
    batches correctly (`CatalogFeedProductFetcher::fetchByPage()` at 500, `AbstractPriceWatchScanCron`'s
    `LIMIT` + rotating cursor, SKU autocomplete's `setPageSize(20)`). Worth stating in the issue
    reply, not worth any speculative code change.
-7. **Reply to #261 itself** — nothing posted yet. Once 3–6 above are far enough along, draft a
-   reply covering all six of the asker's original questions (including #1, production references,
-   and #6, roadmap/maintenance — both honest "not yet" answers, not silence) for the maintainer to
-   review before posting.
+7. ~~**Reply to #261 itself**~~ — done, posted. Covered all six original questions honestly
+   (including #1, production references — still none — and #6, roadmap/maintenance), summarized
+   the multi-store/performance work from items 2–6, and asked the reporter to actually try it
+   against Wayfarer.cz (even a staging copy) since there's still no real production usage to point
+   to. Issue left open — it's an active conversation waiting on their response, not something
+   resolved to close.
 
 ## Admin UX
 
@@ -279,20 +281,24 @@ coupon/channel/device/geography.
   every select-type dedicated field (`tier`, `event_type`, `engagement_type`, and now `match_mode`)
   leaks its default value into every condition/action row's saved params regardless of that row's
   own type — pre-existing, harmless to correctness, but untidy.
-- **Dedicated-field merge leaks every select field's default into every row's params** — found
-  while verifying the tag multiselect work above (see `docs/adr/0018`'s own "known, accepted gap"
-  section for the full detail): `CampaignSaveProcessor`/`SegmentSaveProcessor`'s
-  `normalizeRowParams()` merges a condition/action row's WHOLE set of dedicated field values,
-  including ones irrelevant to that row's own type, because Magento_Ui's dynamicRows always posts
-  every field's current value regardless of switcherConfig visibility. Text inputs default to
-  empty (skipped, no visible symptom) but a `<select>` always has something selected, so
-  `tier`/`event_type`/`engagement_type`/`match_mode`'s default leaks into unrelated rows' saved
-  `params_json` — e.g. a `monetary_total_at_least` condition's saved params end up with a useless
-  `tier: "bronze"` key nobody asked for. Each condition class only reads the keys it cares about,
-  so this doesn't break anything today, just leaves untidy data. Fix needs the merge loop to only
-  consider fields relevant to the row's own `type` (a lookup table keyed by type, not a flat list
-  of every dedicated field name across every type) — a real, separate change touching both save
-  processors. Small/medium scope.
+- ~~**Dedicated-field merge leaks every select field's default into every row's params**~~ — done.
+  `CampaignSaveProcessor`/`SegmentSaveProcessor`'s `normalizeRowParams()` used to merge a
+  condition/action row's WHOLE set of dedicated field values regardless of the row's own type
+  (Magento_Ui's dynamicRows always posts every field's current value regardless of
+  switcherConfig visibility), so e.g. a `monetary_total_at_least` condition's saved params could
+  pick up a useless `tier: "bronze"` key from an unrelated row's `<select>` default. Fixed with a
+  `type => [relevant field names]` lookup (`CONDITION_FIELDS_BY_TYPE`/`ACTION_FIELDS_BY_TYPE`/
+  `TRIGGER_FIELDS_BY_TYPE`), verified against every real condition/action class's own params
+  reads, not just UI config (which turned out to be missing several registered types entirely).
+  **Found a second, more serious bug the same way**: `send_whatsapp`'s `template_id`/`params` and
+  `send_push`'s `title`/`url` were missing from the old flat field list *entirely* — since
+  `campaign-flow-editor.js` renders only dedicated-field inputs for a type that has
+  `getFieldsConfig()` descriptors (no `params_json` fallback), those four field names were
+  silently dropped on every save, not just leaked — a `send_whatsapp`/`send_push` action
+  configured via the Flow canvas never actually had its template/title/url persisted. Both bugs
+  fixed together; verified against the real running admin (a crafted POST to the real
+  `ordo/campaign/save` endpoint, not just unit tests): the leak is gone and
+  `send_whatsapp`'s `template_id`/`params` now save correctly.
 - **Five more free-text fields with the same "references real data, no autocomplete" shape the
   tag field had** — found by a dedicated survey while scoping the tag multiselect work above (see
   `docs/adr/0018`). Not done in this pass; grouped here as one roadmap entry, not five, since
