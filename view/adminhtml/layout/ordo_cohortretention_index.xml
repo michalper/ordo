@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <css src="Ordo_Automation::css/_tokens.css"/>
+        <css src="Ordo_Automation::css/dashboard.css"/>
+    </head>
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="ordo_cohortretention_listing_intro"
+                   template="Ordo_Automation::listing_intro.phtml" before="ordo_cohortretention_listing">
+                <arguments>
+                    <argument name="intro_text" xsi:type="string">One row per cohort month and months-since-first-purchase pair. A cohort is every registered customer (guest orders have no identity to track repeat purchases against, so they're excluded) grouped by the calendar month of their own first order. "Months Since First Purchase" 0 is always 100% retention by definition — everyone in a cohort ordered in their own first month; later rows show what share of that same cohort placed another order N months on. Sort/filter by cohort month to read one cohort's retention curve, or by months-since to compare every cohort at the same point in their lifecycle.</argument>
+                </arguments>
+            </block>
+            <uiComponent name="ordo_cohortretention_listing"/>
+        </referenceContainer>
+    </body>
+</page>

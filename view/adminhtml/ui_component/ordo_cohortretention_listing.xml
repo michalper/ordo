@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">ordo_cohortretention_listing.ordo_cohortretention_listing_data_source</item>
+        </item>
+    </argument>
+    <settings>
+        <spinner>ordo_cohortretention_columns</spinner>
+        <deps>
+            <dep>ordo_cohortretention_listing.ordo_cohortretention_listing_data_source</dep>
+        </deps>
+        <buttons>
+            <button name="back_to_dashboard">
+                <url path="ordo/dashboard/index"/>
+                <class>back</class>
+                <label translate="true">Back to Dashboard</label>
+            </button>
+        </buttons>
+    </settings>
+
+    <dataSource name="ordo_cohortretention_listing_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider</argument>
+            <argument name="name" xsi:type="string">ordo_cohortretention_listing_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">entity_id</argument>
+            <argument name="requestFieldName" xsi:type="string">entity_id</argument>
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="update_url" xsi:type="url" path="mui/index/render"/>
+                </item>
+            </argument>
+        </argument>
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/grid/provider</item>
+            </item>
+        </argument>
+    </dataSource>
+
+    <!-- Read-only - no mass actions. One row per (cohort_month, months_since_first_purchase)
+         pair; see Model\ResourceModel\CohortRetention\Grid\Collection's own docblock. -->
+    <columns name="ordo_cohortretention_columns">
+        <!-- Plain text, not the Date column type: cohort_month is a 'YYYY-MM-01' month bucket
+             label computed by DATE_FORMAT(), not a real DATETIME column - the Date column's JS
+             applies a UTC->admin-timezone conversion meant for real timestamps, which shifted this
+             plain date string onto the previous day plus a stray time-of-day (confirmed against a
+             real screenshot: "2026-11-01" rendered as "2026-10-31 19:00:00" on this sandbox's
+             timezone). -->
+        <column name="cohort_month">
+            <settings>
+                <filter>text</filter>
+                <dataType>text</dataType>
+                <sorting>asc</sorting>
+                <label translate="true">Cohort Month</label>
+            </settings>
+        </column>
+        <column name="months_since_first_purchase">
+            <settings>
+                <filter>textRange</filter>
+                <dataType>text</dataType>
+                <sortable>true</sortable>
+                <label translate="true">Months Since First Purchase</label>
+            </settings>
+        </column>
+        <column name="cohort_size">
+            <settings>
+                <filter>textRange</filter>
+                <dataType>text</dataType>
+                <sortable>true</sortable>
+                <label translate="true">Cohort Size</label>
+            </settings>
+        </column>
+        <column name="active_customers">
+            <settings>
+                <filter>textRange</filter>
+                <dataType>text</dataType>
+                <sortable>true</sortable>
+                <label translate="true">Still Active</label>
+            </settings>
+        </column>
+        <column name="retention_rate">
+            <settings>
+                <filter>textRange</filter>
+                <dataType>text</dataType>
+                <sortable>true</sortable>
+                <label translate="true">Retention Rate (%)</label>
+            </settings>
+        </column>
+    </columns>
+</listing>

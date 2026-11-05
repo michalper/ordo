@@ -248,10 +248,23 @@ Not prioritized against each other; listed for later scoping with the business/p
   save-through-core-resource-model trick `EmailTemplateVersion\MassRestore` already uses - so
   publishing automatically takes a fresh "before publish" snapshot via the existing
   `SnapshotEmailTemplateVersion` plugin when versioning is enabled, then deletes the draft row.
-- **Cross-campaign revenue/LTV comparison view, and cohort/retention analysis** — ranks/compares
-  campaigns against each other, or groups customers by first-purchase month/campaign and tracks how
-  their repeat-purchase rate evolves over time, on top of the existing per-campaign funnel view and
-  `RfmCalculator`/`ClvCalculator`. Medium scope.
+- ~~**Cross-campaign revenue/LTV comparison view, and cohort/retention analysis**~~ — done, see
+  `docs/adr/0023-cross-campaign-comparison-and-cohort-retention-reports.md`. Two separate
+  reports, not one page: `ordo/campaigncomparison/index` ranks campaigns against each other
+  (sent/converted/conversion rate from `ordo_campaign_outcome_log`, revenue from the already-
+  deduplicated `ordo_campaign_attribution`, avg. converted-customer CLV from
+  `ordo_customer_clv_score`), and `ordo/cohortretention/index` groups registered customers by
+  their first-order calendar month and tracks what share of each cohort placed another order N
+  months later. Neither needed a new table or cron — both are pure live SQL over tables this
+  module already writes, same philosophy as the revenue/channel analytics report. Cohort rows have
+  no natural per-row entity (unlike every other report grid in this module), so
+  `CohortRetention\Grid\Collection` is the one place that replaces its base `SearchResult`'s
+  `FROM` clause outright instead of extending it with joins — flagged explicitly in the ADR as a
+  deliberate one-off departure. Verified against the real admin, in Polish: both reports and their
+  dashboard cards render with real data and fully translated labels (all 12 non-English locale
+  CSVs updated, matching this module's established "every new UI string ships translated"
+  discipline). Cohort-by-acquisition-campaign (not just by calendar month) remains open, logged in
+  the ADR's own Consequences section, not solved here.
 
 **The five items below are analytics/reporting gap ideas** (see issue #261 for the original
 multi-store/performance thread this grew out of). Ordo's automation side (triggered sends,

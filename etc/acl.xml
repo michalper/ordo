@@ -35,6 +35,8 @@
                 <resource id="Ordo_Automation::product_performance" title="Ordo Automation Product Performance" translate="title" sortOrder="720"/>
                 <resource id="Ordo_Automation::revenue_analytics" title="Ordo Automation Revenue Analytics" translate="title" sortOrder="730"/>
                 <resource id="Ordo_Automation::email_template_drafts" title="Ordo Automation Email Template Drafts" translate="title" sortOrder="740"/>
+                <resource id="Ordo_Automation::campaign_comparison" title="Ordo Automation Campaign Comparison" translate="title" sortOrder="750"/>
+                <resource id="Ordo_Automation::cohort_retention" title="Ordo Automation Cohort Retention" translate="title" sortOrder="760"/>
             </resource>
         </resources>
     </acl>

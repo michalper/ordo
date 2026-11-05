@@ -1,0 +1,106 @@
+<?xml version="1.0"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">ordo_campaigncomparison_listing.ordo_campaigncomparison_listing_data_source</item>
+        </item>
+    </argument>
+    <settings>
+        <spinner>ordo_campaigncomparison_columns</spinner>
+        <deps>
+            <dep>ordo_campaigncomparison_listing.ordo_campaigncomparison_listing_data_source</dep>
+        </deps>
+        <buttons>
+            <button name="back_to_dashboard">
+                <url path="ordo/dashboard/index"/>
+                <class>back</class>
+                <label translate="true">Back to Dashboard</label>
+            </button>
+        </buttons>
+    </settings>
+
+    <dataSource name="ordo_campaigncomparison_listing_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider</argument>
+            <argument name="name" xsi:type="string">ordo_campaigncomparison_listing_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">entity_id</argument>
+            <argument name="requestFieldName" xsi:type="string">entity_id</argument>
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="update_url" xsi:type="url" path="mui/index/render"/>
+                </item>
+            </argument>
+        </argument>
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/grid/provider</item>
+            </item>
+        </argument>
+    </dataSource>
+
+    <!-- Read-only - no mass actions. One row per campaign; see
+         Model\ResourceModel\CampaignComparison\Grid\Collection's own docblock for the join shape. -->
+    <columns name="ordo_campaigncomparison_columns">
+        <column name="entity_id">
+            <settings>
+                <filter>text</filter>
+                <sorting>desc</sorting>
+                <label translate="true">Campaign ID</label>
+            </settings>
+        </column>
+        <column name="name">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Campaign</label>
+            </settings>
+        </column>
+        <column name="enabled" component="Magento_Ui/js/grid/columns/select">
+            <settings>
+                <filter>select</filter>
+                <options class="Magento\Config\Model\Config\Source\Yesno"/>
+                <dataType>select</dataType>
+                <label translate="true">Enabled</label>
+            </settings>
+        </column>
+        <column name="sent">
+            <settings>
+                <filter>textRange</filter>
+                <dataType>text</dataType>
+                <sortable>true</sortable>
+                <label translate="true">Sent</label>
+            </settings>
+        </column>
+        <column name="converted">
+            <settings>
+                <filter>textRange</filter>
+                <dataType>text</dataType>
+                <sortable>true</sortable>
+                <label translate="true">Converted</label>
+            </settings>
+        </column>
+        <column name="conversion_rate">
+            <settings>
+                <filter>textRange</filter>
+                <dataType>text</dataType>
+                <sortable>true</sortable>
+                <label translate="true">Conversion Rate (%)</label>
+            </settings>
+        </column>
+        <column name="revenue">
+            <settings>
+                <filter>textRange</filter>
+                <dataType>text</dataType>
+                <sortable>true</sortable>
+                <label translate="true">Attributed Revenue</label>
+            </settings>
+        </column>
+        <column name="avg_converted_clv">
+            <settings>
+                <filter>textRange</filter>
+                <dataType>text</dataType>
+                <sortable>true</sortable>
+                <label translate="true">Avg. Converted Customer CLV</label>
+            </settings>
+        </column>
+    </columns>
+</listing>

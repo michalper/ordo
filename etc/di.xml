@@ -125,6 +125,8 @@
                 <item name="ordo_pricewatch_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\PriceWatch\PriceWatchSubscription\Grid\Collection</item>
                 <item name="ordo_emailtemplateversion_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\EmailTemplateVersion\Grid\Collection</item>
                 <item name="ordo_emailtemplatedraft_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\EmailTemplateDraft\Grid\Collection</item>
+                <item name="ordo_campaigncomparison_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\CampaignComparison\Grid\Collection</item>
+                <item name="ordo_cohortretention_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\CohortRetention\Grid\Collection</item>
             </argument>
         </arguments>
     </type>

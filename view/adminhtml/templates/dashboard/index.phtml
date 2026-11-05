@@ -297,6 +297,18 @@ $segmentNavDesc = __(
                     'icon' => 'bar-chart',
                 ],
                 [
+                    'url' => $block->getUrl('ordo/campaigncomparison/index'),
+                    'title' => __('Campaign Comparison'),
+                    'desc' => __('Rank campaigns by sent, conversion rate, attributed revenue and converted-customer CLV'),
+                    'icon' => 'bar-chart',
+                ],
+                [
+                    'url' => $block->getUrl('ordo/cohortretention/index'),
+                    'title' => __('Cohort Retention'),
+                    'desc' => __('How repeat-purchase rate evolves after a customer\'s first order, by cohort month'),
+                    'icon' => 'bar-chart',
+                ],
+                [
                     'url' => $block->getUrl('ordo/customer360/index'),
                     'title' => __('Customer 360'),
                     'desc' => __('Segments, tags, RFM, lead score, NPS and loyalty tier for one customer'),

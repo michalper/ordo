@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <css src="Ordo_Automation::css/_tokens.css"/>
+        <css src="Ordo_Automation::css/dashboard.css"/>
+    </head>
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="ordo_campaigncomparison_listing_intro"
+                   template="Ordo_Automation::listing_intro.phtml" before="ordo_campaigncomparison_listing">
+                <arguments>
+                    <argument name="intro_text" xsi:type="string">One row per campaign, ranked against each other: how many sends, how many converted, the conversion rate, revenue (Model\Campaign\AttributionCalculator's equal-weight multi-touch split across every campaign a customer clicked through before ordering — not single-touch "last campaign before the order"), and the average projected lifetime value (Model\Clv\ClvCalculator) of the customers it converted. A campaign that has never sent anything still shows as a 0 row; "Avg. Converted Customer CLV" is blank, not $0, when a campaign hasn't converted anyone yet.</argument>
+                </arguments>
+            </block>
+            <uiComponent name="ordo_campaigncomparison_listing"/>
+        </referenceContainer>
+    </body>
+</page>
