@@ -92,16 +92,31 @@ is concentrated in multi-store; PHP 8.3 and Hyvä were mostly already fine or tr
   there was nothing to add a breakpoint to. Checked at a real 950px browser window (not just read
   from the CSS): the conditions row itself stays within its content column with no horizontal
   overflow, before and after this change.
-- **Found while checking the above: every row in the Conditions `dynamicRows` list (both
+- ~~**Found while checking the above: every row in the Conditions `dynamicRows` list (both
   `ordo_campaign_form.xml`'s classic editor and `ordo_segment_form.xml`) is missing its own delete
-  button entirely** — not a styling/overlap issue, the element genuinely isn't in the DOM at any
-  width, confirmed with 1 and 2 rows present, for multiple condition types. The CSS written for it
-  (`tr.data-row td:last-child .action-delete` and friends, `segment-form.css`/`campaign-form.css`)
-  is dead code targeting an element that no longer renders. The Free Gift Offer form's own Tiers
-  `dynamicRows` list (same technique, `free-gift-offer-form.css`) still has a working delete
-  (trash icon) button, so this is scoped to Conditions specifically, not every `dynamicRows` list
-  in the module. Once added, a condition can't currently be removed from either form without
-  discarding the whole campaign/segment and starting over.
+  button entirely**~~ — done, and verified against the real running admin (not just read from the
+  diff), which caught a second, more serious bug the button alone didn't surface. Added the same
+  `<actionDelete>` element the Free Gift Offer form's Tiers list already had to both forms'
+  conditions container (`ordo_campaign_form.xml`'s added even though that fieldset stays
+  `visible: false` behind the Flow canvas, so the dynamicRows component is correct if it's ever
+  shown again; the Actions list was out of scope for this bullet and left as-is). The button
+  rendered in the right place but never actually deleted anything on a real click - confirmed with
+  `elementFromPoint()` at the button's own center: `segment-form.css`'s existing
+  `tr.data-row td:last-child` rule (pinning the delete button to the row's right edge) was matching
+  a *different* field's `<td>` than the one holding the button. This row has ~24 dedicated fields
+  (one per condition type, almost all collapsed to 0×0 by `switcherConfig`), and dumping every
+  `<td>`'s own `data-index` in actual DOM order proved that order has nothing to do with the fields'
+  declaration order in the XML or their own `sortOrder` - Magento positions each field visually via
+  a separate `order` CSS value and leaves raw DOM child order to whatever sequence each field's own
+  component finishes initializing in. `:last-child` happened to land on `match_mode` (sortOrder 16,
+  nowhere near actually last) instead of the real `actionDelete` `<td>` (sortOrder 30), so
+  `match_mode`'s own absolutely-positioned-on-top-by-that-same-rule column silently ate every click
+  meant for the button beneath it. Fixed by matching `td:has(.action-delete)` instead of
+  `td:last-child` (segment-form.css's three selectors touching that column) - verified by adding and
+  removing rows at different positions (first, middle, last) in a real browser, confirming the
+  right row's own data (not just the last one) is removed each time. The Free Gift Offer form's own
+  Tiers/Products lists (2-3 simple fields, no `switcherConfig`) never hit this, since there's no
+  field-count/async-init race for `:last-child` to get wrong there.
 - ~~**`WhatsAppTemplate\Edit\SubmitForReviewButton`/`RefreshStatusButton` 404 when clicked**~~ —
   done. Same fix as `Shared\Edit\DeleteButton`/`EmailTemplateDraft\Edit\PublishButton` (see
   `docs/adr/0021-email-template-drafts.md`): both called `deleteConfirm('message', 'url')`

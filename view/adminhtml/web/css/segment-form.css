@@ -302,8 +302,21 @@
 }
 
 /* Delete button: pinned to the row's right edge instead of the full-row-width grey bar it renders
-   as by default in the original table layout. */
-[data-index="conditions"].admin__dynamic-rows tr.data-row td:last-child {
+   as by default in the original table layout.
+   td:has(.action-delete), not td:last-child: this row has ~24 dedicated fields (one <td> each,
+   almost all collapsed to 0x0 by switcherConfig except whichever one the selected condition type
+   needs), and confirmed live - dumping every td's own data-index in DOM order - that DOM child
+   order here is NOT the fields' declaration order in ordo_segment_form.xml, and not a sort by
+   their own sortOrder either; visual position is driven entirely by a separate `order` CSS value
+   Magento_Ui sets per field, left totally free to initialize its backing component in whatever
+   order finishes first. :last-child matching a live example (match_mode, sortOrder 16, nowhere
+   near actually last) instead of the real actionDelete <td> (sortOrder 30) meant the delete button
+   rendered in the right place (via that `order` value) but a DIFFERENT field's own td - absolutely
+   positioned on top of it by this same rule - silently ate every real click there: confirmed with
+   elementFromPoint() at the button's own center resolving to that other field's wrapper, not the
+   button. The free-gift-offer form's Tiers/Products lists (2-3 fields, no switcherConfig) never
+   hit this because there's no field-count/async-init race for :last-child to get wrong. */
+[data-index="conditions"].admin__dynamic-rows tr.data-row td:has(.action-delete) {
     flex: 0 0 auto;
     position: absolute;
     top: 50%;
@@ -311,7 +324,7 @@
     transform: translateY(-50%);
 }
 
-[data-index="conditions"].admin__dynamic-rows tr.data-row td:last-child .action-delete {
+[data-index="conditions"].admin__dynamic-rows tr.data-row td:has(.action-delete) .action-delete {
     background: none;
     border: none;
     color: var(--ordo-muted);
@@ -319,11 +332,11 @@
     padding: 4px;
 }
 
-[data-index="conditions"].admin__dynamic-rows tr.data-row td:last-child .action-delete:hover {
+[data-index="conditions"].admin__dynamic-rows tr.data-row td:has(.action-delete) .action-delete:hover {
     color: var(--ordo-danger);
 }
 
-[data-index="conditions"].admin__dynamic-rows tr.data-row td:last-child .action-delete span {
+[data-index="conditions"].admin__dynamic-rows tr.data-row td:has(.action-delete) .action-delete span {
     display: none;
 }
 

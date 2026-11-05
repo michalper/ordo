@@ -3125,6 +3125,11 @@
                         </tooltip>
                     </settings>
                 </field>
+                <actionDelete sortOrder="30">
+                    <settings>
+                        <componentType>actionDelete</componentType>
+                    </settings>
+                </actionDelete>
             </container>
         </dynamicRows>
     </fieldset>
