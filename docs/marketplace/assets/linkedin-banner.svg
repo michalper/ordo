@@ -1,0 +1,81 @@
+<svg width="1584" height="396" viewBox="0 0 1584 396" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', -apple-system, Helvetica, Arial, sans-serif">
+  <defs>
+    <pattern id="dotgrid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="1.5" cy="1.5" r="1.5" fill="#1E293B" />
+    </pattern>
+    <linearGradient id="magenta" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E879F9" />
+      <stop offset="100%" stop-color="#C026D3" />
+    </linearGradient>
+    <linearGradient id="logoMark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E879F9" />
+      <stop offset="100%" stop-color="#0EA5E9" />
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1584" height="396" fill="#0F172A" />
+  <rect width="1584" height="396" fill="url(#dotgrid)" />
+
+  <!-- Left ~400px is kept empty: the page's square logo overlaps this entire column -->
+  <g transform="translate(430, 70)">
+    <circle cx="18" cy="18" r="16" fill="none" stroke="url(#logoMark)" stroke-width="3" />
+    <circle cx="18" cy="18" r="5" fill="url(#logoMark)" />
+    <circle cx="4" cy="4" r="3" fill="#E879F9" />
+    <circle cx="32" cy="4" r="3" fill="#0EA5E9" />
+    <circle cx="4" cy="32" r="3" fill="#0EA5E9" />
+    <circle cx="32" cy="32" r="3" fill="#E879F9" />
+    <line x1="18" y1="18" x2="4" y2="4" stroke="#E879F9" stroke-width="1.5" opacity="0.7" />
+    <line x1="18" y1="18" x2="32" y2="4" stroke="#0EA5E9" stroke-width="1.5" opacity="0.7" />
+    <line x1="18" y1="18" x2="4" y2="32" stroke="#0EA5E9" stroke-width="1.5" opacity="0.7" />
+    <line x1="18" y1="18" x2="32" y2="32" stroke="#E879F9" stroke-width="1.5" opacity="0.7" />
+    <text x="56" y="28" fill="#F8FAFC" font-size="40" font-weight="700">ordo</text>
+  </g>
+
+  <text x="430" y="150" fill="#94A3B8" font-size="20" font-weight="600">Marketing Automation for Magento Open Source</text>
+  <text x="430" y="177" fill="#CBD5E1" font-size="14">Native campaign engine for B2B &amp; B2C. No external SaaS.</text>
+
+  <g transform="translate(430, 196)">
+    <rect x="0" y="0" width="112" height="32" rx="16" fill="#1E293B" stroke="#334155" />
+    <text x="56" y="21" fill="#93C5FD" font-size="13" font-weight="600" text-anchor="middle">PHP 8.3+</text>
+
+    <rect x="124" y="0" width="140" height="32" rx="16" fill="#1E293B" stroke="#334155" />
+    <text x="194" y="21" fill="#FDE68A" font-size="13" font-weight="600" text-anchor="middle">Open Source</text>
+
+    <rect x="276" y="0" width="150" height="32" rx="16" fill="#1E293B" stroke="#334155" />
+    <text x="351" y="21" fill="#F0ABFC" font-size="13" font-weight="600" text-anchor="middle">B2B + B2C</text>
+  </g>
+
+  <!-- Right: condensed campaign-flow mockup -->
+  <g transform="translate(1060, 40)">
+    <path d="M 95 60 L 95 110 L 165 110 L 165 150" fill="none" stroke="url(#magenta)" stroke-width="2.5" filter="url(#glow)" />
+    <path d="M 165 190 L 165 220 L 115 220 L 115 250" fill="none" stroke="#0EA5E9" stroke-width="2.5" filter="url(#glow)" />
+
+    <g transform="translate(0, 20)">
+      <rect width="200" height="42" rx="8" fill="#1E1329" stroke="#C026D3" stroke-width="1.5" />
+      <circle cx="18" cy="21" r="4" fill="#E879F9" />
+      <text x="34" y="17" fill="#F0ABFC" font-size="10" font-weight="700">TRIGGER</text>
+      <text x="34" y="32" fill="#E2E8F0" font-size="12">Order Placed</text>
+    </g>
+
+    <g transform="translate(70, 150)">
+      <rect width="200" height="42" rx="8" fill="#0B1E2E" stroke="#0EA5E9" stroke-width="1.5" />
+      <circle cx="18" cy="21" r="4" fill="#38BDF8" />
+      <text x="34" y="17" fill="#7DD3FC" font-size="10" font-weight="700">CONDITION</text>
+      <text x="34" y="32" fill="#E2E8F0" font-size="12">Total &#8805; $500</text>
+    </g>
+
+    <g transform="translate(20, 268)">
+      <rect width="210" height="42" rx="8" fill="#1E1329" stroke="#C026D3" stroke-width="1.5" />
+      <circle cx="18" cy="21" r="4" fill="#E879F9" />
+      <text x="34" y="17" fill="#F0ABFC" font-size="10" font-weight="700">ACTION</text>
+      <text x="34" y="32" fill="#E2E8F0" font-size="12">Generate Coupon &amp; Send Email</text>
+    </g>
+  </g>
+</svg>
