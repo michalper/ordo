@@ -15,8 +15,41 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   template starts `enabled: false` so the admin can review/fill in merchant-specific fields
   (`rule_id`, email copy) before anything sends. Win-back was deliberately not included — it's
   not buildable with the engine's current primitives, see `docs/adr/0020`.
+- **Email template drafts** — new `Model\EmailTemplateDraft` lets an admin edit a Magento email
+  template's subject/content/styles as a separate draft, without touching the live row
+  `send_email` reads, then publish it when ready. Publish saves through the real core
+  `Magento\Email\Model\ResourceModel\Template`, the same trick `EmailTemplateVersion\MassRestore`
+  already uses, so it gets a free pre-publish snapshot via the existing versioning plugin. See
+  `docs/adr/0021`.
+- **Czech (`cs_CZ`) added as a supported locale** — real pre-adoption interest (GitHub issue #261,
+  a Czech company) prompted adding it alongside the other machine-translated locales.
 
 ### Fixed
+
+- **188 user-facing strings across the module had never been translated in any non-English
+  locale** — found via a dedicated audit after a direct user report ("widziałem ich sporo" —
+  "I saw quite a few"). By far the largest gap: 147 of `etc/adminhtml/system.xml`'s config field
+  labels/help text (the entire Stores → Configuration → Ordo Automation section fell back to raw
+  English in every locale). The rest: 18 `etc/acl.xml` resource titles, 4 `etc/widget.xml`
+  strings, grid column headers and form field labels/notices across several `ui_component` XMLs,
+  and 9 PHP/.phtml page titles and dashboard card strings. All were already correctly wrapped in
+  `__()`/`translate="true"` — the gap was purely missing CSV rows. 187 deduplicated phrases added
+  to all 12 locale CSVs (2,244 new translation cells).
+- **Grid actions column URLs used `*/*/` wildcards instead of fully-qualified routes** —
+  `Ui\Component\Listing\Column\EmailTemplateDraftActions`'s Edit/Publish/Delete links 404'd,
+  because a wildcard resolves against the grid's own AJAX data-source request, not the page the
+  grid is displayed on.
+- **Every entity's edit-form "Delete" button (and the new Publish button) 404'd when clicked** —
+  the shared `Block\Adminhtml\Shared\Edit\DeleteButton` called `deleteConfirm()` with only 2
+  arguments, which navigates via a plain GET; every `Delete`/`Publish` controller in this module
+  implements `HttpPostActionInterface` only, so that GET was rejected before ever dispatching.
+  This means the edit-form Delete button had likely never worked for *any* entity when clicked
+  from the entity's own edit page (only the grid's row-action Delete, a correct AJAX POST, ever
+  worked). Fixed at the shared class. A closely related instance in `WhatsAppTemplate`'s own
+  `SubmitForReviewButton`/`RefreshStatusButton` was found but deliberately left unfixed as
+  out-of-scope — logged to ROADMAP.md.
+- **29 i18n CSV rows had `\n` line endings instead of this repo's `\r\n`** — a mixed-line-ending
+  slip from the email template drafts work, normalized back across all locale files.
 
 - **`campaign-flow-editor.js` and `Model\Campaign\TypeLabels` had no i18n at all** — all 33
   hardcoded JS strings plus 2 in `tag-chip-editor.js` wrapped in `__()`/`$t()`, and the much
