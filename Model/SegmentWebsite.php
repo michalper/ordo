@@ -12,15 +12,11 @@ use Ordo\Automation\Model\ResourceModel\Segment\Website as SegmentWebsiteResourc
  */
 class SegmentWebsite extends AbstractModel
 {
+    use HasEntityIdGetterTrait;
+
     protected function _construct(): void
     {
         $this->_init(SegmentWebsiteResource::class);
-    }
-
-    public function getEntityId(): ?int
-    {
-        $id = $this->getData('entity_id');
-        return $id === null ? null : (int) $id;
     }
 
     public function getSegmentId(): int

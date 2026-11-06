@@ -3,24 +3,17 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model;
 
-use Magento\Framework\Model\AbstractModel;
 use Ordo\Automation\Model\ResourceModel\ContentBlock as ContentBlockResource;
 
 /**
  * A reusable, admin-authored piece of email content — see etc/db_schema.xml's
- * ordo_content_block comment. Admin-only, plain AbstractModel, same shape as ScoreRule.
+ * ordo_content_block comment. Admin-only, a named, toggleable top-level entity like Segment.
  */
-class ContentBlock extends AbstractModel
+class ContentBlock extends AbstractNamedToggleableEntityModel
 {
     protected function _construct(): void
     {
         $this->_init(ContentBlockResource::class);
-    }
-
-    public function getEntityId(): ?int
-    {
-        $id = $this->getData('entity_id');
-        return $id === null ? null : (int) $id;
     }
 
     public function getIdentifier(): string
@@ -32,11 +25,6 @@ class ContentBlock extends AbstractModel
     {
         $this->setData('identifier', $identifier);
         return $this;
-    }
-
-    public function getName(): string
-    {
-        return (string) $this->getData('name');
     }
 
     public function setName(string $name): self
@@ -66,11 +54,6 @@ class ContentBlock extends AbstractModel
     {
         $this->setData('config', $config);
         return $this;
-    }
-
-    public function isEnabled(): bool
-    {
-        return (bool) $this->getData('enabled');
     }
 
     public function setEnabled(bool $enabled): self

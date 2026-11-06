@@ -8,15 +8,11 @@ use Ordo\Automation\Model\ResourceModel\Segment\Condition as SegmentConditionRes
 
 class SegmentCondition extends AbstractModel
 {
+    use ChildRowGettersTrait;
+
     protected function _construct(): void
     {
         $this->_init(SegmentConditionResource::class);
-    }
-
-    public function getEntityId(): ?int
-    {
-        $id = $this->getData('entity_id');
-        return $id === null ? null : (int) $id;
     }
 
     public function getSegmentId(): int
@@ -30,39 +26,16 @@ class SegmentCondition extends AbstractModel
         return $this;
     }
 
-    public function getType(): string
-    {
-        return (string) $this->getData('type');
-    }
-
     public function setType(string $type): self
     {
         $this->setData('type', $type);
         return $this;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    public function getParams(): array
-    {
-        return ParamsMap::fromJson((string) $this->getData('params'));
-    }
-
-    public function getParamsJson(): string
-    {
-        return (string) $this->getData('params');
-    }
-
     public function setParamsJson(string $paramsJson): self
     {
         $this->setData('params', $paramsJson);
         return $this;
-    }
-
-    public function getSortOrder(): int
-    {
-        return (int) $this->getData('sort_order');
     }
 
     public function setSortOrder(int $sortOrder): self

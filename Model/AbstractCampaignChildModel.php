@@ -20,37 +20,10 @@ use Magento\Framework\Model\AbstractModel;
  */
 abstract class AbstractCampaignChildModel extends AbstractModel
 {
-    /**
-     * @return array<string, mixed>
-     */
-    public function getParams(): array
-    {
-        return ParamsMap::fromJson((string) $this->getData('params'));
-    }
-
-    public function getEntityId(): ?int
-    {
-        $id = $this->getData('entity_id');
-        return $id === null ? null : (int) $id;
-    }
+    use ChildRowGettersTrait;
 
     public function getCampaignId(): int
     {
         return (int) $this->getData('campaign_id');
-    }
-
-    public function getType(): string
-    {
-        return (string) $this->getData('type');
-    }
-
-    public function getParamsJson(): string
-    {
-        return (string) $this->getData('params');
-    }
-
-    public function getSortOrder(): int
-    {
-        return (int) $this->getData('sort_order');
     }
 }

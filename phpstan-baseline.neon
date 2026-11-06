@@ -1425,13 +1425,13 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 2
+			count: 1
 			path: Model/AdAudience.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 6
+			count: 5
 			path: Model/AdAudience.php
 
 		-
@@ -2233,15 +2233,9 @@ parameters:
 			path: Model/Config/Source/EmailTemplateOptions.php
 
 		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/ContentBlock.php
-
-		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 4
+			count: 3
 			path: Model/ContentBlock.php
 
 		-
@@ -2569,26 +2563,8 @@ parameters:
 			path: Model/FreeGiftEligibility.php
 
 		-
-			message: '#^Binary operation "\+\=" between \(float\|int\) and mixed results in an error\.$#'
-			identifier: assignOp.invalid
-			count: 1
-			path: Model/FreeGiftManagement.php
-
-		-
 			message: '#^Call to an undefined method Magento\\Quote\\Api\\Data\\CartInterface\:\:collectTotals\(\)\.$#'
 			identifier: method.notFound
-			count: 1
-			path: Model/FreeGiftManagement.php
-
-		-
-			message: '#^Cannot call method getGiftSlots\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: Model/FreeGiftManagement.php
-
-		-
-			message: '#^Cannot call method getMinSubtotal\(\) on mixed\.$#'
-			identifier: method.nonObject
 			count: 1
 			path: Model/FreeGiftManagement.php
 
@@ -2672,12 +2648,6 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$quote of method Ordo\\Automation\\Model\\FreeGiftManagement\:\:removeExistingGiftItems\(\) expects Magento\\Quote\\Model\\Quote, Magento\\Quote\\Api\\Data\\CartInterface given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model/FreeGiftManagement.php
-
-		-
-			message: '#^Parameter \#1 \$remainingSlots of method Ordo\\Automation\\Model\\FreeGiftEligibility\:\:setRemainingSlots\(\) expects int, float\|int\<0, max\> given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Model/FreeGiftManagement.php
@@ -2883,13 +2853,13 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 2
+			count: 1
 			path: Model/LeadRoutingRule.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 5
+			count: 4
 			path: Model/LeadRoutingRule.php
 
 		-
@@ -3665,18 +3635,6 @@ parameters:
 			identifier: cast.int
 			count: 3
 			path: Model/ScoreRuleWebsite.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/Segment.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 1
-			path: Model/Segment.php
 
 		-
 			message: '#^Cannot call method getParams\(\) on mixed\.$#'

@@ -3,15 +3,14 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model;
 
-use Magento\Framework\Model\AbstractModel;
 use Ordo\Automation\Model\ResourceModel\AdAudience as AdAudienceResource;
 
 /**
  * A segment configured to sync as a remarketing audience to an external ad platform — see
- * etc/db_schema.xml's ordo_ad_audience comment. Admin-only, plain AbstractModel, same shape as
- * ScoreRule/Segment.
+ * etc/db_schema.xml's ordo_ad_audience comment. Admin-only, a named, toggleable top-level
+ * entity like Segment.
  */
-class AdAudience extends AbstractModel
+class AdAudience extends AbstractNamedToggleableEntityModel
 {
     public const string PLATFORM_GOOGLE_ADS = 'google_ads';
     public const string PLATFORM_META = 'meta';
@@ -22,17 +21,6 @@ class AdAudience extends AbstractModel
     protected function _construct(): void
     {
         $this->_init(AdAudienceResource::class);
-    }
-
-    public function getEntityId(): ?int
-    {
-        $id = $this->getData('entity_id');
-        return $id === null ? null : (int) $id;
-    }
-
-    public function getName(): string
-    {
-        return (string) $this->getData('name');
     }
 
     public function setName(string $name): self
@@ -73,11 +61,6 @@ class AdAudience extends AbstractModel
     {
         $this->setData('external_audience_id', $externalAudienceId);
         return $this;
-    }
-
-    public function isEnabled(): bool
-    {
-        return (bool) $this->getData('enabled');
     }
 
     public function setEnabled(bool $enabled): self

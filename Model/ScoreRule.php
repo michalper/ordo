@@ -12,15 +12,11 @@ use Ordo\Automation\Model\ResourceModel\ScoreRule as ScoreRuleResource;
  */
 class ScoreRule extends AbstractModel
 {
+    use HasEntityIdGetterTrait;
+
     protected function _construct(): void
     {
         $this->_init(ScoreRuleResource::class);
-    }
-
-    public function getEntityId(): ?int
-    {
-        $id = $this->getData('entity_id');
-        return $id === null ? null : (int) $id;
     }
 
     public function getAttributeCode(): string

@@ -3,29 +3,17 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model;
 
-use Magento\Framework\Model\AbstractModel;
 use Ordo\Automation\Model\ResourceModel\LeadRoutingRule as LeadRoutingRuleResource;
 
 /**
  * A declarative lead-routing rule — see etc/db_schema.xml's ordo_lead_routing_rule comment.
- * Admin-only, plain AbstractModel, same shape as ScoreRule.
+ * Admin-only, a named, toggleable top-level entity like Segment.
  */
-class LeadRoutingRule extends AbstractModel
+class LeadRoutingRule extends AbstractNamedToggleableEntityModel
 {
     protected function _construct(): void
     {
         $this->_init(LeadRoutingRuleResource::class);
-    }
-
-    public function getEntityId(): ?int
-    {
-        $id = $this->getData('entity_id');
-        return $id === null ? null : (int) $id;
-    }
-
-    public function getName(): string
-    {
-        return (string) $this->getData('name');
     }
 
     public function setName(string $name): self
@@ -79,11 +67,6 @@ class LeadRoutingRule extends AbstractModel
     {
         $this->setData('reps', $reps);
         return $this;
-    }
-
-    public function isEnabled(): bool
-    {
-        return (bool) $this->getData('enabled');
     }
 
     public function setEnabled(bool $enabled): self

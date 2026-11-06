@@ -13,6 +13,8 @@ use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate as WhatsAppTemplateReso
  */
 class WhatsAppTemplate extends AbstractModel
 {
+    use HasEntityIdGetterTrait;
+
     public const string CATEGORY_MARKETING = 'marketing';
     public const string CATEGORY_UTILITY = 'utility';
     public const string CATEGORY_AUTHENTICATION = 'authentication';
@@ -26,12 +28,6 @@ class WhatsAppTemplate extends AbstractModel
     protected function _construct(): void
     {
         $this->_init(WhatsAppTemplateResource::class);
-    }
-
-    public function getEntityId(): ?int
-    {
-        $id = $this->getData('entity_id');
-        return $id === null ? null : (int) $id;
     }
 
     public function getName(): string

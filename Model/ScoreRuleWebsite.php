@@ -12,15 +12,11 @@ use Ordo\Automation\Model\ResourceModel\ScoreRule\Website as ScoreRuleWebsiteRes
  */
 class ScoreRuleWebsite extends AbstractModel
 {
+    use HasEntityIdGetterTrait;
+
     protected function _construct(): void
     {
         $this->_init(ScoreRuleWebsiteResource::class);
-    }
-
-    public function getEntityId(): ?int
-    {
-        $id = $this->getData('entity_id');
-        return $id === null ? null : (int) $id;
     }
 
     public function getScoreRuleId(): int
