@@ -23,6 +23,15 @@ Ordo Marketing Automation
 **Marketing** (closest fit in Adobe's own category list — confirm against whatever the submission form
 offers at the time, categories can change independently of this doc).
 
+## Website / Support URL
+
+```
+https://ordo.marketing
+```
+
+Also the listing's documentation link target where the form asks for one separately — the live marketing
+site (see `docs.html` there) links back out to the GitHub README/wiki for the full technical docs.
+
 ## Short description
 
 ```
