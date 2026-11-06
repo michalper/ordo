@@ -13,11 +13,12 @@ use Ordo\Automation\Model\ConsentTopic;
  * EmailTemplateOptions etc. are. Shared by every send_* campaign action's "topic" field
  * (SendEmail, SendSms, SendWhatsApp, SendPush) via their own getParamFields().
  */
-final class ConsentTopicOptions
+class ConsentTopicOptions
 {
     /**
      * @return array<string, string>
      */
+    // phpcs:ignore Magento2.Functions.StaticFunction -- fixed enum-to-label map, nothing to intercept
     public static function toMap(): array
     {
         return [

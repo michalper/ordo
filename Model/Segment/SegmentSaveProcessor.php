@@ -183,5 +183,4 @@ class SegmentSaveProcessor
 
         return json_encode(['logic' => $logic, 'conditions' => $conditions]) ?: '{}';
     }
-
 }

@@ -19,12 +19,13 @@ namespace Ordo\Automation\Model\Campaign;
  * row regardless of type, and a dedicated field silently missing from one of the
  * hand-maintained lists entirely.
  */
-final class ParamFieldsNormalizer
+class ParamFieldsNormalizer
 {
     /**
      * @param array<string, mixed> $row
      * @param array<int, array{name: string, label?: string, notice?: string, options?: array<int|string, string>, type?: string}> $fields
      */
+    // phpcs:ignore Magento2.Functions.StaticFunction -- pure value normalizer, nothing to intercept
     public static function normalizeRowParams(array $row, array $fields): string
     {
         $params = self::parseJson((string) ($row['params_json'] ?? ''));
@@ -62,6 +63,7 @@ final class ParamFieldsNormalizer
      *
      * @return array<string, mixed>
      */
+    // phpcs:ignore Magento2.Functions.StaticFunction -- pure value normalizer, nothing to intercept
     public static function parseJson(string $raw): array
     {
         $raw = trim($raw);

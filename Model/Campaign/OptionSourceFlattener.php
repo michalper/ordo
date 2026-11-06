@@ -14,11 +14,12 @@ use Magento\Framework\Data\OptionSourceInterface;
  * private toMap() method, before condition/action classes needed to flatten their own options
  * too).
  */
-final class OptionSourceFlattener
+class OptionSourceFlattener
 {
     /**
      * @return array<int|string, string>
      */
+    // phpcs:ignore Magento2.Functions.StaticFunction -- pure value transform, nothing to intercept
     public static function toMap(OptionSourceInterface $source): array
     {
         $map = [];

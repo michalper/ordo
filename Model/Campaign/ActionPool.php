@@ -39,6 +39,7 @@ class ActionPool
      *
      * @return array<int, array{name: string, label: string, type: string, notice: string}>
      */
+    // phpcs:ignore Magento2.Functions.StaticFunction -- fixed field descriptor, nothing to intercept
     public static function splitActionFields(): array
     {
         return [
