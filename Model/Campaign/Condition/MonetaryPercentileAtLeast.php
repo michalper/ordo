@@ -15,4 +15,9 @@ class MonetaryPercentileAtLeast extends AbstractPercentileAtLeast
     {
         return 'monetary_percentile';
     }
+
+    protected function getFieldLabel(): string
+    {
+        return (string) __('Minimum monetary percentile');
+    }
 }

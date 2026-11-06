@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Model\Campaign\Condition;
 
 use Ordo\Automation\Model\Campaign\Condition\HasTag;
+use Ordo\Automation\Model\Config\Source\TagMatchMode;
 use Ordo\Automation\Model\CustomerTagManager;
 use PHPUnit\Framework\TestCase;
 
@@ -15,7 +16,7 @@ class HasTagTest extends TestCase
     protected function setUp(): void
     {
         $this->customerTagManager = $this->createMock(CustomerTagManager::class);
-        $this->condition = new HasTag($this->customerTagManager);
+        $this->condition = new HasTag($this->customerTagManager, new TagMatchMode());
     }
 
     public function testSatisfiedWhenCustomerHasAnyOfTheTagsDefaultMatchMode(): void
@@ -90,5 +91,10 @@ class HasTagTest extends TestCase
         $this->customerTagManager->expects(self::never())->method('getCustomerIdsWithAnyTag');
 
         self::assertSame([], $this->condition->resolveCustomerIds([]));
+    }
+
+    public function testGetParamFieldsListsTagsAndMatchMode(): void
+    {
+        self::assertSame(['tags', 'match_mode'], array_column($this->condition->getParamFields(), 'name'));
     }
 }

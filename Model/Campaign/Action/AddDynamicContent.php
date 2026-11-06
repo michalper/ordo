@@ -8,6 +8,7 @@ use Ordo\Automation\Model\ContentBlock;
 use Ordo\Automation\Model\ContentBlock\Producer\ProducerInterface;
 use Ordo\Automation\Model\ContentBlock\ProducerPool;
 use Ordo\Automation\Model\ContentBlockRepository;
+use Ordo\Automation\Model\ResourceModel\ContentBlock\CollectionFactory as ContentBlockCollectionFactory;
 
 /**
  * Params: {"content_block_id": 3, "output_key": "dynamic_content_html"} — output_key defaults
@@ -23,7 +24,8 @@ class AddDynamicContent implements ActionInterface
 
     public function __construct(
         private readonly ContentBlockRepository $contentBlockRepository,
-        private readonly ProducerPool $producerPool
+        private readonly ProducerPool $producerPool,
+        private readonly ContentBlockCollectionFactory $contentBlockCollectionFactory
     ) {
     }
 
@@ -44,5 +46,38 @@ class AddDynamicContent implements ActionInterface
 
         $producer = $this->producerPool->get($block->getType());
         $context[$outputKey] = $producer instanceof ProducerInterface ? $producer->render($block, $context) : '';
+    }
+
+    public function getParamFields(): array
+    {
+        return [
+            [
+                'name' => 'content_block_id',
+                'label' => (string) __('Content block'),
+                'options' => $this->getContentBlockOptions(),
+            ],
+            ['name' => 'output_key', 'label' => (string) __('Output variable name (optional)')],
+        ];
+    }
+
+    /**
+     * entity_id => "name (type)" for every enabled content block - same query
+     * Block\Adminhtml\Campaign\Edit\Flow::getContentBlockOptions() used to run itself, before
+     * this method moved here.
+     *
+     * @return array<int, string>
+     */
+    private function getContentBlockOptions(): array
+    {
+        $collection = $this->contentBlockCollectionFactory->create();
+        $collection->addFieldToFilter('enabled', 1);
+
+        $options = [];
+        foreach ($collection as $block) {
+            /** @var ContentBlock $block */
+            $options[(int) $block->getEntityId()] = $block->getName() . ' (' . $block->getType() . ')';
+        }
+
+        return $options;
     }
 }

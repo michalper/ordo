@@ -45,4 +45,11 @@ class PurchasedCategory implements ConditionInterface, BulkResolvableConditionIn
 
         return $this->purchasedProductResolver->getCustomerIdsWhoPurchasedInCategory((int) $categoryId);
     }
+
+    public function getParamFields(): array
+    {
+        return [
+            ['name' => 'category_id', 'label' => (string) __('Category ID')],
+        ];
+    }
 }

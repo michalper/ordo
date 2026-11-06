@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Model\Campaign\Condition;
 
 use Ordo\Automation\Model\Campaign\Condition\MessageEngaged;
+use Ordo\Automation\Model\Config\Source\CampaignOptions;
+use Ordo\Automation\Model\Config\Source\MessageEngagementType;
 use Ordo\Automation\Model\Email\MessageEngagementResolver;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
@@ -11,12 +13,15 @@ use PHPUnit\Framework\TestCase;
 class MessageEngagedTest extends TestCase
 {
     private MessageEngagementResolver&\PHPUnit\Framework\MockObject\MockObject $resolver;
+    private CampaignOptions $campaignOptions;
     private MessageEngaged $condition;
 
     protected function setUp(): void
     {
         $this->resolver = $this->createMock(MessageEngagementResolver::class);
-        $this->condition = new MessageEngaged($this->resolver);
+        $this->campaignOptions = $this->createStub(CampaignOptions::class);
+        $this->campaignOptions->method('toOptionArray')->willReturn([]);
+        $this->condition = new MessageEngaged($this->resolver, $this->campaignOptions, new MessageEngagementType());
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -81,5 +86,13 @@ class MessageEngagedTest extends TestCase
             'engagement_type' => 'clicked',
             'engagement_within_days' => 30,
         ]));
+    }
+
+    public function testGetParamFieldsListsCampaignAndEngagementFields(): void
+    {
+        self::assertSame(
+            ['campaign_id', 'engagement_type', 'engagement_within_days'],
+            array_column($this->condition->getParamFields(), 'name')
+        );
     }
 }

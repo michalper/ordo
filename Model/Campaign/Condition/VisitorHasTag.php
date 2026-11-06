@@ -5,6 +5,7 @@ namespace Ordo\Automation\Model\Campaign\Condition;
 
 use Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface;
 use Ordo\Automation\Api\Campaign\ConditionInterface;
+use Ordo\Automation\Model\Campaign\OptionSourceFlattener;
 use Ordo\Automation\Model\Config\Source\TagMatchMode;
 use Ordo\Automation\Model\VisitorTagManager;
 
@@ -23,7 +24,8 @@ use Ordo\Automation\Model\VisitorTagManager;
 class VisitorHasTag implements ConditionInterface, BulkResolvableConditionInterface
 {
     public function __construct(
-        private readonly VisitorTagManager $visitorTagManager
+        private readonly VisitorTagManager $visitorTagManager,
+        private readonly TagMatchMode $tagMatchModeOptions
     ) {
     }
 
@@ -44,6 +46,22 @@ class VisitorHasTag implements ConditionInterface, BulkResolvableConditionInterf
     public function resolveCustomerIds(array $params): array
     {
         return [];
+    }
+
+    /**
+     * Identical to HasTag::getParamFields() - same two fields, same "tags" field name (see this
+     * class's own docblock on why).
+     */
+    public function getParamFields(): array
+    {
+        return [
+            ['name' => 'tags', 'label' => (string) __('Tags'), 'type' => 'tag_multiselect'],
+            [
+                'name' => 'match_mode',
+                'label' => (string) __('Match'),
+                'options' => OptionSourceFlattener::toMap($this->tagMatchModeOptions),
+            ],
+        ];
     }
 
     /**

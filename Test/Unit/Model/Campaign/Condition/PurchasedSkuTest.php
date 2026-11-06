@@ -71,4 +71,9 @@ class PurchasedSkuTest extends TestCase
 
         self::assertSame([], $this->condition->resolveCustomerIds(['sku' => '']));
     }
+
+    public function testGetParamFieldsListsSku(): void
+    {
+        self::assertSame(['sku'], array_column($this->condition->getParamFields(), 'name'));
+    }
 }

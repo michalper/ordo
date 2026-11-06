@@ -82,4 +82,11 @@ class NpsScoreAtLeast implements ConditionInterface, BulkResolvableConditionInte
 
         return array_map('intval', $ids);
     }
+
+    public function getParamFields(): array
+    {
+        return [
+            ['name' => 'threshold', 'label' => (string) __('Minimum NPS score')],
+        ];
+    }
 }

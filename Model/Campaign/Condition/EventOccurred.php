@@ -5,6 +5,8 @@ namespace Ordo\Automation\Model\Campaign\Condition;
 
 use Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface;
 use Ordo\Automation\Api\Campaign\ConditionInterface;
+use Ordo\Automation\Model\Campaign\OptionSourceFlattener;
+use Ordo\Automation\Model\Config\Source\EventType;
 use Ordo\Automation\Model\Event\EventOccurredResolver;
 
 /**
@@ -20,7 +22,8 @@ use Ordo\Automation\Model\Event\EventOccurredResolver;
 class EventOccurred implements ConditionInterface, BulkResolvableConditionInterface
 {
     public function __construct(
-        private readonly EventOccurredResolver $eventOccurredResolver
+        private readonly EventOccurredResolver $eventOccurredResolver,
+        private readonly EventType $eventTypeOptions
     ) {
     }
 
@@ -62,5 +65,18 @@ class EventOccurred implements ConditionInterface, BulkResolvableConditionInterf
             $eventKey !== '' ? $eventKey : null,
             $withinDays
         );
+    }
+
+    public function getParamFields(): array
+    {
+        return [
+            [
+                'name' => 'event_type',
+                'label' => (string) __('Event'),
+                'options' => OptionSourceFlattener::toMap($this->eventTypeOptions),
+            ],
+            ['name' => 'event_key', 'label' => (string) __('SKU (optional)')],
+            ['name' => 'within_days', 'label' => (string) __('Within days')],
+        ];
     }
 }

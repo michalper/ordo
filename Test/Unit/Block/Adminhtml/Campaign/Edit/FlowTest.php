@@ -7,6 +7,8 @@ use Magento\Backend\Block\Template\Context;
 use Magento\Directory\Helper\Data as DirectoryHelper;
 use Magento\Framework\Json\Helper\Data as JsonHelper;
 use Magento\Framework\Registry;
+use Ordo\Automation\Api\Campaign\ActionInterface;
+use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Block\Adminhtml\Campaign\Edit\Flow;
 use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\Campaign\ActionPool;
@@ -16,27 +18,23 @@ use Ordo\Automation\Model\CampaignAction;
 use Ordo\Automation\Model\CampaignCondition;
 use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
-use Ordo\Automation\Model\ContentBlock;
-use Ordo\Automation\Model\Config\Source\CampaignOptions;
-use Ordo\Automation\Model\Config\Source\CartPriceRuleOptions;
-use Ordo\Automation\Model\Config\Source\EmailTemplateOptions;
-use Ordo\Automation\Model\Config\Source\EventType;
-use Ordo\Automation\Model\Config\Source\LoyaltyTier;
-use Ordo\Automation\Model\Config\Source\MessageEngagementType;
-use Ordo\Automation\Model\Config\Source\TagMatchMode;
-use Ordo\Automation\Model\Config\Source\SegmentOptions;
-use Ordo\Automation\Model\Config\Source\WhatsAppTemplateOptions;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\Collection as ActionCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\Collection as ConditionCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as ConditionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as TriggerCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
-use Ordo\Automation\Model\ResourceModel\ContentBlock\Collection as ContentBlockCollection;
-use Ordo\Automation\Model\ResourceModel\ContentBlock\CollectionFactory as ContentBlockCollectionFactory;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * getFieldsConfig()'s own field content (labels/notices/options for a given condition/action
+ * type) is no longer tested here - it's read straight from each ConditionPool/ActionPool-
+ * registered class's own getParamFields(), tested in that class's own *Test.php. This file only
+ * covers Flow's own composition: the trigger/condition/action chain building (getFlowDataJson()),
+ * type/label lookups, and that getFieldsConfig() correctly passes each type through to its own
+ * pool entry (or ActionPool::splitActionFields() for the one pseudo-type with no entry).
+ */
 class FlowTest extends TestCase
 {
     private Registry $registry;
@@ -46,16 +44,6 @@ class FlowTest extends TestCase
     private TriggerEvent $triggerEventSource;
     private ConditionPool $conditionPool;
     private ActionPool $actionPool;
-    private ContentBlockCollectionFactory $contentBlockCollectionFactory;
-    private WhatsAppTemplateOptions $whatsAppTemplateOptions;
-    private SegmentOptions $segmentOptions;
-    private LoyaltyTier $loyaltyTierOptions;
-    private EventType $eventTypeOptions;
-    private CampaignOptions $campaignOptions;
-    private MessageEngagementType $messageEngagementTypeOptions;
-    private TagMatchMode $tagMatchModeOptions;
-    private CartPriceRuleOptions $cartPriceRuleOptions;
-    private EmailTemplateOptions $emailTemplateOptions;
 
     protected function setUp(): void
     {
@@ -63,29 +51,6 @@ class FlowTest extends TestCase
         $this->triggerCollectionFactory = $this->createStub(TriggerCollectionFactory::class);
         $this->conditionCollectionFactory = $this->createStub(ConditionCollectionFactory::class);
         $this->actionCollectionFactory = $this->createStub(ActionCollectionFactory::class);
-        $this->contentBlockCollectionFactory = $this->createStub(ContentBlockCollectionFactory::class);
-        $contentBlockCollection = $this->createStub(ContentBlockCollection::class);
-        $contentBlockCollection->method('addFieldToFilter')->willReturnSelf();
-        $contentBlockCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
-        $this->contentBlockCollectionFactory->method('create')->willReturn($contentBlockCollection);
-        $this->whatsAppTemplateOptions = $this->createStub(WhatsAppTemplateOptions::class);
-        $this->whatsAppTemplateOptions->method('toOptionArray')->willReturn([]);
-        $this->segmentOptions = $this->createStub(SegmentOptions::class);
-        $this->segmentOptions->method('toOptionArray')->willReturn([]);
-        $this->loyaltyTierOptions = $this->createStub(LoyaltyTier::class);
-        $this->loyaltyTierOptions->method('toOptionArray')->willReturn([]);
-        // The real class — it has no dependencies and its two hardcoded options are exactly
-        // what getEventTypeOptions() should surface.
-        $this->eventTypeOptions = new EventType();
-        $this->campaignOptions = $this->createStub(CampaignOptions::class);
-        $this->campaignOptions->method('toOptionArray')->willReturn([]);
-        // Also real/no dependencies, same reasoning as eventTypeOptions above.
-        $this->messageEngagementTypeOptions = new MessageEngagementType();
-        $this->tagMatchModeOptions = new TagMatchMode();
-        $this->cartPriceRuleOptions = $this->createStub(CartPriceRuleOptions::class);
-        $this->cartPriceRuleOptions->method('toOptionArray')->willReturn([]);
-        $this->emailTemplateOptions = $this->createStub(EmailTemplateOptions::class);
-        $this->emailTemplateOptions->method('toOptionArray')->willReturn([]);
         $this->triggerEventSource = $this->createStub(TriggerEvent::class);
         $this->triggerEventSource->method('toOptionArray')->willReturn([
             ['value' => 'order_placed', 'label' => __('Order Placed')],
@@ -115,20 +80,27 @@ class FlowTest extends TestCase
             $this->conditionPool,
             $this->actionPool,
             new TypeLabels(),
-            $this->contentBlockCollectionFactory,
-            $this->whatsAppTemplateOptions,
-            $this->segmentOptions,
-            $this->loyaltyTierOptions,
-            $this->eventTypeOptions,
-            $this->campaignOptions,
-            $this->messageEngagementTypeOptions,
-            $this->tagMatchModeOptions,
-            $this->cartPriceRuleOptions,
-            $this->emailTemplateOptions,
             [],
             $this->createStub(JsonHelper::class),
             $this->createStub(DirectoryHelper::class)
         );
+    }
+
+    /**
+     * @param int[] $customerIds
+     */
+    private function stubCondition(array $paramFields): ConditionInterface
+    {
+        $condition = $this->createStub(ConditionInterface::class);
+        $condition->method('getParamFields')->willReturn($paramFields);
+        return $condition;
+    }
+
+    private function stubAction(array $paramFields): ActionInterface
+    {
+        $action = $this->createStub(ActionInterface::class);
+        $action->method('getParamFields')->willReturn($paramFields);
+        return $action;
     }
 
     private function triggerCollectionWith(array $triggerEvents): TriggerCollection
@@ -395,31 +367,6 @@ class FlowTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
-    public function testGetFieldsConfigListsKnownConditionAndActionFields(): void
-    {
-        $config = $this->makeBlock()->getFieldsConfig();
-
-        self::assertSame(
-            [
-                ['name' => 'tags', 'label' => 'Tags', 'type' => 'tag_multiselect'],
-                [
-                    'name' => 'match_mode',
-                    'label' => 'Match',
-                    'options' => ['any' => 'Has ANY of these tags', 'all' => 'Has ALL of these tags'],
-                ],
-            ],
-            $config['condition']['tag']
-        );
-        self::assertSame(
-            [
-                ['name' => 'rule_id', 'label' => 'Cart price rule', 'options' => []],
-                ['name' => 'prefix', 'label' => 'Coupon code prefix'],
-            ],
-            $config['action']['generate_coupon']
-        );
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
     public function testGetFieldsConfigListsScheduledTriggerFields(): void
     {
         $config = $this->makeBlock()->getFieldsConfig();
@@ -511,163 +458,54 @@ class FlowTest extends TestCase
         self::assertStringContainsString('alert(1)', $data[2]['html']);
     }
 
+    /**
+     * getFieldsConfig()'s own job for conditions/actions is now just "ask the pool for this
+     * type's own getParamFields()" - this is the one test proving that pass-through, rather than
+     * re-testing any specific type's field content (see each condition/action class's own
+     * *Test.php for that).
+     */
     #[AllowMockObjectsWithoutExpectations]
-    public function testGetContentBlockOptionsMapsEntityIdToNameAndType(): void
+    public function testGetFieldsConfigReadsEachTypeDirectlyFromItsOwnPoolEntry(): void
     {
-        $contentBlock = $this->createStub(ContentBlock::class);
-        $contentBlock->method('getEntityId')->willReturn(7);
-        $contentBlock->method('getName')->willReturn('Welcome Snippet');
-        $contentBlock->method('getType')->willReturn('snippet');
+        $this->conditionPool->method('get')->willReturnMap([
+            ['order_total_gte', $this->stubCondition([['name' => 'amount', 'label' => 'Minimum order total']])],
+            ['tag', $this->stubCondition([['name' => 'tags', 'label' => 'Tags', 'type' => 'tag_multiselect']])],
+        ]);
+        $this->actionPool->method('get')->willReturnMap([
+            ['add_tag', $this->stubAction([['name' => 'tags', 'label' => 'Tags', 'type' => 'tag_multiselect']])],
+            ['send_email', $this->stubAction([['name' => 'template', 'label' => 'Email template']])],
+        ]);
 
-        $contentBlockCollection = $this->createMock(ContentBlockCollection::class);
-        $contentBlockCollection->expects(self::once())
-            ->method('addFieldToFilter')
-            ->with('enabled', 1)
-            ->willReturnSelf();
-        $contentBlockCollection->method('getIterator')->willReturn(new \ArrayIterator([$contentBlock]));
-        $this->contentBlockCollectionFactory = $this->createStub(ContentBlockCollectionFactory::class);
-        $this->contentBlockCollectionFactory->method('create')->willReturn($contentBlockCollection);
+        $config = $this->makeBlock()->getFieldsConfig();
 
+        self::assertSame([['name' => 'amount', 'label' => 'Minimum order total']], $config['condition']['order_total_gte']);
         self::assertSame(
-            [7 => 'Welcome Snippet (snippet)'],
-            $this->makeBlock()->getContentBlockOptions()
+            [['name' => 'tags', 'label' => 'Tags', 'type' => 'tag_multiselect']],
+            $config['condition']['tag']
         );
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testGetWhatsAppTemplateOptionsFlattensTheSourceToAValueLabelMap(): void
-    {
-        $this->whatsAppTemplateOptions = $this->createStub(WhatsAppTemplateOptions::class);
-        $this->whatsAppTemplateOptions->method('toOptionArray')->willReturn([
-            ['value' => 3, 'label' => 'Order Shipped'],
-        ]);
-
-        self::assertSame(
-            [3 => 'Order Shipped'],
-            $this->makeBlock()->getWhatsAppTemplateOptions()
-        );
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testGetFieldsConfigListsSendWhatsAppTemplateAndParamsFields(): void
-    {
-        $this->whatsAppTemplateOptions = $this->createStub(WhatsAppTemplateOptions::class);
-        $this->whatsAppTemplateOptions->method('toOptionArray')->willReturn([
-            ['value' => 3, 'label' => 'Order Shipped'],
-        ]);
-
-        $config = $this->makeBlock()->getFieldsConfig()['action']['send_whatsapp'];
-
-        self::assertSame('template_id', $config[0]['name']);
-        self::assertSame([3 => 'Order Shipped'], $config[0]['options']);
-        self::assertSame('params', $config[1]['name']);
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testGetFieldsConfigListsSendPushTitleBodyAndUrlFields(): void
-    {
-        $config = $this->makeBlock()->getFieldsConfig()['action']['send_push'];
-
-        self::assertSame('title', $config[0]['name']);
-        self::assertSame('body', $config[1]['name']);
-        self::assertSame('url', $config[2]['name']);
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testGetSegmentOptionsMapsEntityIdToName(): void
-    {
-        $this->segmentOptions = $this->createStub(SegmentOptions::class);
-        $this->segmentOptions->method('toOptionArray')->willReturn([
-            ['value' => 9, 'label' => 'VIP customers'],
-        ]);
-
-        self::assertSame([9 => 'VIP customers'], $this->makeBlock()->getSegmentOptions());
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testGetCartPriceRuleOptionsMapsRuleIdToName(): void
-    {
-        $this->cartPriceRuleOptions = $this->createStub(CartPriceRuleOptions::class);
-        $this->cartPriceRuleOptions->method('toOptionArray')->willReturn([
-            ['value' => 5, 'label' => '10% Off'],
-        ]);
-
-        self::assertSame([5 => '10% Off'], $this->makeBlock()->getCartPriceRuleOptions());
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testGetEmailTemplateOptionsMapsIdentifierToLabel(): void
-    {
-        $this->emailTemplateOptions = $this->createStub(EmailTemplateOptions::class);
-        $this->emailTemplateOptions->method('toOptionArray')->willReturn([
-            ['value' => 'ordo_campaign_generic', 'label' => 'Generic Campaign Email'],
-            ['value' => 12, 'label' => 'Custom Welcome'],
-        ]);
-
-        self::assertSame(
-            ['ordo_campaign_generic' => 'Generic Campaign Email', 12 => 'Custom Welcome'],
-            $this->makeBlock()->getEmailTemplateOptions()
-        );
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testGetLoyaltyTierOptionsMapsTierToLabel(): void
-    {
-        $this->loyaltyTierOptions = $this->createStub(LoyaltyTier::class);
-        $this->loyaltyTierOptions->method('toOptionArray')->willReturn([
-            ['value' => 'bronze', 'label' => 'Bronze'],
-            ['value' => 'gold', 'label' => 'Gold'],
-        ]);
-
-        self::assertSame(
-            ['bronze' => 'Bronze', 'gold' => 'Gold'],
-            $this->makeBlock()->getLoyaltyTierOptions()
-        );
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testGetFieldsConfigListsInSegmentNotInSegmentLoyaltyTierNpsAndEventOccurredFields(): void
-    {
-        $this->segmentOptions = $this->createStub(SegmentOptions::class);
-        $this->segmentOptions->method('toOptionArray')->willReturn([
-            ['value' => 9, 'label' => 'VIP customers'],
-        ]);
-
-        $config = $this->makeBlock()->getFieldsConfig()['condition'];
-
-        self::assertSame('segment_id', $config['in_segment'][0]['name']);
-        self::assertSame([9 => 'VIP customers'], $config['in_segment'][0]['options']);
-        self::assertSame('segment_id', $config['not_in_segment'][0]['name']);
-        self::assertSame('tier', $config['loyalty_tier_at_least'][0]['name']);
-        self::assertSame('threshold', $config['nps_score_at_least'][0]['name']);
-        self::assertSame(
-            ['event_type', 'event_key', 'within_days'],
-            array_column($config['event_occurred'], 'name')
-        );
+        self::assertSame([['name' => 'template', 'label' => 'Email template']], $config['action']['send_email']);
     }
 
     /**
-     * Regression test: order_frequency_at_least/recency_days_at_most/monetary_total_at_least
-     * had no entry here at all - the Drawflow "Flow" canvas (the only editor a merchant, or
-     * MFTF's window.ordoFlowTestHook.buildChain(), can use) falls back to the generic
-     * params_json field for any condition type not listed, so count/days/amount posted via
-     * fields: {count: ...} etc. was a silent no-op and the condition could never actually be
-     * satisfied. Confirmed via a real CI run: AdminOrderFrequencyAtLeastConditionTest/
-     * AdminRecencyDaysAtMostConditionTest/AdminMonetaryTotalAtLeastConditionTest all failed with
-     * their campaign's send_email action never firing, even after a long wait - not a timing
-     * race, the condition was unconditionally false because its param was never actually set.
+     * A type the pool doesn't resolve (a custom condition/action a store added with no
+     * getParamFields() override, or simply not configured in this test) gets an empty field
+     * list - it still works via the JSON fallback field every node has, just with no dedicated
+     * inputs.
      */
     #[AllowMockObjectsWithoutExpectations]
-    public function testGetFieldsConfigListsRfmAtLeastConditionFields(): void
+    public function testGetFieldsConfigIsEmptyForATypeThePoolDoesNotResolve(): void
     {
-        $config = $this->makeBlock()->getFieldsConfig()['condition'];
+        $config = $this->makeBlock()->getFieldsConfig();
 
-        self::assertSame('count', $config['order_frequency_at_least'][0]['name']);
-        self::assertSame('days', $config['recency_days_at_most'][0]['name']);
-        self::assertSame('amount', $config['monetary_total_at_least'][0]['name']);
-        self::assertSame('ratio_at_least', $config['reorder_cycle_at_risk'][0]['name']);
+        self::assertSame([], $config['condition']['order_total_gte']);
+        self::assertSame([], $config['action']['send_email']);
     }
 
+    /**
+     * 'split' has no ActionPool entry at all (CampaignDispatcher::runSplit() intercepts it
+     * directly) - its field descriptor comes from ActionPool::splitActionFields() instead of a
+     * pool lookup.
+     */
     #[AllowMockObjectsWithoutExpectations]
     public function testGetFieldsConfigDescribesSplitAsAVariantListField(): void
     {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Model\Campaign\Condition;
 
 use Ordo\Automation\Model\Campaign\Condition\LoyaltyTierAtLeast;
+use Ordo\Automation\Model\Config\Source\LoyaltyTier as LoyaltyTierOptions;
 use Ordo\Automation\Model\CustomerScoreManager;
 use Ordo\Automation\Model\LoyaltyTierCalculator;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -13,13 +14,20 @@ class LoyaltyTierAtLeastTest extends TestCase
 {
     private CustomerScoreManager&\PHPUnit\Framework\MockObject\MockObject $customerScoreManager;
     private LoyaltyTierCalculator&\PHPUnit\Framework\MockObject\MockObject $loyaltyTierCalculator;
+    private LoyaltyTierOptions $loyaltyTierOptions;
     private LoyaltyTierAtLeast $condition;
 
     protected function setUp(): void
     {
         $this->customerScoreManager = $this->createMock(CustomerScoreManager::class);
         $this->loyaltyTierCalculator = $this->createMock(LoyaltyTierCalculator::class);
-        $this->condition = new LoyaltyTierAtLeast($this->customerScoreManager, $this->loyaltyTierCalculator);
+        $this->loyaltyTierOptions = $this->createStub(LoyaltyTierOptions::class);
+        $this->loyaltyTierOptions->method('toOptionArray')->willReturn([]);
+        $this->condition = new LoyaltyTierAtLeast(
+            $this->customerScoreManager,
+            $this->loyaltyTierCalculator,
+            $this->loyaltyTierOptions
+        );
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -113,5 +121,10 @@ class LoyaltyTierAtLeastTest extends TestCase
         $this->customerScoreManager->expects(self::never())->method('getAllCustomerIds');
 
         self::assertSame([], $this->condition->resolveCustomerIds(['tier' => 'platinum']));
+    }
+
+    public function testGetParamFieldsListsTier(): void
+    {
+        self::assertSame(['tier'], array_column($this->condition->getParamFields(), 'name'));
     }
 }

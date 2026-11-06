@@ -19,38 +19,8 @@ parameters:
 			path: Block/Adminhtml/Campaign/Edit/Flow.php
 
 		-
-			message: '#^Cannot access offset ''label'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Block/Adminhtml/Campaign/Edit/Flow.php
-
-		-
 			message: '#^Cannot access offset ''output_1'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Block/Adminhtml/Campaign/Edit/Flow.php
-
-		-
-			message: '#^Cannot access offset ''value'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Block/Adminhtml/Campaign/Edit/Flow.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 1
-			path: Block/Adminhtml/Campaign/Edit/Flow.php
-
-		-
-			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, int given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Block/Adminhtml/Campaign/Edit/Flow.php
-
-		-
-			message: '#^Possibly invalid array key type mixed\.$#'
-			identifier: offsetAccess.invalidOffset
 			count: 1
 			path: Block/Adminhtml/Campaign/Edit/Flow.php
 
@@ -1627,6 +1597,12 @@ parameters:
 			path: Model/Campaign/Action/AddDynamicContent.php
 
 		-
+			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Campaign/Action/AddDynamicContent.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 2
@@ -1791,13 +1767,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 7
-			path: Model/Campaign/CampaignSaveProcessor.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\Campaign\\CampaignSaveProcessor\:\:parseJson\(\) should return array\<string, mixed\> but returns array\<mixed\>\.$#'
-			identifier: return.type
-			count: 1
+			count: 5
 			path: Model/Campaign/CampaignSaveProcessor.php
 
 		-
@@ -1805,6 +1775,42 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Model/Campaign/CampaignSaveProcessor.php
+
+		-
+			message: '#^Cannot access offset ''label'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/Campaign/OptionSourceFlattener.php
+
+		-
+			message: '#^Cannot access offset ''value'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Model/Campaign/OptionSourceFlattener.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/Campaign/OptionSourceFlattener.php
+
+		-
+			message: '#^Possibly invalid array key type mixed\.$#'
+			identifier: offsetAccess.invalidOffset
+			count: 1
+			path: Model/Campaign/OptionSourceFlattener.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Model/Campaign/ParamFieldsNormalizer.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Model\\Campaign\\ParamFieldsNormalizer\:\:parseJson\(\) should return array\<string, mixed\> but returns array\<mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Model/Campaign/ParamFieldsNormalizer.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -3753,13 +3759,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 6
-			path: Model/Segment/SegmentSaveProcessor.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Model\\Segment\\SegmentSaveProcessor\:\:parseJson\(\) should return array\<string, mixed\> but returns array\<mixed\>\.$#'
-			identifier: return.type
-			count: 1
+			count: 4
 			path: Model/Segment/SegmentSaveProcessor.php
 
 		-

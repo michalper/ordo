@@ -99,4 +99,12 @@ class NotifyTest extends TestCase
         $context = ['customer_id' => 42];
         $this->action->execute($context, []);
     }
+
+    public function testGetParamFieldsListsHeadlineBodyAndCta(): void
+    {
+        self::assertSame(
+            ['headline', 'body', 'cta_label', 'cta_url'],
+            array_column($this->action->getParamFields(), 'name')
+        );
+    }
 }

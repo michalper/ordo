@@ -9,10 +9,13 @@ use Magento\Framework\Mail\Template\TransportBuilder;
 use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Api\Campaign\ActionInterface;
+use Ordo\Automation\Model\Campaign\ConsentTopicOptions;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
 use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
+use Ordo\Automation\Model\Campaign\OptionSourceFlattener;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\Campaign\SendTimeOptimizationGate;
+use Ordo\Automation\Model\Config\Source\EmailTemplateOptions;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\ConsentTopic;
@@ -71,7 +74,8 @@ class SendEmail implements ActionInterface
         private readonly SendRetrier $sendRetrier,
         private readonly MessageSendRetryQueue $messageSendRetryQueue,
         private readonly LoggerInterface $logger,
-        private readonly CustomerStoreResolver $customerStoreResolver
+        private readonly CustomerStoreResolver $customerStoreResolver,
+        private readonly EmailTemplateOptions $emailTemplateOptions
     ) {
     }
 
@@ -189,5 +193,37 @@ class SendEmail implements ActionInterface
             $this->pendingMessageIdHolder->consume();
             $this->inlineTranslation->resume();
         }
+    }
+
+    public function getParamFields(): array
+    {
+        return [
+            [
+                'name' => 'template',
+                'label' => (string) __('Email template'),
+                'options' => OptionSourceFlattener::toMap($this->emailTemplateOptions),
+            ],
+            ['name' => 'message', 'label' => (string) __('Message')],
+            [
+                'name' => 'use_optimal_send_time',
+                'label' => (string) __('Send at customer\'s optimal time'),
+                'options' => [
+                    '' => (string) __('No - send immediately'),
+                    'true' => (string) __(
+                        'Yes - defer to this customer\'s own historically-best open/click hour'
+                        . ' (Model\Campaign\SendTimeOptimizer), when enough history exists'
+                    ),
+                ],
+            ],
+            [
+                'name' => 'topic',
+                'label' => (string) __('Consent topic'),
+                'options' => ConsentTopicOptions::toMap(),
+                'notice' => (string) __(
+                    'Which opt-out preference this send is checked against, beyond the'
+                    . ' customer\'s own per-channel consent. Defaults to Promotional if left blank.'
+                ),
+            ],
+        ];
     }
 }

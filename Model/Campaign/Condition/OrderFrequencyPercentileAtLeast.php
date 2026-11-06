@@ -15,4 +15,9 @@ class OrderFrequencyPercentileAtLeast extends AbstractPercentileAtLeast
     {
         return 'frequency_percentile';
     }
+
+    protected function getFieldLabel(): string
+    {
+        return (string) __('Minimum order-frequency percentile');
+    }
 }

@@ -57,4 +57,14 @@ class ReorderCycleAtRisk implements ConditionInterface, BulkResolvableConditionI
 
         return $matching;
     }
+
+    public function getParamFields(): array
+    {
+        return [
+            [
+                'name' => 'ratio_at_least',
+                'label' => (string) __('Drift ratio, at least (1.0 = exactly on schedule)'),
+            ],
+        ];
+    }
 }

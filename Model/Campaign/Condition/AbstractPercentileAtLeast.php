@@ -27,6 +27,12 @@ abstract class AbstractPercentileAtLeast implements ConditionInterface, BulkReso
      */
     abstract protected function getPercentileKey(): string;
 
+    /**
+     * Admin-facing label for the one "percentile" field every concrete subclass shares - the
+     * only thing besides getPercentileKey() a subclass needs to supply.
+     */
+    abstract protected function getFieldLabel(): string;
+
     public function isSatisfied(array $context, array $params): bool
     {
         $customerId = (int) ($context['customer_id'] ?? 0);
@@ -68,5 +74,12 @@ abstract class AbstractPercentileAtLeast implements ConditionInterface, BulkReso
         }
 
         return $matching;
+    }
+
+    public function getParamFields(): array
+    {
+        return [
+            ['name' => 'percentile', 'label' => $this->getFieldLabel()],
+        ];
     }
 }

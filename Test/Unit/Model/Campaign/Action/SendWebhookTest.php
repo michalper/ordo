@@ -182,4 +182,9 @@ class SendWebhookTest extends TestCase
 
         self::assertSame(2, $calls);
     }
+
+    public function testGetParamFieldsListsEvent(): void
+    {
+        self::assertSame(['event'], array_column($this->makeAction()->getParamFields(), 'name'));
+    }
 }

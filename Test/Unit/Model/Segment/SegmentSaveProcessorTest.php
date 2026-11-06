@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Model\Segment;
 
+use Ordo\Automation\Api\Campaign\ConditionInterface;
+use Ordo\Automation\Model\Campaign\ConditionPool;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition as SegmentConditionResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\Collection as SegmentConditionCollection;
@@ -22,6 +24,7 @@ use PHPUnit\Framework\TestCase;
 
 class SegmentSaveProcessorTest extends TestCase
 {
+    private ConditionPool $conditionPool;
     private SegmentFactory $segmentFactory;
     private SegmentResource $segmentResource;
     private SegmentConditionFactory $segmentConditionFactory;
@@ -33,6 +36,10 @@ class SegmentSaveProcessorTest extends TestCase
 
     protected function setUp(): void
     {
+        $this->conditionPool = $this->createStub(ConditionPool::class);
+        $this->conditionPool->method('get')->willReturnCallback(
+            fn (string $type) => $this->stubConditionFields()[$type] ?? null
+        );
         $this->segmentFactory = $this->createMock(SegmentFactory::class);
         $this->segmentResource = $this->createMock(SegmentResource::class);
         $this->segmentConditionFactory = $this->createMock(SegmentConditionFactory::class);
@@ -44,9 +51,41 @@ class SegmentSaveProcessorTest extends TestCase
         $this->segmentWebsiteCollectionFactory->method('create')->willReturn($this->emptyWebsiteCollection());
     }
 
+    /**
+     * Every condition type any test in this file posts a row for - see
+     * Model\Campaign\CampaignSaveProcessorTest's identical stubConditionFields() for the full
+     * reasoning. 'group'/'tag' rows don't need real field metadata here: normalizeGroupRow()
+     * never consults the pool at all, and the one 'tag' test only counts how many rows got
+     * created, not their params content.
+     *
+     * @return array<string, ConditionInterface>
+     */
+    private function stubConditionFields(): array
+    {
+        return [
+            'monetary_total_at_least' => $this->stubCondition([['name' => 'amount']]),
+            'event_occurred' => $this->stubCondition([
+                ['name' => 'event_type'],
+                ['name' => 'event_key'],
+                ['name' => 'within_days'],
+            ]),
+            'in_segment' => $this->stubCondition([['name' => 'segment_id']]),
+            'loyalty_tier_at_least' => $this->stubCondition([['name' => 'tier']]),
+            'reorder_cycle_at_risk' => $this->stubCondition([['name' => 'ratio_at_least']]),
+        ];
+    }
+
+    private function stubCondition(array $paramFields): ConditionInterface
+    {
+        $condition = $this->createStub(ConditionInterface::class);
+        $condition->method('getParamFields')->willReturn($paramFields);
+        return $condition;
+    }
+
     private function makeProcessor(): SegmentSaveProcessor
     {
         return new SegmentSaveProcessor(
+            $this->conditionPool,
             $this->segmentFactory,
             $this->segmentResource,
             $this->segmentConditionFactory,

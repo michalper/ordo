@@ -17,4 +17,11 @@ interface ActionInterface
      * @param array<string, mixed> $params    action configuration saved on the campaign
      */
     public function execute(array &$context, array $params): void;
+
+    /**
+     * Same role as ConditionInterface::getParamFields() - see that method's own docblock.
+     *
+     * @return array<int, array{name: string, label: string, notice?: string, options?: array<int|string, string>, type?: string}>
+     */
+    public function getParamFields(): array;
 }

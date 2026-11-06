@@ -156,6 +156,11 @@ class SegmentMemberResolverTest extends TestCase
             {
                 return $this->customerIds;
             }
+
+            public function getParamFields(): array
+            {
+                return [];
+            }
         };
     }
 
@@ -377,6 +382,11 @@ class SegmentMemberResolverTest extends TestCase
             {
                 return $this->inner->resolveCustomerIds($params);
             }
+
+            public function getParamFields(): array
+            {
+                return [];
+            }
         };
 
         $this->conditionsByType['clv_at_least'] = $poolCondition;
@@ -449,6 +459,11 @@ class SegmentMemberResolverTest extends TestCase
             public function resolveCustomerIds(array $params): array
             {
                 return $this->inner->resolveCustomerIds($params);
+            }
+
+            public function getParamFields(): array
+            {
+                return [];
             }
         };
 
@@ -612,6 +627,11 @@ class SegmentMemberResolverTest extends TestCase
             public function resolveCustomerIds(array $params): array
             {
                 return $this->inner->resolveCustomerIds($params);
+            }
+
+            public function getParamFields(): array
+            {
+                return [];
             }
         };
 

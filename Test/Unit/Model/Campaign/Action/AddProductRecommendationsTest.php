@@ -104,4 +104,9 @@ class AddProductRecommendationsTest extends TestCase
         self::assertSame('', $context['recommended_products_html']);
         self::assertSame('', $context['recommended_products_text']);
     }
+
+    public function testGetParamFieldsListsCount(): void
+    {
+        self::assertSame(['count'], array_column($this->action->getParamFields(), 'name'));
+    }
 }

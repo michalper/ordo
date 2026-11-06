@@ -77,4 +77,9 @@ class MonetaryTotalAtLeastTest extends TestCase
 
         self::assertSame([], $this->condition->resolveCustomerIds(['amount' => 'not-a-number']));
     }
+
+    public function testGetParamFieldsListsAmount(): void
+    {
+        self::assertSame(['amount'], array_column($this->condition->getParamFields(), 'name'));
+    }
 }

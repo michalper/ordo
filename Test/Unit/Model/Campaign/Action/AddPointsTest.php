@@ -50,4 +50,9 @@ class AddPointsTest extends TestCase
         $this->action->execute($context, []);
         $this->action->execute($context, ['points' => '0']);
     }
+
+    public function testGetParamFieldsListsPoints(): void
+    {
+        self::assertSame(['points'], array_column($this->action->getParamFields(), 'name'));
+    }
 }

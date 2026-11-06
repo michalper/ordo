@@ -57,4 +57,11 @@ class NpsSurvey implements ActionInterface
 
         $this->surveyPromptResource->save($prompt);
     }
+
+    public function getParamFields(): array
+    {
+        return [
+            ['name' => 'question', 'label' => (string) __('Question')],
+        ];
+    }
 }

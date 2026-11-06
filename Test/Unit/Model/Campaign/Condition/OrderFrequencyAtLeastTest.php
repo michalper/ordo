@@ -81,4 +81,9 @@ class OrderFrequencyAtLeastTest extends TestCase
 
         self::assertSame([], $this->condition->resolveCustomerIds(['count' => 'not-a-number']));
     }
+
+    public function testGetParamFieldsListsCount(): void
+    {
+        self::assertSame(['count'], array_column($this->condition->getParamFields(), 'name'));
+    }
 }

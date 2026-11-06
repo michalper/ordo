@@ -40,4 +40,11 @@ class ScoreAtLeast implements ConditionInterface, BulkResolvableConditionInterfa
 
         return $this->customerScoreManager->getCustomerIdsWithScoreAtLeast((int) $threshold);
     }
+
+    public function getParamFields(): array
+    {
+        return [
+            ['name' => 'threshold', 'label' => (string) __('Minimum score')],
+        ];
+    }
 }

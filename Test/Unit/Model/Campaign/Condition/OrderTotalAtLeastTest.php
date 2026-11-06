@@ -38,4 +38,9 @@ class OrderTotalAtLeastTest extends TestCase
     {
         self::assertSame([], $this->condition->resolveCustomerIds(['amount' => '100']));
     }
+
+    public function testGetParamFieldsListsAmount(): void
+    {
+        self::assertSame(['amount'], array_column($this->condition->getParamFields(), 'name'));
+    }
 }

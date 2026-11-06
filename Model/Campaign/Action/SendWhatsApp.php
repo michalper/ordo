@@ -6,9 +6,12 @@ namespace Ordo\Automation\Model\Campaign\Action;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Campaign\ConsentTopicOptions;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
 use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
+use Ordo\Automation\Model\Campaign\OptionSourceFlattener;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
+use Ordo\Automation\Model\Config\Source\WhatsAppTemplateOptions;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\ConsentTopic;
@@ -56,7 +59,8 @@ class SendWhatsApp implements ActionInterface
         private readonly SendRetrier $sendRetrier,
         private readonly MessageSendRetryQueue $messageSendRetryQueue,
         private readonly LoggerInterface $logger,
-        private readonly PhoneNumberResolver $phoneNumberResolver
+        private readonly PhoneNumberResolver $phoneNumberResolver,
+        private readonly WhatsAppTemplateOptions $whatsAppTemplateOptions
     ) {
     }
 
@@ -192,5 +196,37 @@ class SendWhatsApp implements ActionInterface
         }
 
         return array_map('trim', explode(',', $paramsCsv));
+    }
+
+    public function getParamFields(): array
+    {
+        return [
+            [
+                'name' => 'template_id',
+                'label' => (string) __('WhatsApp template'),
+                'options' => OptionSourceFlattener::toMap($this->whatsAppTemplateOptions),
+                'notice' => (string) __(
+                    'Only APPROVED templates appear here — the WhatsApp Business Platform never'
+                    . ' allows a free-form message from a campaign send.'
+                ),
+            ],
+            [
+                'name' => 'params',
+                'label' => (string) __('Template parameters (comma-separated, optional)'),
+                'notice' => (string) __(
+                    'Fills the template\'s {{1}}, {{2}}, ... placeholders in order, e.g. for a'
+                    . ' template body of "Hi {{1}}, your order {{2}} shipped": John,ORD-1234'
+                ),
+            ],
+            [
+                'name' => 'topic',
+                'label' => (string) __('Consent topic'),
+                'options' => ConsentTopicOptions::toMap(),
+                'notice' => (string) __(
+                    'Which opt-out preference this send is checked against, beyond the'
+                    . ' customer\'s own per-channel consent. Defaults to Promotional if left blank.'
+                ),
+            ],
+        ];
     }
 }

@@ -29,4 +29,11 @@ class AddPoints implements ActionInterface
 
         $this->customerScoreManager->addPoints($customerId, $points);
     }
+
+    public function getParamFields(): array
+    {
+        return [
+            ['name' => 'points', 'label' => (string) __('Points')],
+        ];
+    }
 }

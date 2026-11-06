@@ -396,4 +396,12 @@ class SendSmsTest extends TestCase
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['message' => 'hello']);
     }
+
+    public function testGetParamFieldsListsMessageAndTopic(): void
+    {
+        self::assertSame(
+            ['message', 'topic'],
+            array_column($this->makeAction()->getParamFields(), 'name')
+        );
+    }
 }

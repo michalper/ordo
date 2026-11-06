@@ -6,7 +6,6 @@ namespace Ordo\Automation\Block\Adminhtml\Campaign\Edit;
 use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
 use Magento\Directory\Helper\Data as DirectoryHelper;
-use Magento\Framework\Data\OptionSourceInterface;
 use Magento\Framework\Json\Helper\Data as JsonHelper;
 use Magento\Framework\Registry;
 use Ordo\Automation\Api\Data\CampaignTriggerInterface;
@@ -17,22 +16,10 @@ use Ordo\Automation\Model\Campaign\TypeLabels;
 use Ordo\Automation\Model\CampaignAction;
 use Ordo\Automation\Model\CampaignCondition;
 use Ordo\Automation\Model\CampaignTrigger;
-use Ordo\Automation\Model\Config\Source\CampaignOptions;
-use Ordo\Automation\Model\Config\Source\CartPriceRuleOptions;
-use Ordo\Automation\Model\Config\Source\EmailTemplateOptions;
-use Ordo\Automation\Model\Config\Source\EventType;
-use Ordo\Automation\Model\Config\Source\LoyaltyTier;
-use Ordo\Automation\Model\Config\Source\MessageEngagementType;
-use Ordo\Automation\Model\Config\Source\SegmentOptions;
-use Ordo\Automation\Model\Config\Source\TagMatchMode;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
-use Ordo\Automation\Model\Config\Source\WhatsAppTemplateOptions;
-use Ordo\Automation\Model\ConsentTopic;
-use Ordo\Automation\Model\ContentBlock;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as ConditionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
-use Ordo\Automation\Model\ResourceModel\ContentBlock\CollectionFactory as ContentBlockCollectionFactory;
 
 /**
  * Editable Drawflow (https://github.com/jerosoler/Drawflow) view of a campaign's trigger(s) →
@@ -62,16 +49,6 @@ class Flow extends Template
         private readonly ConditionPool $conditionPool,
         private readonly ActionPool $actionPool,
         private readonly TypeLabels $typeLabels,
-        private readonly ContentBlockCollectionFactory $contentBlockCollectionFactory,
-        private readonly WhatsAppTemplateOptions $whatsAppTemplateOptions,
-        private readonly SegmentOptions $segmentOptions,
-        private readonly LoyaltyTier $loyaltyTierOptions,
-        private readonly EventType $eventTypeOptions,
-        private readonly CampaignOptions $campaignOptions,
-        private readonly MessageEngagementType $messageEngagementTypeOptions,
-        private readonly TagMatchMode $tagMatchModeOptions,
-        private readonly CartPriceRuleOptions $cartPriceRuleOptions,
-        private readonly EmailTemplateOptions $emailTemplateOptions,
         array $data = [],
         ?JsonHelper $jsonHelper = null,
         ?DirectoryHelper $directoryHelper = null
@@ -164,188 +141,32 @@ class Flow extends Template
     }
 
     /**
-     * entity_id => "name (type)" for every enabled content block — options for the
-     * add_dynamic_content action's content_block_id field, same select-rendering path
-     * campaign-flow-editor.js's renderFields() uses for any field descriptor that carries an
-     * "options" map.
-     *
-     * @return array<int, string>
-     */
-    public function getContentBlockOptions(): array
-    {
-        $collection = $this->contentBlockCollectionFactory->create();
-        $collection->addFieldToFilter('enabled', 1);
-
-        $options = [];
-        foreach ($collection as $block) {
-            /** @var ContentBlock $block */
-            $options[(int) $block->getEntityId()] = $block->getName() . ' (' . $block->getType() . ')';
-        }
-
-        return $options;
-    }
-
-    /**
-     * entity_id => name for every APPROVED WhatsApp template — options for the send_whatsapp
-     * action's template_id field, read from the same Source class the UI-component form uses
-     * (which also owns the "approved only" reasoning), flattened to the plain value => label
-     * map this canvas renders.
-     *
-     * @return array<int|string, string>
-     */
-    public function getWhatsAppTemplateOptions(): array
-    {
-        return $this->toMap($this->whatsAppTemplateOptions);
-    }
-
-    /**
-     * entity_id => name for every segment (ALL of them, not just enabled — see the Source
-     * class) — options for the in_segment/not_in_segment condition's segment_id field.
-     *
-     * @return array<int|string, string>
-     */
-    public function getSegmentOptions(): array
-    {
-        return $this->toMap($this->segmentOptions);
-    }
-
-    /**
-     * rule_id => rule name - the generate_coupon action's own rule_id field, and the content
-     * block product feed's rule-based source (Model\Config\Source\CartPriceRuleOptions - same
-     * active/uses-a-coupon filter either way).
-     *
-     * @return array<int|string, string>
-     */
-    public function getCartPriceRuleOptions(): array
-    {
-        return $this->toMap($this->cartPriceRuleOptions);
-    }
-
-    /**
-     * template identifier (string code or numeric DB id) => label - the send_email action's own
-     * template field (Model\Config\Source\EmailTemplateOptions).
-     *
-     * @return array<int|string, string>
-     */
-    public function getEmailTemplateOptions(): array
-    {
-        return $this->toMap($this->emailTemplateOptions);
-    }
-
-    /**
-     * ConsentTopic value => label, plus a leading empty option meaning "use the channel default
-     * (Promotional)" - a fixed 2-value enum, not DB-driven like the other option maps on this
-     * block, so inlined here rather than injecting a dedicated source-model dependency the way
-     * WhatsAppTemplateOptions/EmailTemplateOptions etc. are, the same reasoning
-     * use_optimal_send_time's own inline options above already applies.
-     *
-     * @return array<string, string>
-     */
-    private function getConsentTopicOptions(): array
-    {
-        return [
-            '' => (string) __('(Default: Promotional)'),
-            ConsentTopic::Promotional->value => (string) __('Promotional'),
-            ConsentTopic::AccountUpdates->value => (string) __('Account & Order Updates'),
-        ];
-    }
-
-    /**
-     * tier => human-readable label - options for the loyalty_tier_at_least condition's tier
-     * field.
-     *
-     * @return array<int|string, string>
-     */
-    public function getLoyaltyTierOptions(): array
-    {
-        return $this->toMap($this->loyaltyTierOptions);
-    }
-
-    /**
-     * event_type => human-readable label - options for the event_occurred condition's
-     * event_type field.
-     *
-     * @return array<int|string, string>
-     */
-    public function getEventTypeOptions(): array
-    {
-        return $this->toMap($this->eventTypeOptions);
-    }
-
-    /**
-     * entity_id => name for every campaign (ALL of them, not just enabled — see the Source
-     * class) — options for the message_engaged condition's campaign_id field.
-     *
-     * @return array<int|string, string>
-     */
-    public function getCampaignOptions(): array
-    {
-        return $this->toMap($this->campaignOptions);
-    }
-
-    /**
-     * "opened"/"clicked" => human-readable label — options for the message_engaged condition's
-     * event_type field.
-     *
-     * @return array<int|string, string>
-     */
-    public function getMessageEngagementTypeOptions(): array
-    {
-        return $this->toMap($this->messageEngagementTypeOptions);
-    }
-
-    /**
-     * @return array<int|string, string>
-     */
-    public function getTagMatchModeOptions(): array
-    {
-        return $this->toMap($this->tagMatchModeOptions);
-    }
-
-    /**
-     * Shared by the 'tag' and 'visitor_tag' condition types - identical field set (see those
-     * entries' own single dedicated "tags" form field, same reasoning the two condition classes
-     * themselves already shared one field name for).
-     *
-     * @return array<int, array<string, string|array<int|string, string>>>
-     */
-    private function getTagConditionFields(): array
-    {
-        return [
-            ['name' => 'tags', 'label' => (string) __('Tags'), 'type' => 'tag_multiselect'],
-            ['name' => 'match_mode', 'label' => (string) __('Match'), 'options' => $this->getTagMatchModeOptions()],
-        ];
-    }
-
-    /**
-     * The canvas renders plain value => label maps; the admin form's Source classes return
-     * OptionSourceInterface's list-of-pairs shape. One flattener instead of each option getter
-     * re-querying what its Source class already queries.
-     *
-     * @return array<int|string, string>
-     */
-    private function toMap(OptionSourceInterface $source): array
-    {
-        $map = [];
-        foreach ($source->toOptionArray() as $option) {
-            $map[$option['value']] = (string) $option['label'];
-        }
-
-        return $map;
-    }
-
-    /**
-     * Which of Save.php's DEDICATED_PARAM_FIELDS applies to each known condition/action type —
-     * the same mapping ordo_campaign_form.xml's switcherConfig encodes for the native dynamicRows
-     * form, duplicated here (not read from the XML) so the flow canvas can render the same
-     * human-readable labeled inputs instead of a raw JSON textarea for anyone who doesn't know
-     * what JSON is. A type not listed here (a custom condition/action a store added) still works
-     * via the JSON fallback field every node also has.
+     * Which dedicated, labeled admin-UI fields apply to each known condition/action type - read
+     * directly from each ConditionPool/ActionPool-registered class's own getParamFields()
+     * (the same single source of truth Model\Campaign\CampaignSaveProcessor/Model\Segment\
+     * SegmentSaveProcessor read), not a copy of that mapping hand-maintained here. A type not
+     * listed (a custom condition/action a store added that doesn't override getParamFields())
+     * still works via the JSON fallback field every node also has. 'trigger' stays hardcoded -
+     * unlike conditions/actions, trigger types have no extensible Pool (only two ever have
+     * params), so there's no class to read this from.
      *
      * @return array<string, array<string, array<int, array<string, string|array<int|string, string>>>>>
      */
     public function getFieldsConfig(): array
     {
+        $conditionFields = [];
+        foreach ($this->getConditionTypes() as $type) {
+            $conditionFields[$type] = $this->conditionPool->get($type)?->getParamFields() ?? [];
+        }
+
+        $actionFields = [];
+        foreach ($this->getActionTypes() as $type) {
+            // 'split' has no ActionPool entry - see ActionPool::splitActionFields()'s own docblock.
+            $actionFields[$type] = $type === 'split'
+                ? ActionPool::splitActionFields()
+                : ($this->actionPool->get($type)?->getParamFields() ?? []);
+        }
+
         return [
             'trigger' => [
                 CampaignTriggerInterface::TRIGGER_SCHEDULED_AT => [
@@ -371,238 +192,8 @@ class Flow extends Template
                     ],
                 ],
             ],
-            'condition' => [
-                'tag' => $this->getTagConditionFields(),
-                'order_total_gte' => [['name' => 'amount', 'label' => (string) __('Minimum order total')]],
-                'visitor_tag' => $this->getTagConditionFields(),
-                'score_at_least' => [['name' => 'threshold', 'label' => (string) __('Minimum score')]],
-                'in_segment' => [
-                    [
-                        'name' => 'segment_id',
-                        'label' => (string) __('Segment'),
-                        'options' => $this->getSegmentOptions(),
-                    ],
-                ],
-                'not_in_segment' => [
-                    [
-                        'name' => 'segment_id',
-                        'label' => (string) __('Segment'),
-                        'options' => $this->getSegmentOptions(),
-                    ],
-                ],
-                'loyalty_tier_at_least' => [
-                    [
-                        'name' => 'tier',
-                        'label' => (string) __('Minimum tier'),
-                        'options' => $this->getLoyaltyTierOptions(),
-                    ],
-                ],
-                'nps_score_at_least' => [['name' => 'threshold', 'label' => (string) __('Minimum NPS score')]],
-                'order_frequency_at_least' => [['name' => 'count', 'label' => (string) __('Minimum order count')]],
-                'recency_days_at_most' => [['name' => 'days', 'label' => (string) __('Maximum days since last order')]],
-                'monetary_total_at_least' => [['name' => 'amount', 'label' => (string) __('Minimum lifetime total')]],
-                'reorder_cycle_at_risk' => [
-                    [
-                        'name' => 'ratio_at_least',
-                        'label' => (string) __('Drift ratio, at least (1.0 = exactly on schedule)'),
-                    ],
-                ],
-                'event_occurred' => [
-                    [
-                        'name' => 'event_type',
-                        'label' => (string) __('Event'),
-                        'options' => $this->getEventTypeOptions(),
-                    ],
-                    ['name' => 'event_key', 'label' => (string) __('SKU (optional)')],
-                    ['name' => 'within_days', 'label' => (string) __('Within days')],
-                ],
-                'message_engaged' => [
-                    [
-                        'name' => 'campaign_id',
-                        'label' => (string) __('Campaign'),
-                        'options' => $this->getCampaignOptions(),
-                    ],
-                    [
-                        'name' => 'engagement_type',
-                        'label' => (string) __('Opened or clicked'),
-                        'options' => $this->getMessageEngagementTypeOptions(),
-                    ],
-                    ['name' => 'engagement_within_days', 'label' => (string) __('Within days')],
-                ],
-            ],
-            'action' => [
-                'add_tag' => [['name' => 'tags', 'label' => (string) __('Tags'), 'type' => 'tag_multiselect']],
-                'add_points' => [['name' => 'points', 'label' => (string) __('Points')]],
-                'generate_coupon' => [
-                    [
-                        'name' => 'rule_id',
-                        'label' => (string) __('Cart price rule'),
-                        'options' => $this->getCartPriceRuleOptions(),
-                    ],
-                    ['name' => 'prefix', 'label' => (string) __('Coupon code prefix')],
-                ],
-                'send_email' => [
-                    [
-                        'name' => 'template',
-                        'label' => (string) __('Email template'),
-                        'options' => $this->getEmailTemplateOptions(),
-                    ],
-                    ['name' => 'message', 'label' => (string) __('Message')],
-                    [
-                        'name' => 'use_optimal_send_time',
-                        'label' => (string) __('Send at customer\'s optimal time'),
-                        'options' => [
-                            '' => (string) __('No - send immediately'),
-                            'true' => (string) __(
-                                'Yes - defer to this customer\'s own historically-best open/click hour'
-                                . ' (Model\Campaign\SendTimeOptimizer), when enough history exists'
-                            ),
-                        ],
-                    ],
-                    [
-                        'name' => 'topic',
-                        'label' => (string) __('Consent topic'),
-                        'options' => $this->getConsentTopicOptions(),
-                        'notice' => (string) __(
-                            'Which opt-out preference this send is checked against, beyond the'
-                            . ' customer\'s own per-channel consent. Defaults to Promotional if left blank.'
-                        ),
-                    ],
-                ],
-                'popup' => [
-                    ['name' => 'headline', 'label' => (string) __('Popup headline')],
-                    ['name' => 'body', 'label' => (string) __('Popup body')],
-                    ['name' => 'cta_label', 'label' => (string) __('CTA button label')],
-                    ['name' => 'cta_url', 'label' => (string) __('CTA button URL')],
-                ],
-                'add_dynamic_content' => [
-                    [
-                        'name' => 'content_block_id',
-                        'label' => (string) __('Content block'),
-                        'options' => $this->getContentBlockOptions(),
-                    ],
-                    ['name' => 'output_key', 'label' => (string) __('Output variable name (optional)')],
-                ],
-                'send_sms' => [
-                    [
-                        'name' => 'message',
-                        'label' => (string) __('SMS message'),
-                        'notice' => (string) __(
-                            'Include an opt-out instruction (e.g. "Reply STOP to unsubscribe") in the'
-                            . ' first message to any recipient — required by Twilio\'s messaging policy'
-                            . ' and, in the US, the TCPA.'
-                        ),
-                    ],
-                    [
-                        'name' => 'topic',
-                        'label' => (string) __('Consent topic'),
-                        'options' => $this->getConsentTopicOptions(),
-                        'notice' => (string) __(
-                            'Which opt-out preference this send is checked against, beyond the'
-                            . ' customer\'s own per-channel consent. Defaults to Promotional if left blank.'
-                        ),
-                    ],
-                ],
-                'send_whatsapp' => [
-                    [
-                        'name' => 'template_id',
-                        'label' => (string) __('WhatsApp template'),
-                        'options' => $this->getWhatsAppTemplateOptions(),
-                        'notice' => (string) __(
-                            'Only APPROVED templates appear here — the WhatsApp Business Platform never'
-                            . ' allows a free-form message from a campaign send.'
-                        ),
-                    ],
-                    [
-                        'name' => 'params',
-                        'label' => (string) __('Template parameters (comma-separated, optional)'),
-                        'notice' => (string) __(
-                            'Fills the template\'s {{1}}, {{2}}, ... placeholders in order, e.g. for a'
-                            . ' template body of "Hi {{1}}, your order {{2}} shipped": John,ORD-1234'
-                        ),
-                    ],
-                    [
-                        'name' => 'topic',
-                        'label' => (string) __('Consent topic'),
-                        'options' => $this->getConsentTopicOptions(),
-                        'notice' => (string) __(
-                            'Which opt-out preference this send is checked against, beyond the'
-                            . ' customer\'s own per-channel consent. Defaults to Promotional if left blank.'
-                        ),
-                    ],
-                ],
-                'send_push' => [
-                    ['name' => 'title', 'label' => (string) __('Notification title')],
-                    ['name' => 'body', 'label' => (string) __('Notification body')],
-                    [
-                        'name' => 'url',
-                        'label' => (string) __('URL to open on click (optional)'),
-                        'notice' => (string) __(
-                            'Opened by push-sw.js\'s notificationclick handler when the browser'
-                            . ' notification is clicked - defaults to "/" if left blank.'
-                        ),
-                    ],
-                    [
-                        'name' => 'topic',
-                        'label' => (string) __('Consent topic'),
-                        'options' => $this->getConsentTopicOptions(),
-                        'notice' => (string) __(
-                            'Which opt-out preference this send is checked against, beyond the'
-                            . ' customer\'s own per-channel consent. Defaults to Promotional if left blank.'
-                        ),
-                    ],
-                ],
-                'split' => [
-                    [
-                        'name' => 'variants',
-                        'label' => (string) __('Variants'),
-                        // Not a plain text/select field - campaign-flow-editor.js's
-                        // renderVariantEditor() renders a whole interactive sub-editor for this
-                        // one (add/remove variant, each with its own weight and nested action
-                        // chain), keyed off this 'type' rather than an 'options' map the way
-                        // add_dynamic_content's content_block_id field is.
-                        'type' => 'variant_list',
-                        'notice' => (string) __(
-                            'Each variant gets a relative weight (they don\'t need to sum to 100)'
-                            . ' and its own action chain. A customer is assigned to exactly one'
-                            . ' variant, deterministically, the first time they enter this split -'
-                            . ' repeat dispatches (and a delayed resume elsewhere in the chain)'
-                            . ' always land in the same variant. A variant\'s own actions can\'t'
-                            . ' have their own delay yet.'
-                        ),
-                    ],
-                ],
-                'generate_ai_content' => [
-                    [
-                        'name' => 'prompt',
-                        'label' => (string) __('Prompt'),
-                        'notice' => (string) __(
-                            'Reference dispatch context with {{placeholders}}, e.g. '
-                            . '{{customer_first_name}}. Calls the self-hosted Ollama instance '
-                            . 'configured under Stores > Configuration > Ordo Automation > AI '
-                            . 'Content.'
-                        ),
-                    ],
-                    [
-                        'name' => 'output_key',
-                        'label' => (string) __('Output variable name'),
-                        'notice' => (string) __(
-                            'A later "Send Email" action in this same chain can render the '
-                            . 'result with {{var <output variable name>|raw}}. Defaults to '
-                            . '"ai_content_html" if left blank.'
-                        ),
-                    ],
-                    [
-                        'name' => 'fallback',
-                        'label' => (string) __('Fallback text'),
-                        'notice' => (string) __(
-                            'Used instead of a real Ollama response whenever AI content '
-                            . 'generation is disabled, unconfigured, or the local instance '
-                            . 'times out - the send is never blocked by this action.'
-                        ),
-                    ],
-                ],
-            ],
+            'condition' => $conditionFields,
+            'action' => $actionFields,
         ];
     }
 

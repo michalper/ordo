@@ -17,6 +17,7 @@ use Ordo\Automation\Model\Campaign\FrequencyCapGate;
 use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\Campaign\SendTimeOptimizationGate;
+use Ordo\Automation\Model\Config\Source\EmailTemplateOptions;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\ConsentTopic;
@@ -45,9 +46,12 @@ class SendEmailTest extends TestCase
     private LoggerInterface $logger;
     private StoreInterface $store;
     private CustomerStoreResolver $customerStoreResolver;
+    private EmailTemplateOptions $emailTemplateOptions;
 
     protected function setUp(): void
     {
+        $this->emailTemplateOptions = $this->createStub(EmailTemplateOptions::class);
+        $this->emailTemplateOptions->method('toOptionArray')->willReturn([]);
         $this->customerRepository = $this->createMock(CustomerRepositoryInterface::class);
         $this->transportBuilder = $this->createMock(TransportBuilder::class);
         $this->storeManager = $this->createStub(StoreManagerInterface::class);
@@ -102,7 +106,16 @@ class SendEmailTest extends TestCase
             new SendRetrier(1),
             $this->messageSendRetryQueue,
             $this->logger,
-            $this->customerStoreResolver
+            $this->customerStoreResolver,
+            $this->emailTemplateOptions
+        );
+    }
+
+    public function testGetParamFieldsListsTemplateAndTopic(): void
+    {
+        self::assertSame(
+            ['template', 'message', 'use_optimal_send_time', 'topic'],
+            array_column($this->makeAction()->getParamFields(), 'name')
         );
     }
 

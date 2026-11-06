@@ -47,4 +47,11 @@ class AddProductRecommendations implements ActionInterface
         $context['recommended_products_html'] = $this->productRecommendationRenderer->renderHtml($skus);
         $context['recommended_products_text'] = $this->productRecommendationRenderer->renderText($skus);
     }
+
+    public function getParamFields(): array
+    {
+        return [
+            ['name' => 'count', 'label' => (string) __('Number of products to recommend')],
+        ];
+    }
 }

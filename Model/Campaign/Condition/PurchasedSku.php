@@ -45,4 +45,11 @@ class PurchasedSku implements ConditionInterface, BulkResolvableConditionInterfa
 
         return $this->purchasedProductResolver->getCustomerIdsWhoPurchasedSku($sku);
     }
+
+    public function getParamFields(): array
+    {
+        return [
+            ['name' => 'sku', 'label' => (string) __('SKU')],
+        ];
+    }
 }

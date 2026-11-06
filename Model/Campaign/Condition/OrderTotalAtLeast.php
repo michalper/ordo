@@ -33,4 +33,11 @@ class OrderTotalAtLeast implements ConditionInterface, BulkResolvableConditionIn
     {
         return [];
     }
+
+    public function getParamFields(): array
+    {
+        return [
+            ['name' => 'amount', 'label' => (string) __('Minimum order total')],
+        ];
+    }
 }

@@ -18,4 +18,9 @@ class RecencyPercentileAtLeast extends AbstractPercentileAtLeast
     {
         return 'recency_percentile';
     }
+
+    protected function getFieldLabel(): string
+    {
+        return (string) __('Minimum recency percentile');
+    }
 }

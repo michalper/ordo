@@ -34,4 +34,11 @@ class AddTag implements ActionInterface
             }
         }
     }
+
+    public function getParamFields(): array
+    {
+        return [
+            ['name' => 'tags', 'label' => (string) __('Tags'), 'type' => 'tag_multiselect'],
+        ];
+    }
 }

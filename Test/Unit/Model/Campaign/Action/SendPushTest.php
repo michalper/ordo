@@ -186,4 +186,12 @@ class SendPushTest extends TestCase
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['title' => 'Hi']);
     }
+
+    public function testGetParamFieldsListsTitleBodyUrlAndTopic(): void
+    {
+        self::assertSame(
+            ['title', 'body', 'url', 'topic'],
+            array_column($this->makeAction()->getParamFields(), 'name')
+        );
+    }
 }

@@ -6,6 +6,7 @@ namespace Ordo\Automation\Model\Campaign\Action;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Campaign\ConsentTopicOptions;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
 use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
@@ -176,5 +177,29 @@ class SendSms implements ActionInterface
             // MessageSendRetryQueue::enqueueOrRethrow()/RETRY_CONTEXT_FLAG.
             $this->messageSendRetryQueue->enqueueOrRethrow(self::ACTION_TYPE, $context, $params, $e);
         }
+    }
+
+    public function getParamFields(): array
+    {
+        return [
+            [
+                'name' => 'message',
+                'label' => (string) __('SMS message'),
+                'notice' => (string) __(
+                    'Include an opt-out instruction (e.g. "Reply STOP to unsubscribe") in the'
+                    . ' first message to any recipient — required by Twilio\'s messaging policy'
+                    . ' and, in the US, the TCPA.'
+                ),
+            ],
+            [
+                'name' => 'topic',
+                'label' => (string) __('Consent topic'),
+                'options' => ConsentTopicOptions::toMap(),
+                'notice' => (string) __(
+                    'Which opt-out preference this send is checked against, beyond the'
+                    . ' customer\'s own per-channel consent. Defaults to Promotional if left blank.'
+                ),
+            ],
+        ];
     }
 }

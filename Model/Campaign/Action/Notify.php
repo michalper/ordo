@@ -59,4 +59,14 @@ class Notify implements ActionInterface
 
         $this->notificationResource->save($notification);
     }
+
+    public function getParamFields(): array
+    {
+        return [
+            ['name' => 'headline', 'label' => (string) __('Popup headline')],
+            ['name' => 'body', 'label' => (string) __('Popup body')],
+            ['name' => 'cta_label', 'label' => (string) __('CTA button label')],
+            ['name' => 'cta_url', 'label' => (string) __('CTA button URL')],
+        ];
+    }
 }

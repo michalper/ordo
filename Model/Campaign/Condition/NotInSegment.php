@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Ordo\Automation\Model\Campaign\Condition;
 
 use Ordo\Automation\Api\Campaign\ConditionInterface;
+use Ordo\Automation\Model\Campaign\OptionSourceFlattener;
+use Ordo\Automation\Model\Config\Source\SegmentOptions;
 use Ordo\Automation\Model\Segment\SegmentMatcher;
 
 /**
@@ -21,7 +23,8 @@ use Ordo\Automation\Model\Segment\SegmentMatcher;
 class NotInSegment implements ConditionInterface
 {
     public function __construct(
-        private readonly SegmentMatcher $segmentMatcher
+        private readonly SegmentMatcher $segmentMatcher,
+        private readonly SegmentOptions $segmentOptions
     ) {
     }
 
@@ -44,5 +47,16 @@ class NotInSegment implements ConditionInterface
         }
 
         return !$this->segmentMatcher->isCustomerInSegment($segmentId, $customerId, $visitedSegmentIds);
+    }
+
+    public function getParamFields(): array
+    {
+        return [
+            [
+                'name' => 'segment_id',
+                'label' => (string) __('Segment'),
+                'options' => OptionSourceFlattener::toMap($this->segmentOptions),
+            ],
+        ];
     }
 }

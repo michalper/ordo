@@ -59,4 +59,11 @@ class MonetaryTotalAtLeast implements ConditionInterface, BulkResolvableConditio
 
         return $matching;
     }
+
+    public function getParamFields(): array
+    {
+        return [
+            ['name' => 'amount', 'label' => (string) __('Minimum lifetime total')],
+        ];
+    }
 }

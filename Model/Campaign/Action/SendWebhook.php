@@ -93,6 +93,19 @@ class SendWebhook implements ActionInterface
         }
     }
 
+    public function getParamFields(): array
+    {
+        return [
+            [
+                'name' => 'event',
+                'label' => (string) __('Event name override (optional)'),
+                'notice' => (string) __(
+                    'Defaults to the campaign\'s own trigger event (e.g. "order_placed") when left blank.'
+                ),
+            ],
+        ];
+    }
+
     /**
      * @param array<string, mixed> $payload
      */

@@ -11,19 +11,31 @@ use Ordo\Automation\Model\ContentBlock;
 use Ordo\Automation\Model\ContentBlock\Producer\ProducerInterface;
 use Ordo\Automation\Model\ContentBlock\ProducerPool;
 use Ordo\Automation\Model\ContentBlockRepository;
+use Ordo\Automation\Model\ResourceModel\ContentBlock\Collection as ContentBlockCollection;
+use Ordo\Automation\Model\ResourceModel\ContentBlock\CollectionFactory as ContentBlockCollectionFactory;
 use PHPUnit\Framework\TestCase;
 
 class AddDynamicContentTest extends TestCase
 {
     private ContentBlockRepository&\PHPUnit\Framework\MockObject\MockObject $contentBlockRepository;
     private ProducerPool&\PHPUnit\Framework\MockObject\MockObject $producerPool;
+    private ContentBlockCollectionFactory&\PHPUnit\Framework\MockObject\MockObject $contentBlockCollectionFactory;
     private AddDynamicContent $action;
 
     protected function setUp(): void
     {
         $this->contentBlockRepository = $this->createMock(ContentBlockRepository::class);
         $this->producerPool = $this->createMock(ProducerPool::class);
-        $this->action = new AddDynamicContent($this->contentBlockRepository, $this->producerPool);
+        $collection = $this->createMock(ContentBlockCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
+        $this->contentBlockCollectionFactory = $this->createMock(ContentBlockCollectionFactory::class);
+        $this->contentBlockCollectionFactory->method('create')->willReturn($collection);
+        $this->action = new AddDynamicContent(
+            $this->contentBlockRepository,
+            $this->producerPool,
+            $this->contentBlockCollectionFactory
+        );
     }
 
     private function makeBlock(string $type, bool $enabled): ContentBlock
@@ -154,5 +166,13 @@ class AddDynamicContentTest extends TestCase
         $this->action->execute($context, ['output_key' => 'custom_html_key']);
 
         self::assertSame('', $context['custom_html_key']);
+    }
+
+    public function testGetParamFieldsListsContentBlockIdAndOutputKey(): void
+    {
+        self::assertSame(
+            ['content_block_id', 'output_key'],
+            array_column($this->action->getParamFields(), 'name')
+        );
     }
 }

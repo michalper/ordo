@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Model\Campaign\Condition;
 
 use Ordo\Automation\Model\Campaign\Condition\EventOccurred;
+use Ordo\Automation\Model\Config\Source\EventType;
 use Ordo\Automation\Model\Event\EventOccurredResolver;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
@@ -16,7 +17,7 @@ class EventOccurredTest extends TestCase
     protected function setUp(): void
     {
         $this->eventOccurredResolver = $this->createMock(EventOccurredResolver::class);
-        $this->condition = new EventOccurred($this->eventOccurredResolver);
+        $this->condition = new EventOccurred($this->eventOccurredResolver, new EventType());
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -106,5 +107,13 @@ class EventOccurredTest extends TestCase
         $this->eventOccurredResolver->expects(self::never())->method('getCustomerIdsWithEvent');
 
         self::assertSame([], $this->condition->resolveCustomerIds(['event_type' => '', 'within_days' => 14]));
+    }
+
+    public function testGetParamFieldsListsEventTypeKeyAndWithinDays(): void
+    {
+        self::assertSame(
+            ['event_type', 'event_key', 'within_days'],
+            array_column($this->condition->getParamFields(), 'name')
+        );
     }
 }

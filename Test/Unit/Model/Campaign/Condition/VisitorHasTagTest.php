@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Model\Campaign\Condition;
 
 use Ordo\Automation\Model\Campaign\Condition\VisitorHasTag;
+use Ordo\Automation\Model\Config\Source\TagMatchMode;
 use Ordo\Automation\Model\VisitorTagManager;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
@@ -16,7 +17,7 @@ class VisitorHasTagTest extends TestCase
     protected function setUp(): void
     {
         $this->visitorTagManager = $this->createMock(VisitorTagManager::class);
-        $this->condition = new VisitorHasTag($this->visitorTagManager);
+        $this->condition = new VisitorHasTag($this->visitorTagManager, new TagMatchMode());
     }
 
     public function testSatisfiedWhenVisitorHasAnyOfTheTagsDefaultMatchMode(): void
@@ -65,5 +66,10 @@ class VisitorHasTagTest extends TestCase
     public function testResolveCustomerIdsAlwaysMatchesNobody(): void
     {
         self::assertSame([], $this->condition->resolveCustomerIds(['tags' => ['vip']]));
+    }
+
+    public function testGetParamFieldsListsTagsAndMatchMode(): void
+    {
+        self::assertSame(['tags', 'match_mode'], array_column($this->condition->getParamFields(), 'name'));
     }
 }

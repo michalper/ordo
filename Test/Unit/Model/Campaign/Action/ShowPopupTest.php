@@ -168,4 +168,12 @@ class ShowPopupTest extends TestCase
         $context = ['customer_id' => 42];
         $this->action->execute($context, ['headline' => 'Hello!']);
     }
+
+    public function testGetParamFieldsListsHeadlineBodyAndCta(): void
+    {
+        self::assertSame(
+            ['headline', 'body', 'cta_label', 'cta_url'],
+            array_column($this->action->getParamFields(), 'name')
+        );
+    }
 }

@@ -52,4 +52,11 @@ class ClvAtLeast implements ConditionInterface, BulkResolvableConditionInterface
 
         return $matching;
     }
+
+    public function getParamFields(): array
+    {
+        return [
+            ['name' => 'amount', 'label' => (string) __('Minimum projected lifetime value')],
+        ];
+    }
 }

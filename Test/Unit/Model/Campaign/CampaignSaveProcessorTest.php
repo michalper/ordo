@@ -4,8 +4,12 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Model\Campaign;
 
 use Magento\Framework\App\CacheInterface;
+use Ordo\Automation\Api\Campaign\ActionInterface;
+use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\Campaign;
+use Ordo\Automation\Model\Campaign\ActionPool;
 use Ordo\Automation\Model\Campaign\CampaignSaveProcessor;
+use Ordo\Automation\Model\Campaign\ConditionPool;
 use Ordo\Automation\Model\CampaignAction;
 use Ordo\Automation\Model\CampaignActionFactory;
 use Ordo\Automation\Model\CampaignCondition;
@@ -34,6 +38,8 @@ use PHPUnit\Framework\TestCase;
 
 class CampaignSaveProcessorTest extends TestCase
 {
+    private ConditionPool $conditionPool;
+    private ActionPool $actionPool;
     private CampaignFactory $campaignFactory;
     private CampaignResource $campaignResource;
     private CampaignTriggerFactory $campaignTriggerFactory;
@@ -52,6 +58,14 @@ class CampaignSaveProcessorTest extends TestCase
 
     protected function setUp(): void
     {
+        $this->conditionPool = $this->createStub(ConditionPool::class);
+        $this->conditionPool->method('get')->willReturnCallback(
+            fn (string $type) => $this->stubConditionFields()[$type] ?? null
+        );
+        $this->actionPool = $this->createStub(ActionPool::class);
+        $this->actionPool->method('get')->willReturnCallback(
+            fn (string $type) => $this->stubActionFields()[$type] ?? null
+        );
         $this->campaignFactory = $this->createMock(CampaignFactory::class);
         $this->campaignResource = $this->createMock(CampaignResource::class);
         $this->campaignTriggerFactory = $this->createStub(CampaignTriggerFactory::class);
@@ -70,9 +84,89 @@ class CampaignSaveProcessorTest extends TestCase
         $this->cache = $this->createMock(CacheInterface::class);
     }
 
+    /**
+     * Every condition type any test in this file posts a row for - a stub ConditionInterface
+     * whose getParamFields() returns just enough field names (no labels/options needed) for
+     * CampaignSaveProcessor's own normalizeRowParams()/leak-prevention logic to exercise, same
+     * as the real registered class would provide. A type deliberately absent here (e.g.
+     * 'has_tag' in the JSON-fallback test) resolves to null, matching an unmapped/unregistered
+     * type.
+     *
+     * @return array<string, ConditionInterface>
+     */
+    private function stubConditionFields(): array
+    {
+        return [
+            'tag' => $this->stubCondition([
+                ['name' => 'tags', 'type' => 'tag_multiselect'],
+                ['name' => 'match_mode'],
+            ]),
+            'monetary_total_at_least' => $this->stubCondition([['name' => 'amount']]),
+            'recency_percentile_at_least' => $this->stubCondition([['name' => 'percentile']]),
+            'in_segment' => $this->stubCondition([['name' => 'segment_id']]),
+            'loyalty_tier_at_least' => $this->stubCondition([['name' => 'tier']]),
+            'event_occurred' => $this->stubCondition([
+                ['name' => 'event_type'],
+                ['name' => 'event_key'],
+                ['name' => 'within_days'],
+            ]),
+            'reorder_cycle_at_risk' => $this->stubCondition([['name' => 'ratio_at_least']]),
+        ];
+    }
+
+    /**
+     * Same role as stubConditionFields(), for actions. 'split' is never looked up through the
+     * pool at all (CampaignSaveProcessor checks for it before ever calling actionPool->get() -
+     * see ActionPool::splitActionFields()), so it doesn't need an entry here.
+     *
+     * @return array<string, ActionInterface>
+     */
+    private function stubActionFields(): array
+    {
+        return [
+            'add_tag' => $this->stubAction([['name' => 'tags', 'type' => 'tag_multiselect']]),
+            'add_dynamic_content' => $this->stubAction([
+                ['name' => 'content_block_id'],
+                ['name' => 'output_key'],
+            ]),
+            'generate_ai_content' => $this->stubAction([
+                ['name' => 'prompt'],
+                ['name' => 'output_key'],
+                ['name' => 'fallback'],
+            ]),
+            'send_whatsapp' => $this->stubAction([
+                ['name' => 'template_id'],
+                ['name' => 'params'],
+                ['name' => 'topic'],
+            ]),
+            'send_push' => $this->stubAction([
+                ['name' => 'title'],
+                ['name' => 'body'],
+                ['name' => 'url'],
+                ['name' => 'topic'],
+            ]),
+        ];
+    }
+
+    private function stubCondition(array $paramFields): ConditionInterface
+    {
+        $condition = $this->createStub(ConditionInterface::class);
+        $condition->method('getParamFields')->willReturn($paramFields);
+        return $condition;
+    }
+
+    private function stubAction(array $paramFields): ActionInterface
+    {
+        $action = $this->createStub(ActionInterface::class);
+        $action->method('getParamFields')->willReturn($paramFields);
+        return $action;
+    }
+
     private function makeProcessor(): CampaignSaveProcessor
     {
         return new CampaignSaveProcessor(
+            $this->conditionPool,
+            $this->actionPool,
             $this->campaignFactory,
             $this->campaignResource,
             $this->campaignTriggerFactory,

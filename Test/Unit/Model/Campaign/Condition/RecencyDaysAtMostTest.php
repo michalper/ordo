@@ -83,4 +83,9 @@ class RecencyDaysAtMostTest extends TestCase
 
         self::assertSame([], $this->condition->resolveCustomerIds(['days' => 'not-a-number']));
     }
+
+    public function testGetParamFieldsListsDays(): void
+    {
+        self::assertSame(['days'], array_column($this->condition->getParamFields(), 'name'));
+    }
 }

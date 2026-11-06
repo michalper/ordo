@@ -47,6 +47,11 @@ class SegmentBulkActionConsumerTest extends TestCase
                 }
                 $this->executedWith[] = ['customerId' => (int) $context['customer_id'], 'params' => $params];
             }
+
+            public function getParamFields(): array
+            {
+                return [];
+            }
         };
     }
 

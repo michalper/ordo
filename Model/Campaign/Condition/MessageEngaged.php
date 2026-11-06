@@ -5,6 +5,9 @@ namespace Ordo\Automation\Model\Campaign\Condition;
 
 use Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface;
 use Ordo\Automation\Api\Campaign\ConditionInterface;
+use Ordo\Automation\Model\Campaign\OptionSourceFlattener;
+use Ordo\Automation\Model\Config\Source\CampaignOptions;
+use Ordo\Automation\Model\Config\Source\MessageEngagementType;
 use Ordo\Automation\Model\Email\MessageEngagementResolver;
 
 /**
@@ -19,7 +22,9 @@ use Ordo\Automation\Model\Email\MessageEngagementResolver;
 class MessageEngaged implements ConditionInterface, BulkResolvableConditionInterface
 {
     public function __construct(
-        private readonly MessageEngagementResolver $messageEngagementResolver
+        private readonly MessageEngagementResolver $messageEngagementResolver,
+        private readonly CampaignOptions $campaignOptions,
+        private readonly MessageEngagementType $messageEngagementTypeOptions
     ) {
     }
 
@@ -68,5 +73,22 @@ class MessageEngaged implements ConditionInterface, BulkResolvableConditionInter
         $withinDays = (int) ($params['engagement_within_days'] ?? 0);
 
         return [(int) $campaignId, $eventType, $withinDays];
+    }
+
+    public function getParamFields(): array
+    {
+        return [
+            [
+                'name' => 'campaign_id',
+                'label' => (string) __('Campaign'),
+                'options' => OptionSourceFlattener::toMap($this->campaignOptions),
+            ],
+            [
+                'name' => 'engagement_type',
+                'label' => (string) __('Opened or clicked'),
+                'options' => OptionSourceFlattener::toMap($this->messageEngagementTypeOptions),
+            ],
+            ['name' => 'engagement_within_days', 'label' => (string) __('Within days')],
+        ];
     }
 }

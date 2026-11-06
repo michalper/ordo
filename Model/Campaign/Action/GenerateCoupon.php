@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Ordo\Automation\Model\Campaign\Action;
 
 use Ordo\Automation\Api\Campaign\ActionInterface;
+use Ordo\Automation\Model\Campaign\OptionSourceFlattener;
+use Ordo\Automation\Model\Config\Source\CartPriceRuleOptions;
 use Ordo\Automation\Model\CouponGenerator;
 use Psr\Log\LoggerInterface;
 
@@ -15,7 +17,8 @@ class GenerateCoupon implements ActionInterface
 {
     public function __construct(
         private readonly CouponGenerator $couponGenerator,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly CartPriceRuleOptions $cartPriceRuleOptions
     ) {
     }
 
@@ -38,5 +41,17 @@ class GenerateCoupon implements ActionInterface
                 $e->getMessage()
             ));
         }
+    }
+
+    public function getParamFields(): array
+    {
+        return [
+            [
+                'name' => 'rule_id',
+                'label' => (string) __('Cart price rule'),
+                'options' => OptionSourceFlattener::toMap($this->cartPriceRuleOptions),
+            ],
+            ['name' => 'prefix', 'label' => (string) __('Coupon code prefix')],
+        ];
     }
 }

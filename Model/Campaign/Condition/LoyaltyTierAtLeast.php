@@ -5,6 +5,8 @@ namespace Ordo\Automation\Model\Campaign\Condition;
 
 use Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface;
 use Ordo\Automation\Api\Campaign\ConditionInterface;
+use Ordo\Automation\Model\Campaign\OptionSourceFlattener;
+use Ordo\Automation\Model\Config\Source\LoyaltyTier as LoyaltyTierOptions;
 use Ordo\Automation\Model\CustomerScoreManager;
 use Ordo\Automation\Model\LoyaltyTierCalculator;
 
@@ -19,7 +21,8 @@ class LoyaltyTierAtLeast implements ConditionInterface, BulkResolvableConditionI
 {
     public function __construct(
         private readonly CustomerScoreManager $customerScoreManager,
-        private readonly LoyaltyTierCalculator $loyaltyTierCalculator
+        private readonly LoyaltyTierCalculator $loyaltyTierCalculator,
+        private readonly LoyaltyTierOptions $loyaltyTierOptions
     ) {
     }
 
@@ -56,5 +59,16 @@ class LoyaltyTierAtLeast implements ConditionInterface, BulkResolvableConditionI
         }
 
         return $this->customerScoreManager->getCustomerIdsWithScoreAtLeast($minimumScore);
+    }
+
+    public function getParamFields(): array
+    {
+        return [
+            [
+                'name' => 'tier',
+                'label' => (string) __('Minimum tier'),
+                'options' => OptionSourceFlattener::toMap($this->loyaltyTierOptions),
+            ],
+        ];
     }
 }

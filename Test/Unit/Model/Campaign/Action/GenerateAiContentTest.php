@@ -96,4 +96,12 @@ class GenerateAiContentTest extends TestCase
         self::assertSame('generated', $context['custom_key']);
         self::assertArrayNotHasKey('ai_content_html', $context);
     }
+
+    public function testGetParamFieldsListsPromptAndOutputKey(): void
+    {
+        self::assertSame(
+            ['prompt', 'output_key', 'fallback'],
+            array_column($this->action->getParamFields(), 'name')
+        );
+    }
 }

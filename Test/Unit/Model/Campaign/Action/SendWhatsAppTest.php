@@ -14,6 +14,7 @@ use Ordo\Automation\Model\Campaign\Action\SendWhatsApp;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
 use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
+use Ordo\Automation\Model\Config\Source\WhatsAppTemplateOptions;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\ConsentTopic;
@@ -40,9 +41,12 @@ class SendWhatsAppTest extends TestCase
     private FrequencyCapGate $frequencyCapGate;
     private MessageSendRetryQueue&\PHPUnit\Framework\MockObject\MockObject $messageSendRetryQueue;
     private LoggerInterface $logger;
+    private WhatsAppTemplateOptions $whatsAppTemplateOptions;
 
     protected function setUp(): void
     {
+        $this->whatsAppTemplateOptions = $this->createStub(WhatsAppTemplateOptions::class);
+        $this->whatsAppTemplateOptions->method('toOptionArray')->willReturn([]);
         $this->customerRepository = $this->createMock(CustomerRepositoryInterface::class);
         $this->whatsAppSender = $this->createMock(WhatsAppSender::class);
         $this->config = $this->createMock(Config::class);
@@ -86,7 +90,8 @@ class SendWhatsAppTest extends TestCase
             new SendRetrier(1),
             $this->messageSendRetryQueue,
             $this->logger,
-            new PhoneNumberResolver()
+            new PhoneNumberResolver(),
+            $this->whatsAppTemplateOptions
         );
     }
 
@@ -390,5 +395,13 @@ class SendWhatsAppTest extends TestCase
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['template_id' => '3']);
+    }
+
+    public function testGetParamFieldsListsTemplateParamsAndTopic(): void
+    {
+        self::assertSame(
+            ['template_id', 'params', 'topic'],
+            array_column($this->makeAction()->getParamFields(), 'name')
+        );
     }
 }

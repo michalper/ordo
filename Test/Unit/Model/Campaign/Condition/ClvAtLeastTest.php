@@ -63,4 +63,9 @@ class ClvAtLeastTest extends TestCase
 
         self::assertSame([], $this->condition->resolveCustomerIds(['amount' => 'lots']));
     }
+
+    public function testGetParamFieldsListsAmount(): void
+    {
+        self::assertSame(['amount'], array_column($this->condition->getParamFields(), 'name'));
+    }
 }

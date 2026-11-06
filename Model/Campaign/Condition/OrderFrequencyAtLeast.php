@@ -60,4 +60,11 @@ class OrderFrequencyAtLeast implements ConditionInterface, BulkResolvableConditi
 
         return $matching;
     }
+
+    public function getParamFields(): array
+    {
+        return [
+            ['name' => 'count', 'label' => (string) __('Minimum order count')],
+        ];
+    }
 }

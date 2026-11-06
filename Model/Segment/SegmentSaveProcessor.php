@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Segment;
 
+use Ordo\Automation\Model\Campaign\ConditionPool;
+use Ordo\Automation\Model\Campaign\ParamFieldsNormalizer;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition as SegmentConditionResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\CollectionFactory as SegmentConditionCollectionFactory;
@@ -25,50 +27,6 @@ use Ordo\Automation\Model\SegmentWebsiteFactory;
 class SegmentSaveProcessor
 {
     /**
-     * Which dedicated fields are actually relevant to each condition type - keyed by type, not a
-     * flat list, so normalizeRowParams() only merges a field into a row's params when that row's
-     * own type actually reads it. A flat list used to merge ANY non-empty dedicated field into
-     * EVERY row regardless of type, because Magento_Ui's dynamicRows always posts every field's
-     * current value even when switcherConfig hides it for that row's type (e.g. a
-     * monetary_total_at_least condition's saved params would pick up a useless tier: "bronze" key
-     * just because some other row on the same form happened to be a loyalty_tier_at_least
-     * condition). Mirrors Model\Campaign\CampaignSaveProcessor::CONDITION_FIELDS_BY_TYPE exactly -
-     * a segment condition uses the same ConditionPool types a campaign condition does, 'amount'/
-     * 'rule_id' and similar action-only/campaign-only fields just never appear here since segments
-     * have no actions. Verified against every Model\Campaign\Condition\*.php class's own real
-     * params reads, not just UI config.
-     */
-    private const array CONDITION_FIELDS_BY_TYPE = [
-        'tag' => ['tags', 'match_mode'],
-        'order_total_gte' => ['amount'],
-        'visitor_tag' => ['tags', 'match_mode'],
-        'score_at_least' => ['threshold'],
-        'recency_days_at_most' => ['days'],
-        'order_frequency_at_least' => ['count'],
-        'monetary_total_at_least' => ['amount'],
-        'recency_percentile_at_least' => ['percentile'],
-        'order_frequency_percentile_at_least' => ['percentile'],
-        'monetary_percentile_at_least' => ['percentile'],
-        'reorder_cycle_at_risk' => ['ratio_at_least'],
-        'clv_at_least' => ['amount'],
-        'in_segment' => ['segment_id'],
-        'not_in_segment' => ['segment_id'],
-        'loyalty_tier_at_least' => ['tier'],
-        'nps_score_at_least' => ['threshold'],
-        'purchased_sku' => ['sku'],
-        'purchased_category' => ['category_id'],
-        'event_occurred' => ['event_type', 'event_key', 'within_days'],
-        'message_engaged' => ['campaign_id', 'engagement_type', 'engagement_within_days'],
-    ];
-
-    /**
-     * Dedicated fields whose posted value is itself JSON (an array), not a plain scalar - mirrors
-     * Model\Campaign\CampaignSaveProcessor's own JSON_DEDICATED_PARAM_FIELDS (currently just its
-     * 'variants'; this form has no variant_list field, so 'tags' is the first entry here).
-     */
-    private const array JSON_DEDICATED_PARAM_FIELDS = ['tags'];
-
-    /**
      * Applies to both the top-level conditions list and a single group's own nested list - the
      * admin UI has no client-side equivalent cap (Magento_Ui's dynamic-rows.js in this version
      * has no built-in "max records" option to hook into), so this is the actual enforcement
@@ -78,6 +36,7 @@ class SegmentSaveProcessor
     private const int MAX_CONDITIONS_PER_LIST = 10;
 
     public function __construct(
+        private readonly ConditionPool $conditionPool,
         private readonly SegmentFactory $segmentFactory,
         private readonly SegmentResource $segmentResource,
         private readonly SegmentConditionFactory $segmentConditionFactory,
@@ -177,7 +136,7 @@ class SegmentSaveProcessor
                 'type' => $type,
                 'params' => $type === 'group'
                     ? $this->normalizeGroupRow($row)
-                    : $this->normalizeRowParams($row, self::CONDITION_FIELDS_BY_TYPE[$type] ?? []),
+                    : ParamFieldsNormalizer::normalizeRowParams($row, $this->conditionPool->get($type)?->getParamFields() ?? []),
                 'sort_order' => $sortOrder++,
             ]);
             $this->segmentConditionResource->save($condition);
@@ -225,58 +184,4 @@ class SegmentSaveProcessor
         return json_encode(['logic' => $logic, 'conditions' => $conditions]) ?: '{}';
     }
 
-    /**
-     * Starts from whatever was typed in the JSON textarea (if valid), then overlays whichever of
-     * $relevantFields are present on the row — same merge Model\Campaign\CampaignSaveProcessor
-     * already uses for its own conditions/actions. $relevantFields is the row's own type's entry
-     * from CONDITION_FIELDS_BY_TYPE (or [] for an unmapped type) - never the full field set, so a
-     * field some other type's row happens to have posted a value for never leaks into this row's
-     * params.
-     *
-     * @param array<string, mixed> $row
-     * @param array<int, string> $relevantFields
-     */
-    private function normalizeRowParams(array $row, array $relevantFields): string
-    {
-        $params = $this->parseJson((string) ($row['params_json'] ?? ''));
-
-        foreach ($relevantFields as $field) {
-            $value = trim((string) ($row[$field] ?? ''));
-            if ($value === '') {
-                continue;
-            }
-
-            if (in_array($field, self::JSON_DEDICATED_PARAM_FIELDS, true)) {
-                $decoded = json_decode($value, true);
-                $params[$field] = is_array($decoded) ? $decoded : [];
-                continue;
-            }
-
-            $params[$field] = $value;
-        }
-
-        // json_encode([]) is the JSON array literal "[]", not the empty JSON OBJECT "{}" a
-        // condition's params conceptually are (a key-value map, not a list) - forced explicitly
-        // rather than relying on json_encode's own empty-array behavior, which flips to "[]"
-        // the moment $params has zero keys.
-        return $params === [] ? '{}' : (json_encode($params) ?: '{}');
-    }
-
-    /**
-     * Falls back to an empty object rather than rejecting the save outright — a condition with
-     * unparsable params simply won't find the keys it expects when matched, fails closed rather
-     * than crashing.
-     *
-     * @return array<string, mixed>
-     */
-    private function parseJson(string $raw): array
-    {
-        $raw = trim($raw);
-        if ($raw === '') {
-            return [];
-        }
-
-        $decoded = json_decode($raw, true);
-        return json_last_error() === JSON_ERROR_NONE && is_array($decoded) ? $decoded : [];
-    }
 }

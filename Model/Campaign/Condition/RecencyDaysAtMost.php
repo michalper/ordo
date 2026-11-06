@@ -53,4 +53,11 @@ class RecencyDaysAtMost implements ConditionInterface, BulkResolvableConditionIn
 
         return $matching;
     }
+
+    public function getParamFields(): array
+    {
+        return [
+            ['name' => 'days', 'label' => (string) __('Maximum days since last order')],
+        ];
+    }
 }

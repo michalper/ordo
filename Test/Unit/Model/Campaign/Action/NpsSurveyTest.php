@@ -78,4 +78,9 @@ class NpsSurveyTest extends TestCase
         $context = ['customer_id' => 42];
         $this->action->execute($context, []);
     }
+
+    public function testGetParamFieldsListsQuestion(): void
+    {
+        self::assertSame(['question'], array_column($this->action->getParamFields(), 'name'));
+    }
 }

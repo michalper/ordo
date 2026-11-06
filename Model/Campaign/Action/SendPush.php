@@ -5,6 +5,7 @@ namespace Ordo\Automation\Model\Campaign\Action;
 
 use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Campaign\ConsentTopicOptions;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
@@ -123,5 +124,30 @@ class SendPush implements ActionInterface
         foreach ($subscriptions as $subscription) {
             $this->pushSubscriptionSender->send($subscription, $payload, $customerId, $campaignId, $variant);
         }
+    }
+
+    public function getParamFields(): array
+    {
+        return [
+            ['name' => 'title', 'label' => (string) __('Notification title')],
+            ['name' => 'body', 'label' => (string) __('Notification body')],
+            [
+                'name' => 'url',
+                'label' => (string) __('URL to open on click (optional)'),
+                'notice' => (string) __(
+                    'Opened by push-sw.js\'s notificationclick handler when the browser'
+                    . ' notification is clicked - defaults to "/" if left blank.'
+                ),
+            ],
+            [
+                'name' => 'topic',
+                'label' => (string) __('Consent topic'),
+                'options' => ConsentTopicOptions::toMap(),
+                'notice' => (string) __(
+                    'Which opt-out preference this send is checked against, beyond the'
+                    . ' customer\'s own per-channel consent. Defaults to Promotional if left blank.'
+                ),
+            ],
+        ];
     }
 }
