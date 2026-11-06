@@ -3,6 +3,10 @@
 All notable changes to this module are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/).
 
+When cutting a new version here, also add a short, plain-language entry to
+`ordo-site/changelog.html` (separate repo, deployed to ordo.marketing) —
+it doesn't update itself from this file.
+
 ## [Unreleased]
 
 ## [1.4.0] - 2026-11-06
