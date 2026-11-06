@@ -100,6 +100,7 @@ class NotifyTest extends TestCase
         $this->action->execute($context, []);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsHeadlineBodyAndCta(): void
     {
         self::assertSame(

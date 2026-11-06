@@ -5,6 +5,7 @@ namespace Ordo\Automation\Test\Unit\Model\Campaign\Action;
 
 use Ordo\Automation\Model\Campaign\Action\AddTag;
 use Ordo\Automation\Model\CustomerTagManager;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 class AddTagTest extends TestCase
@@ -56,6 +57,7 @@ class AddTagTest extends TestCase
         $this->action->execute($context, []);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsTags(): void
     {
         self::assertSame(['tags'], array_column($this->action->getParamFields(), 'name'));

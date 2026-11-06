@@ -72,6 +72,7 @@ class PurchasedSkuTest extends TestCase
         self::assertSame([], $this->condition->resolveCustomerIds(['sku' => '']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsSku(): void
     {
         self::assertSame(['sku'], array_column($this->condition->getParamFields(), 'name'));

@@ -84,6 +84,7 @@ class ReorderCycleAtRiskTest extends TestCase
         self::assertSame([], $this->condition->resolveCustomerIds(['ratio_at_least' => 'not-a-number']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsRatioAtLeast(): void
     {
         self::assertSame(['ratio_at_least'], array_column($this->condition->getParamFields(), 'name'));

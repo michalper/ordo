@@ -6,6 +6,7 @@ namespace Ordo\Automation\Test\Unit\Model\Campaign\Action;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Ai\OllamaClient;
 use Ordo\Automation\Model\Campaign\Action\GenerateAiContent;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 class GenerateAiContentTest extends TestCase
@@ -97,6 +98,7 @@ class GenerateAiContentTest extends TestCase
         self::assertArrayNotHasKey('ai_content_html', $context);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsPromptAndOutputKey(): void
     {
         self::assertSame(

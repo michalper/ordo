@@ -69,6 +69,7 @@ class NotInSegmentTest extends TestCase
         ));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsSegmentId(): void
     {
         self::assertSame(['segment_id'], array_column($this->condition->getParamFields(), 'name'));

@@ -99,6 +99,7 @@ class OrderFrequencyPercentileAtLeastTest extends TestCase
         self::assertSame([], $this->condition->resolveCustomerIds(['percentile' => 'top']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsPercentile(): void
     {
         self::assertSame(['percentile'], array_column($this->condition->getParamFields(), 'name'));

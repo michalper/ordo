@@ -88,6 +88,7 @@ class MessageEngagedTest extends TestCase
         ]));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsCampaignAndEngagementFields(): void
     {
         self::assertSame(

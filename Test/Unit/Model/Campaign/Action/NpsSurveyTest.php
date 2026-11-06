@@ -79,6 +79,7 @@ class NpsSurveyTest extends TestCase
         $this->action->execute($context, []);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsQuestion(): void
     {
         self::assertSame(['question'], array_column($this->action->getParamFields(), 'name'));

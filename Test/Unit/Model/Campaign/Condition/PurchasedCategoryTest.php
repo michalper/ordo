@@ -80,6 +80,7 @@ class PurchasedCategoryTest extends TestCase
         self::assertSame([], $this->condition->resolveCustomerIds(['category_id' => 'not-a-number']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsCategoryId(): void
     {
         self::assertSame(['category_id'], array_column($this->condition->getParamFields(), 'name'));

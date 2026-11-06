@@ -109,6 +109,7 @@ class EventOccurredTest extends TestCase
         self::assertSame([], $this->condition->resolveCustomerIds(['event_type' => '', 'within_days' => 14]));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsEventTypeKeyAndWithinDays(): void
     {
         self::assertSame(

@@ -111,6 +111,7 @@ class SendEmailTest extends TestCase
         );
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsTemplateAndTopic(): void
     {
         self::assertSame(

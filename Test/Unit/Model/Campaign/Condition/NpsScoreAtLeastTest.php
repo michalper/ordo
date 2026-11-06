@@ -127,6 +127,7 @@ class NpsScoreAtLeastTest extends TestCase
         self::assertSame([3, 5], $condition->resolveCustomerIds(['threshold' => '9']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsThreshold(): void
     {
         self::assertSame(['threshold'], array_column($this->condition->getParamFields(), 'name'));

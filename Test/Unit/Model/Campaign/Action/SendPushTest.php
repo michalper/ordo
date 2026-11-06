@@ -187,6 +187,7 @@ class SendPushTest extends TestCase
         $this->makeAction()->execute($context, ['title' => 'Hi']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsTitleBodyUrlAndTopic(): void
     {
         self::assertSame(

@@ -397,6 +397,7 @@ class SendSmsTest extends TestCase
         $this->makeAction()->execute($context, ['message' => 'hello']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsMessageAndTopic(): void
     {
         self::assertSame(

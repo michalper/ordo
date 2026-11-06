@@ -6,6 +6,7 @@ namespace Ordo\Automation\Test\Unit\Model\Campaign\Condition;
 use Ordo\Automation\Model\Campaign\Condition\HasTag;
 use Ordo\Automation\Model\Config\Source\TagMatchMode;
 use Ordo\Automation\Model\CustomerTagManager;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 class HasTagTest extends TestCase
@@ -93,6 +94,7 @@ class HasTagTest extends TestCase
         self::assertSame([], $this->condition->resolveCustomerIds([]));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsTagsAndMatchMode(): void
     {
         self::assertSame(['tags', 'match_mode'], array_column($this->condition->getParamFields(), 'name'));

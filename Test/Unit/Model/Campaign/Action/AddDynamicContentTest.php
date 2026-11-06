@@ -13,23 +13,24 @@ use Ordo\Automation\Model\ContentBlock\ProducerPool;
 use Ordo\Automation\Model\ContentBlockRepository;
 use Ordo\Automation\Model\ResourceModel\ContentBlock\Collection as ContentBlockCollection;
 use Ordo\Automation\Model\ResourceModel\ContentBlock\CollectionFactory as ContentBlockCollectionFactory;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 class AddDynamicContentTest extends TestCase
 {
     private ContentBlockRepository&\PHPUnit\Framework\MockObject\MockObject $contentBlockRepository;
     private ProducerPool&\PHPUnit\Framework\MockObject\MockObject $producerPool;
-    private ContentBlockCollectionFactory&\PHPUnit\Framework\MockObject\MockObject $contentBlockCollectionFactory;
+    private ContentBlockCollectionFactory $contentBlockCollectionFactory;
     private AddDynamicContent $action;
 
     protected function setUp(): void
     {
         $this->contentBlockRepository = $this->createMock(ContentBlockRepository::class);
         $this->producerPool = $this->createMock(ProducerPool::class);
-        $collection = $this->createMock(ContentBlockCollection::class);
+        $collection = $this->createStub(ContentBlockCollection::class);
         $collection->method('addFieldToFilter')->willReturnSelf();
         $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
-        $this->contentBlockCollectionFactory = $this->createMock(ContentBlockCollectionFactory::class);
+        $this->contentBlockCollectionFactory = $this->createStub(ContentBlockCollectionFactory::class);
         $this->contentBlockCollectionFactory->method('create')->willReturn($collection);
         $this->action = new AddDynamicContent(
             $this->contentBlockRepository,
@@ -168,6 +169,7 @@ class AddDynamicContentTest extends TestCase
         self::assertSame('', $context['custom_html_key']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsContentBlockIdAndOutputKey(): void
     {
         self::assertSame(

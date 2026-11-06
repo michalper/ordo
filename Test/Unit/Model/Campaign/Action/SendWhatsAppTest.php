@@ -397,6 +397,7 @@ class SendWhatsAppTest extends TestCase
         $this->makeAction()->execute($context, ['template_id' => '3']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsTemplateParamsAndTopic(): void
     {
         self::assertSame(

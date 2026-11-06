@@ -123,6 +123,7 @@ class LoyaltyTierAtLeastTest extends TestCase
         self::assertSame([], $this->condition->resolveCustomerIds(['tier' => 'platinum']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsTier(): void
     {
         self::assertSame(['tier'], array_column($this->condition->getParamFields(), 'name'));

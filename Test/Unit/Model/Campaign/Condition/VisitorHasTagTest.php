@@ -68,6 +68,7 @@ class VisitorHasTagTest extends TestCase
         self::assertSame([], $this->condition->resolveCustomerIds(['tags' => ['vip']]));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsTagsAndMatchMode(): void
     {
         self::assertSame(['tags', 'match_mode'], array_column($this->condition->getParamFields(), 'name'));

@@ -169,6 +169,7 @@ class ShowPopupTest extends TestCase
         $this->action->execute($context, ['headline' => 'Hello!']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsHeadlineBodyAndCta(): void
     {
         self::assertSame(

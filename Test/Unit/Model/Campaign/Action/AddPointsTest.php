@@ -5,6 +5,7 @@ namespace Ordo\Automation\Test\Unit\Model\Campaign\Action;
 
 use Ordo\Automation\Model\Campaign\Action\AddPoints;
 use Ordo\Automation\Model\CustomerScoreManager;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 class AddPointsTest extends TestCase
@@ -51,6 +52,7 @@ class AddPointsTest extends TestCase
         $this->action->execute($context, ['points' => '0']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsPoints(): void
     {
         self::assertSame(['points'], array_column($this->action->getParamFields(), 'name'));

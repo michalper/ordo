@@ -79,6 +79,7 @@ class ScoreAtLeastTest extends TestCase
         self::assertSame([], $this->condition->resolveCustomerIds(['threshold' => 'lots']));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsThreshold(): void
     {
         self::assertSame(['threshold'], array_column($this->condition->getParamFields(), 'name'));

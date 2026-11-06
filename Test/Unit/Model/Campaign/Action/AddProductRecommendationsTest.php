@@ -6,6 +6,7 @@ namespace Ordo\Automation\Test\Unit\Model\Campaign\Action;
 use Ordo\Automation\Model\Campaign\Action\AddProductRecommendations;
 use Ordo\Automation\Model\Recommendation\ProductRecommendationRenderer;
 use Ordo\Automation\Model\Recommendation\ProductRecommender;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 class AddProductRecommendationsTest extends TestCase
@@ -105,6 +106,7 @@ class AddProductRecommendationsTest extends TestCase
         self::assertSame('', $context['recommended_products_text']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetParamFieldsListsCount(): void
     {
         self::assertSame(['count'], array_column($this->action->getParamFields(), 'name'));
