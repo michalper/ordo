@@ -5,6 +5,8 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-06
+
 ### Added
 
 - **Curated campaign template library** (ROADMAP.md "Candidate new features") — new
@@ -33,6 +35,76 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   columns' `flex-basis` values proportionally, so more columns still fit on one line before
   wrapping on a tablet-width screen. `campaign-form.css`/`whatsapp-template-form.css` have no
   multi-column layout at all, so there was nothing to add a breakpoint to for those two.
+- **`order_canceled` trigger** (analytics/reporting-gap roadmap ideas, issue #261) — new
+  `Observer\DispatchOrderCanceledCampaigns` on Magento core's own `order_cancel_after` event
+  (covers the admin "Cancel" button, the REST/SOAP cancel API, and this module's own
+  `OrderApprovalManagement::rejectByToken()`), publishing the same context shape `order_placed`
+  already uses so existing templates and `send_email`/`generate_coupon` actions work unchanged —
+  enables a "sorry to see you go, here's a discount" recovery campaign off a real cancellation,
+  which nothing could react to before.
+- **Product performance report** (`ordo/productperformance/index`) — per-SKU views, purchases, and
+  a store-wide abandon rate. Purchases are a live join (`sales_order_item` is never pruned); views
+  are materialized incrementally by new `Cron\CalculateProductPerformance` (a `FlagManager`
+  watermark, not a full rescan) since `ordo_visitor_event` is pruned after ~7 days — a live join
+  there would have silently redefined "views" as "last week" while purchases stayed all-time,
+  skewing abandon rate worse every day. Abandon rate is store-wide, not a per-visitor funnel —
+  confirmed infeasible, not just harder: no `visitor_id` column exists on `sales_order` anywhere.
+  See `docs/adr/0015`.
+- **`message_engaged` condition** (opened/clicked an earlier campaign) — new
+  `Model\Campaign\Condition\MessageEngaged`, usable from both the campaign Drawflow canvas and the
+  segment editor, reusing the SendGrid Event Webhook engagement data an earlier commit (`32a2955`)
+  already captured but nothing could read as a targeting condition. See `docs/adr/0016`.
+- **Revenue/channel analytics report** (`ordo/revenueanalytics/index`, last of the five
+  analytics/reporting-gap roadmap items from issue #261) — one row per order: revenue, coupon
+  code, the campaign credited with the conversion (deduped to one campaign per order — a naive
+  join would double-count, since `markActed()` can credit one order to more than one campaign),
+  billing country/city, and new-vs-returning. Device and coupon-to-campaign attribution are known,
+  documented gaps (`docs/adr/0017`), not silently faked.
+- **`Cron\PruneMessageLog`** — `ordo_message_log`/`ordo_message_log_event` had no retention cron at
+  all (flagged as a gap while building `message_engaged` above), so send/engagement history
+  accumulated forever. Mirrors `PruneVisitorEvents`'s shape, default 180-day retention (longer than
+  visitor events' 7 days, since this is a reporting record, not a raw tracking pixel); event rows
+  cascade-delete automatically via their own FK. New config comment warns against setting the
+  retention below a `message_engaged` condition's own `within_days`.
+- **Multi-select tag chip editor with ANY/ALL match mode** — `Has Tag`/`Visitor Has Tag`/`add_tag`'s
+  tag field was plain free text with no autocomplete, easy to typo a tag that silently matched
+  nothing. Now a removable-chip editor with live autocomplete and free entry for a new tag, plus a
+  per-condition "has ANY of these tags"/"has ALL of these tags" toggle. `HasTag` migrated onto
+  `BulkResolvableConditionInterface`. Caught and fixed two real `Magento\Framework\DB\Select` API
+  bugs and a real saved-tags-don't-reload-on-edit bug along the way, confirmed against real data,
+  not just reasoned about. See `docs/adr/0018`.
+- **Cross-campaign comparison and cohort retention reports** (`ordo/campaigncomparison/index`,
+  `ordo/cohortretention/index`) — the former ranks campaigns against each other (sent/converted/
+  conversion rate, revenue from the already-deduplicated `ordo_campaign_attribution`, average CLV
+  of converted customers); the latter groups registered customers by first-order calendar month
+  and tracks repeat-purchase rate by cohort month. Neither needed a new table or cron — both are
+  live SQL over tables this module already writes. See `docs/adr/0023`.
+- **Automated anomaly/insight alerts** — new `Cron\DetectAnomalies` flags a campaign's revenue
+  dropping vs. its own trailing 7-day baseline, or a campaign's conversion rate deviating from its
+  peers' average. Scoped to per-campaign anomalies, not per-channel, since channel isn't tracked at
+  the campaign-outcome/attribution level (the same gap `docs/adr/0017` already flagged). New
+  read-only `ordo/anomalyalert/index` grid, a dashboard stat card, and five `Helper\Config`
+  thresholds so a real merchant can retune them once they have production data. See `docs/adr/0025`.
+
+### Changed
+
+- **Condition-type dropdown grouped into categories** — the segment editor's flat ~20-item
+  condition picker is now 4 `<optgroup>`s (Tags & Behavior, Order & Purchase History, Score &
+  Engagement, Segments), via `TypeLabels::conditionCategory()`/`conditionCategoryOrder()` and
+  Magento_Ui's native optgroup binding shape — no new JS/UI component needed.
+- **Product feeds walk the catalog once per store, not once per format** — `Cron\RefreshProductFeed`
+  and the admin "Refresh Now" action each used to walk the whole catalog once per (format, store)
+  pair even though every registered format scopes the catalog identically. New
+  `Model\ProductFeed\ProductFeedRefresher` walks it once per store and offers each product to every
+  enabled generator, cutting DB load/product hydration to a third of what it was with all three
+  formats enabled, while keeping the same per-format failure isolation. See `docs/adr/0022`.
+- **The three storefront poll endpoints merged into one** — `Controller\Track\{Popup,Notification,
+  Survey}` (each its own `startPolling()` loop in `tracker.js`, each a full Magento bootstrap) are
+  replaced by a single `Controller\Track\Poll` (`GET /ordo/track/poll`) returning all three
+  concerns in one JSON body, gated by one `data-poll-enabled`/`data-poll-interval` pair instead of
+  six attributes. Each concern keeps its exact pre-merge semantics. No deprecated alias for the old
+  three routes — this module has no public production install yet, so the breaking change is
+  cheap. See `docs/adr/0024`.
 
 ### Fixed
 
@@ -102,6 +174,31 @@ follows [Keep a Changelog](https://keepachangelog.com/).
   `ordo_campaign_importform.xml`/`ordo_segment_importform.xml`.
 - **`.ordo-tag-chip-input` had no real styling** — fell back to stark browser-default input
   chrome; now matches the border/padding/radius of its sibling admin fields.
+- **Three real admin UX bugs found clicking through the admin**, each confirmed against a real
+  screenshot before fixing: the dashboard setup-wizard banner's background fell back to a
+  saturated indigo meant for buttons/badges (its real CSS variable was always defined, so the
+  intended light-lavender fallback never applied), making the dark title/body text unreadable;
+  the segment editor's `event_only_warning` note rendered as a truncating single-line `<input>`
+  instead of showing its full two-sentence text; and `segment_id`/`campaign_id` selects with zero
+  saved segments/campaigns yet rendered as an unlabeled, unusably tiny empty box, now captioned
+  "-- Please Select --".
+- **Two more real bugs found while fixing the three above** — the setup-wizard banner's own "Open
+  Setup Guide" button rendered fully transparent (its CSS color-token aliases were scoped to a
+  wrapper the banner isn't a descendant of, so every `var(--ordo-primary)`-style reference inside
+  it silently resolved to nothing; rescoped to `:root`), and `event_only_warning`'s textarea fix
+  was swapped for this form's existing tooltip mechanism instead (a permanently-visible block was
+  too much real estate for what's genuinely just a caveat).
+- **`event_only_warning`'s tooltip collided with the strip above it** — a z-index bump alone didn't
+  fix it (confirmed via `elementFromPoint()` at the overlap pixel); opened the tooltip downward
+  instead of Magento's default upward placement, since there's open space below the row and
+  nothing below it to collide with.
+- **Missing delete button on campaign/segment Conditions rows** (ROADMAP.md "Admin UX") — adding a
+  condition was possible but removing one wasn't, short of discarding the whole campaign/segment.
+  Adding the button alone wasn't enough: `segment-form.css`'s `td:last-child` rule (meant to pin it
+  to the row's right edge) matched a different field's `<td>` in this ~24-field, switcher-driven
+  row, since DOM child order there isn't tied to declaration order or `sortOrder` — the button
+  rendered correctly but a sibling field's column silently ate every click on top of it. Fixed by
+  matching `td:has(.action-delete)` instead, which doesn't depend on DOM order.
 
 ## [1.3.0] - 2026-11-04
 
