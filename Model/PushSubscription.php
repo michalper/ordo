@@ -107,4 +107,22 @@ class PushSubscription extends AbstractModel
         $this->setData(self::LAST_SEEN_AT, $lastSeenAt);
         return $this;
     }
+
+    /**
+     * Ownership check for Controller\Track\UnregisterPushSubscription - same shape as
+     * Model\VisitorIdentityFieldsTrait::belongsTo() (this class can't use that trait directly,
+     * see its own docblock: setCustomerId() here takes a non-nullable int). A request may only
+     * unregister a subscription that belongs to its own customer_id/visitor_id, so a visitor
+     * can't guess/leak another endpoint and delete someone else's subscription. An empty
+     * visitor_id never matches - both an absent request identity and a row with no visitor_id at
+     * all would otherwise both be "", and '' === '' must not count as ownership.
+     */
+    public function belongsTo(?int $customerId, string $visitorId): bool
+    {
+        if ($customerId !== null && $this->getCustomerId() === $customerId) {
+            return true;
+        }
+
+        return $visitorId !== '' && $this->getVisitorId() === $visitorId;
+    }
 }

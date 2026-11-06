@@ -109,6 +109,29 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         $controller->execute();
     }
 
+    /**
+     * Regression test: Twilio\Security\RequestValidator has no special-case rejection for an
+     * empty *key* (only an empty signature) - a forged signature computed with the empty-string
+     * key would otherwise validate successfully before the Auth Token is ever configured.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testEmptyAuthTokenIsRejectedEvenWithAForgedMatchingSignature(): void
+    {
+        $this->config = $this->createStub(Config::class);
+        $this->config->method('getTwilioAuthToken')->willReturn('');
+
+        $controller = $this->makeController();
+        $postParams = ['MessageSid' => 'SM123', 'MessageStatus' => 'delivered'];
+        $forgedSignature = (new RequestValidator(''))->computeSignature(self::CALLBACK_URL, $postParams);
+        $this->request->method('getHeader')->willReturnMap([['X-Twilio-Signature', $forgedSignature]]);
+        $this->request->method('getPostValue')->willReturn($postParams);
+
+        $this->messageLogCollectionFactory->expects(self::never())->method('create');
+        $this->jsonResult->expects(self::once())->method('setHttpResponseCode')->with(403);
+
+        $controller->execute();
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testMissingSignatureHeaderIsRejected(): void
     {

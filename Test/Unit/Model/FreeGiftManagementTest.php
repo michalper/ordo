@@ -15,7 +15,6 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\FreeGiftEligibility;
 use Ordo\Automation\Model\FreeGiftEligibilityFactory;
 use Ordo\Automation\Model\FreeGiftManagement;
-use Ordo\Automation\Model\FreeGiftOffer;
 use Ordo\Automation\Model\FreeGiftOfferProduct;
 use Ordo\Automation\Model\FreeGiftOfferTier;
 use Ordo\Automation\Model\FreeGiftSelection;
@@ -63,6 +62,11 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         $this->eligibilityFactory->method('create')->willReturnCallback(fn () => new FreeGiftEligibility());
         $this->productRepository = $this->createMock(ProductRepositoryInterface::class);
         $this->userContext = $this->createStub(UserContextInterface::class);
+        // Every quote() call below defaults to customer_id 1 - matches here by default so a test
+        // that doesn't care about ownership exercises a realistic authenticated-customer-owns-
+        // their-own-cart call, not an unauthenticated one (which assertOwnership now always
+        // rejects - see FreeGiftManagement::assertOwnership()'s own docblock).
+        $this->userContext->method('getUserId')->willReturn(1);
         $this->config = $this->createStub(Config::class);
         $this->config->method('isFreeGiftEnabled')->willReturn(true);
 
@@ -146,7 +150,7 @@ class FreeGiftManagementTest extends AbstractModelTestCase
     private function quote(
         float $baseSubtotal,
         int $id = 42,
-        int $customerId = 0,
+        int $customerId = 1,
         int $storeId = 1,
         ?float $displaySubtotal = null
     ): Quote {
@@ -242,6 +246,23 @@ class FreeGiftManagementTest extends AbstractModelTestCase
     {
         $this->userContext->method('getUserId')->willReturn(99);
         $quote = $this->quote(0.0, 7, 5);
+        $this->cartRepository->method('get')->willReturn($quote);
+
+        $this->expectException(NoSuchEntityException::class);
+        $this->management->getEligibility(7);
+    }
+
+    /**
+     * Regression test for the IDOR this module's etc/webapi.xml ACL alone can't prevent: an
+     * authenticated customer must never be let through onto a cart whose own customer_id is 0
+     * (an orphaned guest quote) just because 0 used to be treated as "no owner to compare
+     * against" - that integer cartId is a plain auto-increment, guessable by iteration.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetEligibilityThrowsWhenCartBelongsToNoOne(): void
+    {
+        $this->userContext->method('getUserId')->willReturn(99);
+        $quote = $this->quote(0.0, 7, 0);
         $this->cartRepository->method('get')->willReturn($quote);
 
         $this->expectException(NoSuchEntityException::class);

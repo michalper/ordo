@@ -94,19 +94,20 @@ class FreeGiftManagement implements FreeGiftManagementInterface
     }
 
     /**
-     * A logged-in customer may only act on their own cart — a guest quote (customer_id null)
-     * is left unchecked here since guest checkout has no identity to compare against; the
-     * cart id itself (a large auto-increment, not guessable in practice for this module's
-     * scope) is the only protection for guest carts, matching this module's other
-     * customer-facing endpoints (see OfferManagement::selfExtend for the identical pattern).
+     * A logged-in customer may only act on their own cart — same strict always-compare pattern
+     * as OfferManagement::selfExtend(). etc/webapi.xml's ACL for both getEligibility()/
+     * selectGifts() is "self" with no anonymous route alongside it, so every real caller here
+     * already has an authenticated customer id; a cart whose own customer_id is 0 (an orphaned
+     * guest quote, never this caller's) must still be rejected, not waved through - the raw
+     * integer cartId is a plain auto-increment and guessable by iteration, so skipping the check
+     * for that case let any authenticated customer tamper with an unrelated guest's cart. Same
+     * "not found" response for a wrong owner as for a missing cart - avoids leaking that a cart
+     * exists but belongs to someone else.
      */
     private function assertOwnership(Quote $quote): void
     {
         $customerId = $this->userContext->getUserId();
-        if ($customerId !== null
-            && (int) $quote->getCustomerId() > 0
-            && (int) $quote->getCustomerId() !== (int) $customerId
-        ) {
+        if ($customerId === null || (int) $quote->getCustomerId() !== (int) $customerId) {
             throw new NoSuchEntityException(__('Cart with id "%1" does not exist.', $quote->getId()));
         }
     }

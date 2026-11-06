@@ -97,4 +97,35 @@ class PushSubscriptionTest extends AbstractModelTestCase
 
         self::assertSame('2026-01-02 00:00:00', $model->getData('last_seen_at'));
     }
+
+    public function testBelongsToMatchesByCustomerId(): void
+    {
+        $model = $this->makeModel();
+        $model->setCustomerId(42);
+
+        self::assertTrue($model->belongsTo(42, ''));
+    }
+
+    public function testBelongsToMatchesByVisitorId(): void
+    {
+        $model = $this->makeModel();
+        $model->setVisitorId('visitor-abc123');
+
+        self::assertTrue($model->belongsTo(null, 'visitor-abc123'));
+    }
+
+    public function testBelongsToRejectsMismatchedCustomerId(): void
+    {
+        $model = $this->makeModel();
+        $model->setCustomerId(42);
+
+        self::assertFalse($model->belongsTo(99, ''));
+    }
+
+    public function testBelongsToRejectsEmptyVisitorIdEvenWhenRowHasNoVisitorIdEither(): void
+    {
+        $model = $this->makeModel();
+
+        self::assertFalse($model->belongsTo(null, ''));
+    }
 }

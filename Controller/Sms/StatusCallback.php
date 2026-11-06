@@ -50,7 +50,22 @@ class StatusCallback extends Action implements HttpPostActionInterface, CsrfAwar
         $params = $this->getRequest()->getPostValue();
         $params = is_array($params) ? $params : [];
 
-        $validator = new RequestValidator($this->config->getTwilioAuthToken());
+        $authToken = $this->config->getTwilioAuthToken();
+        // Twilio's RequestValidator has no special-case rejection for an empty *key* (only for an
+        // empty signature) - with no auth token configured yet, the HMAC key is a known constant
+        // ('') and the correct signature is fully computable by anyone from the public callback
+        // URL + POST params, same fail-open risk SendGridSignatureValidator::isValid() guards
+        // against for its own empty key. Must fail closed here before ever constructing/calling
+        // RequestValidator.
+        if ($authToken === '') {
+            $this->logger->error(
+                'Ordo_Automation: rejected an SMS status callback, Twilio Auth Token is not configured.'
+            );
+
+            return $result->setHttpResponseCode(403)->setData(['ok' => false]);
+        }
+
+        $validator = new RequestValidator($authToken);
         $callbackUrl = $this->callbackUrlBuilder->getSmsStatusCallbackUrl();
         if ($signature === '' || !$validator->validate($signature, $callbackUrl, $params)) {
             $this->logger->error(

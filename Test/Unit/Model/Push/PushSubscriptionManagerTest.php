@@ -156,14 +156,31 @@ class PushSubscriptionManagerTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
-    public function testUnregisterDeletesEveryMatchingRow(): void
+    public function testUnregisterDeletesEveryMatchingRowThatBelongsToTheCaller(): void
     {
         $row = $this->createStub(PushSubscription::class);
+        $row->method('belongsTo')->willReturn(true);
         $this->collectionFactory->method('create')->willReturn($this->makeCollection([$row]));
 
         $this->resource->expects(self::once())->method('delete')->with($row);
 
-        $this->manager->unregister('https://push.example.com/1');
+        $this->manager->unregister('https://push.example.com/1', null, 'visitor-1');
+    }
+
+    /**
+     * Regression test: the endpoint alone is not proof of ownership - a caller whose own
+     * customer_id/visitor_id doesn't match the row's must not be able to delete it.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testUnregisterDoesNotDeleteARowThatDoesNotBelongToTheCaller(): void
+    {
+        $row = $this->createStub(PushSubscription::class);
+        $row->method('belongsTo')->willReturn(false);
+        $this->collectionFactory->method('create')->willReturn($this->makeCollection([$row]));
+
+        $this->resource->expects(self::never())->method('delete');
+
+        $this->manager->unregister('https://push.example.com/1', null, 'someone-elses-visitor-id');
     }
 
     #[AllowMockObjectsWithoutExpectations]

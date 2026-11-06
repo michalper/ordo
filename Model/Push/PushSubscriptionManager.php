@@ -75,13 +75,21 @@ class PushSubscriptionManager
         }
     }
 
-    public function unregister(string $endpoint): void
+    /**
+     * Only deletes a matching row that actually belongs to the caller (PushSubscription::
+     * belongsTo()) - the endpoint alone is not proof of ownership: a request bearing an endpoint
+     * it found or was given (logs, a shared device, a separate disclosure) must not be able to
+     * delete a stranger's subscription.
+     */
+    public function unregister(string $endpoint, ?int $customerId, string $visitorId): void
     {
         $collection = $this->collectionFactory->create();
         $collection->addFieldToFilter('endpoint_hash', $this->hashEndpoint($endpoint));
         foreach ($collection as $subscription) {
             /** @var PushSubscription $subscription */
-            $this->pushSubscriptionResource->delete($subscription);
+            if ($subscription->belongsTo($customerId, $visitorId)) {
+                $this->pushSubscriptionResource->delete($subscription);
+            }
         }
     }
 

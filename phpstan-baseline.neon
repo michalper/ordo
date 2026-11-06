@@ -2619,7 +2619,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 6
+			count: 5
 			path: Model/FreeGiftManagement.php
 
 		-
