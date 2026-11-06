@@ -94,20 +94,26 @@ class FreeGiftManagement implements FreeGiftManagementInterface
     }
 
     /**
-     * A logged-in customer may only act on their own cart — same strict always-compare pattern
-     * as OfferManagement::selfExtend(). etc/webapi.xml's ACL for both getEligibility()/
-     * selectGifts() is "self" with no anonymous route alongside it, so every real caller here
-     * already has an authenticated customer id; a cart whose own customer_id is 0 (an orphaned
-     * guest quote, never this caller's) must still be rejected, not waved through - the raw
-     * integer cartId is a plain auto-increment and guessable by iteration, so skipping the check
-     * for that case let any authenticated customer tamper with an unrelated guest's cart. Same
-     * "not found" response for a wrong owner as for a missing cart - avoids leaking that a cart
-     * exists but belongs to someone else.
+     * A logged-in customer may only act on their own cart - a genuinely anonymous caller
+     * ($customerId null) is still waved through unconditionally, same as before: this is also
+     * the real headless/guest-checkout path (see Test\Integration\FreeGiftManagementScenarioTest),
+     * and the raw integer cartId being guessable-by-iteration is not a vulnerability for a caller
+     * who was never authenticated as anyone to begin with.
+     *
+     * What changed from the original check: it used to ALSO wave through an *authenticated*
+     * caller whenever the quote's own customer_id was 0 - i.e. any logged-in customer could pass
+     * an arbitrary cartId belonging to an unrelated, orphaned guest quote and the "ownership"
+     * check would simply no-op, because there was nothing on that quote to compare against. That
+     * let any real customer account iterate cartIds and tamper with a stranger's guest cart. Now
+     * an authenticated caller is held to a strict match against the quote's own customer_id,
+     * full stop - same pattern as the already-correct OfferManagement::selfExtend(). Same "not
+     * found" response for a wrong owner as for a missing cart - avoids leaking that a cart exists
+     * but belongs to someone else.
      */
     private function assertOwnership(Quote $quote): void
     {
         $customerId = $this->userContext->getUserId();
-        if ($customerId === null || (int) $quote->getCustomerId() !== (int) $customerId) {
+        if ($customerId !== null && (int) $quote->getCustomerId() !== (int) $customerId) {
             throw new NoSuchEntityException(__('Cart with id "%1" does not exist.', $quote->getId()));
         }
     }

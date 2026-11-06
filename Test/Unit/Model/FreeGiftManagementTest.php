@@ -269,6 +269,39 @@ class FreeGiftManagementTest extends AbstractModelTestCase
         $this->management->getEligibility(7);
     }
 
+    /**
+     * The other half of the regression above: a genuinely anonymous caller (no customer token at
+     * all) acting on a genuine guest cart must still be waved through unconditionally - this is
+     * the real headless/guest-checkout path (see Test\Integration\FreeGiftManagementScenarioTest),
+     * not a hole to close.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetEligibilitySucceedsForAnonymousCallerOnAGuestCart(): void
+    {
+        $this->userContext = $this->createStub(UserContextInterface::class);
+        $this->management = new FreeGiftManagement(
+            $this->cartRepository,
+            $this->offerCollectionFactory,
+            $this->tierCollectionFactory,
+            $this->productCollectionFactory,
+            $this->giftItemCollectionFactory,
+            $this->giftItemFactory,
+            $this->giftItemResource,
+            $this->eligibilityFactory,
+            $this->productRepository,
+            $this->userContext,
+            $this->config
+        );
+        $this->stubOffersAndTiers([], []);
+        $this->stubGiftItems([]);
+        $quote = $this->quote(0.0, 7, 0);
+        $this->cartRepository->method('get')->willReturn($quote);
+
+        $eligibility = $this->management->getEligibility(7);
+
+        self::assertSame(0, $eligibility->getEarnedSlots());
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testSelectGiftsThrowsOnDuplicateSkus(): void
     {
