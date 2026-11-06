@@ -68,11 +68,20 @@ class RfmCalculator
                 ->where('state != ?', 'canceled')
         );
 
+        return $this->recencyDaysFromOrderDate($lastOrderAt ? (string) $lastOrderAt : null);
+    }
+
+    /**
+     * Shared by getRecencyDays() and getAggregatesForAllCustomers() so the two call sites can
+     * never drift apart on what "days since order" means.
+     */
+    private function recencyDaysFromOrderDate(?string $lastOrderAt): ?int
+    {
         if (!$lastOrderAt) {
             return null;
         }
 
-        $days = ($this->dateTime->gmtTimestamp() - strtotime((string) $lastOrderAt)) / 86400;
+        $days = ($this->dateTime->gmtTimestamp() - strtotime($lastOrderAt)) / 86400;
 
         return max(0, (int) floor($days));
     }
@@ -157,17 +166,11 @@ class RfmCalculator
                 $customerId = (int) $row['customer_id'];
                 $lastCustomerId = $customerId;
                 $lastOrderAt = $row['last_order_at'] ?? null;
-                $recencyDays = null;
-
-                if ($lastOrderAt) {
-                    $days = ($this->dateTime->gmtTimestamp() - strtotime((string) $lastOrderAt)) / 86400;
-                    $recencyDays = max(0, (int) floor($days));
-                }
 
                 $aggregates[$customerId] = [
                     'frequency' => (int) $row['frequency'],
                     'monetary' => (float) $row['monetary'],
-                    'recency_days' => $recencyDays,
+                    'recency_days' => $this->recencyDaysFromOrderDate($lastOrderAt ? (string) $lastOrderAt : null),
                 ];
             }
         } while (count($rows) === self::SCAN_PAGE_SIZE);

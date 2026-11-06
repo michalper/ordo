@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Model;
 
 use Magento\Framework\App\ResourceConnection;
+use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
 use Ordo\Automation\Api\CustomerTagManagementInterface;
 
@@ -33,8 +34,8 @@ class CustomerTagManager implements CustomerTagManagementInterface
             return;
         }
 
-        $connection = $this->resourceConnection->getConnection();
-        $connection->insert($this->resourceConnection->getTableName('ordo_customer_tag'), [
+        $connection = $this->connection();
+        $connection->insert($this->table(), [
             'customer_id' => $customerId,
             'tag' => $tag,
             'added_at' => date('Y-m-d H:i:s'),
@@ -45,17 +46,17 @@ class CustomerTagManager implements CustomerTagManagementInterface
 
     public function removeTag(int $customerId, string $tag): void
     {
-        $connection = $this->resourceConnection->getConnection();
+        $connection = $this->connection();
         $connection->delete(
-            $this->resourceConnection->getTableName('ordo_customer_tag'),
+            $this->table(),
             ['customer_id = ?' => $customerId, 'tag = ?' => $tag]
         );
     }
 
     public function hasTag(int $customerId, string $tag): bool
     {
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('ordo_customer_tag');
+        $connection = $this->connection();
+        $table = $this->table();
 
         $count = $connection->fetchOne(
             $connection->select()
@@ -72,8 +73,8 @@ class CustomerTagManager implements CustomerTagManagementInterface
      */
     public function getTags(int $customerId): array
     {
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('ordo_customer_tag');
+        $connection = $this->connection();
+        $table = $this->table();
 
         return $connection->fetchCol(
             $connection->select()
@@ -96,8 +97,8 @@ class CustomerTagManager implements CustomerTagManagementInterface
             return [];
         }
 
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('ordo_customer_tag');
+        $connection = $this->connection();
+        $table = $this->table();
 
         $ids = $connection->fetchCol(
             $connection->select()
@@ -127,8 +128,8 @@ class CustomerTagManager implements CustomerTagManagementInterface
             return [];
         }
 
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('ordo_customer_tag');
+        $connection = $this->connection();
+        $table = $this->table();
 
         // distinct() is called as its own statement, not chained - 'DISTINCT tag' as a bare
         // column string gets backtick-quoted as a literal identifier ("DISTINCT"."tag") instead
@@ -153,8 +154,8 @@ class CustomerTagManager implements CustomerTagManagementInterface
      */
     public function getCustomerIdsWithTag(string $tag): array
     {
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('ordo_customer_tag');
+        $connection = $this->connection();
+        $table = $this->table();
         $customerTable = $this->resourceConnection->getTableName('customer_entity');
 
         // ordo_customer_tag has no FK to customer_entity (same small-table design as
@@ -182,8 +183,8 @@ class CustomerTagManager implements CustomerTagManagementInterface
             return false;
         }
 
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('ordo_customer_tag');
+        $connection = $this->connection();
+        $table = $this->table();
 
         $count = $connection->fetchOne(
             $connection->select()
@@ -206,8 +207,8 @@ class CustomerTagManager implements CustomerTagManagementInterface
             return false;
         }
 
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('ordo_customer_tag');
+        $connection = $this->connection();
+        $table = $this->table();
 
         $matched = (int) $connection->fetchOne(
             $connection->select()
@@ -232,8 +233,8 @@ class CustomerTagManager implements CustomerTagManagementInterface
             return [];
         }
 
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('ordo_customer_tag');
+        $connection = $this->connection();
+        $table = $this->table();
         $customerTable = $this->resourceConnection->getTableName('customer_entity');
 
         // distinct() as its own statement - see searchTags()'s own comment on why a bare
@@ -263,8 +264,8 @@ class CustomerTagManager implements CustomerTagManagementInterface
             return [];
         }
 
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('ordo_customer_tag');
+        $connection = $this->connection();
+        $table = $this->table();
         $customerTable = $this->resourceConnection->getTableName('customer_entity');
 
         // having() is called as its own statement, not chained - Magento's Select overrides
@@ -279,5 +280,15 @@ class CustomerTagManager implements CustomerTagManagementInterface
         $select->having('COUNT(DISTINCT t.tag) >= ?', count(array_unique($tags)));
 
         return array_map('intval', $connection->fetchCol($select));
+    }
+
+    private function connection(): AdapterInterface
+    {
+        return $this->resourceConnection->getConnection();
+    }
+
+    private function table(): string
+    {
+        return $this->resourceConnection->getTableName('ordo_customer_tag');
     }
 }

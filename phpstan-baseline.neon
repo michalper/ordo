@@ -1725,7 +1725,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 5
+			count: 4
 			path: Model/Campaign/Action/SendSms.php
 
 		-
@@ -1749,7 +1749,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 4
+			count: 3
 			path: Model/Campaign/Action/SendWhatsApp.php
 
 		-
@@ -1757,6 +1757,12 @@ parameters:
 			identifier: cast.string
 			count: 1
 			path: Model/Campaign/Action/ShowPopup.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/Sms/PhoneNumberResolver.php
 
 		-
 			message: '#^Cannot access offset ''actions'' on mixed\.$#'

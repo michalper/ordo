@@ -19,6 +19,7 @@ use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate as WhatsAppTemplateResource;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
+use Ordo\Automation\Model\Sms\PhoneNumberResolver;
 use Ordo\Automation\Model\WhatsApp\WhatsAppSender;
 use Ordo\Automation\Model\WhatsAppTemplate;
 use Ordo\Automation\Model\WhatsAppTemplateFactory;
@@ -84,7 +85,8 @@ class SendWhatsAppTest extends TestCase
             $this->frequencyCapGate,
             new SendRetrier(1),
             $this->messageSendRetryQueue,
-            $this->logger
+            $this->logger,
+            new PhoneNumberResolver()
         );
     }
 

@@ -15,8 +15,8 @@ use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
 use Ordo\Automation\Model\Sms\OptedOutException;
+use Ordo\Automation\Model\Sms\PhoneNumberResolver;
 use Ordo\Automation\Model\Sms\SmsSenderInterface;
-use Ordo\Automation\Setup\Patch\Data\AddCustomerSmsPhoneAttribute;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -44,14 +44,6 @@ class SendSms implements ActionInterface
     private const string CHANNEL = 'sms';
     private const string ACTION_TYPE = 'send_sms';
 
-    /**
-     * E.164: a leading "+", then 8-15 digits total, first digit non-zero (ITU-T E.164 caps the
-     * whole number, country code included, at 15 digits). Deliberately permissive beyond that —
-     * this is a fail-fast sanity check before spending a Twilio API call, not a full numbering-plan validator,
-     * so it doesn't try to validate per-country length/prefix rules.
-     */
-    private const string E164_PATTERN = '/^\+[1-9]\d{7,14}$/';
-
     public function __construct(
         private readonly CustomerRepositoryInterface $customerRepository,
         private readonly SmsSenderInterface $smsSender,
@@ -63,7 +55,8 @@ class SendSms implements ActionInterface
         private readonly SendRetrier $sendRetrier,
         private readonly MessageSendRetryQueue $messageSendRetryQueue,
         private readonly LoggerInterface $logger,
-        private readonly CustomerStoreResolver $customerStoreResolver
+        private readonly CustomerStoreResolver $customerStoreResolver,
+        private readonly PhoneNumberResolver $phoneNumberResolver
     ) {
     }
 
@@ -92,9 +85,8 @@ class SendSms implements ActionInterface
             return;
         }
 
-        $phoneAttribute = $customer->getCustomAttribute(AddCustomerSmsPhoneAttribute::ATTRIBUTE_CODE);
-        $phone = $phoneAttribute !== null ? trim((string) $phoneAttribute->getValue()) : '';
-        if ($phone === '') {
+        $phone = $this->phoneNumberResolver->resolve($customer);
+        if ($phone === null) {
             $this->logger->error(sprintf(
                 'Ordo_Automation: send_sms action has no ordo_sms_phone set for customer #%d.',
                 $customerId
@@ -121,7 +113,7 @@ class SendSms implements ActionInterface
             return;
         }
 
-        if (!preg_match(self::E164_PATTERN, $phone)) {
+        if (!$this->phoneNumberResolver->isValidE164($phone)) {
             $this->logger->error(sprintf(
                 'Ordo_Automation: send_sms action skipped for customer #%d, ordo_sms_phone "%s" is not a valid'
                 . ' E.164 number.',

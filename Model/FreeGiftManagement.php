@@ -217,11 +217,9 @@ class FreeGiftManagement implements FreeGiftManagementInterface
         $earned = 0;
         if ($activeOfferIds !== []) {
             $subtotal = (float) $quote->getBaseSubtotal();
-            foreach ($this->tierCollectionFactory->create()->addOffersFilter($activeOfferIds) as $tier) {
-                if ($tier->getMinSubtotal() <= $subtotal) {
-                    $earned += $tier->getGiftSlots();
-                }
-            }
+            /** @var \Ordo\Automation\Model\FreeGiftOfferTier[] $tiers */
+            $tiers = iterator_to_array($this->tierCollectionFactory->create()->addOffersFilter($activeOfferIds));
+            $earned = $this->earnedSlotsForOffer($tiers, $subtotal);
         }
 
         $eligibleSkus = array_keys($this->mapEligibleSkusToOfferId($activeOfferIds));

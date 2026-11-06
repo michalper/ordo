@@ -67,12 +67,28 @@ class ConsentManager
 
         $this->customerConsentResource->save($consent);
 
-        // Append-only - never updates a previous log row, unlike ordo_customer_consent's own
-        // upsert above. See CustomerConsentLog's own class doc for why this exists. topic is left
-        // unset (null) - this is a channel-level change, see setTopicConsent() for the other kind.
+        $this->writeConsentLog($customerId, $channel, null, $consented, $source);
+    }
+
+    /**
+     * Append-only - never updates a previous log row, unlike ordo_customer_consent/
+     * ordo_customer_consent_topic's own upsert above. See CustomerConsentLog's own class doc for
+     * why this exists. $topic is left null for a channel-level change (setConsent()), set for a
+     * topic-level one (setTopicConsent()).
+     */
+    private function writeConsentLog(
+        int $customerId,
+        ConsentChannel $channel,
+        ?ConsentTopic $topic,
+        bool $consented,
+        ?string $source
+    ): void {
         $logEntry = $this->customerConsentLogFactory->create();
         $logEntry->setCustomerId($customerId);
         $logEntry->setChannel($channel->value);
+        if ($topic !== null) {
+            $logEntry->setTopic($topic->value);
+        }
         $logEntry->setConsented($consented);
         $logEntry->setSource($source);
         $this->customerConsentLogResource->save($logEntry);
@@ -172,13 +188,7 @@ class ConsentManager
 
         $this->customerConsentTopicResource->save($topicConsent);
 
-        $logEntry = $this->customerConsentLogFactory->create();
-        $logEntry->setCustomerId($customerId);
-        $logEntry->setChannel($channel->value);
-        $logEntry->setTopic($topic->value);
-        $logEntry->setConsented($consented);
-        $logEntry->setSource($source);
-        $this->customerConsentLogResource->save($logEntry);
+        $this->writeConsentLog($customerId, $channel, $topic, $consented, $source);
     }
 
     /**

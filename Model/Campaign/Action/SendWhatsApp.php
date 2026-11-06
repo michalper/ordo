@@ -14,9 +14,9 @@ use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate as WhatsAppTemplateResource;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
+use Ordo\Automation\Model\Sms\PhoneNumberResolver;
 use Ordo\Automation\Model\WhatsApp\WhatsAppSender;
 use Ordo\Automation\Model\WhatsAppTemplateFactory;
-use Ordo\Automation\Setup\Patch\Data\AddCustomerSmsPhoneAttribute;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -43,11 +43,6 @@ class SendWhatsApp implements ActionInterface
     private const string CHANNEL = 'whatsapp';
     private const string ACTION_TYPE = 'send_whatsapp';
 
-    /**
-     * Same E.164 sanity check send_sms uses — see that class's own constant for the reasoning.
-     */
-    private const string E164_PATTERN = '/^\+[1-9]\d{7,14}$/';
-
     public function __construct(
         private readonly CustomerRepositoryInterface $customerRepository,
         private readonly WhatsAppSender $whatsAppSender,
@@ -60,7 +55,8 @@ class SendWhatsApp implements ActionInterface
         private readonly FrequencyCapGate $frequencyCapGate,
         private readonly SendRetrier $sendRetrier,
         private readonly MessageSendRetryQueue $messageSendRetryQueue,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly PhoneNumberResolver $phoneNumberResolver
     ) {
     }
 
@@ -105,9 +101,8 @@ class SendWhatsApp implements ActionInterface
             return;
         }
 
-        $phoneAttribute = $customer->getCustomAttribute(AddCustomerSmsPhoneAttribute::ATTRIBUTE_CODE);
-        $phone = $phoneAttribute !== null ? trim((string) $phoneAttribute->getValue()) : '';
-        if ($phone === '') {
+        $phone = $this->phoneNumberResolver->resolve($customer);
+        if ($phone === null) {
             $this->logger->error(sprintf(
                 'Ordo_Automation: send_whatsapp action has no ordo_sms_phone set for customer #%d.',
                 $customerId
@@ -141,7 +136,7 @@ class SendWhatsApp implements ActionInterface
             return;
         }
 
-        if (!preg_match(self::E164_PATTERN, $phone)) {
+        if (!$this->phoneNumberResolver->isValidE164($phone)) {
             // Never log the raw phone number here - this module otherwise deliberately hashes/
             // avoids logging PII (see Model/AdAudience/PiiHasher.php), and the customer id alone
             // is enough to look the record up if needed.

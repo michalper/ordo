@@ -666,9 +666,6 @@ class CampaignDispatcher
     }
 
     /**
-     * @param array<string, mixed> $context
-     */
-    /**
      * context['customer_id'] is the universal convention key every trigger observer populates
      * (CustomerTagManager, VisitorEventLogger, TriggerOutcomeLogger, SegmentMatcher, ...) - reused
      * here for both CampaignEntryGuard's lookup and scheduleResume()'s denormalized column. Null

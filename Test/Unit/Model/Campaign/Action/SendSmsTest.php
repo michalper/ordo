@@ -19,6 +19,7 @@ use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
 use Ordo\Automation\Model\Sms\OptedOutException;
+use Ordo\Automation\Model\Sms\PhoneNumberResolver;
 use Ordo\Automation\Model\Sms\SmsSenderInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
@@ -81,7 +82,8 @@ class SendSmsTest extends TestCase
             new SendRetrier(1),
             $this->messageSendRetryQueue,
             $this->logger,
-            $this->customerStoreResolver
+            $this->customerStoreResolver,
+            new PhoneNumberResolver()
         );
     }
 

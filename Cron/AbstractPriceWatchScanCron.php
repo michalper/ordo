@@ -169,17 +169,7 @@ abstract class AbstractPriceWatchScanCron
         $guestEmail = !empty($row['guest_email']) ? (string) $row['guest_email'] : null;
 
         if ($isNotifiable && $customerId !== null) {
-            // Claim (set notified_at) BEFORE dispatching, not after - a crash between a
-            // successful dispatch and the claim write must never cause a duplicate trigger on
-            // the next tick. The claim is conditional (... WHERE notified_at IS NULL, affected
-            // rows checked): of two overlapping runs that both selected this row, only the one
-            // whose UPDATE actually matched may dispatch. If the dispatch itself then fails, the
-            // claim is rolled back so this row is retried next run.
-            if (!$this->claim($entityId, $newValue)) {
-                return false;
-            }
-
-            try {
+            return $this->claimAndRun($entityId, $newValue, function () use ($customerId, $productId, $oldValue, $newValue): void {
                 $this->campaignDispatcher->dispatch(
                     $this->triggerCode(),
                     array_merge(
@@ -187,36 +177,20 @@ abstract class AbstractPriceWatchScanCron
                         $this->triggerPayload($oldValue, $newValue)
                     )
                 );
-            } catch (\Throwable $e) {
-                $this->unclaim($entityId);
-                throw $e;
-            }
-
-            return true;
+            });
         }
 
         if ($isNotifiable && $guestEmail !== null) {
             // Only reachable when customer_id was null - the branch above already claims/returns
-            // for every notifiable row with a known customer. Same conditional-claim/
-            // rollback-on-failure shape as that branch, just sent directly to the guest instead
-            // of through the campaign engine.
-            if (!$this->claim($entityId, $newValue)) {
-                return false;
-            }
-
-            try {
+            // for every notifiable row with a known customer.
+            return $this->claimAndRun($entityId, $newValue, function () use ($guestEmail, $product, $oldValue, $newValue): void {
                 $this->guestPriceWatchNotifier->notify(
                     $guestEmail,
                     $product,
                     $this->watchType(),
                     $this->triggerPayload($oldValue, $newValue)
                 );
-            } catch (\Throwable $e) {
-                $this->unclaim($entityId);
-                throw $e;
-            }
-
-            return true;
+            });
         }
 
         // No notifiable change yet, or a guest watch with no email on file - advance the cursor,
@@ -229,6 +203,31 @@ abstract class AbstractPriceWatchScanCron
         $this->updateRow($entityId, $update);
 
         return false;
+    }
+
+    /**
+     * Claim (set notified_at) BEFORE running $action, not after - a crash between a successful
+     * dispatch/notify and the claim write must never cause a duplicate trigger on the next tick.
+     * The claim is conditional (claim(), affected rows checked): of two overlapping runs that
+     * both selected this row, only the one whose UPDATE actually matched may run $action. If
+     * $action itself then throws, the claim is rolled back so this row is retried next run.
+     * Shared by both processRow() branches (known customer vs. guest email), which otherwise
+     * differed only in which action they ran.
+     */
+    private function claimAndRun(int $entityId, mixed $newValue, callable $action): bool
+    {
+        if (!$this->claim($entityId, $newValue)) {
+            return false;
+        }
+
+        try {
+            $action();
+        } catch (\Throwable $e) {
+            $this->unclaim($entityId);
+            throw $e;
+        }
+
+        return true;
     }
 
     /**

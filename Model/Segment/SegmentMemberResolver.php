@@ -349,16 +349,14 @@ class SegmentMemberResolver
             return [];
         }
 
-        $threshold = (int) $days;
-        $matching = [];
-
+        $recencyDaysByCustomer = [];
         foreach ($this->getAggregates() as $customerId => $aggregate) {
-            if ($aggregate['recency_days'] !== null && $aggregate['recency_days'] <= $threshold) {
-                $matching[] = $customerId;
+            if ($aggregate['recency_days'] !== null) {
+                $recencyDaysByCustomer[$customerId] = $aggregate['recency_days'];
             }
         }
 
-        return $matching;
+        return $this->filterByThreshold($recencyDaysByCustomer, (float) $days, atLeast: false);
     }
 
     /**
@@ -383,15 +381,12 @@ class SegmentMemberResolver
             return $this->rfmCalculator->getAllCustomerIds();
         }
 
-        $matching = [];
+        $frequencyByCustomer = array_map(
+            static fn (array $aggregate): int => $aggregate['frequency'],
+            $this->getAggregates()
+        );
 
-        foreach ($this->getAggregates() as $customerId => $aggregate) {
-            if ($aggregate['frequency'] >= $threshold) {
-                $matching[] = $customerId;
-            }
-        }
-
-        return $matching;
+        return $this->filterByThreshold($frequencyByCustomer, (float) $threshold);
     }
 
     /**
@@ -415,15 +410,12 @@ class SegmentMemberResolver
             return $this->rfmCalculator->getAllCustomerIds();
         }
 
-        $matching = [];
+        $monetaryByCustomer = array_map(
+            static fn (array $aggregate): float => $aggregate['monetary'],
+            $this->getAggregates()
+        );
 
-        foreach ($this->getAggregates() as $customerId => $aggregate) {
-            if ($aggregate['monetary'] >= $threshold) {
-                $matching[] = $customerId;
-            }
-        }
-
-        return $matching;
+        return $this->filterByThreshold($monetaryByCustomer, $threshold);
     }
 
     /**
@@ -444,16 +436,12 @@ class SegmentMemberResolver
             return [];
         }
 
-        $threshold = (float) $percentile;
-        $matching = [];
+        $rankByCustomer = array_map(
+            static fn (array $ranks): float => $ranks[$metric],
+            $this->getPercentileRanks()
+        );
 
-        foreach ($this->getPercentileRanks() as $customerId => $ranks) {
-            if ($ranks[$metric] >= $threshold) {
-                $matching[] = $customerId;
-            }
-        }
-
-        return $matching;
+        return $this->filterByThreshold($rankByCustomer, (float) $percentile);
     }
 
     /**
@@ -539,11 +527,23 @@ class SegmentMemberResolver
             return [];
         }
 
-        $threshold = (float) $ratioAtLeast;
+        return $this->filterByThreshold($this->getReorderCycleDriftRatios(), (float) $ratioAtLeast);
+    }
+
+    /**
+     * Shared by the five resolveXxxAtLeast()/resolveXxxAtMost() methods above, each of which is
+     * otherwise just this same "validate a numeric param, then filter a customerId => value map
+     * by it" shape with a different value source.
+     *
+     * @param array<int, int|float> $valuesByCustomerId
+     * @return int[]
+     */
+    private function filterByThreshold(array $valuesByCustomerId, float $threshold, bool $atLeast = true): array
+    {
         $matching = [];
 
-        foreach ($this->getReorderCycleDriftRatios() as $customerId => $ratio) {
-            if ($ratio >= $threshold) {
+        foreach ($valuesByCustomerId as $customerId => $value) {
+            if ($atLeast ? $value >= $threshold : $value <= $threshold) {
                 $matching[] = $customerId;
             }
         }
