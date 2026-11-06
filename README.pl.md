@@ -12,7 +12,7 @@
 [![Code Style](https://img.shields.io/badge/code%20style-Magento2%20Coding%20Standard-orange)](phpcs.xml.dist)
 [![Open Issues](https://img.shields.io/github/issues/michalper/ordo)](https://github.com/michalper/ordo/issues)
 
-*[Read in English](README.md)*
+*[Read in English](README.md)* · [ordo.marketing](https://ordo.marketing)
 
 Marketing automation działający wewnątrz standardowego Magento Open Source — bez licencji Adobe Commerce B2B, bez
 zewnętrznej subskrypcji MA. Triggery liczone są z danych, które Magento już ma (zamówienia, koszyki, klienci), albo z

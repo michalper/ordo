@@ -12,7 +12,7 @@
 [![Code Style](https://img.shields.io/badge/code%20style-Magento2%20Coding%20Standard-orange)](phpcs.xml.dist)
 [![Open Issues](https://img.shields.io/github/issues/michalper/ordo)](https://github.com/michalper/ordo/issues)
 
-*[Czytaj po polsku](README.pl.md)*
+*[Czytaj po polsku](README.pl.md)* · [ordo.marketing](https://ordo.marketing)
 
 A full campaign automation engine (trigger → conditions → actions, drag-and-drop canvas) that runs *inside*
 stock Magento Open Source — no Adobe Commerce B2B license, no per-contact MA subscription. Triggers are computed
