@@ -454,6 +454,18 @@ parameters:
 			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
 			identifier: method.notFound
 			count: 1
+			path: Controller/Adminhtml/AnomalyAlert/Index.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller/Adminhtml/AnomalyAlert/Index.php
+
+		-
+			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
+			identifier: method.notFound
+			count: 1
 			path: Controller/Adminhtml/Customer360/Index.php
 
 		-
@@ -2375,6 +2387,24 @@ parameters:
 			identifier: cast.string
 			count: 3
 			path: Model/Cron/CronRunLog.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
+			path: Model/Anomaly/AnomalyAlert.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Anomaly/AnomalyAlert.php
+
+		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 3
+			path: Model/Anomaly/AnomalyAlert.php
 
 		-
 			message: '#^Cannot access offset ''order_count'' on mixed\.$#'

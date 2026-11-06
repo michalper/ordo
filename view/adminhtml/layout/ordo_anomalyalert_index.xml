@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="ordo_anomalyalert_listing_intro"
+                   template="Ordo_Automation::listing_intro.phtml" before="ordo_anomalyalert_listing">
+                <arguments>
+                    <argument name="intro_text" xsi:type="string">Notable deviations Cron\DetectAnomalies has flagged - a campaign's revenue dropping vs. its own trailing baseline, or a campaign's conversion rate deviating from its peers' average. Configure thresholds under Stores → Configuration → Ordo Automation → Engagement &amp; Retention → Anomaly / Insight Alerts.</argument>
+                </arguments>
+            </block>
+            <uiComponent name="ordo_anomalyalert_listing"/>
+        </referenceContainer>
+    </body>
+</page>

@@ -75,6 +75,15 @@ class Config
     private const string XML_PATH_NPS_SURVEY_POLL_INTERVAL_SECONDS
         = 'ordo_tracking/tracking/nps_survey_poll_interval_seconds';
 
+    private const string XML_PATH_ANOMALY_ALERTS_ENABLED = 'ordo_automation/anomaly_alerts/enabled';
+    private const string XML_PATH_ANOMALY_LOOKBACK_DAYS = 'ordo_automation/anomaly_alerts/lookback_days';
+    private const string XML_PATH_ANOMALY_MIN_SAMPLE_SIZE = 'ordo_automation/anomaly_alerts/min_sample_size';
+    private const string XML_PATH_ANOMALY_REVENUE_DROP_THRESHOLD_PERCENT
+        = 'ordo_automation/anomaly_alerts/revenue_drop_threshold_percent';
+    private const string XML_PATH_ANOMALY_CONVERSION_OUTLIER_THRESHOLD_PERCENT
+        = 'ordo_automation/anomaly_alerts/conversion_outlier_threshold_percent';
+    private const string XML_PATH_ANOMALY_ALERT_COOLDOWN_DAYS = 'ordo_automation/anomaly_alerts/cooldown_days';
+
     private const string XML_PATH_FREE_GIFT_ENABLED = 'ordo_automation/free_gift/enabled';
 
     private const string XML_PATH_LEAD_SCORING_ENABLED = 'ordo_scoring/lead_scoring/enabled';
@@ -562,6 +571,40 @@ class Config
     public function getNpsSurveyPollIntervalSeconds(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_NPS_SURVEY_POLL_INTERVAL_SECONDS, 25, $storeId);
+    }
+
+    public function isAnomalyAlertsEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_ANOMALY_ALERTS_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getAnomalyLookbackDays(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_ANOMALY_LOOKBACK_DAYS, 7, $storeId);
+    }
+
+    public function getAnomalyMinSampleSize(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_ANOMALY_MIN_SAMPLE_SIZE, 20, $storeId);
+    }
+
+    public function getAnomalyRevenueDropThresholdPercent(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_ANOMALY_REVENUE_DROP_THRESHOLD_PERCENT, 30, $storeId);
+    }
+
+    public function getAnomalyConversionOutlierThresholdPercent(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_ANOMALY_CONVERSION_OUTLIER_THRESHOLD_PERCENT, 50, $storeId);
+    }
+
+    public function getAnomalyAlertCooldownDays(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_ANOMALY_ALERT_COOLDOWN_DAYS, 7, $storeId);
     }
 
     public function isFreeGiftEnabled(?int $storeId = null): bool

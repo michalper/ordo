@@ -1175,4 +1175,23 @@
         </constraint>
     </table>
 
+    <table name="ordo_anomaly_alert" resource="default" engine="innodb" comment="One row per notable deviation Cron\DetectAnomalies flags - a campaign's revenue dropping vs. its own trailing baseline, or a campaign's conversion rate deviating from its peers' average (see docs/adr/0025). An immutable log, same shape as ordo_cron_run_log/ordo_admin_action_log - no acknowledged/resolved state, see that ADR's Consequences section.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="alert_type" nullable="false" length="32" comment="campaign_revenue_drop or campaign_conversion_outlier - see Model\Anomaly\AnomalyAlertType"/>
+        <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id - no FK, same reasoning as ordo_message_log.campaign_id: this row must survive the campaign it references being deleted"/>
+        <column xsi:type="text" name="message" nullable="false" comment="Human-readable summary of the deviation, e.g. 'Campaign #12 revenue dropped 42% (320.00 -> 185.50 over 7 days)'"/>
+        <column xsi:type="decimal" name="current_value" scale="4" precision="20" unsigned="false" nullable="false" comment="The metric's value in the current window (revenue or conversion rate, depending on alert_type)"/>
+        <column xsi:type="decimal" name="baseline_value" scale="4" precision="20" unsigned="false" nullable="false" comment="What current_value was compared against - the campaign's own trailing-window value for campaign_revenue_drop, or the peer average for campaign_conversion_outlier"/>
+        <column xsi:type="decimal" name="deviation_percent" scale="2" precision="6" unsigned="false" nullable="false" comment="Signed percent deviation of current_value from baseline_value"/>
+        <column xsi:type="datetime" name="detected_at" nullable="false" comment="When this alert was detected - also the column Model\Cron\ReminderLogStore::claim() checks the cooldown window against"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="ORDO_ANOMALY_ALERT_ALERT_TYPE_CAMPAIGN_ID_DETECTED_AT" indexType="btree">
+            <column name="alert_type"/>
+            <column name="campaign_id"/>
+            <column name="detected_at"/>
+        </index>
+    </table>
+
 </schema>

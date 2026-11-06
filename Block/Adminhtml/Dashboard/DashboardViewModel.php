@@ -16,6 +16,7 @@ use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\Clv\ClvCalculator;
 use Ordo\Automation\Model\Cron\CronRunLog;
 use Ordo\Automation\Model\LoyaltyTierCalculator;
+use Ordo\Automation\Model\ResourceModel\Anomaly\AnomalyAlert\CollectionFactory as AnomalyAlertCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\CollectionFactory as CampaignCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as CampaignTriggerCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Cron\CronRunLog\CollectionFactory as CronRunLogCollectionFactory;
@@ -105,7 +106,8 @@ class DashboardViewModel implements ArgumentInterface
         private readonly CacheInterface $cache,
         private readonly OrderApprovalCollectionFactory $orderApprovalCollectionFactory,
         private readonly CronRunLogCollectionFactory $cronRunLogCollectionFactory,
-        private readonly ClvCalculator $clvCalculator
+        private readonly ClvCalculator $clvCalculator,
+        private readonly AnomalyAlertCollectionFactory $anomalyAlertCollectionFactory
     ) {
     }
 
@@ -241,6 +243,28 @@ class DashboardViewModel implements ArgumentInterface
                 $collection = $this->cronRunLogCollectionFactory->create();
                 $collection->addFieldToFilter('level', CronRunLog::LEVEL_FAILURE);
                 $collection->addFieldToFilter('created_at', ['gteq' => $cutoff]);
+
+                return $collection->getSize();
+            }
+        );
+    }
+
+    /**
+     * How many anomaly alerts Cron\DetectAnomalies has flagged within its own configured
+     * lookback window (Helper\Config::getAnomalyLookbackDays()) - "is something worth looking at
+     * right now", the same "is something broken right now" framing getFailedCronCount() uses, not
+     * the grid's full history.
+     */
+    public function getRecentAnomalyAlertCount(): int
+    {
+        return $this->cachedCount(
+            'recent_anomaly_alert',
+            function (): int {
+                $lookbackDays = $this->config->getAnomalyLookbackDays();
+                $cutoff = date('Y-m-d H:i:s', (int) strtotime("-{$lookbackDays} days"));
+
+                $collection = $this->anomalyAlertCollectionFactory->create();
+                $collection->addFieldToFilter('detected_at', ['gteq' => $cutoff]);
 
                 return $collection->getSize();
             }

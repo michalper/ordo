@@ -233,4 +233,83 @@ class CampaignOutcomeLoggerTest extends TestCase
         $logger = new CampaignOutcomeLogger($resourceConnection);
         self::assertSame([], $logger->getStats(5));
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetStatsForWindowComputesConversionRateKeyedByCampaignId(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            [
+                'campaign_id' => '5',
+                'sent' => '20',
+                'converted' => '4',
+                'revenue' => '199.990000',
+            ],
+            [
+                'campaign_id' => '7',
+                'sent' => '0',
+                'converted' => '0',
+                'revenue' => null,
+            ],
+        ]);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $logger = new CampaignOutcomeLogger($resourceConnection);
+        $stats = $logger->getStatsForWindow(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-08'));
+
+        self::assertSame(
+            [
+                'campaign_id' => 5,
+                'sent' => 20,
+                'converted' => 4,
+                'conversion_rate' => 20.0,
+                'revenue' => 199.99,
+            ],
+            $stats[5]
+        );
+        self::assertSame(
+            [
+                'campaign_id' => 7,
+                'sent' => 0,
+                'converted' => 0,
+                'conversion_rate' => 0.0,
+                'revenue' => 0.0,
+            ],
+            $stats[7]
+        );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetStatsForWindowBoundsBySentAt(): void
+    {
+        $select = $this->createMock(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('joinLeft')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+        $seenWhereConditions = [];
+        $select->expects(self::exactly(2))->method('where')->willReturnCallback(
+            function (string $condition, mixed $value) use ($select, &$seenWhereConditions) {
+                $seenWhereConditions[$condition] = $value;
+                return $select;
+            }
+        );
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchAll')->willReturn([]);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $logger = new CampaignOutcomeLogger($resourceConnection);
+        $logger->getStatsForWindow(new \DateTimeImmutable('2026-01-01 00:00:00'), new \DateTimeImmutable('2026-01-08 00:00:00'));
+
+        self::assertSame('2026-01-01 00:00:00', $seenWhereConditions['o.sent_at >= ?'] ?? null);
+        self::assertSame('2026-01-08 00:00:00', $seenWhereConditions['o.sent_at < ?'] ?? null);
+    }
 }

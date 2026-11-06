@@ -5,6 +5,8 @@ namespace Ordo\Automation\Test\Unit\Block\Adminhtml\Dashboard;
 
 use Ordo\Automation\Api\Data\CampaignTriggerInterface;
 use Ordo\Automation\Block\Adminhtml\Dashboard\DashboardViewModel;
+use Ordo\Automation\Model\ResourceModel\Anomaly\AnomalyAlert\Collection as AnomalyAlertCollection;
+use Ordo\Automation\Model\ResourceModel\Anomaly\AnomalyAlert\CollectionFactory as AnomalyAlertCollectionFactory;
 use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\CampaignOutcomeLogger;
 use Ordo\Automation\Model\Clv\ClvCalculator;
@@ -46,7 +48,8 @@ class DashboardViewModelTest extends TestCase
         ?CacheInterface $cache = null,
         ?OrderApprovalCollectionFactory $orderApprovalCollectionFactory = null,
         ?CronRunLogCollectionFactory $cronRunLogCollectionFactory = null,
-        ?ClvCalculator $clvCalculator = null
+        ?ClvCalculator $clvCalculator = null,
+        ?AnomalyAlertCollectionFactory $anomalyAlertCollectionFactory = null
     ): DashboardViewModel {
         $pricingHelper ??= $this->createStub(PricingHelper::class);
         $pricingHelper->method('currency')->willReturnCallback(
@@ -70,7 +73,8 @@ class DashboardViewModelTest extends TestCase
             $cache,
             $orderApprovalCollectionFactory ?? $this->createStub(OrderApprovalCollectionFactory::class),
             $cronRunLogCollectionFactory ?? $this->createStub(CronRunLogCollectionFactory::class),
-            $clvCalculator ?? $this->createStub(ClvCalculator::class)
+            $clvCalculator ?? $this->createStub(ClvCalculator::class),
+            $anomalyAlertCollectionFactory ?? $this->createStub(AnomalyAlertCollectionFactory::class)
         );
     }
 
@@ -523,6 +527,35 @@ class DashboardViewModelTest extends TestCase
         );
         self::assertSame(CronRunLog::LEVEL_FAILURE, $filters['level']);
         self::assertArrayHasKey('gteq', $filters['created_at']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetRecentAnomalyAlertCountFiltersToTheLookbackWindow(): void
+    {
+        $filters = [];
+        $collection = $this->createMock(AnomalyAlertCollection::class);
+        $collection->method('addFieldToFilter')->willReturnCallback(
+            function (string $field, $condition) use (&$filters, $collection) {
+                $filters[$field] = $condition;
+                return $collection;
+            }
+        );
+        $collection->method('getSize')->willReturn(4);
+
+        $anomalyAlertCollectionFactory = $this->createStub(AnomalyAlertCollectionFactory::class);
+        $anomalyAlertCollectionFactory->method('create')->willReturn($collection);
+
+        $config = $this->createStub(Config::class);
+        $config->method('getAnomalyLookbackDays')->willReturn(7);
+
+        self::assertSame(
+            4,
+            $this->makeViewModel(
+                config: $config,
+                anomalyAlertCollectionFactory: $anomalyAlertCollectionFactory
+            )->getRecentAnomalyAlertCount()
+        );
+        self::assertArrayHasKey('gteq', $filters['detected_at']);
     }
 
     public function testGetAverageClvScoreDelegatesToClvCalculator(): void

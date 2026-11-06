@@ -169,4 +169,66 @@ class CampaignOutcomeLogger
 
         return $stats;
     }
+
+    /**
+     * Same shape as getStats(), but bounded to sent_at within [$from, $to) and grouped by
+     * campaign_id only (not campaign_id+variant) — for ranking campaigns against each other and
+     * their own trailing baseline (Cron\DetectAnomalies, see docs/adr/0025), the same "ignore the
+     * variant axis" choice Model\ResourceModel\CampaignComparison\Grid\Collection already made for
+     * the same reason: this answers a per-campaign question, not a per-variant one. getStats()
+     * itself is left untouched (all-time, variant-grouped) rather than retrofitting a nullable
+     * date range onto it and every one of its existing call sites.
+     *
+     * @return array<int, array{
+     *     campaign_id: int,
+     *     sent: int,
+     *     converted: int,
+     *     conversion_rate: float,
+     *     revenue: float
+     * }>
+     */
+    public function getStatsForWindow(\DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $outcomeTable = $this->resourceConnection->getTableName('ordo_campaign_outcome_log');
+        $orderTable = $this->resourceConnection->getTableName('sales_order');
+
+        $select = $connection->select()
+            ->from(['o' => $outcomeTable], [
+                'campaign_id',
+                'sent' => 'COUNT(*)',
+                'converted' => 'SUM(CASE WHEN o.acted_at IS NOT NULL THEN 1 ELSE 0 END)',
+                'revenue' => 'SUM(so.base_grand_total)',
+            ])
+            ->joinLeft(['so' => $orderTable], 'so.entity_id = o.order_id', [])
+            ->where('o.sent_at >= ?', $from->format('Y-m-d H:i:s'))
+            ->where('o.sent_at < ?', $to->format('Y-m-d H:i:s'))
+            ->group('campaign_id');
+
+        /**
+         * @var array<int, array{
+         *     campaign_id: string|int,
+         *     sent: string|int,
+         *     converted: string|int,
+         *     revenue: string|null
+         * }> $rows
+         */
+        $rows = $connection->fetchAll($select);
+
+        $stats = [];
+        foreach ($rows as $row) {
+            $sent = (int) $row['sent'];
+            $converted = (int) $row['converted'];
+
+            $stats[(int) $row['campaign_id']] = [
+                'campaign_id' => (int) $row['campaign_id'],
+                'sent' => $sent,
+                'converted' => $converted,
+                'conversion_rate' => $sent > 0 ? round($converted / $sent * 100, 1) : 0.0,
+                'revenue' => $row['revenue'] !== null ? (float) $row['revenue'] : 0.0,
+            ];
+        }
+
+        return $stats;
+    }
 }

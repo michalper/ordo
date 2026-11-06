@@ -331,10 +331,21 @@ coupon/channel/device/geography.
   group name (`Model\Campaign\TypeLabels`, 33 labels + 5 categories) had never been translated at
   all, plus 3 missing `TagMatchMode`/"Match" CSV rows from ADR 0018. 73 new phrase keys added
   across all 11 translated locale CSVs.
-- **Automated anomaly/insight alerts** — a periodic cron flagging notable deviations (a channel's
-  revenue dropping, a coupon/campaign outperforming others). More speculative than the rest of this
-  list — needs real usage data to pick sane thresholds before committing to a design, so lowest
-  priority of this batch. Medium/large scope.
+- ~~**Automated anomaly/insight alerts**~~ — done, see
+  `docs/adr/0025-automated-anomaly-insight-alerts.md`. Scoped to per-campaign anomalies, not
+  per-channel — channel isn't tracked at the campaign-outcome/attribution level at all (confirmed
+  gap, same one ADR 0017 already flagged), so a channel-level alert would need a join the schema
+  can't honestly support. New `Cron\DetectAnomalies` (daily) flags two things over a rolling
+  7-day window vs. an equal-length trailing baseline: `campaign_revenue_drop` (a campaign's own
+  revenue down ≥30% vs. its baseline) and `campaign_conversion_outlier` (a campaign's conversion
+  rate ≥50% off its peers' average, either direction). Both gated behind a minimum sample size
+  (default 20 sent) to avoid flagging noise on low-volume campaigns, and deduplicated via the
+  existing `Model\Cron\ReminderLogStore::claim()` cooldown pattern (`SendCreditLimitAlerts`'s own
+  mechanism) so the same campaign+alert-type pair won't re-fire inside its cooldown window. New
+  read-only `ordo/anomalyalert/index` grid (mirrors `CronRunLog`'s - the simplest existing grid in
+  this module) plus a dashboard stat card. All five thresholds are ordinary `Helper\Config` fields,
+  not hardcoded — exactly so they can be retuned once there's real production data to calibrate
+  against, the risk this item was originally deferred over.
 - **Per-topic preference granularity within a channel** — split a channel's opt-in further (e.g. "promotional"
   vs "product update" email) beyond today's per-channel consent. Confirm real merchant demand first. Medium
   scope.

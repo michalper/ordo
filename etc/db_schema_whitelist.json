@@ -1047,5 +1047,23 @@
             "ORDO_CAMPAIGN_WEBSITE_CAMPAIGN_ID_ORDO_CAMPAIGN_ENTITY_ID": true,
             "ORDO_CAMPAIGN_WEBSITE_CAMPAIGN_ID_WEBSITE_ID": true
         }
+    },
+    "ordo_anomaly_alert": {
+        "column": {
+            "entity_id": true,
+            "alert_type": true,
+            "campaign_id": true,
+            "message": true,
+            "current_value": true,
+            "baseline_value": true,
+            "deviation_percent": true,
+            "detected_at": true
+        },
+        "index": {
+            "ORDO_ANOMALY_ALERT_ALERT_TYPE_CAMPAIGN_ID_DETECTED_AT": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
     }
 }

@@ -43,6 +43,15 @@ $segmentNavDesc = __(
             <div class="ordo-stat-value"><?= $escaper->escapeHtml((string) $viewModel->getFailedCronCount()) ?></div>
             <div class="ordo-stat-label"><?= $escaper->escapeHtml(__('Crons failed (last 24h)')) ?></div>
         </a>
+        <a
+            class="ordo-stat-card ordo-stat-card-link"
+            href="<?= $escaper->escapeUrl($block->getUrl('ordo/anomalyalert/index')) ?>"
+        >
+            <div class="ordo-stat-value"><?=
+                $escaper->escapeHtml((string) $viewModel->getRecentAnomalyAlertCount())
+            ?></div>
+            <div class="ordo-stat-label"><?= $escaper->escapeHtml(__('Anomaly alerts (recent)')) ?></div>
+        </a>
         <div class="ordo-stat-card">
             <div class="ordo-stat-value"><?=
                 $escaper->escapeHtml($viewModel->formatCurrency($viewModel->getAverageClvScore()))
@@ -417,6 +426,12 @@ $segmentNavDesc = __(
             'title' => __('Cron Run Log'),
             'desc' => __('Read-only: every summary/failure line every cron in this module has logged'),
             'icon' => 'refresh',
+        ],
+        [
+            'url' => $block->getUrl('ordo/anomalyalert/index'),
+            'title' => __('Anomaly Alerts'),
+            'desc' => __('Read-only: campaigns whose revenue or conversion rate deviated notably from normal'),
+            'icon' => 'bar-chart',
         ],
         [
             'url' => $block->getUrl('ordo/productfeed/index'),

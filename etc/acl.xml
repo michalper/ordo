@@ -37,6 +37,7 @@
                 <resource id="Ordo_Automation::email_template_drafts" title="Ordo Automation Email Template Drafts" translate="title" sortOrder="740"/>
                 <resource id="Ordo_Automation::campaign_comparison" title="Ordo Automation Campaign Comparison" translate="title" sortOrder="750"/>
                 <resource id="Ordo_Automation::cohort_retention" title="Ordo Automation Cohort Retention" translate="title" sortOrder="760"/>
+                <resource id="Ordo_Automation::anomaly_alert" title="Ordo Automation Anomaly Alerts" translate="title" sortOrder="770"/>
             </resource>
         </resources>
     </acl>
