@@ -14,7 +14,7 @@
 
 *[Czytaj po polsku](README.pl.md)*
 
-A Klaviyo/HubSpot-style campaign engine (trigger → conditions → actions, drag-and-drop canvas) that runs *inside*
+A full campaign automation engine (trigger → conditions → actions, drag-and-drop canvas) that runs *inside*
 stock Magento Open Source — no Adobe Commerce B2B license, no per-contact MA subscription. Triggers are computed
 from data Magento already has (orders, quotes, customers, carts), or from a small first-party data model added
 alongside it.

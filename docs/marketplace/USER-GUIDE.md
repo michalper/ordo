@@ -12,7 +12,7 @@ page for each feature.
 
 ## Overview
 
-Ordo is a Klaviyo/HubSpot-style campaign engine (trigger → conditions → actions) that runs directly
+Ordo is a full campaign automation engine (trigger → conditions → actions) that runs directly
 inside stock Magento Open Source — no Adobe Commerce B2B license, no per-contact marketing-automation
 subscription. Triggers are computed from data Magento already has (orders, quotes, customers, carts),
 or from a small first-party data model Ordo adds alongside it.
