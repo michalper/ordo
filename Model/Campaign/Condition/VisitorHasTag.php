@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Campaign\Condition;
 
+use Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface;
 use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\Config\Source\TagMatchMode;
 use Ordo\Automation\Model\VisitorTagManager;
@@ -14,11 +15,12 @@ use Ordo\Automation\Model\VisitorTagManager;
  * (present on the visitor_tag_added trigger; absent on customer-only triggers like order_placed,
  * which is why this and HasTag are separate condition types rather than one that checks both).
  *
- * Not BulkResolvableConditionInterface - an anonymous visitor has no customer_id, so this can
- * never resolve at the segment/set level (see SegmentMemberResolver's own
- * `case 'visitor_tag': return [];` arm, unchanged by this class).
+ * resolveCustomerIds() always returns [] - an anonymous visitor has no customer_id, so this can
+ * never resolve at the segment/set level. Still implements BulkResolvableConditionInterface
+ * (rather than leaving the type unregistered for Segment\SegmentMemberResolver) so that
+ * knowledge lives with the condition itself, same as OrderTotalAtLeast's identical reasoning.
  */
-class VisitorHasTag implements ConditionInterface
+class VisitorHasTag implements ConditionInterface, BulkResolvableConditionInterface
 {
     public function __construct(
         private readonly VisitorTagManager $visitorTagManager
@@ -37,6 +39,11 @@ class VisitorHasTag implements ConditionInterface
         return $matchAll
             ? $this->visitorTagManager->hasAllTags($visitorId, $tags)
             : $this->visitorTagManager->hasAnyTag($visitorId, $tags);
+    }
+
+    public function resolveCustomerIds(array $params): array
+    {
+        return [];
     }
 
     /**

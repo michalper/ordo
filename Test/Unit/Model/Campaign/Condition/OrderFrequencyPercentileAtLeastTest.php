@@ -80,4 +80,22 @@ class OrderFrequencyPercentileAtLeastTest extends TestCase
 
         self::assertFalse($this->condition->isSatisfied(['customer_id' => 42], ['percentile' => 'top']));
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResolveCustomerIdsFiltersInclusively(): void
+    {
+        $this->rfmCalculator->method('getPercentileRanks')->willReturn([
+            1 => ['recency_percentile' => 100.0, 'frequency_percentile' => 100.0, 'monetary_percentile' => 80.0],
+            2 => ['recency_percentile' => 80.0, 'frequency_percentile' => 50.0, 'monetary_percentile' => 100.0],
+        ]);
+
+        self::assertSame([1], $this->condition->resolveCustomerIds(['percentile' => '80']));
+    }
+
+    public function testResolveCustomerIdsFailsClosedOnNonNumericPercentile(): void
+    {
+        $this->rfmCalculator->expects(self::never())->method('getPercentileRanks');
+
+        self::assertSame([], $this->condition->resolveCustomerIds(['percentile' => 'top']));
+    }
 }

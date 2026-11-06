@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Campaign\Condition;
 
+use Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface;
 use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\Purchase\PurchasedProductResolver;
 
@@ -12,7 +13,7 @@ use Ordo\Automation\Model\Purchase\PurchasedProductResolver;
  * PurchasedProductResolver::hasPurchasedInCategory()'s own docblock for how the subtree is
  * resolved. Same historical "ever bought", not event-context, shape as PurchasedSku.
  */
-class PurchasedCategory implements ConditionInterface
+class PurchasedCategory implements ConditionInterface, BulkResolvableConditionInterface
 {
     public function __construct(
         private readonly PurchasedProductResolver $purchasedProductResolver
@@ -32,5 +33,16 @@ class PurchasedCategory implements ConditionInterface
         }
 
         return $this->purchasedProductResolver->hasPurchasedInCategory((int) $customerId, (int) $categoryId);
+    }
+
+    public function resolveCustomerIds(array $params): array
+    {
+        $categoryId = $params['category_id'] ?? null;
+
+        if (!is_numeric($categoryId) || (int) $categoryId <= 0) {
+            return [];
+        }
+
+        return $this->purchasedProductResolver->getCustomerIdsWhoPurchasedInCategory((int) $categoryId);
     }
 }

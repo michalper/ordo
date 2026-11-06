@@ -48,4 +48,33 @@ class MonetaryTotalAtLeastTest extends TestCase
 
         self::assertFalse($this->condition->isSatisfied(['customer_id' => 42], []));
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResolveCustomerIdsFiltersInclusively(): void
+    {
+        $this->rfmCalculator->method('getAggregatesForAllCustomers')->willReturn([
+            1 => ['frequency' => 0, 'monetary' => 100.0, 'recency_days' => null],
+            2 => ['frequency' => 0, 'monetary' => 99.99, 'recency_days' => null],
+        ]);
+
+        self::assertSame([1], $this->condition->resolveCustomerIds(['amount' => '100']));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResolveCustomerIdsZeroMatchesCustomersWithNoOrdersToo(): void
+    {
+        $this->rfmCalculator->method('getAggregatesForAllCustomers')->willReturn([
+            1 => ['frequency' => 0, 'monetary' => 50.0, 'recency_days' => null],
+        ]);
+        $this->rfmCalculator->method('getAllCustomerIds')->willReturn([1, 2]);
+
+        self::assertSame([1, 2], $this->condition->resolveCustomerIds(['amount' => '0']));
+    }
+
+    public function testResolveCustomerIdsFailsClosedOnNonNumericAmount(): void
+    {
+        $this->rfmCalculator->expects(self::never())->method('getAggregatesForAllCustomers');
+
+        self::assertSame([], $this->condition->resolveCustomerIds(['amount' => 'not-a-number']));
+    }
 }

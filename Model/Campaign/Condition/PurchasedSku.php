@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Campaign\Condition;
 
+use Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface;
 use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\Purchase\PurchasedProductResolver;
 
@@ -12,7 +13,7 @@ use Ordo\Automation\Model\Purchase\PurchasedProductResolver;
  * (see PurchasedProductResolver's own docblock for why it queries sales_order_item directly
  * instead of reading anything off $context beyond the customer id).
  */
-class PurchasedSku implements ConditionInterface
+class PurchasedSku implements ConditionInterface, BulkResolvableConditionInterface
 {
     public function __construct(
         private readonly PurchasedProductResolver $purchasedProductResolver
@@ -32,5 +33,16 @@ class PurchasedSku implements ConditionInterface
         }
 
         return $this->purchasedProductResolver->hasPurchasedSku((int) $customerId, $sku);
+    }
+
+    public function resolveCustomerIds(array $params): array
+    {
+        $sku = trim((string) ($params['sku'] ?? ''));
+
+        if ($sku === '') {
+            return [];
+        }
+
+        return $this->purchasedProductResolver->getCustomerIdsWhoPurchasedSku($sku);
     }
 }

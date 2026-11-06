@@ -5,6 +5,7 @@ namespace Ordo\Automation\Test\Unit\Model\Campaign\Condition;
 
 use Ordo\Automation\Model\Campaign\Condition\VisitorHasTag;
 use Ordo\Automation\Model\VisitorTagManager;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 class VisitorHasTagTest extends TestCase
@@ -58,5 +59,11 @@ class VisitorHasTagTest extends TestCase
         $this->visitorTagManager->expects(self::never())->method('hasAnyTag');
 
         self::assertFalse($this->condition->isSatisfied(['visitor_id' => 'v1'], []));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResolveCustomerIdsAlwaysMatchesNobody(): void
+    {
+        self::assertSame([], $this->condition->resolveCustomerIds(['tags' => ['vip']]));
     }
 }

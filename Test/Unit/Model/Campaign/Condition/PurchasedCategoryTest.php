@@ -63,4 +63,20 @@ class PurchasedCategoryTest extends TestCase
         self::assertFalse($this->condition->isSatisfied(['customer_id' => 42], ['category_id' => '0']));
         self::assertFalse($this->condition->isSatisfied(['customer_id' => 42], ['category_id' => '-1']));
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResolveCustomerIdsDelegatesToPurchasedProductResolver(): void
+    {
+        $this->purchasedProductResolver->method('getCustomerIdsWhoPurchasedInCategory')
+            ->willReturnMap([[15, [7]]]);
+
+        self::assertSame([7], $this->condition->resolveCustomerIds(['category_id' => '15']));
+    }
+
+    public function testResolveCustomerIdsFailsClosedOnNonNumericCategoryId(): void
+    {
+        $this->purchasedProductResolver->expects(self::never())->method('getCustomerIdsWhoPurchasedInCategory');
+
+        self::assertSame([], $this->condition->resolveCustomerIds(['category_id' => 'not-a-number']));
+    }
 }

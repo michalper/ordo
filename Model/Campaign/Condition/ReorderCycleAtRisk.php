@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Campaign\Condition;
 
+use Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface;
 use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\ReorderCycle\ReorderCycleDriftCalculator;
 
@@ -16,7 +17,7 @@ use Ordo\Automation\Model\ReorderCycle\ReorderCycleDriftCalculator;
  * customer with no detected reorder cycle at all has nothing to drift from, so this fails closed
  * for them.
  */
-class ReorderCycleAtRisk implements ConditionInterface
+class ReorderCycleAtRisk implements ConditionInterface, BulkResolvableConditionInterface
 {
     public function __construct(
         private readonly ReorderCycleDriftCalculator $driftCalculator
@@ -35,5 +36,25 @@ class ReorderCycleAtRisk implements ConditionInterface
         $ratio = $this->driftCalculator->getDriftRatioForCustomer($customerId);
 
         return $ratio !== null && $ratio >= (float) $ratioAtLeast;
+    }
+
+    public function resolveCustomerIds(array $params): array
+    {
+        $ratioAtLeast = $params['ratio_at_least'] ?? null;
+
+        if ($ratioAtLeast === null || !is_numeric($ratioAtLeast)) {
+            return [];
+        }
+
+        $threshold = (float) $ratioAtLeast;
+        $matching = [];
+
+        foreach ($this->driftCalculator->getDriftRatiosForAllCustomers() as $customerId => $ratio) {
+            if ($ratio >= $threshold) {
+                $matching[] = $customerId;
+            }
+        }
+
+        return $matching;
     }
 }

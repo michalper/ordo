@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Campaign\Condition;
 
+use Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface;
 use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\Rfm\RfmCalculator;
 
@@ -13,7 +14,7 @@ use Ordo\Automation\Model\Rfm\RfmCalculator;
  * RfmCalculator::getPercentileRanks() each one reads. getPercentileKey() is the only thing a
  * concrete condition needs to supply.
  */
-abstract class AbstractPercentileAtLeast implements ConditionInterface
+abstract class AbstractPercentileAtLeast implements ConditionInterface, BulkResolvableConditionInterface
 {
     public function __construct(
         private readonly RfmCalculator $rfmCalculator
@@ -42,5 +43,30 @@ abstract class AbstractPercentileAtLeast implements ConditionInterface
         }
 
         return $ranks[$customerId][$this->getPercentileKey()] >= (float) $percentile;
+    }
+
+    /**
+     * Percentile 100 is always the best end of every metric (see RfmCalculator::
+     * getPercentileRanks()), so ">= threshold" reads the same way for all three concrete subclasses.
+     */
+    public function resolveCustomerIds(array $params): array
+    {
+        $percentile = $params['percentile'] ?? null;
+
+        if ($percentile === null || !is_numeric($percentile)) {
+            return [];
+        }
+
+        $threshold = (float) $percentile;
+        $key = $this->getPercentileKey();
+        $matching = [];
+
+        foreach ($this->rfmCalculator->getPercentileRanks() as $customerId => $ranks) {
+            if ($ranks[$key] >= $threshold) {
+                $matching[] = $customerId;
+            }
+        }
+
+        return $matching;
     }
 }

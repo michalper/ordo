@@ -34,6 +34,27 @@ class RfmCalculator
     private const int PERCENTILE_CACHE_TTL_SECONDS = 60;
 
     /**
+     * Per-process snapshot cache for getAggregatesForAllCustomers()/getAllCustomerIds(), reset
+     * only via resetSnapshotCache() - previously this caching lived one layer up, duplicated in
+     * Segment\SegmentMemberResolver's own $aggregatesCache, which only helped when
+     * SegmentMemberResolver itself called getAggregatesForAllCustomers(). Once the RFM segment
+     * conditions (Campaign\Condition\RecencyDaysAtMost/OrderFrequencyAtLeast/MonetaryTotalAtLeast)
+     * became independently resolvable via ConditionPool instead of being hardcoded resolver
+     * methods on SegmentMemberResolver, they call this method directly too - the cache has to
+     * live here to still be shared across every condition in one segment resolve, or across every
+     * segment in one SegmentMemberResolver::beginBatch()/endBatch() batch (which now calls
+     * resetSnapshotCache() instead of managing the snapshot itself).
+     *
+     * @var array<int, array{frequency: int, monetary: float, recency_days: int|null}>|null
+     */
+    private ?array $aggregatesSnapshot = null;
+
+    /**
+     * @var int[]|null
+     */
+    private ?array $allCustomerIdsSnapshot = null;
+
+    /**
      * Bounds how many rows getAllCustomerIds()/getAggregatesForAllCustomers() pull into PHP per
      * round trip — without this, both ran a single unbounded SELECT over the whole customer_entity
      * / sales_order tables, exactly the "unbounded full-table scan" ROADMAP.md Tier 4 flags as a
@@ -136,6 +157,10 @@ class RfmCalculator
      */
     public function getAggregatesForAllCustomers(): array
     {
+        if ($this->aggregatesSnapshot !== null) {
+            return $this->aggregatesSnapshot;
+        }
+
         $connection = $this->resourceConnection->getConnection();
         $orderTable = $this->resourceConnection->getTableName('sales_order');
 
@@ -175,6 +200,8 @@ class RfmCalculator
             }
         } while (count($rows) === self::SCAN_PAGE_SIZE);
 
+        $this->aggregatesSnapshot = $aggregates;
+
         return $aggregates;
     }
 
@@ -212,6 +239,14 @@ class RfmCalculator
         ) {
             return $this->percentileRanksCache;
         }
+
+        // A genuine recompute (TTL expired) must see genuinely fresh aggregates/customer-ids too
+        // - otherwise computePercentileRanks() below would silently reuse whatever
+        // getAggregatesForAllCustomers()/getAllCustomerIds() last cached, defeating the TTL this
+        // method exists to enforce for its own long-lived-process callers (see this method's own
+        // class-level docblock). Segment\SegmentMemberResolver's own batch window is unaffected
+        // in the common case - a batch shorter than the TTL never reaches this branch at all.
+        $this->resetSnapshotCache();
 
         $ranks = $this->readStoredPercentileRanks() ?? $this->computePercentileRanks();
 
@@ -498,6 +533,10 @@ class RfmCalculator
      */
     public function getAllCustomerIds(): array
     {
+        if ($this->allCustomerIdsSnapshot !== null) {
+            return $this->allCustomerIdsSnapshot;
+        }
+
         $connection = $this->resourceConnection->getConnection();
         $customerTable = $this->resourceConnection->getTableName('customer_entity');
 
@@ -521,6 +560,23 @@ class RfmCalculator
             }
         } while (count($page) === self::SCAN_PAGE_SIZE);
 
+        $this->allCustomerIdsSnapshot = $ids;
+
         return $ids;
+    }
+
+    /**
+     * Drops the getAggregatesForAllCustomers()/getAllCustomerIds() snapshot - called by
+     * Segment\SegmentMemberResolver at the start of a fresh top-level resolve (not a recursive
+     * in_segment hop) and by its beginBatch()/endBatch(), the same points that previously reset
+     * its own now-removed wrapper cache directly. Deliberately NOT time-bounded (unlike
+     * percentileRanksCache's TTL): a resolve/batch can run longer than any fixed TTL, and the
+     * whole point here is one consistent snapshot for its entire duration, the same tradeoff
+     * SegmentMemberResolver's own cache already made before this moved here.
+     */
+    public function resetSnapshotCache(): void
+    {
+        $this->aggregatesSnapshot = null;
+        $this->allCustomerIdsSnapshot = null;
     }
 }

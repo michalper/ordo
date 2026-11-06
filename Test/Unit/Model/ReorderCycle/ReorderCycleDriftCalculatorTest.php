@@ -114,4 +114,22 @@ class ReorderCycleDriftCalculatorTest extends TestCase
         self::assertEqualsWithDelta(2.0, $ratios[1], 0.1);
         self::assertEqualsWithDelta(0.5, $ratios[2], 0.1);
     }
+
+    /**
+     * The snapshot cache Segment\SegmentMemberResolver relies on - see RfmCalculatorTest's
+     * identical coverage of its own aggregates/all-customer-ids snapshot for the full reasoning.
+     */
+    public function testGetDriftRatiosForAllCustomersCachesUntilResetSnapshotCache(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->expects(self::exactly(2))->method('fetchAll')->willReturn([]);
+
+        $calculator = $this->makeCalculator($connection);
+
+        $calculator->getDriftRatiosForAllCustomers();
+        $calculator->getDriftRatiosForAllCustomers();
+        $calculator->resetSnapshotCache();
+        $calculator->getDriftRatiosForAllCustomers();
+    }
 }

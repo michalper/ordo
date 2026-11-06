@@ -63,4 +63,19 @@ class ScoreAtLeastTest extends TestCase
 
         self::assertFalse($this->condition->isSatisfied(['customer_id' => 42], ['threshold' => 'lots']));
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResolveCustomerIdsDelegatesToCustomerScoreManager(): void
+    {
+        $this->customerScoreManager->method('getCustomerIdsWithScoreAtLeast')->willReturnMap([[50, [3]]]);
+
+        self::assertSame([3], $this->condition->resolveCustomerIds(['threshold' => '50']));
+    }
+
+    public function testResolveCustomerIdsFailsClosedOnNonNumericThreshold(): void
+    {
+        $this->customerScoreManager->expects(self::never())->method('getCustomerIdsWithScoreAtLeast');
+
+        self::assertSame([], $this->condition->resolveCustomerIds(['threshold' => 'lots']));
+    }
 }

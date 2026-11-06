@@ -64,4 +64,23 @@ class ReorderCycleAtRiskTest extends TestCase
 
         self::assertFalse($this->condition->isSatisfied(['customer_id' => 42], []));
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResolveCustomerIdsFiltersByDriftRatioInclusively(): void
+    {
+        $this->driftCalculator->method('getDriftRatiosForAllCustomers')->willReturn([
+            1 => 0.75,
+            2 => 0.5,
+            3 => 1.5,
+        ]);
+
+        self::assertSame([1, 3], $this->condition->resolveCustomerIds(['ratio_at_least' => '0.75']));
+    }
+
+    public function testResolveCustomerIdsFailsClosedOnNonNumericRatio(): void
+    {
+        $this->driftCalculator->expects(self::never())->method('getDriftRatiosForAllCustomers');
+
+        self::assertSame([], $this->condition->resolveCustomerIds(['ratio_at_least' => 'not-a-number']));
+    }
 }

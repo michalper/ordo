@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Campaign\Condition;
 
+use Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface;
 use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\CustomerScoreManager;
 
@@ -10,7 +11,7 @@ use Ordo\Automation\Model\CustomerScoreManager;
  * Params: {"threshold": "50"}. Context must include "customer_id". A missing/non-numeric
  * threshold fails closed (never satisfied), same as every other condition here.
  */
-class ScoreAtLeast implements ConditionInterface
+class ScoreAtLeast implements ConditionInterface, BulkResolvableConditionInterface
 {
     public function __construct(
         private readonly CustomerScoreManager $customerScoreManager
@@ -27,5 +28,16 @@ class ScoreAtLeast implements ConditionInterface
         }
 
         return $this->customerScoreManager->getScore($customerId) >= (int) $threshold;
+    }
+
+    public function resolveCustomerIds(array $params): array
+    {
+        $threshold = $params['threshold'] ?? null;
+
+        if ($threshold === null || !is_numeric($threshold)) {
+            return [];
+        }
+
+        return $this->customerScoreManager->getCustomerIdsWithScoreAtLeast((int) $threshold);
     }
 }

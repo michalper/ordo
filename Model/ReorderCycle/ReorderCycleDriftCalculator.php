@@ -19,6 +19,17 @@ use Magento\Framework\Stdlib\DateTime\DateTime;
  */
 class ReorderCycleDriftCalculator
 {
+    /**
+     * Per-process snapshot cache for getDriftRatiosForAllCustomers(), reset only via
+     * resetSnapshotCache() - same reasoning and lifecycle as RfmCalculator's own
+     * $aggregatesSnapshot, driven by Segment\SegmentMemberResolver for the same reason: this
+     * method is now also called directly by Campaign\Condition\ReorderCycleAtRisk's
+     * resolveCustomerIds(), not just by SegmentMemberResolver itself.
+     *
+     * @var array<int, float>|null
+     */
+    private ?array $driftRatiosSnapshot = null;
+
     public function __construct(
         private readonly ResourceConnection $resourceConnection,
         private readonly DateTime $dateTime
@@ -56,6 +67,10 @@ class ReorderCycleDriftCalculator
      */
     public function getDriftRatiosForAllCustomers(): array
     {
+        if ($this->driftRatiosSnapshot !== null) {
+            return $this->driftRatiosSnapshot;
+        }
+
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName('ordo_reorder_cycle');
 
@@ -80,7 +95,18 @@ class ReorderCycleDriftCalculator
             }
         }
 
+        $this->driftRatiosSnapshot = $ratios;
+
         return $ratios;
+    }
+
+    /**
+     * Drops the getDriftRatiosForAllCustomers() snapshot - see RfmCalculator::
+     * resetSnapshotCache()'s own docblock for why this exists and who calls it.
+     */
+    public function resetSnapshotCache(): void
+    {
+        $this->driftRatiosSnapshot = null;
     }
 
     /**

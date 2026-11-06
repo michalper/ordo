@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Campaign\Condition;
 
+use Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface;
 use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\Rfm\RfmCalculator;
 
@@ -12,7 +13,7 @@ use Ordo\Automation\Model\Rfm\RfmCalculator;
  * recency to compare, so this fails closed for them (never satisfied) rather than treating
  * "never ordered" as infinitely recent or infinitely stale.
  */
-class RecencyDaysAtMost implements ConditionInterface
+class RecencyDaysAtMost implements ConditionInterface, BulkResolvableConditionInterface
 {
     public function __construct(
         private readonly RfmCalculator $rfmCalculator
@@ -31,5 +32,25 @@ class RecencyDaysAtMost implements ConditionInterface
         $recencyDays = $this->rfmCalculator->getRecencyDays($customerId);
 
         return $recencyDays !== null && $recencyDays <= (int) $days;
+    }
+
+    public function resolveCustomerIds(array $params): array
+    {
+        $days = $params['days'] ?? null;
+
+        if ($days === null || !is_numeric($days)) {
+            return [];
+        }
+
+        $threshold = (int) $days;
+        $matching = [];
+
+        foreach ($this->rfmCalculator->getAggregatesForAllCustomers() as $customerId => $aggregate) {
+            if ($aggregate['recency_days'] !== null && $aggregate['recency_days'] <= $threshold) {
+                $matching[] = $customerId;
+            }
+        }
+
+        return $matching;
     }
 }

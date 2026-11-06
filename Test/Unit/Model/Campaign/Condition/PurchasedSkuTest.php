@@ -55,4 +55,20 @@ class PurchasedSkuTest extends TestCase
 
         self::assertFalse($this->condition->isSatisfied(['customer_id' => 42], ['sku' => '   ']));
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResolveCustomerIdsDelegatesToPurchasedProductResolver(): void
+    {
+        $this->purchasedProductResolver->method('getCustomerIdsWhoPurchasedSku')
+            ->willReturnMap([['24-MB01', [5, 6]]]);
+
+        self::assertSame([5, 6], $this->condition->resolveCustomerIds(['sku' => '24-MB01']));
+    }
+
+    public function testResolveCustomerIdsFailsClosedOnEmptySku(): void
+    {
+        $this->purchasedProductResolver->expects(self::never())->method('getCustomerIdsWhoPurchasedSku');
+
+        self::assertSame([], $this->condition->resolveCustomerIds(['sku' => '']));
+    }
 }

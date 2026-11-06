@@ -6,11 +6,11 @@ namespace Ordo\Automation\Test\Unit\Model\Segment;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\DB\Select;
+use Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface;
+use Ordo\Automation\Api\Campaign\ConditionInterface;
+use Ordo\Automation\Model\Campaign\ConditionPool;
 use Ordo\Automation\Model\Condition\GroupWalker;
 use Ordo\Automation\Model\Condition\SetGroupCombineStrategy;
-use Ordo\Automation\Model\CustomerScoreManager;
-use Ordo\Automation\Model\Event\EventOccurredResolver;
-use Ordo\Automation\Model\Purchase\PurchasedProductResolver;
 use Ordo\Automation\Model\ReorderCycle\ReorderCycleDriftCalculator;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\Collection as SegmentConditionCollection;
@@ -27,22 +27,33 @@ use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
+/**
+ * Covers SegmentMemberResolver's own composition logic only - AND/OR combination, nested-group
+ * recursion, in_segment/not_in_segment (the two leaf types it still resolves itself), website
+ * scoping, batch-snapshot orchestration, and fail-closed handling of unknown/non-bulk-resolvable
+ * pool types. Every other leaf type (score_at_least, recency_days_at_most, purchased_sku, ...)
+ * now resolves entirely through its own ConditionPool-registered class - see that class's own
+ * dedicated *Test.php for its resolveCustomerIds() business logic; here it's always a generic
+ * stub condition (stubCondition()), standing in for "some ConditionPool-resolvable type", so
+ * these tests stay about this resolver's own behavior, not duplicate coverage of a condition
+ * class's internals.
+ */
 class SegmentMemberResolverTest extends TestCase
 {
     private SegmentConditionCollectionFactory&\PHPUnit\Framework\MockObject\MockObject $collectionFactory;
-    private CustomerScoreManager&\PHPUnit\Framework\MockObject\MockObject $customerScoreManager;
     private RfmCalculator&\PHPUnit\Framework\MockObject\MockObject $rfmCalculator;
     private SegmentFactory&\PHPUnit\Framework\MockObject\MockObject $segmentFactory;
     private SegmentResource&\PHPUnit\Framework\MockObject\MockObject $segmentResource;
     private LoggerInterface&\PHPUnit\Framework\MockObject\MockObject $logger;
-    private PurchasedProductResolver&\PHPUnit\Framework\MockObject\MockObject $purchasedProductResolver;
-    private EventOccurredResolver&\PHPUnit\Framework\MockObject\MockObject $eventOccurredResolver;
     private ReorderCycleDriftCalculator&\PHPUnit\Framework\MockObject\MockObject $reorderCycleDriftCalculator;
-    private \Ordo\Automation\Model\Campaign\ConditionPool&\PHPUnit\Framework\MockObject\MockObject $conditionPool;
+    private ConditionPool&\PHPUnit\Framework\MockObject\MockObject $conditionPool;
     private SegmentWebsiteCollectionFactory&\PHPUnit\Framework\MockObject\MockObject $segmentWebsiteCollectionFactory;
     private ResourceConnection&\PHPUnit\Framework\MockObject\MockObject $resourceConnection;
     private SegmentMemberResolver $resolver;
     private Segment $segmentStub;
+
+    /** @var array<string, \Ordo\Automation\Api\Campaign\ConditionInterface> */
+    private array $conditionsByType = [];
 
     /** @var array<int, SegmentConditionCollection&\PHPUnit\Framework\MockObject\MockObject> */
     private array $collectionsBySegment = [];
@@ -50,15 +61,15 @@ class SegmentMemberResolverTest extends TestCase
     protected function setUp(): void
     {
         $this->collectionFactory = $this->createMock(SegmentConditionCollectionFactory::class);
-        $this->customerScoreManager = $this->createMock(CustomerScoreManager::class);
         $this->rfmCalculator = $this->createMock(RfmCalculator::class);
         $this->segmentFactory = $this->createMock(SegmentFactory::class);
         $this->segmentResource = $this->createMock(SegmentResource::class);
         $this->logger = $this->createMock(LoggerInterface::class);
-        $this->purchasedProductResolver = $this->createMock(PurchasedProductResolver::class);
-        $this->eventOccurredResolver = $this->createMock(EventOccurredResolver::class);
         $this->reorderCycleDriftCalculator = $this->createMock(ReorderCycleDriftCalculator::class);
-        $this->conditionPool = $this->createMock(\Ordo\Automation\Model\Campaign\ConditionPool::class);
+        $this->conditionPool = $this->createMock(ConditionPool::class);
+        $this->conditionPool->method('get')->willReturnCallback(
+            fn (string $type) => $this->conditionsByType[$type] ?? null
+        );
         $this->segmentWebsiteCollectionFactory = $this->createMock(SegmentWebsiteCollectionFactory::class);
         // No segment in any pre-existing test below is website-scoped unless a test explicitly
         // overrides this - the common case, keeps every test in this file unaffected.
@@ -80,13 +91,10 @@ class SegmentMemberResolverTest extends TestCase
     {
         return new SegmentMemberResolver(
             $this->collectionFactory,
-            $this->customerScoreManager,
             $this->rfmCalculator,
             $this->segmentFactory,
             $this->segmentResource,
             $this->logger,
-            $this->purchasedProductResolver,
-            $this->eventOccurredResolver,
             new GroupWalker(),
             new SetGroupCombineStrategy(),
             $this->reorderCycleDriftCalculator,
@@ -122,19 +130,19 @@ class SegmentMemberResolverTest extends TestCase
     }
 
     /**
-     * 'tag' resolves via HasTag::resolveCustomerIds() (BulkResolvableConditionInterface), reached
-     * through ConditionPool rather than a dedicated switch arm - see HasTagTest for coverage of
-     * HasTag's own ANY/ALL param-reading logic; these tests only exercise
-     * SegmentMemberResolver's own composition/caching/AND-OR behavior, so the stub condition
-     * doesn't need to validate its params, just hand back a fixed result.
+     * Registers a generic ConditionPool-resolvable stub for $type, standing in for whatever real
+     * condition class would normally be registered there - these tests only exercise
+     * SegmentMemberResolver's own composition/caching/AND-OR behavior, not any one condition's
+     * own param-reading logic, so the stub doesn't need to validate params, just hand back a
+     * fixed result.
      *
      * @param int[] $customerIds
      */
-    private function stubTagCondition(array $customerIds): void
+    private function stubCondition(string $type, array $customerIds): void
     {
-        $condition = new class($customerIds) implements
-            \Ordo\Automation\Api\Campaign\ConditionInterface,
-            \Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface {
+        $this->conditionsByType[$type] = new class ($customerIds) implements
+            ConditionInterface,
+            BulkResolvableConditionInterface {
             public function __construct(private readonly array $customerIds)
             {
             }
@@ -149,8 +157,14 @@ class SegmentMemberResolverTest extends TestCase
                 return $this->customerIds;
             }
         };
+    }
 
-        $this->conditionPool->method('get')->willReturnMap([['tag', $condition]]);
+    /**
+     * @param int[] $customerIds
+     */
+    private function stubTagCondition(array $customerIds): void
+    {
+        $this->stubCondition('tag', $customerIds);
     }
 
     /**
@@ -199,7 +213,7 @@ class SegmentMemberResolverTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
-    public function testTagConditionReturnsMatchingCustomerIds(): void
+    public function testPoolResolvableConditionReturnsMatchingCustomerIds(): void
     {
         $this->stubSegment(1, [['type' => 'tag', 'params' => ['tag' => 'vip']]]);
         $this->primeFactory();
@@ -257,283 +271,6 @@ class SegmentMemberResolverTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
-    public function testScoreAtLeastConditionReturnsMatchingCustomerIds(): void
-    {
-        $this->stubSegment(1, [['type' => 'score_at_least', 'params' => ['threshold' => '50']]]);
-        $this->primeFactory();
-
-        $this->customerScoreManager->method('getCustomerIdsWithScoreAtLeast')->willReturnMap([[50, [3]]]);
-
-        self::assertSame([3], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testRecencyDaysAtMostFiltersByExactSameBoundaryAsRfmCalculator(): void
-    {
-        $this->stubSegment(1, [['type' => 'recency_days_at_most', 'params' => ['days' => '10']]]);
-        $this->primeFactory();
-
-        $this->rfmCalculator->method('getAggregatesForAllCustomers')->willReturn([
-            1 => ['frequency' => 1, 'monetary' => 1.0, 'recency_days' => 10],
-            2 => ['frequency' => 1, 'monetary' => 1.0, 'recency_days' => 11],
-            3 => ['frequency' => 0, 'monetary' => 0.0, 'recency_days' => null],
-        ]);
-
-        self::assertSame([1], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testOrderFrequencyAtLeastFiltersInclusively(): void
-    {
-        $this->stubSegment(1, [['type' => 'order_frequency_at_least', 'params' => ['count' => '3']]]);
-        $this->primeFactory();
-
-        $this->rfmCalculator->method('getAggregatesForAllCustomers')->willReturn([
-            1 => ['frequency' => 3, 'monetary' => 0.0, 'recency_days' => null],
-            2 => ['frequency' => 2, 'monetary' => 0.0, 'recency_days' => null],
-        ]);
-
-        self::assertSame([1], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testMultipleRfmConditionsShareOneAggregateQuery(): void
-    {
-        $this->stubSegment(1, [
-            ['type' => 'recency_days_at_most', 'params' => ['days' => '30']],
-            ['type' => 'monetary_total_at_least', 'params' => ['amount' => '100']],
-        ]);
-        $this->primeFactory();
-
-        $this->rfmCalculator->expects(self::once())->method('getAggregatesForAllCustomers')->willReturn([
-            1 => ['frequency' => 0, 'monetary' => 100.0, 'recency_days' => 10],
-            2 => ['frequency' => 0, 'monetary' => 100.0, 'recency_days' => 90],
-        ]);
-
-        self::assertSame([1], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testMonetaryTotalAtLeastFiltersInclusively(): void
-    {
-        $this->stubSegment(1, [['type' => 'monetary_total_at_least', 'params' => ['amount' => '100']]]);
-        $this->primeFactory();
-
-        $this->rfmCalculator->method('getAggregatesForAllCustomers')->willReturn([
-            1 => ['frequency' => 0, 'monetary' => 100.0, 'recency_days' => null],
-            2 => ['frequency' => 0, 'monetary' => 99.99, 'recency_days' => null],
-        ]);
-
-        self::assertSame([1], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testOrderFrequencyAtLeastZeroMatchesCustomersWithNoOrdersToo(): void
-    {
-        $this->stubSegment(1, [['type' => 'order_frequency_at_least', 'params' => ['count' => '0']]]);
-        $this->primeFactory();
-
-        // Customer 2 has never ordered, so it's absent from the aggregate map entirely — a
-        // threshold of 0 must still match them (RfmCalculator::getFrequency() would return 0 for
-        // them on the single-customer path, and 0 >= 0), so this must fall back to "everyone",
-        // not just customers who happen to appear in the aggregate query's results.
-        $this->rfmCalculator->method('getAggregatesForAllCustomers')->willReturn([
-            1 => ['frequency' => 3, 'monetary' => 0.0, 'recency_days' => null],
-        ]);
-        $this->rfmCalculator->method('getAllCustomerIds')->willReturn([1, 2]);
-
-        self::assertSame([1, 2], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testMonetaryTotalAtLeastZeroMatchesCustomersWithNoOrdersToo(): void
-    {
-        $this->stubSegment(1, [['type' => 'monetary_total_at_least', 'params' => ['amount' => '0']]]);
-        $this->primeFactory();
-
-        $this->rfmCalculator->method('getAggregatesForAllCustomers')->willReturn([
-            1 => ['frequency' => 0, 'monetary' => 50.0, 'recency_days' => null],
-        ]);
-        $this->rfmCalculator->method('getAllCustomerIds')->willReturn([1, 2]);
-
-        self::assertSame([1, 2], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    /**
-     * @return array<int, array{recency_percentile: float, frequency_percentile: float, monetary_percentile: float}>
-     */
-    private function percentileFixture(): array
-    {
-        return [
-            1 => [
-                'recency_percentile' => 100.0,
-                'frequency_percentile' => 100.0,
-                'monetary_percentile' => 80.0,
-            ],
-            2 => [
-                'recency_percentile' => 80.0,
-                'frequency_percentile' => 50.0,
-                'monetary_percentile' => 100.0,
-            ],
-            3 => [
-                'recency_percentile' => 25.0,
-                'frequency_percentile' => 25.0,
-                'monetary_percentile' => 25.0,
-            ],
-        ];
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testMonetaryPercentileAtLeastFiltersInclusively(): void
-    {
-        $this->stubSegment(1, [['type' => 'monetary_percentile_at_least', 'params' => ['percentile' => '80']]]);
-        $this->primeFactory();
-
-        $this->rfmCalculator->method('getPercentileRanks')->willReturn($this->percentileFixture());
-
-        self::assertSame([1, 2], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testOrderFrequencyPercentileAtLeastFiltersInclusively(): void
-    {
-        $this->stubSegment(
-            1,
-            [['type' => 'order_frequency_percentile_at_least', 'params' => ['percentile' => '80']]]
-        );
-        $this->primeFactory();
-
-        $this->rfmCalculator->method('getPercentileRanks')->willReturn($this->percentileFixture());
-
-        self::assertSame([1], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testRecencyPercentileAtLeastFiltersInclusively(): void
-    {
-        $this->stubSegment(1, [['type' => 'recency_percentile_at_least', 'params' => ['percentile' => '80']]]);
-        $this->primeFactory();
-
-        $this->rfmCalculator->method('getPercentileRanks')->willReturn($this->percentileFixture());
-
-        self::assertSame([1, 2], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testPercentileConditionWithNonNumericThresholdMatchesNobody(): void
-    {
-        $this->stubSegment(1, [['type' => 'monetary_percentile_at_least', 'params' => ['percentile' => 'top']]]);
-        $this->primeFactory();
-
-        $this->rfmCalculator->expects(self::never())->method('getPercentileRanks');
-
-        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testMultiplePercentileConditionsShareOneRankingComputation(): void
-    {
-        $this->stubSegment(1, [
-            ['type' => 'monetary_percentile_at_least', 'params' => ['percentile' => '80']],
-            ['type' => 'recency_percentile_at_least', 'params' => ['percentile' => '90']],
-        ]);
-        $this->primeFactory();
-
-        $this->rfmCalculator->expects(self::once())
-            ->method('getPercentileRanks')
-            ->willReturn($this->percentileFixture());
-
-        self::assertSame([1], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testPurchasedSkuConditionReturnsMatchingCustomerIds(): void
-    {
-        $this->stubSegment(1, [['type' => 'purchased_sku', 'params' => ['sku' => '24-MB01']]]);
-        $this->primeFactory();
-
-        $this->purchasedProductResolver->method('getCustomerIdsWhoPurchasedSku')
-            ->willReturnMap([['24-MB01', [5, 6]]]);
-
-        self::assertSame([5, 6], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testPurchasedSkuFailsClosedOnEmptySku(): void
-    {
-        $this->stubSegment(1, [['type' => 'purchased_sku', 'params' => ['sku' => '']]]);
-        $this->primeFactory();
-
-        $this->purchasedProductResolver->expects(self::never())->method('getCustomerIdsWhoPurchasedSku');
-
-        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testPurchasedCategoryConditionReturnsMatchingCustomerIds(): void
-    {
-        $this->stubSegment(1, [['type' => 'purchased_category', 'params' => ['category_id' => '15']]]);
-        $this->primeFactory();
-
-        $this->purchasedProductResolver->method('getCustomerIdsWhoPurchasedInCategory')
-            ->willReturnMap([[15, [7]]]);
-
-        self::assertSame([7], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testPurchasedCategoryFailsClosedOnNonNumericCategoryId(): void
-    {
-        $this->stubSegment(1, [['type' => 'purchased_category', 'params' => ['category_id' => 'not-a-number']]]);
-        $this->primeFactory();
-
-        $this->purchasedProductResolver->expects(self::never())->method('getCustomerIdsWhoPurchasedInCategory');
-
-        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testEventOccurredConditionReturnsMatchingCustomerIds(): void
-    {
-        $this->stubSegment(1, [[
-            'type' => 'event_occurred',
-            'params' => ['event_type' => 'cart_add', 'event_key' => '24-MB01', 'within_days' => 14],
-        ]]);
-        $this->primeFactory();
-
-        $this->eventOccurredResolver->method('getCustomerIdsWithEvent')
-            ->willReturnMap([['cart_add', '24-MB01', 14, [8, 9]]]);
-
-        self::assertSame([8, 9], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testEventOccurredConditionWithBlankEventKeyPassesNull(): void
-    {
-        $this->stubSegment(1, [[
-            'type' => 'event_occurred',
-            'params' => ['event_type' => 'cart_add', 'event_key' => '', 'within_days' => 14],
-        ]]);
-        $this->primeFactory();
-
-        $this->eventOccurredResolver->method('getCustomerIdsWithEvent')
-            ->willReturnMap([['cart_add', null, 14, [8]]]);
-
-        self::assertSame([8], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testEventOccurredFailsClosedOnEmptyEventType(): void
-    {
-        $this->stubSegment(1, [['type' => 'event_occurred', 'params' => ['event_type' => '', 'within_days' => 14]]]);
-        $this->primeFactory();
-
-        $this->eventOccurredResolver->expects(self::never())->method('getCustomerIdsWithEvent');
-
-        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
     public function testInSegmentRecursesIntoTargetSegment(): void
     {
         $this->stubSegment(1, [['type' => 'in_segment', 'params' => ['segment_id' => '2']]]);
@@ -549,6 +286,15 @@ class SegmentMemberResolverTest extends TestCase
     public function testInSegmentCycleDetectionFailsClosed(): void
     {
         $this->stubSegment(1, [['type' => 'in_segment', 'params' => ['segment_id' => '1']]]);
+        $this->primeFactory();
+
+        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testInSegmentFailsClosedOnNonNumericSegmentId(): void
+    {
+        $this->stubSegment(1, [['type' => 'in_segment', 'params' => ['segment_id' => 'not-a-number']]]);
         $this->primeFactory();
 
         self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
@@ -588,24 +334,6 @@ class SegmentMemberResolverTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
-    public function testOrderTotalGteAlwaysMatchesNobody(): void
-    {
-        $this->stubSegment(1, [['type' => 'order_total_gte', 'params' => ['amount' => '100']]]);
-        $this->primeFactory();
-
-        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testVisitorTagAlwaysMatchesNobody(): void
-    {
-        $this->stubSegment(1, [['type' => 'visitor_tag', 'params' => ['tag' => 'x']]]);
-        $this->primeFactory();
-
-        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
     public function testUnknownConditionTypeLogsAndFailsClosed(): void
     {
         $this->stubSegment(1, [['type' => 'this_type_does_not_exist', 'params' => []]]);
@@ -629,18 +357,15 @@ class SegmentMemberResolverTest extends TestCase
         $this->stubSegment(1, [['type' => 'clv_at_least', 'params' => ['amount' => '5000']]]);
         $this->primeFactory();
 
-        $bulkCondition = $this->createMock(\Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface::class);
+        $bulkCondition = $this->createMock(BulkResolvableConditionInterface::class);
         $bulkCondition->expects(self::once())
             ->method('resolveCustomerIds')
             ->with(['amount' => '5000'])
             ->willReturn([7, 9]);
 
-        $poolCondition = new class($bulkCondition) implements
-            \Ordo\Automation\Api\Campaign\ConditionInterface,
-            \Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface {
-            public function __construct(
-                private readonly \Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface $inner
-            ) {
+        $poolCondition = new class ($bulkCondition) implements ConditionInterface, BulkResolvableConditionInterface {
+            public function __construct(private readonly BulkResolvableConditionInterface $inner)
+            {
             }
 
             public function isSatisfied(array $context, array $params): bool
@@ -654,7 +379,7 @@ class SegmentMemberResolverTest extends TestCase
             }
         };
 
-        $this->conditionPool->method('get')->willReturnMap([['clv_at_least', $poolCondition]]);
+        $this->conditionsByType['clv_at_least'] = $poolCondition;
         $this->logger->expects(self::never())->method('error');
 
         self::assertSame([7, 9], $this->resolver->getMatchingCustomerIds(1));
@@ -663,7 +388,10 @@ class SegmentMemberResolverTest extends TestCase
     /**
      * A pool-registered condition that does NOT opt into set-level resolution still fails
      * closed with a logged error — being dispatchable per customer isn't enough to claim set
-     * membership silently.
+     * membership silently. Also covers order_total_gte/visitor_tag's own real behavior
+     * indirectly: both now implement BulkResolvableConditionInterface themselves and always
+     * return [] (see OrderTotalAtLeastTest/VisitorHasTagTest) rather than relying on this
+     * resolver to special-case them.
      */
     #[AllowMockObjectsWithoutExpectations]
     public function testPoolConditionWithoutBulkInterfaceStillFailsClosed(): void
@@ -671,8 +399,7 @@ class SegmentMemberResolverTest extends TestCase
         $this->stubSegment(1, [['type' => 'pool_only_type', 'params' => []]]);
         $this->primeFactory();
 
-        $poolOnly = $this->createStub(\Ordo\Automation\Api\Campaign\ConditionInterface::class);
-        $this->conditionPool->method('get')->willReturnMap([['pool_only_type', $poolOnly]]);
+        $this->conditionsByType['pool_only_type'] = $this->createStub(ConditionInterface::class);
 
         $this->logger->expects(self::once())->method('error');
 
@@ -689,7 +416,7 @@ class SegmentMemberResolverTest extends TestCase
         $this->primeFactory();
 
         $this->stubTagCondition([1, 2, 3]);
-        $this->customerScoreManager->method('getCustomerIdsWithScoreAtLeast')->willReturn([2, 3, 4]);
+        $this->stubCondition('score_at_least', [2, 3, 4]);
 
         self::assertSame([2, 3], array_values($this->resolver->getMatchingCustomerIds(1)));
     }
@@ -704,7 +431,26 @@ class SegmentMemberResolverTest extends TestCase
         $this->primeFactory();
 
         $this->stubTagCondition([]);
-        $this->customerScoreManager->expects(self::never())->method('getCustomerIdsWithScoreAtLeast');
+
+        $neverCalled = $this->createMock(BulkResolvableConditionInterface::class);
+        $neverCalled->expects(self::never())->method('resolveCustomerIds');
+        $this->conditionsByType['score_at_least'] = new class ($neverCalled) implements
+            ConditionInterface,
+            BulkResolvableConditionInterface {
+            public function __construct(private readonly BulkResolvableConditionInterface $inner)
+            {
+            }
+
+            public function isSatisfied(array $context, array $params): bool
+            {
+                return false;
+            }
+
+            public function resolveCustomerIds(array $params): array
+            {
+                return $this->inner->resolveCustomerIds($params);
+            }
+        };
 
         self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
     }
@@ -723,7 +469,7 @@ class SegmentMemberResolverTest extends TestCase
         $this->primeFactory();
 
         $this->stubTagCondition([1, 2]);
-        $this->customerScoreManager->method('getCustomerIdsWithScoreAtLeast')->willReturn([3, 4]);
+        $this->stubCondition('score_at_least', [3, 4]);
         $this->logger->expects(self::never())->method('error');
 
         self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
@@ -733,75 +479,6 @@ class SegmentMemberResolverTest extends TestCase
     public function testTagConditionFailsClosedOnMissingOrEmptyTag(): void
     {
         $this->stubSegment(1, [['type' => 'tag', 'params' => []]]);
-        $this->primeFactory();
-
-        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testScoreAtLeastFailsClosedOnNonNumericThreshold(): void
-    {
-        $this->stubSegment(1, [['type' => 'score_at_least', 'params' => ['threshold' => 'not-a-number']]]);
-        $this->primeFactory();
-
-        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testReorderCycleAtRiskFiltersByDriftRatioInclusively(): void
-    {
-        $this->stubSegment(1, [['type' => 'reorder_cycle_at_risk', 'params' => ['ratio_at_least' => '0.75']]]);
-        $this->primeFactory();
-
-        $this->reorderCycleDriftCalculator->method('getDriftRatiosForAllCustomers')->willReturn([
-            1 => 0.75,
-            2 => 0.5,
-            3 => 1.5,
-        ]);
-
-        self::assertSame([1, 3], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testReorderCycleAtRiskFailsClosedOnNonNumericRatio(): void
-    {
-        $this->stubSegment(1, [['type' => 'reorder_cycle_at_risk', 'params' => ['ratio_at_least' => 'not-a-number']]]);
-        $this->primeFactory();
-
-        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testRecencyDaysAtMostFailsClosedOnNonNumericDays(): void
-    {
-        $this->stubSegment(1, [['type' => 'recency_days_at_most', 'params' => ['days' => 'not-a-number']]]);
-        $this->primeFactory();
-
-        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testOrderFrequencyAtLeastFailsClosedOnNonNumericCount(): void
-    {
-        $this->stubSegment(1, [['type' => 'order_frequency_at_least', 'params' => ['count' => 'not-a-number']]]);
-        $this->primeFactory();
-
-        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testMonetaryTotalAtLeastFailsClosedOnNonNumericAmount(): void
-    {
-        $this->stubSegment(1, [['type' => 'monetary_total_at_least', 'params' => ['amount' => 'not-a-number']]]);
-        $this->primeFactory();
-
-        self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testInSegmentFailsClosedOnNonNumericSegmentId(): void
-    {
-        $this->stubSegment(1, [['type' => 'in_segment', 'params' => ['segment_id' => 'not-a-number']]]);
         $this->primeFactory();
 
         self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
@@ -818,7 +495,7 @@ class SegmentMemberResolverTest extends TestCase
         $this->primeFactory();
 
         $this->stubTagCondition([1, 2]);
-        $this->customerScoreManager->method('getCustomerIdsWithScoreAtLeast')->willReturn([2, 3]);
+        $this->stubCondition('score_at_least', [2, 3]);
 
         self::assertSame([1, 2, 3], array_values($this->resolver->getMatchingCustomerIds(1)));
     }
@@ -844,9 +521,10 @@ class SegmentMemberResolverTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testNestedGroupIsResolvedWithItsOwnLogicAndIntersectedIntoTheAndTop(): void
     {
-        // Top level AND: tag=vip AND (group, OR: score>=999 OR score>=1) - customer 2 has the
-        // tag but only clears the group via its low OR branch; customer 3 has the tag but clears
-        // neither branch of the group, so must be excluded from the final AND result.
+        // Top level AND: tag=vip AND (group, OR: score_at_least OR high_score) - customer 2 has
+        // the tag but only clears the group via its "high_score" OR branch; customer 3 has the
+        // tag but clears neither branch of the group, so must be excluded from the final AND
+        // result.
         $this->stubSegment(1, [
             ['type' => 'tag', 'params' => ['tag' => 'vip']],
             [
@@ -855,7 +533,7 @@ class SegmentMemberResolverTest extends TestCase
                     'logic' => 'any',
                     'conditions' => [
                         ['type' => 'score_at_least', 'params' => ['threshold' => '999']],
-                        ['type' => 'score_at_least', 'params' => ['threshold' => '1']],
+                        ['type' => 'high_score', 'params' => ['threshold' => '1']],
                     ],
                 ],
             ],
@@ -863,10 +541,8 @@ class SegmentMemberResolverTest extends TestCase
         $this->primeFactory();
 
         $this->stubTagCondition([2, 3]);
-        $this->customerScoreManager->method('getCustomerIdsWithScoreAtLeast')->willReturnMap([
-            [999, []],
-            [1, [2]],
-        ]);
+        $this->stubCondition('score_at_least', []);
+        $this->stubCondition('high_score', [2]);
 
         self::assertSame([2], array_values($this->resolver->getMatchingCustomerIds(1)));
     }
@@ -902,62 +578,6 @@ class SegmentMemberResolverTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
-    public function testBatchKeepsOneAggregatesSnapshotAcrossTopLevelResolves(): void
-    {
-        $this->stubSegment(1, [['type' => 'recency_days_at_most', 'params' => ['days' => '30']]]);
-        $this->stubSegment(2, [['type' => 'recency_days_at_most', 'params' => ['days' => '10']]]);
-        $this->primeFactory();
-
-        // The whole point of beginBatch(): N segments with RFM conditions, one whole-base
-        // aggregate query — not one per top-level resolve.
-        $this->rfmCalculator->expects(self::once())->method('getAggregatesForAllCustomers')->willReturn([
-            1 => ['frequency' => 1, 'monetary' => 1.0, 'recency_days' => 5],
-        ]);
-
-        $this->resolver->beginBatch();
-        try {
-            self::assertSame([1], $this->resolver->getMatchingCustomerIds(1));
-            self::assertSame([1], $this->resolver->getMatchingCustomerIds(2));
-        } finally {
-            $this->resolver->endBatch();
-        }
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testTopLevelResolvesOutsideABatchEachTakeAFreshSnapshot(): void
-    {
-        $this->stubSegment(1, [['type' => 'recency_days_at_most', 'params' => ['days' => '30']]]);
-        $this->stubSegment(2, [['type' => 'recency_days_at_most', 'params' => ['days' => '10']]]);
-        $this->primeFactory();
-
-        $this->rfmCalculator->expects(self::exactly(2))->method('getAggregatesForAllCustomers')->willReturn([
-            1 => ['frequency' => 1, 'monetary' => 1.0, 'recency_days' => 5],
-        ]);
-
-        self::assertSame([1], $this->resolver->getMatchingCustomerIds(1));
-        self::assertSame([1], $this->resolver->getMatchingCustomerIds(2));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
-    public function testEndBatchRestoresThePerResolveSnapshotReset(): void
-    {
-        $this->stubSegment(1, [['type' => 'recency_days_at_most', 'params' => ['days' => '30']]]);
-        $this->stubSegment(2, [['type' => 'recency_days_at_most', 'params' => ['days' => '10']]]);
-        $this->primeFactory();
-
-        $this->rfmCalculator->expects(self::exactly(2))->method('getAggregatesForAllCustomers')->willReturn([
-            1 => ['frequency' => 1, 'monetary' => 1.0, 'recency_days' => 5],
-        ]);
-
-        $this->resolver->beginBatch();
-        self::assertSame([1], $this->resolver->getMatchingCustomerIds(1));
-        $this->resolver->endBatch();
-
-        // After endBatch(), an ad-hoc resolve must not keep serving the batch's snapshot.
-        self::assertSame([1], $this->resolver->getMatchingCustomerIds(2));
-    }
-
-    #[AllowMockObjectsWithoutExpectations]
     public function testNestedGroupItemsNonArrayParamsAreNormalizedToEmpty(): void
     {
         $this->stubSegmentConditionLogic('all');
@@ -972,11 +592,85 @@ class SegmentMemberResolverTest extends TestCase
         ]);
         $this->primeFactory();
 
-        // params normalized to [] means "threshold" is absent - resolveScoreAtLeast() fails
-        // closed on a missing threshold the same way it would for a hand-written row missing
-        // the field entirely, never reaching the customer score manager at all.
-        $this->customerScoreManager->expects(self::never())->method('getCustomerIdsWithScoreAtLeast');
+        // params normalized to [] means whatever "threshold" the real condition would have read
+        // is absent - asserted here as "never even called" via a condition that fails the test
+        // if resolveCustomerIds() runs at all with non-empty params, same intent as before.
+        $neverCalled = $this->createMock(BulkResolvableConditionInterface::class);
+        $neverCalled->expects(self::once())->method('resolveCustomerIds')->with([])->willReturn([]);
+        $this->conditionsByType['score_at_least'] = new class ($neverCalled) implements
+            ConditionInterface,
+            BulkResolvableConditionInterface {
+            public function __construct(private readonly BulkResolvableConditionInterface $inner)
+            {
+            }
+
+            public function isSatisfied(array $context, array $params): bool
+            {
+                return false;
+            }
+
+            public function resolveCustomerIds(array $params): array
+            {
+                return $this->inner->resolveCustomerIds($params);
+            }
+        };
 
         self::assertSame([], $this->resolver->getMatchingCustomerIds(1));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testBeginBatchResetsBothCalculatorsSnapshotsOnce(): void
+    {
+        $this->rfmCalculator->expects(self::once())->method('resetSnapshotCache');
+        $this->reorderCycleDriftCalculator->expects(self::once())->method('resetSnapshotCache');
+
+        $this->resolver->beginBatch();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testMultipleTopLevelResolvesWithinABatchDoNotResetAgain(): void
+    {
+        $this->stubSegment(1, [['type' => 'tag', 'params' => ['tag' => 'vip']]]);
+        $this->stubSegment(2, [['type' => 'tag', 'params' => ['tag' => 'vip']]]);
+        $this->primeFactory();
+        $this->stubTagCondition([1]);
+
+        // beginBatch() resets once and endBatch() resets once more (it always frees the
+        // snapshot right away) - exactly 2 total. The real point: the two getMatchingCustomerIds()
+        // calls IN BETWEEN must not reset again - that's the whole point of beginBatch(), one
+        // snapshot across the batch - so this must stay at 2, not climb to 4.
+        $this->rfmCalculator->expects(self::exactly(2))->method('resetSnapshotCache');
+
+        $this->resolver->beginBatch();
+        try {
+            $this->resolver->getMatchingCustomerIds(1);
+            $this->resolver->getMatchingCustomerIds(2);
+        } finally {
+            $this->resolver->endBatch();
+        }
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testTopLevelResolvesOutsideABatchEachResetTheSnapshot(): void
+    {
+        $this->stubSegment(1, [['type' => 'tag', 'params' => ['tag' => 'vip']]]);
+        $this->stubSegment(2, [['type' => 'tag', 'params' => ['tag' => 'vip']]]);
+        $this->primeFactory();
+        $this->stubTagCondition([1]);
+
+        $this->rfmCalculator->expects(self::exactly(2))->method('resetSnapshotCache');
+
+        $this->resolver->getMatchingCustomerIds(1);
+        $this->resolver->getMatchingCustomerIds(2);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testEndBatchResetsAgainSoTheNextAdHocResolveDoesNotKeepTheBatchSnapshot(): void
+    {
+        $this->rfmCalculator->expects(self::exactly(2))->method('resetSnapshotCache');
+        $this->reorderCycleDriftCalculator->expects(self::exactly(2))->method('resetSnapshotCache');
+
+        $this->resolver->beginBatch();
+        $this->resolver->endBatch();
     }
 }

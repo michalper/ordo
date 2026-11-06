@@ -78,4 +78,33 @@ class EventOccurredTest extends TestCase
             ['event_type' => '   ', 'within_days' => 14]
         ));
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResolveCustomerIdsDelegatesToEventOccurredResolver(): void
+    {
+        $this->eventOccurredResolver->method('getCustomerIdsWithEvent')
+            ->willReturnMap([['cart_add', '24-MB01', 14, [8, 9]]]);
+
+        self::assertSame([8, 9], $this->condition->resolveCustomerIds(
+            ['event_type' => 'cart_add', 'event_key' => '24-MB01', 'within_days' => 14]
+        ));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResolveCustomerIdsWithBlankEventKeyPassesNull(): void
+    {
+        $this->eventOccurredResolver->method('getCustomerIdsWithEvent')
+            ->willReturnMap([['cart_add', null, 14, [8]]]);
+
+        self::assertSame([8], $this->condition->resolveCustomerIds(
+            ['event_type' => 'cart_add', 'event_key' => '', 'within_days' => 14]
+        ));
+    }
+
+    public function testResolveCustomerIdsFailsClosedOnEmptyEventType(): void
+    {
+        $this->eventOccurredResolver->expects(self::never())->method('getCustomerIdsWithEvent');
+
+        self::assertSame([], $this->condition->resolveCustomerIds(['event_type' => '', 'within_days' => 14]));
+    }
 }

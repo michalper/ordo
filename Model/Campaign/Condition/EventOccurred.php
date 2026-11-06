@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Campaign\Condition;
 
+use Ordo\Automation\Api\Campaign\BulkResolvableConditionInterface;
 use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\Event\EventOccurredResolver;
 
@@ -16,7 +17,7 @@ use Ordo\Automation\Model\Event\EventOccurredResolver;
  * itself works against whatever event_type string a future producer writes, same as
  * VisitorAggregator's own tagging already does.
  */
-class EventOccurred implements ConditionInterface
+class EventOccurred implements ConditionInterface, BulkResolvableConditionInterface
 {
     public function __construct(
         private readonly EventOccurredResolver $eventOccurredResolver
@@ -40,6 +41,23 @@ class EventOccurred implements ConditionInterface
 
         return $this->eventOccurredResolver->hasEventOccurred(
             (int) $customerId,
+            $eventType,
+            $eventKey !== '' ? $eventKey : null,
+            $withinDays
+        );
+    }
+
+    public function resolveCustomerIds(array $params): array
+    {
+        $eventType = trim((string) ($params['event_type'] ?? ''));
+        if ($eventType === '') {
+            return [];
+        }
+
+        $eventKey = trim((string) ($params['event_key'] ?? ''));
+        $withinDays = (int) ($params['within_days'] ?? 0);
+
+        return $this->eventOccurredResolver->getCustomerIdsWithEvent(
             $eventType,
             $eventKey !== '' ? $eventKey : null,
             $withinDays

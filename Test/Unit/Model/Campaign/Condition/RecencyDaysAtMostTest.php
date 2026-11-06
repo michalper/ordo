@@ -64,4 +64,23 @@ class RecencyDaysAtMostTest extends TestCase
 
         self::assertFalse($this->condition->isSatisfied(['customer_id' => 42], []));
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResolveCustomerIdsFiltersByExactSameBoundaryAsIsSatisfied(): void
+    {
+        $this->rfmCalculator->method('getAggregatesForAllCustomers')->willReturn([
+            1 => ['frequency' => 1, 'monetary' => 1.0, 'recency_days' => 10],
+            2 => ['frequency' => 1, 'monetary' => 1.0, 'recency_days' => 11],
+            3 => ['frequency' => 0, 'monetary' => 0.0, 'recency_days' => null],
+        ]);
+
+        self::assertSame([1], $this->condition->resolveCustomerIds(['days' => '10']));
+    }
+
+    public function testResolveCustomerIdsFailsClosedOnNonNumericDays(): void
+    {
+        $this->rfmCalculator->expects(self::never())->method('getAggregatesForAllCustomers');
+
+        self::assertSame([], $this->condition->resolveCustomerIds(['days' => 'not-a-number']));
+    }
 }

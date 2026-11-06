@@ -162,6 +162,40 @@ class RfmCalculatorTest extends TestCase
         self::assertSame([3, 7, 11], $calculator->getAllCustomerIds());
     }
 
+    /**
+     * The snapshot cache Segment\SegmentMemberResolver relies on: a caller resolving more than
+     * one RFM/set-level condition against the same snapshot (within one segment resolve, or
+     * across a whole beginBatch()/endBatch() batch of segments) must pay for the whole-base scan
+     * once, not once per call.
+     */
+    public function testGetAggregatesForAllCustomersCachesUntilResetSnapshotCache(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->expects(self::exactly(2))->method('fetchAll')->willReturn([]);
+
+        $calculator = $this->makeCalculator($connection);
+
+        $calculator->getAggregatesForAllCustomers();
+        $calculator->getAggregatesForAllCustomers();
+        $calculator->resetSnapshotCache();
+        $calculator->getAggregatesForAllCustomers();
+    }
+
+    public function testGetAllCustomerIdsCachesUntilResetSnapshotCache(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->expects(self::exactly(2))->method('fetchCol')->willReturn([]);
+
+        $calculator = $this->makeCalculator($connection);
+
+        $calculator->getAllCustomerIds();
+        $calculator->getAllCustomerIds();
+        $calculator->resetSnapshotCache();
+        $calculator->getAllCustomerIds();
+    }
+
     public function testGetPercentileRanksComputesRankAcrossWholeCustomerBase(): void
     {
         $now = 1700000000;
