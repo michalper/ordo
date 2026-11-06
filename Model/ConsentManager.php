@@ -86,7 +86,7 @@ class ConsentManager
         $logEntry = $this->customerConsentLogFactory->create();
         $logEntry->setCustomerId($customerId);
         $logEntry->setChannel($channel->value);
-        if ($topic !== null) {
+        if ($topic instanceof ConsentTopic) {
             $logEntry->setTopic($topic->value);
         }
         $logEntry->setConsented($consented);
