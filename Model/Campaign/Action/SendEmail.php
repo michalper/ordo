@@ -15,6 +15,7 @@ use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\Campaign\SendTimeOptimizationGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\Email\MessageIdGenerator;
 use Ordo\Automation\Model\Email\PendingMessageIdHolder;
@@ -22,15 +23,17 @@ use Ordo\Automation\Model\Sms\MessageLogWriter;
 use Psr\Log\LoggerInterface;
 
 /**
- * Params: {"template": "ordo_campaign_generic", "message": "optional static text"}.
+ * Params: {"template": "ordo_campaign_generic", "message": "optional static text", "topic":
+ * "promotional"|"account_updates" (optional, defaults to "promotional")}.
  * Context must include "customer_id" (email resolved via CustomerRepositoryInterface).
  * Every scalar value in $context becomes a template variable, so "send_email" after a
  * "generate_coupon" action on the same campaign can render {{var coupon_code}} for free.
  *
- * Checks ConsentManager::hasConsent() before sending anything — an explicit email opt-out
- * silently skips this action (not an error; skipping is the intended behavior). Also checks
- * FrequencyCapGate::allows() (opt-in, cross-channel) right after — a customer over the
- * configured contact-volume cap is skipped and recorded as suppressed, not sent.
+ * Checks ConsentManager::hasTopicConsent() before sending anything — an explicit email opt-out,
+ * at either the channel level or this send's own topic (see ConsentTopic), silently skips this
+ * action (not an error; skipping is the intended behavior). Also checks FrequencyCapGate::
+ * allows() (opt-in, cross-channel) right after — a customer over the configured contact-volume
+ * cap is skipped and recorded as suppressed, not sent.
  *
  * "use_optimal_send_time" (bool, default false) in `params` opts this specific action into
  * SendTimeOptimizationGate — deferring to the customer's own historically-best email open/click
@@ -87,7 +90,8 @@ class SendEmail implements ActionInterface
             return;
         }
 
-        if (!$this->consentManager->hasConsent($customerId, ConsentChannel::Email)) {
+        $topic = ConsentTopic::tryFrom((string) ($params['topic'] ?? '')) ?? ConsentTopic::Promotional;
+        if (!$this->consentManager->hasTopicConsent($customerId, ConsentChannel::Email, $topic)) {
             $this->logger->info(sprintf(
                 'Ordo_Automation: send_email action skipped for customer #%d, email consent withdrawn.',
                 $customerId

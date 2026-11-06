@@ -11,6 +11,7 @@ use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate as WhatsAppTemplateResource;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
 use Ordo\Automation\Model\WhatsApp\WhatsAppSender;
@@ -33,8 +34,9 @@ use Throwable;
  * body placeholders — deliberately not JSON-nested, so the campaign flow editor's own plain-text
  * field (Block/Adminhtml/Campaign/Edit/Flow.php::getFieldsConfig()) can drive it directly.
  *
- * Checks ConsentManager::hasConsent() before sending, same as send_email/send_sms. Also checks
- * FrequencyCapGate::allows() right after (opt-in, cross-channel).
+ * Checks ConsentManager::hasTopicConsent() before sending, same as send_email/send_sms - an
+ * optional "topic" param (see ConsentTopic, defaults to "promotional") on top of "template_id"/
+ * "params" above. Also checks FrequencyCapGate::allows() right after (opt-in, cross-channel).
  */
 class SendWhatsApp implements ActionInterface
 {
@@ -113,7 +115,8 @@ class SendWhatsApp implements ActionInterface
             return;
         }
 
-        if (!$this->consentManager->hasConsent($customerId, ConsentChannel::WhatsApp)) {
+        $topic = ConsentTopic::tryFrom((string) ($params['topic'] ?? '')) ?? ConsentTopic::Promotional;
+        if (!$this->consentManager->hasTopicConsent($customerId, ConsentChannel::WhatsApp, $topic)) {
             $this->logger->info(sprintf(
                 'Ordo_Automation: send_whatsapp action skipped for customer #%d, WhatsApp consent withdrawn.',
                 $customerId

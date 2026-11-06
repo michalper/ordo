@@ -6,14 +6,16 @@ namespace Ordo\Automation\Controller\Adminhtml\Gdpr;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\Controller\Result\RawFactory;
+use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Gdpr\CustomerDataExporter;
 
 /**
  * The data-subject-access-request half of this module's GDPR tooling — a JSON download of
  * everything this module holds about one customer (CustomerDataExporter::export()) plus their
- * current per-channel consent state (ConsentManager::getConsentStates()), which lives in the
- * same table but is more directly useful summarized than buried in the raw row dump.
+ * current per-channel consent state (ConsentManager::getConsentStates()) and per-topic state for
+ * each message-delivery channel (ConsentManager::getTopicConsentStates()), which both live in
+ * their own tables but are more directly useful summarized than buried in the raw row dump.
  */
 class Export extends AbstractGdprAction implements HttpGetActionInterface
 {
@@ -35,8 +37,14 @@ class Export extends AbstractGdprAction implements HttpGetActionInterface
             return $this->resultRedirectFactory->create()->setPath('*/*/index');
         }
 
+        $topicConsentStates = [];
+        foreach ([ConsentChannel::Email, ConsentChannel::Sms, ConsentChannel::Push, ConsentChannel::WhatsApp] as $channel) {
+            $topicConsentStates[$channel->value] = $this->consentManager->getTopicConsentStates($customerId, $channel);
+        }
+
         $payload = [
             'consent_states' => $this->consentManager->getConsentStates($customerId),
+            'topic_consent_states' => $topicConsentStates,
             'data' => $this->customerDataExporter->export($customerId),
         ];
 

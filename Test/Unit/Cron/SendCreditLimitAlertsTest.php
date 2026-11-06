@@ -20,6 +20,7 @@ use Ordo\Automation\Cron\SendCreditLimitAlerts;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\CreditLimitCalculator;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\Email\PendingMessageIdHolder;
@@ -104,7 +105,7 @@ class SendCreditLimitAlertsTest extends TestCase
     private function makeConsentManager(bool $hasConsent = true): ConsentManager
     {
         $consentManager = $this->createStub(ConsentManager::class);
-        $consentManager->method('hasConsentForCustomers')->willReturnCallback(
+        $consentManager->method('hasTopicConsentForCustomers')->willReturnCallback(
             fn (array $customerIds) => array_fill_keys($customerIds, $hasConsent)
         );
 
@@ -222,7 +223,7 @@ class SendCreditLimitAlertsTest extends TestCase
         $customerMapBuilder = $this->makeCustomerMapBuilder([$customer]);
 
         $consentManager = $this->createMock(ConsentManager::class);
-        $consentManager->expects(self::once())->method('hasConsentForCustomers')->with([5], ConsentChannel::Email)->willReturn([5 => false]);
+        $consentManager->expects(self::once())->method('hasTopicConsentForCustomers')->with([5], ConsentChannel::Email, ConsentTopic::AccountUpdates)->willReturn([5 => false]);
 
         (new SendCreditLimitAlerts(
             $config,

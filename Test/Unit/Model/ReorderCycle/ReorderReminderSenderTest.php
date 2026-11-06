@@ -6,6 +6,7 @@ namespace Ordo\Automation\Test\Unit\Model\ReorderCycle;
 use Magento\Customer\Api\Data\CustomerInterface;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\Cron\ReminderLogStore;
 use Ordo\Automation\Model\ReorderCycle;
@@ -66,7 +67,8 @@ class ReorderReminderSenderTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testSendNowThrowsOptedOutExceptionWithoutClaimingOrSendingWhenNoConsent(): void
     {
-        $this->consentManager->expects(self::once())->method('hasConsent')->with(7, ConsentChannel::Email)->willReturn(false);
+        $this->consentManager->expects(self::once())->method('hasTopicConsent')
+            ->with(7, ConsentChannel::Email, ConsentTopic::AccountUpdates)->willReturn(false);
 
         $this->reminderLogStore->expects(self::never())->method('insert');
         $this->emailSender->expects(self::never())->method('send');
@@ -78,7 +80,7 @@ class ReorderReminderSenderTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testSendNowClaimsThenSendsThenLogsOutcome(): void
     {
-        $this->consentManager->method('hasConsent')->willReturn(true);
+        $this->consentManager->method('hasTopicConsent')->willReturn(true);
 
         $this->reminderLogStore->expects(self::once())->method('insert')
             ->with('ordo_reorder_reminder_log', self::callback(
@@ -103,7 +105,7 @@ class ReorderReminderSenderTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testSendNowRollsBackTheClaimAndRethrowsWhenSendFails(): void
     {
-        $this->consentManager->method('hasConsent')->willReturn(true);
+        $this->consentManager->method('hasTopicConsent')->willReturn(true);
         $this->emailSender->method('send')->willThrowException(new \RuntimeException('smtp down'));
 
         $this->reminderLogStore->expects(self::once())->method('insert');

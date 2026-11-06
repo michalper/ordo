@@ -9,13 +9,15 @@ use Ordo\Automation\Model\Campaign\FrequencyCapGate;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\Push\PushSubscriptionManager;
 use Ordo\Automation\Model\Push\PushSubscriptionSender;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
 use Psr\Log\LoggerInterface;
 
 /**
- * Params: {"title": "...", "body": "...", "url": "https://..."} - "url" is optional, opened by
+ * Params: {"title": "...", "body": "...", "url": "https://...", "topic":
+ * "promotional"|"account_updates" (optional, defaults to "promotional")} - "url" is optional, opened by
  * push-sw.js's notificationclick handler when the browser notification is clicked. "body" may
  * include the literal token "{{recommended_products_text}}", substituted with the plain-text
  * rendering Model\Campaign\Action\AddProductRecommendations writes into the context (empty string
@@ -27,9 +29,10 @@ use Psr\Log\LoggerInterface;
  * - this sends to every one of them, since there is no single "the" device to pick, and a failed
  * or dead subscription on one device must never stop delivery to the others.
  *
- * Checks ConsentManager::hasConsent() before sending, same as send_email/send_sms/send_whatsapp.
- * Also checks FrequencyCapGate::allows() right after (opt-in, cross-channel), once per
- * customer before fanning out to their registered subscriptions.
+ * Checks ConsentManager::hasTopicConsent() before sending, same as send_email/send_sms/
+ * send_whatsapp - an optional "topic" param (see ConsentTopic, defaults to "promotional") on top
+ * of "title"/"body"/"url" above. Also checks FrequencyCapGate::allows() right after (opt-in,
+ * cross-channel), once per customer before fanning out to their registered subscriptions.
  *
  * Unlike Send{Email,Sms,WhatsApp} (which enqueue a whole-action retry via
  * Model\Campaign\MessageSendRetryQueue when SendRetrier's in-process retries are exhausted), each
@@ -75,7 +78,8 @@ class SendPush implements ActionInterface
             return;
         }
 
-        if (!$this->consentManager->hasConsent($customerId, ConsentChannel::Push)) {
+        $topic = ConsentTopic::tryFrom((string) ($params['topic'] ?? '')) ?? ConsentTopic::Promotional;
+        if (!$this->consentManager->hasTopicConsent($customerId, ConsentChannel::Push, $topic)) {
             $this->logger->info(sprintf(
                 'Ordo_Automation: send_push action skipped for customer #%d, push consent withdrawn.',
                 $customerId

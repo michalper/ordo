@@ -11,6 +11,7 @@ use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
 use Ordo\Automation\Model\Sms\OptedOutException;
@@ -20,7 +21,8 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * Params: {"message": "SMS text"} - "message" may include the literal token
+ * Params: {"message": "SMS text", "topic": "promotional"|"account_updates" (optional, defaults
+ * to "promotional")} - "message" may include the literal token
  * "{{recommended_products_text}}", substituted with the plain-text rendering
  * Model\Campaign\Action\AddProductRecommendations writes into the context (empty string if that
  * action never ran, or found nothing to recommend). Not a general templating engine - this one
@@ -31,9 +33,10 @@ use Throwable;
  * (SmsSenderInterface, Twilio-backed by default via di.xml preference) inside a try/catch that
  * logs and swallows — a failed SMS never blocks the rest of the campaign's actions.
  *
- * Checks ConsentManager::hasConsent() before sending — an explicit SMS opt-out is recorded the
- * same way Twilio's own STOP-reply opt-out already is (MessageLogWriter::recordOptedOut()), not
- * as a distinct third outcome. Also checks FrequencyCapGate::allows() right after (opt-in,
+ * Checks ConsentManager::hasTopicConsent() before sending — an explicit SMS opt-out, at either
+ * the channel level or this send's own topic (see ConsentTopic), is recorded the same way
+ * Twilio's own STOP-reply opt-out already is (MessageLogWriter::recordOptedOut()), not as a
+ * distinct third outcome. Also checks FrequencyCapGate::allows() right after (opt-in,
  * cross-channel) — over the configured contact-volume cap is recorded as suppressed, not sent.
  */
 class SendSms implements ActionInterface
@@ -99,7 +102,8 @@ class SendSms implements ActionInterface
             return;
         }
 
-        if (!$this->consentManager->hasConsent($customerId, ConsentChannel::Sms)) {
+        $topic = ConsentTopic::tryFrom((string) ($params['topic'] ?? '')) ?? ConsentTopic::Promotional;
+        if (!$this->consentManager->hasTopicConsent($customerId, ConsentChannel::Sms, $topic)) {
             $this->logger->info(sprintf(
                 'Ordo_Automation: send_sms action skipped for customer #%d, SMS consent withdrawn.',
                 $customerId

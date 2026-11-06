@@ -15,12 +15,13 @@ class CustomerDataTableProviderTest extends TestCase
         $this->provider = new CustomerDataTableProvider();
     }
 
-    public function testGetTablesReturnsAllTwentyFourCustomerKeyedTables(): void
+    public function testGetTablesReturnsAllTwentyFiveCustomerKeyedTables(): void
     {
         $tables = $this->provider->getTables();
 
-        self::assertCount(24, $tables);
+        self::assertCount(25, $tables);
         self::assertContains('ordo_customer_consent', $tables);
+        self::assertContains('ordo_customer_consent_topic', $tables);
         self::assertContains('ordo_customer_consent_log', $tables);
         self::assertContains('ordo_customer_tag', $tables);
         self::assertContains('ordo_customer_score', $tables);
@@ -55,6 +56,7 @@ class CustomerDataTableProviderTest extends TestCase
 
         self::assertSame([
             'ordo_customer_consent' => 'consent',
+            'ordo_customer_consent_topic' => 'consent_topic',
             'ordo_customer_consent_log' => 'consent_history',
             'ordo_customer_tag' => 'tags',
             'ordo_customer_score' => 'score',

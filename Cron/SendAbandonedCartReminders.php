@@ -9,6 +9,7 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\Cron\CronRunLogger;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\Cron\ReminderLogStore;
@@ -96,7 +97,13 @@ class SendAbandonedCartReminders
             static fn (array $row): int => (int) $row['customer_id'],
             array_filter($rows, static fn (array $row): bool => !empty($row['customer_id']))
         )));
-        $consentByCustomer = $this->consentManager->hasConsentForCustomers($customerIds, ConsentChannel::Email);
+        // Promotional - an abandoned-cart recovery send is a marketing/recovery push, see
+        // ConsentTopic::Promotional's own docblock.
+        $consentByCustomer = $this->consentManager->hasTopicConsentForCustomers(
+            $customerIds,
+            ConsentChannel::Email,
+            ConsentTopic::Promotional
+        );
 
         $sent = 0;
         foreach ($rows as $row) {

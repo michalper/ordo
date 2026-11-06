@@ -2378,6 +2378,11 @@
                                             <callback>visible</callback>
                                             <params><param name="0" xsi:type="boolean">false</param></params>
                                         </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.topic</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="1">
@@ -2430,6 +2435,11 @@
                                         </action>
                                         <action name="9">
                                             <target>${ $.parentName }.points</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.topic</target>
                                             <callback>visible</callback>
                                             <params><param name="0" xsi:type="boolean">false</param></params>
                                         </action>
@@ -2488,6 +2498,11 @@
                                             <callback>visible</callback>
                                             <params><param name="0" xsi:type="boolean">false</param></params>
                                         </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.topic</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">true</param></params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="3">
@@ -2540,6 +2555,11 @@
                                         </action>
                                         <action name="9">
                                             <target>${ $.parentName }.points</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.topic</target>
                                             <callback>visible</callback>
                                             <params><param name="0" xsi:type="boolean">false</param></params>
                                         </action>
@@ -2598,6 +2618,11 @@
                                             <callback>visible</callback>
                                             <params><param name="0" xsi:type="boolean">true</param></params>
                                         </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.topic</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
                                     </actions>
                                 </rule>
                                 <rule name="5">
@@ -2652,6 +2677,11 @@
                                             <target>${ $.parentName }.points</target>
                                             <callback>visible</callback>
                                             <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="10">
+                                            <target>${ $.parentName }.topic</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">true</param></params>
                                         </action>
                                     </actions>
                                 </rule>
@@ -2710,6 +2740,11 @@
                                         </action>
                                         <action name="10">
                                             <target>${ $.parentName }.question</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.topic</target>
                                             <callback>visible</callback>
                                             <params><param name="0" xsi:type="boolean">false</param></params>
                                         </action>
@@ -2772,6 +2807,11 @@
                                             <target>${ $.parentName }.question</target>
                                             <callback>visible</callback>
                                             <params><param name="0" xsi:type="boolean">true</param></params>
+                                        </action>
+                                        <action name="11">
+                                            <target>${ $.parentName }.topic</target>
+                                            <callback>visible</callback>
+                                            <params><param name="0" xsi:type="boolean">false</param></params>
                                         </action>
                                     </actions>
                                 </rule>
@@ -2848,6 +2888,21 @@
                         <label translate="true">Message</label>
                         <visible>false</visible>
                     </settings>
+                </field>
+                <field name="topic" formElement="select" sortOrder="20">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Consent topic</label>
+                        <notice translate="true">Which opt-out preference this send is checked against, beyond the customer's own per-channel consent. Defaults to Promotional if left blank.</notice>
+                        <visible>false</visible>
+                    </settings>
+                    <formElements>
+                        <select>
+                            <settings>
+                                <options class="Ordo\Automation\Model\Config\Source\ConsentTopicOptions"/>
+                            </settings>
+                        </select>
+                    </formElements>
                 </field>
                 <field name="headline" formElement="input" sortOrder="21">
                     <settings>

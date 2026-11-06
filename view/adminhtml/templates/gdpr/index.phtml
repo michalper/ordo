@@ -81,6 +81,60 @@
 
         <div class="ordo-gdpr-card">
             <div class="ordo-section-head">
+                <h2><?= $escaper->escapeHtml(__('Topic preferences')) ?></h2>
+            </div>
+            <p class="ordo-listing-intro">
+                <?= $escaper->escapeHtml(__(
+                    'Further splits a channel\'s own opt-in above - a customer opted into a channel can'
+                    . ' still opt out of just its promotional sends, or just its account/order update sends.'
+                    . ' Only applies while the channel above is itself opted in.'
+                )) ?>
+            </p>
+            <form action="<?= $escaper->escapeUrl($block->getSetTopicConsentFormAction()) ?>" method="post">
+                <?= $block->getBlockHtml('formkey') ?>
+                <input type="hidden" name="customer_id" value="<?= (int) $block->getCustomerId() ?>"/>
+                <input type="hidden" name="email" value="<?= $escaper->escapeHtmlAttr($block->getCustomerEmail()) ?>"/>
+                <?php foreach ($block->getTopicConsentStates() as $channel => $topics): ?>
+                    <h3 class="ordo-nav-group-title"><?= $escaper->escapeHtml(ucfirst((string) $channel)) ?></h3>
+                    <div class="ordo-trigger-stats">
+                        <?php foreach ($topics as $topic => $consented): ?>
+                            <div class="ordo-gdpr-consent-row">
+                                <span class="ordo-gdpr-consent-label">
+                                    <?= $escaper->escapeHtml($block->getTopicLabel((string) $topic)) ?>
+                                </span>
+                                <div class="ordo-gdpr-consent-controls">
+                                    <span class="ordo-badge <?= $consented ? 'ordo-badge-on' : 'ordo-badge-off' ?>">
+                                        <?=
+                                            $consented
+                                                ? $escaper->escapeHtml(__('Opted in'))
+                                                : $escaper->escapeHtml(__('Opted out'))
+                                        ?>
+                                    </span>
+                                    <button type="submit" class="ordo-btn ordo-btn-secondary"
+                                            onclick="this.form.channel.value='<?=
+                                                $escaper->escapeHtmlAttr((string) $channel)
+                                            ?>';this.form.topic.value='<?=
+                                                $escaper->escapeHtmlAttr((string) $topic)
+                                            ?>';this.form.consented.value='<?= $consented ? '0' : '1' ?>'">
+                                        <?=
+                                            $consented
+                                                ? $escaper->escapeHtml(__('Opt out'))
+                                                : $escaper->escapeHtml(__('Opt in'))
+                                        ?>
+                                    </button>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endforeach; ?>
+                <input type="hidden" name="channel" value=""/>
+                <input type="hidden" name="topic" value=""/>
+                <input type="hidden" name="consented" value=""/>
+            </form>
+        </div>
+
+        <div class="ordo-gdpr-card">
+            <div class="ordo-section-head">
                 <h2><?= $escaper->escapeHtml(__('Data subject actions')) ?></h2>
             </div>
             <div class="ordo-gdpr-actions">

@@ -8,6 +8,7 @@ use Magento\Backend\Block\Template\Context;
 use Magento\Framework\Registry;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\Gdpr\ConsentStates;
 
 class Index extends Template
@@ -60,6 +61,42 @@ class Index extends Template
     public function getSetConsentFormAction(): string
     {
         return $this->getUrl('*/*/setConsent');
+    }
+
+    /**
+     * @return array<string, array<string, bool>> channel value => (topic value => consented),
+     *     for every message-delivery channel (not Ads, which has no topic concept) - every topic
+     *     this customer doesn't have an explicit row for defaults to true (consented), same
+     *     opt-out-register shape ConsentManager::getTopicConsentStates() itself returns.
+     */
+    public function getTopicConsentStates(): array
+    {
+        $customerId = $this->getCustomerId();
+        $states = [];
+
+        foreach ([ConsentChannel::Email, ConsentChannel::Sms, ConsentChannel::Push, ConsentChannel::WhatsApp] as $channel) {
+            $channelStates = $this->consentManager->getTopicConsentStates($customerId, $channel);
+            $states[$channel->value] = [
+                ConsentTopic::Promotional->value => $channelStates[ConsentTopic::Promotional->value] ?? true,
+                ConsentTopic::AccountUpdates->value => $channelStates[ConsentTopic::AccountUpdates->value] ?? true,
+            ];
+        }
+
+        return $states;
+    }
+
+    public function getSetTopicConsentFormAction(): string
+    {
+        return $this->getUrl('*/*/setTopicConsent');
+    }
+
+    public function getTopicLabel(string $topic): string
+    {
+        return match ($topic) {
+            ConsentTopic::Promotional->value => (string) __('Promotional'),
+            ConsentTopic::AccountUpdates->value => (string) __('Account & Order Updates'),
+            default => $topic,
+        };
     }
 
     public function getExportUrl(): string

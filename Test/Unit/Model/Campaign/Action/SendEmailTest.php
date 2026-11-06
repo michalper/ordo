@@ -19,6 +19,7 @@ use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\Campaign\SendTimeOptimizationGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\Email\MessageIdGenerator;
 use Ordo\Automation\Model\Email\PendingMessageIdHolder;
@@ -54,7 +55,7 @@ class SendEmailTest extends TestCase
         $this->consentManager = $this->createStub(ConsentManager::class);
         $this->customerStoreResolver = $this->createStub(CustomerStoreResolver::class);
         $this->customerStoreResolver->method('resolveStoreId')->willReturn(null);
-        $this->consentManager->method('hasConsent')->willReturn(true);
+        $this->consentManager->method('hasTopicConsent')->willReturn(true);
         $this->sendTimeOptimizationGate = $this->createStub(SendTimeOptimizationGate::class);
         $this->sendTimeOptimizationGate->method('allows')->willReturn(true);
         $this->quietHoursGate = $this->createStub(QuietHoursGate::class);
@@ -109,13 +110,28 @@ class SendEmailTest extends TestCase
     public function testExecuteSkipsWhenConsentWithdrawn(): void
     {
         $this->consentManager = $this->createMock(ConsentManager::class);
-        $this->consentManager->expects(self::once())->method('hasConsent')
-            ->with(42, ConsentChannel::Email)->willReturn(false);
+        $this->consentManager->expects(self::once())->method('hasTopicConsent')
+            ->with(42, ConsentChannel::Email, ConsentTopic::Promotional)->willReturn(false);
         $this->customerRepository->expects(self::never())->method('getById');
         $this->logger->expects(self::once())->method('info');
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecutePassesTheConfiguredTopicToConsentCheck(): void
+    {
+        $this->consentManager = $this->createMock(ConsentManager::class);
+        $this->consentManager->expects(self::once())->method('hasTopicConsent')
+            ->with(42, ConsentChannel::Email, ConsentTopic::AccountUpdates)->willReturn(false);
+        $this->logger->method('info');
+
+        $context = ['customer_id' => 42];
+        $this->makeAction()->execute(
+            $context,
+            ['template' => 'ordo_campaign_generic', 'topic' => 'account_updates']
+        );
     }
 
     #[AllowMockObjectsWithoutExpectations]

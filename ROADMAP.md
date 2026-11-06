@@ -346,9 +346,18 @@ coupon/channel/device/geography.
   this module) plus a dashboard stat card. All five thresholds are ordinary `Helper\Config` fields,
   not hardcoded — exactly so they can be retuned once there's real production data to calibrate
   against, the risk this item was originally deferred over.
-- **Per-topic preference granularity within a channel** — split a channel's opt-in further (e.g. "promotional"
-  vs "product update" email) beyond today's per-channel consent. Confirm real merchant demand first. Medium
-  scope.
+- ~~**Per-topic preference granularity within a channel**~~ — done, see
+  `docs/adr/0026-per-topic-consent-granularity.md`. Two fixed topics (`Model\ConsentTopic`:
+  `Promotional`, `AccountUpdates`), a second opt-out register (`ordo_customer_consent_topic`)
+  additive to the existing per-channel one — `ConsentManager::hasTopicConsent()` is true only when
+  both say so, so every existing `hasConsent()` call site keeps working unchanged. The four
+  `send_*` campaign actions gained an optional `topic` param (defaults to `Promotional`), and the
+  five existing reminder crons/senders (win-back, abandoned cart, offer expiry → `Promotional`;
+  credit limit alerts, reorder reminders → `AccountUpdates`) were switched onto the new
+  topic-aware check with a fixed topic each — this is what actually gives a customer real control,
+  not just new campaigns. Managed from a new "Topic preferences" card on the existing admin
+  GDPR/Consent screen; no storefront self-service page, matching channel-level consent's own
+  existing gap.
 - ~~**Merge the three storefront poll endpoints**~~ — done, see
   `docs/adr/0024-merge-storefront-poll-endpoints.md`. The three GET controllers
   (`Controller\Track\{Popup,Notification,Survey}`) collapsed into one, `Controller\Track\Poll`

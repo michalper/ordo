@@ -674,10 +674,11 @@
         </index>
     </table>
 
-    <table name="ordo_customer_consent_log" resource="default" engine="innodb" comment="Append-only audit trail of every Model\ConsentManager::setConsent() call - unlike ordo_customer_consent (which only ever holds the current state, upserted in place), a row here is never updated once written, so who consented/opted out on which channel and when is still answerable after the current state has since changed again.">
+    <table name="ordo_customer_consent_log" resource="default" engine="innodb" comment="Append-only audit trail of every Model\ConsentManager::setConsent()/setTopicConsent() call - unlike ordo_customer_consent/ordo_customer_consent_topic (which only ever hold the current state, upserted in place), a row here is never updated once written, so who consented/opted out on which channel (and, for a topic-level change, which topic) and when is still answerable after the current state has since changed again.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="The customer this consent change applies to"/>
-        <column xsi:type="varchar" name="channel" nullable="false" length="32" comment="email, sms, or push"/>
+        <column xsi:type="varchar" name="channel" nullable="false" length="32" comment="email, sms, push, whatsapp, or ads"/>
+        <column xsi:type="varchar" name="topic" nullable="true" length="32" comment="Set only for a Model\ConsentManager::setTopicConsent() call - null means this log entry is a channel-level change, see ConsentTopic for the possible values"/>
         <column xsi:type="boolean" name="consented" nullable="false" comment="1=opted in, 0=opted out, as of this log entry"/>
         <column xsi:type="varchar" name="source" nullable="true" length="64" comment="Where this change was recorded from, e.g. admin, unsubscribe_link, checkout"/>
         <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
@@ -687,6 +688,24 @@
         <index referenceId="ORDO_CUSTOMER_CONSENT_LOG_CUSTOMER_ID" indexType="btree">
             <column name="customer_id"/>
         </index>
+    </table>
+
+    <table name="ordo_customer_consent_topic" resource="default" engine="innodb" comment="Per-customer, per-channel, per-topic opt-out, additive to ordo_customer_consent own channel-wide state (see Model/ConsentTopic and docs/adr/0026) - Model/ConsentManager::hasTopicConsent() is true only when BOTH this register and the channel-wide one say so. One row per customer_id+channel+topic triple; no row means consented by default, same opt-out-register semantics as ordo_customer_consent.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="The customer this consent state applies to"/>
+        <column xsi:type="varchar" name="channel" nullable="false" length="32" comment="email, sms, push, or whatsapp - never ads, which has no topic concept"/>
+        <column xsi:type="varchar" name="topic" nullable="false" length="32" comment="promotional or account_updates - see ConsentTopic"/>
+        <column xsi:type="boolean" name="consented" nullable="false" default="1" comment="1=opted in, 0=opted out"/>
+        <column xsi:type="varchar" name="source" nullable="true" length="64" comment="Where this state was recorded from, e.g. admin"/>
+        <column xsi:type="timestamp" name="updated_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="true" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="ORDO_CUSTOMER_CONSENT_TOPIC_CUSTOMER_ID_CHANNEL_TOPIC">
+            <column name="customer_id"/>
+            <column name="channel"/>
+            <column name="topic"/>
+        </constraint>
     </table>
 
     <table name="ordo_ad_audience" resource="default" engine="innodb" comment="A segment configured to sync as a remarketing audience to an external ad platform (google_ads or meta) - Cron\SyncAdAudiences hashes each matching segment members email (Model\AdAudience\PiiHasher) and pushes the list via the platform SyncClientInterface implementation, refreshed on a cron.">
@@ -1175,7 +1194,7 @@
         </constraint>
     </table>
 
-    <table name="ordo_anomaly_alert" resource="default" engine="innodb" comment="One row per notable deviation Cron DetectAnomalies flags - a campaign's revenue dropping vs. its own trailing baseline, or a campaign's conversion rate deviating from its peers' average (see docs/adr/0025). An immutable log, same shape as ordo_cron_run_log/ordo_admin_action_log - no acknowledged/resolved state, see that ADR's Consequences section.">
+    <table name="ordo_anomaly_alert" resource="default" engine="innodb" comment="One row per notable deviation Cron DetectAnomalies flags - a campaign revenue dropping vs its own trailing baseline, or a campaign conversion rate deviating from its peers average (see docs/adr/0025). An immutable log, same shape as ordo_cron_run_log/ordo_admin_action_log - no acknowledged/resolved state, see that ADR Consequences section.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="alert_type" nullable="false" length="32" comment="campaign_revenue_drop or campaign_conversion_outlier - see Model\Anomaly\AnomalyAlertType"/>
         <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id - no FK, same reasoning as ordo_message_log.campaign_id: this row must survive the campaign it references being deleted"/>

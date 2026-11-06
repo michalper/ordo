@@ -6,6 +6,7 @@ namespace Ordo\Automation\Cron;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\Cron\CronRunLogger;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\CustomerMapBuilder;
@@ -49,7 +50,13 @@ class SendWinBackEmails
         $alreadySent = array_flip(
             $this->customerTagManager->getCustomerIdsWithTagFromSet($customerIds, self::TAG_WIN_BACK_SENT)
         );
-        $consentByCustomer = $this->consentManager->hasConsentForCustomers($customerIds, ConsentChannel::Email);
+        // Promotional - a win-back send is a marketing/recovery push, see ConsentTopic::
+        // Promotional's own docblock.
+        $consentByCustomer = $this->consentManager->hasTopicConsentForCustomers(
+            $customerIds,
+            ConsentChannel::Email,
+            ConsentTopic::Promotional
+        );
 
         $sent = 0;
         foreach ($customerIds as $customerId) {

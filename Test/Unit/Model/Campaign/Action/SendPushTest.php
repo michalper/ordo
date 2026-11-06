@@ -9,6 +9,7 @@ use Ordo\Automation\Model\Campaign\FrequencyCapGate;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\Push\PushSubscriptionManager;
 use Ordo\Automation\Model\Push\PushSubscriptionSender;
 use Ordo\Automation\Model\PushSubscription;
@@ -36,7 +37,7 @@ class SendPushTest extends TestCase
         $this->config->method('isPushEnabled')->willReturn(true);
         $this->messageLogWriter = $this->createMock(MessageLogWriter::class);
         $this->consentManager = $this->createStub(ConsentManager::class);
-        $this->consentManager->method('hasConsent')->willReturn(true);
+        $this->consentManager->method('hasTopicConsent')->willReturn(true);
         $this->quietHoursGate = $this->createStub(QuietHoursGate::class);
         $this->quietHoursGate->method('allows')->willReturn(true);
         $this->frequencyCapGate = $this->createStub(FrequencyCapGate::class);
@@ -138,8 +139,8 @@ class SendPushTest extends TestCase
     public function testExecuteSkipsAndRecordsOptedOutWhenConsentWithdrawn(): void
     {
         $this->consentManager = $this->createMock(ConsentManager::class);
-        $this->consentManager->expects(self::once())->method('hasConsent')
-            ->with(42, ConsentChannel::Push)->willReturn(false);
+        $this->consentManager->expects(self::once())->method('hasTopicConsent')
+            ->with(42, ConsentChannel::Push, ConsentTopic::Promotional)->willReturn(false);
         $this->pushSubscriptionManager->expects(self::never())->method('getForCustomer');
         $this->pushSubscriptionSender->expects(self::never())->method('send');
         $this->messageLogWriter->expects(self::once())->method('recordOptedOut')->with('push', 42, '');

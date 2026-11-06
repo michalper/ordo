@@ -11,6 +11,7 @@ use Magento\Framework\UrlInterface;
 use Ordo\Automation\Block\Adminhtml\Gdpr\Index;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -146,5 +147,64 @@ class IndexTest extends TestCase
         $this->urlBuilder->method('getUrl')->willReturn('https://example.com/admin/ordo/gdpr/erase/');
 
         self::assertSame('https://example.com/admin/ordo/gdpr/erase/', $this->block->getEraseFormAction());
+    }
+
+    public function testGetTopicConsentStatesDefaultsToTrueAndCoversEveryMessageChannelButNotAds(): void
+    {
+        $this->registry->method('registry')->willReturnMap([['ordo_gdpr_customer_id', 42]]);
+        $this->consentManager->method('getTopicConsentStates')->willReturn([]);
+
+        $states = $this->block->getTopicConsentStates();
+
+        self::assertSame(
+            [
+                ConsentChannel::Email->value,
+                ConsentChannel::Sms->value,
+                ConsentChannel::Push->value,
+                ConsentChannel::WhatsApp->value,
+            ],
+            array_keys($states)
+        );
+        self::assertSame(
+            [ConsentTopic::Promotional->value => true, ConsentTopic::AccountUpdates->value => true],
+            $states[ConsentChannel::Email->value]
+        );
+    }
+
+    public function testGetTopicConsentStatesReflectsRecordedOptOut(): void
+    {
+        $this->registry->method('registry')->willReturnMap([['ordo_gdpr_customer_id', 42]]);
+        $this->consentManager->method('getTopicConsentStates')->willReturnCallback(
+            fn (int $customerId, ConsentChannel $channel) => $channel === ConsentChannel::Email
+                ? [ConsentTopic::Promotional->value => false]
+                : []
+        );
+
+        $states = $this->block->getTopicConsentStates();
+
+        self::assertFalse($states[ConsentChannel::Email->value][ConsentTopic::Promotional->value]);
+        self::assertTrue($states[ConsentChannel::Email->value][ConsentTopic::AccountUpdates->value]);
+        self::assertTrue($states[ConsentChannel::Sms->value][ConsentTopic::Promotional->value]);
+    }
+
+    public function testGetSetTopicConsentFormActionBuildsSetTopicConsentUrl(): void
+    {
+        $this->urlBuilder->method('getUrl')->willReturn('https://example.com/admin/ordo/gdpr/settopicconsent/');
+
+        self::assertSame(
+            'https://example.com/admin/ordo/gdpr/settopicconsent/',
+            $this->block->getSetTopicConsentFormAction()
+        );
+    }
+
+    public function testGetTopicLabelTranslatesKnownTopics(): void
+    {
+        self::assertSame('Promotional', $this->block->getTopicLabel(ConsentTopic::Promotional->value));
+        self::assertSame('Account & Order Updates', $this->block->getTopicLabel(ConsentTopic::AccountUpdates->value));
+    }
+
+    public function testGetTopicLabelFallsBackToTheRawValueForAnUnknownTopic(): void
+    {
+        self::assertSame('mystery', $this->block->getTopicLabel('mystery'));
     }
 }

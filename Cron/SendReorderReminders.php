@@ -7,6 +7,7 @@ use Magento\Customer\Api\Data\CustomerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\Cron\CronRunLogger;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\Cron\ReminderLogStore;
@@ -65,7 +66,13 @@ class SendReorderReminders
         // One query for the whole batch instead of one hasConsent() call per cycle inside the
         // loop below - found via a performance audit, same reasoning as
         // CreditLimitCalculator::getUsedCreditForCustomers().
-        $consentByCustomer = $this->consentManager->hasConsentForCustomers($customerIds, ConsentChannel::Email);
+        // AccountUpdates, not Promotional - a reorder reminder is about the customer's own
+        // purchase pattern, see ConsentTopic::AccountUpdates's own docblock.
+        $consentByCustomer = $this->consentManager->hasTopicConsentForCustomers(
+            $customerIds,
+            ConsentChannel::Email,
+            ConsentTopic::AccountUpdates
+        );
 
         $sent = 0;
         foreach ($cycles as $cycle) {

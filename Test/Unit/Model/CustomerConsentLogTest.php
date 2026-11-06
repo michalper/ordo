@@ -53,4 +53,16 @@ class CustomerConsentLogTest extends AbstractModelTestCase
         $model = $this->makeModel();
         self::assertNull($model->getCreatedAt());
     }
+
+    public function testTopicRoundTrip(): void
+    {
+        $model = $this->makeModel();
+        self::assertNull($model->getTopic());
+
+        $model->setTopic('promotional');
+        self::assertSame('promotional', $model->getTopic());
+
+        $model->setTopic(null);
+        self::assertNull($model->getTopic());
+    }
 }

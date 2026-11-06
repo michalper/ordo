@@ -18,6 +18,7 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\Cron\ReminderLogStore;
 use Ordo\Automation\Model\Email\MessageIdGenerator;
@@ -60,7 +61,7 @@ class SendAbandonedCartRemindersTest extends TestCase
     private function makeConsentManager(bool $hasConsent = true): ConsentManager
     {
         $consentManager = $this->createStub(ConsentManager::class);
-        $consentManager->method('hasConsentForCustomers')->willReturnCallback(
+        $consentManager->method('hasTopicConsentForCustomers')->willReturnCallback(
             fn (array $customerIds) => array_fill_keys($customerIds, $hasConsent)
         );
 
@@ -243,7 +244,7 @@ class SendAbandonedCartRemindersTest extends TestCase
         ]);
 
         $consentManager = $this->createMock(ConsentManager::class);
-        $consentManager->expects(self::once())->method('hasConsentForCustomers')->with([5], ConsentChannel::Email)->willReturn([5 => false]);
+        $consentManager->expects(self::once())->method('hasTopicConsentForCustomers')->with([5], ConsentChannel::Email, ConsentTopic::Promotional)->willReturn([5 => false]);
 
         // The fixed email path starts with quoteFactory->create()->load(...) - asserting it's
         // never called proves sendReminder() itself was skipped, without needing to mock every

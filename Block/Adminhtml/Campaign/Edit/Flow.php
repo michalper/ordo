@@ -27,6 +27,7 @@ use Ordo\Automation\Model\Config\Source\SegmentOptions;
 use Ordo\Automation\Model\Config\Source\TagMatchMode;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
 use Ordo\Automation\Model\Config\Source\WhatsAppTemplateOptions;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\ContentBlock;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as ConditionCollectionFactory;
@@ -229,6 +230,24 @@ class Flow extends Template
     public function getEmailTemplateOptions(): array
     {
         return $this->toMap($this->emailTemplateOptions);
+    }
+
+    /**
+     * ConsentTopic value => label, plus a leading empty option meaning "use the channel default
+     * (Promotional)" - a fixed 2-value enum, not DB-driven like the other option maps on this
+     * block, so inlined here rather than injecting a dedicated source-model dependency the way
+     * WhatsAppTemplateOptions/EmailTemplateOptions etc. are, the same reasoning
+     * use_optimal_send_time's own inline options above already applies.
+     *
+     * @return array<string, string>
+     */
+    private function getConsentTopicOptions(): array
+    {
+        return [
+            '' => (string) __('(Default: Promotional)'),
+            ConsentTopic::Promotional->value => (string) __('Promotional'),
+            ConsentTopic::AccountUpdates->value => (string) __('Account & Order Updates'),
+        ];
     }
 
     /**
@@ -440,6 +459,15 @@ class Flow extends Template
                             ),
                         ],
                     ],
+                    [
+                        'name' => 'topic',
+                        'label' => (string) __('Consent topic'),
+                        'options' => $this->getConsentTopicOptions(),
+                        'notice' => (string) __(
+                            'Which opt-out preference this send is checked against, beyond the'
+                            . ' customer\'s own per-channel consent. Defaults to Promotional if left blank.'
+                        ),
+                    ],
                 ],
                 'popup' => [
                     ['name' => 'headline', 'label' => (string) __('Popup headline')],
@@ -465,6 +493,15 @@ class Flow extends Template
                             . ' and, in the US, the TCPA.'
                         ),
                     ],
+                    [
+                        'name' => 'topic',
+                        'label' => (string) __('Consent topic'),
+                        'options' => $this->getConsentTopicOptions(),
+                        'notice' => (string) __(
+                            'Which opt-out preference this send is checked against, beyond the'
+                            . ' customer\'s own per-channel consent. Defaults to Promotional if left blank.'
+                        ),
+                    ],
                 ],
                 'send_whatsapp' => [
                     [
@@ -484,6 +521,15 @@ class Flow extends Template
                             . ' template body of "Hi {{1}}, your order {{2}} shipped": John,ORD-1234'
                         ),
                     ],
+                    [
+                        'name' => 'topic',
+                        'label' => (string) __('Consent topic'),
+                        'options' => $this->getConsentTopicOptions(),
+                        'notice' => (string) __(
+                            'Which opt-out preference this send is checked against, beyond the'
+                            . ' customer\'s own per-channel consent. Defaults to Promotional if left blank.'
+                        ),
+                    ],
                 ],
                 'send_push' => [
                     ['name' => 'title', 'label' => (string) __('Notification title')],
@@ -494,6 +540,15 @@ class Flow extends Template
                         'notice' => (string) __(
                             'Opened by push-sw.js\'s notificationclick handler when the browser'
                             . ' notification is clicked - defaults to "/" if left blank.'
+                        ),
+                    ],
+                    [
+                        'name' => 'topic',
+                        'label' => (string) __('Consent topic'),
+                        'options' => $this->getConsentTopicOptions(),
+                        'notice' => (string) __(
+                            'Which opt-out preference this send is checked against, beyond the'
+                            . ' customer\'s own per-channel consent. Defaults to Promotional if left blank.'
                         ),
                     ],
                 ],

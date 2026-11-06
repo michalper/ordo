@@ -79,17 +79,17 @@ class CampaignSaveProcessor
      */
     private const array ACTION_FIELDS_BY_TYPE = [
         'add_tag' => ['tags'],
-        'send_email' => ['template', 'message', 'use_optimal_send_time'],
+        'send_email' => ['template', 'message', 'use_optimal_send_time', 'topic'],
         'generate_coupon' => ['rule_id', 'prefix'],
         'popup' => ['headline', 'body', 'cta_label', 'cta_url'],
         'add_points' => ['points'],
         'add_product_recommendations' => ['count'],
         'add_dynamic_content' => ['content_block_id', 'output_key'],
-        'send_sms' => ['message'],
+        'send_sms' => ['message', 'topic'],
         'notify' => ['headline', 'body', 'cta_label', 'cta_url'],
         'nps_survey' => ['question'],
-        'send_whatsapp' => ['template_id', 'params'],
-        'send_push' => ['title', 'body', 'url'],
+        'send_whatsapp' => ['template_id', 'params', 'topic'],
+        'send_push' => ['title', 'body', 'url', 'topic'],
         'generate_ai_content' => ['prompt', 'output_key', 'fallback'],
         'split' => ['variants'],
     ];

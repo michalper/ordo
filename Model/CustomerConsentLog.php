@@ -18,6 +18,7 @@ class CustomerConsentLog extends AbstractModel
     public const ENTITY_ID = 'entity_id';
     public const CUSTOMER_ID = 'customer_id';
     public const CHANNEL = 'channel';
+    public const TOPIC = 'topic';
     public const CONSENTED = 'consented';
     public const SOURCE = 'source';
     public const CREATED_AT = 'created_at';
@@ -46,6 +47,22 @@ class CustomerConsentLog extends AbstractModel
     public function setChannel(string $channel): self
     {
         $this->setData(self::CHANNEL, $channel);
+        return $this;
+    }
+
+    /**
+     * Null means this log entry is a channel-level change (Model\ConsentManager::setConsent()) -
+     * only setTopicConsent() ever sets this.
+     */
+    public function getTopic(): ?string
+    {
+        $value = $this->getData(self::TOPIC);
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setTopic(?string $topic): self
+    {
+        $this->setData(self::TOPIC, $topic);
         return $this;
     }
 

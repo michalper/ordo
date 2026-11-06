@@ -596,6 +596,7 @@
             "entity_id": true,
             "customer_id": true,
             "channel": true,
+            "topic": true,
             "consented": true,
             "source": true,
             "created_at": true
@@ -1064,6 +1065,21 @@
         },
         "constraint": {
             "PRIMARY": true
+        }
+    },
+    "ordo_customer_consent_topic": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "channel": true,
+            "topic": true,
+            "consented": true,
+            "source": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_CUSTOMER_CONSENT_TOPIC_CUSTOMER_ID_CHANNEL_TOPIC": true
         }
     }
 }

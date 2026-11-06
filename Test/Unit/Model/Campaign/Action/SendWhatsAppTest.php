@@ -16,6 +16,7 @@ use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
 use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate as WhatsAppTemplateResource;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
 use Ordo\Automation\Model\WhatsApp\WhatsAppSender;
@@ -49,7 +50,7 @@ class SendWhatsAppTest extends TestCase
         $this->whatsAppTemplateResource = $this->createMock(WhatsAppTemplateResource::class);
         $this->messageLogWriter = $this->createMock(MessageLogWriter::class);
         $this->consentManager = $this->createStub(ConsentManager::class);
-        $this->consentManager->method('hasConsent')->willReturn(true);
+        $this->consentManager->method('hasTopicConsent')->willReturn(true);
         $this->quietHoursGate = $this->createStub(QuietHoursGate::class);
         $this->quietHoursGate->method('allows')->willReturn(true);
         $this->frequencyCapGate = $this->createStub(FrequencyCapGate::class);
@@ -264,8 +265,8 @@ class SendWhatsAppTest extends TestCase
         $this->stubApprovedTemplate();
         $this->customerRepository->method('getById')->willReturn($this->customerWithPhone('+15551234567'));
         $this->consentManager = $this->createMock(ConsentManager::class);
-        $this->consentManager->expects(self::once())->method('hasConsent')
-            ->with(42, ConsentChannel::WhatsApp)->willReturn(false);
+        $this->consentManager->expects(self::once())->method('hasTopicConsent')
+            ->with(42, ConsentChannel::WhatsApp, ConsentTopic::Promotional)->willReturn(false);
         $this->whatsAppSender->expects(self::never())->method('send');
         $this->logger->expects(self::once())->method('info');
         $this->messageLogWriter->expects(self::once())->method('recordOptedOut')

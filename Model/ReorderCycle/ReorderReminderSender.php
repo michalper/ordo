@@ -6,6 +6,7 @@ namespace Ordo\Automation\Model\ReorderCycle;
 use Magento\Customer\Api\Data\CustomerInterface;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\Cron\ReminderLogStore;
 use Ordo\Automation\Model\ReorderCycle;
@@ -52,7 +53,9 @@ class ReorderReminderSender
     {
         $customerId = (int) $customer->getId();
 
-        if (!$this->consentManager->hasConsent($customerId, ConsentChannel::Email)) {
+        // A reorder reminder is about the customer's own purchase pattern, not a marketing push -
+        // see ConsentTopic::AccountUpdates's own docblock.
+        if (!$this->consentManager->hasTopicConsent($customerId, ConsentChannel::Email, ConsentTopic::AccountUpdates)) {
             throw new OptedOutException(sprintf(
                 'Customer #%d has opted out of email; cannot send a reorder reminder.',
                 $customerId

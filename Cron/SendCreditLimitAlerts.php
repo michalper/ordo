@@ -7,6 +7,7 @@ use Magento\Customer\Api\Data\CustomerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\CreditLimitCalculator;
 use Ordo\Automation\Model\Cron\CronRunLogger;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
@@ -59,7 +60,13 @@ class SendCreditLimitAlerts
         $usedCreditByCustomer = $this->creditLimitCalculator->getUsedCreditForCustomers($customerIds);
         // One query for the whole batch instead of one hasConsent() call per customer inside the
         // loop below - found via a performance audit, same reasoning as getUsedCreditForCustomers().
-        $consentByCustomer = $this->consentManager->hasConsentForCustomers($customerIds, ConsentChannel::Email);
+        // AccountUpdates, not Promotional - a credit limit alert is about the customer's own
+        // account state, see ConsentTopic::AccountUpdates's own docblock.
+        $consentByCustomer = $this->consentManager->hasTopicConsentForCustomers(
+            $customerIds,
+            ConsentChannel::Email,
+            ConsentTopic::AccountUpdates
+        );
 
         foreach ($customerIds as $customerId) {
             if (!isset($customerMap[$customerId])) {

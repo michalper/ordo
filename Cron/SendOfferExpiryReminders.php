@@ -7,6 +7,7 @@ use Magento\Customer\Api\Data\CustomerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\Cron\CronRunLogger;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\Cron\ReminderLogStore;
@@ -67,7 +68,13 @@ class SendOfferExpiryReminders
         // One query for the whole batch instead of one hasConsent() call per offer inside the
         // loop below - found via a performance audit, same reasoning as
         // CreditLimitCalculator::getUsedCreditForCustomers().
-        $consentByCustomer = $this->consentManager->hasConsentForCustomers($customerIds, ConsentChannel::Email);
+        // Promotional - an expiring-offer nudge is fundamentally about driving a purchase, same
+        // bucket as win-back/abandoned-cart, see ConsentTopic::Promotional's own docblock.
+        $consentByCustomer = $this->consentManager->hasTopicConsentForCustomers(
+            $customerIds,
+            ConsentChannel::Email,
+            ConsentTopic::Promotional
+        );
 
         $sent = 0;
         foreach ($offers as $offer) {
