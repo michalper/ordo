@@ -9,6 +9,51 @@ it doesn't update itself from this file.
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-06
+
+### Added
+
+- **Per-topic consent granularity** (ROADMAP.md, GDPR follow-up) — new `Model\ConsentTopic`
+  (Promotional, AccountUpdates) and a second, orthogonal opt-out register
+  (`ordo_customer_consent_topic`), additive to the existing per-channel one —
+  `ConsentManager::hasTopicConsent()` is true only when both agree, so every existing
+  `hasConsent()` call site keeps working unchanged. The four `send_*` campaign actions gained an
+  optional `topic` param (defaults to Promotional), and the five existing reminder
+  crons/senders were switched onto the new topic-aware check (win-back/abandoned-cart/
+  offer-expiry → Promotional; credit-limit/reorder-reminders → Account & Order Updates), so a
+  customer who opts out of promotions still gets their credit-limit alerts. Managed from a new
+  "Topic preferences" card on the existing admin GDPR screen. See `docs/adr/0026`.
+
+### Changed
+
+- **Condition/action UI field metadata unified behind `getParamFields()`** — `ConditionInterface`/
+  `ActionInterface` now declare `getParamFields()`, implemented by every condition/action class,
+  replacing three independently hand-maintained field lists (`CampaignSaveProcessor`,
+  `SegmentSaveProcessor`, and the campaign Flow canvas) that had already drifted out of sync with
+  each other. As a side effect, 9 condition/action types that silently had no dedicated canvas
+  field before (`clv_at_least`, `purchased_sku`, `purchased_category`, the three percentile
+  conditions, `notify`, `nps_survey`, `add_product_recommendations`) now render one.
+- **`SegmentMemberResolver`'s 19-arm type switch replaced with `ConditionPool` dispatch** — each
+  resolvable condition type now implements `resolveCustomerIds()` on its own class instead of a
+  private method on the resolver; the RFM/reorder-cycle batch-snapshot cache moved with it onto
+  the calculator classes themselves, so a multi-segment batch resolve still only queries the
+  whole customer base once per calculator, not once per condition.
+- Deduplicated the `getEntityId()`/`getName()`/`isEnabled()` boilerplate repeated across ~13
+  model classes into two shared traits.
+
+### Fixed
+
+- **IDOR on free-gift carts** — an authenticated customer could pass an arbitrary `cartId`
+  belonging to an unrelated, orphaned guest quote and the ownership check no-opped; now holds
+  every authenticated caller to a strict match, while genuinely anonymous (guest-checkout)
+  callers are still waved through unconditionally, unchanged.
+- **Twilio webhook signature verification failed open** when no Auth Token was configured yet —
+  `Controller\Sms\Reply`/`StatusCallback` now reject outright (403) before ever constructing the
+  signature validator.
+- **Push-subscription unregister had no ownership check** — any caller could unregister any
+  endpoint; now requires the caller's own resolved identity to match the subscription, like every
+  sibling `Track` endpoint already does.
+
 ## [1.4.0] - 2026-11-06
 
 ### Added
