@@ -34,7 +34,9 @@
         <amOnPage url="checkout/cart" stepKey="goToCart"/>
         <waitForPageLoad stepKey="waitForCartPage"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainDispatchQueue"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="drainDispatchQueue">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 2: force RecomputeRfmScores to run now (real schedule 01:00 daily, see
              etc/crontab.xml, which a CI run can't wait out) - this customer's real row now

@@ -68,7 +68,9 @@
         <!-- Step 4: run the real visitor-aggregation consumer - this is where
              VisitorAggregator::aggregateForCustomer() actually counts all 3 now-customer_id-tagged
              rows and, only because the count reaches 3, calls CustomerTagManager::addTag(). -->
-        <magentoCLI command="queue:consumers:start ordo.automation.visitor.aggregate --max-messages=50" stepKey="runVisitorAggregationConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runVisitorAggregationConsumer">
+            <argument name="topic">ordo.automation.visitor.aggregate</argument>
+        </helper>
 
         <!-- Step 5: the actual proof - the real ordo_customer_tag row, keyed to the customer this
              module attributed the anonymous browsing to, which could only exist if the two

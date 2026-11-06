@@ -62,7 +62,9 @@
         <waitForPageLoad stepKey="waitForCartPage"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
 
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 3: same wait/reasoning as AdminCampaignPopupActionTest.xml's identical step —
              deliberately staying on the checkout success page, letting its own tracker.js poll

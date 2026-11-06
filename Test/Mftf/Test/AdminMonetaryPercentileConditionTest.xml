@@ -51,7 +51,9 @@
         <amOnPage url="checkout/cart" stepKey="goToCart1"/>
         <waitForPageLoad stepKey="waitForCartPage1"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeFirstOrder"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainDispatchQueueAfterFirstOrder"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="drainDispatchQueueAfterFirstOrder">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <helper class="\Ordo\Automation\Test\Mftf\Helper\CronScheduleHelper" method="scheduleJobNow" stepKey="scheduleRecomputeRfmScoresJob">
             <argument name="jobCode">ordo_automation_recompute_rfm_scores</argument>
@@ -75,7 +77,9 @@
              order-confirmation email as the "latest" one instead of this campaign's. Same
              reasoning/fix as AdminCampaignMultipleConditionsAndTest.xml's identical step. -->
         <wait time="2" stepKey="waitForOrder2DispatchMessageVisible"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainDispatchQueueAfterSecondOrder"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="drainDispatchQueueAfterSecondOrder">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seePercentileConditionCopyInEmail">
             <argument name="expectedText">Monetary percentile condition fired.</argument>

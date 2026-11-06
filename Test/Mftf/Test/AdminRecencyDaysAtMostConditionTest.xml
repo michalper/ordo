@@ -65,7 +65,9 @@
              order-confirmation email as the "latest" one instead of this campaign's. Same
              reasoning/fix as AdminCampaignMultipleConditionsAndTest.xml's identical step. -->
         <wait time="2" stepKey="waitForDispatchMessageVisible"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 3: the real, merchant-visible output only a genuinely-recent real order could
              have produced. -->

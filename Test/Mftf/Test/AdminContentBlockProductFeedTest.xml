@@ -106,7 +106,9 @@
         <waitForPageLoad stepKey="waitForCartPage"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
 
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 5: the actual proof — the real product's own name, which only
              AddDynamicContent -&gt; ProductFeedProducer -&gt; RuleProductLister validating it

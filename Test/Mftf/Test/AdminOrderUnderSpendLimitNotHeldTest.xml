@@ -83,6 +83,8 @@
              same class of bug AdminCampaignMultipleConditionsAndTest.xml's own over-ask comments
              already defend against from the receiving end. Draining here closes it at the
              source instead. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainCampaignDispatchQueue"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="drainCampaignDispatchQueue">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
     </test>
 </tests>

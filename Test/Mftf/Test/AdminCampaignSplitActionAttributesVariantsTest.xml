@@ -100,7 +100,9 @@
              the same deterministic variant computed above for real, and sends that variant's own
              synthetic send_email action. -->
         <wait time="2" stepKey="waitForDispatchMessagesVisible"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 6: the real proof - each recipient's real, MailHog-delivered email contains ONLY
              its own variant's distinctive wording, and ordo_message_log.variant records the

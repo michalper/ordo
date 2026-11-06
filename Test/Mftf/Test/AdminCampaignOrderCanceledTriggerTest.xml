@@ -63,7 +63,9 @@
              order_canceled campaign, which doesn't match order_placed), draining it now so it
              can't leak into a later test's own queue consumption, same reasoning as
              AdminOrderUnderSpendLimitNotHeldTest's own drain call. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainOrderPlacedDispatch"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="drainOrderPlacedDispatch">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 3: cancel the REAL order through the REAL admin order view page - the same path
              the admin "Cancel" button and OrderManagement::cancel() both use, and the one that
@@ -76,7 +78,9 @@
 
         <!-- Step 4: this install has no RabbitMQ (DB queue driver only - see AGENTS.md), so
              nothing consumes the order_canceled dispatch message until a consumer actually runs. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 5: the real Funnel widget on the campaign edit page - sent=1 proves
              DispatchOrderCanceledCampaigns really published, the real consumer really ran

@@ -148,7 +148,9 @@
              actually run (not just be queued) for order 2's tag condition to see it. max-messages
              over-asked (50, not 1 or 5) — mftf.yml sets consumers-wait-for-messages=0 so it's safe,
              per AGENTS.md's "MFTF w prawdziwym CI" section. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumerAfterOrder1"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumerAfterOrder1">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Confirmed via a real CI run to genuinely exist here — Campaign A's condition-less
              add_tag really does run within order 1's own dispatch, exactly as intended (B, the
@@ -188,7 +190,9 @@
         <waitForPageLoad stepKey="waitForCartPageOrder2"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeSecondOrder"/>
 
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumerAfterOrder2"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumerAfterOrder2">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 5: the positive half — the coupon that only Campaign B's AND (order_total_gte
              AND tag, both satisfied this time) could have produced. waitForText, not <see>, for

@@ -37,7 +37,9 @@
              reasoning as StorefrontTrackerClickThresholdTagsVisitorTest (tracker.js's automatic
              page_view on every load leaves plenty of unrelated messages queued ahead of ours in
              this same tracking-group CI job). -->
-        <magentoCLI command="queue:consumers:start ordo.automation.visitor.aggregate --max-messages=50" stepKey="runVisitorAggregationConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runVisitorAggregationConsumer">
+            <argument name="topic">ordo.automation.visitor.aggregate</argument>
+        </helper>
 
         <!-- Step 4: the real, DB-observable effect only a genuinely-crossed view threshold could
              have produced - VisitorAggregator::buildTag()'s 'viewed_<event_type>_<event_key>'

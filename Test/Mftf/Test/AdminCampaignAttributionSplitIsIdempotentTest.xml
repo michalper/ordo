@@ -53,7 +53,9 @@
         <waitForPageLoad stepKey="waitForCartPageFirstOrder"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeFirstOrder"/>
         <wait time="2" stepKey="waitForFirstDispatchMessageVisible"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 3: the real click - the only MFTF-reachable path to a real
              ordo_message_log_event 'clicked' row (see this test's own description). -->
@@ -74,7 +76,9 @@
         <waitForPageLoad stepKey="waitForCartPageSecondOrder"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeSecondOrder"/>
         <wait time="2" stepKey="waitForSecondDispatchMessageVisible"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumerAgain"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumerAgain">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 5: force Cron\ComputeCampaignAttribution to run now (real schedule is hourly -
              see etc/crontab.xml), then confirm the Campaign grid's real "Attributed revenue"

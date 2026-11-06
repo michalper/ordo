@@ -82,6 +82,8 @@
              test's real order publishes an order_placed dispatch message it never needed to
              drain for its own assertions, which would otherwise leak into a LATER test's queue
              drain and replay against whatever campaigns exist by then. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainCampaignDispatchQueue"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="drainCampaignDispatchQueue">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
     </test>
 </tests>

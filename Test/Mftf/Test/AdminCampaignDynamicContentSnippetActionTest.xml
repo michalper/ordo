@@ -127,7 +127,9 @@
              sibling test in the same CI job can leave an unrelated message ahead of ours in the
              queue, safe to over-ask since mftf.yml's consumers-wait-for-messages=0 returns as
              soon as the queue is actually empty. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 6: the actual proof — the snippet's own HTML content, which only
              AddDynamicContent -&gt; SnippetProducer -&gt; SendEmail's context forwarding ->

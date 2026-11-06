@@ -69,6 +69,8 @@
         <see selector=".message-success" userInput="has been approved" stepKey="seeApprovalSuccessMessage"/>
 
         <!-- Same reasoning as AdminApproveOrderViaEmailTest.xml's identical closing step. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainCampaignDispatchQueue"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="drainCampaignDispatchQueue">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
     </test>
 </tests>

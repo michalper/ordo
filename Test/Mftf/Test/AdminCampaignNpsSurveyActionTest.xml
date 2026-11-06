@@ -133,7 +133,9 @@
              under CI load, same reasoning as AdminCampaignMultipleConditionsAndTest.xml's
              identical step. -->
         <wait time="2" stepKey="waitForDispatchMessageVisible"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 5: the survey widget appears - same long wait reasoning as
              AdminCampaignPopupActionTest.xml (tracker.js's first poll tick fires after 2s, then
@@ -187,8 +189,12 @@
         <see selector=".message-success" userInput="Queued &quot;Add Tag&quot;" stepKey="seeQueuedMessage"/>
 
         <!-- Step 7: drain both queues in order, same reasoning as AdminCampaignTagAddedTriggerTest.xml. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.segment.bulk_action --max-messages=50" stepKey="runSegmentBulkActionConsumer"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runSecondCampaignDispatchConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runSegmentBulkActionConsumer">
+            <argument name="topic">ordo.automation.segment.bulk_action</argument>
+        </helper>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runSecondCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 8: the actual proof - a real ordo_customer_tag row that only Campaign B's
              nps_score_at_least condition, reading the real score=9 response Step 5 committed

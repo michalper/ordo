@@ -47,7 +47,9 @@
              picks it up and replays it against whatever campaigns exist by then. Same stale-
              message-leak class of bug AdminOrderUnderSpendLimitNotHeldTest.xml's own identical
              comment documents fixing. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainCampaignDispatchQueue"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="drainCampaignDispatchQueue">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 2: the RFM report grid. -->
         <amOnPage url="admin/ordo/rfm/index" stepKey="goToRfmReportGrid"/>

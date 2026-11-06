@@ -53,7 +53,9 @@
         <waitForPageLoad stepKey="waitForCartPageFirstOrder"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeFirstOrder"/>
         <wait time="2" stepKey="waitForFirstDispatchMessageVisible"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 3: order #2 - a genuinely SEPARATE, real order from the same customer.
              Observer\RecordCampaignOutcome fires on this real sales_order_place_after and marks
@@ -69,7 +71,9 @@
         <waitForPageLoad stepKey="waitForCartPageSecondOrder"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeSecondOrder"/>
         <wait time="2" stepKey="waitForSecondDispatchMessageVisible"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumerAgain"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumerAgain">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 4: the real Funnel widget on the campaign edit page - sent/converted/
              conversion-rate/revenue all reflect the real sends + real conversion above, not just

@@ -66,7 +66,9 @@
              messages (safe: consumers-wait-for-messages=0, see AGENTS.md) — there should be
              exactly one order_placed dispatch message from this order, and the consumer should
              return once the queue is drained rather than blocking for more. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 4: assert the coupon that a disabled campaign's generate_coupon action would
              have produced does NOT exist. Same grid as the end-to-end test, same coupon-code

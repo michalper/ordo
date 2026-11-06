@@ -93,7 +93,9 @@
         <actionGroup ref="StorefrontCustomerLogoutActionGroup" stepKey="logoutVariantBCustomer"/>
 
         <wait time="2" stepKey="waitForDispatchMessagesVisible"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 4: the real proof - two SEPARATE rows, not one aggregate row: a naive query
              grouping only by campaign_id (not campaign_id+variant) would still render a table,

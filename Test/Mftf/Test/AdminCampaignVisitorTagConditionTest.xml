@@ -77,7 +77,9 @@
              load in every test in this same tracking-group CI job, and nothing else in the suite
              reliably drains this queue first. Safe to over-ask — mftf.yml sets
              consumers-wait-for-messages=0. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.visitor.aggregate --max-messages=50" stepKey="runVisitorAggregationConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runVisitorAggregationConsumer">
+            <argument name="topic">ordo.automation.visitor.aggregate</argument>
+        </helper>
 
         <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertVisitorTagAdded" stepKey="assertClickTagAdded">
             <argument name="visitorId">{$grabVisitorId}</argument>
@@ -94,7 +96,9 @@
              actually runs against the real ordo_visitor_tag row and ShowPopup::execute() actually
              queues the real ordo_pending_popup row targeted at visitor_id (no customer_id at all
              in this context). -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 5: the same anonymous browser (same ordo_visitor_id cookie), a fresh page load so
              tracker.js starts a poll loop that begins AFTER the pending popup row above exists.

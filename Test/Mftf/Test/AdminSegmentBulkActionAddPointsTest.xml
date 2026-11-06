@@ -91,7 +91,9 @@
 
         <!-- Step 5: same DB-queue-driver drain as AdminSegmentBulkActionAddTagTest.xml's identical
              step, over-asking max-messages for the same reason. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.segment.bulk_action --max-messages=50" stepKey="runSegmentBulkActionConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runSegmentBulkActionConsumer">
+            <argument name="topic">ordo.automation.segment.bulk_action</argument>
+        </helper>
 
         <!-- Step 6: the real, database-observable side effect — an ordo_customer_score row that
              only SegmentBulkActionConsumer's add_points branch, run via the full

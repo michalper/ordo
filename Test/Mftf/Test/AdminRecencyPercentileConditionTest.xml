@@ -62,7 +62,9 @@
         <amOnPage url="checkout/cart" stepKey="goToCart1"/>
         <waitForPageLoad stepKey="waitForCartPage1"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeFirstOrder"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainDispatchQueueAfterFirstOrder"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="drainDispatchQueueAfterFirstOrder">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 3: force RecomputeRfmScores to run now (real schedule 01:00 daily, see
              etc/crontab.xml, which a CI run can't wait out) - this both replaces the poison row
@@ -93,7 +95,9 @@
              order-confirmation email as the "latest" one instead of this campaign's. Same
              reasoning/fix as AdminCampaignMultipleConditionsAndTest.xml's identical step. -->
         <wait time="2" stepKey="waitForOrder2DispatchMessageVisible"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainDispatchQueueAfterSecondOrder"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="drainDispatchQueueAfterSecondOrder">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 5: the real, merchant-visible output only a genuinely-precomputed,
              genuinely-found percentile rank could have produced. -->

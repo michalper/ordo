@@ -89,7 +89,9 @@
              matched to the same order_placed trigger_event and run inside this one dispatch()
              call. max-messages=50 to safely drain any stale message left by another test in
              this same CI job. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 5: the actual proof - a real ordo_customer_tag row that only Campaign B's
              loyalty_tier_at_least condition, reading the real ordo_customer_score row Campaign

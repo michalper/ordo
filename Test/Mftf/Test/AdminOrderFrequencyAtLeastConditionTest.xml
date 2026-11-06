@@ -54,7 +54,9 @@
         <amOnPage url="checkout/cart" stepKey="goToCart1"/>
         <waitForPageLoad stepKey="waitForCartPage1"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeFirstOrder"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainDispatchQueueAfterFirstOrder"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="drainDispatchQueueAfterFirstOrder">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 3: SECOND real order - frequency is now 2, condition satisfied. -->
         <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage2"/>
@@ -74,7 +76,9 @@
              order-confirmation email as the "latest" one instead of this campaign's. Same
              reasoning/fix as AdminCampaignMultipleConditionsAndTest.xml's identical step. -->
         <wait time="2" stepKey="waitForOrder2DispatchMessageVisible"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainDispatchQueueAfterSecondOrder"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="drainDispatchQueueAfterSecondOrder">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 4: the real, merchant-visible output only a genuine second order could have
              produced. -->

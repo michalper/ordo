@@ -64,7 +64,9 @@
         <waitForPageLoad stepKey="waitForCartPageFirstOrder"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeFirstOrder"/>
         <wait time="2" stepKey="waitForFirstDispatchMessageVisible"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumerAfterFirstOrder"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumerAfterFirstOrder">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <helper class="\Ordo\Automation\Test\Mftf\Helper\CampaignActionCorruptorHelper" method="assertNoMessageSendRetryForActionType" stepKey="assertNoRetryRowWhileDisabled">
             <argument name="actionType">send_webhook</argument>
@@ -83,7 +85,9 @@
         <waitForPageLoad stepKey="waitForCartPageSecondOrder"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeSecondOrder"/>
         <wait time="2" stepKey="waitForSecondDispatchMessageVisible"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumerAfterSecondOrder"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumerAfterSecondOrder">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 4: fix the Outbound URL to this store's own real /ordo/webhook/receive - the
              Outbound and Inbound secrets are already the same value, so the self-signed call

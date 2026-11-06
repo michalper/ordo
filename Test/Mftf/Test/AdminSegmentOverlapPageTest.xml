@@ -40,7 +40,9 @@
         <actionGroup ref="SignUpNewUserFromStorefrontActionGroup" stepKey="registerCustomerOne">
             <argument name="Customer" value="CustomerEntityOne"/>
         </actionGroup>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainQueueAfterCustomerOne"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="drainQueueAfterCustomerOne">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 3: Campaign "B" - customer_registered, no condition, add_tag=overlap_b. Both
              campaigns are enabled from here on. -->
@@ -67,7 +69,9 @@
         <actionGroup ref="SignUpNewUserFromStorefrontActionGroup" stepKey="registerCustomerTwo">
             <argument name="Customer" value="OrdoOverlapCustomerTwo"/>
         </actionGroup>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="drainQueueAfterCustomerTwo"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="drainQueueAfterCustomerTwo">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 5: disable both campaigns immediately - they're unconditional on
              customer_registered, so leaving them enabled would tag every later test's own

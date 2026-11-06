@@ -67,7 +67,9 @@
         <!-- Step 3: see AdminCampaignPopupActionTest.xml's own note on why this is 50, not 1 —
              other tests in this same "tracking" group's CI job can leave their own unrelated
              order-placed dispatch message sitting unconsumed ahead of ours. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 4: the notification banner appears - same explicit long wait as
              AdminCampaignPopupActionTest.xml, for the same reason (tracker.js's poll loop only

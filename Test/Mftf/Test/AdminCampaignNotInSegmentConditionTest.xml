@@ -74,7 +74,9 @@
         <amOnPage url="checkout/cart" stepKey="goToCartOrder1"/>
         <waitForPageLoad stepKey="waitForCartPageOrder1"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeFirstOrder"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumerAfterOrder1"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumerAfterOrder1">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 4: tag the customer directly via this module's own REST API, entirely outside
              the campaign engine - deterministic, no dispatch-ordering ambiguity. Authenticates
@@ -102,7 +104,9 @@
         <amOnPage url="checkout/cart" stepKey="goToCartOrder2"/>
         <waitForPageLoad stepKey="waitForCartPageOrder2"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeSecondOrder"/>
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumerAfterOrder2"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumerAfterOrder2">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 5: the real proof - exactly ONE coupon exists (from order 1), not zero (proving
              not_in_segment isn't just always failing closed) and not two (proving it correctly

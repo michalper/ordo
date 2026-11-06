@@ -69,7 +69,9 @@
              Safe to over-ask: the workflow sets consumers-wait-for-messages=0, so the consumer
              returns as soon as the queue is empty instead of blocking - see mftf.yml's install
              step and AGENTS.md's "MFTF w prawdziwym CI" section for why. -->
-        <magentoCLI command="queue:consumers:start ordo.automation.campaign.dispatch --max-messages=50" stepKey="runCampaignDispatchConsumer"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
 
         <!-- Step 4: the only assertion that checks a real, DB-observable side effect - an
              ordo_customer_tag row that only the real customer_register_success ->
