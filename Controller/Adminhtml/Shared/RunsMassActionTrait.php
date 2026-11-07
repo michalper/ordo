@@ -26,7 +26,7 @@ trait RunsMassActionTrait
             try {
                 $this->applyToEntity($entity);
                 $count++;
-            } catch (\Throwable $e) {
+            } catch (\Throwable) {
                 // Same catch-and-continue shape as the sibling DeletesEntityTrait - one row
                 // throwing (an FK constraint, a repository's CouldNotDeleteException because
                 // that row has a dependent record) must not silently abort every other selected
