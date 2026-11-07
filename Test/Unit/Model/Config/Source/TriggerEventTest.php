@@ -30,6 +30,7 @@ class TriggerEventTest extends TestCase
                 CampaignTriggerInterface::TRIGGER_BACK_IN_STOCK,
                 CampaignTriggerInterface::TRIGGER_REVIEW_REQUEST_DUE,
                 CampaignTriggerInterface::TRIGGER_REFERRAL_CONVERTED,
+                CampaignTriggerInterface::TRIGGER_CUSTOMER_INACTIVE,
             ],
             $values
         );

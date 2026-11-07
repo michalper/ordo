@@ -35,15 +35,17 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Website\CollectionFactory as Ca
 class CampaignSaveProcessor
 {
     /**
-     * Model\Campaign\ScheduledTriggerScanner is the only reader of either of these - every other
-     * trigger type has no params of its own. Triggers have no extensible Pool the way
-     * conditions/actions do (ConditionPool/ActionPool) - just these two fixed types - so this
-     * stays its own small hardcoded map rather than a ConditionInterface-style getParamFields()
-     * method on a one-off TriggerInterface nothing else would ever implement.
+     * Model\Campaign\ScheduledTriggerScanner reads the first two, Cron\
+     * DispatchCustomerInactiveCampaigns reads the third - every other trigger type has no params
+     * of its own. Triggers have no extensible Pool the way conditions/actions do
+     * (ConditionPool/ActionPool) - just these three fixed types - so this stays its own small
+     * hardcoded map rather than a ConditionInterface-style getParamFields() method on a one-off
+     * TriggerInterface nothing else would ever implement.
      */
     private const array TRIGGER_FIELDS_BY_TYPE = [
         'scheduled_at' => ['scheduled_at'],
         'recurring_schedule' => ['cron_expression'],
+        'customer_inactive' => ['days'],
     ];
 
     public function __construct(
