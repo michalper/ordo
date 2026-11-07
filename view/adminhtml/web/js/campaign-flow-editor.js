@@ -282,11 +282,28 @@ define([
     }
 
     /**
+     * $('<div>').text(raw).html() (this function's own previous implementation, and still the
+     * pattern several call sites below used inline instead of calling this) only escapes
+     * `<`/`>`/`&` - exactly what's needed for plain element CONTENT, but NOT `"`, which every
+     * caller embedding the result into a double-quoted HTML attribute (most of them) also needs.
+     * That gap stayed invisible as long as every escaped value was ordinary text unlikely to
+     * contain a literal `"` - until the tag_multiselect field type (below) started escaping
+     * JSON.stringify() output for a `value="..."` attribute, which always contains one: the
+     * unescaped `"` right after the opening `[` closed the attribute early, truncating the
+     * browser's parsed value to just `[` (caught by AdminCreateCampaignWithConditionsAndActionsTest
+     * on reload - a `"`-free tag like "vip" doesn't need the embedded quote to reproduce this;
+     * JSON.stringify's own surrounding quotes around the array are enough on their own).
+     *
      * @param {String} raw
      * @return {String}
      */
     function escapeHtml(raw) {
-        return $('<div>').text(raw).html();
+        return String(raw)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     /**
@@ -631,13 +648,13 @@ define([
                 // a live query (e.g. CampaignOptions) legitimately returns none yet on a fresh
                 // install - with no placeholder, a 0-option <select> renders as an unlabeled,
                 // unusably tiny empty box, indistinguishable from broken.
-                var html = '<option value="">' + $('<div>').text($t('-- Please Select --')).html() + '</option>';
+                var html = '<option value="">' + escapeHtml($t('-- Please Select --')) + '</option>';
 
                 Object.keys(field.options).forEach(function (optionValue) {
                     var selectedAttr = String(value) === String(optionValue) ? ' selected="selected"' : '';
 
-                    html += '<option value="' + $('<div>').text(optionValue).html() + '"' + selectedAttr + '>' +
-                        $('<div>').text(field.options[optionValue]).html() + '</option>';
+                    html += '<option value="' + escapeHtml(optionValue) + '"' + selectedAttr + '>' +
+                        escapeHtml(field.options[optionValue]) + '</option>';
                 });
 
                 return html;
@@ -679,7 +696,7 @@ define([
                                 field.name + '"></div>';
                             if (field.notice) {
                                 html += '<span class="ordo-flow-field-notice">' +
-                                    $('<div>').text(field.notice).html() + '</span>';
+                                    escapeHtml(field.notice) + '</span>';
                             }
                             return;
                         }
@@ -693,10 +710,10 @@ define([
                         if (field.type === 'tag_multiselect') {
                             html += '<div class="ordo-flow-tag-editor" data-tag-editor="' + field.name + '"></div>' +
                                 '<input type="hidden" class="ordo-flow-field-input" data-field="' + field.name +
-                                '" value="' + $('<div>').text(JSON.stringify(params?.[field.name] || [])).html() + '">';
+                                '" value="' + escapeHtml(JSON.stringify(params?.[field.name] || [])) + '">';
                             if (field.notice) {
                                 html += '<span class="ordo-flow-field-notice">' +
-                                    $('<div>').text(field.notice).html() + '</span>';
+                                    escapeHtml(field.notice) + '</span>';
                             }
                             return;
                         }
@@ -713,7 +730,7 @@ define([
                                 '</select>';
                         } else {
                             html += '<input type="text" class="ordo-flow-field-input" data-field="' + field.name + '" value="' +
-                                $('<div>').text(value).html() + '">';
+                                escapeHtml(value) + '">';
                         }
 
                         // A field descriptor carrying a "notice" string (e.g. send_sms's TCPA/
@@ -721,7 +738,7 @@ define([
                         // action type's field descriptors have no "notice" key today, so this is
                         // purely additive, not a behavior change for them.
                         if (field.notice) {
-                            html += '<span class="ordo-flow-field-notice">' + $('<div>').text(field.notice).html() + '</span>';
+                            html += '<span class="ordo-flow-field-notice">' + escapeHtml(field.notice) + '</span>';
                         }
                     });
                 } else if (kind !== 'trigger') {
@@ -732,7 +749,7 @@ define([
                     html += '<label class="ordo-flow-field-label">' +
                         escapeHtml($t('Params (JSON) — advanced, no dedicated fields for this type')) + '</label>' +
                         '<textarea class="ordo-flow-params-textarea" data-field="params_json">' +
-                        $('<div>').text(Object.keys(params ?? {}).length ? JSON.stringify(params) : '').html() +
+                        escapeHtml(Object.keys(params ?? {}).length ? JSON.stringify(params) : '') +
                         '</textarea>';
                 }
 
