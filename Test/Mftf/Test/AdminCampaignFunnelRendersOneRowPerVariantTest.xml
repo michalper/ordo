@@ -18,6 +18,27 @@
             <createData entity="Simple_US_Customer" stepKey="createCustomer4"/>
             <createData entity="Simple_US_Customer" stepKey="createCustomer5"/>
             <createData entity="Simple_US_Customer" stepKey="createCustomer6"/>
+            <!-- ADR 0027: send_email's default topic (Promotional) now requires an explicit
+                 opt-in - every one of these six customers is a real send candidate (split-test
+                 variant), so every one needs it, or its send would be silently skipped. -->
+            <helper class="\Ordo\Automation\Test\Mftf\Helper\GdprTestHelper" method="grantPromotionalConsent" stepKey="grantPromotionalConsent1">
+                <argument name="customerId">$createCustomer1.id$</argument>
+            </helper>
+            <helper class="\Ordo\Automation\Test\Mftf\Helper\GdprTestHelper" method="grantPromotionalConsent" stepKey="grantPromotionalConsent2">
+                <argument name="customerId">$createCustomer2.id$</argument>
+            </helper>
+            <helper class="\Ordo\Automation\Test\Mftf\Helper\GdprTestHelper" method="grantPromotionalConsent" stepKey="grantPromotionalConsent3">
+                <argument name="customerId">$createCustomer3.id$</argument>
+            </helper>
+            <helper class="\Ordo\Automation\Test\Mftf\Helper\GdprTestHelper" method="grantPromotionalConsent" stepKey="grantPromotionalConsent4">
+                <argument name="customerId">$createCustomer4.id$</argument>
+            </helper>
+            <helper class="\Ordo\Automation\Test\Mftf\Helper\GdprTestHelper" method="grantPromotionalConsent" stepKey="grantPromotionalConsent5">
+                <argument name="customerId">$createCustomer5.id$</argument>
+            </helper>
+            <helper class="\Ordo\Automation\Test\Mftf\Helper\GdprTestHelper" method="grantPromotionalConsent" stepKey="grantPromotionalConsent6">
+                <argument name="customerId">$createCustomer6.id$</argument>
+            </helper>
             <createData entity="SimpleProduct2" stepKey="createProduct"/>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>

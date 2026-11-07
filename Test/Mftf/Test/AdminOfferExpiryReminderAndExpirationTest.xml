@@ -13,6 +13,12 @@
         </annotations>
         <before>
             <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <!-- ADR 0027: send_email's default topic (Promotional) now requires an explicit
+                 opt-in - no row means NOT consented, so this scenario's campaign send would
+                 otherwise be silently skipped. -->
+            <helper class="\Ordo\Automation\Test\Mftf\Helper\GdprTestHelper" method="grantPromotionalConsent" stepKey="grantPromotionalConsent">
+                <argument name="customerId">$createCustomer.id$</argument>
+            </helper>
             <!-- Off by default (Helper/Config.php's isSetFlag-backed getter) and the lead time is
                  cut from the real default (2 days) to 0, so "expires today" is what the exact-match
                  addExpiringOnFilter() needs. Both restored in <after> so they don't linger for
