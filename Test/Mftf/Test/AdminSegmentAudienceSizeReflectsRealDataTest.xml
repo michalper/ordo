@@ -49,6 +49,7 @@
         <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addSegmentConditionRow"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForSegmentConditionRow"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="tag" stepKey="selectSegmentConditionType"/>
+        <waitForElementVisible selector="[name='conditions[conditions][0][tags]']" stepKey="waitForSegmentTagField"/>
         <fillField selector="[name='conditions[conditions][0][tags]']" userInput='["vip_audience_test"]' stepKey="fillSegmentConditionParams"/>
 
         <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueSegment"/>
