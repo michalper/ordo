@@ -9,6 +9,24 @@ it doesn't update itself from this file.
 
 ## [Unreleased]
 
+### Changed
+
+- **The `Promotional` consent topic now defaults to opt-in, not opt-out** — a customer with no
+  explicit `ordo_customer_consent_topic` row is no longer treated as consented for marketing
+  sends (win-back, abandoned cart, offer expiry, and any admin-built campaign send whose topic is
+  `Promotional` or unset). `AccountUpdates` is unchanged. This silently stops those sends for
+  every existing customer until an admin explicitly opts them back in via the GDPR/Consent
+  screen — see `docs/adr/0027`.
+
+### Fixed
+
+- **`CampaignSaveProcessor`/`SegmentSaveProcessor`/`RfmCalculator` now wrap their multi-statement
+  save/rebuild sequences in a DB transaction** — a failure partway through could previously leave
+  a campaign/segment partially saved, or the RFM score table empty/half-rebuilt.
+- **Closed a DNS-rebinding gap in the RSS content-block fetcher's SSRF check** — a feed hostname
+  is now resolved once, every candidate address validated, and the real connection pinned to that
+  validated address, instead of trusting a second, independent DNS lookup at request time.
+
 ## [1.5.1] - 2026-11-07
 
 ### Fixed

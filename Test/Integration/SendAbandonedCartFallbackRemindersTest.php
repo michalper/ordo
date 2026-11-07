@@ -22,6 +22,9 @@ use Ordo\Automation\Cron\SendAbandonedCartFallbackReminders;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign\Action\SendSms;
 use Ordo\Automation\Model\Campaign\Action\SendWhatsApp;
+use Ordo\Automation\Model\ConsentChannel;
+use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Setup\Patch\Data\AddCustomerSmsPhoneAttribute;
 use Ordo\Automation\Test\Integration\Fixture\RecordingTwilioSmsSender;
 use PHPUnit\Framework\TestCase;
@@ -220,6 +223,12 @@ class SendAbandonedCartFallbackRemindersTest extends TestCase
         $saved->setCustomAttribute(AddCustomerSmsPhoneAttribute::ATTRIBUTE_CODE, '+15551234567');
         $customerRepository->save($saved);
         self::$objectManager->get(CustomerRegistry::class)->remove($this->customerId);
+
+        // SendSms::execute() below is called with no 'topic' param, so it defaults to
+        // ConsentTopic::Promotional, which (per ADR 0027) requires an explicit opt-in - see the
+        // same note in CampaignSendSmsActionTest.
+        self::$objectManager->get(ConsentManager::class)
+            ->setTopicConsent($this->customerId, ConsentChannel::Sms, ConsentTopic::Promotional, true, 'test-fixture');
     }
 
     private function createCartForCustomer(): void

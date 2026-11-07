@@ -149,7 +149,11 @@ class IndexTest extends TestCase
         self::assertSame('https://example.com/admin/ordo/gdpr/erase/', $this->block->getEraseFormAction());
     }
 
-    public function testGetTopicConsentStatesDefaultsToTrueAndCoversEveryMessageChannelButNotAds(): void
+    /**
+     * Per ADR 0027, "no row" does not mean the same thing for every topic - AccountUpdates still
+     * defaults to true (ADR 0026's original uniform default), Promotional now defaults to false.
+     */
+    public function testGetTopicConsentStatesUsesEachTopicsOwnDefaultAndCoversEveryMessageChannelButNotAds(): void
     {
         $this->registry->method('registry')->willReturnMap([['ordo_gdpr_customer_id', 42]]);
         $this->consentManager->method('getTopicConsentStates')->willReturn([]);
@@ -166,25 +170,25 @@ class IndexTest extends TestCase
             array_keys($states)
         );
         self::assertSame(
-            [ConsentTopic::Promotional->value => true, ConsentTopic::AccountUpdates->value => true],
+            [ConsentTopic::Promotional->value => false, ConsentTopic::AccountUpdates->value => true],
             $states[ConsentChannel::Email->value]
         );
     }
 
-    public function testGetTopicConsentStatesReflectsRecordedOptOut(): void
+    public function testGetTopicConsentStatesReflectsRecordedOptIn(): void
     {
         $this->registry->method('registry')->willReturnMap([['ordo_gdpr_customer_id', 42]]);
         $this->consentManager->method('getTopicConsentStates')->willReturnCallback(
             fn (int $customerId, ConsentChannel $channel) => $channel === ConsentChannel::Email
-                ? [ConsentTopic::Promotional->value => false]
+                ? [ConsentTopic::Promotional->value => true]
                 : []
         );
 
         $states = $this->block->getTopicConsentStates();
 
-        self::assertFalse($states[ConsentChannel::Email->value][ConsentTopic::Promotional->value]);
+        self::assertTrue($states[ConsentChannel::Email->value][ConsentTopic::Promotional->value]);
         self::assertTrue($states[ConsentChannel::Email->value][ConsentTopic::AccountUpdates->value]);
-        self::assertTrue($states[ConsentChannel::Sms->value][ConsentTopic::Promotional->value]);
+        self::assertFalse($states[ConsentChannel::Sms->value][ConsentTopic::Promotional->value]);
     }
 
     public function testGetSetTopicConsentFormActionBuildsSetTopicConsentUrl(): void

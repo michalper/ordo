@@ -6,6 +6,9 @@ namespace Ordo\Automation\Test\Integration;
 use Magento\Framework\App\Bootstrap;
 use Magento\Framework\ObjectManagerInterface;
 use Ordo\Automation\Model\Campaign\Action\SendSms;
+use Ordo\Automation\Model\ConsentChannel;
+use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Setup\Patch\Data\AddCustomerSmsPhoneAttribute;
 use Ordo\Automation\Test\Integration\Fixture\RecordingTwilioSmsSender;
 use PHPUnit\Framework\TestCase;
@@ -112,6 +115,12 @@ class CampaignSendSmsActionTest extends TestCase
         // via a real CI run that this was needed for the custom attribute to actually show up.
         self::$objectManager->get(\Magento\Customer\Model\CustomerRegistry::class)
             ->remove($this->customerId);
+
+        // No explicit 'topic' param below, so this send defaults to ConsentTopic::Promotional,
+        // which (per ADR 0027) requires an explicit opt-in - see the same note in
+        // CampaignSendEmailActionTest.
+        self::$objectManager->get(ConsentManager::class)
+            ->setTopicConsent($this->customerId, ConsentChannel::Sms, ConsentTopic::Promotional, true, 'test-fixture');
 
         $recordingSender = self::$objectManager->create(RecordingTwilioSmsSender::class);
 

@@ -14,9 +14,9 @@ namespace Ordo\Automation\Model;
  * Deliberately only two topics, not an open-ended admin-defined list: every existing
  * consent-gated send in this module (the five email reminder crons, the four send_* campaign
  * actions) maps cleanly onto one of these two, and a small, fixed enum is exactly what
- * ConsentManager::hasTopicConsent()'s own default-consented-unless-explicit-opt-out semantics
- * needs to stay simple - see that method's own call sites for how each existing sender was
- * classified.
+ * ConsentManager::hasTopicConsent()'s own per-topic default-consent semantics (see
+ * defaultsToConsented() below) needs to stay simple - see that method's own call sites for how
+ * each existing sender was classified.
  */
 enum ConsentTopic: string
 {
@@ -30,4 +30,25 @@ enum ConsentTopic: string
      *  confirmation, approval decisions) - those were never consent-gated at all, see
      *  Model\ConsentManager's own docblock. */
     case AccountUpdates = 'account_updates';
+
+    /**
+     * Whether a customer with no explicit ordo_customer_consent_topic row for this topic should
+     * be treated as consented by default. AccountUpdates keeps this module's original
+     * default-opt-out-register behavior (see ConsentManager's class docblock) - these are
+     * account/order-service notices, the same standard as transactional mail.
+     *
+     * Promotional does not: this is electronic marketing, and EU ePrivacy/PECR-style rules
+     * require an affirmative opt-in for that specifically, not merely an honored opt-out - "no
+     * explicit opt-out recorded" is not the same thing as "the customer actually agreed to
+     * receive marketing." See docs/adr/0027 for the decision and its consequences (in particular:
+     * this makes every existing customer with no row default to NOT consented for Promotional,
+     * a deliberate behavior change, not an oversight).
+     */
+    public function defaultsToConsented(): bool
+    {
+        return match ($this) {
+            self::Promotional => false,
+            self::AccountUpdates => true,
+        };
+    }
 }
