@@ -17,77 +17,76 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
-            <!-- Step 1: the campaign - trigger=order_placed, condition=monetary_total_at_least,
-                         reusing the "amount" field (same param key/shape as order_total_gte). -->
-                    <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
-                    <waitForPageLoad stepKey="waitForNewCampaignPage"/>
-                    <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
-                    <fillField selector="[name='name']" userInput="Monetary Total At Least Send Email Campaign" stepKey="fillName"/>
-
-                    <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
-                    <executeJS function="window.ordoFlowTestHook.buildChain([
-                        {kind: 'trigger', type: 'order_placed'},
-                        {kind: 'condition', type: 'monetary_total_at_least', fields: {amount: '100'}},
-                        {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'Monetary total condition fired.', delay_minutes: '0'}}
-                    ]);" stepKey="buildFlowGraph"/>
-
-                    <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
-                    <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
-                    <waitForPageLoad stepKey="waitForSave"/>
-                    <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
-                    <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
-
-                    <!-- Step 2: a REAL order (SimpleProduct2, 123.00) - comfortably clears the 100.00
-                         threshold via a real getMonetaryTotal() sum, not just the order's own total echoed
-                         back (which order_total_gte, a different condition, would do instead). -->
-                    <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
-                        <argument name="Customer" value="$$createCustomer$$"/>
-                    </actionGroup>
-                    <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
-                    <waitForPageLoad stepKey="waitForProductPage"/>
-                    <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
-                        <argument name="productName" value="$createProduct.name$"/>
-                    </actionGroup>
-                    <amOnPage url="checkout/cart" stepKey="goToCart"/>
-                    <waitForPageLoad stepKey="waitForCartPage"/>
-                    <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
-
-                    <!-- A brief settle wait before draining — defensive against a message-visibility race
-                         under CI load: sales_order_place_after's own publish() commits asynchronously
-                         relative to the checkout redirect this action group waits for, so a consumer that
-                         starts draining before that INSERT is visible would find an empty queue and exit
-                         (consumers-wait-for-messages=0) having dispatched nothing, silently leaving the
-                         order-confirmation email as the "latest" one instead of this campaign's. Same
-                         reasoning/fix as AdminCampaignMultipleConditionsAndTest.xml's identical step. -->
-                    <wait time="2" stepKey="waitForDispatchMessageVisible"/>
-                    <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
-                        <argument name="topic">ordo.automation.campaign.dispatch</argument>
-                    </helper>
-
-                    <!-- Step 3: the real, merchant-visible output only a genuine lifetime-spend read could
-                         have produced. -->
-                    <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seeMonetaryConditionCopyInEmail">
-                        <argument name="expectedText">Monetary total condition fired.</argument>
-                        <argument name="toAddress">$createCustomer.email$</argument>
-                    </helper>
-
-                    <!-- Cleanup: this campaign's order_placed trigger + monetary_total_at_least(100) condition
-                         is unconditionally satisfied by essentially any real order placed later in this same
-                         "segment" group's CI job (every SimpleProduct2 checkout clears 123.00 >= 100) - same
-                         root-caused leftover-campaign pollution AdminCampaignInSegmentConditionTest.xml's own
-                         cleanup comment describes. Left undeleted before, this queued a stray "Monetary total
-                         condition fired." email for every later test's own customer, which
-                         MailHogHelper::seeTextInLatestEmail (only ever checking the single latest message)
-                         could then read back instead of that other test's own expected copy. -->
-
-            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
-                <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
-                <argument name="successMessage" value="The campaign has been deleted."/>
-            </actionGroup>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
-</test>
+        <!-- Step 1: the campaign - trigger=order_placed, condition=monetary_total_at_least,
+             reusing the "amount" field (same param key/shape as order_total_gte). -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Monetary Total At Least Send Email Campaign" stepKey="fillName"/>
+
+        <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
+        <executeJS function="window.ordoFlowTestHook.buildChain([
+            {kind: 'trigger', type: 'order_placed'},
+            {kind: 'condition', type: 'monetary_total_at_least', fields: {amount: '100'}},
+            {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'Monetary total condition fired.', delay_minutes: '0'}}
+        ]);" stepKey="buildFlowGraph"/>
+
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
+
+        <!-- Step 2: a REAL order (SimpleProduct2, 123.00) - comfortably clears the 100.00
+             threshold via a real getMonetaryTotal() sum, not just the order's own total echoed
+             back (which order_total_gte, a different condition, would do instead). -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <!-- A brief settle wait before draining — defensive against a message-visibility race
+             under CI load: sales_order_place_after's own publish() commits asynchronously
+             relative to the checkout redirect this action group waits for, so a consumer that
+             starts draining before that INSERT is visible would find an empty queue and exit
+             (consumers-wait-for-messages=0) having dispatched nothing, silently leaving the
+             order-confirmation email as the "latest" one instead of this campaign's. Same
+             reasoning/fix as AdminCampaignMultipleConditionsAndTest.xml's identical step. -->
+        <wait time="2" stepKey="waitForDispatchMessageVisible"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
+
+        <!-- Step 3: the real, merchant-visible output only a genuine lifetime-spend read could
+             have produced. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seeMonetaryConditionCopyInEmail">
+            <argument name="expectedText">Monetary total condition fired.</argument>
+            <argument name="toAddress">$createCustomer.email$</argument>
+        </helper>
+
+        <!-- Cleanup: this campaign's order_placed trigger + monetary_total_at_least(100) condition
+             is unconditionally satisfied by essentially any real order placed later in this same
+             "segment" group's CI job (every SimpleProduct2 checkout clears 123.00 >= 100) - same
+             root-caused leftover-campaign pollution AdminCampaignInSegmentConditionTest.xml's own
+             cleanup comment describes. Left undeleted before, this queued a stray "Monetary total
+             condition fired." email for every later test's own customer, which
+             MailHogHelper::seeTextInLatestEmail (only ever checking the single latest message)
+             could then read back instead of that other test's own expected copy. -->
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
+    </test>
 </tests>

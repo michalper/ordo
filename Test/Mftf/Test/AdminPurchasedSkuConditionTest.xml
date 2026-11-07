@@ -17,69 +17,68 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
-            <!-- Step 1: the campaign - trigger=order_placed, condition=purchased_sku via the
-                         params_json fallback (see this test's own description). -->
-                    <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
-                    <waitForPageLoad stepKey="waitForNewCampaignPage"/>
-                    <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
-                    <fillField selector="[name='name']" userInput="Purchased SKU Send Email Campaign" stepKey="fillName"/>
-
-                    <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
-                    <executeJS function="window.ordoFlowTestHook.buildChain([
-                        {kind: 'trigger', type: 'order_placed'},
-                        {kind: 'condition', type: 'purchased_sku', fields: {params_json: '{&quot;sku&quot;:&quot;$createProduct.sku$&quot;}'}},
-                        {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'Purchased SKU condition fired.', delay_minutes: '0'}}
-                    ]);" stepKey="buildFlowGraph"/>
-
-                    <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
-                    <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
-                    <waitForPageLoad stepKey="waitForSave"/>
-                    <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
-                    <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
-
-                    <!-- Step 2: a REAL order for exactly this SKU - already committed to sales_order_item by
-                         the time order_placed dispatches, so no second order is needed. -->
-                    <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
-                        <argument name="Customer" value="$$createCustomer$$"/>
-                    </actionGroup>
-                    <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
-                    <waitForPageLoad stepKey="waitForProductPage"/>
-                    <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
-                        <argument name="productName" value="$createProduct.name$"/>
-                    </actionGroup>
-                    <amOnPage url="checkout/cart" stepKey="goToCart"/>
-                    <waitForPageLoad stepKey="waitForCartPage"/>
-                    <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
-
-                    <!-- A brief settle wait before draining — defensive against a message-visibility race
-                         under CI load, same reasoning/fix as AdminCampaignMultipleConditionsAndTest.xml's
-                         identical step. -->
-                    <wait time="2" stepKey="waitForDispatchMessageVisible"/>
-                    <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
-                        <argument name="topic">ordo.automation.campaign.dispatch</argument>
-                    </helper>
-
-                    <!-- Step 3: the real, merchant-visible output only a genuine SKU-purchase-history read
-                         could have produced. -->
-                    <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seePurchasedSkuConditionCopyInEmail">
-                        <argument name="expectedText">Purchased SKU condition fired.</argument>
-                        <argument name="toAddress">$createCustomer.email$</argument>
-                    </helper>
-
-                    <!-- Cleanup: this campaign's order_placed + purchased_sku(this fixture's own, unique
-                         per-run SKU) condition can only ever match an order for this exact SKU, which no
-                         other test in this suite places - unlike order_total_gte/monetary_total_at_least/
-                         clv_at_least's own cleanup, a stray leftover campaign here is harmless to later
-                         tests. Still deleted for grid hygiene, consistent with this suite's own convention. -->
-
-            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
-                <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
-                <argument name="successMessage" value="The campaign has been deleted."/>
-            </actionGroup>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
-</test>
+        <!-- Step 1: the campaign - trigger=order_placed, condition=purchased_sku via the
+             params_json fallback (see this test's own description). -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Purchased SKU Send Email Campaign" stepKey="fillName"/>
+
+        <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
+        <executeJS function="window.ordoFlowTestHook.buildChain([
+            {kind: 'trigger', type: 'order_placed'},
+            {kind: 'condition', type: 'purchased_sku', fields: {params_json: '{&quot;sku&quot;:&quot;$createProduct.sku$&quot;}'}},
+            {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'Purchased SKU condition fired.', delay_minutes: '0'}}
+        ]);" stepKey="buildFlowGraph"/>
+
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
+
+        <!-- Step 2: a REAL order for exactly this SKU - already committed to sales_order_item by
+             the time order_placed dispatches, so no second order is needed. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <!-- A brief settle wait before draining — defensive against a message-visibility race
+             under CI load, same reasoning/fix as AdminCampaignMultipleConditionsAndTest.xml's
+             identical step. -->
+        <wait time="2" stepKey="waitForDispatchMessageVisible"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
+
+        <!-- Step 3: the real, merchant-visible output only a genuine SKU-purchase-history read
+             could have produced. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seePurchasedSkuConditionCopyInEmail">
+            <argument name="expectedText">Purchased SKU condition fired.</argument>
+            <argument name="toAddress">$createCustomer.email$</argument>
+        </helper>
+
+        <!-- Cleanup: this campaign's order_placed + purchased_sku(this fixture's own, unique
+             per-run SKU) condition can only ever match an order for this exact SKU, which no
+             other test in this suite places - unlike order_total_gte/monetary_total_at_least/
+             clv_at_least's own cleanup, a stray leftover campaign here is harmless to later
+             tests. Still deleted for grid hygiene, consistent with this suite's own convention. -->
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
+    </test>
 </tests>

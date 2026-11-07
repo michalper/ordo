@@ -20,14 +20,6 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
-            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteScoreRuleNotEquals">
-                <argument name="url" value="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleIdNotEquals}"/>
-                <argument name="successMessage" value="The score rule has been deleted."/>
-            </actionGroup>
-            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteScoreRuleContains">
-                <argument name="url" value="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleIdContains}"/>
-                <argument name="successMessage" value="The score rule has been deleted."/>
-            </actionGroup>
             <magentoCLI command="config:set ordo_scoring/lead_scoring/enabled 0" stepKey="disableLeadScoring"/>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
@@ -83,5 +75,13 @@
              created for the rest of this same CI job. Both rules match essentially any real
              customer (not_equals 99, contains a fixture-standard email domain), making this
              cleanup even more important than the group_id=1-only rules elsewhere in this suite. -->
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteScoreRuleNotEquals">
+            <argument name="url" value="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleIdNotEquals}"/>
+            <argument name="successMessage" value="The score rule has been deleted."/>
+        </actionGroup>
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteScoreRuleContains">
+            <argument name="url" value="admin/ordo/scorerule/delete/entity_id/{$grabScoreRuleIdContains}"/>
+            <argument name="successMessage" value="The score rule has been deleted."/>
+        </actionGroup>
     </test>
 </tests>

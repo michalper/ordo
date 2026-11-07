@@ -18,10 +18,6 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
-            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteSegment">
-                <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabSegmentId}"/>
-                <argument name="successMessage" value="The segment has been deleted."/>
-            </actionGroup>
             <deleteData createDataKey="createCustomer1" stepKey="deleteCustomer1"/>
             <deleteData createDataKey="createCustomer2" stepKey="deleteCustomer2"/>
             <deleteData createDataKey="createCustomer3" stepKey="deleteCustomer3"/>
@@ -87,5 +83,10 @@
             <expectedResult type="string">|2|</expectedResult>
             <actualResult type="variable">grabGridRowCellsJoined</actualResult>
         </assertStringContainsString>
+
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteSegment">
+            <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabSegmentId}"/>
+            <argument name="successMessage" value="The segment has been deleted."/>
+        </actionGroup>
     </test>
 </tests>
