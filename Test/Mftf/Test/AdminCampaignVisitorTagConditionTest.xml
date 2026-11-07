@@ -50,6 +50,7 @@
         <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
         <waitForPageLoad stepKey="waitForSave"/>
         <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
 
         <!-- Step 2: establish a real anonymous visitor_id cookie and fire the click, same as
              StorefrontTrackerClickThresholdTagsVisitorTest — tracker.js issues ordo_visitor_id on
@@ -145,5 +146,15 @@
         <see selector="#ordo-popup-banner" userInput="Visitor tag popup body text" stepKey="seePopupBody"/>
         <seeElement selector="#ordo-popup-banner a[href='https://example.test/visitor-tag-popup']" stepKey="seePopupCtaLink"/>
         <see selector="#ordo-popup-banner a[href='https://example.test/visitor-tag-popup']" userInput="See the offer" stepKey="seePopupCtaLabel"/>
+
+        <!-- Cleanup: left alive, this campaign's visitor_tag_added trigger + visitor_tag
+             condition keeps matching the exact tag StorefrontTrackerClickThresholdTagsVisitorTest
+             and every other click-threshold test in this same "tracking" group's CI job also
+             produces, queuing an extra, unrelated popup for every one of them for the rest of the
+             run - same reasoning AdminCampaignPopupActionTest.xml's own closing step documents. -->
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
     </test>
 </tests>
