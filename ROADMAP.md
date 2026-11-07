@@ -389,3 +389,54 @@ coupon/channel/device/geography.
   (`/ordo/productfeed/index` → 200). Also added `CatalogFeedProductFetcherTest` (previously no
   dedicated test existed for the paging logic — it had only ever been exercised indirectly,
   duplicated across all three generators' own tests).
+
+**The four items below came out of a competitive feature-gap pass** (comparing Ordo's shipped
+surface against other marketing-automation tools' own public feature pages, then verifying each
+candidate gap against this codebase before listing it — most of what was found, Ordo already has:
+KPI dashboard, revenue/channel + product performance reports, cross-campaign comparison, cohort
+retention, 20+ segmentation condition types, the full set of lifecycle emails, email open/click
+tracking, and anomaly alerts are all already shipped, see the rest of this file). These four are
+the ones that are genuinely still open, two of them already named elsewhere in this document as
+known gaps.
+
+- **Coupon → campaign attribution.** Already flagged above (next to the revenue/channel report)
+  and in `docs/adr/0017-revenue-channel-analytics-report.md` as a known limitation:
+  `Model\Campaign\Action\GenerateCoupon`/`Model\CouponGenerator` mark a generated code identically
+  to core's own mass-generator, so nothing records which campaign minted a given coupon — the
+  revenue/channel report can show a coupon as "used," never its origin. `CampaignDispatcher::
+  runActionsFrom()` already stamps `$context['campaign_id']` before calling the action, so the data
+  needed is available at generation time; it's just never persisted. A small satellite table
+  keyed by `coupon_id` (not `code` — `salesrule_coupon.code` isn't guaranteed stable/unique the way
+  `coupon_id` is, and `salesrule_coupon` itself, a core table, shouldn't be altered) alongside the
+  existing `ordo_campaign_attribution` table would close this without a new cron.
+- **Cohort-by-acquisition-campaign grouping.** Logged as open in
+  `docs/adr/0023-cross-campaign-comparison-and-cohort-retention-reports.md`'s own Consequences
+  section at the time it shipped, for lack of a join path from a cohort's first order to the
+  campaign that drove it. That path exists now — `ordo_campaign_attribution` (`order_id`,
+  `campaign_id`, `customer_id`, `attributed_revenue`) — so extending `ordo/cohortretention/index`
+  with an optional "Acquisition Campaign" filter (picking the highest-`attributed_revenue` touch
+  per first order as that order's one canonical acquisition campaign, to keep retention-rate math
+  single-assignment rather than double-counting a multi-touch customer) is a bounded addition to
+  an existing report, not a new one.
+- **Per-customer recency trigger primitive.** The campaign template library item above already
+  names the underlying gap: a true win-back template isn't buildable because `scheduled_at`/
+  `recurring_schedule` triggers have no `customer_id` in context, so there's no composable Flow
+  canvas entry point for "this specific customer has been inactive N days." A new cron-driven
+  trigger (e.g. `customer_inactive`), scanning customers by last-order recency and claiming/
+  cooling-down per customer+campaign the same way every other cron-driven trigger in this module
+  already does (reorder reminders, abandoned cart, price-drop), would both close that named gap
+  and give the engine a genuinely new, reusable capability beyond just win-back.
+- **Purchase funnel / drop-off report.** Twice declined so far in this exact form — the product
+  performance report's and the revenue/channel report's own ADRs both note there's no
+  `visitor_id` on `sales_order`, so a true per-visitor conversion funnel "can't be supported
+  honestly." Both of those declines were scoped to *that report's* per-SKU/per-order shape,
+  though — this module already has the pieces for a differently-scoped funnel: `ordo_visitor_event`
+  (`page_view`/`product_view`/`category_view`/`cart_add`/`element_clicked`) plus
+  `Observer\StitchVisitorIdentity`'s anonymous-visitor-to-customer backfill. A funnel built by
+  joining visitor events to orders via `customer_id` (not `visitor_id`) would be honest about its
+  own real limitation — logged-in/stitched visitors only, guest checkouts excluded — the same
+  "say what it can't measure instead of faking it" discipline ADR 0015/0017 already established,
+  not a different standard. Would also need `cart_add` tracking extended to anonymous visitors
+  (today logged-in-only) and a new `checkout_start` event, plus an incremental daily-stats cron
+  mirroring `Cron\CalculateProductPerformance`'s own reasoning (`ordo_visitor_event` is pruned
+  after ~7 days, so funnel counts must be materialized before that happens).
