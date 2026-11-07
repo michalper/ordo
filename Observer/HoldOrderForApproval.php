@@ -7,10 +7,10 @@ use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\Event\ObserverInterface;
-use Magento\Framework\Math\Random;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order as OrderResource;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Approval\ApprovalTokenGenerator;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\OrderApproval;
 use Ordo\Automation\Model\OrderApprovalFactory;
@@ -37,7 +37,7 @@ class HoldOrderForApproval implements ObserverInterface
         private readonly OrderResource $orderResource,
         private readonly OrderApprovalFactory $orderApprovalFactory,
         private readonly OrderApprovalResource $orderApprovalResource,
-        private readonly Random $random,
+        private readonly ApprovalTokenGenerator $tokenGenerator,
         private readonly ReminderEmailSender $reminderEmailSender,
         private readonly OrderApprovalManagement $orderApprovalManagement,
         private readonly LoggerInterface $logger
@@ -75,7 +75,7 @@ class HoldOrderForApproval implements ObserverInterface
             return;
         }
 
-        $token = $this->random->getUniqueHash();
+        $token = $this->tokenGenerator->generate();
 
         // Order the two saves this way deliberately: at this point in the order-placement
         // flow (sales_order_place_after, dispatched from within Order's own save process),
