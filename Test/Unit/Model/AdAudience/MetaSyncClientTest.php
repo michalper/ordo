@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Model\AdAudience;
 
 use Magento\Framework\HTTP\Client\Curl;
+use Magento\Framework\HTTP\Client\CurlFactory;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\AdAudience\MetaSyncClient;
 use Ordo\Automation\Model\Http\JsonApiClient;
@@ -21,12 +22,14 @@ class MetaSyncClientTest extends TestCase
     protected function setUp(): void
     {
         $this->curl = $this->createMock(Curl::class);
+        $curlFactory = $this->createStub(CurlFactory::class);
+        $curlFactory->method('create')->willReturn($this->curl);
         $this->config = $this->createStub(Config::class);
         $this->config->method('getMetaAccessToken')->willReturn('meta-token');
         $this->config->method('getMetaAdAccountId')->willReturn('9999');
         $this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->client = new MetaSyncClient(new JsonApiClient($this->curl), $this->config, $this->logger);
+        $this->client = new MetaSyncClient(new JsonApiClient($curlFactory), $this->config, $this->logger);
     }
 
     #[AllowMockObjectsWithoutExpectations]

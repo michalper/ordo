@@ -49,7 +49,17 @@ class BlockOverLimitCheckout
             return [$cartId, $payment];
         }
 
-        if ($this->creditLimitCalculator->getUtilizationPercent($customerId) >= 100.0) {
+        // getUtilizationPercent() alone only sees already-placed orders, not the order
+        // currently being placed (beforePlaceOrder() runs ahead of order persistence) - folding
+        // the quote's own grand total into "used" here is what actually blocks a single order
+        // that would itself blow past the limit, not just a later one once this order has
+        // already posted.
+        $projectedUsage = $this->creditLimitCalculator->getProjectedUtilizationPercent(
+            $customerId,
+            (float) $quote->getBaseGrandTotal()
+        );
+
+        if ($projectedUsage >= 100.0) {
             throw new LocalizedException(
                 __(
                     'Your order could not be placed because your account has reached its credit '

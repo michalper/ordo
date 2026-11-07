@@ -21,12 +21,25 @@ trait RunsMassActionTrait
         $resultRedirect = $this->resultRedirectFactory->create();
 
         $count = 0;
+        $failures = 0;
         foreach ($this->getMassActionCollection() as $entity) {
-            $this->applyToEntity($entity);
-            $count++;
+            try {
+                $this->applyToEntity($entity);
+                $count++;
+            } catch (\Throwable) {
+                // Same catch-and-continue shape as the sibling DeletesEntityTrait - one row
+                // throwing (an FK constraint, a repository's CouldNotDeleteException because
+                // that row has a dependent record) must not silently abort every other selected
+                // row still left in the loop, nor leave the admin with no message at all about
+                // what happened.
+                $failures++;
+            }
         }
 
         $this->messageManager->addSuccessMessage($this->getMassActionSuccessMessage($count));
+        if ($failures > 0) {
+            $this->messageManager->addErrorMessage(__('%1 item(s) could not be processed.', $failures));
+        }
 
         return $resultRedirect->setPath('*/*/');
     }

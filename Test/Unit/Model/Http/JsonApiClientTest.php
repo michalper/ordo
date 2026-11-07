@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Model\Http;
 
 use Magento\Framework\HTTP\Client\Curl;
+use Magento\Framework\HTTP\Client\CurlFactory;
 use Ordo\Automation\Model\Http\JsonApiClient;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
@@ -11,12 +12,15 @@ use PHPUnit\Framework\TestCase;
 class JsonApiClientTest extends TestCase
 {
     private Curl&\PHPUnit\Framework\MockObject\MockObject $curl;
+    private CurlFactory&\PHPUnit\Framework\MockObject\MockObject $curlFactory;
     private JsonApiClient $client;
 
     protected function setUp(): void
     {
         $this->curl = $this->createMock(Curl::class);
-        $this->client = new JsonApiClient($this->curl);
+        $this->curlFactory = $this->createMock(CurlFactory::class);
+        $this->curlFactory->method('create')->willReturn($this->curl);
+        $this->client = new JsonApiClient($this->curlFactory);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -65,5 +69,44 @@ class JsonApiClientTest extends TestCase
         $this->curl->method('getBody')->willReturn('not json');
 
         self::assertSame([], $this->client->postJson('https://api.example.com/endpoint', [], [], 'Example API'));
+    }
+
+    /**
+     * Regression: a shared Curl instance never clears headers it was told to add, so one
+     * caller's Authorization/developer-token headers would otherwise leak into the next,
+     * unrelated caller's request within the same process (Cron\SyncAdAudiences calls both
+     * GoogleAdsSyncClient and MetaSyncClient in the same execute()). CurlFactory::create() must
+     * be called once per postJson()/getJson() call, not reused.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testEachCallGetsItsOwnFreshCurlInstance(): void
+    {
+        $firstCurl = $this->createMock(Curl::class);
+        $firstCurl->method('getStatus')->willReturn(200);
+        $firstCurl->method('getBody')->willReturn('{}');
+
+        $secondCurl = $this->createMock(Curl::class);
+        $secondCurl->method('getStatus')->willReturn(200);
+        $secondCurl->method('getBody')->willReturn('{}');
+
+        $this->curlFactory = $this->createMock(CurlFactory::class);
+        $this->curlFactory->expects(self::exactly(2))->method('create')
+            ->willReturnOnConsecutiveCalls($firstCurl, $secondCurl);
+        $this->client = new JsonApiClient($this->curlFactory);
+
+        $firstCurlHeaders = [];
+        $firstCurl->method('addHeader')->willReturnCallback(function (string $name, string $value) use (&$firstCurlHeaders) {
+            $firstCurlHeaders[$name] = $value;
+        });
+        $secondCurlHeaders = [];
+        $secondCurl->method('addHeader')->willReturnCallback(function (string $name, string $value) use (&$secondCurlHeaders) {
+            $secondCurlHeaders[$name] = $value;
+        });
+
+        $this->client->postJson('https://api.example.com/first', [], ['Authorization' => 'Bearer first-token'], 'First API');
+        $this->client->postJson('https://api.example.com/second', [], [], 'Second API');
+
+        self::assertSame('Bearer first-token', $firstCurlHeaders['Authorization']);
+        self::assertArrayNotHasKey('Authorization', $secondCurlHeaders);
     }
 }

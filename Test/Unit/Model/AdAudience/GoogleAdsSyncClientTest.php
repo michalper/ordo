@@ -4,10 +4,11 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Model\AdAudience;
 
 use Magento\Framework\HTTP\Client\Curl;
+use Magento\Framework\HTTP\Client\CurlFactory;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\AdAudience\GoogleAdsSyncClient;
-use Ordo\Automation\Model\Http\JsonApiClient;
 use Ordo\Automation\Model\AdAudience\GoogleOAuthTokenProvider;
+use Ordo\Automation\Model\Http\JsonApiClient;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
@@ -21,13 +22,15 @@ class GoogleAdsSyncClientTest extends TestCase
     protected function setUp(): void
     {
         $this->curl = $this->createMock(Curl::class);
+        $curlFactory = $this->createStub(CurlFactory::class);
+        $curlFactory->method('create')->willReturn($this->curl);
         $this->config = $this->createStub(Config::class);
         $this->config->method('getGoogleAdsLoginCustomerId')->willReturn('1234567890');
         $this->config->method('getGoogleAdsDeveloperToken')->willReturn('dev-token');
         $this->tokenProvider = $this->createMock(GoogleOAuthTokenProvider::class);
         $this->tokenProvider->method('getAccessToken')->willReturn('access-123');
 
-        $this->client = new GoogleAdsSyncClient(new JsonApiClient($this->curl), $this->config, $this->tokenProvider);
+        $this->client = new GoogleAdsSyncClient(new JsonApiClient($curlFactory), $this->config, $this->tokenProvider);
     }
 
     #[AllowMockObjectsWithoutExpectations]

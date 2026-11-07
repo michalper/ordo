@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Model\WhatsApp;
 
 use Magento\Framework\HTTP\Client\Curl;
+use Magento\Framework\HTTP\Client\CurlFactory;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Http\JsonApiClient;
 use Ordo\Automation\Model\RateLimit\OutboundRateLimiter;
@@ -14,12 +15,15 @@ use PHPUnit\Framework\TestCase;
 class WhatsAppSenderTest extends TestCase
 {
     private Curl&\PHPUnit\Framework\MockObject\MockObject $curl;
+    private CurlFactory&\PHPUnit\Framework\MockObject\Stub $curlFactory;
     private Config $config;
     private WhatsAppSender $sender;
 
     protected function setUp(): void
     {
         $this->curl = $this->createMock(Curl::class);
+        $this->curlFactory = $this->createStub(CurlFactory::class);
+        $this->curlFactory->method('create')->willReturn($this->curl);
         $this->config = $this->createStub(Config::class);
         $this->config->method('getWhatsAppAccessToken')->willReturn('access-token');
         $this->config->method('getWhatsAppPhoneNumberId')->willReturn('1234567890');
@@ -27,7 +31,7 @@ class WhatsAppSenderTest extends TestCase
         $this->config->method('getWhatsAppMaxRequestsPerSecond')->willReturn(0);
 
         $this->sender = new WhatsAppSender(
-            new JsonApiClient($this->curl),
+            new JsonApiClient($this->curlFactory),
             $this->config,
             $this->createStub(OutboundRateLimiter::class)
         );
@@ -69,7 +73,7 @@ class WhatsAppSenderTest extends TestCase
 
         $rateLimiter = $this->createMock(OutboundRateLimiter::class);
         $rateLimiter->expects(self::once())->method('throttle')->with('whatsapp', 7.0);
-        $this->sender = new WhatsAppSender(new JsonApiClient($this->curl), $config, $rateLimiter);
+        $this->sender = new WhatsAppSender(new JsonApiClient($this->curlFactory), $config, $rateLimiter);
 
         $this->curl->method('getStatus')->willReturn(200);
         $this->curl->method('getBody')->willReturn(json_encode(['messages' => [['id' => 'wamid.123']]]));

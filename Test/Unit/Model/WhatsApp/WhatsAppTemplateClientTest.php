@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Model\WhatsApp;
 
 use Magento\Framework\HTTP\Client\Curl;
+use Magento\Framework\HTTP\Client\CurlFactory;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Http\JsonApiClient;
 use Ordo\Automation\Model\WhatsApp\WhatsAppTemplateClient;
@@ -19,13 +20,15 @@ class WhatsAppTemplateClientTest extends TestCase
     protected function setUp(): void
     {
         $this->curl = $this->createMock(Curl::class);
+        $curlFactory = $this->createStub(CurlFactory::class);
+        $curlFactory->method('create')->willReturn($this->curl);
         $this->config = $this->createStub(Config::class);
         $this->config->method('getWhatsAppAccessToken')->willReturn('access-token');
         $this->config->method('getWhatsAppBusinessAccountId')->willReturn('9876543210');
 
         // A real JsonApiClient over the mocked Curl — the HTTP mechanics under test are the
         // shared client's, exactly what production runs.
-        $this->client = new WhatsAppTemplateClient(new JsonApiClient($this->curl), $this->config);
+        $this->client = new WhatsAppTemplateClient(new JsonApiClient($curlFactory), $this->config);
     }
 
     #[AllowMockObjectsWithoutExpectations]

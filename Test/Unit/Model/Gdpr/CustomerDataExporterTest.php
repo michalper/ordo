@@ -22,7 +22,7 @@ class CustomerDataExporterTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($select);
-        $connection->expects(self::exactly(27))->method('fetchAll')->with($select)->willReturn([['row' => 1]]);
+        $connection->expects(self::exactly(28))->method('fetchAll')->with($select)->willReturn([['row' => 1]]);
 
         $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);

@@ -38,6 +38,10 @@ class RunsMassActionTraitTest extends AbstractAdminActionTestCase
 
             protected function applyToEntity(object $entity): void
             {
+                if ($entity instanceof \Exception) {
+                    throw $entity;
+                }
+
                 $this->touched[] = $entity;
             }
 
@@ -82,5 +86,35 @@ class RunsMassActionTraitTest extends AbstractAdminActionTestCase
 
         self::assertSame($redirect, $controller->execute());
         self::assertSame([], $controller->touched);
+    }
+
+    /**
+     * Regression: one selected row throwing (an FK constraint, a repository's
+     * CouldNotDeleteException because that row has a dependent record) must not abort every
+     * other row still left in the loop, and the admin must get an error message naming how many
+     * failed - previously the uncaught \Throwable propagated out of execute() entirely, leaving
+     * every row after the failing one untouched with no message at all.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteContinuesPastAFailingEntityAndReportsBoth(): void
+    {
+        $entityA = new \stdClass();
+        $failing = new \RuntimeException('boom');
+        $entityC = new \stdClass();
+        $controller = $this->makeController([$entityA, $failing, $entityC]);
+
+        $redirect = $this->createMock(Redirect::class);
+        $redirect->method('setPath')->willReturnSelf();
+        $this->resultRedirectFactory->method('create')->willReturn($redirect);
+
+        $this->messageManager->expects(self::once())->method('addSuccessMessage')->with(self::callback(
+            fn ($phrase) => (string) $phrase === 'Processed 2.'
+        ));
+        $this->messageManager->expects(self::once())->method('addErrorMessage')->with(self::callback(
+            fn ($phrase) => (string) $phrase === '1 item(s) could not be processed.'
+        ));
+
+        self::assertSame($redirect, $controller->execute());
+        self::assertSame([$entityA, $entityC], $controller->touched);
     }
 }

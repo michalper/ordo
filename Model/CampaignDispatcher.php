@@ -439,7 +439,7 @@ class CampaignDispatcher
         // re-scheduled again for another delay_minutes just because that column is still > 0 on
         // the row. Only actions AFTER it go through the normal delay check.
         $context['campaign_id'] = $campaignId;
-        $this->runOneAction($plan['actions'][$plan['start']], $context);
+        $this->runOneActionOrSplit($campaignId, $plan['actions'][$plan['start']], $context);
         $this->runActionsFrom($campaignId, $plan['actions'], $plan['start'] + 1, $context);
     }
 
@@ -529,16 +529,31 @@ class CampaignDispatcher
                 return;
             }
 
-            // Same "reserved pseudo-type handled before the pool lookup" shape as 'group' is for
-            // conditions (see evaluateOne() above) - 'split' is deliberately NOT an ActionPool
-            // entry, since it has no send/tag/whatever effect of its own, only a branching one.
-            if ((string) $actionRow->getData('type') === 'split') {
-                $this->runSplit($campaignId, $actionRow, $context);
-                continue;
-            }
-
-            $this->runOneAction($actionRow, $context);
+            $this->runOneActionOrSplit($campaignId, $actionRow, $context);
         }
+    }
+
+    /**
+     * Same "reserved pseudo-type handled before the pool lookup" shape as 'group' is for
+     * conditions (see evaluateOne() above) - 'split' is deliberately NOT an ActionPool entry,
+     * since it has no send/tag/whatever effect of its own, only a branching one. Shared by both
+     * runActionsFrom()'s own loop and resumeScheduledAction()'s direct call onto the just-elapsed
+     * action - a split action with its own delay_minutes set is deferred via scheduleResume() the
+     * same as any other action (see the delay check above), so the row resumeScheduledAction()
+     * later runs unconditionally can itself be a 'split' row; calling runOneAction() on it
+     * directly there (its pre-existing shape) looked it up in ActionPool, found nothing (by
+     * design), and silently skipped the branch entirely instead of running either variant.
+     *
+     * @param array<string, mixed> $context
+     */
+    private function runOneActionOrSplit(int $campaignId, CampaignAction $actionRow, array &$context): void
+    {
+        if ((string) $actionRow->getData('type') === 'split') {
+            $this->runSplit($campaignId, $actionRow, $context);
+            return;
+        }
+
+        $this->runOneAction($actionRow, $context);
     }
 
     /**
