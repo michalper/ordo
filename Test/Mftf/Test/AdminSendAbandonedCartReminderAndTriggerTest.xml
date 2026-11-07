@@ -13,6 +13,12 @@
         </annotations>
         <before>
             <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <!-- ADR 0027: send_email's default topic (Promotional) now requires an explicit
+                 opt-in - no row means NOT consented, so this scenario's campaign send would
+                 otherwise be silently skipped. -->
+            <helper class="\Ordo\Automation\Test\Mftf\Helper\GdprTestHelper" method="grantPromotionalConsent" stepKey="grantPromotionalConsent">
+                <argument name="customerId">$createCustomer.id$</argument>
+            </helper>
             <createData entity="SimpleProduct2" stepKey="createProduct"/>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
             <!-- Both off by default (see Helper/Config.php's isSetFlag-backed getters) - the
