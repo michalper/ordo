@@ -47,6 +47,20 @@
              plain date string onto the previous day plus a stray time-of-day (confirmed against a
              real screenshot: "2026-11-01" rendered as "2026-10-31 19:00:00" on this sandbox's
              timezone). -->
+        <!-- Filter-only - no row ever carries this value (it's not a grouping dimension of the
+             aggregate output, see Collection's own docblock), it narrows WHICH customers feed
+             the whole cohort/retention computation before it runs. Collection::addFieldToFilter()
+             special-cases this one field name instead of the generic WHERE-on-the-final-select
+             every other column filter gets. -->
+        <column name="acquisition_campaign_id">
+            <settings>
+                <filter>select</filter>
+                <dataType>select</dataType>
+                <visible>false</visible>
+                <label translate="true">Acquisition Campaign</label>
+                <options class="Ordo\Automation\Model\Config\Source\CampaignOptions"/>
+            </settings>
+        </column>
         <column name="cohort_month">
             <settings>
                 <filter>text</filter>
