@@ -191,6 +191,20 @@ class Flow extends Template
                         ),
                     ],
                 ],
+                CampaignTriggerInterface::TRIGGER_CUSTOMER_INACTIVE => [
+                    [
+                        'name' => 'days',
+                        'label' => (string) __('Inactive for at least N days'),
+                        'notice' => (string) __(
+                            'Fires once per customer whose most recent order (or registration, if they'
+                            . ' never ordered) is at least this many days old - scanned nightly by'
+                            . ' Cron\DispatchCustomerInactiveCampaigns. Re-fires for the same customer'
+                            . ' after the configured refire cooldown (Stores → Configuration → Ordo'
+                            . ' Automation → Customer Inactive Trigger) once they have ordered again and'
+                            . ' gone inactive once more.'
+                        ),
+                    ],
+                ],
             ],
             'condition' => $conditionFields,
             'action' => $actionFields,

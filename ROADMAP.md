@@ -197,8 +197,8 @@ Not prioritized against each other; listed for later scoping with the business/p
   deliberate one-off departure. Verified against the real admin, in Polish: both reports and their
   dashboard cards render with real data and fully translated labels (all 12 non-English locale
   CSVs updated, matching this module's established "every new UI string ships translated"
-  discipline). Cohort-by-acquisition-campaign (not just by calendar month) remains open, logged in
-  the ADR's own Consequences section, not solved here.
+  discipline). Cohort-by-acquisition-campaign (not just by calendar month) was logged as open in
+  the ADR's own Consequences section at the time — since closed, see `docs/adr/0029-cohort-by-acquisition-campaign.md`.
 
 **The five items below are analytics/reporting gap ideas** (see issue #261 for the original
 multi-store/performance thread this grew out of). Ordo's automation side (triggered sends,
@@ -216,9 +216,9 @@ coupon/channel/device/geography.
   never joined by this module before), and new-vs-returning (a derived `MIN(entity_id)`-per-customer
   subselect). Device was dropped, not faked — same reasoning as the product performance report's
   own per-visitor-funnel gap: nothing in this codebase or a stock Magento install tracks order-level
-  device, and there's no join path to add it after the fact. Coupon-to-Ordo-campaign attribution is
-  also a known gap (`Model\CouponGenerator` marks a code identically to core's own mass-generator) —
-  the report shows the code as used, not its origin.
+  device, and there's no join path to add it after the fact. Coupon-to-Ordo-campaign attribution was
+  also a known gap at the time (`Model\CouponGenerator` marks a code identically to core's own
+  mass-generator) — since closed, see `docs/adr/0028-coupon-to-campaign-attribution.md`.
 - ~~**Product performance report**~~ — done, see `docs/adr/0015-product-performance-report.md`.
   Per-SKU views (materialized by a new incremental `Cron\CalculateProductPerformance`, since the
   source `ordo_visitor_event` rows are pruned after ~7 days) and purchases (live-joined from
@@ -399,33 +399,24 @@ tracking, and anomaly alerts are all already shipped, see the rest of this file)
 the ones that are genuinely still open, two of them already named elsewhere in this document as
 known gaps.
 
-- **Coupon → campaign attribution.** Already flagged above (next to the revenue/channel report)
-  and in `docs/adr/0017-revenue-channel-analytics-report.md` as a known limitation:
-  `Model\Campaign\Action\GenerateCoupon`/`Model\CouponGenerator` mark a generated code identically
-  to core's own mass-generator, so nothing records which campaign minted a given coupon — the
-  revenue/channel report can show a coupon as "used," never its origin. `CampaignDispatcher::
-  runActionsFrom()` already stamps `$context['campaign_id']` before calling the action, so the data
-  needed is available at generation time; it's just never persisted. A small satellite table
-  keyed by `coupon_id` (not `code` — `salesrule_coupon.code` isn't guaranteed stable/unique the way
-  `coupon_id` is, and `salesrule_coupon` itself, a core table, shouldn't be altered) alongside the
-  existing `ordo_campaign_attribution` table would close this without a new cron.
-- **Cohort-by-acquisition-campaign grouping.** Logged as open in
-  `docs/adr/0023-cross-campaign-comparison-and-cohort-retention-reports.md`'s own Consequences
-  section at the time it shipped, for lack of a join path from a cohort's first order to the
-  campaign that drove it. That path exists now — `ordo_campaign_attribution` (`order_id`,
-  `campaign_id`, `customer_id`, `attributed_revenue`) — so extending `ordo/cohortretention/index`
-  with an optional "Acquisition Campaign" filter (picking the highest-`attributed_revenue` touch
-  per first order as that order's one canonical acquisition campaign, to keep retention-rate math
-  single-assignment rather than double-counting a multi-touch customer) is a bounded addition to
-  an existing report, not a new one.
-- **Per-customer recency trigger primitive.** The campaign template library item above already
-  names the underlying gap: a true win-back template isn't buildable because `scheduled_at`/
-  `recurring_schedule` triggers have no `customer_id` in context, so there's no composable Flow
-  canvas entry point for "this specific customer has been inactive N days." A new cron-driven
-  trigger (e.g. `customer_inactive`), scanning customers by last-order recency and claiming/
-  cooling-down per customer+campaign the same way every other cron-driven trigger in this module
-  already does (reorder reminders, abandoned cart, price-drop), would both close that named gap
-  and give the engine a genuinely new, reusable capability beyond just win-back.
+- ~~**Coupon → campaign attribution.**~~ — shipped, see `docs/adr/0028-coupon-to-campaign-attribution.md`.
+  New satellite table `ordo_coupon_campaign_log`, keyed by `coupon_id` (not `code`), populated by
+  `CouponGenerator::generate()`'s new optional `campaignId` param from the `context['campaign_id']`
+  `CampaignDispatcher::runActionsFrom()` already stamps. `RevenueAnalytics`'s report gains a
+  separate `coupon_campaign_name` column joined through it.
+- ~~**Cohort-by-acquisition-campaign grouping.**~~ — shipped, see
+  `docs/adr/0029-cohort-by-acquisition-campaign.md`. An optional `acquisition_campaign_id` filter on
+  `ordo/cohortretention/index` narrows the whole pipeline (not a post-hoc row filter) to customers
+  whose first order is attributed to that campaign via `ordo_campaign_attribution`, picking the
+  highest-`attributed_revenue` touch per order (MySQL `ROW_NUMBER()`) to keep retention-rate math
+  single-assignment.
+- ~~**Per-customer recency trigger primitive.**~~ — shipped, see
+  `docs/adr/0030-customer-inactive-campaign-trigger.md`. A new `customer_inactive` trigger
+  (`Cron\DispatchCustomerInactiveCampaigns`, nightly) with its own per-trigger `days` field gives
+  the Flow builder the composable, per-customer entry point the campaign template library item
+  above found missing — a store can now build several differently-shaped win-back campaigns at
+  different inactivity windows, independent of `Cron\TagInactiveCustomers`/`SendWinBackEmails`'s
+  existing single, fixed-threshold email.
 - **Purchase funnel / drop-off report.** Twice declined so far in this exact form — the product
   performance report's and the revenue/channel report's own ADRs both note there's no
   `visitor_id` on `sales_order`, so a true per-visitor conversion funnel "can't be supported

@@ -48,6 +48,11 @@ class Config
     private const string XML_PATH_LIFECYCLE_ENABLED = 'ordo_automation/lifecycle/enabled';
     private const string XML_PATH_LIFECYCLE_WIN_BACK_INACTIVE_DAYS = 'ordo_automation/lifecycle/win_back_inactive_days';
 
+    private const string XML_PATH_CUSTOMER_INACTIVE_TRIGGER_ENABLED =
+        'ordo_automation/customer_inactive_trigger/enabled';
+    private const string XML_PATH_CUSTOMER_INACTIVE_TRIGGER_REFIRE_COOLDOWN_DAYS =
+        'ordo_automation/customer_inactive_trigger/refire_cooldown_days';
+
     private const string XML_PATH_CLV_PROJECTION_YEARS = 'ordo_scoring/clv/projection_years';
     private const string XML_PATH_CLV_MIN_TENURE_MONTHS = 'ordo_scoring/clv/min_tenure_months';
 
@@ -445,6 +450,20 @@ class Config
     public function getWinBackInactiveDays(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_LIFECYCLE_WIN_BACK_INACTIVE_DAYS, 90, $storeId);
+    }
+
+    public function isCustomerInactiveTriggerEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_CUSTOMER_INACTIVE_TRIGGER_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getCustomerInactiveRefireCooldownDays(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_CUSTOMER_INACTIVE_TRIGGER_REFIRE_COOLDOWN_DAYS, 30, $storeId);
     }
 
     public function isOrderApprovalEnabled(?int $storeId = null): bool

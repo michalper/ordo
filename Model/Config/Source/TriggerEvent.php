@@ -50,6 +50,10 @@ class TriggerEvent implements OptionSourceInterface
                 'value' => CampaignTriggerInterface::TRIGGER_REFERRAL_CONVERTED,
                 'label' => __('Referral Converted (referred customer placed their first order)'),
             ],
+            [
+                'value' => CampaignTriggerInterface::TRIGGER_CUSTOMER_INACTIVE,
+                'label' => __('Customer Inactive For N Days'),
+            ],
         ];
     }
 }
