@@ -41,6 +41,11 @@
         <selectOption selector="[name='type']" userInput="product_feed" stepKey="selectProductFeedType"/>
         <waitForElementVisible selector="[name='source']" stepKey="waitForSourceField"/>
         <selectOption selector="[name='source']" userInput="category" stepKey="selectCategorySource"/>
+        <!-- See AdminCampaignNotInSegmentConditionTest.xml's identical comment on this same wait
+             - switcherConfig's visible toggle racing a subsequent select has been observed under
+             CI load as InvalidElementStateException here instead of ElementNotInteractable, same
+             underlying timing issue. -->
+        <wait time="1" stepKey="waitForSourceSwitch"/>
         <waitForElementVisible selector="[name='category_id']" stepKey="waitForCategoryIdField"/>
         <selectOption selector="[name='category_id']" userInput="$createCategory.id$" stepKey="fillCategoryId"/>
         <!-- item_count is deliberately left at its own default, same reasoning as

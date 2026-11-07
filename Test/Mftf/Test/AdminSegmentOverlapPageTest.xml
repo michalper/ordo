@@ -95,6 +95,8 @@
         <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addSegmentAConditionRow"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForSegmentAConditionRow"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="tag" stepKey="selectSegmentAConditionType"/>
+        <!-- See AdminCampaignNotInSegmentConditionTest.xml's identical comment on this same wait. -->
+        <wait time="1" stepKey="waitForConditionTypeSwitchA"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][tags]']" stepKey="waitForSegmentATagField"/>
         <fillField selector="[name='conditions[conditions][0][tags]']" userInput='["overlap_shared"]' stepKey="fillSegmentATag"/>
         <waitForElementClickable selector="#save" stepKey="waitForSegmentASaveClickable"/>
@@ -110,6 +112,8 @@
         <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addSegmentBConditionRow"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForSegmentBConditionRow"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="tag" stepKey="selectSegmentBConditionType"/>
+        <!-- See AdminCampaignNotInSegmentConditionTest.xml's identical comment on this same wait. -->
+        <wait time="1" stepKey="waitForConditionTypeSwitchB"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][tags]']" stepKey="waitForSegmentBTagField"/>
         <fillField selector="[name='conditions[conditions][0][tags]']" userInput='["overlap_b"]' stepKey="fillSegmentBTag"/>
         <waitForElementClickable selector="#save" stepKey="waitForSegmentBSaveClickable"/>

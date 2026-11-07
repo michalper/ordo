@@ -39,6 +39,9 @@
         <selectOption selector="[name='type']" userInput="product_feed" stepKey="selectProductFeedType"/>
         <waitForElementVisible selector="[name='source']" stepKey="waitForSourceField"/>
         <selectOption selector="[name='source']" userInput="rule" stepKey="selectRuleSource"/>
+        <!-- See AdminContentBlockProductFeedCategorySourceTest.xml's identical comment on this
+             same wait. -->
+        <wait time="1" stepKey="waitForSourceSwitch"/>
         <waitForElementVisible selector="[name='rule_id']" stepKey="waitForRuleIdField"/>
         <selectOption selector="[name='rule_id']" userInput="$createRule.rule_id$" stepKey="fillRuleId"/>
         <!-- item_count is deliberately left at its own default (4) rather than filled here:

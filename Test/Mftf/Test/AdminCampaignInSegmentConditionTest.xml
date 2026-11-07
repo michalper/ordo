@@ -69,6 +69,8 @@
         <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addSegmentConditionRow"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForSegmentConditionRow"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="tag" stepKey="selectSegmentConditionType"/>
+        <!-- See AdminCampaignNotInSegmentConditionTest.xml's identical comment on this same wait. -->
+        <wait time="1" stepKey="waitForConditionTypeSwitch"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][tags]']" stepKey="waitForSegmentTagField"/>
         <fillField selector="[name='conditions[conditions][0][tags]']" userInput='["vip"]' stepKey="fillSegmentConditionParams"/>
 
