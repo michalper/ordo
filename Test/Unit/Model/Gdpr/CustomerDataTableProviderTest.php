@@ -15,11 +15,11 @@ class CustomerDataTableProviderTest extends TestCase
         $this->provider = new CustomerDataTableProvider();
     }
 
-    public function testGetTablesReturnsAllTwentySevenCustomerKeyedTables(): void
+    public function testGetTablesReturnsAllTwentyEightCustomerKeyedTables(): void
     {
         $tables = $this->provider->getTables();
 
-        self::assertCount(27, $tables);
+        self::assertCount(28, $tables);
         self::assertContains('ordo_customer_consent', $tables);
         self::assertContains('ordo_customer_consent_topic', $tables);
         self::assertContains('ordo_customer_consent_log', $tables);
@@ -52,6 +52,9 @@ class CustomerDataTableProviderTest extends TestCase
         // db_schema.xml and had never been added here either.
         self::assertContains('ordo_review_request_log', $tables);
         self::assertContains('ordo_referral_code', $tables);
+        // Found 2026-11-07 (full-module review): added by the customer_inactive campaign
+        // trigger feature, had a non-nullable customer_id and was never added here either.
+        self::assertContains('ordo_customer_inactive_trigger_claim', $tables);
     }
 
     public function testGetExportKeysByTableMapsEveryTableToItsExportKey(): void
@@ -86,6 +89,7 @@ class CustomerDataTableProviderTest extends TestCase
             'ordo_visitor_event' => 'visitor_events',
             'ordo_review_request_log' => 'review_request_log',
             'ordo_referral_code' => 'referral_code',
+            'ordo_customer_inactive_trigger_claim' => 'customer_inactive_trigger_claim',
         ], $map);
     }
 

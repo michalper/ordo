@@ -821,6 +821,38 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->resumeScheduledAction(1, 11, ['customer_id' => 1]);
     }
 
+    /**
+     * Regression: a 'split' action with its own delay_minutes defers via scheduleResume() the
+     * same as any other action, so the row resumeScheduledAction() unconditionally runs at the
+     * resume point can itself be a split row - calling runOneAction() on it directly looked it
+     * up in ActionPool (which deliberately has no 'split' entry), found nothing, and silently
+     * skipped the branch entirely instead of running either variant.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResumeScheduledActionRunsASplitActionAtTheResumePoint(): void
+    {
+        $resumeAction = $this->createMock(CampaignAction::class);
+        $resumeAction->method('getEntityId')->willReturn(11);
+        $resumeAction->method('getSortOrder')->willReturn(20);
+        $resumeAction->method('getDelayMinutes')->willReturn(0);
+        $resumeAction->method('getData')->willReturnMap([['type', 'split']]);
+        // Weight 100/0 - deterministically always variant 'a', regardless of identity hash.
+        $resumeAction->method('getParams')->willReturn([
+            'variants' => [
+                ['key' => 'a', 'weight' => 100, 'actions' => [['type' => 'tag_customer', 'params' => ['tag' => 'variant-a']]]],
+                ['key' => 'b', 'weight' => 0, 'actions' => [['type' => 'tag_customer', 'params' => ['tag' => 'variant-b']]]],
+            ],
+        ]);
+
+        $this->makeResumeActionCollections($resumeAction, [$resumeAction]);
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute')->with(self::anything(), ['tag' => 'variant-a']);
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->resumeScheduledAction(1, 11, ['customer_id' => 1]);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testResumeScheduledActionFiltersMainQueryBySortOrderOfResumeRow(): void
     {

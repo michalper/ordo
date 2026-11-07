@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Model\Http;
 
 use Magento\Framework\HTTP\Client\Curl;
+use Magento\Framework\HTTP\Client\CurlFactory;
 use RuntimeException;
 
 /**
@@ -15,13 +16,22 @@ use RuntimeException;
  * the HTTP mechanics underneath were duplicated. Model\Push\PushSender is deliberately NOT built
  * on this - its payload is pre-encrypted binary (Content-Type: application/octet-stream, not
  * JSON), so forcing it through a "postJson" abstraction would be the wrong fit.
+ *
+ * Builds a fresh Curl instance per call via CurlFactory rather than injecting one Curl - Curl
+ * never clears headers it was told to add, and this module's own DI never declares it
+ * shared="false", so a single shared instance would carry one caller's Authorization/developer-
+ * token headers into the next, unrelated caller's request within the same process (confirmed the
+ * hard way: Cron\SyncAdAudiences calls both GoogleAdsSyncClient and MetaSyncClient in the same
+ * execute(), and the latter's postJson() call passes no auth headers of its own, relying on the
+ * access_token already being in its own POST body - meaning a shared Curl would still be
+ * carrying Google's bearer/developer-token headers onto the request to Meta's API).
  */
 class JsonApiClient
 {
     private const int TIMEOUT_SECONDS = 30;
 
     public function __construct(
-        private readonly Curl $curl
+        private readonly CurlFactory $curlFactory
     ) {
     }
 
@@ -34,15 +44,16 @@ class JsonApiClient
      */
     public function postJson(string $url, array $payload, array $headers, string $serviceName): array
     {
-        $this->curl->setTimeout(self::TIMEOUT_SECONDS);
-        $this->curl->setOption(CURLOPT_FOLLOWLOCATION, false);
-        $this->curl->addHeader('Content-Type', 'application/json');
+        $curl = $this->curlFactory->create();
+        $curl->setTimeout(self::TIMEOUT_SECONDS);
+        $curl->setOption(CURLOPT_FOLLOWLOCATION, false);
+        $curl->addHeader('Content-Type', 'application/json');
         foreach ($headers as $name => $value) {
-            $this->curl->addHeader($name, $value);
+            $curl->addHeader($name, $value);
         }
-        $this->curl->post($url, (string) json_encode($payload));
+        $curl->post($url, (string) json_encode($payload));
 
-        return $this->interpretResponse($url, $serviceName);
+        return $this->interpretResponse($curl, $url, $serviceName);
     }
 
     /**
@@ -53,23 +64,24 @@ class JsonApiClient
      */
     public function getJson(string $url, array $headers, string $serviceName): array
     {
-        $this->curl->setTimeout(self::TIMEOUT_SECONDS);
-        $this->curl->setOption(CURLOPT_FOLLOWLOCATION, false);
+        $curl = $this->curlFactory->create();
+        $curl->setTimeout(self::TIMEOUT_SECONDS);
+        $curl->setOption(CURLOPT_FOLLOWLOCATION, false);
         foreach ($headers as $name => $value) {
-            $this->curl->addHeader($name, $value);
+            $curl->addHeader($name, $value);
         }
-        $this->curl->get($url);
+        $curl->get($url);
 
-        return $this->interpretResponse($url, $serviceName);
+        return $this->interpretResponse($curl, $url, $serviceName);
     }
 
     /**
      * @return array<mixed>
      */
-    private function interpretResponse(string $url, string $serviceName): array
+    private function interpretResponse(Curl $curl, string $url, string $serviceName): array
     {
-        $status = $this->curl->getStatus();
-        $responseBody = (string) $this->curl->getBody();
+        $status = $curl->getStatus();
+        $responseBody = (string) $curl->getBody();
 
         if ($status < 200 || $status >= 300) {
             throw new RuntimeException(

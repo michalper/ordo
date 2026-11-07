@@ -17,7 +17,7 @@ class CustomerDataEraserTest extends TestCase
         $connection->expects(self::once())->method('beginTransaction');
         $connection->expects(self::once())->method('commit');
         $connection->expects(self::never())->method('rollBack');
-        $connection->expects(self::exactly(27))->method('delete')
+        $connection->expects(self::exactly(28))->method('delete')
             ->with(self::callback('is_string'), ['customer_id = ?' => 42])
             ->willReturn(1);
 

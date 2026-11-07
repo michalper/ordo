@@ -168,6 +168,35 @@ class CreditLimitCalculatorTest extends TestCase
         self::assertSame(50.0, $calculator->getUtilizationPercent(42));
     }
 
+    /**
+     * Regression: Plugin\Quote\BlockOverLimitCheckout needs the pending quote's own total
+     * folded into "used" before dividing, since already-placed orders alone can't see the order
+     * currently being placed.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetProjectedUtilizationPercentFoldsInTheAdditionalAmount(): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+        $attribute = $this->createStub(AttributeInterface::class);
+        $attribute->method('getValue')->willReturn('1000');
+        $customer->method('getCustomAttribute')->willReturn($attribute);
+
+        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $customerRepository->method('getById')->willReturn($customer);
+
+        $connection = $this->makeConnectionMock();
+        $connection->method('fetchOne')->willReturn('0');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $calculator = new CreditLimitCalculator($resourceConnection, $customerRepository);
+
+        // $0 already used, but a $50,000 pending order against a $1,000 limit is 5000%, not 0%.
+        self::assertSame(5000.0, $calculator->getProjectedUtilizationPercent(42, 50000.0));
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testGetCreditLimitFromCustomerReturnsAttributeValueWithoutAnEavRoundTrip(): void
     {

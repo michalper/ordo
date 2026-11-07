@@ -95,12 +95,28 @@ class CreditLimitCalculator
      */
     public function getUtilizationPercent(int $customerId): float
     {
+        return $this->getProjectedUtilizationPercent($customerId, 0.0);
+    }
+
+    /**
+     * Same as getUtilizationPercent(), plus $additionalAmount folded into "used" before dividing
+     * - Plugin\Quote\BlockOverLimitCheckout's own reason for this: getUsedCredit() only sums
+     * already-PLACED orders, so checking utilization alone at checkout time can't see the order
+     * currently being placed. A customer with $0 used credit and a $1,000 limit placing a single
+     * $50,000 order would otherwise compute 0% utilization and sail straight through, over the
+     * limit, before that order itself ever counts as "used."
+     *
+     * @return float 0-100+ (can exceed 100 if the customer is already over, or would be put
+     *     over, the limit)
+     */
+    public function getProjectedUtilizationPercent(int $customerId, float $additionalAmount): float
+    {
         $limit = $this->getCreditLimit($customerId);
         if ($limit <= 0.0) {
             return 0.0;
         }
 
-        return round(($this->getUsedCredit($customerId) / $limit) * 100, 2);
+        return round((($this->getUsedCredit($customerId) + $additionalAmount) / $limit) * 100, 2);
     }
 
     /**

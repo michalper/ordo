@@ -51,10 +51,10 @@ class BlockOverLimitCheckoutTest extends TestCase
     {
         $this->config->method('isCreditLimitCheckoutBlockEnabled')->willReturn(true);
 
-        $quote = $this->createQuoteStub(null);
+        $quote = $this->createQuoteStub(null, 0.0);
         $this->cartRepository->method('get')->willReturnMap([[42, $quote]]);
 
-        $this->creditLimitCalculator->expects(self::never())->method('getUtilizationPercent');
+        $this->creditLimitCalculator->expects(self::never())->method('getProjectedUtilizationPercent');
 
         $result = $this->plugin->beforePlaceOrder($this->subject, 42);
 
@@ -66,10 +66,10 @@ class BlockOverLimitCheckoutTest extends TestCase
     {
         $this->config->method('isCreditLimitCheckoutBlockEnabled')->willReturn(true);
 
-        $quote = $this->createQuoteStub(7);
+        $quote = $this->createQuoteStub(7, 50.0);
         $this->cartRepository->method('get')->willReturnMap([[42, $quote]]);
 
-        $this->creditLimitCalculator->method('getUtilizationPercent')->willReturnMap([[7, 99.99]]);
+        $this->creditLimitCalculator->method('getProjectedUtilizationPercent')->willReturnMap([[7, 50.0, 99.99]]);
 
         $result = $this->plugin->beforePlaceOrder($this->subject, 42);
 
@@ -81,10 +81,10 @@ class BlockOverLimitCheckoutTest extends TestCase
     {
         $this->config->method('isCreditLimitCheckoutBlockEnabled')->willReturn(true);
 
-        $quote = $this->createQuoteStub(7);
+        $quote = $this->createQuoteStub(7, 50000.0);
         $this->cartRepository->method('get')->willReturnMap([[42, $quote]]);
 
-        $this->creditLimitCalculator->method('getUtilizationPercent')->willReturnMap([[7, 150.0]]);
+        $this->creditLimitCalculator->method('getProjectedUtilizationPercent')->willReturnMap([[7, 50000.0, 150.0]]);
 
         $this->expectException(LocalizedException::class);
         $this->expectExceptionMessage(
@@ -100,26 +100,56 @@ class BlockOverLimitCheckoutTest extends TestCase
     {
         $this->config->method('isCreditLimitCheckoutBlockEnabled')->willReturn(true);
 
-        $quote = $this->createQuoteStub(7);
+        $quote = $this->createQuoteStub(7, 50.0);
         $this->cartRepository->method('get')->willReturnMap([[42, $quote]]);
 
-        $this->creditLimitCalculator->method('getUtilizationPercent')->willReturnMap([[7, 100.0]]);
+        $this->creditLimitCalculator->method('getProjectedUtilizationPercent')->willReturnMap([[7, 50.0, 100.0]]);
 
         $this->expectException(LocalizedException::class);
 
         $this->plugin->beforePlaceOrder($this->subject, 42);
     }
 
-    private function createQuoteStub(?int $customerId): Quote
+    /**
+     * Regression: a single order can blow straight past the limit without ever being blocked if
+     * only already-placed orders count as "used" - the quote's own grand total (not yet an
+     * order) must be folded into the projected usage too.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testBlocksASingleOrderThatAloneWouldExceedTheLimit(): void
     {
-        return new class ($customerId) extends Quote {
-            public function __construct(private readonly ?int $customerId)
-            {
+        $this->config->method('isCreditLimitCheckoutBlockEnabled')->willReturn(true);
+
+        $quote = $this->createQuoteStub(7, 50000.0);
+        $this->cartRepository->method('get')->willReturnMap([[42, $quote]]);
+
+        // $0 already used, but this quote's own $50,000 pushes projected usage over the limit.
+        $this->creditLimitCalculator->expects(self::once())->method('getProjectedUtilizationPercent')
+            ->with(7, 50000.0)
+            ->willReturn(5000.0);
+
+        $this->expectException(LocalizedException::class);
+
+        $this->plugin->beforePlaceOrder($this->subject, 42);
+    }
+
+    private function createQuoteStub(?int $customerId, float $baseGrandTotal): Quote
+    {
+        return new class ($customerId, $baseGrandTotal) extends Quote {
+            public function __construct(
+                private readonly ?int $customerId,
+                private readonly float $baseGrandTotal
+            ) {
             }
 
             public function getCustomerId(): ?int
             {
                 return $this->customerId;
+            }
+
+            public function getBaseGrandTotal(): float
+            {
+                return $this->baseGrandTotal;
             }
         };
     }
