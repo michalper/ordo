@@ -15,6 +15,14 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
+            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteUnknownTypeImportedCampaign">
+                <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabUnknownTypeImportedCampaignId}"/>
+                <argument name="successMessage" value="The campaign has been deleted."/>
+            </actionGroup>
+            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteUnknownTypeSourceCampaign">
+                <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabUnknownTypeSourceCampaignId}"/>
+                <argument name="successMessage" value="The campaign has been deleted."/>
+            </actionGroup>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
@@ -129,14 +137,5 @@
             <expectedResult type="string">no_such_action_type</expectedResult>
             <actualResult type="variable">fetchUnknownTypeImportedExportBody</actualResult>
         </assertStringNotContainsString>
-
-        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteUnknownTypeImportedCampaign">
-            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabUnknownTypeImportedCampaignId}"/>
-            <argument name="successMessage" value="The campaign has been deleted."/>
-        </actionGroup>
-        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteUnknownTypeSourceCampaign">
-            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabUnknownTypeSourceCampaignId}"/>
-            <argument name="successMessage" value="The campaign has been deleted."/>
-        </actionGroup>
     </test>
 </tests>

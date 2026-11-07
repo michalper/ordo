@@ -17,6 +17,10 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
+            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+                <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+                <argument name="successMessage" value="The campaign has been deleted."/>
+            </actionGroup>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
@@ -91,10 +95,5 @@
         <see selector=".ordo-campaign-funnel table tbody tr td:nth-child(5)" userInput="1" stepKey="seeConvertedCountIsOne"/>
         <see selector=".ordo-campaign-funnel table tbody tr td:nth-child(6)" userInput="50.0" stepKey="seeConversionRateIsFiftyPercent"/>
         <dontSee selector=".ordo-campaign-funnel table tbody tr td:nth-child(7)" userInput="0.00" stepKey="dontSeeZeroRevenue"/>
-
-        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
-            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
-            <argument name="successMessage" value="The campaign has been deleted."/>
-        </actionGroup>
     </test>
 </tests>

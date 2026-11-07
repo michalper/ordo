@@ -22,6 +22,14 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
+            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaignA">
+                <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignIdA}"/>
+                <argument name="successMessage" value="The campaign has been deleted."/>
+            </actionGroup>
+            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaignB">
+                <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignIdB}"/>
+                <argument name="successMessage" value="The campaign has been deleted."/>
+            </actionGroup>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
             <deleteData createDataKey="createRule" stepKey="deleteRule"/>
@@ -211,13 +219,5 @@
              fail deterministically in every full-group run (confirmed via a real CI run — see
              AdminCampaignInSegmentConditionTest.xml's own campaign A, which was the actual
              source); closing it here too so no test alphabetically after this one inherits it. -->
-        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaignA">
-            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignIdA}"/>
-            <argument name="successMessage" value="The campaign has been deleted."/>
-        </actionGroup>
-        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaignB">
-            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignIdB}"/>
-            <argument name="successMessage" value="The campaign has been deleted."/>
-        </actionGroup>
     </test>
 </tests>

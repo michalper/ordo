@@ -18,6 +18,10 @@
             <magentoCLI command="config:set ordo_automation/reorder/at_risk_drift_ratio 0.5" stepKey="lowerAtRiskThreshold"/>
         </before>
         <after>
+            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteSegment">
+                <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabSegmentId}"/>
+                <argument name="successMessage" value="The segment has been deleted."/>
+            </actionGroup>
             <magentoCLI command="config:set ordo_automation/reorder/enabled 0" stepKey="disableReorder"/>
             <magentoCLI command="config:set ordo_automation/reorder/at_risk_drift_ratio 0.75" stepKey="restoreAtRiskThresholdDefault"/>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
@@ -126,10 +130,5 @@
             <expectedResult type="string">true</expectedResult>
             <actualResult type="variable">grabHasAtRiskTag</actualResult>
         </assertEquals>
-
-        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteSegment">
-            <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabSegmentId}"/>
-            <argument name="successMessage" value="The segment has been deleted."/>
-        </actionGroup>
     </test>
 </tests>

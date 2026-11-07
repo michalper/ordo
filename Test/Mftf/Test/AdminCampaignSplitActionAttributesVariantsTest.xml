@@ -22,6 +22,10 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
+            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+                <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+                <argument name="successMessage" value="The campaign has been deleted."/>
+            </actionGroup>
             <deleteData createDataKey="createCustomer1" stepKey="deleteCustomer1"/>
             <deleteData createDataKey="createCustomer2" stepKey="deleteCustomer2"/>
             <deleteData createDataKey="createCustomer3" stepKey="deleteCustomer3"/>
@@ -129,10 +133,5 @@
             <expectedResult type="string">b</expectedResult>
             <actualResult type="variable">grabVariantForRecipientB</actualResult>
         </assertEquals>
-
-        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
-            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
-            <argument name="successMessage" value="The campaign has been deleted."/>
-        </actionGroup>
     </test>
 </tests>

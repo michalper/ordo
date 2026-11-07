@@ -18,6 +18,10 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
+            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteSegment">
+                <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabSegmentId}"/>
+                <argument name="successMessage" value="The segment has been deleted."/>
+            </actionGroup>
             <deleteData createDataKey="createCustomer1" stepKey="deleteCustomer1"/>
             <deleteData createDataKey="createCustomer2" stepKey="deleteCustomer2"/>
             <deleteData createDataKey="createCustomer3" stepKey="deleteCustomer3"/>
@@ -49,6 +53,8 @@
         <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addSegmentConditionRow"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForSegmentConditionRow"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="tag" stepKey="selectSegmentConditionType"/>
+        <!-- See AdminCampaignNotInSegmentConditionTest.xml's identical comment on this same wait. -->
+        <wait time="1" stepKey="waitForConditionTypeSwitch"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][tags]']" stepKey="waitForSegmentTagField"/>
         <fillField selector="[name='conditions[conditions][0][tags]']" userInput='["vip_audience_test"]' stepKey="fillSegmentConditionParams"/>
 
@@ -81,10 +87,5 @@
             <expectedResult type="string">|2|</expectedResult>
             <actualResult type="variable">grabGridRowCellsJoined</actualResult>
         </assertStringContainsString>
-
-        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteSegment">
-            <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabSegmentId}"/>
-            <argument name="successMessage" value="The segment has been deleted."/>
-        </actionGroup>
     </test>
 </tests>

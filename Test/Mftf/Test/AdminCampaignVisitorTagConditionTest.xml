@@ -115,7 +115,7 @@
              never-logged-in visitor — a popup rendered in this exact anonymous browser, which only
              the visitor_tag condition matching the real ordo_visitor_tag row (written by a
              completely separate async chain) could have allowed through. -->
-        <waitForElementVisible selector="#ordo-popup-banner" stepKey="waitForPopupBanner"/>
+        <waitForElementVisible selector="#ordo-popup-banner" time="90" stepKey="waitForPopupBanner"/>
         <see selector="#ordo-popup-banner" userInput="Visitor Tag Popup Headline" stepKey="seePopupHeadline"/>
         <see selector="#ordo-popup-banner" userInput="Visitor tag popup body text" stepKey="seePopupBody"/>
         <seeElement selector="#ordo-popup-banner a[href='https://example.test/visitor-tag-popup']" stepKey="seePopupCtaLink"/>

@@ -17,95 +17,96 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
+            <!-- Step 1: trigger=order_placed, condition=order total (kept low, so any real order
+                         clears it), action=notify with real headline/body/cta params - same dedicated
+                         fields "popup" uses (ordo_campaign_form.xml's switcherConfig shows headline/body/
+                         cta_label/cta_url for "notify" too, see its own rule). -->
+                    <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+                    <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+                    <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+                    <fillField selector="[name='name']" userInput="E2E Notify Campaign" stepKey="fillName"/>
+
+                    <!-- The triggers/conditions/actions dynamicRows fieldsets are permanently hidden now that
+                         the Drawflow "Flow" canvas is the only editor a merchant actually sees — see
+                         AdminCampaignAddTagActionTest.xml for the full rationale. "notify" has no dedicated
+                         field descriptor in Block/Adminhtml/Campaign/Edit/Flow::getFieldsConfig() (only
+                         "popup" among the on-site actions does) — its headline/body/cta_label/cta_url all go
+                         through the generic params_json fallback field. -->
+                    <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
+                    <executeJS function="window.ordoFlowTestHook.buildChain([
+                        {kind: 'trigger', type: 'order_placed'},
+                        {kind: 'condition', type: 'order_total_gte', fields: {amount: '50'}},
+                        {kind: 'action', type: 'notify', fields: {params_json: '{&quot;headline&quot;: &quot;E2E Notify Headline&quot;, &quot;body&quot;: &quot;E2E notify body text&quot;, &quot;cta_label&quot;: &quot;See details&quot;, &quot;cta_url&quot;: &quot;https://example.test/e2e-notify&quot;}', delay_minutes: '0'}}
+                    ]);" stepKey="buildFlowGraph"/>
+
+                    <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+                    <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
+                    <waitForPageLoad stepKey="waitForSave"/>
+                    <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+                    <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
+
+                    <!-- Step 2: a REAL order, through REAL storefront checkout, as the REAL customer. -->
+                    <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+                        <argument name="Customer" value="$$createCustomer$$"/>
+                    </actionGroup>
+                    <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+                    <waitForPageLoad stepKey="waitForProductPage"/>
+                    <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+                        <argument name="productName" value="$createProduct.name$"/>
+                    </actionGroup>
+
+                    <amOnPage url="checkout/cart" stepKey="goToCart"/>
+                    <waitForPageLoad stepKey="waitForCartPage"/>
+                    <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+                    <!-- Step 3: see AdminCampaignPopupActionTest.xml's own note on why this is 50, not 1 —
+                         other tests in this same "tracking" group's CI job can leave their own unrelated
+                         order-placed dispatch message sitting unconsumed ahead of ours. -->
+                    <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+                        <argument name="topic">ordo.automation.campaign.dispatch</argument>
+                    </helper>
+
+                    <!-- Step 4: the notification banner appears - same explicit long wait as
+                         AdminCampaignPopupActionTest.xml, for the same reason (tracker.js's poll loop only
+                         fires every 2s on the first tick, then falls back to a full poll-interval cycle). -->
+                    <waitForElementVisible selector="#ordo-notification-list" time="90" stepKey="waitForNotificationList"/>
+                    <see selector="#ordo-notification-list" userInput="E2E Notify Headline" stepKey="seeNotificationHeadline"/>
+                    <see selector="#ordo-notification-list" userInput="E2E notify body text" stepKey="seeNotificationBody"/>
+                    <seeElement selector="#ordo-notification-list a[href='https://example.test/e2e-notify']" stepKey="seeNotificationCtaLink"/>
+
+                    <!-- Step 5: the actual proof this test exists for - reload the page and confirm the SAME
+                         notification is still there. A one-shot popup would already be gone by now (claimed
+                         on the very first poll above); this must survive because ordo_notification rows are
+                         never claimed-and-gone. -->
+                    <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="reloadPageAfterFirstPoll"/>
+                    <waitForPageLoad stepKey="waitForReloadAfterFirstPoll"/>
+                    <waitForElementVisible selector="#ordo-notification-list" time="90" stepKey="waitForNotificationListAfterReload"/>
+                    <see selector="#ordo-notification-list" userInput="E2E Notify Headline" stepKey="seeNotificationHeadlineAfterReload"/>
+
+                    <!-- Step 6: dismiss it - the only client action that ever sets read_at server-side. -->
+                    <click selector="#ordo-notification-list button[aria-label='Dismiss']" stepKey="clickDismissButton"/>
+                    <dontSeeElement selector="#ordo-notification-list div[id^='ordo-notification-']" stepKey="dontSeeNotificationAfterDismiss"/>
+
+                    <!-- Step 7: reload again - if the dismiss above only removed it from this page's own DOM
+                         without actually reaching the server, a fresh poll on this new page load would bring
+                         it right back. It must NOT reappear. -->
+                    <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="reloadPageAfterDismiss"/>
+                    <waitForPageLoad stepKey="waitForReloadAfterDismiss"/>
+                    <wait time="5" stepKey="waitForPollAfterDismissReload"/>
+                    <dontSeeElement selector="#ordo-notification-list div[id^='ordo-notification-']" stepKey="dontSeeNotificationAfterDismissReload"/>
+
+                    <!-- Cleanup: same root-caused reasoning as AdminCampaignPopupActionTest.xml's identical
+                         closing step - this campaign's order_total_gte condition (50) matches essentially
+                         any real order in this same "tracking" group's CI job. -->
+
+            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+                <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+                <argument name="successMessage" value="The campaign has been deleted."/>
+            </actionGroup>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
-        <!-- Step 1: trigger=order_placed, condition=order total (kept low, so any real order
-             clears it), action=notify with real headline/body/cta params - same dedicated
-             fields "popup" uses (ordo_campaign_form.xml's switcherConfig shows headline/body/
-             cta_label/cta_url for "notify" too, see its own rule). -->
-        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
-        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
-        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
-        <fillField selector="[name='name']" userInput="E2E Notify Campaign" stepKey="fillName"/>
-
-        <!-- The triggers/conditions/actions dynamicRows fieldsets are permanently hidden now that
-             the Drawflow "Flow" canvas is the only editor a merchant actually sees — see
-             AdminCampaignAddTagActionTest.xml for the full rationale. "notify" has no dedicated
-             field descriptor in Block/Adminhtml/Campaign/Edit/Flow::getFieldsConfig() (only
-             "popup" among the on-site actions does) — its headline/body/cta_label/cta_url all go
-             through the generic params_json fallback field. -->
-        <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
-        <executeJS function="window.ordoFlowTestHook.buildChain([
-            {kind: 'trigger', type: 'order_placed'},
-            {kind: 'condition', type: 'order_total_gte', fields: {amount: '50'}},
-            {kind: 'action', type: 'notify', fields: {params_json: '{&quot;headline&quot;: &quot;E2E Notify Headline&quot;, &quot;body&quot;: &quot;E2E notify body text&quot;, &quot;cta_label&quot;: &quot;See details&quot;, &quot;cta_url&quot;: &quot;https://example.test/e2e-notify&quot;}', delay_minutes: '0'}}
-        ]);" stepKey="buildFlowGraph"/>
-
-        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
-        <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
-        <waitForPageLoad stepKey="waitForSave"/>
-        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
-        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
-
-        <!-- Step 2: a REAL order, through REAL storefront checkout, as the REAL customer. -->
-        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
-            <argument name="Customer" value="$$createCustomer$$"/>
-        </actionGroup>
-        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
-        <waitForPageLoad stepKey="waitForProductPage"/>
-        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
-            <argument name="productName" value="$createProduct.name$"/>
-        </actionGroup>
-
-        <amOnPage url="checkout/cart" stepKey="goToCart"/>
-        <waitForPageLoad stepKey="waitForCartPage"/>
-        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
-
-        <!-- Step 3: see AdminCampaignPopupActionTest.xml's own note on why this is 50, not 1 —
-             other tests in this same "tracking" group's CI job can leave their own unrelated
-             order-placed dispatch message sitting unconsumed ahead of ours. -->
-        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
-            <argument name="topic">ordo.automation.campaign.dispatch</argument>
-        </helper>
-
-        <!-- Step 4: the notification banner appears - same explicit long wait as
-             AdminCampaignPopupActionTest.xml, for the same reason (tracker.js's poll loop only
-             fires every 2s on the first tick, then falls back to a full poll-interval cycle). -->
-        <waitForElementVisible selector="#ordo-notification-list" time="90" stepKey="waitForNotificationList"/>
-        <see selector="#ordo-notification-list" userInput="E2E Notify Headline" stepKey="seeNotificationHeadline"/>
-        <see selector="#ordo-notification-list" userInput="E2E notify body text" stepKey="seeNotificationBody"/>
-        <seeElement selector="#ordo-notification-list a[href='https://example.test/e2e-notify']" stepKey="seeNotificationCtaLink"/>
-
-        <!-- Step 5: the actual proof this test exists for - reload the page and confirm the SAME
-             notification is still there. A one-shot popup would already be gone by now (claimed
-             on the very first poll above); this must survive because ordo_notification rows are
-             never claimed-and-gone. -->
-        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="reloadPageAfterFirstPoll"/>
-        <waitForPageLoad stepKey="waitForReloadAfterFirstPoll"/>
-        <waitForElementVisible selector="#ordo-notification-list" time="90" stepKey="waitForNotificationListAfterReload"/>
-        <see selector="#ordo-notification-list" userInput="E2E Notify Headline" stepKey="seeNotificationHeadlineAfterReload"/>
-
-        <!-- Step 6: dismiss it - the only client action that ever sets read_at server-side. -->
-        <click selector="#ordo-notification-list button[aria-label='Dismiss']" stepKey="clickDismissButton"/>
-        <dontSeeElement selector="#ordo-notification-list div[id^='ordo-notification-']" stepKey="dontSeeNotificationAfterDismiss"/>
-
-        <!-- Step 7: reload again - if the dismiss above only removed it from this page's own DOM
-             without actually reaching the server, a fresh poll on this new page load would bring
-             it right back. It must NOT reappear. -->
-        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="reloadPageAfterDismiss"/>
-        <waitForPageLoad stepKey="waitForReloadAfterDismiss"/>
-        <wait time="5" stepKey="waitForPollAfterDismissReload"/>
-        <dontSeeElement selector="#ordo-notification-list div[id^='ordo-notification-']" stepKey="dontSeeNotificationAfterDismissReload"/>
-
-        <!-- Cleanup: same root-caused reasoning as AdminCampaignPopupActionTest.xml's identical
-             closing step - this campaign's order_total_gte condition (50) matches essentially
-             any real order in this same "tracking" group's CI job. -->
-        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
-            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
-            <argument name="successMessage" value="The campaign has been deleted."/>
-        </actionGroup>
-    </test>
+</test>
 </tests>

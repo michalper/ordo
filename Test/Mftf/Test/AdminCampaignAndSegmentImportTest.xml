@@ -15,6 +15,14 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
+            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteImportedSegment">
+                <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabImportedSegmentId}"/>
+                <argument name="successMessage" value="The segment has been deleted."/>
+            </actionGroup>
+            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteSourceSegment">
+                <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabSourceSegmentId}"/>
+                <argument name="successMessage" value="The segment has been deleted."/>
+            </actionGroup>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
@@ -148,14 +156,5 @@
             <expectedResult type="string">888</expectedResult>
             <actualResult type="variable">fetchImportedSegmentExportBody</actualResult>
         </assertStringContainsString>
-
-        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteImportedSegment">
-            <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabImportedSegmentId}"/>
-            <argument name="successMessage" value="The segment has been deleted."/>
-        </actionGroup>
-        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteSourceSegment">
-            <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabSourceSegmentId}"/>
-            <argument name="successMessage" value="The segment has been deleted."/>
-        </actionGroup>
     </test>
 </tests>
