@@ -608,6 +608,21 @@
             "PRIMARY": true
         }
     },
+    "ordo_coupon_campaign_log": {
+        "column": {
+            "entity_id": true,
+            "coupon_id": true,
+            "campaign_id": true,
+            "created_at": true
+        },
+        "index": {
+            "ORDO_COUPON_CAMPAIGN_LOG_CAMPAIGN_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_COUPON_CAMPAIGN_LOG_COUPON_ID": true
+        }
+    },
     "ordo_ad_audience": {
         "column": {
             "entity_id": true,
