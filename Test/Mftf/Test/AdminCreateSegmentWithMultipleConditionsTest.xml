@@ -47,9 +47,14 @@
         <waitForElementVisible selector="[name='conditions[conditions][1][type]']" stepKey="waitForConditionRowTwo"/>
         <selectOption selector="[name='conditions[conditions][1][type]']" userInput="tag" stepKey="selectConditionTypeTwo"/>
         <!-- See AdminCampaignNotInSegmentConditionTest.xml's identical comment on this same wait. -->
-        <wait time="1" stepKey="waitForConditionTypeSwitchTwo"/>
-        <waitForElementVisible selector="[name='conditions[conditions][1][tags]']" stepKey="waitForConditionTagFieldTwo"/>
-        <fillField selector="[name='conditions[conditions][1][tags]']" userInput='["vip"]' stepKey="fillConditionParamsTwo"/>
+        <!-- segment-tag-multiselect.js hides this raw input the moment its chip
+             editor mounts (view/adminhtml/web/js/segment-tag-multiselect.js's own
+             enhance(): "$input.hide().after($editor)") - it is never visible long
+             enough for waitForElementVisible/fillField to reliably hit it. Setting the
+             value directly via JS and dispatching 'change' is immune to that, same
+             reasoning campaign-flow-editor.js's own buildChain() test hook already
+             documents for the identical hidden-input shape on the Flow canvas. -->
+        <executeJS function="var el = document.querySelector(&quot;[name='conditions[conditions][1][tags]']&quot;); el.value = JSON.stringify(['vip']); el.dispatchEvent(new Event('change'));" stepKey="fillConditionParamsTwo"/>
 
         <waitForElementClickable selector="#save" stepKey="waitForClickSaveClickable"/>
         <click selector="#save" stepKey="clickSave"/>

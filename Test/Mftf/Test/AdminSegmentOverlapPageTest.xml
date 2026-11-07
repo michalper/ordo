@@ -96,9 +96,14 @@
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForSegmentAConditionRow"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="tag" stepKey="selectSegmentAConditionType"/>
         <!-- See AdminCampaignNotInSegmentConditionTest.xml's identical comment on this same wait. -->
-        <wait time="1" stepKey="waitForConditionTypeSwitchA"/>
-        <waitForElementVisible selector="[name='conditions[conditions][0][tags]']" stepKey="waitForSegmentATagField"/>
-        <fillField selector="[name='conditions[conditions][0][tags]']" userInput='["overlap_shared"]' stepKey="fillSegmentATag"/>
+        <!-- segment-tag-multiselect.js hides this raw input the moment its chip
+             editor mounts (view/adminhtml/web/js/segment-tag-multiselect.js's own
+             enhance(): "$input.hide().after($editor)") - it is never visible long
+             enough for waitForElementVisible/fillField to reliably hit it. Setting the
+             value directly via JS and dispatching 'change' is immune to that, same
+             reasoning campaign-flow-editor.js's own buildChain() test hook already
+             documents for the identical hidden-input shape on the Flow canvas. -->
+        <executeJS function="var el = document.querySelector(&quot;[name='conditions[conditions][0][tags]']&quot;); el.value = JSON.stringify(['overlap_shared']); el.dispatchEvent(new Event('change'));" stepKey="fillSegmentATag"/>
         <waitForElementClickable selector="#save" stepKey="waitForSegmentASaveClickable"/>
         <click selector="#save" stepKey="clickSaveSegmentA"/>
         <waitForPageLoad stepKey="waitForSegmentASave"/>
@@ -113,9 +118,14 @@
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForSegmentBConditionRow"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="tag" stepKey="selectSegmentBConditionType"/>
         <!-- See AdminCampaignNotInSegmentConditionTest.xml's identical comment on this same wait. -->
-        <wait time="1" stepKey="waitForConditionTypeSwitchB"/>
-        <waitForElementVisible selector="[name='conditions[conditions][0][tags]']" stepKey="waitForSegmentBTagField"/>
-        <fillField selector="[name='conditions[conditions][0][tags]']" userInput='["overlap_b"]' stepKey="fillSegmentBTag"/>
+        <!-- segment-tag-multiselect.js hides this raw input the moment its chip
+             editor mounts (view/adminhtml/web/js/segment-tag-multiselect.js's own
+             enhance(): "$input.hide().after($editor)") - it is never visible long
+             enough for waitForElementVisible/fillField to reliably hit it. Setting the
+             value directly via JS and dispatching 'change' is immune to that, same
+             reasoning campaign-flow-editor.js's own buildChain() test hook already
+             documents for the identical hidden-input shape on the Flow canvas. -->
+        <executeJS function="var el = document.querySelector(&quot;[name='conditions[conditions][0][tags]']&quot;); el.value = JSON.stringify(['overlap_b']); el.dispatchEvent(new Event('change'));" stepKey="fillSegmentBTag"/>
         <waitForElementClickable selector="#save" stepKey="waitForSegmentBSaveClickable"/>
         <click selector="#save" stepKey="clickSaveSegmentB"/>
         <waitForPageLoad stepKey="waitForSegmentBSave"/>

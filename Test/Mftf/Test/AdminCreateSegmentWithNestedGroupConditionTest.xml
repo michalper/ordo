@@ -37,8 +37,14 @@
         <click selector="//*[contains(text(), 'Add Condition')]" stepKey="addTopLevelConditionRow"/>
         <waitForElementVisible selector="[name='conditions[conditions][0][type]']" stepKey="waitForTopLevelConditionRow"/>
         <selectOption selector="[name='conditions[conditions][0][type]']" userInput="tag" stepKey="selectTopLevelConditionType"/>
-        <waitForElementVisible selector="[name='conditions[conditions][0][tags]']" stepKey="waitForTagField"/>
-        <fillField selector="[name='conditions[conditions][0][tags]']" userInput='["vip"]' stepKey="fillTagValue"/>
+        <!-- segment-tag-multiselect.js hides this raw input the moment its chip
+             editor mounts (view/adminhtml/web/js/segment-tag-multiselect.js's own
+             enhance(): "$input.hide().after($editor)") - it is never visible long
+             enough for waitForElementVisible/fillField to reliably hit it. Setting the
+             value directly via JS and dispatching 'change' is immune to that, same
+             reasoning campaign-flow-editor.js's own buildChain() test hook already
+             documents for the identical hidden-input shape on the Flow canvas. -->
+        <executeJS function="var el = document.querySelector(&quot;[name='conditions[conditions][0][tags]']&quot;); el.value = JSON.stringify(['vip']); el.dispatchEvent(new Event('change'));" stepKey="fillTagValue"/>
 
         <!-- Row 1: the nested group. Selecting "group" must render segment-group-modal.js's
              inline panel directly under this row's own "Group matches" selector - no popup ever
