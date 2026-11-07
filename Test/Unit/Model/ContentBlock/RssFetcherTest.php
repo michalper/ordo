@@ -10,6 +10,7 @@ use Magento\Framework\Model\Context;
 use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
 use Magento\Framework\Registry;
 use Ordo\Automation\Model\ContentBlock;
+use Ordo\Automation\Model\ContentBlock\HostResolverInterface;
 use Ordo\Automation\Model\ContentBlock\Renderer\RssItemRenderer;
 use Ordo\Automation\Model\ContentBlock\RssFetcher;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -23,6 +24,9 @@ class RssFetcherTest extends TestCase
     private AdapterInterface&\PHPUnit\Framework\MockObject\MockObject $connection;
     private RssItemRenderer&\PHPUnit\Framework\MockObject\MockObject $rssItemRenderer;
     private LoggerInterface&\PHPUnit\Framework\MockObject\MockObject $logger;
+    private HostResolverInterface&\PHPUnit\Framework\MockObject\MockObject $hostResolver;
+    /** @var array<string, string[]> */
+    private array $resolverAnswers = [];
     private RssFetcher $fetcher;
 
     protected function setUp(): void
@@ -35,8 +39,23 @@ class RssFetcherTest extends TestCase
             ->willReturnMap([['ordo_content_block_rss_cache', 'ordo_content_block_rss_cache']]);
         $this->rssItemRenderer = $this->createMock(RssItemRenderer::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->hostResolver = $this->createMock(HostResolverInterface::class);
+        // Registered exactly once - PHPUnit's mock matcher uses the FIRST method() stub
+        // registered on a given method for every invocation (there's no "last one wins" once a
+        // method()-only, unscoped stub exists), so setResolverAnswers() below mutates this
+        // shared array by reference instead of registering a second callback.
+        $this->hostResolver->method('resolve')->willReturnCallback(
+            fn (string $host): array => $this->resolverAnswers[$host] ?? []
+        );
+        $this->setResolverAnswers(['example.com' => ['93.184.216.34']]);
 
-        $this->fetcher = new RssFetcher($this->curl, $this->resourceConnection, $this->rssItemRenderer, $this->logger);
+        $this->fetcher = new RssFetcher(
+            $this->curl,
+            $this->resourceConnection,
+            $this->rssItemRenderer,
+            $this->logger,
+            $this->hostResolver
+        );
     }
 
     private function makeBlock(array $config): ContentBlock
@@ -49,6 +68,18 @@ class RssFetcherTest extends TestCase
         $block->setConfigArray($config);
 
         return $block;
+    }
+
+    /**
+     * Adds/overrides resolve() answers for specific hosts, on top of setUp()'s single stub
+     * registration - see that registration's own comment for why this merges into the shared
+     * array rather than registering a new mock behavior.
+     *
+     * @param array<string, string[]> $answers
+     */
+    private function setResolverAnswers(array $answers): void
+    {
+        $this->resolverAnswers = $answers + $this->resolverAnswers;
     }
 
     private const VALID_RSS = <<<'XML'
@@ -254,6 +285,69 @@ XML;
         $this->logger->expects(self::once())->method('error');
 
         $this->fetcher->fetch($this->makeBlock(['feed_url' => 'http://169.254.169.254/latest/meta-data']));
+    }
+
+    /**
+     * The actual DNS-rebinding close: a hostname that resolves to a private address must be
+     * rejected the same way a literal private IP already is - resolveSafeConnectIp() validates
+     * every address HostResolverInterface::resolve() returns, not just the literal host string.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRejectsFeedUrlWhoseHostnameResolvesToAPrivateAddressWithoutCallingCurl(): void
+    {
+        $this->setResolverAnswers(['attacker.example' => ['10.0.0.5']]);
+
+        $this->curl->expects(self::never())->method('get');
+        $this->connection->expects(self::once())->method('query')->with(
+            self::anything(),
+            [3, 'Feed URL must not point at a private/reserved address.']
+        );
+        $this->rssItemRenderer->expects(self::never())->method('render');
+        $this->logger->expects(self::once())->method('error');
+
+        $this->fetcher->fetch($this->makeBlock(['feed_url' => 'http://attacker.example/feed.xml']));
+    }
+
+    /**
+     * An unresolvable hostname fails closed rather than silently falling through to curl's own
+     * (unpinned) resolution.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRejectsFeedUrlWithAnUnresolvableHostnameWithoutCallingCurl(): void
+    {
+        $this->setResolverAnswers(['nowhere.example' => []]);
+
+        $this->curl->expects(self::never())->method('get');
+        $this->connection->expects(self::once())->method('query')->with(
+            self::anything(),
+            [3, 'Feed URL host could not be resolved.']
+        );
+        $this->rssItemRenderer->expects(self::never())->method('render');
+        $this->logger->expects(self::once())->method('error');
+
+        $this->fetcher->fetch($this->makeBlock(['feed_url' => 'http://nowhere.example/feed.xml']));
+    }
+
+    /**
+     * fetchBody() must pin the real curl connection to the exact address resolveSafeConnectIp()
+     * validated - not just trust curl's own, separate resolution of the same hostname at
+     * connect time (that would reopen the DNS-rebinding gap resolving/validating exists to
+     * close).
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPinsTheCurlConnectionToTheValidatedResolvedAddress(): void
+    {
+        $setOptionCalls = [];
+        $this->curl->method('setOption')->willReturnCallback(function ($option, $value) use (&$setOptionCalls) {
+            $setOptionCalls[$option] = $value;
+            return true;
+        });
+        $this->curl->method('getStatus')->willReturn(200);
+        $this->curl->method('getBody')->willReturn(self::VALID_RSS);
+
+        $this->fetcher->fetch($this->makeBlock(['feed_url' => 'https://example.com/feed.xml']));
+
+        self::assertSame(['example.com:443:93.184.216.34'], $setOptionCalls[CURLOPT_RESOLVE] ?? null);
     }
 
     #[AllowMockObjectsWithoutExpectations]
