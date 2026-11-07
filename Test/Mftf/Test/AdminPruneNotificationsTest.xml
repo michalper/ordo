@@ -30,10 +30,14 @@
         <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
         <fillField selector="[name='name']" userInput="Prune Notifications Campaign" stepKey="fillName"/>
 
+        <!-- Notify now declares getParamFields() => [headline, body, cta_label, cta_url]
+             (refactor 4bb9136), so the Flow canvas renders a dedicated "headline" input instead
+             of the params_json fallback textarea - see AdminCampaignNotifyActionTest.xml's own
+             comment on this. -->
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
-            {kind: 'action', type: 'notify', fields: {params_json: '{&quot;headline&quot;: &quot;Prune Test Notification Headline&quot;}', delay_minutes: '0'}}
+            {kind: 'action', type: 'notify', fields: {headline: 'Prune Test Notification Headline', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraph"/>
 
         <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>

@@ -38,13 +38,14 @@
 
         <!-- The triggers/conditions/actions dynamicRows fieldsets are permanently hidden now that
              the Drawflow "Flow" canvas is the only editor a merchant actually sees — see
-             AdminCampaignAddTagActionTest.xml for the full rationale. "nps_survey" has no
-             dedicated field descriptor in getFieldsConfig() — "question" goes through the
-             generic params_json fallback field. -->
+             AdminCampaignAddTagActionTest.xml for the full rationale. NpsSurvey now declares
+             getParamFields() => [question] (refactor 4bb9136), so the Flow canvas renders a
+             dedicated "question" input instead of the params_json fallback textarea - same
+             silent-no-op bug Step 2 below's own comment documents for nps_score_at_least. -->
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvasA"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
-            {kind: 'action', type: 'nps_survey', fields: {params_json: '{&quot;question&quot;: &quot;How likely are you to recommend us to a friend?&quot;}', delay_minutes: '0'}}
+            {kind: 'action', type: 'nps_survey', fields: {question: 'How likely are you to recommend us to a friend?', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraphA"/>
 
         <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaignA"/>

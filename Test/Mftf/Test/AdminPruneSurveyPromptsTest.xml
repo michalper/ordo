@@ -30,12 +30,13 @@
         <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
         <fillField selector="[name='name']" userInput="Prune Survey Prompts Campaign" stepKey="fillName"/>
 
-        <!-- nps_survey has no dedicated field descriptor in Flow::getFieldsConfig(), so it renders
-             via the generic params_json fallback textarea. -->
+        <!-- NpsSurvey now declares getParamFields() => [question] (refactor 4bb9136), so the Flow
+             canvas renders a dedicated "question" input instead of the params_json fallback
+             textarea - see AdminCampaignNpsSurveyActionTest.xml's own comment on this. -->
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
-            {kind: 'action', type: 'nps_survey', fields: {params_json: '{&quot;question&quot;: &quot;Prune Test Survey Question&quot;}', delay_minutes: '0'}}
+            {kind: 'action', type: 'nps_survey', fields: {question: 'Prune Test Survey Question', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraph"/>
 
         <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
