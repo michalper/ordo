@@ -27,7 +27,7 @@
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'export_test_distinctive_tag', delay_minutes: '0'}}
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;export_test_distinctive_tag&quot;]', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraph"/>
         <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
         <waitForPageLoad stepKey="waitForCampaignSave"/>

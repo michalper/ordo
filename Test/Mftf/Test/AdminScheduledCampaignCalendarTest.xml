@@ -50,7 +50,7 @@
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForScheduledFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'scheduled_at', fields: {scheduled_at: '{$generateScheduledAtValue}'}},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'schedule_calendar_test', delay_minutes: '0'}}
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;schedule_calendar_test&quot;]', delay_minutes: '0'}}
         ]);" stepKey="buildScheduledFlowGraph"/>
         <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableScheduledCampaign"/>
         <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyScheduledCampaign"/>
@@ -66,7 +66,7 @@
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForRecurringFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'recurring_schedule', fields: {cron_expression: '0 8 * * 0'}},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'schedule_calendar_test', delay_minutes: '0'}}
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;schedule_calendar_test&quot;]', delay_minutes: '0'}}
         ]);" stepKey="buildRecurringFlowGraph"/>
         <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableRecurringCampaign"/>
         <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyRecurringCampaign"/>

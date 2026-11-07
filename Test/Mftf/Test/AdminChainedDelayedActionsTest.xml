@@ -37,9 +37,9 @@
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'chain-start', delay_minutes: '0'}},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'chain-middle', delay_minutes: '1440'}},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'chain-end', delay_minutes: '1440'}}
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;chain-start&quot;]', delay_minutes: '0'}},
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;chain-middle&quot;]', delay_minutes: '1440'}},
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;chain-end&quot;]', delay_minutes: '1440'}}
         ]);" stepKey="buildFlowGraph"/>
 
         <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>

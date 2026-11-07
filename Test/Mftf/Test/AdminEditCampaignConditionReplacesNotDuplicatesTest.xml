@@ -40,7 +40,7 @@
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
             {kind: 'condition', type: 'order_total_gte', fields: {amount: '30'}},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'oldtag'}}
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;oldtag&quot;]'}}
         ]);" stepKey="buildFlowGraph"/>
 
         <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->

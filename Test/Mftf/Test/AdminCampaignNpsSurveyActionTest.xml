@@ -74,7 +74,7 @@
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'tag_added'},
             {kind: 'condition', type: 'nps_score_at_least', fields: {threshold: '9'}},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'nps_promoter', delay_minutes: '0'}}
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;nps_promoter&quot;]', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraphB"/>
 
         <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaignB"/>

@@ -35,7 +35,7 @@
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'retry_test_ok', delay_minutes: '10'}},
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;retry_test_ok&quot;]', delay_minutes: '10'}},
             {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'Retried delayed action fired.', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraph"/>
 

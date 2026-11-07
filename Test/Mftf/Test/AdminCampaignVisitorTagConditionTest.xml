@@ -41,7 +41,7 @@
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'visitor_tag_added'},
-            {kind: 'condition', type: 'visitor_tag', fields: {tag: 'clicked_hero-cta-button'}},
+            {kind: 'condition', type: 'visitor_tag', fields: {tags: '[&quot;clicked_hero-cta-button&quot;]'}},
             {kind: 'action', type: 'popup', fields: {headline: 'Visitor Tag Popup Headline', body: 'Visitor tag popup body text', cta_label: 'See the offer', cta_url: 'https://example.test/visitor-tag-popup', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraph"/>
 

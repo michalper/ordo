@@ -46,7 +46,7 @@
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
             {kind: 'trigger', type: 'customer_registered'},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'multi-trigger-test-tag', delay_minutes: '0'}}
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;multi-trigger-test-tag&quot;]', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraph"/>
 
         <!-- "enabled" renders as a Magento_Ui single-checkbox styled as a toggle switch

@@ -33,7 +33,7 @@
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
             {kind: 'condition', type: 'order_total_gte', fields: {amount: '999999'}},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'multi-campaign-a-never-fires', delay_minutes: '0'}}
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;multi-campaign-a-never-fires&quot;]', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraphA"/>
 
         <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaignA"/>
@@ -51,7 +51,7 @@
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvasB"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'multi-campaign-b-always-fires', delay_minutes: '0'}}
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;multi-campaign-b-always-fires&quot;]', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraphB"/>
 
         <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaignB"/>

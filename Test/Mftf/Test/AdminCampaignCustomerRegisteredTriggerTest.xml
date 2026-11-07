@@ -40,7 +40,7 @@
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'customer_registered'},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'new-registrant', delay_minutes: '0'}}
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;new-registrant&quot;]', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraph"/>
 
         <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
