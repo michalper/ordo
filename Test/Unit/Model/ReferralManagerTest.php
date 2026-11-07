@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Model;
 
+use Magento\Framework\Exception\AlreadyExistsException;
 use Ordo\Automation\Model\Referral;
 use Ordo\Automation\Model\ReferralCode;
 use Ordo\Automation\Model\ReferralCodeFactory;
@@ -116,6 +117,47 @@ class ReferralManagerTest extends TestCase
         $this->referralCodeResource->expects(self::once())->method('save')->with($newModel);
 
         self::assertSame('NEWCODE1', $this->makeManager()->getOrCreateCode(5));
+    }
+
+    public function testGetOrCreateCodeReturnsExistingCodeWhenItLosesTheRaceOnCustomerId(): void
+    {
+        $winner = $this->createStub(ReferralCode::class);
+        $winner->method('getId')->willReturn(1);
+        $winner->method('getCode')->willReturn('WINNER1');
+
+        $this->referralCodeCollectionFactory->method('create')->willReturnOnConsecutiveCalls(
+            $this->makeReferralCodeCollection(null),
+            $this->makeReferralCodeCollection($winner)
+        );
+
+        $this->referralCodeGenerator->method('generateUnique')->willReturn('LOSER01');
+
+        $newModel = $this->createStub(ReferralCode::class);
+        $this->referralCodeFactory->method('create')->willReturn($newModel);
+
+        $this->referralCodeResource = $this->createMock(ReferralCodeResource::class);
+        $this->referralCodeResource->expects(self::once())->method('save')->with($newModel)
+            ->willThrowException(new AlreadyExistsException(__('Unique constraint violation found')));
+
+        self::assertSame('WINNER1', $this->makeManager()->getOrCreateCode(5));
+    }
+
+    public function testGetOrCreateCodeRethrowsWhenSaveFailsAndNoCodeExistsForTheCustomer(): void
+    {
+        $this->referralCodeCollectionFactory->method('create')
+            ->willReturn($this->makeReferralCodeCollection(null));
+
+        $this->referralCodeGenerator->method('generateUnique')->willReturn('COLLIDE1');
+
+        $newModel = $this->createStub(ReferralCode::class);
+        $this->referralCodeFactory->method('create')->willReturn($newModel);
+
+        $this->referralCodeResource = $this->createStub(ReferralCodeResource::class);
+        $this->referralCodeResource->method('save')
+            ->willThrowException(new AlreadyExistsException(__('Unique constraint violation found')));
+
+        $this->expectException(AlreadyExistsException::class);
+        $this->makeManager()->getOrCreateCode(5);
     }
 
     public function testResolveReferrerCustomerIdReturnsNullForUnknownCode(): void
