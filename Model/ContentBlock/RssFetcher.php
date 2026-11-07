@@ -37,7 +37,8 @@ class RssFetcher
         private readonly Curl $curl,
         private readonly ResourceConnection $resourceConnection,
         private readonly RssItemRenderer $rssItemRenderer,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly HostResolverInterface $hostResolver
     ) {
     }
 
@@ -80,11 +81,22 @@ class RssFetcher
 
     private function fetchBody(string $feedUrl): string
     {
-        $this->assertSafeUrl($feedUrl);
+        // No Magento core alternative extracts scheme/host/port from an arbitrary string
+        // without a network call.
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        $parts = parse_url($feedUrl);
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        $port = (int) ($parts['port'] ?? ($scheme === 'https' ? 443 : 80));
+        $connectIp = $this->resolveSafeConnectIp($scheme, $host);
 
         $this->curl->setTimeout(self::TIMEOUT_SECONDS);
         $this->curl->setOption(CURLOPT_MAXFILESIZE, self::MAX_RESPONSE_BYTES);
         $this->curl->setOption(CURLOPT_FOLLOWLOCATION, false);
+        // Pins the actual TCP connection to the exact address validated by
+        // resolveSafeConnectIp() above, regardless of what a second, independent DNS lookup at
+        // connect time might return - see that method's own docblock for why that gap matters.
+        $this->curl->setOption(CURLOPT_RESOLVE, ["{$host}:{$port}:{$connectIp}"]);
         $this->curl->get($feedUrl);
 
         $status = $this->curl->getStatus();
@@ -106,22 +118,22 @@ class RssFetcher
      * block hostnames that are themselves a literal loopback/private/link-local/reserved
      * address or a well-known local name, so an admin can't be used (deliberately or via a
      * compromised account) to make the app server probe its own cloud metadata endpoint,
-     * localhost, or internal-network services by IP. Redirects are disabled above for the same
-     * reason — a validated URL could otherwise 302 to an internal address at fetch time.
+     * localhost, or internal-network services by IP. Redirects are disabled in fetchBody() for
+     * the same reason — a validated URL could otherwise 302 to an internal address at fetch time.
      *
-     * This deliberately does NOT resolve arbitrary hostnames (DNS lookups here would make unit
-     * tests network-dependent, and a real resolver check belongs behind an injectable interface
-     * if this needs hardening further) — a hostname that resolves to a private address via DNS
-     * rebinding is a known residual risk of this simpler check, not something this method
-     * catches.
+     * A hostname (as opposed to a literal IP) is resolved exactly once, here, via
+     * HostResolverInterface — every candidate address it returns is validated, and the first one
+     * is returned for fetchBody() to pin the real connection to via CURLOPT_RESOLVE. That pin is
+     * what actually closes the DNS-rebinding gap: without it, a hostname that resolves safely
+     * right here but is reconfigured (by its own, attacker-controlled DNS) to answer privately a
+     * moment later would still have curl's own, independent connect-time lookup reach an
+     * internal address — validating the hostname alone, with no control over what address the
+     * real request ends up using, would not have been a real fix.
+     *
+     * @return string the IP fetchBody() should pin the real connection to
      */
-    private function assertSafeUrl(string $feedUrl): void
+    private function resolveSafeConnectIp(string $scheme, string $host): string
     {
-        // No Magento core alternative extracts scheme/host from an arbitrary string without a network call.
-        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
-        $parts = parse_url($feedUrl);
-        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-        $host = strtolower((string) ($parts['host'] ?? ''));
         if (!in_array($scheme, ['http', 'https'], true) || $host === '') {
             throw new \RuntimeException('Feed URL must be a plain http(s) URL.');
         }
@@ -130,9 +142,26 @@ class RssFetcher
             throw new \RuntimeException('Feed URL must not point at a local host.');
         }
 
-        if (filter_var($host, FILTER_VALIDATE_IP)
-            && !filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)
-        ) {
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            $this->assertSafeIp($host);
+            return $host;
+        }
+
+        $resolved = $this->hostResolver->resolve($host);
+        if ($resolved === []) {
+            throw new \RuntimeException('Feed URL host could not be resolved.');
+        }
+
+        foreach ($resolved as $ip) {
+            $this->assertSafeIp($ip);
+        }
+
+        return $resolved[0];
+    }
+
+    private function assertSafeIp(string $ip): void
+    {
+        if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
             throw new \RuntimeException('Feed URL must not point at a private/reserved address.');
         }
     }
