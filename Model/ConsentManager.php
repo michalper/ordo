@@ -252,9 +252,7 @@ class ConsentManager
             // A channel-level opt-out always wins - narrows, never widens, same as
             // hasTopicConsent(). Otherwise an explicit topic row decides; with none, fall back to
             // this topic's own default (see ConsentTopic::defaultsToConsented()).
-            $states[$customerId] = $channelConsented
-                ? ($topicRows[$customerId] ?? $topic->defaultsToConsented())
-                : false;
+            $states[$customerId] = $channelConsented && ($topicRows[$customerId] ?? $topic->defaultsToConsented());
         }
 
         return $states;
