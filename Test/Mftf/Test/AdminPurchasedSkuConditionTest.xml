@@ -28,8 +28,11 @@
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
-        <!-- Step 1: the campaign - trigger=order_placed, condition=purchased_sku via the
-             params_json fallback (see this test's own description). -->
+        <!-- Step 1: the campaign - trigger=order_placed, condition=purchased_sku. PurchasedSku
+             now declares getParamFields() => [sku] (refactor 4bb9136), so the Flow canvas renders
+             a dedicated "sku" input instead of the params_json fallback textarea - setting
+             fields: {params_json: '...'} here was a silent no-op (same root cause
+             AdminCampaignMultipleConditionsAndTest.xml's own "tag" field comment documents). -->
         <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
         <waitForPageLoad stepKey="waitForNewCampaignPage"/>
         <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
@@ -38,7 +41,7 @@
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
-            {kind: 'condition', type: 'purchased_sku', fields: {params_json: '{&quot;sku&quot;:&quot;$createProduct.sku$&quot;}'}},
+            {kind: 'condition', type: 'purchased_sku', fields: {sku: '$createProduct.sku$'}},
             {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'Purchased SKU condition fired.', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraph"/>
 

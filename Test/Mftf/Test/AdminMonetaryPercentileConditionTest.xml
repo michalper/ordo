@@ -34,10 +34,15 @@
         <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
         <fillField selector="[name='name']" userInput="Monetary Percentile Send Email Campaign" stepKey="fillName"/>
 
+        <!-- AbstractPercentileAtLeast now declares getParamFields() => [percentile] (refactor
+             4bb9136), so the Flow canvas renders a dedicated "percentile" input instead of the
+             params_json fallback textarea - setting fields: {params_json: '...'} here was a
+             silent no-op (same root cause AdminCampaignMultipleConditionsAndTest.xml's own "tag"
+             field comment documents). -->
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
-            {kind: 'condition', type: 'monetary_percentile_at_least', fields: {params_json: '{&quot;percentile&quot;:0}'}},
+            {kind: 'condition', type: 'monetary_percentile_at_least', fields: {percentile: '0'}},
             {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'Monetary percentile condition fired.', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraph"/>
 

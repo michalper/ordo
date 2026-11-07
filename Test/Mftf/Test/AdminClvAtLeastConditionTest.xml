@@ -28,10 +28,12 @@
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
-        <!-- Step 1: the campaign - trigger=order_placed, condition=clv_at_least. No dedicated
-             Flow-editor field for this type (see this test's own description), so "amount" is
-             set via the universal params_json fallback instead of a fields entry - same
-             mechanism/pattern as AdminRecencyPercentileConditionTest's percentile field. -->
+        <!-- Step 1: the campaign - trigger=order_placed, condition=clv_at_least. ClvAtLeast now
+             declares getParamFields() => [amount] (refactor 4bb9136), so the Flow canvas renders
+             a dedicated "amount" input instead of the params_json fallback textarea - setting
+             fields: {params_json: '...'} here was a silent no-op (same root cause
+             AdminCampaignMultipleConditionsAndTest.xml's own "tag" field comment documents for
+             HasTag), which is why this real CI run never found the condition-fired email. -->
         <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
         <waitForPageLoad stepKey="waitForNewCampaignPage"/>
         <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
@@ -40,7 +42,7 @@
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
-            {kind: 'condition', type: 'clv_at_least', fields: {params_json: '{&quot;amount&quot;:1000}'}},
+            {kind: 'condition', type: 'clv_at_least', fields: {amount: '1000'}},
             {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'CLV condition fired.', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraph"/>
 

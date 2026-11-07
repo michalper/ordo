@@ -34,9 +34,12 @@
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
-        <!-- Step 1: the campaign - trigger=order_placed, condition=purchased_category via the
-             params_json fallback (see this test's own description), pointed at the real category
-             the fixture product was just assigned to above. -->
+        <!-- Step 1: the campaign - trigger=order_placed, condition=purchased_category, pointed at
+             the real category the fixture product was just assigned to above. PurchasedCategory
+             now declares getParamFields() => [category_id] (refactor 4bb9136), so the Flow canvas
+             renders a dedicated "category_id" input instead of the params_json fallback textarea
+             - setting fields: {params_json: '...'} here was a silent no-op (same root cause
+             AdminCampaignMultipleConditionsAndTest.xml's own "tag" field comment documents). -->
         <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
         <waitForPageLoad stepKey="waitForNewCampaignPage"/>
         <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
@@ -45,7 +48,7 @@
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
-            {kind: 'condition', type: 'purchased_category', fields: {params_json: '{&quot;category_id&quot;:&quot;$createCategory.id$&quot;}'}},
+            {kind: 'condition', type: 'purchased_category', fields: {category_id: '$createCategory.id$'}},
             {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'Purchased category condition fired.', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraph"/>
 

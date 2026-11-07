@@ -33,15 +33,16 @@
 
         <!-- The triggers/conditions/actions dynamicRows fieldsets are permanently hidden now that
              the Drawflow "Flow" canvas is the only editor a merchant actually sees — see
-             AdminCampaignAddTagActionTest.xml for the full rationale. "notify" has no dedicated
-             field descriptor in Block/Adminhtml/Campaign/Edit/Flow::getFieldsConfig() (only
-             "popup" among the on-site actions does) — its headline/body/cta_label/cta_url all go
-             through the generic params_json fallback field. -->
+             AdminCampaignAddTagActionTest.xml for the full rationale. Notify now declares
+             getParamFields() => [headline, body, cta_label, cta_url] (refactor 4bb9136), so the
+             Flow canvas renders dedicated inputs for each instead of the params_json fallback
+             textarea - see AdminCampaignMultipleConditionsAndTest.xml's own "tag" field comment
+             for the general silent-no-op shape of this bug. -->
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
             {kind: 'condition', type: 'order_total_gte', fields: {amount: '50'}},
-            {kind: 'action', type: 'notify', fields: {params_json: '{&quot;headline&quot;: &quot;E2E Notify Headline&quot;, &quot;body&quot;: &quot;E2E notify body text&quot;, &quot;cta_label&quot;: &quot;See details&quot;, &quot;cta_url&quot;: &quot;https://example.test/e2e-notify&quot;}', delay_minutes: '0'}}
+            {kind: 'action', type: 'notify', fields: {headline: 'E2E Notify Headline', body: 'E2E notify body text', cta_label: 'See details', cta_url: 'https://example.test/e2e-notify', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraph"/>
 
         <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
