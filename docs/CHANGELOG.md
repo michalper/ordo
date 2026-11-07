@@ -9,6 +9,25 @@ it doesn't update itself from this file.
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-11-07
+
+### Fixed
+
+- **Segment edit page's "Add Tag" bulk action silently applied to nobody** —
+  `Controller\Adminhtml\Segment\BulkAction` queued the action in the single-tag shape
+  (`{"tag": ...}`) `AddTag` used before 1.5.0's tag-chip-editor refactor; `AddTag::execute()` has
+  read a `tags` array ever since, so every real "Add Tag" bulk action click since 1.5.0 queued
+  and reported success without ever writing a tag. `BulkAction` now builds `{"tags": [...]}`;
+  verified end-to-end against a real database.
+- 25 MFTF test files still referenced the pre-1.5.0 single-tag `add_tag`/`tag`/`visitor_tag`
+  field shape (`fields: {tag: ...}` instead of `{tags: '[...]'}`), explaining the
+  `No ordo_customer_tag row found`/MailHog-assertion failures across several scheduled MFTF runs
+  since 1.5.0 — brought back in sync with the real field name. No module behavior change.
+- Two unrelated MFTF-only timing/action issues surfaced by the same runs: `<fillField>` used on
+  two native `<select>` fields (`category_id`/`rule_id`) instead of `<selectOption>`, and several
+  segment condition tests filled the dynamically-shown `tags` field before waiting for it to
+  become visible.
+
 ## [1.5.0] - 2026-11-06
 
 ### Added
