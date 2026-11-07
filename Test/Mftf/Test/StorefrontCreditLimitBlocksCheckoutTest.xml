@@ -25,19 +25,24 @@
         </after>
 
         <!-- Step 1: a real, low credit limit - same admin form field/tab as AdminSendCreditLimitAlertTest.
-             SimpleProduct2's fixture price (123.00) comfortably exceeds it once the FIRST order is
-             placed (utilization was still 0% at that moment, so it goes through normally). -->
+             Set to 150, deliberately ABOVE SimpleProduct2's fixture price (123.00):
+             BlockOverLimitCheckout folds the quote's OWN grand total into the projected
+             utilization check (CreditLimitCalculator::getProjectedUtilizationPercent()), so a
+             limit at or below 123 would incorrectly block even this FIRST order on its own
+             (123/limit alone would already be >= 100%). 150 keeps a single order under the
+             threshold (123/150 = 82%) while still letting two orders combined clear it. -->
         <amOnPage url="{{AdminEditCustomerPage.url($$createCustomer.id$$)}}" stepKey="goToCustomerEditPage"/>
         <waitForPageLoad stepKey="waitForCustomerEditPage"/>
         <actionGroup ref="AdminOpenAccountInformationTabFromCustomerEditPageActionGroup" stepKey="openAccountInformationTab"/>
         <waitForElementVisible selector="[name='customer[ordo_credit_limit]']" stepKey="waitForCreditLimitField"/>
-        <fillField selector="[name='customer[ordo_credit_limit]']" userInput="50" stepKey="fillCreditLimit"/>
+        <fillField selector="[name='customer[ordo_credit_limit]']" userInput="150" stepKey="fillCreditLimit"/>
         <click selector="{{AdminCustomerMainActionsSection.saveButton}}" stepKey="saveCustomer"/>
         <see selector="{{AdminCustomerMessagesSection.successMessage}}" userInput="You saved the customer" stepKey="seeCustomerSavedMessage"/>
 
-        <!-- Step 2: the FIRST real order - placed normally, since the plugin only checks
-             utilization as it stands BEFORE this order (0%, nothing on the account yet). Its own
-             total_due (unpaid, no invoice) becomes the "used credit" for every check from here on. -->
+        <!-- Step 2: the FIRST real order - placed normally. The plugin folds this order's own
+             grand total into the projected check (0 existing + 123 this order = 123/150 = 82%),
+             still under the 100% threshold. Its own total_due (unpaid, no invoice) becomes part
+             of the "used credit" for every check from here on. -->
         <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
             <argument name="Customer" value="$$createCustomer$$"/>
         </actionGroup>
@@ -50,10 +55,11 @@
         <waitForPageLoad stepKey="waitForCartPageFirstOrder"/>
         <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeFirstOrder"/>
 
-        <!-- Step 3: the SECOND real checkout attempt - utilization is now 123.00/50.00 = 246%,
-             well past the plugin's >= 100% threshold, so this one must be blocked before the
-             order is ever created. Built manually (not PlaceOrderWithLoggedUserActionGroup,
-             which asserts the SUCCESS page) since the point here is the FAILURE path. -->
+        <!-- Step 3: the SECOND real checkout attempt - projected utilization is now
+             (123.00 already placed + 123.00 this order) / 150.00 = 164%, well past the plugin's
+             >= 100% threshold, so this one must be blocked before the order is ever created.
+             Built manually (not PlaceOrderWithLoggedUserActionGroup, which asserts the SUCCESS
+             page) since the point here is the FAILURE path. -->
         <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPageSecondOrder"/>
         <waitForPageLoad stepKey="waitForProductPageSecondOrder"/>
         <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCartSecondOrder">

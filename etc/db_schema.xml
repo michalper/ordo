@@ -1097,6 +1097,7 @@
         <column xsi:type="datetime" name="sent_at" nullable="false" comment="When this campaign send happened"/>
         <column xsi:type="datetime" name="acted_at" nullable="true" comment="Set once the customer places an order after this send — null until/unless they respond"/>
         <column xsi:type="int" name="order_id" padding="10" unsigned="true" nullable="true" comment="sales_order.entity_id — the order that constitutes the conversion, set together with acted_at"/>
+        <column xsi:type="int" name="trigger_order_id" padding="10" unsigned="true" nullable="true" comment="sales_order.entity_id whose own order_placed/referral_converted dispatch produced this send (CampaignOutcomeLogger::logSent()'s own $triggerOrderId) — null for every other trigger type. Lets markActed() refuse to credit a row to the exact order that caused it, when the queue consumer races ahead of that same order's own sales_order_save_after."/>
         <constraint xsi:type="primary" referenceId="PRIMARY"><column name="entity_id"/></constraint>
         <index referenceId="ORDO_CAMPAIGN_OUTCOME_LOG_CAMPAIGN_ID_VARIANT" indexType="btree">
             <column name="campaign_id"/>
