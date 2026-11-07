@@ -248,6 +248,31 @@ function applyPaletteGroupSearch($, $group, query, hasQuery) {
     }
 }
 
+/**
+ * $('<div>').text(raw).html() (this function's own previous implementation, and still the
+ * pattern several call sites below used inline instead of calling this) only escapes
+ * `<`/`>`/`&` - exactly what's needed for plain element CONTENT, but NOT `"`, which every
+ * caller embedding the result into a double-quoted HTML attribute (most of them) also needs.
+ * That gap stayed invisible as long as every escaped value was ordinary text unlikely to
+ * contain a literal `"` - until the tag_multiselect field type (below) started escaping
+ * JSON.stringify() output for a `value="..."` attribute, which always contains one: the
+ * unescaped `"` right after the opening `[` closed the attribute early, truncating the
+ * browser's parsed value to just `[` (caught by AdminCreateCampaignWithConditionsAndActionsTest
+ * on reload - a `"`-free tag like "vip" doesn't need the embedded quote to reproduce this;
+ * JSON.stringify's own surrounding quotes around the array are enough on their own).
+ *
+ * @param {String} raw
+ * @return {String}
+ */
+function escapeHtml(raw) {
+    return String(raw)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll('\'', '&#39;');
+}
+
 define([
     'jquery',
     'uiRegistry',
@@ -279,31 +304,6 @@ define([
             .catch(function () {
                 return [];
             });
-    }
-
-    /**
-     * $('<div>').text(raw).html() (this function's own previous implementation, and still the
-     * pattern several call sites below used inline instead of calling this) only escapes
-     * `<`/`>`/`&` - exactly what's needed for plain element CONTENT, but NOT `"`, which every
-     * caller embedding the result into a double-quoted HTML attribute (most of them) also needs.
-     * That gap stayed invisible as long as every escaped value was ordinary text unlikely to
-     * contain a literal `"` - until the tag_multiselect field type (below) started escaping
-     * JSON.stringify() output for a `value="..."` attribute, which always contains one: the
-     * unescaped `"` right after the opening `[` closed the attribute early, truncating the
-     * browser's parsed value to just `[` (caught by AdminCreateCampaignWithConditionsAndActionsTest
-     * on reload - a `"`-free tag like "vip" doesn't need the embedded quote to reproduce this;
-     * JSON.stringify's own surrounding quotes around the array are enough on their own).
-     *
-     * @param {String} raw
-     * @return {String}
-     */
-    function escapeHtml(raw) {
-        return String(raw)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
     }
 
     /**
