@@ -69,6 +69,20 @@
             "ORDO_REVIEW_REQUEST_LOG_ORDER_ID": true
         }
     },
+    "ordo_customer_inactive_trigger_claim": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "campaign_id": true,
+            "fired_at": true
+        },
+        "index": {
+            "ORDO_CSTR_INACTIVE_TRIGGER_CLAIM_CSTR_ID_CAMPAIGN_ID_FIRED_AT": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
     "ordo_email_template_draft": {
         "column": {
             "entity_id": true,

@@ -93,6 +93,19 @@ interface CampaignTriggerInterface
     public const TRIGGER_REFERRAL_CONVERTED = 'referral_converted';
 
     /**
+     * Fires from Cron\DispatchCustomerInactiveCampaigns for a registered customer whose most
+     * recent non-canceled order (or registration, if they never ordered) is older than this
+     * trigger's own `days` param - unlike Cron\TagInactiveCustomers/SendWinBackEmails (a single,
+     * fixed-threshold, non-composable email), this is a real trigger a campaign builds on, so a
+     * store can run several win-back-shaped campaigns at different inactivity windows (e.g. a
+     * 30-day nudge and a separate 90-day "we miss you" with a bigger incentive). Claimed via
+     * ordo_customer_inactive_trigger_claim, re-firable after Helper\Config::
+     * getCustomerInactiveRefireCooldownDays() - a customer can leave and re-enter inactivity more
+     * than once, unlike TRIGGER_REVIEW_REQUEST_DUE's one-dispatch-per-order-forever shape.
+     */
+    public const TRIGGER_CUSTOMER_INACTIVE = 'customer_inactive';
+
+    /**
      * @return int|null
      */
     public function getEntityId(): ?int;

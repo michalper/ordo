@@ -1363,6 +1363,18 @@ parameters:
 			path: Cron/TagInactiveCustomers.php
 
 		-
+			message: '#^Parameter \#1 \$sql of method Magento\\Framework\\DB\\Adapter\\AdapterInterface\:\:fetchCol\(\) expects Magento\\Framework\\DB\\Select\|string, Zend_Db_Select given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Cron/DispatchCustomerInactiveCampaigns.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Cron/DispatchCustomerInactiveCampaigns.php
+
+		-
 			message: '#^Cannot cast mixed to float\.$#'
 			identifier: cast.double
 			count: 2
