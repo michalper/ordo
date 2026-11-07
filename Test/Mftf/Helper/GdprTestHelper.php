@@ -14,6 +14,42 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class GdprTestHelper extends Helper
 {
+    /**
+     * Per ADR 0027, the Promotional consent topic now defaults to NOT consented for a customer
+     * with no explicit ordo_customer_consent_topic row - every MFTF scenario whose campaign
+     * relies on a send_email/send_sms/send_whatsapp/send_push action firing (no explicit 'topic'
+     * param, so it defaults to Promotional) needs this called on its freshly-created test
+     * customer, or the send is silently skipped and the scenario times out waiting on MailHog/a
+     * recorded send that was never attempted.
+     */
+    public function grantPromotionalConsent(
+        int $customerId,
+        string $channel = 'email',
+        string $dbHost = '127.0.0.1',
+        string $dbName = 'magento',
+        string $dbUser = 'root',
+        string $dbPassword = ''
+    ): void {
+        $pdo = new \PDO(
+            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
+            $dbUser,
+            $dbPassword,
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+        );
+
+        $statement = $pdo->prepare(
+            'INSERT INTO ordo_customer_consent_topic (customer_id, channel, topic, consented, source) '
+            . 'VALUES (:customer_id, :channel, :topic, 1, :source) '
+            . 'ON DUPLICATE KEY UPDATE consented = 1'
+        );
+        $statement->execute([
+            'customer_id' => $customerId,
+            'channel' => $channel,
+            'topic' => 'promotional',
+            'source' => 'mftf-test-fixture',
+        ]);
+    }
+
     public function assertNoConsentRowForCustomer(
         int $customerId,
         string $dbHost = '127.0.0.1',
