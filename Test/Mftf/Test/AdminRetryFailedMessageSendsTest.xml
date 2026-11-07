@@ -28,8 +28,14 @@
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
-        <!-- Step 1: the campaign - trigger=order_placed, action=send_email with a nonexistent
-             template identifier, so the real send genuinely fails and exhausts SendRetrier. -->
+        <!-- Step 1: the campaign - trigger=order_placed, action=send_email. "template" now
+             renders as a <select> of real, registered templates (SendEmail::getParamFields()'s
+             "options" key, refactor 4bb9136) - a nonexistent identifier has no matching <option>,
+             so buildChain can no longer set it directly (the select's value would just stay
+             unchanged). Save with a real template through the UI instead, then corrupt it to the
+             nonexistent one directly on the saved row right after, same direct-DB-write technique
+             (and the same CampaignActionCorruptorHelper) Step 3 below already uses for the retry
+             row. -->
         <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
         <waitForPageLoad stepKey="waitForNewCampaignPage"/>
         <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
@@ -38,7 +44,7 @@
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
-            {kind: 'action', type: 'send_email', fields: {template: 'ordo_nonexistent_template_xyz', message: 'Retried message send fired.', delay_minutes: '0'}}
+            {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'Retried message send fired.', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraph"/>
 
         <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
@@ -46,6 +52,11 @@
         <waitForPageLoad stepKey="waitForSave"/>
         <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
         <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
+
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\CampaignActionCorruptorHelper" method="setFirstActionParams" stepKey="corruptTemplateToNonexistent">
+            <argument name="campaignId">{$grabCampaignId}</argument>
+            <argument name="paramsJson">{"template":"ordo_nonexistent_template_xyz","message":"Retried message send fired.","delay_minutes":"0"}</argument>
+        </helper>
 
         <!-- Step 2: a REAL order - dispatch runs send_email inline (delay_minutes=0), which
              genuinely fails against the nonexistent template and, after exhausting SendRetrier,
