@@ -18,12 +18,20 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
 class VisitorEventHelper extends Helper
 {
     /**
-     * @throws \RuntimeException if no matching row exists
+     * Polls rather than checking once - the fetch() tracker.js's own window.ordoTrack() call
+     * makes is fire-and-forget (keepalive:true, never awaited by the caller), so a fixed <wait>
+     * before this runs is guessing at a delay that varies with runner load, same reasoning
+     * waitForSurveyResponseRecordedByEmail() below already documents for its own out-of-band
+     * poll - a plain one-shot check here intermittently raced ahead of the real INSERT under CI
+     * load.
+     *
+     * @throws \RuntimeException if no matching row appears within the timeout
      */
     public function assertEventLogged(
         string $visitorId,
         string $eventType,
         string $eventKey = '',
+        int $timeoutSeconds = 10,
         string $dbHost = '127.0.0.1',
         string $dbName = 'magento',
         string $dbUser = 'root',
@@ -44,31 +52,40 @@ class VisitorEventHelper extends Helper
         }
 
         $statement = $pdo->prepare($sql);
-        $statement->execute($params);
-        $count = (int) $statement->fetchColumn();
+        $deadline = microtime(true) + $timeoutSeconds;
 
-        if ($count < 1) {
-            throw new \RuntimeException(sprintf(
-                'No ordo_visitor_event row found for visitor_id="%s" event_type="%s"%s.',
-                $visitorId,
-                $eventType,
-                $eventKey !== '' ? sprintf(' event_key="%s"', $eventKey) : ''
-            ));
-        }
+        do {
+            $statement->execute($params);
+            if ((int) $statement->fetchColumn() > 0) {
+                return;
+            }
+            usleep(500000);
+        } while (microtime(true) < $deadline);
+
+        throw new \RuntimeException(sprintf(
+            'No ordo_visitor_event row found for visitor_id="%s" event_type="%s"%s after %ds.',
+            $visitorId,
+            $eventType,
+            $eventKey !== '' ? sprintf(' event_key="%s"', $eventKey) : '',
+            $timeoutSeconds
+        ));
     }
 
     /**
      * Confirms VisitorAggregator actually wrote a real ordo_visitor_tag row for this visitor —
      * the real, DB-observable effect of crossing Config::getTrackingClickThreshold(), and the
      * exact signal Observer\DispatchVisitorTagAddedCampaigns.php's "visitor_tag_added" trigger
-     * fires from (see VisitorTagManager::addTag()). Same out-of-band PDO pattern as
-     * assertEventLogged() above, against the tag table instead of the event table.
+     * fires from (see VisitorTagManager::addTag()). Same out-of-band PDO polling pattern as
+     * assertEventLogged() above, against the tag table instead of the event table - this one is
+     * normally called right after a drainQueueWithRetry() step rather than a raw fetch(), so the
+     * race is narrower, but still real under CI load.
      *
-     * @throws \RuntimeException if no matching row exists
+     * @throws \RuntimeException if no matching row appears within the timeout
      */
     public function assertVisitorTagAdded(
         string $visitorId,
         string $tag,
+        int $timeoutSeconds = 10,
         string $dbHost = '127.0.0.1',
         string $dbName = 'magento',
         string $dbUser = 'root',
@@ -84,16 +101,23 @@ class VisitorEventHelper extends Helper
         $statement = $pdo->prepare(
             'SELECT COUNT(*) FROM ordo_visitor_tag WHERE visitor_id = :visitor_id AND tag = :tag'
         );
-        $statement->execute(['visitor_id' => $visitorId, 'tag' => $tag]);
-        $count = (int) $statement->fetchColumn();
+        $params = ['visitor_id' => $visitorId, 'tag' => $tag];
+        $deadline = microtime(true) + $timeoutSeconds;
 
-        if ($count < 1) {
-            throw new \RuntimeException(sprintf(
-                'No ordo_visitor_tag row found for visitor_id="%s" tag="%s".',
-                $visitorId,
-                $tag
-            ));
-        }
+        do {
+            $statement->execute($params);
+            if ((int) $statement->fetchColumn() > 0) {
+                return;
+            }
+            usleep(500000);
+        } while (microtime(true) < $deadline);
+
+        throw new \RuntimeException(sprintf(
+            'No ordo_visitor_tag row found for visitor_id="%s" tag="%s" after %ds.',
+            $visitorId,
+            $tag,
+            $timeoutSeconds
+        ));
     }
 
     /**
