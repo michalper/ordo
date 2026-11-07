@@ -42,7 +42,7 @@
         <waitForElementVisible selector="[name='source']" stepKey="waitForSourceField"/>
         <selectOption selector="[name='source']" userInput="category" stepKey="selectCategorySource"/>
         <waitForElementVisible selector="[name='category_id']" stepKey="waitForCategoryIdField"/>
-        <fillField selector="[name='category_id']" userInput="$createCategory.id$" stepKey="fillCategoryId"/>
+        <selectOption selector="[name='category_id']" userInput="$createCategory.id$" stepKey="fillCategoryId"/>
         <!-- item_count is deliberately left at its own default, same reasoning as
              AdminContentBlockProductFeedTest and AdminContentBlockRssTest: rss_item_count,
              product_feed_item_count all share the same underlying dataScope in

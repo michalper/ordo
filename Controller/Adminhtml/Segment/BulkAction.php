@@ -93,7 +93,7 @@ class BulkAction extends AbstractSegmentAction implements HttpPostActionInterfac
                 throw new LocalizedException(__('Please enter a tag.'));
             }
 
-            return ['tag' => $tag];
+            return ['tags' => [$tag]];
         }
 
         $points = $this->getRequest()->getParam('points');

@@ -67,9 +67,9 @@
         </assertEquals>
 
         <seeElementInDOM selector=".ordo-flow-node[data-kind='action'] select.ordo-flow-type-select option[value='add_tag'][selected]" stepKey="seeActionTypePersisted"/>
-        <grabValueFrom selector=".ordo-flow-node[data-kind='action'] input[data-field='tag']" stepKey="grabActionTag"/>
+        <grabValueFrom selector=".ordo-flow-node[data-kind='action'] input[data-field='tags']" stepKey="grabActionTag"/>
         <assertEquals stepKey="assertActionTagValue">
-            <expectedResult type="string">vip</expectedResult>
+            <expectedResult type="string">["vip"]</expectedResult>
             <actualResult type="variable">grabActionTag</actualResult>
         </assertEquals>
     </test>

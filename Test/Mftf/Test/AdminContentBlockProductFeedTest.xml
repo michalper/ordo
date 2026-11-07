@@ -40,7 +40,7 @@
         <waitForElementVisible selector="[name='source']" stepKey="waitForSourceField"/>
         <selectOption selector="[name='source']" userInput="rule" stepKey="selectRuleSource"/>
         <waitForElementVisible selector="[name='rule_id']" stepKey="waitForRuleIdField"/>
-        <fillField selector="[name='rule_id']" userInput="$createRule.rule_id$" stepKey="fillRuleId"/>
+        <selectOption selector="[name='rule_id']" userInput="$createRule.rule_id$" stepKey="fillRuleId"/>
         <!-- item_count is deliberately left at its own default (4) rather than filled here:
              this field and rss_item_count share the same underlying dataScope (see
              ordo_contentblock_form.xml), so a plain [name='item_count'] selector can't reliably
