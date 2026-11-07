@@ -38,6 +38,7 @@
                 <resource id="Ordo_Automation::campaign_comparison" title="Ordo Automation Campaign Comparison" translate="title" sortOrder="750"/>
                 <resource id="Ordo_Automation::cohort_retention" title="Ordo Automation Cohort Retention" translate="title" sortOrder="760"/>
                 <resource id="Ordo_Automation::anomaly_alert" title="Ordo Automation Anomaly Alerts" translate="title" sortOrder="770"/>
+                <resource id="Ordo_Automation::funnel_report" title="Ordo Automation Funnel Report" translate="title" sortOrder="780"/>
             </resource>
         </resources>
     </acl>

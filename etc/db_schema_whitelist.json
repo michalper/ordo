@@ -486,6 +486,20 @@
             "ORDO_PRODUCT_PERFORMANCE_SKU": true
         }
     },
+    "ordo_funnel_daily_stats": {
+        "column": {
+            "entity_id": true,
+            "date": true,
+            "product_view_visitors": true,
+            "cart_add_visitors": true,
+            "checkout_start_visitors": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDO_FUNNEL_DAILY_STATS_DATE": true
+        }
+    },
     "ordo_visitor_tag": {
         "column": {
             "entity_id": true,

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <css src="Ordo_Automation::css/_tokens.css"/>
+        <css src="Ordo_Automation::css/dashboard.css"/>
+    </head>
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="ordo_funnelreport_listing_intro"
+                   template="Ordo_Automation::listing_intro.phtml" before="ordo_funnelreport_listing">
+                <arguments>
+                    <argument name="intro_text" xsi:type="string">One row per day: how many distinct registered customers reached each stage of the purchase journey, and the drop-off into the next one. Scoped to registered customers only, consistently across every stage, including product views — a customer who browsed anonymously and later logged in or registered is still counted (their earlier activity is backfilled), but a pure guest checkout who never creates an account is excluded entirely, the same way every stage is, not just the last one. "Checkout Started" requires the storefront theme to call window.ordoTrack('checkout_start') on its checkout page — a store that hasn't added that integration will simply see that stage (and the drop-off into/out of it) as zero. Figures lag by up to 2 days by design, to give a same-day login time to be matched back to that day's earlier browsing before the numbers are finalized.</argument>
+                </arguments>
+            </block>
+            <uiComponent name="ordo_funnelreport_listing"/>
+        </referenceContainer>
+    </body>
+</page>

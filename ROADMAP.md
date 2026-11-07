@@ -426,17 +426,13 @@ known gaps.
   cooling-down per customer+campaign the same way every other cron-driven trigger in this module
   already does (reorder reminders, abandoned cart, price-drop), would both close that named gap
   and give the engine a genuinely new, reusable capability beyond just win-back.
-- **Purchase funnel / drop-off report.** Twice declined so far in this exact form — the product
-  performance report's and the revenue/channel report's own ADRs both note there's no
-  `visitor_id` on `sales_order`, so a true per-visitor conversion funnel "can't be supported
-  honestly." Both of those declines were scoped to *that report's* per-SKU/per-order shape,
-  though — this module already has the pieces for a differently-scoped funnel: `ordo_visitor_event`
-  (`page_view`/`product_view`/`category_view`/`cart_add`/`element_clicked`) plus
-  `Observer\StitchVisitorIdentity`'s anonymous-visitor-to-customer backfill. A funnel built by
-  joining visitor events to orders via `customer_id` (not `visitor_id`) would be honest about its
-  own real limitation — logged-in/stitched visitors only, guest checkouts excluded — the same
-  "say what it can't measure instead of faking it" discipline ADR 0015/0017 already established,
-  not a different standard. Would also need `cart_add` tracking extended to anonymous visitors
-  (today logged-in-only) and a new `checkout_start` event, plus an incremental daily-stats cron
-  mirroring `Cron\CalculateProductPerformance`'s own reasoning (`ordo_visitor_event` is pruned
-  after ~7 days, so funnel counts must be materialized before that happens).
+- ~~**Purchase funnel / drop-off report.**~~ — shipped, see `docs/adr/0031-purchase-funnel-report.md`.
+  Twice declined before in the product performance/revenue-channel reports' own per-SKU/per-order
+  shape (no `visitor_id` on `sales_order`) - closed with a differently-scoped funnel instead,
+  joining `ordo_visitor_event` to orders via `customer_id`, scoped to registered customers
+  consistently across every stage (not just the last one, or the drop-off percentages would be
+  meaningless). New `checkout_start` event (`window.ordoTrack('checkout_start')`, same
+  theme-integration-point pattern `product_view`/`category_view` already use);
+  `Cron\CalculateFunnelMetrics` materializes daily counts into `ordo_funnel_daily_stats` before
+  `ordo_visitor_event` is pruned, at a 2-day settling lag so a same-day login has time to be
+  stitched back onto that day's earlier browsing first.

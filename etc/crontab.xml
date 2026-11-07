@@ -52,6 +52,12 @@
         <job name="ordo_automation_calculate_product_performance" instance="Ordo\Automation\Cron\CalculateProductPerformance" method="execute">
             <schedule>*/30 * * * *</schedule>
         </job>
+        <!-- Once daily is enough - this recomputes a whole calendar day at a 2-day settling lag
+             (see Cron\CalculateFunnelMetrics's own docblock), comfortably inside the 7-day
+             ordo_visitor_event retention window above regardless of exact time of day. -->
+        <job name="ordo_automation_calculate_funnel_metrics" instance="Ordo\Automation\Cron\CalculateFunnelMetrics" method="execute">
+            <schedule>0 2 * * *</schedule>
+        </job>
         <job name="ordo_automation_run_scheduled_campaign_actions" instance="Ordo\Automation\Cron\RunScheduledCampaignActions" method="execute">
             <schedule>*/5 * * * *</schedule>
         </job>
