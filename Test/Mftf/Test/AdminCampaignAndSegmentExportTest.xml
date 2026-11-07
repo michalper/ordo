@@ -15,10 +15,6 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
-            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteSegment">
-                <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabSegmentId}"/>
-                <argument name="successMessage" value="The segment has been deleted."/>
-            </actionGroup>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
@@ -113,5 +109,10 @@
             <expectedResult type="string">777</expectedResult>
             <actualResult type="variable">fetchSegmentExportBody</actualResult>
         </assertStringContainsString>
+
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteSegment">
+            <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabSegmentId}"/>
+            <argument name="successMessage" value="The segment has been deleted."/>
+        </actionGroup>
     </test>
 </tests>

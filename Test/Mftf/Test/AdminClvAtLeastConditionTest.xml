@@ -17,72 +17,71 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
-            <!-- Step 1: the campaign - trigger=order_placed, condition=clv_at_least. No dedicated
-                         Flow-editor field for this type (see this test's own description), so "amount" is
-                         set via the universal params_json fallback instead of a fields entry - same
-                         mechanism/pattern as AdminRecencyPercentileConditionTest's percentile field. -->
-                    <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
-                    <waitForPageLoad stepKey="waitForNewCampaignPage"/>
-                    <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
-                    <fillField selector="[name='name']" userInput="CLV At Least Send Email Campaign" stepKey="fillName"/>
-
-                    <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
-                    <executeJS function="window.ordoFlowTestHook.buildChain([
-                        {kind: 'trigger', type: 'order_placed'},
-                        {kind: 'condition', type: 'clv_at_least', fields: {params_json: '{&quot;amount&quot;:1000}'}},
-                        {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'CLV condition fired.', delay_minutes: '0'}}
-                    ]);" stepKey="buildFlowGraph"/>
-
-                    <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
-                    <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
-                    <waitForPageLoad stepKey="waitForSave"/>
-                    <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
-                    <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
-
-                    <!-- Step 2: a REAL order (SimpleProduct2, 123.00) - projects to 4428.00 CLV under
-                         default config, comfortably above the 1000.00 threshold via the amplified formula,
-                         while the raw order total/lifetime spend (123.00 each) would not clear it. -->
-                    <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
-                        <argument name="Customer" value="$$createCustomer$$"/>
-                    </actionGroup>
-                    <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
-                    <waitForPageLoad stepKey="waitForProductPage"/>
-                    <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
-                        <argument name="productName" value="$createProduct.name$"/>
-                    </actionGroup>
-                    <amOnPage url="checkout/cart" stepKey="goToCart"/>
-                    <waitForPageLoad stepKey="waitForCartPage"/>
-                    <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
-
-                    <!-- A brief settle wait before draining — defensive against a message-visibility race
-                         under CI load, same reasoning/fix as AdminCampaignMultipleConditionsAndTest.xml's
-                         identical step. -->
-                    <wait time="2" stepKey="waitForDispatchMessageVisible"/>
-                    <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
-                        <argument name="topic">ordo.automation.campaign.dispatch</argument>
-                    </helper>
-
-                    <!-- Step 3: the real, merchant-visible output only a genuine, amplified CLV projection
-                         could have produced. -->
-                    <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seeClvConditionCopyInEmail">
-                        <argument name="expectedText">CLV condition fired.</argument>
-                        <argument name="toAddress">$createCustomer.email$</argument>
-                    </helper>
-
-                    <!-- Cleanup: this campaign's order_placed trigger + clv_at_least(1000) condition is
-                         unconditionally satisfied by essentially any real single order placed later in this
-                         same "segment" group's CI job (a fresh customer's first order always floors at the
-                         same minimum tenure), same root-caused leftover-campaign pollution
-                         AdminMonetaryTotalAtLeastConditionTest.xml's own cleanup comment describes. -->
-
-            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
-                <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
-                <argument name="successMessage" value="The campaign has been deleted."/>
-            </actionGroup>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
-</test>
+        <!-- Step 1: the campaign - trigger=order_placed, condition=clv_at_least. No dedicated
+             Flow-editor field for this type (see this test's own description), so "amount" is
+             set via the universal params_json fallback instead of a fields entry - same
+             mechanism/pattern as AdminRecencyPercentileConditionTest's percentile field. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="CLV At Least Send Email Campaign" stepKey="fillName"/>
+
+        <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
+        <executeJS function="window.ordoFlowTestHook.buildChain([
+            {kind: 'trigger', type: 'order_placed'},
+            {kind: 'condition', type: 'clv_at_least', fields: {params_json: '{&quot;amount&quot;:1000}'}},
+            {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'CLV condition fired.', delay_minutes: '0'}}
+        ]);" stepKey="buildFlowGraph"/>
+
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
+
+        <!-- Step 2: a REAL order (SimpleProduct2, 123.00) - projects to 4428.00 CLV under
+             default config, comfortably above the 1000.00 threshold via the amplified formula,
+             while the raw order total/lifetime spend (123.00 each) would not clear it. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <!-- A brief settle wait before draining — defensive against a message-visibility race
+             under CI load, same reasoning/fix as AdminCampaignMultipleConditionsAndTest.xml's
+             identical step. -->
+        <wait time="2" stepKey="waitForDispatchMessageVisible"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
+
+        <!-- Step 3: the real, merchant-visible output only a genuine, amplified CLV projection
+             could have produced. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seeClvConditionCopyInEmail">
+            <argument name="expectedText">CLV condition fired.</argument>
+            <argument name="toAddress">$createCustomer.email$</argument>
+        </helper>
+
+        <!-- Cleanup: this campaign's order_placed trigger + clv_at_least(1000) condition is
+             unconditionally satisfied by essentially any real single order placed later in this
+             same "segment" group's CI job (a fresh customer's first order always floors at the
+             same minimum tenure), same root-caused leftover-campaign pollution
+             AdminMonetaryTotalAtLeastConditionTest.xml's own cleanup comment describes. -->
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
+    </test>
 </tests>

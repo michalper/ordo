@@ -16,11 +16,7 @@
             <createData entity="SimpleProduct2" stepKey="createProduct"/>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
             <!-- Off by default (see Helper/Config.php's isFrequencyCapEnabled) - restored in
-                 <after>
-            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
-                <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
-                <argument name="successMessage" value="The campaign has been deleted."/>
-            </actionGroup> so it doesn't linger for whatever other campaign-group test runs next in
+                 <after> so it doesn't linger for whatever other campaign-group test runs next in
                  this same install. max_messages/window_hours left at their real defaults (5,
                  24h). -->
             <magentoCLI command="config:set ordo_channels/frequency_cap/enabled 1" stepKey="enableFrequencyCap"/>
@@ -115,5 +111,10 @@
             <argument name="expectedText">Frequency cap test campaign message.</argument>
             <argument name="toAddress">$createCustomer.email$</argument>
         </helper>
+
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
     </test>
 </tests>

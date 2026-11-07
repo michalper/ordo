@@ -17,80 +17,79 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
-            <!-- Step 1: the "recommendations" content block - count deliberately left at its own
-                         default (4), same reasoning as every other content-block test in this suite: this
-                         test doesn't assert on the exact count, only that the one real best-selling product
-                         shows up. -->
-                    <amOnPage url="admin/ordo/contentblock/new" stepKey="goToNewContentBlockPage"/>
-                    <waitForPageLoad stepKey="waitForNewContentBlockPage"/>
-                    <waitForElementVisible selector="[name='identifier']" stepKey="waitForIdentifierField"/>
-                    <fillField selector="[name='identifier']" userInput="e2e_onsite_recommendations_block" stepKey="fillIdentifier"/>
-                    <fillField selector="[name='name']" userInput="E2E On-Site Recommendations Block" stepKey="fillName"/>
-                    <selectOption selector="[name='type']" userInput="recommendations" stepKey="selectRecommendationsType"/>
-
-                    <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveContentBlock"/>
-                    <waitForPageLoad stepKey="waitForContentBlockSave"/>
-                    <see selector=".message-success" userInput="The content block has been saved." stepKey="seeContentBlockSuccessMessage"/>
-                    <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabContentBlockId"/>
-
-                    <!-- Step 2: a plain CMS page - no layout_update_xml or any other special field needed.
-                         The block is embedded via this module's own view/frontend/layout/
-                         cms_page_view_id_e2e-onsite-recommendations-page.xml, matched purely by this
-                         identifier (see this test's own description for why that's the real, supported
-                         mechanism, and why the two mechanisms tried before this one both had real problems). -->
-                    <createData entity="_defaultCmsPage" stepKey="createCmsPage">
-                        <field key="identifier">e2e-onsite-recommendations-page</field>
-                    </createData>
-
-                    <!-- Step 3: a REAL order, through REAL storefront checkout, by a throwaway seed
-                         customer - this is what makes SimpleProduct2 rank among the store's best-sellers
-                         (ProductRecommender::rankedBestSellerSkus(), a plain SUM(qty_ordered) GROUP BY sku
-                         over the WHOLE store, not scoped to this test or even this MFTF run in any way).
-                         Quantity is deliberately bumped to 50 here, not left at the storefront default of 1
-                         - found via a real, repeatable failure running this test as part of the full
-                         campaign2 group (never surfaced running it alone, which is exactly why "verified by
-                         hand" in isolation wasn't enough): 9 other tests in this same group each place their
-                         own real order for their own product, so a plain qty-1 order here can easily rank
-                         outside the recommendation block's own top-4 default limit once enough sibling tests
-                         have run first. 50 comfortably outweighs any realistic number of qty-1 sibling
-                         orders without having to know or hard-code that count. -->
-                    <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsSeedCustomer">
-                        <argument name="Customer" value="$$createSeedCustomer$$"/>
-                    </actionGroup>
-                    <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
-                    <waitForPageLoad stepKey="waitForProductPage"/>
-                    <fillField selector="{{StorefrontProductActionSection.quantity}}" userInput="50" stepKey="fillQuantity"/>
-                    <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
-                        <argument name="productName" value="$createProduct.name$"/>
-                    </actionGroup>
-                    <amOnPage url="checkout/cart" stepKey="goToCart"/>
-                    <waitForPageLoad stepKey="waitForCartPage"/>
-                    <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
-
-                    <!-- Step 4: log back out - the actual proof this test is after is that the on-site
-                         block works for a completely anonymous visitor, not just a logged-in one. -->
-                    <actionGroup ref="StorefrontCustomerLogoutActionGroup" stepKey="logoutSeedCustomer"/>
-
-                    <!-- Step 5: the actual proof - the real best-selling product's own name, rendered by
-                         Block\Frontend\ContentBlock\Render on a real CMS page, for a visitor who never
-                         logged in and never interacted with any campaign. -->
-                    <amOnPage url="e2e-onsite-recommendations-page" stepKey="goToCmsPage"/>
-                    <waitForPageLoad stepKey="waitForCmsPage"/>
-                    <see selector=".recommended-products" userInput="$createProduct.name$" stepKey="seeRecommendedProductOnPage"/>
-
-                    <!-- Cleanup: no <deleteData> equivalent for this REST-less entity - delete it directly
-                         through the real admin UI instead, same reasoning as every other content-block test
-                         in this suite. -->
-
-            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteContentBlock">
-                <argument name="url" value="admin/ordo/contentblock/delete/entity_id/{$grabContentBlockId}/"/>
-                <argument name="successMessage" value="The content block has been deleted."/>
-            </actionGroup>
             <deleteData createDataKey="createSeedCustomer" stepKey="deleteSeedCustomer"/>
             <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
             <deleteData createDataKey="createCmsPage" stepKey="deleteCmsPage"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
-</test>
+        <!-- Step 1: the "recommendations" content block - count deliberately left at its own
+             default (4), same reasoning as every other content-block test in this suite: this
+             test doesn't assert on the exact count, only that the one real best-selling product
+             shows up. -->
+        <amOnPage url="admin/ordo/contentblock/new" stepKey="goToNewContentBlockPage"/>
+        <waitForPageLoad stepKey="waitForNewContentBlockPage"/>
+        <waitForElementVisible selector="[name='identifier']" stepKey="waitForIdentifierField"/>
+        <fillField selector="[name='identifier']" userInput="e2e_onsite_recommendations_block" stepKey="fillIdentifier"/>
+        <fillField selector="[name='name']" userInput="E2E On-Site Recommendations Block" stepKey="fillName"/>
+        <selectOption selector="[name='type']" userInput="recommendations" stepKey="selectRecommendationsType"/>
+
+        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveContentBlock"/>
+        <waitForPageLoad stepKey="waitForContentBlockSave"/>
+        <see selector=".message-success" userInput="The content block has been saved." stepKey="seeContentBlockSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabContentBlockId"/>
+
+        <!-- Step 2: a plain CMS page - no layout_update_xml or any other special field needed.
+             The block is embedded via this module's own view/frontend/layout/
+             cms_page_view_id_e2e-onsite-recommendations-page.xml, matched purely by this
+             identifier (see this test's own description for why that's the real, supported
+             mechanism, and why the two mechanisms tried before this one both had real problems). -->
+        <createData entity="_defaultCmsPage" stepKey="createCmsPage">
+            <field key="identifier">e2e-onsite-recommendations-page</field>
+        </createData>
+
+        <!-- Step 3: a REAL order, through REAL storefront checkout, by a throwaway seed
+             customer - this is what makes SimpleProduct2 rank among the store's best-sellers
+             (ProductRecommender::rankedBestSellerSkus(), a plain SUM(qty_ordered) GROUP BY sku
+             over the WHOLE store, not scoped to this test or even this MFTF run in any way).
+             Quantity is deliberately bumped to 50 here, not left at the storefront default of 1
+             - found via a real, repeatable failure running this test as part of the full
+             campaign2 group (never surfaced running it alone, which is exactly why "verified by
+             hand" in isolation wasn't enough): 9 other tests in this same group each place their
+             own real order for their own product, so a plain qty-1 order here can easily rank
+             outside the recommendation block's own top-4 default limit once enough sibling tests
+             have run first. 50 comfortably outweighs any realistic number of qty-1 sibling
+             orders without having to know or hard-code that count. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsSeedCustomer">
+            <argument name="Customer" value="$$createSeedCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <fillField selector="{{StorefrontProductActionSection.quantity}}" userInput="50" stepKey="fillQuantity"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <!-- Step 4: log back out - the actual proof this test is after is that the on-site
+             block works for a completely anonymous visitor, not just a logged-in one. -->
+        <actionGroup ref="StorefrontCustomerLogoutActionGroup" stepKey="logoutSeedCustomer"/>
+
+        <!-- Step 5: the actual proof - the real best-selling product's own name, rendered by
+             Block\Frontend\ContentBlock\Render on a real CMS page, for a visitor who never
+             logged in and never interacted with any campaign. -->
+        <amOnPage url="e2e-onsite-recommendations-page" stepKey="goToCmsPage"/>
+        <waitForPageLoad stepKey="waitForCmsPage"/>
+        <see selector=".recommended-products" userInput="$createProduct.name$" stepKey="seeRecommendedProductOnPage"/>
+
+        <!-- Cleanup: no <deleteData> equivalent for this REST-less entity - delete it directly
+             through the real admin UI instead, same reasoning as every other content-block test
+             in this suite. -->
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteContentBlock">
+            <argument name="url" value="admin/ordo/contentblock/delete/entity_id/{$grabContentBlockId}/"/>
+            <argument name="successMessage" value="The content block has been deleted."/>
+        </actionGroup>
+    </test>
 </tests>

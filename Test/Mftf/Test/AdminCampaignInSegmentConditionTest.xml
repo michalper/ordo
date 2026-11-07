@@ -22,14 +22,6 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
-            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaignA">
-                <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignIdA}"/>
-                <argument name="successMessage" value="The campaign has been deleted."/>
-            </actionGroup>
-            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaignB">
-                <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignIdB}"/>
-                <argument name="successMessage" value="The campaign has been deleted."/>
-            </actionGroup>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
             <deleteData createDataKey="createRule" stepKey="deleteRule"/>
@@ -183,5 +175,13 @@
              producing a real, deterministic, always-reproducible-in-full-group premature-coupon
              failure that never reproduced in isolation. Deleting both campaigns here closes the
              leak at its source instead of leaving every future test in this group exposed to it. -->
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaignA">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignIdA}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaignB">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignIdB}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
     </test>
 </tests>

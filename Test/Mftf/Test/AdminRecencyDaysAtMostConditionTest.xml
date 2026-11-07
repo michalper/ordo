@@ -17,77 +17,76 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
-            <!-- Step 1: the campaign - trigger=order_placed, condition=recency_days_at_most with the
-                         dedicated "days" field (ordo_campaign_form.xml's conditions switcherConfig). -->
-                    <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
-                    <waitForPageLoad stepKey="waitForNewCampaignPage"/>
-                    <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
-                    <fillField selector="[name='name']" userInput="Recency Days At Most Send Email Campaign" stepKey="fillName"/>
-
-                    <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
-                    <executeJS function="window.ordoFlowTestHook.buildChain([
-                        {kind: 'trigger', type: 'order_placed'},
-                        {kind: 'condition', type: 'recency_days_at_most', fields: {days: '1'}},
-                        {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'Recency days condition fired.', delay_minutes: '0'}}
-                    ]);" stepKey="buildFlowGraph"/>
-
-                    <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
-                    <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
-                    <waitForPageLoad stepKey="waitForSave"/>
-                    <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
-                    <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
-
-                    <!-- Step 2: a REAL order, through REAL storefront checkout - RfmCalculator::getRecencyDays()
-                         reads MAX(sales_order.created_at) directly, so this order (created "now") gives a
-                         recency of 0 days the instant it dispatches. -->
-                    <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
-                        <argument name="Customer" value="$$createCustomer$$"/>
-                    </actionGroup>
-                    <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
-                    <waitForPageLoad stepKey="waitForProductPage"/>
-                    <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
-                        <argument name="productName" value="$createProduct.name$"/>
-                    </actionGroup>
-                    <amOnPage url="checkout/cart" stepKey="goToCart"/>
-                    <waitForPageLoad stepKey="waitForCartPage"/>
-                    <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
-
-                    <!-- A brief settle wait before draining — defensive against a message-visibility race
-                         under CI load: sales_order_place_after's own publish() commits asynchronously
-                         relative to the checkout redirect this action group waits for, so a consumer that
-                         starts draining before that INSERT is visible would find an empty queue and exit
-                         (consumers-wait-for-messages=0) having dispatched nothing, silently leaving the
-                         order-confirmation email as the "latest" one instead of this campaign's. Same
-                         reasoning/fix as AdminCampaignMultipleConditionsAndTest.xml's identical step. -->
-                    <wait time="2" stepKey="waitForDispatchMessageVisible"/>
-                    <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
-                        <argument name="topic">ordo.automation.campaign.dispatch</argument>
-                    </helper>
-
-                    <!-- Step 3: the real, merchant-visible output only a genuinely-recent real order could
-                         have produced. -->
-                    <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seeRecencyConditionCopyInEmail">
-                        <argument name="expectedText">Recency days condition fired.</argument>
-                        <argument name="toAddress">$createCustomer.email$</argument>
-                    </helper>
-
-                    <!-- Cleanup: this campaign's order_placed trigger + recency_days_at_most(1) condition is
-                         satisfied by literally any order placed "now", i.e. every real order any later test in
-                         this same "tracking" group's CI job places - same root-caused leftover-campaign
-                         pollution AdminCampaignInSegmentConditionTest.xml's own cleanup comment describes. Left
-                         undeleted before, this queued a stray "Recency days condition fired." email for every
-                         later test's own customer, which MailHogHelper::seeTextInLatestEmail (only ever
-                         checking the single latest message) could then read back instead of that other test's
-                         own expected copy. -->
-
-            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
-                <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
-                <argument name="successMessage" value="The campaign has been deleted."/>
-            </actionGroup>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
-</test>
+        <!-- Step 1: the campaign - trigger=order_placed, condition=recency_days_at_most with the
+             dedicated "days" field (ordo_campaign_form.xml's conditions switcherConfig). -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Recency Days At Most Send Email Campaign" stepKey="fillName"/>
+
+        <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
+        <executeJS function="window.ordoFlowTestHook.buildChain([
+            {kind: 'trigger', type: 'order_placed'},
+            {kind: 'condition', type: 'recency_days_at_most', fields: {days: '1'}},
+            {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'Recency days condition fired.', delay_minutes: '0'}}
+        ]);" stepKey="buildFlowGraph"/>
+
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
+
+        <!-- Step 2: a REAL order, through REAL storefront checkout - RfmCalculator::getRecencyDays()
+             reads MAX(sales_order.created_at) directly, so this order (created "now") gives a
+             recency of 0 days the instant it dispatches. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <!-- A brief settle wait before draining — defensive against a message-visibility race
+             under CI load: sales_order_place_after's own publish() commits asynchronously
+             relative to the checkout redirect this action group waits for, so a consumer that
+             starts draining before that INSERT is visible would find an empty queue and exit
+             (consumers-wait-for-messages=0) having dispatched nothing, silently leaving the
+             order-confirmation email as the "latest" one instead of this campaign's. Same
+             reasoning/fix as AdminCampaignMultipleConditionsAndTest.xml's identical step. -->
+        <wait time="2" stepKey="waitForDispatchMessageVisible"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
+
+        <!-- Step 3: the real, merchant-visible output only a genuinely-recent real order could
+             have produced. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seeRecencyConditionCopyInEmail">
+            <argument name="expectedText">Recency days condition fired.</argument>
+            <argument name="toAddress">$createCustomer.email$</argument>
+        </helper>
+
+        <!-- Cleanup: this campaign's order_placed trigger + recency_days_at_most(1) condition is
+             satisfied by literally any order placed "now", i.e. every real order any later test in
+             this same "tracking" group's CI job places - same root-caused leftover-campaign
+             pollution AdminCampaignInSegmentConditionTest.xml's own cleanup comment describes. Left
+             undeleted before, this queued a stray "Recency days condition fired." email for every
+             later test's own customer, which MailHogHelper::seeTextInLatestEmail (only ever
+             checking the single latest message) could then read back instead of that other test's
+             own expected copy. -->
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
+    </test>
 </tests>
