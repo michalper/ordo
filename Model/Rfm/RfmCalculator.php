@@ -329,12 +329,6 @@ class RfmCalculator
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName('ordo_customer_rfm_score');
 
-        $connection->delete($table);
-
-        if ($ranks === []) {
-            return;
-        }
-
         $rows = [];
         foreach ($ranks as $customerId => $rank) {
             $rows[] = [
@@ -348,8 +342,20 @@ class RfmCalculator
             ];
         }
 
-        foreach (array_chunk($rows, 500) as $chunk) {
-            $connection->insertMultiple($table, $chunk);
+        // Wrapped in one transaction so a crash mid-run can't leave the table empty (or
+        // partially repopulated) between the delete and the inserts - getPercentileRanks()'s own
+        // live-compute fallback already makes a stale table merely slow, not wrong, but there's
+        // no reason to open that window at all when it costs nothing to avoid.
+        $connection->beginTransaction();
+        try {
+            $connection->delete($table);
+            foreach (array_chunk($rows, 500) as $chunk) {
+                $connection->insertMultiple($table, $chunk);
+            }
+            $connection->commit();
+        } catch (\Throwable $e) {
+            $connection->rollBack();
+            throw $e;
         }
     }
 
