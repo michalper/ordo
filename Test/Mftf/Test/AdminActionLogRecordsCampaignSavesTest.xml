@@ -15,6 +15,10 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
+            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+                <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+                <argument name="successMessage" value="The campaign has been deleted."/>
+            </actionGroup>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
@@ -56,10 +60,5 @@
         <see selector="table.data-grid" userInput="Campaign" stepKey="seeCampaignEntityTypeInGrid"/>
         <see selector="table.data-grid" userInput="AdminActionLog Test Campaign A" stepKey="seeOldNameInDiff"/>
         <see selector="table.data-grid" userInput="AdminActionLog Test Campaign B" stepKey="seeNewNameInDiff"/>
-
-        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
-            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
-            <argument name="successMessage" value="The campaign has been deleted."/>
-        </actionGroup>
     </test>
 </tests>

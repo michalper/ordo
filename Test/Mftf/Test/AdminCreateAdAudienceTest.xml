@@ -15,62 +15,63 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
+            <!-- Step 1: a real segment, purely as the picker's only real option. -->
+                    <amOnPage url="admin/ordo/segment/new" stepKey="goToNewSegmentPage"/>
+                    <waitForPageLoad stepKey="waitForNewSegmentPage"/>
+                    <waitForElementVisible selector="[name='name']" stepKey="waitForSegmentNameField"/>
+                    <fillField selector="[name='name']" userInput="Test Segment For Ad Audience" stepKey="fillSegmentName"/>
+                    <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueSegment"/>
+                    <waitForPageLoad stepKey="waitForSegmentSave"/>
+                    <see selector=".message-success" userInput="The segment has been saved." stepKey="seeSegmentSuccessMessage"/>
+                    <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabSegmentId"/>
+
+                    <!-- Step 2: the ad audience row under test. -->
+                    <amOnPage url="admin/ordo/adaudience/new" stepKey="goToNewAdAudiencePage"/>
+                    <waitForPageLoad stepKey="waitForNewAdAudiencePage"/>
+                    <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+                    <fillField selector="[name='name']" userInput="Test Ad Audience" stepKey="fillName"/>
+                    <selectOption selector="[name='segment_id']" userInput="Test Segment For Ad Audience" stepKey="selectSegment"/>
+                    <selectOption selector="[name='platform']" userInput="Google Ads" stepKey="selectPlatform"/>
+                    <fillField selector="[name='external_audience_id']" userInput="customers/123/userLists/456" stepKey="fillExternalAudienceId"/>
+
+                    <!-- "Save & Continue Edit", not plain "Save" (which redirects to the grid with no
+                         entity_id in the URL for grabFromCurrentUrl to capture) - same reasoning as every
+                         other admin form in this suite. -->
+                    <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSave"/>
+                    <waitForPageLoad stepKey="waitForSave"/>
+                    <see selector=".message-success" userInput="The ad audience has been saved." stepKey="seeSuccessMessage"/>
+                    <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabAdAudienceId"/>
+
+                    <!-- Step 3: the grid reflects the real, just-saved row. waitForElementVisible, not just
+                         waitForPageLoad - this is this fresh instance's first-ever load of a brand new
+                         ui_component (ordo_adaudience_listing), and waitForPageLoad only checks document.
+                         readyState/jQuery.active, not that RequireJS/knockout have finished rendering the
+                         grid itself, same "cold first load" reasoning AdminCreateCampaignTest.xml documents
+                         for its own first form load. -->
+                    <amOnPage url="admin/ordo/adaudience/index" stepKey="goToAdAudienceGrid"/>
+                    <waitForPageLoad stepKey="waitForGrid"/>
+                    <waitForElementVisible selector="table.data-grid" stepKey="waitForDataGrid"/>
+                    <see selector="table.data-grid" userInput="Test Ad Audience" stepKey="seeAdAudienceInGrid"/>
+                    <see selector="table.data-grid" userInput="Google Ads" stepKey="seePlatformInGrid"/>
+
+                    <!-- Step 4: delete it for real. -->
+                    <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteAdAudience">
+                        <argument name="url" value="admin/ordo/adaudience/delete/entity_id/{$grabAdAudienceId}"/>
+                        <argument name="successMessage" value="The ad audience has been deleted."/>
+                    </actionGroup>
+                    <amOnPage url="admin/ordo/adaudience/index" stepKey="goToAdAudienceGridAfterDelete"/>
+                    <waitForPageLoad stepKey="waitForGridAfterDelete"/>
+                    <waitForElementVisible selector="table.data-grid" stepKey="waitForDataGridAfterDelete"/>
+                    <dontSee selector="table.data-grid" userInput="Test Ad Audience" stepKey="dontSeeAdAudienceInGrid"/>
+
+                    <!-- Cleanup: the segment. -->
+
+            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteSegment">
+                <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabSegmentId}"/>
+                <argument name="successMessage" value="The segment has been deleted."/>
+            </actionGroup>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
-        <!-- Step 1: a real segment, purely as the picker's only real option. -->
-        <amOnPage url="admin/ordo/segment/new" stepKey="goToNewSegmentPage"/>
-        <waitForPageLoad stepKey="waitForNewSegmentPage"/>
-        <waitForElementVisible selector="[name='name']" stepKey="waitForSegmentNameField"/>
-        <fillField selector="[name='name']" userInput="Test Segment For Ad Audience" stepKey="fillSegmentName"/>
-        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueSegment"/>
-        <waitForPageLoad stepKey="waitForSegmentSave"/>
-        <see selector=".message-success" userInput="The segment has been saved." stepKey="seeSegmentSuccessMessage"/>
-        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabSegmentId"/>
-
-        <!-- Step 2: the ad audience row under test. -->
-        <amOnPage url="admin/ordo/adaudience/new" stepKey="goToNewAdAudiencePage"/>
-        <waitForPageLoad stepKey="waitForNewAdAudiencePage"/>
-        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
-        <fillField selector="[name='name']" userInput="Test Ad Audience" stepKey="fillName"/>
-        <selectOption selector="[name='segment_id']" userInput="Test Segment For Ad Audience" stepKey="selectSegment"/>
-        <selectOption selector="[name='platform']" userInput="Google Ads" stepKey="selectPlatform"/>
-        <fillField selector="[name='external_audience_id']" userInput="customers/123/userLists/456" stepKey="fillExternalAudienceId"/>
-
-        <!-- "Save & Continue Edit", not plain "Save" (which redirects to the grid with no
-             entity_id in the URL for grabFromCurrentUrl to capture) - same reasoning as every
-             other admin form in this suite. -->
-        <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSave"/>
-        <waitForPageLoad stepKey="waitForSave"/>
-        <see selector=".message-success" userInput="The ad audience has been saved." stepKey="seeSuccessMessage"/>
-        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabAdAudienceId"/>
-
-        <!-- Step 3: the grid reflects the real, just-saved row. waitForElementVisible, not just
-             waitForPageLoad - this is this fresh instance's first-ever load of a brand new
-             ui_component (ordo_adaudience_listing), and waitForPageLoad only checks document.
-             readyState/jQuery.active, not that RequireJS/knockout have finished rendering the
-             grid itself, same "cold first load" reasoning AdminCreateCampaignTest.xml documents
-             for its own first form load. -->
-        <amOnPage url="admin/ordo/adaudience/index" stepKey="goToAdAudienceGrid"/>
-        <waitForPageLoad stepKey="waitForGrid"/>
-        <waitForElementVisible selector="table.data-grid" stepKey="waitForDataGrid"/>
-        <see selector="table.data-grid" userInput="Test Ad Audience" stepKey="seeAdAudienceInGrid"/>
-        <see selector="table.data-grid" userInput="Google Ads" stepKey="seePlatformInGrid"/>
-
-        <!-- Step 4: delete it for real. -->
-        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteAdAudience">
-            <argument name="url" value="admin/ordo/adaudience/delete/entity_id/{$grabAdAudienceId}"/>
-            <argument name="successMessage" value="The ad audience has been deleted."/>
-        </actionGroup>
-        <amOnPage url="admin/ordo/adaudience/index" stepKey="goToAdAudienceGridAfterDelete"/>
-        <waitForPageLoad stepKey="waitForGridAfterDelete"/>
-        <waitForElementVisible selector="table.data-grid" stepKey="waitForDataGridAfterDelete"/>
-        <dontSee selector="table.data-grid" userInput="Test Ad Audience" stepKey="dontSeeAdAudienceInGrid"/>
-
-        <!-- Cleanup: the segment. -->
-        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteSegment">
-            <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabSegmentId}"/>
-            <argument name="successMessage" value="The segment has been deleted."/>
-        </actionGroup>
-    </test>
+</test>
 </tests>

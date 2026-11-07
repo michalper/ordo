@@ -18,6 +18,14 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
+            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+                <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+                <argument name="successMessage" value="The campaign has been deleted."/>
+            </actionGroup>
+            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteSegment">
+                <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabSegmentId}"/>
+                <argument name="successMessage" value="The segment has been deleted."/>
+            </actionGroup>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
             <deleteData createDataKey="createRule" stepKey="deleteRule"/>
@@ -128,14 +136,5 @@
             <expectedResult type="int">1</expectedResult>
             <actualResult type="variable">grabCouponRowCount</actualResult>
         </assertEquals>
-
-        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
-            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
-            <argument name="successMessage" value="The campaign has been deleted."/>
-        </actionGroup>
-        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteSegment">
-            <argument name="url" value="admin/ordo/segment/delete/entity_id/{$grabSegmentId}"/>
-            <argument name="successMessage" value="The segment has been deleted."/>
-        </actionGroup>
     </test>
 </tests>

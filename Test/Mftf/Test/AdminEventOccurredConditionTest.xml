@@ -17,67 +17,68 @@
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
+            <!-- Step 1: the campaign - trigger=order_placed, condition=event_occurred using its own
+                         dedicated event_type/event_key/within_days fields. -->
+                    <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+                    <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+                    <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+                    <fillField selector="[name='name']" userInput="Event Occurred Send Email Campaign" stepKey="fillName"/>
+
+                    <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
+                    <executeJS function="window.ordoFlowTestHook.buildChain([
+                        {kind: 'trigger', type: 'order_placed'},
+                        {kind: 'condition', type: 'event_occurred', fields: {event_type: 'cart_add', event_key: '$createProduct.sku$', within_days: '7'}},
+                        {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'Event occurred condition fired.', delay_minutes: '0'}}
+                    ]);" stepKey="buildFlowGraph"/>
+
+                    <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+                    <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
+                    <waitForPageLoad stepKey="waitForSave"/>
+                    <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+                    <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
+
+                    <!-- Step 2: a REAL, logged-in add-to-cart (TrackCartAdd's own real trigger event), then a
+                         real checkout - order_placed dispatches with the cart_add row already on the books. -->
+                    <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+                        <argument name="Customer" value="$$createCustomer$$"/>
+                    </actionGroup>
+                    <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+                    <waitForPageLoad stepKey="waitForProductPage"/>
+                    <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+                        <argument name="productName" value="$createProduct.name$"/>
+                    </actionGroup>
+                    <amOnPage url="checkout/cart" stepKey="goToCart"/>
+                    <waitForPageLoad stepKey="waitForCartPage"/>
+                    <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+                    <!-- A brief settle wait before draining — defensive against a message-visibility race
+                         under CI load, same reasoning/fix as AdminCampaignMultipleConditionsAndTest.xml's
+                         identical step. -->
+                    <wait time="2" stepKey="waitForDispatchMessageVisible"/>
+                    <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+                        <argument name="topic">ordo.automation.campaign.dispatch</argument>
+                    </helper>
+
+                    <!-- Step 3: the real, merchant-visible output only a genuine cart_add event read could
+                         have produced. -->
+                    <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seeEventOccurredConditionCopyInEmail">
+                        <argument name="expectedText">Event occurred condition fired.</argument>
+                        <argument name="toAddress">$createCustomer.email$</argument>
+                    </helper>
+
+                    <!-- Cleanup: this campaign's order_placed + event_occurred(cart_add, this fixture's own
+                         unique SKU) condition can only ever match this exact product's own cart-add event,
+                         which no other test in this suite uses - a stray leftover campaign here is harmless.
+                         Still deleted for grid hygiene, consistent with this suite's own convention. -->
+
+            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+                <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+                <argument name="successMessage" value="The campaign has been deleted."/>
+            </actionGroup>
             <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
             <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
         </after>
 
-        <!-- Step 1: the campaign - trigger=order_placed, condition=event_occurred using its own
-             dedicated event_type/event_key/within_days fields. -->
-        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
-        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
-        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
-        <fillField selector="[name='name']" userInput="Event Occurred Send Email Campaign" stepKey="fillName"/>
-
-        <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
-        <executeJS function="window.ordoFlowTestHook.buildChain([
-            {kind: 'trigger', type: 'order_placed'},
-            {kind: 'condition', type: 'event_occurred', fields: {event_type: 'cart_add', event_key: '$createProduct.sku$', within_days: '7'}},
-            {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'Event occurred condition fired.', delay_minutes: '0'}}
-        ]);" stepKey="buildFlowGraph"/>
-
-        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
-        <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
-        <waitForPageLoad stepKey="waitForSave"/>
-        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
-        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
-
-        <!-- Step 2: a REAL, logged-in add-to-cart (TrackCartAdd's own real trigger event), then a
-             real checkout - order_placed dispatches with the cart_add row already on the books. -->
-        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
-            <argument name="Customer" value="$$createCustomer$$"/>
-        </actionGroup>
-        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
-        <waitForPageLoad stepKey="waitForProductPage"/>
-        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
-            <argument name="productName" value="$createProduct.name$"/>
-        </actionGroup>
-        <amOnPage url="checkout/cart" stepKey="goToCart"/>
-        <waitForPageLoad stepKey="waitForCartPage"/>
-        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
-
-        <!-- A brief settle wait before draining — defensive against a message-visibility race
-             under CI load, same reasoning/fix as AdminCampaignMultipleConditionsAndTest.xml's
-             identical step. -->
-        <wait time="2" stepKey="waitForDispatchMessageVisible"/>
-        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
-            <argument name="topic">ordo.automation.campaign.dispatch</argument>
-        </helper>
-
-        <!-- Step 3: the real, merchant-visible output only a genuine cart_add event read could
-             have produced. -->
-        <helper class="\Ordo\Automation\Test\Mftf\Helper\MailHogHelper" method="seeTextInLatestEmail" stepKey="seeEventOccurredConditionCopyInEmail">
-            <argument name="expectedText">Event occurred condition fired.</argument>
-            <argument name="toAddress">$createCustomer.email$</argument>
-        </helper>
-
-        <!-- Cleanup: this campaign's order_placed + event_occurred(cart_add, this fixture's own
-             unique SKU) condition can only ever match this exact product's own cart-add event,
-             which no other test in this suite uses - a stray leftover campaign here is harmless.
-             Still deleted for grid hygiene, consistent with this suite's own convention. -->
-        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
-            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
-            <argument name="successMessage" value="The campaign has been deleted."/>
-        </actionGroup>
-    </test>
+</test>
 </tests>

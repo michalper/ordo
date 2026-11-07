@@ -20,6 +20,10 @@
             <magentoCLI command="config:set ordo_channels/webhook/enabled 0" stepKey="disableWebhookBefore"/>
         </before>
         <after>
+            <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+                <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+                <argument name="successMessage" value="The campaign has been deleted."/>
+            </actionGroup>
             <magentoCLI command="config:set ordo_channels/webhook/enabled 0" stepKey="disableWebhookAfter"/>
             <magentoCLI command="config:set ordo_channels/webhook/outbound_url ''" stepKey="clearOutboundUrlAfter"/>
             <magentoCLI command="config:set ordo_channels/webhook/outbound_secret ''" stepKey="clearOutboundSecretAfter"/>
@@ -105,10 +109,5 @@
         <helper class="\Ordo\Automation\Test\Mftf\Helper\CampaignActionCorruptorHelper" method="assertNoMessageSendRetryForActionType" stepKey="assertRetryRowGoneAfterFix">
             <argument name="actionType">send_webhook</argument>
         </helper>
-
-        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
-            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
-            <argument name="successMessage" value="The campaign has been deleted."/>
-        </actionGroup>
     </test>
 </tests>
