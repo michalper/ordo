@@ -65,9 +65,9 @@ class Index extends Template
 
     /**
      * @return array<string, array<string, bool>> channel value => (topic value => consented),
-     *     for every message-delivery channel (not Ads, which has no topic concept) - every topic
-     *     this customer doesn't have an explicit row for defaults to true (consented), same
-     *     opt-out-register shape ConsentManager::getTopicConsentStates() itself returns.
+     *     for every message-delivery channel (not Ads, which has no topic concept) - a topic this
+     *     customer doesn't have an explicit row for falls back to that topic's own default (see
+     *     ConsentTopic::defaultsToConsented()), not a single uniform default for every topic.
      */
     public function getTopicConsentStates(): array
     {
@@ -77,8 +77,10 @@ class Index extends Template
         foreach ([ConsentChannel::Email, ConsentChannel::Sms, ConsentChannel::Push, ConsentChannel::WhatsApp] as $channel) {
             $channelStates = $this->consentManager->getTopicConsentStates($customerId, $channel);
             $states[$channel->value] = [
-                ConsentTopic::Promotional->value => $channelStates[ConsentTopic::Promotional->value] ?? true,
-                ConsentTopic::AccountUpdates->value => $channelStates[ConsentTopic::AccountUpdates->value] ?? true,
+                ConsentTopic::Promotional->value =>
+                    $channelStates[ConsentTopic::Promotional->value] ?? ConsentTopic::Promotional->defaultsToConsented(),
+                ConsentTopic::AccountUpdates->value =>
+                    $channelStates[ConsentTopic::AccountUpdates->value] ?? ConsentTopic::AccountUpdates->defaultsToConsented(),
             ];
         }
 

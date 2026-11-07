@@ -33,6 +33,12 @@ use Ordo\Automation\Model\ResourceModel\CustomerConsentTopic\CollectionFactory a
  * keeps working completely unchanged, and only the few sends that actually have a topic
  * (the four send_* campaign actions, plus the existing reminder crons this pass also opted in)
  * call the new methods instead.
+ *
+ * Unlike hasConsent() above, hasTopicConsent()/hasTopicConsentForCustomers() do NOT use a single
+ * uniform "no row = consented" default for every topic - each ConsentTopic case answers that for
+ * itself via defaultsToConsented(). See docs/adr/0027: Promotional requires an explicit opt-in
+ * (defaults to NOT consented), everything else keeps this class's original opt-out-register
+ * default.
  */
 class ConsentManager
 {
@@ -168,7 +174,14 @@ class ConsentManager
         }
 
         $topicConsent = $this->findTopicConsent($customerId, $channel, $topic);
-        return !$topicConsent instanceof CustomerConsentTopic || $topicConsent->isConsented();
+        if ($topicConsent instanceof CustomerConsentTopic) {
+            return $topicConsent->isConsented();
+        }
+
+        // No explicit row - fall back to whatever this specific topic defaults to (see
+        // ConsentTopic::defaultsToConsented()'s own docblock: Promotional and AccountUpdates
+        // disagree here, unlike the single, uniform default hasConsent() uses).
+        return $topic->defaultsToConsented();
     }
 
     public function setTopicConsent(
@@ -220,19 +233,28 @@ class ConsentManager
      */
     public function hasTopicConsentForCustomers(array $customerIds, ConsentChannel $channel, ConsentTopic $topic): array
     {
-        $states = $this->hasConsentForCustomers($customerIds, $channel);
+        $channelStates = $this->hasConsentForCustomers($customerIds, $channel);
         if ($customerIds === []) {
-            return $states;
+            return $channelStates;
         }
 
         $collection = $this->customerConsentTopicCollectionFactory->create();
         $collection->addCustomerIdsChannelAndTopicFilter($customerIds, $channel->value, $topic->value);
 
+        $topicRows = [];
         foreach ($collection as $topicConsent) {
             /** @var CustomerConsentTopic $topicConsent */
-            if ($states[$topicConsent->getCustomerId()] ?? true) {
-                $states[$topicConsent->getCustomerId()] = $topicConsent->isConsented();
-            }
+            $topicRows[$topicConsent->getCustomerId()] = $topicConsent->isConsented();
+        }
+
+        $states = [];
+        foreach ($channelStates as $customerId => $channelConsented) {
+            // A channel-level opt-out always wins - narrows, never widens, same as
+            // hasTopicConsent(). Otherwise an explicit topic row decides; with none, fall back to
+            // this topic's own default (see ConsentTopic::defaultsToConsented()).
+            $states[$customerId] = $channelConsented
+                ? ($topicRows[$customerId] ?? $topic->defaultsToConsented())
+                : false;
         }
 
         return $states;

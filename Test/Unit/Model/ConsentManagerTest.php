@@ -253,14 +253,50 @@ class ConsentManagerTest extends TestCase
         self::assertFalse($this->manager->hasTopicConsent(42, ConsentChannel::Email, ConsentTopic::Promotional));
     }
 
+    /**
+     * AccountUpdates defaults to consented with no explicit row, same as ADR 0026's original,
+     * uniform default - unlike Promotional, see the next test.
+     */
     #[AllowMockObjectsWithoutExpectations]
-    public function testHasTopicConsentReturnsTrueWhenChannelOptedInAndNoTopicRowExists(): void
+    public function testHasTopicConsentReturnsTrueWhenChannelOptedInAndNoTopicRowExistsForAccountUpdates(): void
     {
         $this->collectionFactory->method('create')->willReturn($this->makeCollection(null));
 
         $noTopicRow = $this->createStub(CustomerConsentTopic::class);
         $noTopicRow->method('getId')->willReturn(null);
         $this->topicCollectionFactory->method('create')->willReturn($this->makeTopicCollection($noTopicRow));
+
+        self::assertTrue($this->manager->hasTopicConsent(42, ConsentChannel::Email, ConsentTopic::AccountUpdates));
+    }
+
+    /**
+     * Promotional requires an explicit opt-in (ADR 0027) - no row means NOT consented, the
+     * opposite default from AccountUpdates above, even though the channel itself is opted in.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testHasTopicConsentReturnsFalseWhenChannelOptedInButNoTopicRowExistsForPromotional(): void
+    {
+        $this->collectionFactory->method('create')->willReturn($this->makeCollection(null));
+
+        $noTopicRow = $this->createStub(CustomerConsentTopic::class);
+        $noTopicRow->method('getId')->willReturn(null);
+        $this->topicCollectionFactory->method('create')->willReturn($this->makeTopicCollection($noTopicRow));
+
+        self::assertFalse($this->manager->hasTopicConsent(42, ConsentChannel::Email, ConsentTopic::Promotional));
+    }
+
+    /**
+     * An explicit opt-in row must still work for Promotional despite its default being false.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testHasTopicConsentReturnsTrueWhenChannelOptedInAndTopicExplicitlyOptedInForPromotional(): void
+    {
+        $this->collectionFactory->method('create')->willReturn($this->makeCollection(null));
+
+        $topicRow = $this->createStub(CustomerConsentTopic::class);
+        $topicRow->method('getId')->willReturn(1);
+        $topicRow->method('isConsented')->willReturn(true);
+        $this->topicCollectionFactory->method('create')->willReturn($this->makeTopicCollection($topicRow));
 
         self::assertTrue($this->manager->hasTopicConsent(42, ConsentChannel::Email, ConsentTopic::Promotional));
     }
@@ -319,8 +355,13 @@ class ConsentManagerTest extends TestCase
         );
     }
 
+    /**
+     * AccountUpdates defaults to consented with no row (customer 1), same as ADR 0026's original
+     * uniform default - a channel-level opt-out (customer 3) still always wins over any topic
+     * row, and an explicit topic opt-out (customer 2) still narrows consent as before.
+     */
     #[AllowMockObjectsWithoutExpectations]
-    public function testHasTopicConsentForCustomersCombinesChannelAndTopicRegisters(): void
+    public function testHasTopicConsentForCustomersCombinesChannelAndTopicRegistersForAccountUpdates(): void
     {
         $channelOptOut = $this->createStub(CustomerConsent::class);
         $channelOptOut->method('getCustomerId')->willReturn(3);
@@ -334,6 +375,31 @@ class ConsentManagerTest extends TestCase
 
         self::assertSame(
             [1 => true, 2 => false, 3 => false],
+            $this->manager->hasTopicConsentForCustomers([1, 2, 3], ConsentChannel::Email, ConsentTopic::AccountUpdates)
+        );
+    }
+
+    /**
+     * Same scenario as above but for Promotional (ADR 0027): customer 1 (no row at all, channel
+     * opted in) now defaults to NOT consented instead of consented - the only line that differs
+     * from the AccountUpdates case. Customer 2's explicit opt-in and customer 3's channel-level
+     * opt-out behave identically regardless of topic.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testHasTopicConsentForCustomersCombinesChannelAndTopicRegistersForPromotional(): void
+    {
+        $channelOptOut = $this->createStub(CustomerConsent::class);
+        $channelOptOut->method('getCustomerId')->willReturn(3);
+        $channelOptOut->method('isConsented')->willReturn(false);
+        $this->collectionFactory->method('create')->willReturn($this->makeCollection($channelOptOut));
+
+        $topicOptIn = $this->createStub(CustomerConsentTopic::class);
+        $topicOptIn->method('getCustomerId')->willReturn(2);
+        $topicOptIn->method('isConsented')->willReturn(true);
+        $this->topicCollectionFactory->method('create')->willReturn($this->makeTopicCollection($topicOptIn));
+
+        self::assertSame(
+            [1 => false, 2 => true, 3 => false],
             $this->manager->hasTopicConsentForCustomers([1, 2, 3], ConsentChannel::Email, ConsentTopic::Promotional)
         );
     }
