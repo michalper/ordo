@@ -708,6 +708,20 @@
         </constraint>
     </table>
 
+    <table name="ordo_coupon_campaign_log" resource="default" engine="innodb" comment="Which campaign (if any) a generate_coupon action minted a given salesrule_coupon code for - CouponGenerator::generate() only ever inserts here, never updates (a coupon code is immutable once minted). Model\ResourceModel\RevenueAnalytics\Grid\Collection joins through this to show which campaign a used coupon came from, closing the gap ADR 0017 left open (a coupon's use was visible in the revenue/channel report, but not which campaign generated it).">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="coupon_id" padding="10" unsigned="true" nullable="false" comment="salesrule_coupon.coupon_id (that table's own PK column, not entity_id - a core Magento quirk) - no FK, same reasoning as ordo_campaign_attribution.campaign_id: this row must survive the coupon (or its rule) being deleted, so a historical report doesn't silently lose its own join target"/>
+        <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id whose generate_coupon action minted this coupon - no FK, same reasoning as coupon_id above"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="When this coupon was generated"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY"><column name="entity_id"/></constraint>
+        <constraint xsi:type="unique" referenceId="ORDO_COUPON_CAMPAIGN_LOG_COUPON_ID">
+            <column name="coupon_id"/>
+        </constraint>
+        <index referenceId="ORDO_COUPON_CAMPAIGN_LOG_CAMPAIGN_ID" indexType="btree">
+            <column name="campaign_id"/>
+        </index>
+    </table>
+
     <table name="ordo_ad_audience" resource="default" engine="innodb" comment="A segment configured to sync as a remarketing audience to an external ad platform (google_ads or meta) - Cron\SyncAdAudiences hashes each matching segment members email (Model\AdAudience\PiiHasher) and pushes the list via the platform SyncClientInterface implementation, refreshed on a cron.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="name" nullable="false" length="255" comment="Admin-facing name"/>

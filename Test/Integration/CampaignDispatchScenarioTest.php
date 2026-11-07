@@ -408,6 +408,19 @@ class CampaignDispatchScenarioTest extends TestCase
         $coupon = $collection->getFirstItem();
         self::assertSame($ruleId, (int) $coupon->getRuleId());
 
+        // ADR 0028: dispatch() stamps context['campaign_id'] before running any action (see
+        // CampaignDispatcher's own docblock) - this is the real, end-to-end proof that
+        // GenerateCoupon/CouponGenerator actually picks it up and logs it, not just a mocked
+        // unit-level assertion that the right arguments were passed around.
+        $connection = self::$objectManager->get(\Magento\Framework\App\ResourceConnection::class)->getConnection();
+        $logTable = self::$objectManager->get(\Magento\Framework\App\ResourceConnection::class)
+            ->getTableName('ordo_coupon_campaign_log');
+        $loggedCampaignId = $connection->fetchOne(
+            $connection->select()->from($logTable, ['campaign_id'])->where('coupon_id = ?', (int) $coupon->getId())
+        );
+        self::assertSame($campaignId, (int) $loggedCampaignId, 'generate_coupon must log which campaign generated this coupon');
+        $connection->delete($logTable, ['coupon_id = ?' => (int) $coupon->getId()]);
+
         self::$objectManager->get(CouponResource::class)->delete($coupon);
         $this->deleteCustomer($customerId);
     }

@@ -31,9 +31,10 @@ class GenerateCoupon implements ActionInterface
         }
 
         $prefix = (string) ($params['prefix'] ?? 'ORDO');
+        $campaignId = isset($context['campaign_id']) ? (int) $context['campaign_id'] : null;
 
         try {
-            $context['coupon_code'] = $this->couponGenerator->generate($ruleId, $prefix);
+            $context['coupon_code'] = $this->couponGenerator->generate($ruleId, $prefix, campaignId: $campaignId);
         } catch (\Throwable $e) {
             $this->logger->error(sprintf(
                 'Ordo_Automation: failed to generate coupon for rule #%d: %s',

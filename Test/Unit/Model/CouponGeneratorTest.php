@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Model;
 
+use Magento\Framework\App\ResourceConnection;
+use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\Math\Random;
 use Magento\SalesRule\Helper\Coupon as CouponHelper;
 use Magento\SalesRule\Model\Coupon;
@@ -11,9 +13,35 @@ use Magento\SalesRule\Model\ResourceModel\Coupon as CouponResource;
 use Ordo\Automation\Model\CouponGenerator;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class CouponGeneratorTest extends TestCase
 {
+    private ResourceConnection&\PHPUnit\Framework\MockObject\MockObject $resourceConnection;
+    private AdapterInterface&\PHPUnit\Framework\MockObject\MockObject $connection;
+    private LoggerInterface&\PHPUnit\Framework\MockObject\MockObject $logger;
+
+    protected function setUp(): void
+    {
+        $this->resourceConnection = $this->createMock(ResourceConnection::class);
+        $this->connection = $this->createMock(AdapterInterface::class);
+        $this->resourceConnection->method('getConnection')->willReturn($this->connection);
+        $this->resourceConnection->method('getTableName')
+            ->willReturnMap([['ordo_coupon_campaign_log', 'ordo_coupon_campaign_log']]);
+        $this->logger = $this->createMock(LoggerInterface::class);
+    }
+
+    private function makeGenerator(CouponFactory $couponFactory, CouponResource $couponResource, Random $random): CouponGenerator
+    {
+        return new CouponGenerator(
+            $couponFactory,
+            $couponResource,
+            $random,
+            $this->resourceConnection,
+            $this->logger
+        );
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testGenerateBuildsAndSavesCoupon(): void
     {
@@ -35,8 +63,9 @@ class CouponGeneratorTest extends TestCase
         $couponFactory->method('create')->willReturn($coupon);
 
         $couponResource->expects(self::once())->method('save')->with($coupon);
+        $this->connection->expects(self::never())->method('insert');
 
-        $generator = new CouponGenerator($couponFactory, $couponResource, $random);
+        $generator = $this->makeGenerator($couponFactory, $couponResource, $random);
 
         self::assertSame('ORDO-ABCDEF1234', $generator->generate(7));
     }
@@ -54,8 +83,66 @@ class CouponGeneratorTest extends TestCase
         $coupon->expects(self::once())->method('setUsageLimit')->with(5);
         $couponFactory->method('create')->willReturn($coupon);
 
-        $generator = new CouponGenerator($couponFactory, $couponResource, $random);
+        $generator = $this->makeGenerator($couponFactory, $couponResource, $random);
 
         self::assertSame('WELCOME-XYZ', $generator->generate(1, 'WELCOME', 5));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGenerateLogsCampaignAttributionWhenCampaignIdGiven(): void
+    {
+        $couponFactory = $this->createStub(CouponFactory::class);
+        $couponResource = $this->createStub(CouponResource::class);
+        $random = $this->createStub(Random::class);
+        $random->method('getRandomString')->willReturn('abc');
+
+        $coupon = $this->createStub(Coupon::class);
+        $coupon->method('getId')->willReturn(99);
+        $couponFactory->method('create')->willReturn($coupon);
+
+        $this->connection->expects(self::once())->method('insert')->with(
+            'ordo_coupon_campaign_log',
+            ['coupon_id' => 99, 'campaign_id' => 42]
+        );
+
+        $generator = $this->makeGenerator($couponFactory, $couponResource, $random);
+
+        $generator->generate(1, campaignId: 42);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGenerateDoesNotLogAttributionWhenNoCampaignIdGiven(): void
+    {
+        $couponFactory = $this->createStub(CouponFactory::class);
+        $couponResource = $this->createStub(CouponResource::class);
+        $random = $this->createStub(Random::class);
+        $random->method('getRandomString')->willReturn('abc');
+        $couponFactory->method('create')->willReturn($this->createStub(Coupon::class));
+
+        $this->connection->expects(self::never())->method('insert');
+
+        $generator = $this->makeGenerator($couponFactory, $couponResource, $random);
+
+        $generator->generate(1);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGenerateStillReturnsCodeWhenAttributionLoggingThrows(): void
+    {
+        $couponFactory = $this->createStub(CouponFactory::class);
+        $couponResource = $this->createStub(CouponResource::class);
+        $random = $this->createStub(Random::class);
+        $random->method('getRandomString')->willReturn('abc');
+
+        $coupon = $this->createStub(Coupon::class);
+        $coupon->method('getId')->willReturn(99);
+        $couponFactory->method('create')->willReturn($coupon);
+
+        $this->connection->method('insert')->willThrowException(new \RuntimeException('DB down'));
+        $this->logger->expects(self::once())->method('error');
+
+        $generator = $this->makeGenerator($couponFactory, $couponResource, $random);
+
+        self::assertSame('ORDO-ABC', $generator->generate(1, campaignId: 42));
     }
 }
