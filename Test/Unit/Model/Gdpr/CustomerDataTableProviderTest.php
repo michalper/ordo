@@ -15,11 +15,11 @@ class CustomerDataTableProviderTest extends TestCase
         $this->provider = new CustomerDataTableProvider();
     }
 
-    public function testGetTablesReturnsAllTwentyFiveCustomerKeyedTables(): void
+    public function testGetTablesReturnsAllTwentySevenCustomerKeyedTables(): void
     {
         $tables = $this->provider->getTables();
 
-        self::assertCount(25, $tables);
+        self::assertCount(27, $tables);
         self::assertContains('ordo_customer_consent', $tables);
         self::assertContains('ordo_customer_consent_topic', $tables);
         self::assertContains('ordo_customer_consent_log', $tables);
@@ -48,6 +48,10 @@ class CustomerDataTableProviderTest extends TestCase
         self::assertContains('ordo_price_watch_subscription', $tables);
         self::assertContains('ordo_push_send_retry', $tables);
         self::assertContains('ordo_visitor_event', $tables);
+        // Found 2026-11-07 (security review): both have a non-nullable customer_id in
+        // db_schema.xml and had never been added here either.
+        self::assertContains('ordo_review_request_log', $tables);
+        self::assertContains('ordo_referral_code', $tables);
     }
 
     public function testGetExportKeysByTableMapsEveryTableToItsExportKey(): void
@@ -80,6 +84,8 @@ class CustomerDataTableProviderTest extends TestCase
             'ordo_price_watch_subscription' => 'price_watch_subscriptions',
             'ordo_push_send_retry' => 'push_send_retry',
             'ordo_visitor_event' => 'visitor_events',
+            'ordo_review_request_log' => 'review_request_log',
+            'ordo_referral_code' => 'referral_code',
         ], $map);
     }
 
