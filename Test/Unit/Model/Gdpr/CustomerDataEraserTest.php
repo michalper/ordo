@@ -14,7 +14,10 @@ class CustomerDataEraserTest extends TestCase
     public function testEraseDeletesFromEveryTableFilteredByCustomerId(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
-        $connection->expects(self::exactly(25))->method('delete')
+        $connection->expects(self::once())->method('beginTransaction');
+        $connection->expects(self::once())->method('commit');
+        $connection->expects(self::never())->method('rollBack');
+        $connection->expects(self::exactly(27))->method('delete')
             ->with(self::callback('is_string'), ['customer_id = ?' => 42])
             ->willReturn(1);
 
@@ -40,6 +43,28 @@ class CustomerDataEraserTest extends TestCase
         self::assertArrayHasKey('ordo_reorder_cycle', $result);
         self::assertArrayHasKey('ordo_offer', $result);
         self::assertArrayHasKey('ordo_credit_limit_alert_log', $result);
+        self::assertArrayHasKey('ordo_review_request_log', $result);
+        self::assertArrayHasKey('ordo_referral_code', $result);
         self::assertSame(1, $result['ordo_customer_tag']);
+    }
+
+    public function testEraseRollsBackAndRethrowsWhenADeleteFails(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::once())->method('beginTransaction');
+        $connection->expects(self::never())->method('commit');
+        $connection->expects(self::once())->method('rollBack');
+        $connection->method('delete')->willThrowException(new \RuntimeException('deadlock'));
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $eraser = new CustomerDataEraser($resourceConnection, new CustomerDataTableProvider());
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('deadlock');
+
+        $eraser->erase(42);
     }
 }

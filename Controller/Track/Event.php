@@ -22,7 +22,13 @@ use Ordo\Automation\Model\VisitorEventLogger;
  */
 class Event extends Action implements HttpPostActionInterface, CsrfAwareActionInterface
 {
-    private const array ALLOWED_EVENT_TYPES = ['page_view', 'product_view', 'category_view', 'element_clicked'];
+    private const array ALLOWED_EVENT_TYPES = [
+        'page_view',
+        'product_view',
+        'category_view',
+        'element_clicked',
+        'checkout_start',
+    ];
     private const int MAX_KEY_LENGTH = 255;
 
     public function __construct(

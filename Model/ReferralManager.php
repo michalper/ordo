@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model;
 
+use Magento\Framework\Exception\AlreadyExistsException;
 use Ordo\Automation\Model\ResourceModel\Referral as ReferralResource;
 use Ordo\Automation\Model\ResourceModel\Referral\Collection as ReferralCollection;
 use Ordo\Automation\Model\ResourceModel\Referral\CollectionFactory as ReferralCollectionFactory;
@@ -44,7 +45,23 @@ class ReferralManager
         $referralCode = $this->referralCodeFactory->create();
         $referralCode->setCustomerId($customerId);
         $referralCode->setCode($code);
-        $this->referralCodeResource->save($referralCode);
+
+        try {
+            $this->referralCodeResource->save($referralCode);
+        } catch (AlreadyExistsException $e) {
+            // Lost a race against a concurrent getOrCreateCode() call for this same customer
+            // between the check above and this save - the unique constraint on customer_id means
+            // this is by far the likeliest cause (a code-value collision is vanishingly rare
+            // given generateUnique()'s own check just above), so the row the other request
+            // already created covers it; only a genuine code-value collision falls through to
+            // the rethrow.
+            $existing = $this->findCodeByCustomer($customerId);
+            if ($existing instanceof ReferralCode) {
+                return $existing->getCode();
+            }
+
+            throw $e;
+        }
 
         return $code;
     }

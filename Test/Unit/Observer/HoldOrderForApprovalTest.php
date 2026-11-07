@@ -9,12 +9,12 @@ use Magento\Framework\Api\AttributeInterface;
 use Magento\Framework\Event;
 use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\Exception\LocalizedException;
-use Magento\Framework\Math\Random;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order as OrderResource;
 use Magento\Store\Model\Store;
 use Ordo\Automation\Api\Data\OrderApprovalDecisionLinksInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Approval\ApprovalTokenGenerator;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
 use Ordo\Automation\Model\OrderApproval;
 use Ordo\Automation\Model\OrderApprovalFactory;
@@ -34,7 +34,7 @@ class HoldOrderForApprovalTest extends TestCase
     private OrderResource $orderResource;
     private OrderApprovalFactory $orderApprovalFactory;
     private OrderApprovalResource $orderApprovalResource;
-    private Random $random;
+    private ApprovalTokenGenerator $tokenGenerator;
     private ReminderEmailSender $reminderEmailSender;
     private OrderApprovalManagement $orderApprovalManagement;
     private LoggerInterface $logger;
@@ -47,7 +47,7 @@ class HoldOrderForApprovalTest extends TestCase
         $this->orderResource = $this->createMock(OrderResource::class);
         $this->orderApprovalFactory = $this->createStub(OrderApprovalFactory::class);
         $this->orderApprovalResource = $this->createMock(OrderApprovalResource::class);
-        $this->random = $this->createStub(Random::class);
+        $this->tokenGenerator = $this->createStub(ApprovalTokenGenerator::class);
         $this->reminderEmailSender = $this->createStub(ReminderEmailSender::class);
         $this->orderApprovalManagement = $this->createStub(OrderApprovalManagement::class);
         $this->logger = $this->createMock(LoggerInterface::class);
@@ -61,7 +61,7 @@ class HoldOrderForApprovalTest extends TestCase
             $this->orderResource,
             $this->orderApprovalFactory,
             $this->orderApprovalResource,
-            $this->random,
+            $this->tokenGenerator,
             $this->reminderEmailSender,
             $this->orderApprovalManagement,
             $this->logger
@@ -214,7 +214,7 @@ class HoldOrderForApprovalTest extends TestCase
 
         $this->orderResource->expects(self::once())->method('save')->with($order);
 
-        $this->random->method('getUniqueHash')->willReturn('token123');
+        $this->tokenGenerator->method('generate')->willReturn('token123');
 
         $approval = $this->createMock(OrderApproval::class);
         $approval->expects(self::once())->method('setData')->with([
@@ -296,7 +296,7 @@ class HoldOrderForApprovalTest extends TestCase
 
         $this->orderResource->expects(self::once())->method('save')->with($order);
 
-        $this->random->method('getUniqueHash')->willReturn('token123');
+        $this->tokenGenerator->method('generate')->willReturn('token123');
 
         $approval = $this->createMock(OrderApproval::class);
         $approval->expects(self::once())->method('setData')->with([
@@ -346,7 +346,7 @@ class HoldOrderForApprovalTest extends TestCase
         ]);
         $this->customerRepository->method('getById')->willReturn($customer);
 
-        $this->random->method('getUniqueHash')->willReturn('token123');
+        $this->tokenGenerator->method('generate')->willReturn('token123');
         $this->orderApprovalFactory->method('create')->willReturn($this->createStub(OrderApproval::class));
 
         $this->logger->expects(self::once())->method('error');

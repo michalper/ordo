@@ -572,6 +572,21 @@
         </constraint>
     </table>
 
+    <table name="ordo_funnel_daily_stats" resource="default" engine="innodb" comment="Daily per-stage distinct-customer counts for the purchase funnel report (docs/adr/0031), kept current by Cron\CalculateFunnelMetrics reading ordo_visitor_event before PruneVisitorEvents deletes it - no column for the completed_order stage, Model\ResourceModel\FunnelReport\Grid\Collection joins sales_order live at report time instead (never pruned, so it needs no table of its own), same reasoning ordo_product_performance already established for purchase counts.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="date" name="date" nullable="false" comment="Calendar day these counts cover"/>
+        <column xsi:type="int" name="product_view_visitors" padding="10" unsigned="true" nullable="false" default="0" comment="Distinct customer_id count of product_view events this day - guest (customer_id NULL) events are excluded, see docs/adr/0031"/>
+        <column xsi:type="int" name="cart_add_visitors" padding="10" unsigned="true" nullable="false" default="0" comment="Distinct customer_id count of cart_add events this day - already logged-in-only by Observer/TrackCartAdd's own design"/>
+        <column xsi:type="int" name="checkout_start_visitors" padding="10" unsigned="true" nullable="false" default="0" comment="Distinct customer_id count of checkout_start events this day"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="ORDO_FUNNEL_DAILY_STATS_DATE">
+            <column name="date"/>
+        </constraint>
+    </table>
+
     <table name="ordo_visitor_tag" resource="default" engine="innodb" comment="Behavioral tags for anonymous, never-logged-in visitors — the same segmentation primitive as ordo_customer_tag, keyed by visitor_id instead of customer_id since an anonymous visitor has no customer row to attach to yet">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="visitor_id" nullable="false" length="64" comment="Anonymous first-party cookie value, matches ordo_visitor_event.visitor_id"/>

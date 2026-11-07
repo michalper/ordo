@@ -6,9 +6,11 @@
  * can be dropped into any site" goal from README → Roadmap → Phase 5.
  *
  * MVP scope, documented rather than pretended-complete: this always fires a "page_view" event
- * on load. Firing "product_view" / "category_view" with the right SKU/category id requires the
- * theme to call window.ordoTrack(eventType, eventKey) on PDP/PLP templates — there is no
- * automatic page-type detection here, since that varies by theme.
+ * on load. Firing "product_view" / "category_view" with the right SKU/category id, or
+ * "checkout_start" with no key, requires the theme to call window.ordoTrack(eventType, eventKey)
+ * on the relevant PDP/PLP/checkout templates — there is no automatic page-type detection here,
+ * since that varies by theme. "checkout_start" is what Model\ResourceModel\FunnelReport\Grid\
+ * Collection's own funnel report reads for its own middle stage — see docs/adr/0031.
  *
  * Also runs this module's first-ever poll loop (see startPolling below) when the
  * "tracking > popup_enabled" config is on: a campaign's "Show Popup" action has no way to push

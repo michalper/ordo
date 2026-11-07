@@ -125,6 +125,29 @@ class EventTest extends AbstractFrontendActionTestCase
         $controller->execute();
     }
 
+    /**
+     * checkout_start (docs/adr/0031) needs no event_key, unlike product_view/category_view -
+     * there's nothing to identify about "checkout started" beyond the fact itself.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteLogsCheckoutStartEvent(): void
+    {
+        $controller = $this->makeController();
+        $this->config->method('isTrackingEnabled')->willReturn(true);
+        $this->request->method('getParam')->willReturnMap([
+            ['visitor_id', null, 'v1'],
+            ['event_type', null, 'checkout_start'],
+        ]);
+
+        $this->customerSession->method('isLoggedIn')->willReturn(false);
+
+        $this->visitorEventLogger->expects(self::once())->method('log')
+            ->with('v1', 'checkout_start', null, null);
+        $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
+
+        $controller->execute();
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsEventForLoggedInCustomer(): void
     {

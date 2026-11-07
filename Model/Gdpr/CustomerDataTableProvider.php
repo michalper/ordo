@@ -12,7 +12,7 @@ namespace Ordo\Automation\Model\Gdpr;
  * erasure that misses data (compliance risk) or an export that's incomplete - both now read from
  * here instead.
  *
- * Went stale TWICE already, in exactly the way this doc warns about. First: a follow-up audit
+ * Went stale THREE times now, in exactly the way this doc warns about. First: a follow-up audit
  * found the list was missing ordo_customer_rfm_score, ordo_trigger_outcome_log,
  * ordo_campaign_outcome_log, ordo_push_subscription, ordo_reorder_cycle, ordo_offer and
  * ordo_credit_limit_alert_log. Second (2026-09-17, found during live end-to-end verification of
@@ -26,9 +26,11 @@ namespace Ordo\Automation\Model\Gdpr;
  * Observer\StitchVisitorIdentity has since added a nullable customer_id column to that exact
  * table (set once identity stitching links a visitor to a logged-in customer), silently making
  * that reasoning wrong: a customer's browsing history, once linked to their account, was neither
- * erased nor exported by a GDPR request. There is no automated check that this list stays
- * complete - re-verify against db_schema.xml for every table with a customer_id column whenever
- * a new one is added, don't trust this list is still exhaustive just because it was once.
+ * erased nor exported by a GDPR request. Third (2026-11-07, security review): ordo_review_request_log
+ * and ordo_referral_code both carry a non-nullable customer_id and had neither ever been added
+ * here. There is no automated check that this list stays complete - re-verify against
+ * db_schema.xml for every table with a customer_id column whenever a new one is added, don't
+ * trust this list is still exhaustive just because it was once.
  */
 class CustomerDataTableProvider
 {
@@ -64,6 +66,8 @@ class CustomerDataTableProvider
         'ordo_price_watch_subscription' => 'price_watch_subscriptions',
         'ordo_push_send_retry' => 'push_send_retry',
         'ordo_visitor_event' => 'visitor_events',
+        'ordo_review_request_log' => 'review_request_log',
+        'ordo_referral_code' => 'referral_code',
     ];
 
     /**
