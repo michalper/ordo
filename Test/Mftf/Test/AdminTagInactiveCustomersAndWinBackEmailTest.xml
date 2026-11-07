@@ -13,6 +13,12 @@
         </annotations>
         <before>
             <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <!-- ADR 0027: send_email's default topic (Promotional) now requires an explicit
+                 opt-in - no row means NOT consented, so this scenario's campaign send would
+                 otherwise be silently skipped. -->
+            <helper class="\Ordo\Automation\Test\Mftf\Helper\GdprTestHelper" method="grantPromotionalConsent" stepKey="grantPromotionalConsent">
+                <argument name="customerId">$createCustomer.id$</argument>
+            </helper>
             <!-- A customer created THIS instant only counts as "inactive" if the window is 0
                  days - see Cron\TagInactiveCustomers::execute(): cutoff = now - win_back_inactive_days,
                  and the customer must satisfy created_at <= cutoff. Restored to the code default

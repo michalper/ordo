@@ -24,7 +24,7 @@ class GenerateCouponTest extends TestCase
     public function testExecuteSetsCouponCodeInContext(): void
     {
         $generator = $this->createMock(CouponGenerator::class);
-        $generator->method('generate')->willReturnMap([[5, 'COMEBACK', 'COMEBACK-XYZ']]);
+        $generator->method('generate')->willReturn('COMEBACK-XYZ');
 
         $action = new GenerateCoupon(
             $generator,
@@ -36,6 +36,45 @@ class GenerateCouponTest extends TestCase
         $action->execute($context, ['rule_id' => '5', 'prefix' => 'COMEBACK']);
 
         self::assertSame('COMEBACK-XYZ', $context['coupon_code']);
+    }
+
+    /**
+     * runActionsFrom() stamps context['campaign_id'] before any action runs (see
+     * CampaignDispatcher's own docblock) - this is what lets RevenueAnalytics later attribute the
+     * coupon back to the campaign that generated it (ADR 0028).
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecutePassesCampaignIdFromContextToGenerator(): void
+    {
+        $generator = $this->createMock(CouponGenerator::class);
+        $generator->expects(self::once())->method('generate')->with(5, 'COMEBACK', 1, 42)
+            ->willReturn('COMEBACK-XYZ');
+
+        $action = new GenerateCoupon(
+            $generator,
+            $this->createStub(LoggerInterface::class),
+            $this->makeCartPriceRuleOptions()
+        );
+
+        $context = ['campaign_id' => 42];
+        $action->execute($context, ['rule_id' => '5', 'prefix' => 'COMEBACK']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecutePassesNullCampaignIdWhenNotInContext(): void
+    {
+        $generator = $this->createMock(CouponGenerator::class);
+        $generator->expects(self::once())->method('generate')->with(5, 'ORDO', 1, null)
+            ->willReturn('ORDO-XYZ');
+
+        $action = new GenerateCoupon(
+            $generator,
+            $this->createStub(LoggerInterface::class),
+            $this->makeCartPriceRuleOptions()
+        );
+
+        $context = [];
+        $action->execute($context, ['rule_id' => '5']);
     }
 
     public function testExecuteLogsErrorWhenRuleIdMissing(): void
