@@ -34,7 +34,9 @@ class CampaignOutcomeLoggerTest extends TestCase
                 return $data['campaign_id'] === 5
                     && $data['variant'] === 'b'
                     && $data['customer_id'] === 42
-                    && isset($data['sent_at']);
+                    && isset($data['sent_at'])
+                    && array_key_exists('trigger_order_id', $data)
+                    && $data['trigger_order_id'] === null;
             })
         );
         $connection->expects(self::never())->method('fetchRow');
@@ -46,6 +48,32 @@ class CampaignOutcomeLoggerTest extends TestCase
 
         $logger = new CampaignOutcomeLogger($resourceConnection);
         $logger->logSent(5, 'b', 42);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testLogSentPersistsTriggerOrderIdOnTheInsertedRow(): void
+    {
+        $select = $this->createMock(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('order')->willReturnSelf();
+        $select->method('limit')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchRow')->willReturn(false);
+        $connection->expects(self::once())->method('insert')->with(
+            'ordo_campaign_outcome_log',
+            self::callback(fn (array $data): bool => $data['trigger_order_id'] === 100)
+        );
+        $connection->expects(self::never())->method('update');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $logger = new CampaignOutcomeLogger($resourceConnection);
+        $logger->logSent(5, null, 42, 100);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -149,6 +177,30 @@ class CampaignOutcomeLoggerTest extends TestCase
                 return $where['customer_id = ?'] === 42
                     && in_array('acted_at IS NULL', $where, true)
                     && array_key_exists('sent_at >= ?', $where);
+            })
+        );
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $logger = new CampaignOutcomeLogger($resourceConnection);
+        $logger->markActed(42, 99);
+    }
+
+    public function testMarkActedExcludesARowTriggeredByTheSameOrderItWouldCredit(): void
+    {
+        // The exact bug a real CI run caught: a campaign still enabled for order_placed sends
+        // again on every order, so a customer's own current order can race its own (queue-
+        // consumed) dispatch - if that dispatch's logSent() lands first, the fresh row it just
+        // wrote must never be credited to the very order that caused it.
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::once())->method('update')->with(
+            'ordo_campaign_outcome_log',
+            self::anything(),
+            self::callback(function (array $where): bool {
+                return array_key_exists('(trigger_order_id IS NULL OR trigger_order_id <> ?)', $where)
+                    && $where['(trigger_order_id IS NULL OR trigger_order_id <> ?)'] === 99;
             })
         );
 

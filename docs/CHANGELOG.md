@@ -26,6 +26,12 @@ it doesn't update itself from this file.
 - **Closed a DNS-rebinding gap in the RSS content-block fetcher's SSRF check** — a feed hostname
   is now resolved once, every candidate address validated, and the real connection pinned to that
   validated address, instead of trusting a second, independent DNS lookup at request time.
+- **A campaign still enabled for `order_placed` could, in rare timing, credit an order with
+  "converting" itself** — if the queue consumer processed that same order's own campaign dispatch
+  before its `sales_order_save_after` fired, `Observer\RecordCampaignOutcome` had no way to tell
+  its own just-sent row apart from an earlier, unrelated one. `ordo_campaign_outcome_log` now
+  records which order's dispatch produced each send (`trigger_order_id`), and
+  `CampaignOutcomeLogger::markActed()` never credits a row to that same order.
 
 ## [1.5.1] - 2026-11-07
 
