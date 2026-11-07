@@ -37,7 +37,7 @@ class CalculateFunnelMetrics
 
     public function execute(): void
     {
-        $date = date('Y-m-d', (int) strtotime('-' . self::SETTLE_DAYS . ' days'));
+        $date = date('Y-m-d', strtotime('-' . self::SETTLE_DAYS . ' days'));
 
         $connection = $this->resourceConnection->getConnection();
         $eventTable = $this->resourceConnection->getTableName('ordo_visitor_event');
