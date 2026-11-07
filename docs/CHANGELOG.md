@@ -9,6 +9,8 @@ it doesn't update itself from this file.
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-11-07
+
 ### Changed
 
 - **The `Promotional` consent topic now defaults to opt-in, not opt-out** — a customer with no
