@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Model\Segment;
 
+use Magento\Framework\App\ResourceConnection;
+use Magento\Framework\DB\Adapter\AdapterInterface;
 use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\Campaign\ConditionPool;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
@@ -33,6 +35,7 @@ class SegmentSaveProcessorTest extends TestCase
     private SegmentWebsiteFactory $segmentWebsiteFactory;
     private SegmentWebsiteResource $segmentWebsiteResource;
     private SegmentWebsiteCollectionFactory $segmentWebsiteCollectionFactory;
+    private ResourceConnection $resourceConnection;
 
     protected function setUp(): void
     {
@@ -49,6 +52,10 @@ class SegmentSaveProcessorTest extends TestCase
         $this->segmentWebsiteResource = $this->createMock(SegmentWebsiteResource::class);
         $this->segmentWebsiteCollectionFactory = $this->createStub(SegmentWebsiteCollectionFactory::class);
         $this->segmentWebsiteCollectionFactory->method('create')->willReturn($this->emptyWebsiteCollection());
+        $this->resourceConnection = $this->createStub(ResourceConnection::class);
+        $this->resourceConnection->method('getConnection')->willReturn(
+            $this->createStub(AdapterInterface::class)
+        );
     }
 
     /**
@@ -93,7 +100,8 @@ class SegmentSaveProcessorTest extends TestCase
             $this->segmentConditionCollectionFactory,
             $this->segmentWebsiteFactory,
             $this->segmentWebsiteResource,
-            $this->segmentWebsiteCollectionFactory
+            $this->segmentWebsiteCollectionFactory,
+            $this->resourceConnection
         );
     }
 

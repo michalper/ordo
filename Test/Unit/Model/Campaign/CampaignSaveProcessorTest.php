@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Model\Campaign;
 
 use Magento\Framework\App\CacheInterface;
+use Magento\Framework\App\ResourceConnection;
+use Magento\Framework\DB\Adapter\AdapterInterface;
 use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\Campaign;
@@ -55,6 +57,7 @@ class CampaignSaveProcessorTest extends TestCase
     private CampaignWebsiteResource $campaignWebsiteResource;
     private WebsiteCollectionFactory $websiteCollectionFactory;
     private CacheInterface $cache;
+    private ResourceConnection $resourceConnection;
 
     protected function setUp(): void
     {
@@ -82,6 +85,10 @@ class CampaignSaveProcessorTest extends TestCase
         $this->websiteCollectionFactory = $this->createStub(WebsiteCollectionFactory::class);
         $this->websiteCollectionFactory->method('create')->willReturn($this->emptyWebsiteCollection());
         $this->cache = $this->createMock(CacheInterface::class);
+        $this->resourceConnection = $this->createStub(ResourceConnection::class);
+        $this->resourceConnection->method('getConnection')->willReturn(
+            $this->createStub(AdapterInterface::class)
+        );
     }
 
     /**
@@ -181,7 +188,8 @@ class CampaignSaveProcessorTest extends TestCase
             $this->campaignWebsiteFactory,
             $this->campaignWebsiteResource,
             $this->websiteCollectionFactory,
-            $this->cache
+            $this->cache,
+            $this->resourceConnection
         );
     }
 

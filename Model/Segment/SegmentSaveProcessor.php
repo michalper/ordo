@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Segment;
 
+use Magento\Framework\App\ResourceConnection;
 use Ordo\Automation\Model\Campaign\ConditionPool;
 use Ordo\Automation\Model\Campaign\ParamFieldsNormalizer;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
@@ -44,7 +45,8 @@ class SegmentSaveProcessor
         private readonly SegmentConditionCollectionFactory $segmentConditionCollectionFactory,
         private readonly SegmentWebsiteFactory $segmentWebsiteFactory,
         private readonly SegmentWebsiteResource $segmentWebsiteResource,
-        private readonly SegmentWebsiteCollectionFactory $segmentWebsiteCollectionFactory
+        private readonly SegmentWebsiteCollectionFactory $segmentWebsiteCollectionFactory,
+        private readonly ResourceConnection $resourceConnection
     ) {
     }
 
@@ -72,9 +74,20 @@ class SegmentSaveProcessor
         $conditionRows = (array) ($data['conditions']['conditions'] ?? []);
         $websiteIds = (array) ($data['website_ids'] ?? []);
 
-        $this->segmentResource->save($segment);
-        $this->saveConditions((int) $segment->getEntityId(), $conditionRows);
-        $this->saveWebsites((int) $segment->getEntityId(), $websiteIds);
+        // Wrapped in one transaction for the same reason as Model\Campaign\CampaignSaveProcessor
+        // ::process() - every child table here is delete-then-reinsert, only safe if the whole
+        // sequence commits or rolls back together.
+        $connection = $this->resourceConnection->getConnection();
+        $connection->beginTransaction();
+        try {
+            $this->segmentResource->save($segment);
+            $this->saveConditions((int) $segment->getEntityId(), $conditionRows);
+            $this->saveWebsites((int) $segment->getEntityId(), $websiteIds);
+            $connection->commit();
+        } catch (\Throwable $e) {
+            $connection->rollBack();
+            throw $e;
+        }
 
         return $segment;
     }

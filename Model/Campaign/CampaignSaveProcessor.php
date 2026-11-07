@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Model\Campaign;
 
 use Magento\Framework\App\CacheInterface;
+use Magento\Framework\App\ResourceConnection;
 use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\CampaignActionFactory;
 use Ordo\Automation\Model\CampaignConditionFactory;
@@ -62,7 +63,8 @@ class CampaignSaveProcessor
         private readonly CampaignWebsiteFactory $campaignWebsiteFactory,
         private readonly CampaignWebsiteResource $campaignWebsiteResource,
         private readonly CampaignWebsiteCollectionFactory $campaignWebsiteCollectionFactory,
-        private readonly CacheInterface $cache
+        private readonly CacheInterface $cache,
+        private readonly ResourceConnection $resourceConnection
     ) {
     }
 
@@ -95,14 +97,27 @@ class CampaignSaveProcessor
         /** @var array<int, string|int> $websiteIds */
         $websiteIds = (array) ($data['website_ids'] ?? []);
 
-        $this->campaignResource->save($campaign);
-        $this->saveTriggers((int) $campaign->getEntityId(), $triggerRows);
-        $this->saveChildRows(
-            (int) $campaign->getEntityId(),
-            $conditionRows,
-            $actionRows
-        );
-        $this->saveWebsites((int) $campaign->getEntityId(), $websiteIds);
+        // Wrapped in one transaction so a failure partway through (e.g. a condition row that
+        // fails validation) can't leave the campaign saved with only some of its triggers/
+        // conditions/actions deleted-and-not-yet-reinserted - every child table here is
+        // delete-then-reinsert (see this class's own docblock), which is only safe if the whole
+        // sequence commits or rolls back together.
+        $connection = $this->resourceConnection->getConnection();
+        $connection->beginTransaction();
+        try {
+            $this->campaignResource->save($campaign);
+            $this->saveTriggers((int) $campaign->getEntityId(), $triggerRows);
+            $this->saveChildRows(
+                (int) $campaign->getEntityId(),
+                $conditionRows,
+                $actionRows
+            );
+            $this->saveWebsites((int) $campaign->getEntityId(), $websiteIds);
+            $connection->commit();
+        } catch (\Throwable $e) {
+            $connection->rollBack();
+            throw $e;
+        }
 
         // This is the admin UI's actual write path for triggers/enabled status — it saves
         // child rows via the resource models directly, not CampaignRepository — so
