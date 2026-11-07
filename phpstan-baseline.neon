@@ -3487,6 +3487,18 @@ parameters:
 			path: Model/ResourceModel/MessageSendRetry.php
 
 		-
+			message: '#^Cannot call method quoteInto\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: Model/ResourceModel/Offer.php
+
+		-
+			message: '#^Cannot call method update\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/ResourceModel/Offer.php
+
+		-
 			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
 			identifier: binaryOp.invalid
 			count: 1
