@@ -42,7 +42,7 @@
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
             {kind: 'condition', type: 'order_total_gte', fields: {amount: '500'}},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'big_spender'}}
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;big_spender&quot;]'}}
         ]);" stepKey="buildFlowGraph"/>
         <!-- "enabled" renders as a Magento_Ui single-checkbox styled as a toggle switch
              (prefer: "toggle") — the real <input> is visually covered by its own field

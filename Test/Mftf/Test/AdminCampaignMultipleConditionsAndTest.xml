@@ -77,7 +77,7 @@
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
             {kind: 'condition', type: 'order_total_gte', fields: {amount: '50'}},
-            {kind: 'condition', type: 'tag', fields: {tag: 'vip'}},
+            {kind: 'condition', type: 'tag', fields: {tags: '[&quot;vip&quot;]'}},
             {kind: 'action', type: 'generate_coupon', fields: {rule_id: '$createRule.rule_id$', prefix: 'ANDTEST', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraphB"/>
 
@@ -104,7 +104,7 @@
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvasA"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'vip'}}
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;vip&quot;]'}}
         ]);" stepKey="buildFlowGraphA"/>
 
         <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->

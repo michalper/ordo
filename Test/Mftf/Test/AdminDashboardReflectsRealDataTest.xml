@@ -34,7 +34,7 @@
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
             {kind: 'condition', type: 'order_total_gte', fields: {amount: '500'}},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'dashboard_stat_test'}}
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;dashboard_stat_test&quot;]'}}
         ]);" stepKey="buildFlowGraph"/>
         <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
 

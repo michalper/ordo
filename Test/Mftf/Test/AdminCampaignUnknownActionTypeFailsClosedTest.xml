@@ -37,7 +37,7 @@
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'order_placed'},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'will_be_corrupted', delay_minutes: '0'}},
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;will_be_corrupted&quot;]', delay_minutes: '0'}},
             {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'You should still get this.', delay_minutes: '0'}}
         ]);" stepKey="buildFlowGraph"/>
 

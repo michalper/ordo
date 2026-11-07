@@ -27,7 +27,7 @@
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForSharedFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'customer_registered'},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'overlap_shared', delay_minutes: '0'}}
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;overlap_shared&quot;]', delay_minutes: '0'}}
         ]);" stepKey="buildSharedFlowGraph"/>
         <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableSharedCampaign"/>
         <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplySharedFlowAndSave"/>
@@ -53,7 +53,7 @@
         <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForBFlowCanvas"/>
         <executeJS function="window.ordoFlowTestHook.buildChain([
             {kind: 'trigger', type: 'customer_registered'},
-            {kind: 'action', type: 'add_tag', fields: {tag: 'overlap_b', delay_minutes: '0'}}
+            {kind: 'action', type: 'add_tag', fields: {tags: '[&quot;overlap_b&quot;]', delay_minutes: '0'}}
         ]);" stepKey="buildBFlowGraph"/>
         <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableBCampaign"/>
         <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyBFlowAndSave"/>
