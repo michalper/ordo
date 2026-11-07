@@ -7,10 +7,13 @@ use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Api\Data\CustomerInterfaceFactory;
 use Magento\Framework\App\Bootstrap;
 use Magento\Framework\App\CacheInterface;
+use Magento\Framework\App\MutableScopeConfig;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\ObjectManagerInterface;
+use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Cron\DispatchCustomerInactiveCampaigns;
+use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\CampaignActionFactory;
 use Ordo\Automation\Model\CampaignDispatcher;
@@ -52,16 +55,40 @@ class DispatchCustomerInactiveCampaignsTest extends TestCase
         self::$objectManager = $bootstrap->getObjectManager();
         self::$objectManager->get(\Magento\Framework\App\State::class)->setAreaCode('adminhtml');
         self::$objectManager->get(\Magento\Framework\Registry::class)->register('isSecureArea', true);
-        self::$objectManager->get(\Magento\Framework\App\MutableScopeConfig::class)->setValue(
+    }
+
+    /**
+     * Real magento-integration-test-lite MutableScopeConfig override: $objectManager->get(
+     * MutableScopeConfig::class)->setValue(...) does NOT affect what Helper\Config's own injected
+     * ScopeConfigInterface sees in this install - they resolve to two genuinely different object
+     * instances (confirmed via a real CI run of this exact test). The only way proven to actually
+     * work is constructing the SAME MutableScopeConfig instance and passing it explicitly as
+     * Helper\Config's own scopeConfig constructor argument, then passing THAT Config instance
+     * into the cron under test - same pattern CampaignSendSmsActionTest::
+     * createConfigWithSmsEnabled() already established.
+     */
+    private function makeEnabledConfig(): Config
+    {
+        $scopeConfig = self::$objectManager->create(MutableScopeConfig::class);
+        $scopeConfig->setValue(
             'ordo_automation/customer_inactive_trigger/enabled',
             1,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+            ScopeInterface::SCOPE_STORE
         );
-        self::$objectManager->get(\Magento\Framework\App\MutableScopeConfig::class)->setValue(
+        $scopeConfig->setValue(
             'ordo_automation/customer_inactive_trigger/refire_cooldown_days',
             30,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+            ScopeInterface::SCOPE_STORE
         );
+
+        return self::$objectManager->create(Config::class, ['scopeConfig' => $scopeConfig]);
+    }
+
+    private function makeCron(): DispatchCustomerInactiveCampaigns
+    {
+        return self::$objectManager->create(DispatchCustomerInactiveCampaigns::class, [
+            'config' => $this->makeEnabledConfig(),
+        ]);
     }
 
     protected function tearDown(): void
@@ -174,7 +201,7 @@ class DispatchCustomerInactiveCampaignsTest extends TestCase
         $this->flushCampaignCache();
         $customerId = $this->createCustomerRegisteredDaysAgo(daysAgo: 45);
 
-        self::$objectManager->get(DispatchCustomerInactiveCampaigns::class)->execute();
+        $this->makeCron()->execute();
 
         $tagManager = self::$objectManager->get(CustomerTagManager::class);
         self::assertContains(
@@ -200,7 +227,7 @@ class DispatchCustomerInactiveCampaignsTest extends TestCase
         $this->flushCampaignCache();
         $customerId = $this->createCustomerRegisteredDaysAgo(daysAgo: 5);
 
-        self::$objectManager->get(DispatchCustomerInactiveCampaigns::class)->execute();
+        $this->makeCron()->execute();
 
         $tagManager = self::$objectManager->get(CustomerTagManager::class);
         self::assertSame([], $tagManager->getCustomerIdsWithTagFromSet([$customerId], 'win_back_candidate'));
@@ -212,7 +239,7 @@ class DispatchCustomerInactiveCampaignsTest extends TestCase
         $this->flushCampaignCache();
         $customerId = $this->createCustomerRegisteredDaysAgo(daysAgo: 45);
 
-        $cron = self::$objectManager->get(DispatchCustomerInactiveCampaigns::class);
+        $cron = $this->makeCron();
         $cron->execute();
         $cron->execute();
 
