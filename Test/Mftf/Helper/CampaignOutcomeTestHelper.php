@@ -24,8 +24,8 @@ class CampaignOutcomeTestHelper extends Helper
      * @throws \RuntimeException if no matching row appears within the given attempts
      */
     public function assertOutcomeLogged(
-        int $campaignId,
-        int $customerId,
+        string $campaignId,
+        string $customerId,
         int $maxAttempts = 10,
         int $sleepSeconds = 1,
         string $dbHost = '127.0.0.1',
