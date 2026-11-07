@@ -100,6 +100,16 @@
             <argument name="topic">ordo.automation.campaign.dispatch</argument>
         </helper>
 
+        <!-- drainQueueWithRetry's own retries only guard against the CLI bridge returning too
+             fast to have bootstrapped Magento at all (see that helper's own docblock) - not
+             against the consumer itself genuinely taking longer than usual to process this one
+             message under CI load. Polling the real ordo_pending_popup row directly, the same
+             way assertClickTagAdded above already closes the identical race one step earlier,
+             instead of just trusting the drain call returned in time. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\PendingPopupTestHelper" method="assertPendingPopupForVisitor" stepKey="assertPopupQueuedForVisitor">
+            <argument name="visitorId">{$grabVisitorId}</argument>
+        </helper>
+
         <!-- Step 5: the same anonymous browser (same ordo_visitor_id cookie), a fresh page load so
              tracker.js starts a poll loop that begins AFTER the pending popup row above exists.
              pollForPopup() always sends '?visitor_id=' + the cookie regardless of login state
