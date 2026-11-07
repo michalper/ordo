@@ -9,9 +9,9 @@ use Magento\Sales\Model\Order;
 use Ordo\Automation\Model\CampaignOutcomeLogger;
 
 /**
- * On sales_order_save_after, NOT sales_order_place_after like HoldOrderForApproval/
- * DispatchOrderPlacedCampaigns (this one is otherwise unrelated to either) - deliberately fires
- * later than them. \Magento\Sales\Model\Order::place() (what sales_order_place_after fires from)
+ * On sales_order_save_after, NOT sales_order_place_after like HoldOrderForApproval (this one is
+ * otherwise unrelated to it) - deliberately fires later. \Magento\Sales\Model\Order::place()
+ * (what sales_order_place_after fires from)
  * always runs BEFORE the order resource model's own save() persists it, for every normal
  * (non-reorder) checkout - see Magento\Quote\Model\QuoteManagement::submitQuote()'s own real
  * code, which only ever sets a fresh order's entity_id early for a reorder (reusing the quote's
