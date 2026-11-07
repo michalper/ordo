@@ -38,9 +38,14 @@
              CI load - waitForElementVisible alone has been observed to still race it
              (ElementNotInteractableException), same category of timing issue as this suite's
              other documented settle-waits. -->
-        <wait time="1" stepKey="waitForConditionTypeSwitch"/>
-        <waitForElementVisible selector="[name='conditions[conditions][0][tags]']" stepKey="waitForSegmentTagField"/>
-        <fillField selector="[name='conditions[conditions][0][tags]']" userInput='["vip"]' stepKey="fillSegmentConditionParams"/>
+        <!-- segment-tag-multiselect.js hides this raw input the moment its chip
+             editor mounts (view/adminhtml/web/js/segment-tag-multiselect.js's own
+             enhance(): "$input.hide().after($editor)") - it is never visible long
+             enough for waitForElementVisible/fillField to reliably hit it. Setting the
+             value directly via JS and dispatching 'change' is immune to that, same
+             reasoning campaign-flow-editor.js's own buildChain() test hook already
+             documents for the identical hidden-input shape on the Flow canvas. -->
+        <executeJS function="var el = document.querySelector(&quot;[name='conditions[conditions][0][tags]']&quot;); el.value = JSON.stringify(['vip']); el.dispatchEvent(new Event('change'));" stepKey="fillSegmentConditionParams"/>
 
         <click selector="//button[contains(., 'Save &amp; Continue Edit')]" stepKey="clickSaveAndContinueSegment"/>
         <waitForPageLoad stepKey="waitForSegmentSave"/>
