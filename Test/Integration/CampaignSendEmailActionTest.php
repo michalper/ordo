@@ -6,6 +6,9 @@ namespace Ordo\Automation\Test\Integration;
 use Magento\Framework\App\Bootstrap;
 use Magento\Framework\ObjectManagerInterface;
 use Ordo\Automation\Model\Campaign\Action\SendEmail;
+use Ordo\Automation\Model\ConsentChannel;
+use Ordo\Automation\Model\ConsentManager;
+use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Test\Integration\Fixture\RecordingTransportBuilder;
 use PHPUnit\Framework\TestCase;
 
@@ -64,6 +67,13 @@ class CampaignSendEmailActionTest extends TestCase
         $customer->setWebsiteId((int) $storeManager->getWebsite()->getId());
         $saved = $customerRepository->save($customer);
         $this->customerId = (int) $saved->getId();
+
+        // No explicit 'topic' param below, so this send defaults to ConsentTopic::Promotional,
+        // which (per ADR 0027) requires an explicit opt-in - a freshly created customer has no
+        // ordo_customer_consent_topic row at all otherwise, and the send would be silently
+        // skipped before this test ever reaches TransportBuilder.
+        self::$objectManager->get(ConsentManager::class)
+            ->setTopicConsent($this->customerId, ConsentChannel::Email, ConsentTopic::Promotional, true, 'test-fixture');
 
         $recordingBuilder = self::$objectManager->create(RecordingTransportBuilder::class);
 
