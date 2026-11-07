@@ -67,6 +67,21 @@
             <argument name="eventKey">hero-cta-button</argument>
         </helper>
 
+        <!-- tracker.js's own poll loop, once started by the page load above, never stops itself
+             (setInterval is never cleared - see that file's own docblock) - it keeps firing in
+             the background on THIS SAME open page for as long as steps 3-4 below take (multiple
+             drainQueueWithRetry calls, each with their own backoff; minutes under real CI load).
+             A real CI run caught this the hard way: the OLD page's own background poller found
+             and claim-consumed (DeliveryClaimer is claim-once) the popup the moment it became
+             available, silently rendering it into a DOM nobody is watching - by the time Step 5
+             below does a fresh navigation, the server-side row is already delivered, so the new
+             page's own poll finds nothing and the final assertion times out. Navigating away now
+             destroys this page's JS context (and its timer) before the popup can even exist yet,
+             so the ONLY poller still running when Step 5 navigates back is the one actually being
+             watched. -->
+        <amOnPage url="admin/admin/dashboard" stepKey="goToAdminDashboardToStopBackgroundPolling"/>
+        <waitForPageLoad stepKey="waitForAdminDashboard"/>
+
         <!-- Step 3: run the real visitor-aggregation consumer. This is what actually writes the
              ordo_visitor_tag row (VisitorTagManager::addTag()) AND, from inside that same call,
              dispatches ordo_visitor_tag_added -> Observer/DispatchVisitorTagAddedCampaigns.php ->

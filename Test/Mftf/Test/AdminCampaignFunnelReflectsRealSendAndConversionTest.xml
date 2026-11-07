@@ -63,16 +63,10 @@
             <argument name="topic">ordo.automation.campaign.dispatch</argument>
         </helper>
 
-        <!-- drainQueueWithRetry's own retries only guard against the CLI bridge returning too
-             fast to have bootstrapped Magento at all - not against the consumer itself genuinely
-             taking longer than usual under CI load. If order #1's own ordo_campaign_outcome_log
-             row isn't actually written yet by the time order #2 below is placed,
-             Observer\RecordCampaignOutcome::markActed() finds zero un-acted rows to mark when
-             order #2 saves, and then (since markActed() marks every un-acted row for the
-             customer, not just one) a LATER drain that processes order #1's now-overdue send
-             alongside order #2's own can wrongly convert both outcome rows at once - a real CI
-             run caught exactly this: converted=2, not the expected 1. Polling the row directly
-             closes the race regardless of consumer timing. -->
+        <!-- Closes the same consumer-timing race PendingPopupTestHelper::assertPendingPopupForVisitor()
+             closes in AdminCampaignVisitorTagConditionTest - a real CI run caught converted=2
+             instead of the expected 1 here, root-caused to order #1's own outcome row not
+             existing yet when order #2 is placed. -->
         <helper class="\Ordo\Automation\Test\Mftf\Helper\CampaignOutcomeTestHelper" method="assertOutcomeLogged" stepKey="assertFirstOutcomeLogged">
             <argument name="campaignId">{$grabCampaignId}</argument>
             <argument name="customerId">$createCustomer.id$</argument>
