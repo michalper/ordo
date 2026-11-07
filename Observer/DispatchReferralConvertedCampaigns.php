@@ -13,12 +13,14 @@ use Ordo\Automation\Model\Referral\FirstOrderChecker;
 use Ordo\Automation\Model\ReferralManager;
 
 /**
- * Fires on every order placement (same event Observer\DispatchOrderPlacedCampaigns already
- * listens on): if this is the customer's first order ever (FirstOrderChecker) and they were
- * referred by someone (Model\ReferralManager still has a pending row for them), marks that
- * referral converted and publishes `referral_converted` targeting the REFERRER (context
- * customer_id = referrer, not the customer who just ordered) - so a store's campaign can reward
- * the person who made the referral, the actual "reward-on-referral" moment.
+ * Fires on sales_order_save_after (same event Observer\DispatchOrderPlacedCampaigns also listens
+ * on, for the same reason — see that class's own docblock: the 'order_id' published below reads
+ * $order->getEntityId(), genuinely unpopulated on sales_order_place_after for a normal checkout):
+ * if this is the customer's first order ever (FirstOrderChecker) and they were referred by
+ * someone (Model\ReferralManager still has a pending row for them), marks that referral
+ * converted and publishes `referral_converted` targeting the REFERRER (context customer_id =
+ * referrer, not the customer who just ordered) - so a store's campaign can reward the person who
+ * made the referral, the actual "reward-on-referral" moment.
  */
 class DispatchReferralConvertedCampaigns implements ObserverInterface
 {

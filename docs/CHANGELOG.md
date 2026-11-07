@@ -26,12 +26,17 @@ it doesn't update itself from this file.
 - **Closed a DNS-rebinding gap in the RSS content-block fetcher's SSRF check** — a feed hostname
   is now resolved once, every candidate address validated, and the real connection pinned to that
   validated address, instead of trusting a second, independent DNS lookup at request time.
-- **A campaign still enabled for `order_placed` could, in rare timing, credit an order with
-  "converting" itself** — if the queue consumer processed that same order's own campaign dispatch
-  before its `sales_order_save_after` fired, `Observer\RecordCampaignOutcome` had no way to tell
-  its own just-sent row apart from an earlier, unrelated one. `ordo_campaign_outcome_log` now
-  records which order's dispatch produced each send (`trigger_order_id`), and
-  `CampaignOutcomeLogger::markActed()` never credits a row to that same order.
+- **A campaign still enabled for `order_placed`/`referral_converted` could credit an order with
+  "converting" itself, every time, not just on rare timing** — `DispatchOrderPlacedCampaigns`/
+  `DispatchReferralConvertedCampaigns` published the triggering order's id into the dispatch
+  context from `sales_order_place_after`, where a fresh order's `entity_id` is genuinely
+  unpopulated for every normal checkout (the same trap `RecordCampaignOutcome`/
+  `RecordTriggerOutcome` were already moved off of) — `(int) null` silently became `0`, so
+  `CampaignOutcomeLogger::logSent()`'s self-exclusion never matched a real order id and
+  `markActed()` could mark a row as converted by the very order whose own dispatch sent it. Both
+  observers moved to `sales_order_save_after`; `ordo_campaign_outcome_log` now also records which
+  order's dispatch produced each send (`trigger_order_id`) as a second, independent guard in
+  `markActed()`.
 
 ## [1.5.1] - 2026-11-07
 

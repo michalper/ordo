@@ -8,8 +8,6 @@
     </event>
     <event name="sales_order_place_after">
         <observer name="ordo_automation_hold_order_for_approval" instance="Ordo\Automation\Observer\HoldOrderForApproval"/>
-        <observer name="ordo_automation_dispatch_order_placed_campaigns" instance="Ordo\Automation\Observer\DispatchOrderPlacedCampaigns"/>
-        <observer name="ordo_automation_dispatch_referral_converted_campaigns" instance="Ordo\Automation\Observer\DispatchReferralConvertedCampaigns"/>
     </event>
     <!-- order_cancel_after is Magento core's own event (dispatched by
          \Magento\Sales\Model\Order::cancel()), not module-specific like ordo_customer_tag_added
@@ -20,20 +18,32 @@
     <event name="order_cancel_after">
         <observer name="ordo_automation_dispatch_order_canceled_campaigns" instance="Ordo\Automation\Observer\DispatchOrderCanceledCampaigns"/>
     </event>
-    <!-- RecordTriggerOutcome/RecordCampaignOutcome are on sales_order_save_after, NOT
-         sales_order_place_after like their sibling observers above - see each class's own
-         docblock for why: \Magento\Sales\Model\Order::place() (which sales_order_place_after
-         fires from) always runs BEFORE \Magento\Sales\Model\ResourceModel\Order::save()
-         persists the order, for every normal (non-reorder) checkout - a fresh order's own
-         entity_id is genuinely unpopulated at sales_order_place_after time, confirmed via
+    <!-- RecordTriggerOutcome/RecordCampaignOutcome/DispatchOrderPlacedCampaigns/
+         DispatchReferralConvertedCampaigns are all on sales_order_save_after, NOT
+         sales_order_place_after - see each class's own docblock for why:
+         \Magento\Sales\Model\Order::place() (which sales_order_place_after fires from) always
+         runs BEFORE \Magento\Sales\Model\ResourceModel\Order::save() persists the order, for
+         every normal (non-reorder) checkout - a fresh order's own entity_id is genuinely
+         unpopulated at sales_order_place_after time, confirmed via
          Magento\Quote\Model\QuoteManagement::submitQuote()'s own real code (entity_id is only
-         ever set early for a reorder, from the quote's own origOrderId). Both observers require
-         a real entity_id to record a conversion against, so sales_order_place_after silently
-         no-ops them for every real order, every time - a real, previously-undiscovered bug this
-         session's own AdminCampaignFunnelReflectsRealSendAndConversionTest caught. -->
+         ever set early for a reorder, from the quote's own origOrderId). RecordTriggerOutcome/
+         RecordCampaignOutcome need a real entity_id to record a conversion against, so
+         sales_order_place_after silently no-ops them for every real order, every time - a real,
+         previously-undiscovered bug this session's own
+         AdminCampaignFunnelReflectsRealSendAndConversionTest caught. DispatchOrderPlacedCampaigns/
+         DispatchReferralConvertedCampaigns moved here for the SAME reason, discovered later: both
+         publish 'order_id' into the dispatch context (CampaignOutcomeLogger::logSent()'s own
+         $triggerOrderId, meant to stop a send from crediting itself as its own conversion) by
+         reading $order->getEntityId() while it was still null at sales_order_place_after time -
+         (int) null silently became 0, a value that's never a real order id, so the self-exclusion
+         it was meant to drive never actually matched anything. HoldOrderForApproval alone stays
+         on sales_order_place_after - it mutates the order's own status before persistence, which
+         is the entire point of that observer running at that exact moment. -->
     <event name="sales_order_save_after">
         <observer name="ordo_automation_record_trigger_outcome" instance="Ordo\Automation\Observer\RecordTriggerOutcome"/>
         <observer name="ordo_automation_record_campaign_outcome" instance="Ordo\Automation\Observer\RecordCampaignOutcome"/>
+        <observer name="ordo_automation_dispatch_order_placed_campaigns" instance="Ordo\Automation\Observer\DispatchOrderPlacedCampaigns"/>
+        <observer name="ordo_automation_dispatch_referral_converted_campaigns" instance="Ordo\Automation\Observer\DispatchReferralConvertedCampaigns"/>
     </event>
     <event name="ordo_customer_tag_added">
         <observer name="ordo_automation_dispatch_tag_added_campaigns" instance="Ordo\Automation\Observer\DispatchTagAddedCampaigns"/>
