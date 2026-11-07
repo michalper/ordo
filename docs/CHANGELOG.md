@@ -9,7 +9,28 @@ it doesn't update itself from this file.
 
 ## [Unreleased]
 
-## [1.5.2] - 2026-11-07
+## [1.6.0] - 2026-11-07
+
+### Added
+
+- **Coupon → campaign attribution** — a new `ordo_coupon_campaign_log` table (keyed by
+  `coupon_id`, populated by `CouponGenerator::generate()`'s new optional `campaignId` param from
+  `context['campaign_id']`) records which campaign, if any, generated a given coupon code, with a
+  new `coupon_campaign_name` column surfaced on the revenue/channel analytics report — see
+  `docs/adr/0028`.
+- **A new, composable `customer_inactive` campaign trigger** — unlike the existing, single
+  fixed-threshold win-back email (`Cron\TagInactiveCustomers`/`SendWinBackEmails`), this is a real
+  Flow-canvas trigger with its own per-trigger `days` field, so a store can build several
+  differently-shaped win-back campaigns at different inactivity windows. Dispatched nightly by
+  `Cron\DispatchCustomerInactiveCampaigns` — see `docs/adr/0030`.
+- **Purchase funnel / drop-off report** — a new daily, per-stage distinct-customer funnel
+  (product view → cart add → checkout start → completed order), scoped consistently to
+  registered customers across every stage so the drop-off percentages between stages stay
+  meaningful. Kept current by `Cron\CalculateFunnelMetrics` — see `docs/adr/0031`.
+- **Cohort retention can now be narrowed by acquisition campaign** — an optional
+  `acquisition_campaign_id` filter on `ordo/cohortretention/index` rebuilds the whole collection
+  pipeline (not a post-hoc row filter) to only the customers whose first order is attributed to
+  that campaign, via the existing `ordo_campaign_attribution` table — see `docs/adr/0029`.
 
 ### Changed
 

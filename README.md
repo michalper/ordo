@@ -41,7 +41,9 @@ access to that data.
 
 - Abandoned cart recovery, capped per cart.
 - Welcome email on registration.
-- Win-back / re-engagement email after N days of inactivity, self-clearing once the customer orders again.
+- Win-back / re-engagement email after N days of inactivity, self-clearing once the customer orders again — either
+  the built-in, single fixed-threshold cron, or a composable `customer_inactive` campaign trigger with its own
+  per-trigger inactivity window for building several differently-shaped win-back campaigns.
 - SMS recovery (Twilio) — a `send_sms` campaign action, with delivery-status tracking and opt-out handling.
 - WhatsApp (Meta Cloud API) — a `send_whatsapp` campaign action sending pre-approved templates, with its own
   admin-managed template approval lifecycle and delivery-status webhook.
@@ -63,6 +65,9 @@ access to that data.
 - Admin UI — dashboard, campaign builder (editable [Drawflow](https://github.com/jerosoler/Drawflow) trigger(s) →
   conditions → actions canvas, multiple triggers per campaign), campaign calendar (trigger/action timing across all
   campaigns), free gift offer builder, reorder-cycles diagnostic grid.
+- Reporting & analytics — RFM/lead scoring, revenue & channel analytics (with coupon-to-campaign attribution) and
+  product performance, cross-campaign comparison, cohort retention (optionally narrowed to one acquisition
+  campaign), and a daily purchase-funnel/drop-off report.
 
 Every feature has its own config toggle under **Stores → Configuration → Ordo Automation** and its own cron job.
 
