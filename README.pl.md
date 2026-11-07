@@ -38,7 +38,9 @@ strukturalnie nie widzą.
 
 - Odzyskiwanie porzuconych koszyków, limitowane na koszyk.
 - E-mail powitalny przy rejestracji.
-- E-mail win-back po N dniach nieaktywności, czyszczony automatycznie po kolejnym zamówieniu.
+- E-mail win-back po N dniach nieaktywności, czyszczony automatycznie po kolejnym zamówieniu — albo wbudowany cron
+  z jednym, ustalonym progiem, albo komponowalny trigger kampanii `customer_inactive` z własnym, konfigurowalnym
+  oknem nieaktywności, do budowania kilku różnych kampanii win-back.
 - SMS (Twilio) — akcja kampanii `send_sms`, ze śledzeniem statusu dostarczenia i obsługą opt-out.
 - WhatsApp (Meta Cloud API) — akcja kampanii `send_whatsapp` wysyłająca zatwierdzone wcześniej szablony, z własnym
   cyklem zatwierdzania szablonów w adminie i webhookiem statusu dostarczenia.
@@ -59,6 +61,9 @@ strukturalnie nie widzą.
 - Panel administracyjny — dashboard, kreator kampanii (edytowalny diagram [Drawflow](https://github.com/jerosoler/Drawflow)
   trigger(y) → warunki → akcje, wiele triggerów na kampanię), kalendarz kampanii (trigger/harmonogram akcji wszystkich
   kampanii w jednym miejscu), kreator ofert gratisów, diagnostyczny grid cykli reorder.
+- Raporty i analityka — RFM/punktacja leadów, analityka przychodów i kanałów (z atrybucją kuponu do kampanii) oraz
+  wydajność produktów, porównanie kampanii, retencja kohortowa (opcjonalnie zwężona do jednej kampanii
+  pozyskującej), oraz dzienny raport lejka zakupowego/odpadania klientów.
 
 Każda funkcja ma własny przełącznik w **Stores → Configuration → Ordo Automation** i własne zadanie cron.
 
