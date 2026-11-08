@@ -22,6 +22,11 @@ it doesn't update itself from this file.
   `ordoCreditLimit` are thin wrappers over the same `Api\OfferManagementInterface`/
   `Api\CreditLimitManagementInterface` services the existing REST routes already call. See
   `docs/adr/0033`.
+- **GraphQL storefront API, Phase 3 — price-watch & push subscriptions** —
+  `registerOrdoPriceWatch`/`unregisterOrdoPriceWatch`, `registerOrdoPushSubscription`/
+  `unregisterOrdoPushSubscription`, closing out every phase of the GraphQL storefront API plan.
+  Thin wrappers over the existing `PriceWatchSubscriptionManager`/`PushSubscriptionManager`
+  services. See `docs/adr/0034`.
 
 ## [1.6.0] - 2026-11-07
 

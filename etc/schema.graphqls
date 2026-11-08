@@ -29,6 +29,31 @@ type Mutation {
     extendOrdoOffer(
         offerId: Int!
     ): OrdoExtendOfferOutput @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\ExtendOffer") @doc(description: "Same self-service extension as the storefront My Offers page's Extend button (Api/OfferManagementInterface::selfExtend()) - pushes the offer's expiry back by the configured number of days, capped at the configured max extensions. Fails (ok: false) rather than throwing for an ordinary business rule (already at the cap, lost a race to another extend request) - only a missing/not-owned offer is a hard GraphQL error.")
+
+    registerOrdoPriceWatch(
+        productId: Int!
+        watchType: String! @doc(description: "price_drop or back_in_stock.")
+        visitorId: String
+        email: String @doc(description: "Only used for a guest (no logged-in customer) registration - the only address the price/stock scan crons have to notify a guest directly.")
+    ): OrdoRegisterPriceWatchOutput @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\RegisterPriceWatch") @doc(description: "Same \"Notify me\" registration as the storefront PDP (Controller\\Track\\RegisterPriceWatch) - re-registering an existing watch re-arms it (clears any earlier notified_at).")
+
+    unregisterOrdoPriceWatch(
+        productId: Int!
+        watchType: String!
+        visitorId: String
+    ): OrdoOkOutput @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\UnregisterPriceWatch") @doc(description: "Removes a price/back-in-stock watch. Idempotent - ok: true whether or not a matching watch existed.")
+
+    registerOrdoPushSubscription(
+        endpoint: String!
+        p256dh: String!
+        auth: String!
+        visitorId: String
+    ): OrdoRegisterPushSubscriptionOutput @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\RegisterPushSubscription") @doc(description: "Same registration as tracker.js's own call once the visitor grants notification permission and the browser returns a real PushSubscription (Controller\\Track\\RegisterPushSubscription) - the actual browser Push API subscription still has to happen client-side; this is just the \"tell Ordo about it\" half. endpoint is validated server-side before being persisted (Model\\Push\\PushEndpointValidator) - the same SSRF defense the REST transport already has.")
+
+    unregisterOrdoPushSubscription(
+        endpoint: String!
+        visitorId: String
+    ): OrdoOkOutput @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\UnregisterPushSubscription") @doc(description: "Removes a push subscription by endpoint. Ownership-checked (PushSubscription::belongsTo()), same as dismissOrdoNotification - only ever removes a subscription that actually belongs to the caller's own customer/visitor, silently idempotent otherwise.")
 }
 
 type OrdoTrackerPoll {
@@ -92,4 +117,18 @@ type OrdoExtendOfferOutput {
     ok: Boolean!
     reason: String @doc(description: "Set only when ok is false and the offer WAS found and owned by the caller - e.g. the already-at-the-cap or lost-the-race message. A missing/not-owned offer is a GraphQL error instead, not this field.")
     offer: OrdoOffer @doc(description: "The offer's new state (fresh expires_at) when ok is true.")
+}
+
+type OrdoOkOutput {
+    ok: Boolean!
+}
+
+type OrdoRegisterPriceWatchOutput {
+    ok: Boolean!
+    reason: String @doc(description: "Set only when ok is false - e.g. \"price_watch_disabled\", \"invalid_payload\", \"invalid_product\" or \"invalid_email\".")
+}
+
+type OrdoRegisterPushSubscriptionOutput {
+    ok: Boolean!
+    reason: String @doc(description: "Set only when ok is false - e.g. \"push_disabled\", \"invalid_payload\" or \"invalid_endpoint\".")
 }

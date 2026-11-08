@@ -15,6 +15,16 @@ browser-observable for Selenium to assert on.
   don't need a pre-seeded fixture row — no mutation exists to create a popup/notification/survey
   prompt (those are campaign-engine-produced, not customer-facing), so a nonexistent id exercises
   the same "not found" branch a real one that's already been acted on would.
+- `OffersApiTest.php` — Phase 2: `ordoOffers`, `ordoCreditLimit`, `extendOrdoOffer`. Same
+  no-fixture-seeding reasoning — `extendOrdoOffer`'s one path that needs an owned, extendable
+  offer row (`ok: true`) is covered by `Api\OfferManagementInterface::selfExtend()`'s own test
+  suite instead; this file only confirms the GraphQL transport wires a real id through correctly.
+- `PriceWatchAndPushApiTest.php` — Phase 3: `registerOrdoPriceWatch`/`unregisterOrdoPriceWatch`,
+  `registerOrdoPushSubscription`/`unregisterOrdoPushSubscription`. The register mutations are
+  gated by their own feature toggle (off by default on a fresh instance), so those tests assert
+  the response *shape* (a real 200, a boolean `ok`, `reason` one of the known values) rather than
+  a specific `ok` value — passes whether or not the target instance has the toggle on. The
+  unregister mutations have no such gate and assert the real `ok: true` outcome directly.
 
 ## Running these tests
 
