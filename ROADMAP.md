@@ -58,11 +58,15 @@ protocol has nothing browser-observable for Selenium to assert on.
   entity with customerId = 0" instead of an authorization error. Fixed in the resolver itself
   (`Model\GraphQl\Resolver\CreditLimit`), which now checks for a guest explicitly first, the same
   convention Magento's own core customer-aware resolvers use — see ADR 0032's update.
-- [ ] **Phase 3 — price-watch & push subscriptions**: `registerOrdoPriceWatch`/
-  `unregisterOrdoPriceWatch` (mirrors `Controller\Track\RegisterPriceWatch`),
-  `registerOrdoPushSubscription`/`unregisterOrdoPushSubscription` (mirrors
-  `Controller\Track\Register/UnregisterPushSubscription` — the actual browser Push API
-  subscription still has to happen client-side; this is just the "tell Ordo about it" half).
+- [x] **Phase 3 — price-watch & push subscriptions** — shipped: `registerOrdoPriceWatch`/
+  `unregisterOrdoPriceWatch`, `registerOrdoPushSubscription`/`unregisterOrdoPushSubscription`
+  (the actual browser Push API subscription still has to happen client-side; this is just the
+  "tell Ordo about it" half). All four are thin wrappers over the existing
+  `PriceWatchSubscriptionManager`/`PushSubscriptionManager` services — `unregisterOrdoPriceWatch`
+  is the first customer-facing transport for that one specifically, since no REST/controller
+  route ever called it before. Verified against a real running instance: real register/unregister
+  round-trips for both concerns, the SSRF-blocked-endpoint rejection, and the disabled-feature
+  response shape. See ADR 0034 — this closes every phase of the GraphQL storefront API plan.
 
 ## Test coverage
 

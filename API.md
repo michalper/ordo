@@ -427,7 +427,7 @@ curl -s -X DELETE "$BASE/rest/V1/ordo/campaigns/<id>" -H "Authorization: Bearer 
 Every customer-facing storefront touchpoint above this line is REST; the ones below are
 GraphQL instead — `Controller\Track\*`/`Controller\Offer\*`'s plain frontend controllers have no
 GraphQL-native equivalent for a decoupled/PWA Studio storefront to call (see `ROADMAP.md`'s
-"GraphQL storefront API" section for the full phased plan — Phases 1 and 2 below are shipped).
+"GraphQL storefront API" section for the full phased plan — all three phases below are shipped).
 Covered by `Test/GraphQl/` (see `Test/GraphQl/README.md`).
 
 Identity: a logged-in customer comes from the same customer token REST already issues
@@ -445,6 +445,10 @@ always an explicit argument (tracker.js's own `ordo_visitor_id` cookie value), s
 | `ordoOffers` | Query | `Controller\Offer\Index` ("My Offers" page) — requires a logged-in customer, `[]` for a guest |
 | `extendOrdoOffer(offerId: Int!)` | Mutation | `POST /V1/ordo/offers/:offerId/self-extend` |
 | `ordoCreditLimit` | Query | `GET /V1/ordo/credit-limit/mine` — requires a logged-in customer (GraphQL authorization error for a guest, not `null`) |
+| `registerOrdoPriceWatch(productId, watchType, visitorId, email)` | Mutation | `Controller\Track\RegisterPriceWatch` |
+| `unregisterOrdoPriceWatch(productId, watchType, visitorId)` | Mutation | no REST equivalent — first customer-facing transport for `PriceWatchSubscriptionManager::unregister()` |
+| `registerOrdoPushSubscription(endpoint, p256dh, auth, visitorId)` | Mutation | `POST /ordo/track/register-push-subscription` |
+| `unregisterOrdoPushSubscription(endpoint, visitorId)` | Mutation | `POST /ordo/track/unregister-push-subscription` |
 
 ```bash
 curl -s -X POST "$BASE/graphql" -H 'Content-Type: application/json' -d '{
@@ -463,5 +467,15 @@ curl -s -X POST "$BASE/graphql" -H 'Content-Type: application/json' -H "Authoriz
 
 curl -s -X POST "$BASE/graphql" -H 'Content-Type: application/json' -H "Authorization: Bearer $CUSTOMER_TOKEN" -d '{
   "query": "mutation { extendOrdoOffer(offerId: 123) { ok reason offer { expires_at } } }"
+}'
+
+curl -s -X POST "$BASE/graphql" -H 'Content-Type: application/json' -d '{
+  "query": "mutation($v: String!) { registerOrdoPriceWatch(productId: 123, watchType: \"price_drop\", visitorId: $v) { ok reason } }",
+  "variables": {"v": "a-real-visitor-id"}
+}'
+
+curl -s -X POST "$BASE/graphql" -H 'Content-Type: application/json' -d '{
+  "query": "mutation($v: String!) { registerOrdoPushSubscription(endpoint: \"https://fcm.googleapis.com/fcm/send/...\", p256dh: \"...\", auth: \"...\", visitorId: $v) { ok reason } }",
+  "variables": {"v": "a-real-visitor-id"}
 }'
 ```
