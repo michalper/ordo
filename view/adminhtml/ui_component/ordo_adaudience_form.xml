@@ -93,7 +93,7 @@
             <settings>
                 <dataType>text</dataType>
                 <label translate="true">External Audience ID</label>
-                <notice translate="true">Google Ads: an existing user list resourceName (customers/{id}/userLists/{id}). Meta: leave blank to have a new Custom Audience created on first sync.</notice>
+                <notice translate="true">Google Ads: an existing Customer Match audience list's numeric id, created directly in Google Ads first. Meta: leave blank to have a new Custom Audience created on first sync.</notice>
             </settings>
         </field>
         <field name="enabled" formElement="checkbox" sortOrder="50">

@@ -72,7 +72,11 @@ protocol has nothing browser-observable for Selenium to assert on.
 
 - Ad-audience sync (`Cron\SyncAdAudiences`) has no test against a real Google Ads/Meta account — request/response
   logic is unit-tested via a fake `Curl`, but OAuth token exchange and Custom Audience creation/replace have never
-  hit the real API.
+  hit the real API. Attempting that verification found the Google Ads side's actual integration target had moved
+  out from under it — `GoogleAdsSyncClient` migrated from the Google Ads API's now-effectively-retired
+  `OfflineUserDataJobService` to the Data Manager API (three real, independent bugs fixed along the way: a sunset
+  REST version, a dead partial-failure check, and a fire-and-forgotten long-running operation) — see
+  `docs/adr/0035`. Still blocked on a real account/OAuth consent for the new scope to close this gap fully.
 - `send_whatsapp`/WhatsApp templates have no test against a real Meta WhatsApp Business Account — same shape,
   template submission/approval polling/send have never hit a live WABA.
 

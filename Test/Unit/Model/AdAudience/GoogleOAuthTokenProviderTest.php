@@ -19,9 +19,9 @@ class GoogleOAuthTokenProviderTest extends TestCase
     {
         $this->curl = $this->createMock(Curl::class);
         $this->config = $this->createStub(Config::class);
-        $this->config->method('getGoogleAdsClientId')->willReturn('client-id');
-        $this->config->method('getGoogleAdsClientSecret')->willReturn('client-secret');
-        $this->config->method('getGoogleAdsRefreshToken')->willReturn('refresh-token');
+        $this->config->method('getDataManagerClientId')->willReturn('client-id');
+        $this->config->method('getDataManagerClientSecret')->willReturn('client-secret');
+        $this->config->method('getDataManagerRefreshToken')->willReturn('refresh-token');
 
         $this->provider = new GoogleOAuthTokenProvider($this->curl, $this->config);
     }
