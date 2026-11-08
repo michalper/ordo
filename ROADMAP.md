@@ -547,11 +547,13 @@ referral program, and `browse_abandoned` itself all already existed and are not 
   live `COUNT(*)` against today's `ordo_visitor_event` rows for that SKU (not
   `ordo_product_performance`'s all-time total, which has no date bucket to answer "today" at
   all), gated by a configurable minimum view count below which nothing is shown at all.
-- **GA4/Meta Conversions API webhook template** — `Model\Campaign\Action\SendWebhook` already
-  exists as a generic action; a documented, ready-to-wire payload shape for GA4 Measurement
-  Protocol/Meta Conversions API server-side events (e.g. on `order_placed` + a value condition)
-  would close the loop between Ordo's segmentation and a store's ad platforms without needing a
-  verified ad-audience sync account.
+- ~~**GA4/Meta Conversions API campaign actions.**~~ — shipped, see
+  `docs/adr/0040-ga4-meta-conversions-api-actions.md`. Two new actions, `send_ga4_event`/
+  `send_meta_conversion_event` - NOT built on `SendWebhook` as originally framed here, once
+  reading that class showed its always-signed, always-one-URL shape can't actually carry either
+  platform's own required payload/auth. Each posts directly to GA4's Measurement Protocol or
+  Meta's Conversions API with that platform's own exact shape, closing the loop between Ordo's
+  segmentation and a store's ad platforms without needing a verified ad-audience sync account.
 - **TikTok ad-audience sync** — same shape as the existing Google Ads/Meta ad-audience sync, but
   flagged as a real risk before any work starts: TikTok's own Custom Audience eligibility has
   comparably strict account-history/spend requirements to Google Ads' Customer Match (see the

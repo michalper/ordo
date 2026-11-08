@@ -11,6 +11,11 @@ it doesn't update itself from this file.
 
 ### Added
 
+- **GA4 / Meta server-side conversion reporting** — two new campaign actions,
+  `send_ga4_event`/`send_meta_conversion_event`, report a real order straight to Google
+  Analytics 4's Measurement Protocol or Meta's Conversions API from the server, bypassing ad
+  blockers and browser privacy settings that often stop the regular on-page tracking tag from
+  ever firing. See ADR 0040.
 - **Social proof widget** — new `window.ordoRenderSocialProof(sku, containerSelector)` theme
   integration point renders "N people viewed this today" from a real, live count of today's
   `product_view` events for that SKU, once a configurable minimum is met. See ADR 0039.

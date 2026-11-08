@@ -75,6 +75,8 @@ class TypeLabels
             'split' => (string) __('A/B Split Test'),
             'generate_ai_content' => (string) __('Generate AI Content (Ollama)'),
             'send_webhook' => (string) __('Send Webhook'),
+            'send_ga4_event' => (string) __('Send GA4 Purchase Event'),
+            'send_meta_conversion_event' => (string) __('Send Meta Conversion Event'),
         ];
     }
 

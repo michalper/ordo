@@ -573,7 +573,7 @@
                             </field>
                             <field id="max_requests_per_second" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
                                 <label>Max Requests Per Second</label>
-                                <comment>Paces outbound "Send Webhook" calls so a campaign/cron reaching many customers in one tick doesn't hammer the configured endpoint. 0 disables throttling entirely.</comment>
+                                <comment>Paces outbound "Send Webhook" calls so a campaign/cron reaching many customers in one tick doesn't hammer the configured endpoint. Also paces the "Send GA4 Purchase Event"/"Send Meta Conversion Event" actions (Conversion Tracking, above), each on its own independent pace. 0 disables throttling entirely.</comment>
                                 <depends><field id="enabled">1</field></depends>
                             </field>
                         </group>
@@ -808,6 +808,42 @@
                             <field id="meta_ad_account_id" translate="label comment" type="text" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
                                 <label>Meta Ad Account ID</label>
                                 <comment>Digits only, without the "act_" prefix.</comment>
+                            </field>
+                        </group>
+
+                        <group id="conversion_tracking" translate="label" type="text" sortOrder="15" showInDefault="1" showInWebsite="1" showInStore="1">
+                            <label>Conversion Tracking (GA4 / Meta)</label>
+                            <field id="ga4_enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Enable GA4 server-side purchase events</label>
+                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                                <comment>Lets a campaign's "Send GA4 Purchase Event" action report a real order straight to Google Analytics 4, bypassing ad blockers and browser privacy settings that often stop the regular on-page tracking tag from ever firing.</comment>
+                            </field>
+                            <field id="ga4_measurement_id" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>GA4 Measurement ID</label>
+                                <comment>Starts with "G-", found in GA4 under Admin &gt; Data Streams &gt; your web stream.</comment>
+                                <depends><field id="ga4_enabled">1</field></depends>
+                            </field>
+                            <field id="ga4_api_secret" translate="label comment" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>GA4 Measurement Protocol API Secret</label>
+                                <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                                <comment>Created in the same Data Stream, under "Measurement Protocol API secrets".</comment>
+                                <depends><field id="ga4_enabled">1</field></depends>
+                            </field>
+                            <field id="meta_capi_enabled" translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Enable Meta server-side purchase events</label>
+                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                                <comment>Lets a campaign's "Send Meta Conversion Event" action report a real order straight to Meta's Conversions API, the same way GA4 above bypasses ad blockers. Separate from, and unrelated to, the Ad Audience Sync integration above - that pushes customer lists for targeting, this reports individual purchases for ad measurement/optimization.</comment>
+                            </field>
+                            <field id="meta_capi_pixel_id" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Meta Pixel ID</label>
+                                <comment>Found in Meta Events Manager, under your Pixel's settings.</comment>
+                                <depends><field id="meta_capi_enabled">1</field></depends>
+                            </field>
+                            <field id="meta_capi_access_token" translate="label comment" type="obscure" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Meta Conversions API Access Token</label>
+                                <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                                <comment>Generated in Meta Events Manager, under your Pixel's "Settings" &gt; "Conversions API" section.</comment>
+                                <depends><field id="meta_capi_enabled">1</field></depends>
                             </field>
                         </group>
                         
