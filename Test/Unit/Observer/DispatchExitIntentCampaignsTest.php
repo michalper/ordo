@@ -14,7 +14,7 @@ class DispatchExitIntentCampaignsTest extends TestCase
     public function testExecutePublishesWhenVisitorIdPresent(): void
     {
         $event = $this->createStub(Event::class);
-        $event->method('getData')->with('visitor_id')->willReturn('v1');
+        $event->method('getData')->willReturn('v1');
 
         $observer = $this->createStub(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);
@@ -28,7 +28,7 @@ class DispatchExitIntentCampaignsTest extends TestCase
     public function testExecuteDoesNothingWhenVisitorIdEmpty(): void
     {
         $event = $this->createStub(Event::class);
-        $event->method('getData')->with('visitor_id')->willReturn('');
+        $event->method('getData')->willReturn('');
 
         $observer = $this->createStub(EventObserver::class);
         $observer->method('getEvent')->willReturn($event);

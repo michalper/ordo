@@ -24,7 +24,8 @@ class DispatchExitIntentCampaigns implements ObserverInterface
 
     public function execute(EventObserver $observer): void
     {
-        $visitorId = (string) $observer->getEvent()->getData('visitor_id');
+        $visitorId = $observer->getEvent()->getData('visitor_id');
+        $visitorId = is_string($visitorId) ? $visitorId : '';
 
         if ($visitorId === '') {
             return;
