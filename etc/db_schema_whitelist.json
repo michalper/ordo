@@ -83,6 +83,21 @@
             "PRIMARY": true
         }
     },
+    "ordo_customer_anniversary_trigger_claim": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "campaign_id": true,
+            "fired_year": true,
+            "fired_at": true
+        },
+        "index": {
+            "IDX_6472D00852F6AFF4308FEB1E570702BC": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
     "ordo_email_template_draft": {
         "column": {
             "entity_id": true,

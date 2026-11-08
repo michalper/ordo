@@ -71,6 +71,7 @@ class CustomerDataTableProvider
         'ordo_review_request_log' => 'review_request_log',
         'ordo_referral_code' => 'referral_code',
         'ordo_customer_inactive_trigger_claim' => 'customer_inactive_trigger_claim',
+        'ordo_customer_anniversary_trigger_claim' => 'customer_anniversary_trigger_claim',
     ];
 
     /**

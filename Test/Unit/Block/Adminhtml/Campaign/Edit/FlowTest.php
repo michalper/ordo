@@ -373,6 +373,11 @@ class FlowTest extends TestCase
 
         self::assertSame('scheduled_at', $config['trigger']['scheduled_at'][0]['name']);
         self::assertSame('cron_expression', $config['trigger']['recurring_schedule'][0]['name']);
+        self::assertSame('date_source', $config['trigger']['customer_anniversary'][0]['name']);
+        self::assertSame(
+            ['dob', 'registration'],
+            array_keys($config['trigger']['customer_anniversary'][0]['options'])
+        );
     }
 
     #[AllowMockObjectsWithoutExpectations]

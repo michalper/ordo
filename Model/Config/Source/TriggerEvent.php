@@ -58,6 +58,10 @@ class TriggerEvent implements OptionSourceInterface
                 'value' => CampaignTriggerInterface::TRIGGER_EXIT_INTENT,
                 'label' => __('Exit Intent (anonymous)'),
             ],
+            [
+                'value' => CampaignTriggerInterface::TRIGGER_CUSTOMER_ANNIVERSARY,
+                'label' => __('Customer Birthday / Registration Anniversary'),
+            ],
         ];
     }
 }

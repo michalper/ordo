@@ -203,6 +203,22 @@ class Flow extends Template
                         ),
                     ],
                 ],
+                CampaignTriggerInterface::TRIGGER_CUSTOMER_ANNIVERSARY => [
+                    [
+                        'name' => 'date_source',
+                        'label' => (string) __('Date'),
+                        'notice' => (string) __(
+                            'Fires once per calendar year, the day a registered customer\'s own date'
+                            . ' matches today (month+day) - scanned daily by'
+                            . ' Cron\DispatchCustomerAnniversaryCampaigns. A customer with no Date of'
+                            . ' Birth on file never matches the "Birth Date" option.'
+                        ),
+                        'options' => [
+                            'dob' => (string) __('Birth Date (customer_dob)'),
+                            'registration' => (string) __('Registration Anniversary (account created_at)'),
+                        ],
+                    ],
+                ],
             ],
             'condition' => $conditionFields,
             'action' => $actionFields,

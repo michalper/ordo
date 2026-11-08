@@ -117,6 +117,20 @@ interface CampaignTriggerInterface
     public const TRIGGER_EXIT_INTENT = 'exit_intent';
 
     /**
+     * Fires from Cron\DispatchCustomerAnniversaryCampaigns, once per calendar year, for a
+     * registered customer whose `customer_dob` or account `created_at` month+day matches today -
+     * which of the two this trigger's own `date_source` param ("dob" or "registration") selects.
+     * Unlike TRIGGER_CUSTOMER_INACTIVE's rolling, re-fireable-after-a-cooldown shape, a birthday/
+     * anniversary is a fixed calendar date that can only genuinely recur once a year, so
+     * ordo_customer_anniversary_trigger_claim is keyed by (customer_id, campaign_id, fired_year)
+     * instead of a cooldown window - no config to tune, "has this already fired this year" is
+     * the whole rule. February 29 is a deliberately accepted edge case: a customer with that
+     * month+day only ever matches on an actual leap year, same as every other system that stores
+     * a plain date without its own leap-year remapping.
+     */
+    public const TRIGGER_CUSTOMER_ANNIVERSARY = 'customer_anniversary';
+
+    /**
      * @return int|null
      */
     public function getEntityId(): ?int;

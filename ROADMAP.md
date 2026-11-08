@@ -529,10 +529,17 @@ referral program, and `browse_abandoned` itself all already existed and are not 
   page load from a `mouseout`-based listener in `tracker.js`, gated by its own
   `tracking > exit_intent_enabled` toggle. Reuses the existing `Show Popup` action and its
   frequency cap unchanged - no new action type needed.
-- **Birthday/anniversary campaign trigger** — no trigger reads `customer_dob` (a standard but
-  optional Magento customer attribute) at all; would need its own daily cron in the
-  `Cron\DispatchCustomerInactiveCampaigns`/`Cron\TagInactiveCustomers` shape, matching month+day
-  rather than an inactivity window.
+- ~~**Birthday/anniversary campaign trigger.**~~ — shipped, see
+  `docs/adr/0038-customer-anniversary-campaign-trigger.md`. New `customer_anniversary` trigger
+  (`Cron\DispatchCustomerAnniversaryCampaigns`, daily) fires once per calendar year for a
+  registered customer whose `customer_dob` or account registration date matches today's
+  month+day, picked per campaign via the trigger's own `date_source` field - one trigger type
+  covers both birthday and signup-anniversary campaigns, not two separate ones. Keyed by
+  (`customer_id`, `campaign_id`, `fired_year`) rather than `customer_inactive`'s cooldown-days
+  shape, since a birthday/anniversary can only genuinely recur once a year. Verified against the
+  real sandbox, not just unit tests: a real campaign + real customer with `dob`/registration date
+  backdated to match today, dispatched through the real `CampaignDispatcher`, a real `add_tag`
+  action applied, and a second same-day/same-year run correctly not re-firing.
 - ~~**Social proof widget on PDP.**~~ — shipped, see `docs/adr/0039-social-proof-widget.md`. New
   `window.ordoRenderSocialProof(sku, containerSelector)` theme integration point - same shape as
   the existing `window.ordoTrack()`/`window.ordoSubscribeToPriceWatch()`, no new layout XML or PDP
