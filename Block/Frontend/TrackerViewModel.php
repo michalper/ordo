@@ -59,6 +59,11 @@ class TrackerViewModel implements ArgumentInterface
         return $this->config->isPushEnabled();
     }
 
+    public function isGtmBridgeEnabled(): bool
+    {
+        return $this->config->isGtmBridgeEnabled();
+    }
+
     /**
      * Not a secret - safe to render straight into the page, same as any other applicationServerKey
      * example in the Web Push spec itself.

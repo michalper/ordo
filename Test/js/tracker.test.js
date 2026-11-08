@@ -251,3 +251,41 @@ QUnit.module('Ordo_Automation/js/tracker (polling)', function () {
         assert.strictEqual(env.fetchCalls.length, callsBefore, 'no submit fired on a plain close');
     });
 });
+
+QUnit.module('Ordo_Automation/js/tracker (GTM bridge)', function () {
+    QUnit.test('does not touch window.dataLayer when data-gtm-bridge-enabled is not "1"', function (assert) {
+        const env = loadTracker();
+
+        assert.strictEqual(env.dom.window.dataLayer, undefined);
+    });
+
+    QUnit.test('the automatic page_view on load is mirrored to dataLayer when enabled', function (assert) {
+        const env = loadTracker({ 'data-gtm-bridge-enabled': '1' });
+
+        assert.deepEqual(env.dom.window.dataLayer, [{ event: 'ordo_page_view', ordoEventKey: null }]);
+    });
+
+    QUnit.test('a later window.ordoTrack() call with an event key is appended, not replacing earlier pushes', function (assert) {
+        const env = loadTracker({ 'data-gtm-bridge-enabled': '1' });
+
+        env.dom.window.ordoTrack('product_view', '24-MB01');
+
+        assert.deepEqual(env.dom.window.dataLayer, [
+            { event: 'ordo_page_view', ordoEventKey: null },
+            { event: 'ordo_product_view', ordoEventKey: '24-MB01' }
+        ]);
+    });
+
+    QUnit.test('reuses the same dataLayer array across calls instead of replacing it', function (assert) {
+        const env = loadTracker({ 'data-gtm-bridge-enabled': '1' });
+        const afterLoad = env.dom.window.dataLayer;
+
+        env.dom.window.ordoTrack('checkout_start');
+
+        assert.strictEqual(env.dom.window.dataLayer, afterLoad, 'same array instance, not replaced');
+        assert.deepEqual(env.dom.window.dataLayer, [
+            { event: 'ordo_page_view', ordoEventKey: null },
+            { event: 'ordo_checkout_start', ordoEventKey: null }
+        ]);
+    });
+});

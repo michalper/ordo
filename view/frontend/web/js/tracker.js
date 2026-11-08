@@ -18,6 +18,9 @@
  * banner appears" to actually happen live is the browser periodically asking the server "is
  * there anything for me?" — built on polling rather than a websocket/SSE connection since this
  * is meant to stay a plain <script> tag with no server-push infrastructure required.
+ *
+ * When "tracking > gtm_bridge_enabled" is on, every track() call is also mirrored onto
+ * window.dataLayer (see pushToDataLayer below) — see docs/adr/0036.
  */
 (function () {
     'use strict';
@@ -80,6 +83,28 @@
 
         // fire-and-forget — a tracking call should never block or break the page it's on.
         fetch(ENDPOINT, { method: 'POST', body: body, keepalive: true }).catch(function () {});
+
+        pushToDataLayer(eventType, eventKey);
+    }
+
+    /**
+     * Mirrors every track() call onto window.dataLayer too, gated by its own config toggle
+     * (data-gtm-bridge-enabled — see ADR 0036) so a store's existing GTM container can build
+     * GA4/Ads audiences from Ordo's own event taxonomy (segmentation tags, campaign triggers)
+     * without waiting on this module's own, separately-gated ad-audience sync. Deliberately
+     * doesn't load GTM itself — the store's own container script is assumed already on the page,
+     * same "this is a bridge, not a GTM installer" scope ADR 0036 documents.
+     */
+    function pushToDataLayer(eventType, eventKey) {
+        if (!currentScript || currentScript.getAttribute('data-gtm-bridge-enabled') !== '1') {
+            return;
+        }
+
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+            event: 'ordo_' + eventType,
+            ordoEventKey: eventKey || null
+        });
     }
 
     /**

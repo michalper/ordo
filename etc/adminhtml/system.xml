@@ -702,6 +702,12 @@
                                     <field id="nps_survey_enabled">1</field>
                                 </depends>
                             </field>
+                            <field id="gtm_bridge_enabled" translate="label comment" type="select" sortOrder="110" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Mirror tracked events to Google Tag Manager's dataLayer</label>
+                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                                <comment>Pushes every event tracker.js already sends (page_view, product_view, category_view, checkout_start, and any custom window.ordoTrack() call) onto window.dataLayer too, tagged with an ordo_-prefixed event name. This lets a store's existing GTM container build GA4/Ads audiences from Ordo's own event taxonomy. GTM itself isn't loaded by this - the store's own container must already be on the page. Requires tracking to be enabled above.</comment>
+                                <depends><field id="enabled">1</field></depends>
+                            </field>
                         </group>
             
                         

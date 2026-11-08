@@ -60,7 +60,8 @@ strukturalnie nie widzą.
   historycznie najlepszej godzinie otwarcia/kliknięcia dla danego klienta (tylko e-mail — jedyny
   kanał z danymi o otwarciach/kliknięciach).
 - Śledzenie zachowań na stronie — bezzależnościowy snippet JS zamieniający odsłony stron/produktów/kategorii w
-  tagi silnika kampanii.
+  tagi silnika kampanii, z opcjonalnym mostem wysyłającym śledzone zdarzenia do `dataLayer` istniejącego
+  Google Tag Managera sklepu.
 - GraphQL API dla storefrontu — śledzenie, Moje oferty, status limitu kredytowego, obserwacja cen i subskrypcje
   Web Push, dla headlessowego/PWA Studio storefrontu bez żadnej strony renderowanej po stronie Magento. Cienkie
   wrappery nad tymi samymi klasami serwisowymi, które wywołują już istniejące endpointy REST — bez duplikacji logiki.
