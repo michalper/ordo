@@ -100,8 +100,8 @@ bin/magento cache:flush
 - [API.md](API.md) — REST service contract reference.
 - [CONTRIBUTING.md](CONTRIBUTING.md) — quality/testing requirements for changes.
 - Localization: `i18n/` CSVs, keyed off `en_US.csv`. Shipped: `en_US`, `pl_PL` (native-reviewed), `de_DE`, `fr_FR`,
-  `es_ES`, `it_IT`, `pt_BR`, `zh_Hans_CN`, `ja_JP`, `ru_RU`, `uk_UA`, `nl_NL`, `cs_CZ` (machine-translated, pending
-  native review).
+  `es_ES`, `it_IT`, `pt_BR`, `zh_Hans_CN`, `ja_JP`, `ru_RU`, `uk_UA`, `nl_NL`, `cs_CZ`, `ko_KR`, `tr_TR`, `ro_RO`,
+  `hu_HU`, `sv_SE`, `sk_SK`, `sl_SI` (machine-translated, pending native review).
 
 ## License
 
