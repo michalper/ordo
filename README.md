@@ -79,8 +79,10 @@ Every feature has its own config toggle under **Stores → Configuration → Ord
   of it depends on Luma's JS stack. No separate `hyva-themes/*` compatibility module is needed. If your Hyvä
   theme's own `tailwind.config.js` purges unused classes, add this module's `view/frontend` directory to its
   `content` array so the few Tailwind utility classes in `offer/index.phtml` survive the build.
-- **Multi-store** — config reads, segment/scoring, and campaign matching are not yet fully store/website-scoped;
-  see [ROADMAP.md](ROADMAP.md) for the current gap list.
+- **Multi-store** — config reads resolve the customer's own store (not Magento's ambient
+  "current store"), and campaigns/segments/score rules can each be scoped to one or more
+  websites via their own admin multiselect (empty selection = unscoped, matching every website).
+  See `docs/adr/0013`/`0014`.
 
 ## Install
 
