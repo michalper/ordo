@@ -71,6 +71,11 @@ class Config
     private const string XML_PATH_TRACKING_CLICK_THRESHOLD = 'ordo_tracking/tracking/click_threshold';
     private const string XML_PATH_TRACKING_GTM_BRIDGE_ENABLED = 'ordo_tracking/tracking/gtm_bridge_enabled';
     private const string XML_PATH_TRACKING_EXIT_INTENT_ENABLED = 'ordo_tracking/tracking/exit_intent_enabled';
+    private const string XML_PATH_TRACKING_SOCIAL_PROOF_ENABLED = 'ordo_tracking/tracking/social_proof_enabled';
+    private const string XML_PATH_TRACKING_SOCIAL_PROOF_MINIMUM_VIEWS
+        = 'ordo_tracking/tracking/social_proof_minimum_views';
+    private const string XML_PATH_TRACKING_SOCIAL_PROOF_MESSAGE_TEMPLATE
+        = 'ordo_tracking/tracking/social_proof_message_template';
 
     private const string XML_PATH_POPUP_ENABLED = 'ordo_tracking/tracking/popup_enabled';
     private const string XML_PATH_POPUP_POLL_INTERVAL_SECONDS = 'ordo_tracking/tracking/popup_poll_interval_seconds';
@@ -558,6 +563,42 @@ class Config
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
+    }
+
+    public function isSocialProofEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_TRACKING_SOCIAL_PROOF_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Below this many real views today, Controller\Track\SocialProof returns no message at all -
+     * "1 person viewed this today" reads as weak evidence, not social proof, so there is a floor
+     * below which saying nothing beats saying something unconvincing.
+     */
+    public function getSocialProofMinimumViews(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_TRACKING_SOCIAL_PROOF_MINIMUM_VIEWS, 3, $storeId);
+    }
+
+    /**
+     * "{count}" is replaced with today's real view count by Controller\Track\SocialProof before
+     * this ever reaches the browser - formatted server-side, in PHP, rather than templated in
+     * tracker.js, so the message stays ordinary per-store-view-scoped config text like any other
+     * admin-authored copy in this module, not a hardcoded English string in a static JS file.
+     */
+    public function getSocialProofMessageTemplate(?int $storeId = null): string
+    {
+        $value = $this->scopeConfig->getValue(
+            self::XML_PATH_TRACKING_SOCIAL_PROOF_MESSAGE_TEMPLATE,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+
+        return is_string($value) && $value !== '' ? $value : '{count} people viewed this today';
     }
 
     public function isPopupEnabled(?int $storeId = null): bool

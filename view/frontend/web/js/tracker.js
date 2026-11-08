@@ -24,6 +24,11 @@
  *
  * When "tracking > exit_intent_enabled" is on, also fires an "exit_intent" tracking event (see
  * startExitIntentDetection below) once per page load — see docs/adr/0037.
+ *
+ * window.ordoRenderSocialProof(sku, containerSelector) is another theme integration point, same
+ * shape as window.ordoTrack()/window.ordoSubscribeToPriceWatch(): the PDP template calls it with
+ * the product it already knows and a container it has placed in its own markup — see
+ * renderSocialProof below and docs/adr/0039.
  */
 (function () {
     'use strict';
@@ -37,6 +42,7 @@
     var NOTIFICATION_LIST_ID = 'ordo-notification-list';
     var SUBMIT_SURVEY_ENDPOINT = '/ordo/track/submitsurveyresponse';
     var SURVEY_PROMPT_ID = 'ordo-survey-prompt';
+    var SOCIAL_PROOF_ENDPOINT = '/ordo/track/socialproof';
 
     // Captured synchronously, at the top of this script's own execution — document.currentScript
     // is only reliable for a plain, synchronously-executing <script src> tag like this one; it
@@ -548,9 +554,45 @@
         });
     }
 
+    /**
+     * Fills `containerSelector` with "N people viewed this today" for `sku`, once, on demand -
+     * called by the theme's own PDP template, which already knows both. The container starts
+     * hidden in the theme's own markup and is only revealed once a real message comes back, so a
+     * disabled feature, a below-minimum view count, or a failed request all leave the page
+     * exactly as the theme rendered it - never an empty or stale-looking box. The message text
+     * itself is server-formatted (Controller\Track\SocialProof, from Helper\Config::
+     * getSocialProofMessageTemplate()) - this function has no template/count logic of its own.
+     *
+     * @param {String} sku
+     * @param {String} containerSelector e.g. "#ordo-social-proof"
+     */
+    function renderSocialProof(sku, containerSelector) {
+        if (!currentScript || currentScript.getAttribute('data-social-proof-enabled') !== '1') {
+            return;
+        }
+
+        var container = document.querySelector(containerSelector);
+        if (!container || !sku) {
+            return;
+        }
+
+        fetch(SOCIAL_PROOF_ENDPOINT + '?sku=' + encodeURIComponent(sku), { credentials: 'same-origin' })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                if (data && data.message) {
+                    container.textContent = data.message;
+                    container.style.display = '';
+                }
+            })
+            .catch(function () {});
+    }
+
     window.ordoTrack = track;
     window.ordoSubscribeToPush = subscribeToPush;
     window.ordoSubscribeToPriceWatch = subscribeToPriceWatch;
+    window.ordoRenderSocialProof = renderSocialProof;
     track('page_view');
     startPolling(15, renderPollResponse);
     startExitIntentDetection();

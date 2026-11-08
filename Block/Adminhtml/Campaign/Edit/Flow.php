@@ -175,8 +175,7 @@ class Flow extends Template
                         'label' => (string) __('Date/time (store timezone)'),
                         'notice' => (string) __(
                             'Format: YYYY-MM-DD HH:MM:SS, e.g. 2026-11-28 09:00:00. Fires at most once, the'
-                            . ' next time Cron\DispatchScheduledCampaignTriggers scans (every 5 minutes) after'
-                            . ' this moment.'
+                            . ' next time the scheduler checks (every 5 minutes) after this moment.'
                         ),
                     ],
                 ],
@@ -197,11 +196,10 @@ class Flow extends Template
                         'label' => (string) __('Inactive for at least N days'),
                         'notice' => (string) __(
                             'Fires once per customer whose most recent order (or registration, if they'
-                            . ' never ordered) is at least this many days old - scanned nightly by'
-                            . ' Cron\DispatchCustomerInactiveCampaigns. Re-fires for the same customer'
-                            . ' after the configured refire cooldown (Stores → Configuration → Ordo'
-                            . ' Automation → Customer Inactive Trigger) once they have ordered again and'
-                            . ' gone inactive once more.'
+                            . ' never ordered) is at least this many days old - checked every night.'
+                            . ' Re-fires for the same customer after the configured refire cooldown'
+                            . ' (Stores → Configuration → Ordo Automation → Customer Inactive Trigger)'
+                            . ' once they have ordered again and gone inactive once more.'
                         ),
                     ],
                 ],

@@ -346,3 +346,75 @@ QUnit.module('Ordo_Automation/js/tracker (exit intent)', function () {
         assert.strictEqual(env.fetchCalls.length, callsBefore, 'exiting downward is not exit intent');
     });
 });
+
+QUnit.module('Ordo_Automation/js/tracker (social proof)', function () {
+    function makeContainer(document, id) {
+        const container = document.createElement('div');
+        container.id = id;
+        container.style.display = 'none';
+        document.body.appendChild(container);
+        return container;
+    }
+
+    QUnit.test('does nothing when data-social-proof-enabled is not "1"', async function (assert) {
+        const env = loadTracker();
+        const document = env.dom.window.document;
+        const container = makeContainer(document, 'ordo-social-proof');
+        const callsBefore = env.fetchCalls.length;
+
+        env.dom.window.ordoRenderSocialProof('24-MB01', '#ordo-social-proof');
+        await flush();
+
+        assert.strictEqual(env.fetchCalls.length, callsBefore, 'no request made');
+        assert.strictEqual(container.style.display, 'none', 'container left untouched');
+    });
+
+    QUnit.test('does nothing when the container selector matches nothing', async function (assert) {
+        const env = loadTracker({ 'data-social-proof-enabled': '1' });
+        const callsBefore = env.fetchCalls.length;
+
+        env.dom.window.ordoRenderSocialProof('24-MB01', '#does-not-exist');
+        await flush();
+
+        assert.strictEqual(env.fetchCalls.length, callsBefore, 'no request made');
+    });
+
+    QUnit.test('does nothing when no sku is given', async function (assert) {
+        const env = loadTracker({ 'data-social-proof-enabled': '1' });
+        const callsBefore = env.fetchCalls.length;
+
+        env.dom.window.ordoRenderSocialProof('', '#ordo-social-proof');
+        await flush();
+
+        assert.strictEqual(env.fetchCalls.length, callsBefore, 'no request made');
+    });
+
+    QUnit.test('fills and reveals the container when the server returns a message', async function (assert) {
+        const env = loadTracker({ 'data-social-proof-enabled': '1' });
+        const document = env.dom.window.document;
+        const container = makeContainer(document, 'ordo-social-proof');
+
+        env.setPollResponse({ message: '12 people viewed this today' });
+        env.dom.window.ordoRenderSocialProof('24-MB01', '#ordo-social-proof');
+        await flush();
+
+        const call = env.fetchCalls[env.fetchCalls.length - 1];
+        assert.strictEqual(call.url, '/ordo/track/socialproof?sku=24-MB01');
+        assert.deepEqual(call.options, { credentials: 'same-origin' });
+        assert.strictEqual(container.textContent, '12 people viewed this today');
+        assert.strictEqual(container.style.display, '');
+    });
+
+    QUnit.test('leaves the container hidden when the server returns no message', async function (assert) {
+        const env = loadTracker({ 'data-social-proof-enabled': '1' });
+        const document = env.dom.window.document;
+        const container = makeContainer(document, 'ordo-social-proof');
+
+        env.setPollResponse({ message: null });
+        env.dom.window.ordoRenderSocialProof('24-MB01', '#ordo-social-proof');
+        await flush();
+
+        assert.strictEqual(container.textContent, '');
+        assert.strictEqual(container.style.display, 'none');
+    });
+});

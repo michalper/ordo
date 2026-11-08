@@ -557,6 +557,11 @@
         <index referenceId="ORDO_VISITOR_EVENT_CREATED_AT" indexType="btree">
             <column name="created_at"/>
         </index>
+        <index referenceId="ORDO_VISITOR_EVENT_TYPE_KEY_CREATED_AT" indexType="btree">
+            <column name="event_type"/>
+            <column name="event_key"/>
+            <column name="created_at"/>
+        </index>
     </table>
 
     <table name="ordo_product_performance" resource="default" engine="innodb" comment="Running per-SKU view count, kept current by Cron\CalculateProductPerformance reading ordo_visitor_event incrementally before PruneVisitorEvents deletes it - purchase counts are joined live from sales_order_item at report time instead (that data is never pruned, so it needs no table of its own), see Model\ResourceModel\ProductPerformance\Grid\Collection.">

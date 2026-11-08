@@ -101,4 +101,12 @@ class TrackerViewModelTest extends TestCase
 
         self::assertTrue((new TrackerViewModel($config))->isExitIntentEnabled());
     }
+
+    public function testIsSocialProofEnabledReflectsConfig(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isSocialProofEnabled')->willReturn(true);
+
+        self::assertTrue((new TrackerViewModel($config))->isSocialProofEnabled());
+    }
 }

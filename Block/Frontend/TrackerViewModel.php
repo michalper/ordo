@@ -69,6 +69,11 @@ class TrackerViewModel implements ArgumentInterface
         return $this->config->isExitIntentEnabled();
     }
 
+    public function isSocialProofEnabled(): bool
+    {
+        return $this->config->isSocialProofEnabled();
+    }
+
     /**
      * Not a secret - safe to render straight into the page, same as any other applicationServerKey
      * example in the Web Push spec itself.
