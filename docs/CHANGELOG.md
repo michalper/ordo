@@ -9,6 +9,8 @@ it doesn't update itself from this file.
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-11-08
+
 ### Added
 
 - **GraphQL storefront API, Phase 1 — core tracking** — `ordoTrackerPoll`, `trackOrdoEvent`,
