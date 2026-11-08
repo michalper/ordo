@@ -60,7 +60,7 @@ class OfferTest extends AbstractDbTestCase
     {
         [$context, $connection] = $this->makeDbContextWithConnection();
         $this->stubQuoteInto($connection);
-        $connection->method('update')->willReturn(0);
+        $connection->expects(self::once())->method('update')->willReturn(0);
 
         $model = $this->createMock(OfferInterface::class);
         $model->method('getEntityId')->willReturn(7);

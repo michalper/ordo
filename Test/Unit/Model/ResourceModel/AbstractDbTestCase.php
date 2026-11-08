@@ -20,15 +20,31 @@ abstract class AbstractDbTestCase extends TestCase
 {
     protected function makeDbContext(): Context
     {
-        return $this->makeDbContextWithConnection()[0];
+        $connection = $this->createStub(AdapterInterface::class);
+
+        $resources = $this->createStub(ResourceConnection::class);
+        $resources->method('getConnection')->willReturn($connection);
+        $resources->method('getTableName')->willReturnCallback(fn (string $table) => $table);
+
+        $context = $this->createStub(Context::class);
+        $context->method('getResources')->willReturn($resources);
+        $context->method('getTransactionManager')
+            ->willReturn($this->createStub(TransactionManagerInterface::class));
+        $context->method('getObjectRelationProcessor')
+            ->willReturn($this->createStub(ObjectRelationProcessor::class));
+
+        return $context;
     }
 
     /**
-     * Same as makeDbContext(), but also hands back the connection itself - for a test that needs
-     * to set expectations on a real query the resource model issues (e.g. an update()/insert()
-     * call), not just verify _construct()'s own table/field wiring. A mock, not a stub - this
-     * project's PHPUnit version doesn't support ->method()->with()/->expects() chained directly
-     * off a bare createStub() return value, only off createMock()'s.
+     * Same shape as makeDbContext(), but also hands back the connection itself as a mock - for a
+     * test that needs to set expectations on a real query the resource model issues (e.g. an
+     * update()/insert() call), not just verify _construct()'s own table/field wiring. A separate
+     * method, not makeDbContext() plus a mocked connection swapped in, because this project's
+     * PHPUnit run treats any mock that never gets an expects() call as a usage error ("Consider
+     * refactoring your test code to use a test stub instead") - sharing one connection object
+     * between both call shapes would fail every existing _construct()-only test that never sets
+     * an expectation on it.
      *
      * @return array{0: Context, 1: AdapterInterface&\PHPUnit\Framework\MockObject\MockObject}
      */
