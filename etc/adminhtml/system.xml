@@ -745,24 +745,22 @@
 
             <group id="ad_audience_sync" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                             <label>Ad Audience Sync (Google Ads / Meta)</label>
-                            <field id="google_ads_client_id" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Google Ads OAuth Client ID</label>
+                            <field id="data_manager_client_id" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Data Manager API OAuth Client ID</label>
+                                <comment>Google Ads Customer Match sync now goes through the Data Manager API (OfflineUserDataJobService was retired for new integrations) - see ADR 0035.</comment>
                             </field>
-                            <field id="google_ads_client_secret" translate="label" type="obscure" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Google Ads OAuth Client Secret</label>
+                            <field id="data_manager_client_secret" translate="label" type="obscure" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Data Manager API OAuth Client Secret</label>
                                 <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                             </field>
-                            <field id="google_ads_refresh_token" translate="label" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Google Ads OAuth Refresh Token</label>
+                            <field id="data_manager_refresh_token" translate="label comment" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Data Manager API OAuth Refresh Token</label>
+                                <comment>Needs its own consent grant for the https://www.googleapis.com/auth/datamanager scope - a Google Ads API-only refresh token from before this integration doesn't carry it.</comment>
                                 <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                             </field>
-                            <field id="google_ads_developer_token" translate="label" type="obscure" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Google Ads Developer Token</label>
-                                <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                            </field>
-                            <field id="google_ads_login_customer_id" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Google Ads Login Customer ID</label>
-                                <comment>The manager (MCC) account id, digits only, no dashes.</comment>
+                            <field id="google_ads_account_id" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Google Ads Account ID</label>
+                                <comment>The Google Ads account the Customer Match audience list belongs to, digits only, no dashes.</comment>
                             </field>
                             <field id="meta_access_token" translate="label comment" type="obscure" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
                                 <label>Meta Access Token</label>

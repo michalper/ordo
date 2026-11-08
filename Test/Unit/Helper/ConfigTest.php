@@ -119,11 +119,10 @@ class ConfigTest extends TestCase
     public function testAdAudienceAndShoppingFeedGettersDelegateToScopeConfig(): void
     {
         $this->scopeConfig->method('getValue')->willReturnMap([
-            ['ordo_integrations/ad_audience_sync/google_ads_client_id', 'store', null, 'gid'],
-            ['ordo_integrations/ad_audience_sync/google_ads_client_secret', 'store', null, 'gsecret'],
-            ['ordo_integrations/ad_audience_sync/google_ads_refresh_token', 'store', null, 'grefresh'],
-            ['ordo_integrations/ad_audience_sync/google_ads_developer_token', 'store', null, 'gdev'],
-            ['ordo_integrations/ad_audience_sync/google_ads_login_customer_id', 'store', null, '1234567890'],
+            ['ordo_integrations/ad_audience_sync/data_manager_client_id', 'store', null, 'gid'],
+            ['ordo_integrations/ad_audience_sync/data_manager_client_secret', 'store', null, 'gsecret'],
+            ['ordo_integrations/ad_audience_sync/data_manager_refresh_token', 'store', null, 'grefresh'],
+            ['ordo_integrations/ad_audience_sync/google_ads_account_id', 'store', null, '1234567890'],
             ['ordo_integrations/ad_audience_sync/meta_access_token', 'store', null, 'mtoken'],
             ['ordo_integrations/ad_audience_sync/meta_ad_account_id', 'store', null, '9999'],
             ['ordo_integrations/shopping_feed/title', 'store', null, 'My Feed'],
@@ -131,11 +130,10 @@ class ConfigTest extends TestCase
             ['ordo_integrations/meta_catalog_feed/default_brand', 'store', null, 'Acme'],
         ]);
 
-        self::assertSame('gid', $this->config->getGoogleAdsClientId());
-        self::assertSame('gsecret', $this->config->getGoogleAdsClientSecret());
-        self::assertSame('grefresh', $this->config->getGoogleAdsRefreshToken());
-        self::assertSame('gdev', $this->config->getGoogleAdsDeveloperToken());
-        self::assertSame('1234567890', $this->config->getGoogleAdsLoginCustomerId());
+        self::assertSame('gid', $this->config->getDataManagerClientId());
+        self::assertSame('gsecret', $this->config->getDataManagerClientSecret());
+        self::assertSame('grefresh', $this->config->getDataManagerRefreshToken());
+        self::assertSame('1234567890', $this->config->getGoogleAdsAccountId());
         self::assertSame('mtoken', $this->config->getMetaAccessToken());
         self::assertSame('9999', $this->config->getMetaAdAccountId());
         self::assertSame('My Feed', $this->config->getShoppingFeedTitle());

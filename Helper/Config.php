@@ -106,15 +106,14 @@ class Config
     private const string XML_PATH_SMS_TWILIO_FROM_NUMBER = 'ordo_channels/sms/twilio_from_number';
     private const string XML_PATH_SMS_TWILIO_MAX_PER_SECOND = 'ordo_channels/sms/twilio_max_requests_per_second';
 
-    private const string XML_PATH_GOOGLE_ADS_CLIENT_ID = 'ordo_integrations/ad_audience_sync/google_ads_client_id';
-    private const string XML_PATH_GOOGLE_ADS_CLIENT_SECRET
-        = 'ordo_integrations/ad_audience_sync/google_ads_client_secret';
-    private const string XML_PATH_GOOGLE_ADS_REFRESH_TOKEN
-        = 'ordo_integrations/ad_audience_sync/google_ads_refresh_token';
-    private const string XML_PATH_GOOGLE_ADS_DEVELOPER_TOKEN
-        = 'ordo_integrations/ad_audience_sync/google_ads_developer_token';
-    private const string XML_PATH_GOOGLE_ADS_LOGIN_CUSTOMER_ID
-        = 'ordo_integrations/ad_audience_sync/google_ads_login_customer_id';
+    private const string XML_PATH_DATA_MANAGER_CLIENT_ID
+        = 'ordo_integrations/ad_audience_sync/data_manager_client_id';
+    private const string XML_PATH_DATA_MANAGER_CLIENT_SECRET
+        = 'ordo_integrations/ad_audience_sync/data_manager_client_secret';
+    private const string XML_PATH_DATA_MANAGER_REFRESH_TOKEN
+        = 'ordo_integrations/ad_audience_sync/data_manager_refresh_token';
+    private const string XML_PATH_GOOGLE_ADS_ACCOUNT_ID
+        = 'ordo_integrations/ad_audience_sync/google_ads_account_id';
     private const string XML_PATH_META_ACCESS_TOKEN = 'ordo_integrations/ad_audience_sync/meta_access_token';
     private const string XML_PATH_META_AD_ACCOUNT_ID = 'ordo_integrations/ad_audience_sync/meta_ad_account_id';
 
@@ -740,34 +739,29 @@ class Config
         return $this->intConfig(self::XML_PATH_SMS_TWILIO_MAX_PER_SECOND, 1, $storeId);
     }
 
-    public function getGoogleAdsClientId(?int $storeId = null): string
+    public function getDataManagerClientId(?int $storeId = null): string
     {
         return (string) $this->scopeConfig->getValue(
-            self::XML_PATH_GOOGLE_ADS_CLIENT_ID,
+            self::XML_PATH_DATA_MANAGER_CLIENT_ID,
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
     }
 
-    public function getGoogleAdsClientSecret(?int $storeId = null): string
+    public function getDataManagerClientSecret(?int $storeId = null): string
     {
-        return $this->decryptedConfig(self::XML_PATH_GOOGLE_ADS_CLIENT_SECRET, $storeId);
+        return $this->decryptedConfig(self::XML_PATH_DATA_MANAGER_CLIENT_SECRET, $storeId);
     }
 
-    public function getGoogleAdsRefreshToken(?int $storeId = null): string
+    public function getDataManagerRefreshToken(?int $storeId = null): string
     {
-        return $this->decryptedConfig(self::XML_PATH_GOOGLE_ADS_REFRESH_TOKEN, $storeId);
+        return $this->decryptedConfig(self::XML_PATH_DATA_MANAGER_REFRESH_TOKEN, $storeId);
     }
 
-    public function getGoogleAdsDeveloperToken(?int $storeId = null): string
-    {
-        return $this->decryptedConfig(self::XML_PATH_GOOGLE_ADS_DEVELOPER_TOKEN, $storeId);
-    }
-
-    public function getGoogleAdsLoginCustomerId(?int $storeId = null): string
+    public function getGoogleAdsAccountId(?int $storeId = null): string
     {
         return (string) $this->scopeConfig->getValue(
-            self::XML_PATH_GOOGLE_ADS_LOGIN_CUSTOMER_ID,
+            self::XML_PATH_GOOGLE_ADS_ACCOUNT_ID,
             ScopeInterface::SCOPE_STORE,
             $storeId
         );

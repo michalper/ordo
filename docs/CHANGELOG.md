@@ -28,6 +28,17 @@ it doesn't update itself from this file.
   Thin wrappers over the existing `PriceWatchSubscriptionManager`/`PushSubscriptionManager`
   services. See `docs/adr/0034`.
 
+### Fixed
+
+- **`Model\AdAudience\GoogleAdsSyncClient` migrated from the Google Ads API to the Data Manager
+  API** — attempting to verify ad-audience sync against a real account found the old integration
+  target (`OfflineUserDataJobService`) now fails outright for any Google Cloud project without
+  Customer Match API history in a 2025-2026 grandfathering window, version bump or not. Three
+  further, independent real bugs fixed along the way: a long-sunset REST API version, a dead
+  partial-failure check (`enablePartialFailure` was never set), and a long-running `:run` operation
+  that was fired and forgotten, with `Cron\SyncAdAudiences` recording success the instant the job
+  was merely *accepted* rather than actually completed. See `docs/adr/0035`.
+
 ## [1.6.0] - 2026-11-07
 
 ### Added

@@ -8,8 +8,12 @@ use Ordo\Automation\Helper\Config;
 
 /**
  * Exchanges the configured long-lived OAuth refresh token for a short-lived access token —
- * Google Ads API calls (GoogleAdsSyncClient) are Bearer-authenticated with this, never with the
- * refresh token itself. One real HTTP call, the standard OAuth 2.0 refresh-token grant.
+ * Data Manager API calls (GoogleAdsSyncClient) are Bearer-authenticated with this, never with
+ * the refresh token itself. One real HTTP call, the standard OAuth 2.0 refresh-token grant.
+ *
+ * Data Manager API needs its own https://www.googleapis.com/auth/datamanager scope, granted to
+ * a dedicated refresh token - a refresh token obtained for the old, now-retired Google Ads API
+ * OfflineUserDataJobService integration doesn't carry it (see ADR 0035).
  *
  * @see https://developers.google.com/identity/protocols/oauth2/web-server#offline
  */
@@ -30,9 +34,9 @@ class GoogleOAuthTokenProvider
         $this->curl->setOption(CURLOPT_FOLLOWLOCATION, false);
         $this->curl->post(self::TOKEN_ENDPOINT, [
             'grant_type' => 'refresh_token',
-            'client_id' => $this->config->getGoogleAdsClientId(),
-            'client_secret' => $this->config->getGoogleAdsClientSecret(),
-            'refresh_token' => $this->config->getGoogleAdsRefreshToken(),
+            'client_id' => $this->config->getDataManagerClientId(),
+            'client_secret' => $this->config->getDataManagerClientSecret(),
+            'refresh_token' => $this->config->getDataManagerRefreshToken(),
         ]);
 
         $status = $this->curl->getStatus();
