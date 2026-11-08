@@ -150,7 +150,14 @@ is concentrated in multi-store; PHP 8.3 and Hyvä were mostly already fine or tr
 
 ## Documentation
 
-- GitHub Wiki (`github.com/michalper/ordo/wiki`, source staged in `docs/wiki/`) — needs native PL review.
+- ~~GitHub Wiki (`github.com/michalper/ordo/wiki`, source staged in `docs/wiki/`) — needs native PL
+  review.~~ — the `docs/wiki/` staging copy had drifted stale (last touched 2026-11-05) relative to
+  the real, live wiki, which every edit since has gone straight to instead — removed it rather than
+  resync it, since nothing actually reads from it. Audited the live wiki's PL/EN parity directly
+  (heading-count check per page, every page bilingual except `Privacy-Policy.md`, now translated
+  too) and backfilled several real gaps found along the way: the `customer_inactive`/
+  `order_canceled`/`review_request_due`/`referral_converted` triggers, `generate_ai_content`, and
+  the whole lead-routing/sales-rep-digest feature pair had zero wiki coverage.
 
 ## Candidate new features
 
