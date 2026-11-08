@@ -7,6 +7,49 @@ detail see [CHANGELOG.md](docs/CHANGELOG.md) and [VERIFICATION.md](VERIFICATION.
 Ownership split: B2B direction is scoped by the technical/architecture side (this repo's maintainer); B2C direction is
 scoped from real hands-on marketing automation experience.
 
+## GraphQL storefront API
+
+Ordo has zero GraphQL coverage today — every customer-facing storefront touchpoint
+(`Controller\Track\*`'s `tracker.js`-polled/posted endpoints, `Controller\Offer\*`) is a plain
+frontend controller, and `etc/webapi.xml`'s REST routes are mostly admin/integration CRUD. A
+headless/PWA Studio storefront can't call either shape the way it calls core Magento's own
+GraphQL schema — it has no server-rendered page for `tracker.js` to load from, and no
+`fetch()`-friendly cookie-based session the way a Luma tab has. This closes that gap, one
+query/mutation at a time, each thin-wrapping the *same* underlying service class its existing
+REST/frontend-controller equivalent already calls (no logic duplicated into the resolver).
+
+Identity model: a logged-in customer is resolved from `ContextInterface::getUserId()` (Magento's
+own GraphQL customer-token auth), not `Magento\Customer\Model\Session` — a decoupled frontend has
+no PHP session cookie to carry. `visitorId` is always an explicit argument, same as
+`Controller\Track\Poll`'s existing `resolveVisitorIdFromParam()` fallback (tracker.js already
+can't rely on reading its own cookie cross-origin either).
+
+Testing: a new `Test/GraphQl/` suite, same shape as `Test/Api/` (`AbstractGraphQlTestCase.php` —
+raw HTTP POST to `/graphql`, real instance, no mocks, reusing `Test/Api`'s existing customer/admin
+token acquisition) — not MFTF, for the same reason `Test/Api/README.md` already gives: a pure API
+protocol has nothing browser-observable for Selenium to assert on.
+
+- [ ] **Phase 1 — core tracking** (the biggest PWA blocker; mirrors `tracker.js`'s own 4 calls):
+  - `ordoTrackerPoll(visitorId: String): OrdoTrackerPoll` — mirrors `Controller\Track\Poll`
+    (`{popup, notifications, survey}`).
+  - `trackOrdoEvent(eventType: String!, eventKey: String, visitorId: String): OrdoTrackEventOutput`
+    — mirrors `Controller\Track\Event`.
+  - `dismissOrdoNotification(notificationId: Int!, visitorId: String): OrdoDismissNotificationOutput`
+    — mirrors `Controller\Track\DismissNotification`.
+  - `submitOrdoSurveyResponse(surveyId: Int!, score: Int!, visitorId: String): OrdoSubmitSurveyResponseOutput`
+    — mirrors `Controller\Track\SubmitSurveyResponse`.
+- [ ] **Phase 2 — My Offers**: `ordoOffers: [OrdoOffer]` (mirrors `Controller\Offer\Index`),
+  `extendOrdoOffer(offerId: Int!): OrdoExtendOfferOutput` (mirrors `Controller\Offer\Extend`/the
+  existing `/V1/ordo/offers/:offerId/self-extend` REST route — same `OfferSelfExtension` service,
+  a second transport onto it, not a second implementation), `ordoCreditLimit: OrdoCreditLimit`
+  (mirrors the existing `/V1/ordo/credit-limit/mine` REST route, for PWA-native access without a
+  separate REST client).
+- [ ] **Phase 3 — price-watch & push subscriptions**: `registerOrdoPriceWatch`/
+  `unregisterOrdoPriceWatch` (mirrors `Controller\Track\RegisterPriceWatch`),
+  `registerOrdoPushSubscription`/`unregisterOrdoPushSubscription` (mirrors
+  `Controller\Track\Register/UnregisterPushSubscription` — the actual browser Push API
+  subscription still has to happen client-side; this is just the "tell Ordo about it" half).
+
 ## Test coverage
 
 - Ad-audience sync (`Cron\SyncAdAudiences`) has no test against a real Google Ads/Meta account — request/response
