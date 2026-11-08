@@ -13,8 +13,15 @@ $templates = $block->getUndraftedTemplates();
         )) ?>
     </p>
     <?php if ($templates): ?>
-        <form class="ordo-email-template-draft-chooser-form" action="<?= $escaper->escapeUrl($block->getNewDraftUrl()) ?>" method="get">
-            <select name="template_id">
+        <form
+            class="ordo-email-template-draft-chooser-form"
+            action="<?= $escaper->escapeUrl($block->getNewDraftUrl()) ?>"
+            method="get"
+        >
+            <label for="ordo-email-template-draft-chooser-select">
+                <?= $escaper->escapeHtml(__('Template')) ?>
+            </label>
+            <select name="template_id" id="ordo-email-template-draft-chooser-select">
                 <?php foreach ($templates as $template): ?>
                     <option value="<?= $escaper->escapeHtmlAttr((string) $template['id']) ?>">
                         <?= $escaper->escapeHtml($template['code']) ?>

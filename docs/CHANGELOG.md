@@ -26,6 +26,10 @@ it doesn't update itself from this file.
   versioning policy defaults an expired version's calls to the next-oldest still-usable version
   rather than erroring outright, so this was a silent drift bug, not an outright outage. Bumped to
   the current `v26.0`.
+- **The Email Template Drafts "Start a new draft" dropdown had no label at all** — a screen
+  reader had no way to tell what the `<select>` was for (WCAG 2 input-without-label), and sighted
+  users got no visible indication either. Added a real, visible `<label for>` instead of a
+  screen-reader-only one, since the latter wouldn't have helped sighted users at all.
 
 ## [1.7.0] - 2026-11-08
 

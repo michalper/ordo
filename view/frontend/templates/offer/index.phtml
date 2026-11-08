@@ -23,11 +23,21 @@ $offers = $viewModel->getOffers();
                 <caption class="table-caption lg:sr-only"><?= $escaper->escapeHtml(__('My Offers')) ?></caption>
                 <thead>
                     <tr>
-                        <th scope="col" class="col reference lg:border-b lg:p-2 lg:text-left"><?= $escaper->escapeHtml(__('Reference')) ?></th>
-                        <th scope="col" class="col status lg:border-b lg:p-2 lg:text-left"><?= $escaper->escapeHtml(__('Status')) ?></th>
-                        <th scope="col" class="col total lg:border-b lg:p-2 lg:text-left"><?= $escaper->escapeHtml(__('Total')) ?></th>
-                        <th scope="col" class="col expires lg:border-b lg:p-2 lg:text-left"><?= $escaper->escapeHtml(__('Expires')) ?></th>
-                        <th scope="col" class="col actions lg:border-b lg:p-2 lg:text-left"><?= $escaper->escapeHtml(__('Actions')) ?></th>
+                        <th scope="col" class="col reference lg:border-b lg:p-2 lg:text-left">
+                            <?= $escaper->escapeHtml(__('Reference')) ?>
+                        </th>
+                        <th scope="col" class="col status lg:border-b lg:p-2 lg:text-left">
+                            <?= $escaper->escapeHtml(__('Status')) ?>
+                        </th>
+                        <th scope="col" class="col total lg:border-b lg:p-2 lg:text-left">
+                            <?= $escaper->escapeHtml(__('Total')) ?>
+                        </th>
+                        <th scope="col" class="col expires lg:border-b lg:p-2 lg:text-left">
+                            <?= $escaper->escapeHtml(__('Expires')) ?>
+                        </th>
+                        <th scope="col" class="col actions lg:border-b lg:p-2 lg:text-left">
+                            <?= $escaper->escapeHtml(__('Actions')) ?>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -56,7 +66,11 @@ $offers = $viewModel->getOffers();
                                 >
                                     <?= $block->getBlockHtml('formkey') ?>
                                     <input type="hidden" name="offer_id" value="<?= (int) $offer->getEntityId() ?>"/>
-                                    <button type="submit" class="action extend primary lg:rounded lg:bg-gray-800 lg:px-3 lg:py-1 lg:text-white">
+                                    <button
+                                        type="submit"
+                                        class="action extend primary lg:rounded lg:bg-gray-800
+                                            lg:px-3 lg:py-1 lg:text-white"
+                                    >
                                         <span><?= $escaper->escapeHtml($extendLabel) ?></span>
                                     </button>
                                 </form>

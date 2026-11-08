@@ -149,7 +149,10 @@ class SegmentSaveProcessor
                 'type' => $type,
                 'params' => $type === 'group'
                     ? $this->normalizeGroupRow($row)
-                    : ParamFieldsNormalizer::normalizeRowParams($row, $this->conditionPool->get($type)?->getParamFields() ?? []),
+                    : ParamFieldsNormalizer::normalizeRowParams(
+                        $row,
+                        $this->conditionPool->get($type)?->getParamFields() ?? []
+                    ),
                 'sort_order' => $sortOrder++,
             ]);
             $this->segmentConditionResource->save($condition);

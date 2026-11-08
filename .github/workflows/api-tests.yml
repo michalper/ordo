@@ -28,6 +28,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
 
+    env:
+      # Every curl call against the REST API below sends this same header - one constant instead
+      # of repeating the literal string at each call site.
+      JSON_CONTENT_TYPE: "Content-Type: application/json"
+
     services:
       mysql:
         image: mysql:8.0
@@ -201,7 +206,7 @@ jobs:
         working-directory: magento
         run: |
           curl -sf -X POST "http://127.0.0.1:8080/rest/V1/customers" \
-            -H "Content-Type: application/json" \
+            -H "$JSON_CONTENT_TYPE" \
             -d '{"customer":{"email":"apitest@example.com","firstname":"Api","lastname":"Test"},"password":"ApiTest123!"}'
 
           bin/magento cache:flush
@@ -212,11 +217,11 @@ jobs:
         # Test/Api itself uses, with no reindex/timing gap to wait out.
         run: |
           TOKEN=$(curl -sf -X POST "http://127.0.0.1:8080/rest/V1/integration/admin/token" \
-            -H "Content-Type: application/json" \
+            -H "$JSON_CONTENT_TYPE" \
             -d '{"username":"apitest","password":"ApiTest123!"}' | tr -d '"')
 
           curl -sf -X POST "http://127.0.0.1:8080/rest/V1/products" \
-            -H "Content-Type: application/json" \
+            -H "$JSON_CONTENT_TYPE" \
             -H "Authorization: Bearer $TOKEN" \
             -d '{"product":{"sku":"ORDO-API-TEST-SKU","name":"Ordo Api Test Product","price":10,"status":1,"visibility":4,"type_id":"simple","attribute_set_id":4,"extension_attributes":{"stock_item":{"qty":100,"is_in_stock":true}}}}'
 
@@ -238,11 +243,11 @@ jobs:
         working-directory: magento
         run: |
           ADMIN_TOKEN=$(curl -sf -X POST "http://127.0.0.1:8080/rest/V1/integration/admin/token" \
-            -H "Content-Type: application/json" \
+            -H "$JSON_CONTENT_TYPE" \
             -d '{"username":"apitest","password":"ApiTest123!"}' | tr -d '"')
 
           curl -sf -X PUT "http://127.0.0.1:8080/rest/V1/customers/1" \
-            -H "Content-Type: application/json" \
+            -H "$JSON_CONTENT_TYPE" \
             -H "Authorization: Bearer $ADMIN_TOKEN" \
             -d '{"customer":{"id":1,"email":"apitest@example.com","firstname":"Api","lastname":"Test","custom_attributes":[{"attribute_code":"ordo_order_spend_limit","value":"1"},{"attribute_code":"ordo_approval_admin_email","value":"admin@example.com"}]}}'
 
@@ -251,7 +256,7 @@ jobs:
           bin/magento cache:flush
 
           CUSTOMER_TOKEN=$(curl -sf -X POST "http://127.0.0.1:8080/rest/V1/integration/customer/token" \
-            -H "Content-Type: application/json" \
+            -H "$JSON_CONTENT_TYPE" \
             -d '{"username":"apitest@example.com","password":"ApiTest123!"}' | tr -d '"')
 
           place_one_order() {
@@ -259,19 +264,19 @@ jobs:
               -H "Authorization: Bearer $CUSTOMER_TOKEN")
 
             curl -sf -X POST "http://127.0.0.1:8080/rest/V1/carts/mine/items" \
-              -H "Content-Type: application/json" -H "Authorization: Bearer $CUSTOMER_TOKEN" \
+              -H "$JSON_CONTENT_TYPE" -H "Authorization: Bearer $CUSTOMER_TOKEN" \
               -d "{\"cartItem\":{\"sku\":\"ORDO-API-TEST-SKU\",\"qty\":1,\"quote_id\":\"$CART_ID\"}}" \
               > /dev/null
 
             ADDRESS='{"region":"California","region_id":12,"country_id":"US","street":["1 Test St"],"postcode":"90001","city":"Los Angeles","firstname":"Api","lastname":"Test","email":"apitest@example.com","telephone":"5555555555"}'
 
             curl -sf -X POST "http://127.0.0.1:8080/rest/V1/carts/mine/shipping-information" \
-              -H "Content-Type: application/json" -H "Authorization: Bearer $CUSTOMER_TOKEN" \
+              -H "$JSON_CONTENT_TYPE" -H "Authorization: Bearer $CUSTOMER_TOKEN" \
               -d "{\"addressInformation\":{\"shipping_address\":$ADDRESS,\"billing_address\":$ADDRESS,\"shipping_carrier_code\":\"flatrate\",\"shipping_method_code\":\"flatrate\"}}" \
               > /dev/null
 
             curl -sf -X POST "http://127.0.0.1:8080/rest/V1/carts/mine/payment-information" \
-              -H "Content-Type: application/json" -H "Authorization: Bearer $CUSTOMER_TOKEN" \
+              -H "$JSON_CONTENT_TYPE" -H "Authorization: Bearer $CUSTOMER_TOKEN" \
               -d "{\"paymentMethod\":{\"method\":\"checkmo\"},\"billingAddress\":$ADDRESS}" \
               > /dev/null
           }

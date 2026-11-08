@@ -44,7 +44,9 @@ class ScoreRuleEvaluator
         }
 
         $websiteIdsByRule = $this->loadWebsiteIdsByRule($rules);
-        $customerWebsiteId = $websiteIdsByRule === [] ? null : $this->customerStoreResolver->resolveWebsiteId($customer);
+        $customerWebsiteId = $websiteIdsByRule === []
+            ? null
+            : $this->customerStoreResolver->resolveWebsiteId($customer);
 
         $points = 0;
         foreach ($rules as $rule) {

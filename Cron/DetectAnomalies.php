@@ -56,11 +56,19 @@ class DetectAnomalies
     }
 
     /**
-     * @param array<int, array{campaign_id: int, sent: int, converted: int, conversion_rate: float, revenue: float}> $currentStats
-     * @param array<int, array{campaign_id: int, sent: int, converted: int, conversion_rate: float, revenue: float}> $baselineStats
+     * @param array<int, array{
+     *     campaign_id: int, sent: int, converted: int, conversion_rate: float, revenue: float
+     * }> $currentStats
+     * @param array<int, array{
+     *     campaign_id: int, sent: int, converted: int, conversion_rate: float, revenue: float
+     * }> $baselineStats
      */
-    private function detectRevenueDrops(array $currentStats, array $baselineStats, int $minSampleSize, int $lookbackDays): int
-    {
+    private function detectRevenueDrops(
+        array $currentStats,
+        array $baselineStats,
+        int $minSampleSize,
+        int $lookbackDays
+    ): int {
         $thresholdPercent = $this->config->getAnomalyRevenueDropThresholdPercent();
         $created = 0;
 
@@ -101,7 +109,9 @@ class DetectAnomalies
     }
 
     /**
-     * @param array<int, array{campaign_id: int, sent: int, converted: int, conversion_rate: float, revenue: float}> $currentStats
+     * @param array<int, array{
+     *     campaign_id: int, sent: int, converted: int, conversion_rate: float, revenue: float
+     * }> $currentStats
      */
     private function detectConversionOutliers(array $currentStats, int $minSampleSize, int $lookbackDays): int
     {

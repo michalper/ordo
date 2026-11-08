@@ -188,7 +188,10 @@ class CampaignSaveProcessor
             $condition->setData([
                 'campaign_id' => $campaignId,
                 'type' => $type,
-                'params' => ParamFieldsNormalizer::normalizeRowParams($row, $this->conditionPool->get($type)?->getParamFields() ?? []),
+                'params' => ParamFieldsNormalizer::normalizeRowParams(
+                    $row,
+                    $this->conditionPool->get($type)?->getParamFields() ?? []
+                ),
                 'sort_order' => $sortOrder++,
             ]);
             $this->campaignConditionResource->save($condition);
@@ -208,7 +211,9 @@ class CampaignSaveProcessor
 
             $type = (string) $row['type'];
             // 'split' has no ActionPool entry - see ActionPool::splitActionFields()'s own docblock.
-            $fields = $type === 'split' ? ActionPool::splitActionFields() : ($this->actionPool->get($type)?->getParamFields() ?? []);
+            $fields = $type === 'split'
+                ? ActionPool::splitActionFields()
+                : ($this->actionPool->get($type)?->getParamFields() ?? []);
             $action = $this->campaignActionFactory->create();
             $action->setData([
                 'campaign_id' => $campaignId,
