@@ -16,6 +16,12 @@ it doesn't update itself from this file.
   track on-site behavior and read/act on popups/notifications/surveys without any
   server-rendered Magento page. Thin GraphQL wrappers over the exact same service classes
   `Controller\Track\*` already calls — no logic duplicated. See `docs/adr/0032`.
+- **GraphQL storefront API, Phase 2 — My Offers** — `ordoOffers`, `extendOrdoOffer`,
+  `ordoCreditLimit`, so a headless/PWA Studio storefront can list/extend offers and read
+  credit-limit status without a server-rendered page or REST client. `extendOrdoOffer` and
+  `ordoCreditLimit` are thin wrappers over the same `Api\OfferManagementInterface`/
+  `Api\CreditLimitManagementInterface` services the existing REST routes already call. See
+  `docs/adr/0033`.
 
 ## [1.6.0] - 2026-11-07
 

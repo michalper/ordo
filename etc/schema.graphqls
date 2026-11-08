@@ -2,6 +2,10 @@ type Query {
     ordoTrackerPoll(
         visitorId: String @doc(description: "The ordo_visitor_id first-party cookie value — tracker.js's own identity, passed explicitly since a decoupled/PWA storefront has no server-rendered page for the cookie-reading version of this to run on.")
     ): OrdoTrackerPoll @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\TrackerPoll") @doc(description: "Same merged popup/notifications/survey shape as the public GET /ordo/track/poll endpoint tracker.js polls (see ADR 0024) — a disabled concern's key is simply absent from the response, not present-but-null.")
+
+    ordoOffers: [OrdoOffer] @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\Offers") @doc(description: "The logged-in customer's own offers, same data the storefront My Offers account page (Controller/Offer/Index) lists. Empty for a guest - there is no customer to scope offers to.")
+
+    ordoCreditLimit: OrdoCreditLimit @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\CreditLimit") @doc(description: "Same data as the existing GET /V1/ordo/credit-limit/mine REST route, for PWA-native access without a separate REST client. Requires a logged-in customer - a guest request is a GraphQL authorization error, not a null/empty result.")
 }
 
 type Mutation {
@@ -21,6 +25,10 @@ type Mutation {
         score: Int! @doc(description: "0-10.")
         visitorId: String
     ): OrdoSubmitSurveyResponseOutput @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\SubmitSurveyResponse") @doc(description: "Records the visitor's answer to a delivered NPS/satisfaction survey prompt. Ownership-checked, same as dismissOrdoNotification; a prompt already answered is never overwritten.")
+
+    extendOrdoOffer(
+        offerId: Int!
+    ): OrdoExtendOfferOutput @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\ExtendOffer") @doc(description: "Same self-service extension as the storefront My Offers page's Extend button (Api/OfferManagementInterface::selfExtend()) - pushes the offer's expiry back by the configured number of days, capped at the configured max extensions. Fails (ok: false) rather than throwing for an ordinary business rule (already at the cap, lost a race to another extend request) - only a missing/not-owned offer is a hard GraphQL error.")
 }
 
 type OrdoTrackerPoll {
@@ -60,4 +68,28 @@ type OrdoDismissNotificationOutput {
 
 type OrdoSubmitSurveyResponseOutput {
     ok: Boolean!
+}
+
+type OrdoOffer {
+    entity_id: Int
+    reference: String
+    status: String
+    total: Float
+    currency_code: String
+    expires_at: String
+    can_self_extend: Boolean @doc(description: "Whether the storefront should show an Extend button for this offer - mirrors Block/Frontend/OfferViewModel::canSelfExtend().")
+    self_extension_days: Int @doc(description: "How many days extendOrdoOffer would push the expiry back by, if canSelfExtend is true.")
+}
+
+type OrdoCreditLimit {
+    credit_limit: Float
+    used_credit: Float
+    available_credit: Float @doc(description: "credit_limit - used_credit, not clamped to zero - can be negative if already over the limit.")
+    utilization_percent: Float @doc(description: "0-100+, can exceed 100 if already over the limit.")
+}
+
+type OrdoExtendOfferOutput {
+    ok: Boolean!
+    reason: String @doc(description: "Set only when ok is false and the offer WAS found and owned by the caller - e.g. the already-at-the-cap or lost-the-race message. A missing/not-owned offer is a GraphQL error instead, not this field.")
+    offer: OrdoOffer @doc(description: "The offer's new state (fresh expires_at) when ok is true.")
 }
