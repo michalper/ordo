@@ -338,8 +338,17 @@ jobs:
           # Routes PHP's mail() (Magento's default Sendmail transport — this module sets no SMTP
           # config of its own) into MailHog instead of trying (and failing) to actually send.
           # mhsendmail is a tiny sendmail-compatible binary purpose-built for exactly this.
-          sudo curl -sfL -o /usr/local/bin/mhsendmail \
-            https://github.com/mailhog/mhsendmail/releases/download/v0.2.0/mhsendmail_linux_amd64
+          # Retried: a real nightly run saw this specific, rarely-fetched 2020 release asset
+          # fail with a transient 5xx from GitHub's release-asset CDN on 4 of 7 concurrent
+          # matrix legs at once (curl -f turns that into exit 22, failing the whole step
+          # instantly under `bash -e`, with no later step ever re-attempting it) - same class of
+          # flakiness already handled elsewhere in this job (composer's own retries, the nginx/
+          # PHP-FPM health-check loop below), just missing here.
+          for i in $(seq 1 5); do
+            sudo curl -sfL -o /usr/local/bin/mhsendmail \
+              https://github.com/mailhog/mhsendmail/releases/download/v0.2.0/mhsendmail_linux_amd64 && break
+            sleep 3
+          done
           sudo chmod +x /usr/local/bin/mhsendmail
           # Symfony's SendmailTransport (Magento's Sendmail\Model\Transport::createSendmailTransport())
           # rejects any sendmail_path whose flags don't contain a literal " -bs" or " -t" — confirmed
