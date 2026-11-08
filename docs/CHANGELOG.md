@@ -9,6 +9,15 @@ it doesn't update itself from this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`Model\WhatsApp\WhatsAppSender`/`WhatsAppTemplateClient` were pinned to Meta Graph API `v20.0`**,
+  which Meta deprecated and removed on 2026-09-24 — found while planning real-account verification
+  for `send_whatsapp`/WhatsApp templates (`ROADMAP.md`'s "Test coverage" section). Meta's own
+  versioning policy defaults an expired version's calls to the next-oldest still-usable version
+  rather than erroring outright, so this was a silent drift bug, not an outright outage. Bumped to
+  the current `v26.0`.
+
 ## [1.7.0] - 2026-11-08
 
 ### Added

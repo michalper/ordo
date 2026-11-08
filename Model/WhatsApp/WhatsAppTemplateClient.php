@@ -17,7 +17,7 @@ use Ordo\Automation\Model\Http\JsonApiClient;
  */
 class WhatsAppTemplateClient
 {
-    private const string API_VERSION = 'v20.0';
+    private const string API_VERSION = 'v26.0';
 
     private const string SERVICE_NAME = 'Meta Graph API';
 
