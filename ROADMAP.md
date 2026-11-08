@@ -40,12 +40,24 @@ protocol has nothing browser-observable for Selenium to assert on.
   reader (a brace-balance pass ahead of the real GraphQL parser doesn't know about string
   literals) — not a GraphQL spec violation, a Magento-specific trap; avoid literal braces in any
   `@doc` description text.
-- [ ] **Phase 2 — My Offers**: `ordoOffers: [OrdoOffer]` (mirrors `Controller\Offer\Index`),
-  `extendOrdoOffer(offerId: Int!): OrdoExtendOfferOutput` (mirrors `Controller\Offer\Extend`/the
-  existing `/V1/ordo/offers/:offerId/self-extend` REST route — same `OfferSelfExtension` service,
-  a second transport onto it, not a second implementation), `ordoCreditLimit: OrdoCreditLimit`
-  (mirrors the existing `/V1/ordo/credit-limit/mine` REST route, for PWA-native access without a
-  separate REST client).
+- [x] **Phase 2 — My Offers** — shipped: `ordoOffers: [OrdoOffer]` (own query logic, scoped by
+  `CustomerIdResolver` rather than `Block\Frontend\OfferViewModel`'s session-based one — see
+  Phase 1's identity-model note), `extendOrdoOffer(offerId: Int!): OrdoExtendOfferOutput` and
+  `ordoCreditLimit: OrdoCreditLimit` (both thin wrappers calling the *same*
+  `Api\OfferManagementInterface::selfExtend()`/`Api\CreditLimitManagementInterface::getMyStatus()`
+  the REST routes already call — no reimplementation). Verified against a real running instance:
+  a real seeded offer row extended over real HTTP (expiry pushed back, then correctly refused at
+  the configured extension cap), a real credit-limit read, and guest/not-found/already-maxed all
+  producing the right response shape. One real, non-obvious finding from that verification: both
+  reused services resolve the caller's identity via a DI-injected `UserContextInterface`, not the
+  GraphQL `ContextInterface` the resolver itself receives — confirmed empirically (not assumed)
+  that Magento populates it correctly for a GraphQL customer-token request too, same as it does
+  for REST. But `CreditLimitManagementInterface::getMyStatus()`'s own guest guard
+  (`$customerId === null`) doesn't fire for GraphQL, because `UserContextInterface::getUserId()`
+  returns `0` for a guest, not `null` — unguarded, this fell through to a confusing "No such
+  entity with customerId = 0" instead of an authorization error. Fixed in the resolver itself
+  (`Model\GraphQl\Resolver\CreditLimit`), which now checks for a guest explicitly first, the same
+  convention Magento's own core customer-aware resolvers use — see ADR 0032's update.
 - [ ] **Phase 3 — price-watch & push subscriptions**: `registerOrdoPriceWatch`/
   `unregisterOrdoPriceWatch` (mirrors `Controller\Track\RegisterPriceWatch`),
   `registerOrdoPushSubscription`/`unregisterOrdoPushSubscription` (mirrors
