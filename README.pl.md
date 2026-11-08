@@ -79,8 +79,10 @@ Każda funkcja ma własny przełącznik w **Stores → Configuration → Ordo Au
   kompatybilności `hyva-themes/*`. Jeśli Twój motyw Hyvä ma skonfigurowane czyszczenie nieużywanych klas w
   `tailwind.config.js`, dodaj katalog `view/frontend` tego modułu do tablicy `content`, żeby kilka klas
   narzędziowych Tailwinda w `offer/index.phtml` przetrwało build.
-- **Multi-store** — odczyty konfiguracji, segmentacja/scoring i dopasowywanie kampanii nie są jeszcze w pełni
-  przypisane do konkretnego store'u/witryny; aktualna lista braków jest w [ROADMAP.md](ROADMAP.md).
+- **Multi-store** — odczyty konfiguracji rozpoznają własny store klienta (nie "bieżący" store
+  Magento), a kampanie/segmenty/reguły punktacji można przypisać do jednej lub kilku witryn przez
+  własny multiselect w adminie (brak wyboru = bez ograniczeń, dopasowuje każdą witrynę). Patrz
+  `docs/adr/0013`/`0014`.
 
 ## Instalacja
 
