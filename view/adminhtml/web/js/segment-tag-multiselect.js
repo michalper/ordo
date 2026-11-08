@@ -78,7 +78,10 @@ define([
             // A malformed or pre-existing non-JSON value (e.g. a legacy comma-separated string
             // from before this field became a chip editor) just starts the editor with no tags
             // instead of failing to render at all - the hidden input is fully overwritten on the
-            // next add/remove anyway, so there's nothing to recover from the raw value.
+            // next add/remove anyway, so there's nothing to recover from the raw value. Logged,
+            // not silently swallowed, so a genuinely corrupted value is still visible to whoever
+            // is debugging the page.
+            console.warn('Ordo: could not parse tag field value as JSON, starting with no tags', e);
             initialTags = [];
         }
 
