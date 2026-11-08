@@ -524,10 +524,11 @@ referral program, and `browse_abandoned` itself all already existed and are not 
   now optionally mirrors every tracked event onto `window.dataLayer` so a store's existing GTM
   container can build audiences from Ordo's own event taxonomy without this module's ad-audience
   sync (itself gated on real-account access most small stores won't have).
-- **Exit-intent popup trigger** — no mouse-leaves-toward-the-tab detection exists anywhere in
-  `tracker.js` today; a new trigger (e.g. `exit_intent`) fired from a theme-side listener on the
-  cart/checkout page would let a campaign show a last-chance offer, same delivery mechanism as
-  the existing popup action.
+- ~~**Exit-intent popup trigger.**~~ — shipped, see `docs/adr/0037-exit-intent-trigger.md`. A new
+  `exit_intent` trigger (anonymous-only, same context shape as `visitor_tag_added`) fires once per
+  page load from a `mouseout`-based listener in `tracker.js`, gated by its own
+  `tracking > exit_intent_enabled` toggle. Reuses the existing `Show Popup` action and its
+  frequency cap unchanged - no new action type needed.
 - **Birthday/anniversary campaign trigger** — no trigger reads `customer_dob` (a standard but
   optional Magento customer attribute) at all; would need its own daily cron in the
   `Cron\DispatchCustomerInactiveCampaigns`/`Cron\TagInactiveCustomers` shape, matching month+day

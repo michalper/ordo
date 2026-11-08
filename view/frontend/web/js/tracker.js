@@ -21,6 +21,9 @@
  *
  * When "tracking > gtm_bridge_enabled" is on, every track() call is also mirrored onto
  * window.dataLayer (see pushToDataLayer below) — see docs/adr/0036.
+ *
+ * When "tracking > exit_intent_enabled" is on, also fires an "exit_intent" tracking event (see
+ * startExitIntentDetection below) once per page load — see docs/adr/0037.
  */
 (function () {
     'use strict';
@@ -516,9 +519,39 @@
         });
     }
 
+    /**
+     * Fires window.ordoTrack('exit_intent') the first time, per page load, the mouse leaves the
+     * page entirely via the top edge - the usual "about to click the tab/back/bookmark bar"
+     * signal a campaign's Exit Intent trigger (see docs/adr/0037) listens for. A plain mouseout
+     * fires constantly as the cursor crosses between child elements; event.relatedTarget is null
+     * only when it actually left the document, and clientY near 0 is what distinguishes "leaving
+     * upward, toward the browser chrome" from leaving out any other edge (sideways/downward exits
+     * are rarely "closing the tab" and would make this fire on ordinary page interaction).
+     * Deliberately fires at most once per page load - repeat exits across a session are still
+     * each their own fresh page load, and Model\Campaign\Action\ShowPopup's own
+     * popup_frequency_cap_hours already caps how often a popup actually reaches the screen, so no
+     * further dedup is needed here.
+     */
+    function startExitIntentDetection() {
+        if (!currentScript || currentScript.getAttribute('data-exit-intent-enabled') !== '1') {
+            return;
+        }
+
+        var fired = false;
+
+        document.addEventListener('mouseout', function (event) {
+            if (fired || event.relatedTarget !== null || event.clientY > 0) {
+                return;
+            }
+            fired = true;
+            track('exit_intent');
+        });
+    }
+
     window.ordoTrack = track;
     window.ordoSubscribeToPush = subscribeToPush;
     window.ordoSubscribeToPriceWatch = subscribeToPriceWatch;
     track('page_view');
     startPolling(15, renderPollResponse);
+    startExitIntentDetection();
 })();

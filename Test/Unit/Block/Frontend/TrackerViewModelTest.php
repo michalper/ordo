@@ -85,4 +85,20 @@ class TrackerViewModelTest extends TestCase
 
         self::assertSame('public-key-b64url', (new TrackerViewModel($config))->getVapidPublicKey());
     }
+
+    public function testIsGtmBridgeEnabledReflectsConfig(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isGtmBridgeEnabled')->willReturn(true);
+
+        self::assertTrue((new TrackerViewModel($config))->isGtmBridgeEnabled());
+    }
+
+    public function testIsExitIntentEnabledReflectsConfig(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isExitIntentEnabled')->willReturn(true);
+
+        self::assertTrue((new TrackerViewModel($config))->isExitIntentEnabled());
+    }
 }

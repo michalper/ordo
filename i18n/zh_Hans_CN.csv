@@ -1204,3 +1204,6 @@
 "Mirror tracked events to Google Tag Manager's dataLayer","将跟踪事件镜像到 Google Tag Manager 的 dataLayer"
 "Pushes every event tracker.js already sends (page_view, product_view, category_view, checkout_start, and any custom window.ordoTrack() call) onto window.dataLayer too, tagged with an ordo_-prefixed event name. This lets a store's existing GTM container build GA4/Ads audiences from Ordo's own event taxonomy. GTM itself isn't loaded by this - the store's own container must already be on the page. Requires tracking to be enabled above.","将 tracker.js 已发送的每个事件（page_view、product_view、category_view、checkout_start 和任何自定义 window.ordoTrack() 调用）也推送到 window.dataLayer，并使用 ordo_ 前缀的事件名称进行标记。 这允许商店的现有 GTM 容器根据 Ordo 自己的事件分类构建 GA4/Ads 受众。 GTM 本身不会由此加载 - 商店自己的容器必须已经在页面上。需要在上面启用跟踪。"
 "Template","模板"
+"Enable exit-intent detection","启用退出意图检测"
+"Fires an ""Exit Intent"" campaign trigger the first time, per page load, a visitor's mouse leaves toward the top of the browser window - the usual ""about to close the tab"" signal. Lets a campaign show a last-chance popup via the existing ""Show Popup"" action. Requires tracking to be enabled above.","每次页面加载时，访问者的鼠标离开浏览器窗口顶部时，第一次触发“退出意图”活动触发器 - 通常的“即将关闭选项卡”信号。让营销活动通过现有的“显示弹出窗口”操作显示最后机会弹出窗口。需要在上面启用跟踪。"
+"Exit Intent (anonymous)","退出意图（匿名）"

@@ -6,6 +6,7 @@ namespace Ordo\Automation\Test\Unit\Controller\Track;
 use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\Controller\Result\Json;
 use Magento\Framework\Controller\Result\JsonFactory;
+use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
 use Ordo\Automation\Controller\Track\Event;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\VisitorEventLogger;
@@ -19,6 +20,7 @@ class EventTest extends AbstractFrontendActionTestCase
     private CustomerSession $customerSession;
     private Config $config;
     private Json $jsonResult;
+    private EventManagerInterface $eventManager;
 
     protected function setUp(): void
     {
@@ -26,6 +28,7 @@ class EventTest extends AbstractFrontendActionTestCase
         $this->visitorEventLogger = $this->createMock(VisitorEventLogger::class);
         $this->customerSession = $this->createStub(CustomerSession::class);
         $this->config = $this->createStub(Config::class);
+        $this->eventManager = $this->createMock(EventManagerInterface::class);
 
         $this->jsonResult = $this->createMock(Json::class);
         $this->jsonResult->method('setData')->willReturnSelf();
@@ -39,7 +42,8 @@ class EventTest extends AbstractFrontendActionTestCase
             $this->resultJsonFactory,
             $this->visitorEventLogger,
             $this->customerSession,
-            $this->config
+            $this->config,
+            $this->eventManager
         );
     }
 
@@ -100,6 +104,31 @@ class EventTest extends AbstractFrontendActionTestCase
         $this->customerSession->method('isLoggedIn')->willReturn(false);
 
         $this->visitorEventLogger->expects(self::once())->method('log')->with('v1', 'product_view', '15', null);
+        $this->eventManager->expects(self::never())->method('dispatch');
+        $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
+
+        $controller->execute();
+    }
+
+    /**
+     * exit_intent (docs/adr/0037) is the one event type that also fires a Magento event, live -
+     * every other allowed type above only ever feeds VisitorAggregator's threshold-based tagging.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteDispatchesExitIntentEventForAnonymousVisitor(): void
+    {
+        $controller = $this->makeController();
+        $this->config->method('isTrackingEnabled')->willReturn(true);
+        $this->request->method('getParam')->willReturnMap([
+            ['visitor_id', null, 'v1'],
+            ['event_type', null, 'exit_intent'],
+        ]);
+
+        $this->customerSession->method('isLoggedIn')->willReturn(false);
+
+        $this->visitorEventLogger->expects(self::once())->method('log')->with('v1', 'exit_intent', null, null);
+        $this->eventManager->expects(self::once())->method('dispatch')
+            ->with('ordo_visitor_exit_intent', ['visitor_id' => 'v1']);
         $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
 
         $controller->execute();

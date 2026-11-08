@@ -64,6 +64,8 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isPriceWatchEnabled());
         self::assertTrue($this->config->isAiContentEnabled());
         self::assertTrue($this->config->isAiAgentEnabled());
+        self::assertTrue($this->config->isGtmBridgeEnabled());
+        self::assertTrue($this->config->isExitIntentEnabled());
     }
 
     public function testPushGettersDelegateToScopeConfig(): void
