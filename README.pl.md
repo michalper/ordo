@@ -61,6 +61,9 @@ strukturalnie nie widzą.
   kanał z danymi o otwarciach/kliknięciach).
 - Śledzenie zachowań na stronie — bezzależnościowy snippet JS zamieniający odsłony stron/produktów/kategorii w
   tagi silnika kampanii.
+- GraphQL API dla storefrontu — śledzenie, Moje oferty, status limitu kredytowego, obserwacja cen i subskrypcje
+  Web Push, dla headlessowego/PWA Studio storefrontu bez żadnej strony renderowanej po stronie Magento. Cienkie
+  wrappery nad tymi samymi klasami serwisowymi, które wywołują już istniejące endpointy REST — bez duplikacji logiki.
 - Panel administracyjny — dashboard, kreator kampanii (edytowalny diagram [Drawflow](https://github.com/jerosoler/Drawflow)
   trigger(y) → warunki → akcje, wiele triggerów na kampanię), kalendarz kampanii (trigger/harmonogram akcji wszystkich
   kampanii w jednym miejscu), kreator ofert gratisów, diagnostyczny grid cykli reorder.

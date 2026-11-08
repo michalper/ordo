@@ -62,6 +62,9 @@ access to that data.
   historically-best email open/click hour (email-only: the only channel with open/click data).
 - On-site behavior tracking — a dependency-free JS snippet turning page/product/category views into campaign-engine
   tags.
+- GraphQL storefront API — tracking, My Offers, credit-limit status, price-watch and Web Push subscriptions, for a
+  headless/PWA Studio storefront with no server-rendered Magento page. Thin wrappers over the same service classes
+  the REST routes already call, so no logic is duplicated between the two.
 - Admin UI — dashboard, campaign builder (editable [Drawflow](https://github.com/jerosoler/Drawflow) trigger(s) →
   conditions → actions canvas, multiple triggers per campaign), campaign calendar (trigger/action timing across all
   campaigns), free gift offer builder, reorder-cycles diagnostic grid.
