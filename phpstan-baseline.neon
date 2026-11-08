@@ -1197,12 +1197,6 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 2
-			path: Controller/Track/Poll.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
 			count: 1
 			path: Controller/Track/RegisterPriceWatch.php
 

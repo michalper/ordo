@@ -1,0 +1,63 @@
+type Query {
+    ordoTrackerPoll(
+        visitorId: String @doc(description: "The ordo_visitor_id first-party cookie value — tracker.js's own identity, passed explicitly since a decoupled/PWA storefront has no server-rendered page for the cookie-reading version of this to run on.")
+    ): OrdoTrackerPoll @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\TrackerPoll") @doc(description: "Same merged popup/notifications/survey shape as the public GET /ordo/track/poll endpoint tracker.js polls (see ADR 0024) — a disabled concern's key is simply absent from the response, not present-but-null.")
+}
+
+type Mutation {
+    trackOrdoEvent(
+        eventType: String! @doc(description: "One of: page_view, product_view, category_view, element_clicked, checkout_start.")
+        eventKey: String @doc(description: "Free-form context for the event type (e.g. a SKU for product_view) — truncated to 255 characters.")
+        visitorId: String!
+    ): OrdoTrackEventOutput @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\TrackEvent") @doc(description: "Logs a real on-site behavior event, same as tracker.js's own window.ordoTrack() POST to Controller\\Track\\Event.")
+
+    dismissOrdoNotification(
+        notificationId: Int!
+        visitorId: String
+    ): OrdoDismissNotificationOutput @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\DismissNotification") @doc(description: "Marks a persistent on-site notification as read — the only way its read_at is ever set. Ownership-checked: only succeeds for a notification that actually belongs to the caller's own customer/visitor.")
+
+    submitOrdoSurveyResponse(
+        surveyId: Int!
+        score: Int! @doc(description: "0-10.")
+        visitorId: String
+    ): OrdoSubmitSurveyResponseOutput @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\SubmitSurveyResponse") @doc(description: "Records the visitor's answer to a delivered NPS/satisfaction survey prompt. Ownership-checked, same as dismissOrdoNotification; a prompt already answered is never overwritten.")
+}
+
+type OrdoTrackerPoll {
+    popup: OrdoPopup
+    notifications: [OrdoNotification]
+    survey: OrdoSurveyPrompt
+}
+
+type OrdoPopup {
+    headline: String
+    body: String
+    cta_label: String
+    cta_url: String
+}
+
+type OrdoNotification {
+    id: Int
+    headline: String
+    body: String
+    cta_label: String
+    cta_url: String
+}
+
+type OrdoSurveyPrompt {
+    id: Int
+    question: String
+}
+
+type OrdoTrackEventOutput {
+    ok: Boolean!
+    reason: String @doc(description: "Set only when ok is false — e.g. \"tracking_disabled\" or \"invalid_payload\".")
+}
+
+type OrdoDismissNotificationOutput {
+    ok: Boolean!
+}
+
+type OrdoSubmitSurveyResponseOutput {
+    ok: Boolean!
+}
