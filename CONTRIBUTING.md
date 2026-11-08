@@ -87,6 +87,20 @@ directly once your PR is up.
 - Update `Test/Mftf/SCENARIOS.md` if you add or close a scenario gap it tracks, and `ROADMAP.md` if you complete
   or add a roadmap item.
 
+## Cutting a release
+
+Versioning is via git tags only (see `AGENTS.md`) - there's no `"version"` in `composer.json`.
+
+1. Open a PR that renames `docs/CHANGELOG.md`'s `## [Unreleased]` header to `## [X.Y.Z] - YYYY-MM-DD`
+   (today's date) right above it, leaving a fresh empty `## [Unreleased]` in place for future entries.
+   Minor if there's a real `### Added`, patch otherwise. Also add a short, plain-language entry to
+   `ordo-site/changelog.html` (separate repo, deployed to ordo.marketing - it doesn't update itself from
+   this file), and update `README.md`/`README.pl.md`'s feature lists for anything they're still missing.
+2. Once that PR is merged to `main`, run `scripts/release.sh X.Y.Z` from `main` - it tags the current
+   commit **and** publishes the matching GitHub Release (using that version's own changelog section as
+   the release notes) in one step. Don't just `git tag`/`git push` by hand - that's what left 1.6.0 with
+   a tag but no visible entry on the [Releases page](https://github.com/michalper/ordo/releases).
+
 ## Reporting issues
 
 Open a GitHub issue with what you expected, what happened instead, and enough to reproduce it (Magento version,
