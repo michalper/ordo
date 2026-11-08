@@ -59,7 +59,7 @@
                             <field id="fallback_enabled" translate="label comment" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
                                 <label>Cross-channel fallback</label>
                                 <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Off by default. When on, Cron\SendAbandonedCartFallbackReminders falls back to SMS or WhatsApp for a registered customer whose reminder email is still unopened (real ordo_message_log_event open tracking) after the delay below, instead of sending another email.</comment>
+                                <comment>Off by default. When on, falls back to SMS or WhatsApp for a registered customer whose reminder email is still unopened (based on real email-open tracking) after the delay below, instead of sending another email.</comment>
                                 <depends><field id="enabled">1</field></depends>
                             </field>
                             <field id="fallback_delay_hours" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -195,7 +195,7 @@
                             <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                                 <label>Enabled</label>
                                 <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Each campaign's own "Customer Inactive For N Days" trigger sets its own inactivity window - this only gates whether Cron\DispatchCustomerInactiveCampaigns scans for it at all.</comment>
+                                <comment>Each campaign's own "Customer Inactive For N Days" trigger sets its own inactivity window - this only controls whether that scan runs at all.</comment>
                             </field>
                             <field id="refire_cooldown_days" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                                 <label>Minimum days before the same campaign can refire for the same customer</label>
@@ -375,7 +375,7 @@
                             <label>Multi-Touch Campaign Attribution</label>
                             <field id="window_days" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                                 <label>Attribution window (days)</label>
-                                <comment>How many days before an order Cron\ComputeCampaignAttribution looks back for campaign click-throughs (ordo_message_log_event) by the same customer. Every distinct campaign touched within this window shares equal credit for the order's revenue - see Model\Campaign\AttributionCalculator's own docblock. This is separate from, and additive to, the existing single-touch ordo_campaign_outcome_log conversion tracking.</comment>
+                                <comment>How many days before an order to look back for campaign emails/messages the same customer clicked through. Every distinct campaign touched within this window shares equal credit for the order's revenue. This is separate from, and additive to, the existing single-touch conversion tracking.</comment>
                                 <validate>validate-digits validate-greater-than-zero</validate>
                             </field>
                         </group>
@@ -387,7 +387,7 @@
                             <field id="auto_winner_enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                                 <label>Enabled</label>
                                 <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Off by default. When on, Cron\AutoPickCampaignSplitWinner compares each split action's variants by click-through rate (ordo_message_log/ordo_message_log_event) once every variant has reached the minimum sample size below, and permanently shifts all future traffic to whichever variant is winning - the split's own admin-configured weights otherwise stay fixed forever.</comment>
+                                <comment>Off by default. When on, automatically compares each split action's variants by click-through rate once every variant has reached the minimum sample size below, and permanently shifts all future traffic to whichever variant is winning - the split's own admin-configured weights otherwise stay fixed forever.</comment>
                             </field>
                             <field id="min_sample_size" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                                 <label>Minimum sample size per variant</label>
@@ -483,7 +483,7 @@
                             </field>
                             <field id="business_account_id" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
                                 <label>WhatsApp Business Account (WABA) ID</label>
-                                <comment>Where new templates are registered (Model\WhatsApp\WhatsAppTemplateClient::submitTemplate()).</comment>
+                                <comment>Where new templates are registered.</comment>
                                 <depends><field id="enabled">1</field></depends>
                             </field>
                             <field id="app_secret" translate="label comment" type="obscure" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -521,7 +521,7 @@
                             <field id="vapid_private_key" translate="label comment" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                                 <label>VAPID Private Key</label>
                                 <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                                <comment>Signs every outbound push request's VAPID authentication token (Model\Push\VapidTokenBuilder) - never sent to the browser.</comment>
+                                <comment>Signs every outbound push notification's authentication token - never sent to the browser.</comment>
                                 <depends><field id="enabled">1</field></depends>
                             </field>
                             <field id="vapid_subject" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -714,6 +714,23 @@
                                 <comment>Fires an "Exit Intent" campaign trigger the first time, per page load, a visitor's mouse leaves toward the top of the browser window - the usual "about to close the tab" signal. Lets a campaign show a last-chance popup via the existing "Show Popup" action. Requires tracking to be enabled above.</comment>
                                 <depends><field id="enabled">1</field></depends>
                             </field>
+                            <field id="social_proof_enabled" translate="label comment" type="select" sortOrder="130" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Enable "N people viewed this today" on the product page</label>
+                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                                <comment>Shows a message like "12 people viewed this today" on the product page, based on real traffic. Needs a small one-time change in your theme to display it (ask your developer to call window.ordoRenderSocialProof - see the module's documentation). Requires tracking to be enabled above.</comment>
+                                <depends><field id="enabled">1</field></depends>
+                            </field>
+                            <field id="social_proof_minimum_views" translate="label comment" type="text" sortOrder="140" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Minimum views today before showing the message</label>
+                                <comment>The message only shows once a product has at least this many real views today - a very low number ("1 person viewed this today") can look unconvincing instead of reassuring.</comment>
+                                <validate>validate-digits validate-greater-than-zero</validate>
+                                <depends><field id="social_proof_enabled">1</field></depends>
+                            </field>
+                            <field id="social_proof_message_template" translate="label comment" type="text" sortOrder="150" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Message template</label>
+                                <comment>"{count}" is replaced with today's real view count. Default: "{count} people viewed this today".</comment>
+                                <depends><field id="social_proof_enabled">1</field></depends>
+                            </field>
                         </group>
             
                         
@@ -791,7 +808,7 @@
                             <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                                 <label>Enable Google Merchant Center feed</label>
                                 <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Publishes a public, unauthenticated Google Merchant Center-compatible XML feed at "/ordo/productfeed/index", refreshed every 6 hours by Cron\RefreshProductFeed. Distinct from a campaign's "product_feed" content block, which renders a small curated HTML product grid inside emails/on-site, not an exportable feed file.</comment>
+                                <comment>Publishes a public Google Merchant Center-compatible XML feed at "/ordo/productfeed/index", refreshed every 6 hours. Distinct from a campaign's "product_feed" content block, which renders a small curated HTML product grid inside emails/on-site, not an exportable feed file.</comment>
                             </field>
                             <field id="title" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                                 <label>Feed Title</label>
@@ -809,7 +826,7 @@
                             <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                                 <label>Enable Meta Catalog CSV feed</label>
                                 <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Publishes a public, unauthenticated Meta (Facebook/Instagram) Commerce Manager-compatible CSV feed at "/ordo/productfeed/metacatalog", refreshed every 6 hours by the same Cron\RefreshProductFeed that already refreshes the Google Merchant feed above. Unrelated to the Meta Custom Audiences integration under "Ad Audience Sync" — that pushes hashed customer emails to Meta's API, this is a file Meta's own crawler polls.</comment>
+                                <comment>Publishes a public Meta (Facebook/Instagram) Commerce Manager-compatible CSV feed at "/ordo/productfeed/metacatalog", refreshed every 6 hours, same as the Google Merchant feed above. Unrelated to the Meta Custom Audiences integration under "Ad Audience Sync" — that pushes hashed customer emails to Meta's API, this is a file Meta's own crawler polls.</comment>
                             </field>
                             <field id="default_brand" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                                 <label>Default Brand</label>
@@ -824,7 +841,7 @@
                             <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                                 <label>Enabled</label>
                                 <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Publishes a public, unauthenticated JSON product feed for autonomous AI shopping agents at "/ordo/productfeed/aiagent" (refreshed by the same Cron\RefreshProductFeed as the Google Merchant/Meta Catalog feeds above) plus a discovery manifest at "/.well-known/ai-plugin.json" pointing at it.</comment>
+                                <comment>Publishes a public JSON product feed for autonomous AI shopping agents at "/ordo/productfeed/aiagent" (refreshed every 6 hours, same as the Google Merchant/Meta Catalog feeds above) plus a discovery manifest at "/.well-known/ai-plugin.json" pointing at it.</comment>
                             </field>
                             <field id="name" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                                 <label>Name</label>
@@ -842,7 +859,7 @@
                             </field>
                             <field id="rate_limit_per_minute" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
                                 <label>Requests Per Minute Per API Key</label>
-                                <comment>Model\AiAgent\InboundRateLimiter's per-API-key budget for the AI-agent commerce endpoints, enforced after Model\AiAgent\ApiKeyAuthenticator verifies the request's key. 0 disables throttling entirely. Keys are issued/revoked via "bin/magento ordo:ai-agent:api-key:*" - there's no admin grid for them.</comment>
+                                <comment>Per-API-key request budget for the AI-agent commerce endpoints. 0 disables throttling entirely. Keys are issued/revoked via "bin/magento ordo:ai-agent:api-key:*" - there's no admin grid for them.</comment>
                                 <validate>validate-digits</validate>
                             </field>
                             <field id="estimated_delivery_days" translate="label comment" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">

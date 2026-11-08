@@ -9,6 +9,12 @@ it doesn't update itself from this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Social proof widget** — new `window.ordoRenderSocialProof(sku, containerSelector)` theme
+  integration point renders "N people viewed this today" from a real, live count of today's
+  `product_view` events for that SKU, once a configurable minimum is met. See ADR 0039.
+
 ## [1.8.0] - 2026-11-08
 
 ### Added

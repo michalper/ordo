@@ -533,9 +533,13 @@ referral program, and `browse_abandoned` itself all already existed and are not 
   optional Magento customer attribute) at all; would need its own daily cron in the
   `Cron\DispatchCustomerInactiveCampaigns`/`Cron\TagInactiveCustomers` shape, matching month+day
   rather than an inactivity window.
-- **Social proof widget on PDP** ("N people viewed this today") — `ordo_visitor_event` already
-  aggregates per-product view counts for `Cron\CalculateProductPerformance`; nothing currently
-  surfaces that count back to the storefront itself.
+- ~~**Social proof widget on PDP.**~~ — shipped, see `docs/adr/0039-social-proof-widget.md`. New
+  `window.ordoRenderSocialProof(sku, containerSelector)` theme integration point - same shape as
+  the existing `window.ordoTrack()`/`window.ordoSubscribeToPriceWatch()`, no new layout XML or PDP
+  block, since this module has never injected into `catalog_product_view.xml`. Backed by a real,
+  live `COUNT(*)` against today's `ordo_visitor_event` rows for that SKU (not
+  `ordo_product_performance`'s all-time total, which has no date bucket to answer "today" at
+  all), gated by a configurable minimum view count below which nothing is shown at all.
 - **GA4/Meta Conversions API webhook template** — `Model\Campaign\Action\SendWebhook` already
   exists as a generic action; a documented, ready-to-wire payload shape for GA4 Measurement
   Protocol/Meta Conversions API server-side events (e.g. on `order_placed` + a value condition)

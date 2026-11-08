@@ -66,6 +66,35 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isAiAgentEnabled());
         self::assertTrue($this->config->isGtmBridgeEnabled());
         self::assertTrue($this->config->isExitIntentEnabled());
+        self::assertTrue($this->config->isSocialProofEnabled());
+    }
+
+    public function testGetSocialProofMinimumViewsDelegatesToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_tracking/tracking/social_proof_minimum_views', 'store', null, '5'],
+        ]);
+
+        self::assertSame(5, $this->config->getSocialProofMinimumViews());
+    }
+
+    public function testGetSocialProofMinimumViewsDefaultsToThree(): void
+    {
+        self::assertSame(3, $this->config->getSocialProofMinimumViews());
+    }
+
+    public function testGetSocialProofMessageTemplateDelegatesToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_tracking/tracking/social_proof_message_template', 'store', null, '{count} viewed today'],
+        ]);
+
+        self::assertSame('{count} viewed today', $this->config->getSocialProofMessageTemplate());
+    }
+
+    public function testGetSocialProofMessageTemplateDefaultsToAStandardMessage(): void
+    {
+        self::assertSame('{count} people viewed this today', $this->config->getSocialProofMessageTemplate());
     }
 
     public function testPushGettersDelegateToScopeConfig(): void
