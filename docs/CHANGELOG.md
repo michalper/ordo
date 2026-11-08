@@ -14,6 +14,10 @@ it doesn't update itself from this file.
 - **Social proof widget** — new `window.ordoRenderSocialProof(sku, containerSelector)` theme
   integration point renders "N people viewed this today" from a real, live count of today's
   `product_view` events for that SKU, once a configurable minimum is met. See ADR 0039.
+- **Customer birthday / registration anniversary campaign trigger** — new `customer_anniversary`
+  trigger (`Cron\DispatchCustomerAnniversaryCampaigns`, daily) fires once per calendar year for a
+  registered customer whose `customer_dob` or account registration date matches today's
+  month+day, picked per campaign via the trigger's own `date_source` field. See ADR 0038.
 
 ## [1.8.0] - 2026-11-08
 

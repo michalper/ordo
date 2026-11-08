@@ -95,6 +95,22 @@
         </index>
     </table>
 
+    <table name="ordo_customer_anniversary_trigger_claim" resource="default" engine="innodb" comment="Dispatch log for the customer_anniversary campaign trigger (Cron DispatchCustomerAnniversaryCampaigns) - a birthday/registration-anniversary is a fixed calendar date, not a rolling threshold like ordo_customer_inactive_trigger_claim's cooldown, so this is keyed by fired_year instead of a cooldown window: whether a given customer+campaign pair already fired this calendar year is answered by matching fired_year directly, not by a date-range comparison.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
+        <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id whose customer_anniversary trigger fired - no FK, same reasoning as ordo_campaign_attribution.campaign_id"/>
+        <column xsi:type="smallint" name="fired_year" unsigned="true" nullable="false" comment="Calendar year (e.g. 2026) this trigger last fired for this customer+campaign pair - the whole re-fire rule is whether a row already exists for the current year"/>
+        <column xsi:type="timestamp" name="fired_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Exact moment this trigger last fired for this customer+campaign pair"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="ORDO_CUSTOMER_ANNIVERSARY_CLAIM_CUSTOMER_CAMPAIGN_YEAR" indexType="btree">
+            <column name="customer_id"/>
+            <column name="campaign_id"/>
+            <column name="fired_year"/>
+        </index>
+    </table>
+
     <table name="ordo_email_template_version" resource="default" engine="innodb" comment="Snapshot of a Magento email_template row's content taken every time it's saved - Magento's own template editor has no version history of its own, so the send_email campaign action's referenced templates could be silently overwritten with no way back.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="template_id" padding="10" unsigned="true" nullable="false" comment="email_template.template_id this is a snapshot of"/>

@@ -67,6 +67,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isGtmBridgeEnabled());
         self::assertTrue($this->config->isExitIntentEnabled());
         self::assertTrue($this->config->isSocialProofEnabled());
+        self::assertTrue($this->config->isCustomerAnniversaryTriggerEnabled());
     }
 
     public function testGetSocialProofMinimumViewsDelegatesToScopeConfig(): void
