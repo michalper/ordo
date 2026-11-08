@@ -10,14 +10,7 @@ use Magento\Framework\App\CsrfAwareActionInterface;
 use Magento\Framework\App\Request\InvalidRequestException;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Controller\Result\JsonFactory;
-use Ordo\Automation\Helper\Config;
-use Ordo\Automation\Model\Notification;
-use Ordo\Automation\Model\PendingPopup;
-use Ordo\Automation\Model\ResourceModel\Notification\CollectionFactory as NotificationCollectionFactory;
-use Ordo\Automation\Model\ResourceModel\PendingPopup\CollectionFactory as PendingPopupCollectionFactory;
-use Ordo\Automation\Model\ResourceModel\SurveyPrompt\CollectionFactory as SurveyPromptCollectionFactory;
-use Ordo\Automation\Model\SurveyPrompt;
-use Ordo\Automation\Model\Track\DeliveryClaimer;
+use Ordo\Automation\Model\Track\TrackerPollReader;
 use Ordo\Automation\Model\Track\VisitorIdentityResolver;
 
 /**
@@ -33,18 +26,18 @@ use Ordo\Automation\Model\Track\VisitorIdentityResolver;
  * Controller\Track\DismissNotification action). A disabled concern's key is simply omitted from
  * the response rather than present-but-null/empty, since the merged response has no single
  * top-level "enabled" flag the way each old controller's own early-return did.
+ *
+ * The actual popup/notification/survey resolution lives in Model\Track\TrackerPollReader, shared
+ * with Model\GraphQl\Resolver\TrackerPoll (see ADR 0032/0033) — this controller's only own job is
+ * resolving identity the REST/session way and wrapping the result as a JSON response.
  */
 class Poll extends Action implements HttpGetActionInterface, CsrfAwareActionInterface
 {
     public function __construct(
         Context $context,
         private readonly JsonFactory $resultJsonFactory,
-        private readonly PendingPopupCollectionFactory $pendingPopupCollectionFactory,
-        private readonly NotificationCollectionFactory $notificationCollectionFactory,
-        private readonly SurveyPromptCollectionFactory $surveyPromptCollectionFactory,
-        private readonly DeliveryClaimer $deliveryClaimer,
-        private readonly VisitorIdentityResolver $visitorIdentityResolver,
-        private readonly Config $config
+        private readonly TrackerPollReader $trackerPollReader,
+        private readonly VisitorIdentityResolver $visitorIdentityResolver
     ) {
         parent::__construct($context);
     }
@@ -55,92 +48,8 @@ class Poll extends Action implements HttpGetActionInterface, CsrfAwareActionInte
 
         $visitorId = $this->visitorIdentityResolver->resolveVisitorIdFromParam($this->getRequest());
         $customerId = $this->visitorIdentityResolver->resolveCustomerId();
-        $hasIdentity = !$this->visitorIdentityResolver->hasNoIdentity($visitorId);
-        $now = date('Y-m-d H:i:s');
 
-        $data = [];
-        if ($this->config->isPopupEnabled()) {
-            $data['popup'] = $hasIdentity ? $this->resolvePopup($customerId, $visitorId, $now) : null;
-        }
-        if ($this->config->isNotificationEnabled()) {
-            $data['notifications'] = $hasIdentity ? $this->resolveNotifications($customerId, $visitorId, $now) : [];
-        }
-        if ($this->config->isNpsSurveyEnabled()) {
-            $data['survey'] = $hasIdentity ? $this->resolveSurvey($customerId, $visitorId, $now) : null;
-        }
-
-        return $result->setData($data);
-    }
-
-    /**
-     * @return array{headline: string, body: ?string, cta_label: ?string, cta_url: ?string}|null
-     */
-    private function resolvePopup(?int $customerId, string $visitorId, string $now): ?array
-    {
-        $collection = $this->pendingPopupCollectionFactory->create();
-        $collection->addTargetFilter($customerId, $visitorId !== '' ? $visitorId : null, $now);
-        // A handful of candidates, not just one — if two near-simultaneous polls both raced to
-        // claim the first candidate, the loser must fall through to the next one instead of
-        // coming back empty despite a popup genuinely being available.
-        $collection->setPageSize(5);
-
-        /** @var PendingPopup|null $popup */
-        $popup = $this->deliveryClaimer->claimFirst($collection, 'ordo_pending_popup', $now);
-        if ($popup === null) {
-            return null;
-        }
-
-        return [
-            'headline' => $popup->getHeadline(),
-            'body' => $popup->getBody(),
-            'cta_label' => $popup->getCtaLabel(),
-            'cta_url' => $popup->getCtaUrl(),
-        ];
-    }
-
-    /**
-     * @return array<int, array{id: int, headline: string, body: ?string, cta_label: ?string, cta_url: ?string}>
-     */
-    private function resolveNotifications(?int $customerId, string $visitorId, string $now): array
-    {
-        $collection = $this->notificationCollectionFactory->create();
-        $collection->addTargetFilter($customerId, $visitorId !== '' ? $visitorId : null, $now);
-
-        $notifications = [];
-        foreach ($collection as $notification) {
-            /** @var Notification $notification */
-            $notifications[] = [
-                'id' => (int) $notification->getId(),
-                'headline' => $notification->getHeadline(),
-                'body' => $notification->getBody(),
-                'cta_label' => $notification->getCtaLabel(),
-                'cta_url' => $notification->getCtaUrl(),
-            ];
-        }
-
-        return $notifications;
-    }
-
-    /**
-     * @return array{id: int, question: string}|null
-     */
-    private function resolveSurvey(?int $customerId, string $visitorId, string $now): ?array
-    {
-        $collection = $this->surveyPromptCollectionFactory->create();
-        $collection->addTargetFilter($customerId, $visitorId !== '' ? $visitorId : null, $now);
-        // Same claim-race reasoning as resolvePopup() above.
-        $collection->setPageSize(5);
-
-        /** @var SurveyPrompt|null $prompt */
-        $prompt = $this->deliveryClaimer->claimFirst($collection, 'ordo_survey_prompt', $now);
-        if ($prompt === null) {
-            return null;
-        }
-
-        return [
-            'id' => (int) $prompt->getId(),
-            'question' => $prompt->getQuestion(),
-        ];
+        return $result->setData($this->trackerPollReader->resolve($customerId, $visitorId));
     }
 
     public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException

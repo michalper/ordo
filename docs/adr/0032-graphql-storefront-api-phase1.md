@@ -24,7 +24,15 @@ section for the full phased plan this closes the first slice of.
   `Model\GraphQl\Resolver\*` class reuses the exact same collection factories/claimer/logger the
   matching `Controller\Track\*` already calls — the business logic (claim-first popups/surveys,
   event-type allowlist, ownership checks via `belongsTo()`) lives in one place either way; the
-  resolver is just a second transport onto it.
+  resolver is just a second transport onto it. For `TrackerPoll`/`Controller\Track\Poll`
+  specifically, sharing just the collaborators wasn't enough to actually achieve that — the
+  config-gating and per-concern array-shaping logic was still copy-pasted between the two classes
+  until a real CI quality gate (SonarCloud, not something caught locally) flagged it as 50%+
+  duplication on new code, which also kept coverage low (the heavy branch logic wasn't
+  reachable from both classes' own thin unit tests). Extracted into
+  `Model\Track\TrackerPollReader`, the actual shared "given a customer id and/or visitor id,
+  return the merged response" logic, with both the controller and the resolver now reduced to
+  identity resolution plus a one-line delegation.
 - **Identity comes from `ContextInterface::getUserId()`, not `Model\Track\VisitorIdentityResolver`.**
   That existing helper reads `Magento\Customer\Model\Session`, which assumes a cookie-based
   session a decoupled/PWA frontend doesn't carry. A new, small
@@ -58,5 +66,5 @@ this — worth remembering for every future `@doc` description in this module's 
 - `Test/GraphQl/` is a new, portable e2e suite (same shape as `Test/Api/`, reusing its customer
   token endpoint) — `Test/Api/README.md`'s own "why not `dev/tests/api-functional`" reasoning
   applies identically here.
-- Phases 2 (My Offers) and 3 (price-watch/push subscriptions) remain open in `ROADMAP.md`, same
-  thin-wrapper approach.
+- Phase 2 (My Offers) is covered by ADR 0033. Phase 3 (price-watch/push subscriptions) remains
+  open in `ROADMAP.md`, same thin-wrapper approach.
