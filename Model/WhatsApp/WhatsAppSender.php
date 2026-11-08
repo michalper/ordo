@@ -18,7 +18,7 @@ use Ordo\Automation\Model\RateLimit\OutboundRateLimiter;
  */
 class WhatsAppSender
 {
-    private const string API_VERSION = 'v20.0';
+    private const string API_VERSION = 'v26.0';
 
     public function __construct(
         private readonly JsonApiClient $jsonApiClient,
