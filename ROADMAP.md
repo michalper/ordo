@@ -76,7 +76,13 @@ protocol has nothing browser-observable for Selenium to assert on.
   out from under it — `GoogleAdsSyncClient` migrated from the Google Ads API's now-effectively-retired
   `OfflineUserDataJobService` to the Data Manager API (three real, independent bugs fixed along the way: a sunset
   REST version, a dead partial-failure check, and a fire-and-forgotten long-running operation) — see
-  `docs/adr/0035`. Still blocked on a real account/OAuth consent for the new scope to close this gap fully.
+  `docs/adr/0035`. OAuth for the new `datamanager` scope is done (Data Manager API client id/secret/refresh
+  token + Google Ads account id are configured against a real account). **Accepted as a permanent gap,
+  not a pending task:** closing it end-to-end needs a Google Ads account with $50k+ lifetime spend —
+  Google's own eligibility troubleshooter confirms Customer Match list creation is blocked below that
+  threshold, independent of anything in this module — and that level of ad spend isn't realistic for this
+  project. `ingestAudienceMembers` itself stays verified only via unit tests against a fake `Curl`; no
+  real-account run against an actual Customer Match list is expected, now or later.
 - `send_whatsapp`/WhatsApp templates have no test against a real Meta WhatsApp Business Account — same shape,
   template submission/approval polling/send have never hit a live WABA.
 
