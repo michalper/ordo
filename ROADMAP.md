@@ -29,15 +29,17 @@ raw HTTP POST to `/graphql`, real instance, no mocks, reusing `Test/Api`'s exist
 token acquisition) — not MFTF, for the same reason `Test/Api/README.md` already gives: a pure API
 protocol has nothing browser-observable for Selenium to assert on.
 
-- [ ] **Phase 1 — core tracking** (the biggest PWA blocker; mirrors `tracker.js`'s own 4 calls):
-  - `ordoTrackerPoll(visitorId: String): OrdoTrackerPoll` — mirrors `Controller\Track\Poll`
-    (`{popup, notifications, survey}`).
-  - `trackOrdoEvent(eventType: String!, eventKey: String, visitorId: String): OrdoTrackEventOutput`
-    — mirrors `Controller\Track\Event`.
-  - `dismissOrdoNotification(notificationId: Int!, visitorId: String): OrdoDismissNotificationOutput`
-    — mirrors `Controller\Track\DismissNotification`.
-  - `submitOrdoSurveyResponse(surveyId: Int!, score: Int!, visitorId: String): OrdoSubmitSurveyResponseOutput`
-    — mirrors `Controller\Track\SubmitSurveyResponse`.
+- [x] **Phase 1 — core tracking** (the biggest PWA blocker; mirrors `tracker.js`'s own 4 calls) —
+  shipped: `ordoTrackerPoll(visitorId: String): OrdoTrackerPoll`, `trackOrdoEvent`,
+  `dismissOrdoNotification`, `submitOrdoSurveyResponse` (`etc/schema.graphqls`,
+  `Model\GraphQl\Resolver\*`, `Test\GraphQl\TrackingApiTest`). Verified against a real running
+  instance, not just unit tests: all 4 operations round-tripped over real HTTP, including a real
+  customer-token-authenticated mutation that landed in the database and a real
+  ownership-rejection for a mismatched identity. One real, non-obvious bug caught this way: a
+  literal `{`/`}` inside an `@doc(description: "...")` string breaks Magento's `schema.graphqls`
+  reader (a brace-balance pass ahead of the real GraphQL parser doesn't know about string
+  literals) — not a GraphQL spec violation, a Magento-specific trap; avoid literal braces in any
+  `@doc` description text.
 - [ ] **Phase 2 — My Offers**: `ordoOffers: [OrdoOffer]` (mirrors `Controller\Offer\Index`),
   `extendOrdoOffer(offerId: Int!): OrdoExtendOfferOutput` (mirrors `Controller\Offer\Extend`/the
   existing `/V1/ordo/offers/:offerId/self-extend` REST route — same `OfferSelfExtension` service,

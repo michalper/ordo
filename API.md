@@ -421,3 +421,36 @@ curl -s "$BASE/rest/V1/ordo/campaigns?searchCriteria[pageSize]=10" \
 
 curl -s -X DELETE "$BASE/rest/V1/ordo/campaigns/<id>" -H "Authorization: Bearer $TOKEN"
 ```
+
+## GraphQL (headless/PWA storefront)
+
+Every customer-facing storefront touchpoint above this line is REST; the ones below are
+GraphQL instead — `Controller\Track\*`/`Controller\Offer\*`'s plain frontend controllers have no
+GraphQL-native equivalent for a decoupled/PWA Studio storefront to call (see `ROADMAP.md`'s
+"GraphQL storefront API" section for the full phased plan this is Phase 1 of). Covered by
+`Test/GraphQl/` (see `Test/GraphQl/README.md`).
+
+Identity: a logged-in customer comes from the same customer token REST already issues
+(`POST /rest/V1/integration/customer/token`), sent as the usual `Authorization: Bearer <token>`
+header — GraphQL resolves it via `ContextInterface::getUserId()`, not a session. `visitorId` is
+always an explicit argument (tracker.js's own `ordo_visitor_id` cookie value), same as
+`Controller\Track\Poll`'s existing param-based fallback.
+
+| Field | Kind | Mirrors |
+|---|---|---|
+| `ordoTrackerPoll(visitorId: String)` | Query | `GET /ordo/track/poll` |
+| `trackOrdoEvent(eventType, eventKey, visitorId)` | Mutation | `POST /ordo/track/event` |
+| `dismissOrdoNotification(notificationId, visitorId)` | Mutation | `POST /ordo/track/dismiss-notification` |
+| `submitOrdoSurveyResponse(surveyId, score, visitorId)` | Mutation | `POST /ordo/track/submit-survey-response` |
+
+```bash
+curl -s -X POST "$BASE/graphql" -H 'Content-Type: application/json' -d '{
+  "query": "mutation($v: String!) { trackOrdoEvent(eventType: \"product_view\", eventKey: \"24-MB01\", visitorId: $v) { ok reason } }",
+  "variables": {"v": "a-real-visitor-id"}
+}'
+
+curl -s -X POST "$BASE/graphql" -H 'Content-Type: application/json' -d '{
+  "query": "query($v: String) { ordoTrackerPoll(visitorId: $v) { popup { headline body cta_label cta_url } notifications { id headline } survey { id question } } }",
+  "variables": {"v": "a-real-visitor-id"}
+}'
+```

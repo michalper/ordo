@@ -9,6 +9,14 @@ it doesn't update itself from this file.
 
 ## [Unreleased]
 
+### Added
+
+- **GraphQL storefront API, Phase 1 — core tracking** — `ordoTrackerPoll`, `trackOrdoEvent`,
+  `dismissOrdoNotification`, `submitOrdoSurveyResponse`, so a headless/PWA Studio storefront can
+  track on-site behavior and read/act on popups/notifications/surveys without any
+  server-rendered Magento page. Thin GraphQL wrappers over the exact same service classes
+  `Controller\Track\*` already calls — no logic duplicated. See `docs/adr/0032`.
+
 ## [1.6.0] - 2026-11-07
 
 ### Added
