@@ -84,7 +84,16 @@ protocol has nothing browser-observable for Selenium to assert on.
   project. `ingestAudienceMembers` itself stays verified only via unit tests against a fake `Curl`; no
   real-account run against an actual Customer Match list is expected, now or later.
 - `send_whatsapp`/WhatsApp templates have no test against a real Meta WhatsApp Business Account — same shape,
-  template submission/approval polling/send have never hit a live WABA.
+  template submission/approval polling/send have never hit a live WABA. Attempting that verification found and
+  fixed one real bug: `WhatsAppSender`/`WhatsAppTemplateClient` were pinned to Meta Graph API `v20.0`, deprecated
+  and removed 2026-09-24 — bumped to `v26.0`. **Accepted as a permanent gap, not a pending task:** generating a
+  WhatsApp access token requires completing Meta's Business Login OAuth flow, which in turn requires the Facebook
+  account to have at least one Facebook Page (confirmed root cause — every attempt failed with an empty
+  `selected_business_id` in the OAuth callback, traced to "Twoje konto nie ma dostępu do żadnych stron na
+  Facebooku" in Meta Business Suite). Tried on three different Meta apps (including one created via the classic,
+  non-"use case" app-creation flow) with identical results, so this isn't an app-level bug. Creating a Facebook
+  Page would very likely fix it, but the user has declined to create one — real-account verification of
+  `send_whatsapp` stays untested for that reason, independent of anything in this module.
 
 ### MFTF/scenario coverage
 
