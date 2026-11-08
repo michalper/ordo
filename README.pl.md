@@ -56,6 +56,9 @@ strukturalnie nie widzą.
   opiekun.
 - Silnik kampanii — reguła "gdy X i Y, zrób Z", z warunkami/akcjami jako wtyczkami rejestrowanymi w `di.xml` i
   pełnym kontraktem REST.
+- Przewidywana najlepsza pora wysyłki — opcja do włączenia per akcja `send_email`, wysyła w
+  historycznie najlepszej godzinie otwarcia/kliknięcia dla danego klienta (tylko e-mail — jedyny
+  kanał z danymi o otwarciach/kliknięciach).
 - Śledzenie zachowań na stronie — bezzależnościowy snippet JS zamieniający odsłony stron/produktów/kategorii w
   tagi silnika kampanii.
 - Panel administracyjny — dashboard, kreator kampanii (edytowalny diagram [Drawflow](https://github.com/jerosoler/Drawflow)
