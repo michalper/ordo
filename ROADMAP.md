@@ -505,3 +505,34 @@ known gaps.
   `Cron\CalculateFunnelMetrics` materializes daily counts into `ordo_funnel_daily_stats` before
   `ordo_visitor_event` is pruned, at a 2-day settling lag so a same-day login has time to be
   stitched back onto that day's earlier browsing first.
+
+**The five items below came out of a 2026-11-08 brainstorm on where Ordo still has real gaps**,
+checked one by one against the actual codebase before listing (several ideas floated in that
+session turned out to already be shipped — loyalty tiers, wishlist tracking, NPS scoring, the
+referral program, and `browse_abandoned` itself all already existed and are not re-listed here).
+
+- ~~**GTM dataLayer bridge.**~~ — shipped, see `docs/adr/0036-gtm-datalayer-bridge.md`. `tracker.js`
+  now optionally mirrors every tracked event onto `window.dataLayer` so a store's existing GTM
+  container can build audiences from Ordo's own event taxonomy without this module's ad-audience
+  sync (itself gated on real-account access most small stores won't have).
+- **Exit-intent popup trigger** — no mouse-leaves-toward-the-tab detection exists anywhere in
+  `tracker.js` today; a new trigger (e.g. `exit_intent`) fired from a theme-side listener on the
+  cart/checkout page would let a campaign show a last-chance offer, same delivery mechanism as
+  the existing popup action.
+- **Birthday/anniversary campaign trigger** — no trigger reads `customer_dob` (a standard but
+  optional Magento customer attribute) at all; would need its own daily cron in the
+  `Cron\DispatchCustomerInactiveCampaigns`/`Cron\TagInactiveCustomers` shape, matching month+day
+  rather than an inactivity window.
+- **Social proof widget on PDP** ("N people viewed this today") — `ordo_visitor_event` already
+  aggregates per-product view counts for `Cron\CalculateProductPerformance`; nothing currently
+  surfaces that count back to the storefront itself.
+- **GA4/Meta Conversions API webhook template** — `Model\Campaign\Action\SendWebhook` already
+  exists as a generic action; a documented, ready-to-wire payload shape for GA4 Measurement
+  Protocol/Meta Conversions API server-side events (e.g. on `order_placed` + a value condition)
+  would close the loop between Ordo's segmentation and a store's ad platforms without needing a
+  verified ad-audience sync account.
+- **TikTok ad-audience sync** — same shape as the existing Google Ads/Meta ad-audience sync, but
+  flagged as a real risk before any work starts: TikTok's own Custom Audience eligibility has
+  comparably strict account-history/spend requirements to Google Ads' Customer Match (see the
+  "Test coverage" section above) — worth confirming eligibility against a real account *before*
+  writing the integration, not after, given this module has now hit that wall twice.

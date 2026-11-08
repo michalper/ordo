@@ -9,6 +9,15 @@ it doesn't update itself from this file.
 
 ## [Unreleased]
 
+### Added
+
+- **GTM dataLayer bridge** — `tracker.js` now optionally mirrors every tracked event
+  (`page_view`, `product_view`, `category_view`, `checkout_start`, any custom
+  `window.ordoTrack()` call) onto `window.dataLayer` as `{event: "ordo_<type>", ordoEventKey}`,
+  gated by its own `tracking > gtm_bridge_enabled` toggle (default off). Lets a store's existing
+  GTM container build GA4/Ads/Meta Pixel audiences from Ordo's own event taxonomy without this
+  module's own ad-audience sync. Doesn't load GTM itself — see `docs/adr/0036`.
+
 ### Fixed
 
 - **`Model\WhatsApp\WhatsAppSender`/`WhatsAppTemplateClient` were pinned to Meta Graph API `v20.0`**,

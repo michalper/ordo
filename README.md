@@ -61,7 +61,7 @@ access to that data.
 - Predictive send-time optimization — opt-in per `send_email` action, defers to each customer's own
   historically-best email open/click hour (email-only: the only channel with open/click data).
 - On-site behavior tracking — a dependency-free JS snippet turning page/product/category views into campaign-engine
-  tags.
+  tags, with an optional bridge mirroring tracked events into a store's existing Google Tag Manager `dataLayer`.
 - GraphQL storefront API — tracking, My Offers, credit-limit status, price-watch and Web Push subscriptions, for a
   headless/PWA Studio storefront with no server-rendered Magento page. Thin wrappers over the same service classes
   the REST routes already call, so no logic is duplicated between the two.
