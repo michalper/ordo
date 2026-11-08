@@ -50,8 +50,8 @@ class TrackEvent implements ResolverInterface
             return ['ok' => false, 'reason' => 'tracking_disabled'];
         }
 
-        $visitorId = isset($args['visitorId']) && is_string($args['visitorId']) ? $args['visitorId'] : '';
-        $eventType = isset($args['eventType']) && is_string($args['eventType']) ? $args['eventType'] : '';
+        $visitorId = $args['visitorId'] ?? '';
+        $eventType = $args['eventType'] ?? '';
         $eventKey = $args['eventKey'] ?? null;
         $eventKey = is_scalar($eventKey) ? (string) $eventKey : null;
 

@@ -49,7 +49,7 @@ class TrackerPoll implements ResolverInterface
     ) {
         /** @var BaseContextInterface $context */
         $customerId = $this->customerIdResolver->resolveCustomerId($context);
-        $visitorId = isset($args['visitorId']) && is_string($args['visitorId']) ? $args['visitorId'] : '';
+        $visitorId = $args['visitorId'] ?? '';
         $hasIdentity = $customerId !== null || $visitorId !== '';
         $now = date('Y-m-d H:i:s');
 
@@ -101,8 +101,9 @@ class TrackerPoll implements ResolverInterface
         $notifications = [];
         foreach ($collection as $notification) {
             /** @var Notification $notification */
+            $notificationId = $notification->getId();
             $notifications[] = [
-                'id' => (int) $notification->getId(),
+                'id' => is_numeric($notificationId) ? (int) $notificationId : 0,
                 'headline' => $notification->getHeadline(),
                 'body' => $notification->getBody(),
                 'cta_label' => $notification->getCtaLabel(),
@@ -128,8 +129,10 @@ class TrackerPoll implements ResolverInterface
             return null;
         }
 
+        $promptId = $prompt->getId();
+
         return [
-            'id' => (int) $prompt->getId(),
+            'id' => is_numeric($promptId) ? (int) $promptId : 0,
             'question' => $prompt->getQuestion(),
         ];
     }

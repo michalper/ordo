@@ -41,7 +41,7 @@ class DismissNotification implements ResolverInterface
             return ['ok' => false];
         }
 
-        $visitorId = isset($args['visitorId']) && is_string($args['visitorId']) ? $args['visitorId'] : '';
+        $visitorId = $args['visitorId'] ?? '';
         $customerId = $this->customerIdResolver->resolveCustomerId($context);
 
         $notification = $this->notificationFactory->create();
