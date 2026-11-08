@@ -169,7 +169,12 @@ abstract class AbstractPriceWatchScanCron
         $guestEmail = !empty($row['guest_email']) ? (string) $row['guest_email'] : null;
 
         if ($isNotifiable && $customerId !== null) {
-            return $this->claimAndRun($entityId, $newValue, function () use ($customerId, $productId, $oldValue, $newValue): void {
+            return $this->claimAndRun($entityId, $newValue, function () use (
+                $customerId,
+                $productId,
+                $oldValue,
+                $newValue
+            ): void {
                 $this->campaignDispatcher->dispatch(
                     $this->triggerCode(),
                     array_merge(
@@ -183,7 +188,12 @@ abstract class AbstractPriceWatchScanCron
         if ($isNotifiable && $guestEmail !== null) {
             // Only reachable when customer_id was null - the branch above already claims/returns
             // for every notifiable row with a known customer.
-            return $this->claimAndRun($entityId, $newValue, function () use ($guestEmail, $product, $oldValue, $newValue): void {
+            return $this->claimAndRun($entityId, $newValue, function () use (
+                $guestEmail,
+                $product,
+                $oldValue,
+                $newValue
+            ): void {
                 $this->guestPriceWatchNotifier->notify(
                     $guestEmail,
                     $product,

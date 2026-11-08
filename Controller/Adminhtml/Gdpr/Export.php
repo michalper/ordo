@@ -38,7 +38,8 @@ class Export extends AbstractGdprAction implements HttpGetActionInterface
         }
 
         $topicConsentStates = [];
-        foreach ([ConsentChannel::Email, ConsentChannel::Sms, ConsentChannel::Push, ConsentChannel::WhatsApp] as $channel) {
+        $channels = [ConsentChannel::Email, ConsentChannel::Sms, ConsentChannel::Push, ConsentChannel::WhatsApp];
+        foreach ($channels as $channel) {
             $topicConsentStates[$channel->value] = $this->consentManager->getTopicConsentStates($customerId, $channel);
         }
 

@@ -258,8 +258,11 @@ class ConsentManager
         return $states;
     }
 
-    private function findTopicConsent(int $customerId, ConsentChannel $channel, ConsentTopic $topic): ?CustomerConsentTopic
-    {
+    private function findTopicConsent(
+        int $customerId,
+        ConsentChannel $channel,
+        ConsentTopic $topic
+    ): ?CustomerConsentTopic {
         $collection = $this->customerConsentTopicCollectionFactory->create();
         $collection->addCustomerChannelAndTopicFilter($customerId, $channel->value, $topic->value);
 

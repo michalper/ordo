@@ -75,6 +75,10 @@ define([
             var decoded = raw ? JSON.parse(raw) : [];
             initialTags = Array.isArray(decoded) ? decoded : [];
         } catch (e) {
+            // A malformed or pre-existing non-JSON value (e.g. a legacy comma-separated string
+            // from before this field became a chip editor) just starts the editor with no tags
+            // instead of failing to render at all - the hidden input is fully overwritten on the
+            // next add/remove anyway, so there's nothing to recover from the raw value.
             initialTags = [];
         }
 

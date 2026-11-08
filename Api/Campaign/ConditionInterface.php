@@ -25,7 +25,9 @@ interface ConditionInterface
      * canvas's own per-type field inputs. Adding a new condition type's dedicated fields never
      * means touching either of those classes, only this method.
      *
-     * @return array<int, array{name: string, label: string, notice?: string, options?: array<int|string, string>, type?: string}>
+     * @return array<int, array{
+     *     name: string, label: string, notice?: string, options?: array<int|string, string>, type?: string
+     * }>
      */
     public function getParamFields(): array;
 }

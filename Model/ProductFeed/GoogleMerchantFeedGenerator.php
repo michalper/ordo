@@ -82,7 +82,9 @@ class GoogleMerchantFeedGenerator implements FeedGeneratorInterface
             . '<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0"><channel>'
             . '<title>' . $this->escape($this->config->getShoppingFeedTitle($this->storeId)) . '</title>'
             . '<link>' . $this->escape($this->store->getBaseUrl()) . '</link>'
-            . '<description>' . $this->escape($this->config->getShoppingFeedDescription($this->storeId)) . '</description>'
+            . '<description>'
+            . $this->escape($this->config->getShoppingFeedDescription($this->storeId))
+            . '</description>'
             . implode('', $this->items)
             . '</channel></rss>';
 

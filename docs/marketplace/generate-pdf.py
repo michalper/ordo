@@ -79,6 +79,42 @@ def parse_table(lines, i, styles):
     return table, i
 
 
+def parse_code_block(lines, i, styles):
+    i += 1
+    code_lines = []
+    while i < len(lines) and not lines[i].strip().startswith("```"):
+        code_lines.append(lines[i].rstrip("\n"))
+        i += 1
+    i += 1
+    flowables = [Preformatted("\n".join(code_lines), styles["Code"]), Spacer(1, 8)]
+    return flowables, i
+
+
+def parse_list(lines, i, styles):
+    items = []
+    while i < len(lines) and lines[i].strip().startswith("- "):
+        items.append(ListItem(Paragraph(inline(lines[i].strip()[2:]), styles["OrdoBody"]),
+                               leftIndent=12))
+        i += 1
+    flowable = ListFlowable(items, bulletType="bullet", start="•", leftIndent=10)
+    return [flowable, Spacer(1, 6)], i
+
+
+def parse_paragraph(lines, i, styles, is_subtitle):
+    # Join wrapped lines until a blank line or a structural line.
+    buf = [lines[i].strip()]
+    i += 1
+    while i < len(lines):
+        nxt = lines[i].strip()
+        if nxt == "" or nxt.startswith(("#", "```", "|", "- ")):
+            break
+        buf.append(nxt)
+        i += 1
+    # The second line after the H1 title doubles as the subtitle.
+    style = "OrdoSubtitle" if is_subtitle else "OrdoBody"
+    return Paragraph(inline(" ".join(buf)), styles[style]), i
+
+
 def build_story(lines, styles):
     story = []
     i = 0
@@ -86,63 +122,29 @@ def build_story(lines, styles):
         stripped = lines[i].strip()
 
         if stripped.startswith("```"):
-            i += 1
-            code_lines = []
-            while i < len(lines) and not lines[i].strip().startswith("```"):
-                code_lines.append(lines[i].rstrip("\n"))
-                i += 1
-            i += 1
-            story.append(Preformatted("\n".join(code_lines), styles["Code"]))
-            story.append(Spacer(1, 8))
-            continue
-
-        if stripped.startswith("|"):
+            flowables, i = parse_code_block(lines, i, styles)
+            story.extend(flowables)
+        elif stripped.startswith("|"):
             table, i = parse_table(lines, i, styles)
             story.append(table)
             story.append(Spacer(1, 10))
-            continue
-
-        if stripped.startswith("### "):
+        elif stripped.startswith("### "):
             story.append(Paragraph(inline(stripped[4:]), styles["OrdoH2"]))
             i += 1
-            continue
-
-        if stripped.startswith("## "):
+        elif stripped.startswith("## "):
             story.append(Paragraph(inline(stripped[3:]), styles["OrdoH1"]))
             i += 1
-            continue
-
-        if stripped.startswith("# "):
+        elif stripped.startswith("# "):
             story.append(Paragraph(inline(stripped[2:]), styles["OrdoTitle"]))
             i += 1
-            continue
-
-        if stripped.startswith("- "):
-            items = []
-            while i < len(lines) and lines[i].strip().startswith("- "):
-                items.append(ListItem(Paragraph(inline(lines[i].strip()[2:]), styles["OrdoBody"]),
-                                       leftIndent=12))
-                i += 1
-            story.append(ListFlowable(items, bulletType="bullet", start="•", leftIndent=10))
-            story.append(Spacer(1, 6))
-            continue
-
-        if stripped == "":
+        elif stripped.startswith("- "):
+            flowables, i = parse_list(lines, i, styles)
+            story.extend(flowables)
+        elif stripped == "":
             i += 1
-            continue
-
-        # Plain paragraph — join wrapped lines until a blank line or a structural line.
-        buf = [stripped]
-        i += 1
-        while i < len(lines):
-            nxt = lines[i].strip()
-            if (nxt == "" or nxt.startswith(("#", "```", "|", "- "))):
-                break
-            buf.append(nxt)
-            i += 1
-        # The second line after the H1 title doubles as the subtitle.
-        style = "OrdoSubtitle" if len(story) == 1 else "OrdoBody"
-        story.append(Paragraph(inline(" ".join(buf)), styles[style]))
+        else:
+            paragraph, i = parse_paragraph(lines, i, styles, is_subtitle=len(story) == 1)
+            story.append(paragraph)
 
     return story
 

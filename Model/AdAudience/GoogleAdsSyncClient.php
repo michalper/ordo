@@ -95,7 +95,10 @@ class GoogleAdsSyncClient implements SyncClientInterface
     }
 
     /**
-     * @param array{operatingAccount: array{accountType: string, accountId: string}, productDestinationId: string} $destination
+     * @param array{
+     *     operatingAccount: array{accountType: string, accountId: string},
+     *     productDestinationId: string
+     * } $destination
      * @param array<int, string> $hashedEmailBatch at most MAX_MEMBERS_PER_BATCH entries
      */
     private function ingestBatch(array $destination, array $hashedEmailBatch, string $accessToken): void

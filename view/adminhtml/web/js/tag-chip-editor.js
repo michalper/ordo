@@ -68,10 +68,14 @@ define([
             render();
         }
 
+        function isNotSelected(tag) {
+            return !tags.includes(tag);
+        }
+
         function addTag(rawTag) {
             var tag = String(rawTag || '').trim();
 
-            if (tag === '' || tags.indexOf(tag) !== -1) {
+            if (tag === '' || !isNotSelected(tag)) {
                 return;
             }
             tags.push(tag);
@@ -136,9 +140,7 @@ define([
 
             debounceTimer = setTimeout(function () {
                 searchFn(term).then(function (items) {
-                    renderDropdown($input, items.filter(function (tag) {
-                        return tags.indexOf(tag) === -1;
-                    }));
+                    renderDropdown($input, items.filter(isNotSelected));
                 });
             }, 200);
         }

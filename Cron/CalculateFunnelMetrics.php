@@ -45,7 +45,8 @@ class CalculateFunnelMetrics
         $counts = [
             'product_view_visitors' => $this->countDistinctCustomers($connection, $eventTable, 'product_view', $date),
             'cart_add_visitors' => $this->countDistinctCustomers($connection, $eventTable, 'cart_add', $date),
-            'checkout_start_visitors' => $this->countDistinctCustomers($connection, $eventTable, 'checkout_start', $date),
+            'checkout_start_visitors' =>
+                $this->countDistinctCustomers($connection, $eventTable, 'checkout_start', $date),
         ];
 
         $table = $this->resourceConnection->getTableName(self::TABLE);

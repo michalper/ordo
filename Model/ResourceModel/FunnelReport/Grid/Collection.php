@@ -94,7 +94,8 @@ class Collection extends SearchResult
                     'ROUND((1 - (main_table.cart_add_visitors / NULLIF(main_table.product_view_visitors, 0))) * 100, 1)'
                 ),
                 'checkout_start_drop_off_rate' => new \Zend_Db_Expr(
-                    'ROUND((1 - (main_table.checkout_start_visitors / NULLIF(main_table.cart_add_visitors, 0))) * 100, 1)'
+                    'ROUND((1 - (main_table.checkout_start_visitors / '
+                    . 'NULLIF(main_table.cart_add_visitors, 0))) * 100, 1)'
                 ),
                 'completed_order_drop_off_rate' => new \Zend_Db_Expr(sprintf(
                     'ROUND((1 - (%s / NULLIF(main_table.checkout_start_visitors, 0))) * 100, 1)',

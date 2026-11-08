@@ -43,7 +43,9 @@ class ImportFromLibrary extends AbstractCampaignAction implements HttpPostAction
             return $resultRedirect->setPath('*/*/library');
         }
 
-        $this->messageManager->addSuccessMessage(__('Campaign "%1" was created from the template.', $campaign->getName()));
+        $this->messageManager->addSuccessMessage(
+            __('Campaign "%1" was created from the template.', $campaign->getName())
+        );
         return $resultRedirect->setPath('*/*/edit', ['entity_id' => $campaign->getEntityId()]);
     }
 }

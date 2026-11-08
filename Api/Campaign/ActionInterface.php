@@ -21,7 +21,9 @@ interface ActionInterface
     /**
      * Same role as ConditionInterface::getParamFields() - see that method's own docblock.
      *
-     * @return array<int, array{name: string, label: string, notice?: string, options?: array<int|string, string>, type?: string}>
+     * @return array<int, array{
+     *     name: string, label: string, notice?: string, options?: array<int|string, string>, type?: string
+     * }>
      */
     public function getParamFields(): array;
 }

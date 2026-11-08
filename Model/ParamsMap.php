@@ -16,7 +16,7 @@ class ParamsMap
     /**
      * @return array<string, mixed>
      */
-    // phpcs:ignore Magento2.Functions.StaticFunction -- pure value normalizer called from AbstractModel::getParams() implementations, where constructor injection isn't available; nothing to intercept
+    // phpcs:ignore Magento2.Functions.StaticFunction -- pure value normalizer, nothing to intercept
     public static function fromJson(string $json): array
     {
         return self::stringKeyed($json !== '' ? json_decode($json, true) : []);

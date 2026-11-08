@@ -48,7 +48,9 @@ class Save extends AbstractEmailTemplateDraftAction implements HttpPostActionInt
             $draft->setTemplateSubject((string) ($data['template_subject'] ?? ''));
             $draft->setTemplateText((string) ($data['template_text'] ?? ''));
             $templateStyles = $data['template_styles'] ?? null;
-            $draft->setTemplateStyles($templateStyles === null || $templateStyles === '' ? null : (string) $templateStyles);
+            $draft->setTemplateStyles(
+                $templateStyles === null || $templateStyles === '' ? null : (string) $templateStyles
+            );
 
             $this->draftResource->save($draft);
 

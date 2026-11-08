@@ -273,6 +273,31 @@ function escapeHtml(raw) {
         .replaceAll('\'', '&#39;');
 }
 
+/**
+ * Hoisted alongside escapeHtml() above, not declared inside the define() factory below - it
+ * closes over nothing from that scope (just window.BASE_URL/fetch/encodeURIComponent), so
+ * nesting it inside the factory bought nothing but depth.
+ *
+ * @param {String} term
+ * @return {Promise<Array<String>>}
+ */
+function searchTags(term) {
+    var searchUrl = (window.BASE_URL || '') + 'tag/search';
+
+    return fetch(searchUrl + '?term=' + encodeURIComponent(term), {credentials: 'same-origin'})
+        .then(function (response) {
+            return response.ok ? response.json() : {items: []};
+        })
+        .then(function (data) {
+            return (data?.items || []).map(function (item) {
+                return item.tag;
+            });
+        })
+        .catch(function () {
+            return [];
+        });
+}
+
 define([
     'jquery',
     'uiRegistry',
@@ -284,27 +309,6 @@ define([
     'use strict';
 
     var $t = $.mage.__;
-
-    /**
-     * @param {String} term
-     * @return {Promise<Array<String>>}
-     */
-    function searchTags(term) {
-        var searchUrl = (window.BASE_URL || '') + 'tag/search';
-
-        return fetch(searchUrl + '?term=' + encodeURIComponent(term), {credentials: 'same-origin'})
-            .then(function (response) {
-                return response.ok ? response.json() : {items: []};
-            })
-            .then(function (data) {
-                return (data?.items || []).map(function (item) {
-                    return item.tag;
-                });
-            })
-            .catch(function () {
-                return [];
-            });
-    }
 
     /**
      * One variant's own action row inside the variant editor widget - a type <select> (every
