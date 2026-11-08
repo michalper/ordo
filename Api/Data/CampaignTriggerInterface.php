@@ -106,6 +106,17 @@ interface CampaignTriggerInterface
     public const TRIGGER_CUSTOMER_INACTIVE = 'customer_inactive';
 
     /**
+     * Fires live, from Controller\Track\Event (via the "ordo_visitor_exit_intent" Magento event
+     * and Observer\DispatchExitIntentCampaigns - same decoupling shape as
+     * TRIGGER_VISITOR_TAG_ADDED/VisitorTagManager, though here purely because there's no
+     * Magento-core event to hook into, not to avoid a DI cycle), the moment tracker.js detects
+     * the visitor's mouse leaving toward the top of the viewport - see docs/adr/0037. Context
+     * carries only "visitor_id", same anonymous-only shape as TRIGGER_VISITOR_TAG_ADDED; a
+     * logged-in visitor's customer_id is deliberately not included; see that ADR for why.
+     */
+    public const TRIGGER_EXIT_INTENT = 'exit_intent';
+
+    /**
      * @return int|null
      */
     public function getEntityId(): ?int;

@@ -11,6 +11,7 @@ use Magento\Framework\App\CsrfAwareActionInterface;
 use Magento\Framework\App\Request\InvalidRequestException;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Controller\Result\JsonFactory;
+use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\VisitorEventLogger;
 
@@ -28,6 +29,7 @@ class Event extends Action implements HttpPostActionInterface, CsrfAwareActionIn
         'category_view',
         'element_clicked',
         'checkout_start',
+        'exit_intent',
     ];
     private const int MAX_KEY_LENGTH = 255;
 
@@ -36,7 +38,8 @@ class Event extends Action implements HttpPostActionInterface, CsrfAwareActionIn
         private readonly JsonFactory $resultJsonFactory,
         private readonly VisitorEventLogger $visitorEventLogger,
         private readonly CustomerSession $customerSession,
-        private readonly Config $config
+        private readonly Config $config,
+        private readonly EventManagerInterface $eventManager
     ) {
         parent::__construct($context);
     }
@@ -64,6 +67,15 @@ class Event extends Action implements HttpPostActionInterface, CsrfAwareActionIn
         $customerId = $this->customerSession->isLoggedIn() ? (int) $this->customerSession->getCustomerId() : null;
 
         $this->visitorEventLogger->log($visitorId, $eventType, $eventKey, $customerId);
+
+        // exit_intent is a live, anonymous-capable trigger (see
+        // Api\Data\CampaignTriggerInterface::TRIGGER_EXIT_INTENT and docs/adr/0037), unlike every
+        // other type above, which only ever feeds VisitorAggregator's threshold-based tagging -
+        // dispatching it is this controller's own job precisely because there's no Magento-core
+        // event for "the tracking endpoint was called" to observe instead.
+        if ($eventType === 'exit_intent') {
+            $this->eventManager->dispatch('ordo_visitor_exit_intent', ['visitor_id' => $visitorId]);
+        }
 
         return $result->setData(['ok' => true]);
     }

@@ -70,6 +70,7 @@ class Config
     private const string XML_PATH_TRACKING_VIEW_THRESHOLD = 'ordo_tracking/tracking/view_threshold';
     private const string XML_PATH_TRACKING_CLICK_THRESHOLD = 'ordo_tracking/tracking/click_threshold';
     private const string XML_PATH_TRACKING_GTM_BRIDGE_ENABLED = 'ordo_tracking/tracking/gtm_bridge_enabled';
+    private const string XML_PATH_TRACKING_EXIT_INTENT_ENABLED = 'ordo_tracking/tracking/exit_intent_enabled';
 
     private const string XML_PATH_POPUP_ENABLED = 'ordo_tracking/tracking/popup_enabled';
     private const string XML_PATH_POPUP_POLL_INTERVAL_SECONDS = 'ordo_tracking/tracking/popup_poll_interval_seconds';
@@ -545,6 +546,15 @@ class Config
     {
         return $this->scopeConfig->isSetFlag(
             self::XML_PATH_TRACKING_GTM_BRIDGE_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function isExitIntentEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_TRACKING_EXIT_INTENT_ENABLED,
             ScopeInterface::SCOPE_STORE,
             $storeId
         );

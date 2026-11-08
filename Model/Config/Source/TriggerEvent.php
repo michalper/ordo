@@ -54,6 +54,10 @@ class TriggerEvent implements OptionSourceInterface
                 'value' => CampaignTriggerInterface::TRIGGER_CUSTOMER_INACTIVE,
                 'label' => __('Customer Inactive For N Days'),
             ],
+            [
+                'value' => CampaignTriggerInterface::TRIGGER_EXIT_INTENT,
+                'label' => __('Exit Intent (anonymous)'),
+            ],
         ];
     }
 }

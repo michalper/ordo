@@ -289,3 +289,60 @@ QUnit.module('Ordo_Automation/js/tracker (GTM bridge)', function () {
         ]);
     });
 });
+
+QUnit.module('Ordo_Automation/js/tracker (exit intent)', function () {
+    function dispatchMouseOut(document, attrs) {
+        const event = new document.defaultView.MouseEvent('mouseout', { bubbles: true, cancelable: true });
+        Object.keys(attrs).forEach(function (name) {
+            Object.defineProperty(event, name, { value: attrs[name] });
+        });
+        document.dispatchEvent(event);
+    }
+
+    QUnit.test('does not attach a listener when data-exit-intent-enabled is not "1"', function (assert) {
+        const env = loadTracker();
+        const document = env.dom.window.document;
+        const callsBefore = env.fetchCalls.length;
+
+        dispatchMouseOut(document, { relatedTarget: null, clientY: 0 });
+
+        assert.strictEqual(env.fetchCalls.length, callsBefore, 'no exit_intent event tracked');
+    });
+
+    QUnit.test('mouse leaving upward with no relatedTarget fires exit_intent once', function (assert) {
+        const env = loadTracker({ 'data-exit-intent-enabled': '1' });
+        const document = env.dom.window.document;
+        const callsBefore = env.fetchCalls.length;
+
+        dispatchMouseOut(document, { relatedTarget: null, clientY: 0 });
+
+        assert.strictEqual(env.fetchCalls.length, callsBefore + 1);
+        const call = env.fetchCalls[env.fetchCalls.length - 1];
+        assert.strictEqual(call.url, '/ordo/track/event');
+        assert.strictEqual(new URLSearchParams(call.options.body).get('event_type'), 'exit_intent');
+
+        // A second exit upward in the same page load is not tracked again.
+        dispatchMouseOut(document, { relatedTarget: null, clientY: 0 });
+        assert.strictEqual(env.fetchCalls.length, callsBefore + 1, 'fires at most once per page load');
+    });
+
+    QUnit.test('a mouseout with a relatedTarget (moved onto a child element) is ignored', function (assert) {
+        const env = loadTracker({ 'data-exit-intent-enabled': '1' });
+        const document = env.dom.window.document;
+        const callsBefore = env.fetchCalls.length;
+
+        dispatchMouseOut(document, { relatedTarget: document.body, clientY: 0 });
+
+        assert.strictEqual(env.fetchCalls.length, callsBefore, 'still inside the document, not an exit');
+    });
+
+    QUnit.test('a mouseout leaving downward (positive clientY) is ignored', function (assert) {
+        const env = loadTracker({ 'data-exit-intent-enabled': '1' });
+        const document = env.dom.window.document;
+        const callsBefore = env.fetchCalls.length;
+
+        dispatchMouseOut(document, { relatedTarget: null, clientY: 650 });
+
+        assert.strictEqual(env.fetchCalls.length, callsBefore, 'exiting downward is not exit intent');
+    });
+});

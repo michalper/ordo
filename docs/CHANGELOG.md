@@ -17,6 +17,12 @@ it doesn't update itself from this file.
   gated by its own `tracking > gtm_bridge_enabled` toggle (default off). Lets a store's existing
   GTM container build GA4/Ads/Meta Pixel audiences from Ordo's own event taxonomy without this
   module's own ad-audience sync. Doesn't load GTM itself — see `docs/adr/0036`.
+- **Exit-intent campaign trigger** — a new `exit_intent` trigger fires the first time, per page
+  load, a visitor's mouse leaves toward the top of the browser window (the usual
+  "about-to-close-the-tab" gesture), gated by its own `tracking > exit_intent_enabled` toggle
+  (default off). Anonymous-only, same shape as `visitor_tag_added`. Lets a campaign show a
+  last-chance offer via the existing "Show Popup" action — no new action type needed. See
+  `docs/adr/0037`.
 
 ### Fixed
 
