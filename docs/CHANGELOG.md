@@ -9,6 +9,8 @@ it doesn't update itself from this file.
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-11-08
+
 ### Added
 
 - **GTM dataLayer bridge** — `tracker.js` now optionally mirrors every tracked event
