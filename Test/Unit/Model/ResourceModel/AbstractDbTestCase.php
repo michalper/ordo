@@ -20,7 +20,21 @@ abstract class AbstractDbTestCase extends TestCase
 {
     protected function makeDbContext(): Context
     {
-        $connection = $this->createStub(AdapterInterface::class);
+        return $this->makeDbContextWithConnection()[0];
+    }
+
+    /**
+     * Same as makeDbContext(), but also hands back the connection itself - for a test that needs
+     * to set expectations on a real query the resource model issues (e.g. an update()/insert()
+     * call), not just verify _construct()'s own table/field wiring. A mock, not a stub - this
+     * project's PHPUnit version doesn't support ->method()->with()/->expects() chained directly
+     * off a bare createStub() return value, only off createMock()'s.
+     *
+     * @return array{0: Context, 1: AdapterInterface&\PHPUnit\Framework\MockObject\MockObject}
+     */
+    protected function makeDbContextWithConnection(): array
+    {
+        $connection = $this->createMock(AdapterInterface::class);
 
         $resources = $this->createStub(ResourceConnection::class);
         $resources->method('getConnection')->willReturn($connection);
@@ -33,6 +47,6 @@ abstract class AbstractDbTestCase extends TestCase
         $context->method('getObjectRelationProcessor')
             ->willReturn($this->createStub(ObjectRelationProcessor::class));
 
-        return $context;
+        return [$context, $connection];
     }
 }
