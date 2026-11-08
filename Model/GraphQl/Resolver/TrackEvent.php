@@ -35,6 +35,8 @@ class TrackEvent implements ResolverInterface
     }
 
     /**
+     * @param array<string, mixed>|null $value
+     * @param array{eventType?: ?string, eventKey?: mixed, visitorId?: ?string}|null $args
      * @inheritDoc
      */
     public function resolve(

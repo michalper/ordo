@@ -36,6 +36,8 @@ class TrackerPoll implements ResolverInterface
     }
 
     /**
+     * @param array<string, mixed>|null $value
+     * @param array{visitorId?: ?string}|null $args
      * @inheritDoc
      */
     public function resolve(

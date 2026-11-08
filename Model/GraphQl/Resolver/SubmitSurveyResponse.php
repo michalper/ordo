@@ -24,6 +24,8 @@ class SubmitSurveyResponse implements ResolverInterface
     }
 
     /**
+     * @param array<string, mixed>|null $value
+     * @param array{surveyId?: int, score?: int, visitorId?: ?string}|null $args
      * @inheritDoc
      */
     public function resolve(

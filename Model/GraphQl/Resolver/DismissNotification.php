@@ -25,6 +25,8 @@ class DismissNotification implements ResolverInterface
     }
 
     /**
+     * @param array<string, mixed>|null $value
+     * @param array{notificationId?: int, visitorId?: ?string}|null $args
      * @inheritDoc
      */
     public function resolve(
