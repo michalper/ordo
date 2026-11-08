@@ -101,7 +101,8 @@ bin/magento cache:flush
 - [CONTRIBUTING.md](CONTRIBUTING.md) — wymagania jakości/testów dla zmian.
 - Lokalizacja: pliki CSV w `i18n/`, kluczowane względem `en_US.csv`. Dostępne: `en_US`, `pl_PL` (zweryfikowane przez
   native speakera), `de_DE`, `fr_FR`, `es_ES`, `it_IT`, `pt_BR`, `zh_Hans_CN`, `ja_JP`, `ru_RU`, `uk_UA`, `nl_NL`,
-  `cs_CZ` (przetłumaczone maszynowo, czekają na przegląd native speakera).
+  `cs_CZ`, `ko_KR`, `tr_TR`, `ro_RO`, `hu_HU`, `sv_SE`, `sk_SK`, `sl_SI` (przetłumaczone maszynowo, czekają na
+  przegląd native speakera).
 
 ## Licencja
 
