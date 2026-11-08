@@ -39,13 +39,18 @@ Ordo's own server, not the customer's browser, makes the call.
   only (same reuse `GoogleAdsSyncClient`/`MetaSyncClient`/`WhatsAppSender` already make of it) -
   `SendWebhook`'s own signing/payload-wrapping is not reused at all.
 - **Context must include `order_id`** (and, for Meta, `customer_id`) - both actions load the real
-  order via `OrderRepositoryInterface::get()` for an authoritative `grand_total`/
-  `order_currency_code`/`increment_id` rather than trusting whatever a trigger's own context
-  happened to carry (`order_placed`'s context has `order_total` but no currency code at all).
-  Intended for the `order_placed` trigger (optionally gated by a value condition, per the
-  original roadmap framing), but works from any trigger/condition chain that still has a real
-  order in context by the time this action runs. Fails closed (logs, does not throw) when
-  `order_id`/`customer_id` is missing or the entity can't be loaded, same as every other action.
+  order for an authoritative `grand_total`/`order_currency_code`/`increment_id` rather than
+  trusting whatever a trigger's own context happened to carry (`order_placed`'s context has
+  `order_total` but no currency code at all). Intended for the `order_placed` trigger (optionally
+  gated by a value condition, per the original roadmap framing), but works from any trigger/
+  condition chain that still has a real order in context by the time this action runs. Fails
+  closed (logs, does not throw) when `order_id`/`customer_id` is missing or the entity can't be
+  loaded, same as every other action.
+- **Shared `Model\Campaign\Action\OrderContextResolver`** for that order-loading step - both
+  actions' own "read order_id from context, load it, null on anything wrong" logic was byte-for-
+  byte identical, caught by SonarCloud's new-code duplication gate during review (10.1% on a
+  2-file PR) rather than left as two copies that would quietly drift apart the next time either
+  one needed to change.
 - **Reuses `Model\AdAudience\PiiHasher::hashEmail()`** for Meta's required `user_data.em` field -
   that class's own docblock already establishes it as the one shared email-hashing chokepoint for
   both Google Ads Customer Match and Meta Custom Audiences; Conversions API's own hashing spec

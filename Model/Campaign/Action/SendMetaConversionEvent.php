@@ -5,7 +5,6 @@ namespace Ordo\Automation\Model\Campaign\Action;
 
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Sales\Api\Data\OrderInterface;
-use Magento\Sales\Api\OrderRepositoryInterface;
 use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\AdAudience\PiiHasher;
@@ -49,7 +48,7 @@ class SendMetaConversionEvent implements ActionInterface
     public function __construct(
         private readonly Config $config,
         private readonly CustomerRepositoryInterface $customerRepository,
-        private readonly OrderRepositoryInterface $orderRepository,
+        private readonly OrderContextResolver $orderContextResolver,
         private readonly PiiHasher $piiHasher,
         private readonly JsonApiClient $jsonApiClient,
         private readonly OutboundRateLimiter $rateLimiter,
@@ -78,8 +77,8 @@ class SendMetaConversionEvent implements ActionInterface
             return;
         }
 
-        $order = $this->resolveOrder($context);
-        if ($order === null) {
+        $order = $this->orderContextResolver->resolveOrder($context);
+        if (!$order instanceof OrderInterface) {
             $this->logger->error(
                 'Ordo_Automation: send_meta_conversion_event action skipped, context has no loadable order_id.'
             );
@@ -151,24 +150,6 @@ class SendMetaConversionEvent implements ActionInterface
                 ),
             ],
         ];
-    }
-
-    /**
-     * @param array<string, mixed> $context
-     */
-    private function resolveOrder(array $context): ?OrderInterface
-    {
-        $rawOrderId = $context['order_id'] ?? 0;
-        $orderId = is_int($rawOrderId) ? $rawOrderId : 0;
-        if ($orderId <= 0) {
-            return null;
-        }
-
-        try {
-            return $this->orderRepository->get($orderId);
-        } catch (Throwable) {
-            return null;
-        }
     }
 
     /**

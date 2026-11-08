@@ -7,6 +7,7 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Campaign\Action\OrderContextResolver;
 use Ordo\Automation\Model\Campaign\Action\SendGa4Event;
 use Ordo\Automation\Model\Campaign\Action\SendRetrier;
 use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
@@ -21,6 +22,7 @@ class SendGa4EventTest extends TestCase
 {
     private Config $config;
     private OrderRepositoryInterface $orderRepository;
+    private OrderContextResolver $orderContextResolver;
     private JsonApiClient $jsonApiClient;
     private OutboundRateLimiter $rateLimiter;
     private MessageSendRetryQueue $messageSendRetryQueue;
@@ -35,6 +37,7 @@ class SendGa4EventTest extends TestCase
         $this->config->method('getWebhookMaxRequestsPerSecond')->willReturn(0);
 
         $this->orderRepository = $this->createMock(OrderRepositoryInterface::class);
+        $this->orderContextResolver = new OrderContextResolver($this->orderRepository);
         $this->jsonApiClient = $this->createMock(JsonApiClient::class);
         $this->rateLimiter = $this->createStub(OutboundRateLimiter::class);
         $this->messageSendRetryQueue = $this->createMock(MessageSendRetryQueue::class);
@@ -63,7 +66,7 @@ class SendGa4EventTest extends TestCase
     {
         return new SendGa4Event(
             $this->config,
-            $this->orderRepository,
+            $this->orderContextResolver,
             $this->jsonApiClient,
             $this->rateLimiter,
             new SendRetrier(1),

@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Ordo\Automation\Model\Campaign\Action;
 
 use Magento\Sales\Api\Data\OrderInterface;
-use Magento\Sales\Api\OrderRepositoryInterface;
 use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
@@ -46,7 +45,7 @@ class SendGa4Event implements ActionInterface
 
     public function __construct(
         private readonly Config $config,
-        private readonly OrderRepositoryInterface $orderRepository,
+        private readonly OrderContextResolver $orderContextResolver,
         private readonly JsonApiClient $jsonApiClient,
         private readonly OutboundRateLimiter $rateLimiter,
         private readonly SendRetrier $sendRetrier,
@@ -71,8 +70,8 @@ class SendGa4Event implements ActionInterface
             return;
         }
 
-        $order = $this->resolveOrder($context);
-        if ($order === null) {
+        $order = $this->orderContextResolver->resolveOrder($context);
+        if (!$order instanceof OrderInterface) {
             $this->logger->error(
                 'Ordo_Automation: send_ga4_event action skipped, context has no loadable order_id.'
             );
@@ -130,23 +129,5 @@ class SendGa4Event implements ActionInterface
                 ),
             ],
         ];
-    }
-
-    /**
-     * @param array<string, mixed> $context
-     */
-    private function resolveOrder(array $context): ?OrderInterface
-    {
-        $rawOrderId = $context['order_id'] ?? 0;
-        $orderId = is_int($rawOrderId) ? $rawOrderId : 0;
-        if ($orderId <= 0) {
-            return null;
-        }
-
-        try {
-            return $this->orderRepository->get($orderId);
-        } catch (Throwable) {
-            return null;
-        }
     }
 }

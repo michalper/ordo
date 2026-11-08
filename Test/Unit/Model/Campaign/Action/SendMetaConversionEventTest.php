@@ -10,6 +10,7 @@ use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\AdAudience\PiiHasher;
+use Ordo\Automation\Model\Campaign\Action\OrderContextResolver;
 use Ordo\Automation\Model\Campaign\Action\SendMetaConversionEvent;
 use Ordo\Automation\Model\Campaign\Action\SendRetrier;
 use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
@@ -25,6 +26,7 @@ class SendMetaConversionEventTest extends TestCase
     private Config $config;
     private CustomerRepositoryInterface $customerRepository;
     private OrderRepositoryInterface $orderRepository;
+    private OrderContextResolver $orderContextResolver;
     private PiiHasher $piiHasher;
     private JsonApiClient $jsonApiClient;
     private OutboundRateLimiter $rateLimiter;
@@ -41,6 +43,7 @@ class SendMetaConversionEventTest extends TestCase
 
         $this->customerRepository = $this->createMock(CustomerRepositoryInterface::class);
         $this->orderRepository = $this->createMock(OrderRepositoryInterface::class);
+        $this->orderContextResolver = new OrderContextResolver($this->orderRepository);
         $this->piiHasher = new PiiHasher();
         $this->jsonApiClient = $this->createMock(JsonApiClient::class);
         $this->rateLimiter = $this->createStub(OutboundRateLimiter::class);
@@ -78,7 +81,7 @@ class SendMetaConversionEventTest extends TestCase
         return new SendMetaConversionEvent(
             $this->config,
             $this->customerRepository,
-            $this->orderRepository,
+            $this->orderContextResolver,
             $this->piiHasher,
             $this->jsonApiClient,
             $this->rateLimiter,
