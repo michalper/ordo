@@ -30,6 +30,17 @@ it doesn't update itself from this file.
   registered customer whose `customer_dob` or account registration date matches today's
   month+day, picked per campaign via the trigger's own `date_source` field. See ADR 0038.
 
+### Fixed
+
+- **`send_ga4_event`/`send_meta_conversion_event` could leak a live GA4 `api_secret`/Meta
+  `access_token` into the application log and the persisted `ordo_message_send_retry.last_error`
+  column** — both actions pass their auth secret as a URL query parameter (the only format either
+  API accepts it in), and a failed outbound request embedded the full URL, secret included,
+  verbatim in the thrown exception's message. Found via a security review of this session's own
+  GA4/Meta work. `Model\Http\JsonApiClient::postJson()` now takes an optional list of query-param
+  names to redact before building that message; every other caller is unaffected since none of
+  them put a secret in the URL itself.
+
 ## [1.8.0] - 2026-11-08
 
 ### Added
