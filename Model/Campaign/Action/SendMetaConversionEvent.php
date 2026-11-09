@@ -8,9 +8,6 @@ use Magento\Sales\Api\Data\OrderInterface;
 use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\AdAudience\PiiHasher;
-use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
-use Ordo\Automation\Model\Http\JsonApiClient;
-use Ordo\Automation\Model\RateLimit\OutboundRateLimiter;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -50,10 +47,7 @@ class SendMetaConversionEvent implements ActionInterface
         private readonly CustomerRepositoryInterface $customerRepository,
         private readonly OrderContextResolver $orderContextResolver,
         private readonly PiiHasher $piiHasher,
-        private readonly JsonApiClient $jsonApiClient,
-        private readonly OutboundRateLimiter $rateLimiter,
-        private readonly SendRetrier $sendRetrier,
-        private readonly MessageSendRetryQueue $messageSendRetryQueue,
+        private readonly OutboundConversionApiSender $sender,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -122,21 +116,16 @@ class SendMetaConversionEvent implements ActionInterface
             http_build_query(['access_token' => $accessToken])
         );
 
-        try {
-            $this->rateLimiter->throttle(
-                'meta_conversion_event',
-                (float) $this->config->getWebhookMaxRequestsPerSecond()
-            );
-            $this->sendRetrier->attempt(
-                fn () => $this->jsonApiClient->postJson($url, $payload, [], 'Meta Conversions API')
-            );
-        } catch (Throwable $e) {
-            $this->logger->error(sprintf(
-                'Ordo_Automation: send_meta_conversion_event action failed to reach Meta: %s',
-                $e->getMessage()
-            ));
-            $this->messageSendRetryQueue->enqueueOrRethrow(self::ACTION_TYPE, $context, $params, $e);
-        }
+        $this->sender->send(
+            self::ACTION_TYPE,
+            'meta_conversion_event',
+            (float) $this->config->getWebhookMaxRequestsPerSecond(),
+            $url,
+            $payload,
+            'Meta Conversions API',
+            $context,
+            $params
+        );
     }
 
     public function getParamFields(): array
