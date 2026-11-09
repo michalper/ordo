@@ -127,5 +127,8 @@
         <job name="ordo_automation_detect_anomalies" instance="Ordo\Automation\Cron\DetectAnomalies" method="execute">
             <schedule>0 11 * * *</schedule>
         </job>
+        <job name="ordo_automation_expire_loyalty_points" instance="Ordo\Automation\Cron\ExpireLoyaltyPoints" method="execute">
+            <schedule>0 5 * * *</schedule>
+        </job>
     </group>
 </config>

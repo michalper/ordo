@@ -17,6 +17,7 @@ HTTP calls against a running instance, no mocks) via a portable, self-contained 
 - `CustomerTagManagementApiTest.php` — add/get/hasTag/getCustomerIdsWithTag/remove round trip.
 - `OrderApprovalApiTest.php` — admin list, anonymous approve/reject-by-token, `decision-links`.
 - `CreditLimitApiTest.php` — admin by-id lookup, customer-scoped `mine`, auth/authorization edge cases.
+- `LoyaltyPointsApiTest.php` — customer-scoped `mine` balance, redeem's real failure reasons, auth edge cases.
 - `FreeGiftApiTest.php` — offer/tier/product CRUD, eligibility/selection round trip on a real cart. Requires
   `ORDO_API_TEST_PRODUCT_SKU` (a real, existing SKU). Known flakiness under this project's local `php -S`
   sandbox specifically (rapid back-to-back requests) — not expected against a real server.

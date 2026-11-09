@@ -11,6 +11,12 @@ it doesn't update itself from this file.
 
 ### Added
 
+- **Loyalty points program** — a new, ongoing earn/redeem points balance (`ordo_loyalty_points_ledger`),
+  distinct from the existing tier-based `Model\LoyaltyTierCalculator`. Customers earn points on
+  every order and redeem them for a coupon through a new `Api\LoyaltyPointsManagementInterface`
+  service (REST + GraphQL: `ordoLoyaltyPointsBalance`/`redeemOrdoLoyaltyPoints`), reusing the
+  existing `Model\CouponGenerator`/cart-price-rule mechanism rather than a new discount system.
+  Optional expiry via a daily cron. See ADR 0044.
 - **Newsletter signup popup** — a standing, config-driven popup invites an anonymous visitor to
   sign up for the store's newsletter after a configurable delay. Subscribes through Magento's own
   real newsletter subscription and tags the visitor (`newsletter_signup`) so a campaign can react

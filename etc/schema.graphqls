@@ -6,6 +6,8 @@ type Query {
     ordoOffers: [OrdoOffer] @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\Offers") @doc(description: "The logged-in customer's own offers, same data the storefront My Offers account page (Controller/Offer/Index) lists. Empty for a guest - there is no customer to scope offers to.")
 
     ordoCreditLimit: OrdoCreditLimit @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\CreditLimit") @doc(description: "Same data as the existing GET /V1/ordo/credit-limit/mine REST route, for PWA-native access without a separate REST client. Requires a logged-in customer - a guest request is a GraphQL authorization error, not a null/empty result.")
+
+    ordoLoyaltyPointsBalance: Int @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\LoyaltyPointsBalance") @doc(description: "The logged-in customer's real loyalty points balance, same data as GET /V1/ordo/loyalty-points/mine. Requires a logged-in customer - a guest request is a GraphQL authorization error, not a null/empty result.")
 }
 
 type Mutation {
@@ -54,6 +56,8 @@ type Mutation {
         endpoint: String!
         visitorId: String
     ): OrdoOkOutput @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\UnregisterPushSubscription") @doc(description: "Removes a push subscription by endpoint. Ownership-checked (PushSubscription::belongsTo()), same as dismissOrdoNotification - only ever removes a subscription that actually belongs to the caller's own customer/visitor, silently idempotent otherwise.")
+
+    redeemOrdoLoyaltyPoints: OrdoRedeemLoyaltyPointsOutput @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\RedeemLoyaltyPoints") @doc(description: "Same self-service redemption as POST /V1/ordo/loyalty-points/redeem - generates a coupon at the configured points cost/rule. Fails (ok: false) for an ordinary business rule (not enough points, feature disabled/unconfigured) - only a missing authenticated customer is a hard GraphQL error.")
 }
 
 type OrdoTrackerPoll {
@@ -131,4 +135,10 @@ type OrdoRegisterPriceWatchOutput {
 type OrdoRegisterPushSubscriptionOutput {
     ok: Boolean!
     reason: String @doc(description: "Set only when ok is false - e.g. \"push_disabled\", \"invalid_payload\" or \"invalid_endpoint\".")
+}
+
+type OrdoRedeemLoyaltyPointsOutput {
+    ok: Boolean!
+    reason: String @doc(description: "Set only when ok is false - the business-rule message (not enough points, feature disabled/unconfigured).")
+    couponCode: String @doc(description: "The generated coupon code, set only when ok is true.")
 }

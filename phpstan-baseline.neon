@@ -3952,6 +3952,12 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
+			path: Observer/EarnLoyaltyPointsForOrder.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
 			path: Observer/DispatchReferralConvertedCampaigns.php
 
 		-

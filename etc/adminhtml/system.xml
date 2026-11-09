@@ -109,8 +109,40 @@
                                 <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                             </field>
                         </group>
-            
-                        
+
+
+
+            <group id="loyalty_points" translate="label" type="text" sortOrder="45" showInDefault="1" showInWebsite="1" showInStore="1">
+                            <label>Loyalty Points</label>
+                            <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Enabled</label>
+                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                                <comment>An ongoing earn/redeem points balance, distinct from any bronze/silver/gold tier a customer already has - customers earn points on every order and redeem them later for a coupon.</comment>
+                            </field>
+                            <field id="points_per_dollar" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Points earned per $1 spent</label>
+                                <validate>validate-digits validate-greater-than-zero</validate>
+                                <depends><field id="enabled">1</field></depends>
+                            </field>
+                            <field id="redemption_cost" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Points needed to redeem one coupon</label>
+                                <validate>validate-digits validate-greater-than-zero</validate>
+                                <depends><field id="enabled">1</field></depends>
+                            </field>
+                            <field id="redemption_rule_id" translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Redemption coupon rule</label>
+                                <source_model>Ordo\Automation\Model\Config\Source\CartPriceRuleOptions</source_model>
+                                <comment>Which cart price rule a redemption generates a fresh coupon against - set up the discount itself (e.g. "$5 off") as an ordinary cart price rule with coupon type "Specific Coupon" first.</comment>
+                                <depends><field id="enabled">1</field></depends>
+                            </field>
+                            <field id="expiry_days" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Points expire after this many days (0 = never)</label>
+                                <validate>validate-digits</validate>
+                                <depends><field id="enabled">1</field></depends>
+                            </field>
+                        </group>
+
+
 
             <group id="price_watch" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
                             <label>Price Drop / Back In Stock Alerts</label>

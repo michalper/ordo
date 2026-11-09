@@ -1279,4 +1279,29 @@
         </index>
     </table>
 
+    <table name="ordo_loyalty_points_ledger" resource="default" engine="innodb" comment="An append-only points ledger - a real balance is always SUM(points_delta), never a mutated running total, same shape as ordo_campaign_outcome_log. See Model\LoyaltyPointsManager and docs/adr/0044.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="customer_entity.entity_id - no FK, same reasoning as ordo_message_log.campaign_id: this row must survive the customer account it references regardless of the store own data-retention policy"/>
+        <column xsi:type="varchar" name="type" nullable="false" length="16" comment="earn, redeem, or expire - see Model\LoyaltyPointsManager::TYPE_* consts"/>
+        <column xsi:type="int" name="points_delta" nullable="false" comment="Signed - positive for earn, negative for redeem/expire"/>
+        <column xsi:type="int" name="order_id" padding="10" unsigned="true" nullable="true" comment="sales_order.entity_id these points were earned from - null for redeem/expire rows. Checked for an existing earn row before inserting a new one, so a re-saved order never double-earns"/>
+        <column xsi:type="varchar" name="coupon_code" nullable="true" length="32" comment="The coupon this redemption row generated - null for earn/expire rows"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At - also what Cron\ExpireLoyaltyPoints ages the points on this earn row against"/>
+        <column xsi:type="timestamp" name="expired_at" nullable="true" comment="Set by Cron\ExpireLoyaltyPoints once the points on this earn row have been fully accounted for (expired, or found already consumed by a later redemption) - null means still pending. Only ever set on earn rows."/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="ORDO_LOYALTY_POINTS_LEDGER_CUSTOMER_ID" indexType="btree">
+            <column name="customer_id"/>
+        </index>
+        <index referenceId="ORDO_LOYALTY_POINTS_LEDGER_ORDER_ID" indexType="btree">
+            <column name="order_id"/>
+        </index>
+        <index referenceId="ORDO_LOYALTY_POINTS_LEDGER_TYPE_EXPIRED_AT_CREATED_AT" indexType="btree">
+            <column name="type"/>
+            <column name="expired_at"/>
+            <column name="created_at"/>
+        </index>
+    </table>
+
 </schema>
