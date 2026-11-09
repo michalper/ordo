@@ -18,14 +18,51 @@ const ABSOLUTE_PATH = path.join(__dirname, '..', '..', MODULE_PATH);
  * ones back).
  *
  * @param {Object} [scriptAttrs] data-* attributes for the stand-in <script> tag
+ * @param {Object} [options]
+ * @param {Boolean} [options.noRandomUUID] shadows window.crypto.randomUUID with undefined before
+ *   the script loads, for testing generateVisitorId()'s older-browser fallback path - a plain
+ *   `delete` doesn't work here, randomUUID lives on Crypto.prototype in jsdom, not as an own
+ *   property, so `delete instance.randomUUID` is a silent no-op (confirmed directly)
+ * @param {Object} [options.pushSubscription] jsdom has neither navigator.serviceWorker nor
+ *   window.PushManager at all - stubs both, with pushManager.subscribe() resolving to this object
+ *   (needs endpoint + a getKey(name) returning an ArrayBuffer-ish value), for testing
+ *   subscribeToPush()'s real happy path
  * @return {Object} dom, recorded fetch calls/timers, and a setter for the next poll response
  */
-function loadTracker(scriptAttrs) {
+function loadTracker(scriptAttrs, options) {
     const { dom } = createDomEnv();
     // jsdom silently no-ops document.cookie writes on the default about:blank origin - the
     // email-capture tests need a real one so the "dismissed" cookie actually persists.
     dom.reconfigure({ url: 'https://example.test/' });
     const document = dom.window.document;
+
+    // Node 21+ ships its own built-in global `navigator` (a Node-specific object, unrelated to
+    // jsdom's `dom.window.navigator`) - a bare `navigator` reference inside tracker.js resolves
+    // to THAT (global.navigator is a getter-only accessor, can't be reassigned wholesale -
+    // confirmed directly), so the push stub below must be set as a property on global.navigator,
+    // not on dom.window.navigator. It isn't swapped out fresh per test the way dom.window is, so
+    // it's cleared unconditionally first to avoid leaking a stub into a later, unrelated test.
+    delete global.navigator.serviceWorker;
+
+    if (options?.noRandomUUID) {
+        dom.window.crypto.randomUUID = undefined;
+    }
+
+    if (options?.pushSubscription) {
+        dom.window.PushManager = function () {};
+        global.navigator.serviceWorker = {
+            register: function () {
+                return Promise.resolve({});
+            },
+            ready: Promise.resolve({
+                pushManager: {
+                    subscribe: function () {
+                        return Promise.resolve(options.pushSubscription);
+                    }
+                }
+            })
+        };
+    }
 
     const script = document.createElement('script');
     Object.keys(scriptAttrs || {}).forEach(function (name) {
@@ -252,6 +289,131 @@ QUnit.module('Ordo_Automation/js/tracker (polling)', function () {
         close.onclick();
         assert.strictEqual(document.getElementById('ordo-survey-prompt'), null);
         assert.strictEqual(env.fetchCalls.length, callsBefore, 'no submit fired on a plain close');
+    });
+
+    QUnit.test('a second popup while one is showing replaces it, not stacks on top', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({ popup: { headline: 'First' } });
+        env.intervals[0].fn();
+        await flush();
+        assert.true(document.getElementById('ordo-popup-banner').textContent.indexOf('First') !== -1);
+
+        env.setPollResponse({ popup: { headline: 'Second' } });
+        env.intervals[0].fn();
+        await flush();
+
+        assert.strictEqual(document.querySelectorAll('#ordo-popup-banner').length, 1, 'still only one banner');
+        assert.true(document.getElementById('ordo-popup-banner').textContent.indexOf('Second') !== -1);
+        assert.true(document.getElementById('ordo-popup-banner').textContent.indexOf('First') === -1, 'old one gone');
+    });
+
+    QUnit.test('a notification no longer in the poll response is removed on the next tick', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({ notifications: [{ id: 5, headline: 'Back in stock' }] });
+        env.intervals[0].fn();
+        await flush();
+        assert.true(!!document.getElementById('ordo-notification-5'), 'rendered on the first tick');
+
+        env.setPollResponse({ notifications: [] });
+        env.intervals[0].fn();
+        await flush();
+
+        assert.strictEqual(document.getElementById('ordo-notification-5'), null, 'removed once absent from the server list');
+    });
+
+    QUnit.test('clicking a survey score button submits the response and removes the prompt', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({ survey: { id: 9, question: 'How likely…?' } });
+        env.intervals[0].fn();
+        await flush();
+
+        const widget = document.getElementById('ordo-survey-prompt');
+        const scoreButton = Array.prototype.find.call(
+            widget.querySelectorAll('button'),
+            function (button) { return button.textContent === '7'; }
+        );
+        assert.true(!!scoreButton, 'score button 7 rendered');
+
+        scoreButton.onclick();
+
+        assert.strictEqual(document.getElementById('ordo-survey-prompt'), null, 'removed immediately');
+        const submitCall = env.fetchCalls[env.fetchCalls.length - 1];
+        assert.strictEqual(submitCall.url, '/ordo/track/submitsurveyresponse');
+        assert.strictEqual(new URLSearchParams(submitCall.options.body).get('survey_id'), '9');
+        assert.strictEqual(new URLSearchParams(submitCall.options.body).get('score'), '7');
+    });
+});
+
+QUnit.module('Ordo_Automation/js/tracker (visitor id fallback)', function () {
+    QUnit.test('generates a UUID-shaped id even without window.crypto.randomUUID', function (assert) {
+        const env = loadTracker({}, { noRandomUUID: true });
+
+        // The first track() call (the automatic page_view on load) reads/creates the cookie.
+        const match = /ordo_visitor_id=([^;]+)/.exec(env.dom.window.document.cookie);
+        assert.true(!!match, 'visitor id cookie was set');
+        assert.true(
+            /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(decodeURIComponent(match[1])),
+            'looks like a real v4 UUID: ' + match[1]
+        );
+    });
+});
+
+QUnit.module('Ordo_Automation/js/tracker (push subscription)', function () {
+    const fakeSubscription = {
+        endpoint: 'https://push.example.test/abc123',
+        getKey: function (name) {
+            // Real values, not both-zero/empty - exercises the real base64url byte -> char path
+            // (urlBase64ToUint8Array/arrayBufferToBase64Url) rather than an edge case.
+            const bytes = name === 'p256dh' ? [4, 18, 52, 86, 120, 154, 188, 222] : [1, 2, 3, 4, 5];
+            return new Uint8Array(bytes).buffer;
+        }
+    };
+
+    QUnit.test('rejects when data-push-enabled is not "1"', async function (assert) {
+        const env = loadTracker({}, { pushSubscription: fakeSubscription });
+
+        try {
+            await env.dom.window.ordoSubscribeToPush();
+            assert.true(false, 'should have rejected');
+        } catch (e) {
+            assert.strictEqual(e.message, 'Push notifications are disabled.');
+        }
+    });
+
+    QUnit.test('rejects when the browser has no serviceWorker/PushManager support', async function (assert) {
+        const env = loadTracker({ 'data-push-enabled': '1' });
+
+        try {
+            await env.dom.window.ordoSubscribeToPush();
+            assert.true(false, 'should have rejected');
+        } catch (e) {
+            assert.strictEqual(e.message, 'Push notifications are not supported in this browser.');
+        }
+    });
+
+    QUnit.test('registers, waits for an active worker, subscribes, and reports the real subscription', async function (assert) {
+        const env = loadTracker(
+            { 'data-push-enabled': '1', 'data-push-vapid-public-key': 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB' },
+            { pushSubscription: fakeSubscription }
+        );
+
+        const result = await env.dom.window.ordoSubscribeToPush();
+
+        assert.strictEqual(result, fakeSubscription, 'resolves with the real subscription object');
+
+        const registerCall = env.fetchCalls[env.fetchCalls.length - 1];
+        assert.strictEqual(registerCall.url, '/ordo/track/registerpushsubscription');
+        const body = new URLSearchParams(registerCall.options.body);
+        assert.strictEqual(body.get('endpoint'), 'https://push.example.test/abc123');
+        // Base64url: no '+', '/' or '=' padding.
+        assert.true(/^[A-Za-z0-9_-]+$/.test(body.get('p256dh')), 'p256dh is base64url: ' + body.get('p256dh'));
+        assert.true(/^[A-Za-z0-9_-]+$/.test(body.get('auth')), 'auth is base64url: ' + body.get('auth'));
     });
 });
 
