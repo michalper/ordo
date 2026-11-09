@@ -122,4 +122,29 @@ class OfferManagementTest extends TestCase
         $this->expectException(LocalizedException::class);
         $this->management->selfExtend(10);
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSelfExtendRetriesAndThrowsWhenItLosesTheRaceButTheOfferIsStillUnderMax(): void
+    {
+        $offer = $this->createMock(Offer::class);
+        $offer->method('getCustomerId')->willReturn(5);
+        $offer->method('canSelfExtend')->willReturnMap([[2, true]]);
+        $offer->method('getExpiresAt')->willReturn('2026-01-01 00:00:00');
+        $offer->method('getExtensionCount')->willReturn(0);
+
+        $reloaded = $this->createStub(Offer::class);
+        $reloaded->method('canSelfExtend')->willReturn(true);
+
+        $this->offerRepository->expects(self::exactly(2))->method('getById')->with(10)
+            ->willReturnOnConsecutiveCalls($offer, $reloaded);
+        $this->offerResource->method('claimSelfExtension')->willReturn(false);
+
+        $this->userContext->method('getUserId')->willReturn(5);
+        $this->config->method('getOfferMaxSelfExtensions')->willReturn(2);
+        $this->config->method('getOfferSelfExtensionDays')->willReturn(7);
+
+        $this->expectException(LocalizedException::class);
+        $this->expectExceptionMessage('This offer was extended by another request just now. Please try again.');
+        $this->management->selfExtend(10);
+    }
 }

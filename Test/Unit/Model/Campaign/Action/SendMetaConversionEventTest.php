@@ -182,6 +182,17 @@ class SendMetaConversionEventTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testSkippedForAGuestOrderWithNoCustomerIdInContext(): void
+    {
+        $this->orderRepository->method('get')->willReturn($this->makeOrder());
+        $this->customerRepository->expects(self::never())->method('getById');
+        $this->jsonApiClient->expects(self::never())->method('postJson');
+
+        $context = ['order_id' => 55];
+        $this->makeAction()->execute($context, []);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testSkippedWhenCustomerCannotBeLoaded(): void
     {
         $this->orderRepository->method('get')->willReturn($this->makeOrder());

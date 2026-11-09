@@ -177,4 +177,23 @@ class AddDynamicContentTest extends TestCase
             array_column($this->action->getParamFields(), 'name')
         );
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetParamFieldsListsEachEnabledContentBlockAsAnOption(): void
+    {
+        $block = $this->makeBlock('banner', true);
+        $block->setData('entity_id', 3);
+        $block->setData('name', 'Homepage Banner');
+
+        $collection = $this->createStub(ContentBlockCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$block]));
+        $contentBlockCollectionFactory = $this->createStub(ContentBlockCollectionFactory::class);
+        $contentBlockCollectionFactory->method('create')->willReturn($collection);
+
+        $action = new AddDynamicContent($this->contentBlockRepository, $this->producerPool, $contentBlockCollectionFactory);
+
+        $options = $action->getParamFields()[0]['options'];
+        self::assertSame([3 => 'Homepage Banner (banner)'], $options);
+    }
 }

@@ -257,6 +257,28 @@ class TrackerPollReaderTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testPopupIsNullWhenNoCandidateIsAvailable(): void
+    {
+        $reader = $this->makeReader();
+        $this->disableEverythingExcept('popup');
+
+        $this->pendingPopupCollectionFactory->method('create')->willReturn($this->makePopupCollection([]));
+
+        self::assertSame(['popup' => null], $reader->resolve(null, 'v1'));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSurveyIsNullWhenNoCandidateIsAvailable(): void
+    {
+        $reader = $this->makeReader();
+        $this->disableEverythingExcept('survey');
+
+        $this->surveyPromptCollectionFactory->method('create')->willReturn($this->makeSurveyCollection([]));
+
+        self::assertSame(['survey' => null], $reader->resolve(null, 'v1'));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testReturnsEveryUnreadNotificationRegardlessOfClaim(): void
     {
         $reader = $this->makeReader();

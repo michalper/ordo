@@ -213,6 +213,19 @@ class ScoreRuleEvaluatorTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testReturnsZeroWithoutQueryingWebsitesWhenNoRulesAreEnabled(): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+
+        $this->scoreRuleWebsiteCollectionFactory = $this->createMock(ScoreRuleWebsiteCollectionFactory::class);
+        $this->scoreRuleWebsiteCollectionFactory->expects(self::never())->method('create');
+
+        $evaluator = $this->makeEvaluator([]);
+
+        self::assertSame(0, $evaluator->getMatchingRulePoints($customer));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testWebsiteScopedRuleMatchesWhenTheCustomersWebsiteIsIncluded(): void
     {
         $customer = $this->createStub(CustomerInterface::class);

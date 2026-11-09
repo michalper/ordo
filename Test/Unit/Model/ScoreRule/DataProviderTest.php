@@ -10,6 +10,7 @@ use Ordo\Automation\Model\ResourceModel\ScoreRule\Website\Collection as ScoreRul
 use Ordo\Automation\Model\ResourceModel\ScoreRule\Website\CollectionFactory as ScoreRuleWebsiteCollectionFactory;
 use Ordo\Automation\Model\ScoreRule;
 use Ordo\Automation\Model\ScoreRule\DataProvider;
+use Ordo\Automation\Model\ScoreRuleWebsite;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
@@ -67,6 +68,36 @@ class DataProviderTest extends TestCase
 
         // Second call must hit the cached $loadedData branch, not reload from the collection.
         self::assertSame($data, $provider->getData());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetDataPopulatesWebsiteIdsFromTheScoreRuleWebsiteCollection(): void
+    {
+        $rule = $this->createStub(ScoreRule::class);
+        $rule->method('getEntityId')->willReturn(3);
+        $rule->method('getData')->willReturn(['entity_id' => 3, 'attribute_code' => 'group_id']);
+
+        $collection = $this->createStub(ScoreRuleCollection::class);
+        $collection->method('getItems')->willReturn([$rule]);
+
+        $websiteRow = $this->createStub(ScoreRuleWebsite::class);
+        $websiteRow->method('getWebsiteId')->willReturn(2);
+        $websiteCollection = $this->createStub(ScoreRuleWebsiteCollection::class);
+        $websiteCollection->method('addScoreRuleFilter')->willReturnSelf();
+        $websiteCollection->method('getIterator')->willReturn(new \ArrayIterator([$websiteRow]));
+        // A fresh stub, not setUp()'s shared $this->scoreRuleWebsiteCollectionFactory - PHPUnit's
+        // mock matcher uses the FIRST method('create') stub registered for every call, so a
+        // second ->method('create') on the same already-stubbed object would never override
+        // setUp()'s own empty-collection default (confirmed directly).
+        $this->scoreRuleWebsiteCollectionFactory = $this->createStub(ScoreRuleWebsiteCollectionFactory::class);
+        $this->scoreRuleWebsiteCollectionFactory->method('create')->willReturn($websiteCollection);
+
+        $this->dataPersistor->method('get')->willReturn(null);
+
+        $provider = $this->makeProvider($collection);
+        $data = $provider->getData();
+
+        self::assertSame([2], $data[3]['website_ids']);
     }
 
     public function testGetDataAppliesPersistedDataAndClearsIt(): void

@@ -305,6 +305,26 @@ class CampaignDispatcherTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchSkipsAWebsiteScopedCampaignWhenTheContextHasNoCustomerIdAtAll(): void
+    {
+        // Same fail-closed philosophy as the "cannot be resolved" case above, for a trigger whose
+        // context never carries a customer_id in the first place (e.g. a visitor-only trigger) -
+        // customerWebsiteIdFromContext() must short-circuit before ever calling the customer
+        // repository, not treat a missing identity as "every website".
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->stubCampaignWebsites([$this->makeCampaignWebsiteRow(1, 5)]);
+        $this->customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $this->customerRepository->expects(self::never())->method('getById');
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::never())->method('execute');
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->dispatch('visitor_tag_added', ['visitor_id' => 'v1']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testDispatchRunsSplitActionRunningOnlyTheChosenVariantsActions(): void
     {
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));

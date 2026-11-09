@@ -128,6 +128,19 @@ class TikTokSyncClientTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testSyncThrowsWhenUploadResponseIsNotValidJson(): void
+    {
+        $this->curl->method('getStatus')->willReturn(200);
+        // Not malformed JSON (JsonApiClient would already reject that) - valid JSON that decodes
+        // to a scalar rather than the array shape assertSuccess() requires.
+        $this->curl->method('getBody')->willReturn('42');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('TikTok Marketing API file upload response was not valid JSON.');
+        $this->client->sync(null, ['hash1']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testSyncThrowsWhenCreateResponseHasNoAudienceId(): void
     {
         $this->curl->method('getStatus')->willReturn(200);

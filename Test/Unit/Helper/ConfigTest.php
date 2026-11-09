@@ -73,6 +73,8 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isCustomerAnniversaryTriggerEnabled());
         self::assertTrue($this->config->isGa4Enabled());
         self::assertTrue($this->config->isMetaCapiEnabled());
+        self::assertTrue($this->config->isCustomerInactiveTriggerEnabled());
+        self::assertTrue($this->config->isAnomalyAlertsEnabled());
     }
 
     public function testGetSocialProofMinimumViewsDelegatesToScopeConfig(): void
@@ -346,6 +348,12 @@ class ConfigTest extends TestCase
         self::assertSame(100, $this->config->getAbTestMinSampleSize());
         self::assertSame(60, $this->config->getAiAgentRateLimitPerMinute());
         self::assertSame(5, $this->config->getAiAgentEstimatedDeliveryDays());
+        self::assertSame(30, $this->config->getCustomerInactiveRefireCooldownDays());
+        self::assertSame(7, $this->config->getAnomalyLookbackDays());
+        self::assertSame(20, $this->config->getAnomalyMinSampleSize());
+        self::assertSame(30, $this->config->getAnomalyRevenueDropThresholdPercent());
+        self::assertSame(50, $this->config->getAnomalyConversionOutlierThresholdPercent());
+        self::assertSame(7, $this->config->getAnomalyAlertCooldownDays());
     }
 
     public function testOutboundRateLimitGettersReturnAnExplicitZeroRatherThanFallingBackToTheDefault(): void

@@ -157,4 +157,51 @@ class ReminderLogStoreTest extends TestCase
 
         self::assertFalse($store->claim('ordo_offer_reminder_log', ['offer_id = ?' => 9], ['offer_id' => 9]));
     }
+
+    public function testClaimUnderLimitInsertsWhenCountIsBelowTheLimit(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchOne')->willReturnCallback(
+            fn ($query) => is_string($query) && str_contains($query, 'GET_LOCK') ? 1 : 0
+        );
+        $connection->expects(self::once())->method('insert')
+            ->with('ordo_abandoned_cart_reminder_log', ['quote_id' => 10]);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnArgument(0);
+
+        $store = new ReminderLogStore($resourceConnection);
+
+        self::assertTrue($store->claimUnderLimit(
+            'ordo_abandoned_cart_reminder_log',
+            ['quote_id = ?' => 10],
+            1,
+            ['quote_id' => 10]
+        ));
+    }
+
+    public function testClaimUnderLimitRefusesAndDoesNotInsertWhenAlreadyAtTheLimit(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchOne')->willReturnCallback(
+            fn ($query) => is_string($query) && str_contains($query, 'GET_LOCK') ? 1 : 1
+        );
+        $connection->expects(self::never())->method('insert');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnArgument(0);
+
+        $store = new ReminderLogStore($resourceConnection);
+
+        self::assertFalse($store->claimUnderLimit(
+            'ordo_abandoned_cart_reminder_log',
+            ['quote_id = ?' => 10],
+            1,
+            ['quote_id' => 10]
+        ));
+    }
 }

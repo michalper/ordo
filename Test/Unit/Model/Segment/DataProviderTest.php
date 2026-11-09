@@ -7,6 +7,7 @@ use Magento\Framework\App\Request\DataPersistorInterface;
 use Ordo\Automation\Model\Segment;
 use Ordo\Automation\Model\Segment\DataProvider;
 use Ordo\Automation\Model\SegmentCondition;
+use Ordo\Automation\Model\SegmentWebsite;
 use Ordo\Automation\Model\ResourceModel\Segment\Collection as SegmentCollection;
 use Ordo\Automation\Model\ResourceModel\Segment\CollectionFactory as SegmentCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Segment\Condition\Collection as ConditionCollection;
@@ -97,6 +98,38 @@ class DataProviderTest extends TestCase
 
         // Second call must hit the cached $loadedData branch, not reload from the collection.
         self::assertSame($data, $provider->getData());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetDataPopulatesWebsiteIdsFromTheSegmentWebsiteCollection(): void
+    {
+        $segment = $this->createStub(Segment::class);
+        $segment->method('getData')->willReturn(['entity_id' => 1, 'name' => 'VIP customers']);
+        $segment->method('getEntityId')->willReturn(1);
+
+        $collection = $this->createStub(SegmentCollection::class);
+        $collection->method('getItems')->willReturn([$segment]);
+
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeEmptyConditionCollection());
+
+        $websiteRow = $this->createStub(SegmentWebsite::class);
+        $websiteRow->method('getWebsiteId')->willReturn(2);
+        $websiteCollection = $this->createStub(WebsiteCollection::class);
+        $websiteCollection->method('addSegmentFilter')->willReturnSelf();
+        $websiteCollection->method('getIterator')->willReturn(new \ArrayIterator([$websiteRow]));
+        // A fresh stub, not setUp()'s shared $this->websiteCollectionFactory - PHPUnit's mock
+        // matcher uses the FIRST method('create') stub registered for every call, so a second
+        // ->method('create') on the same already-stubbed object would never override setUp()'s
+        // own empty-collection default (confirmed directly).
+        $this->websiteCollectionFactory = $this->createStub(WebsiteCollectionFactory::class);
+        $this->websiteCollectionFactory->method('create')->willReturn($websiteCollection);
+
+        $this->dataPersistor->method('get')->willReturn(null);
+
+        $provider = $this->makeProvider($collection);
+        $data = $provider->getData();
+
+        self::assertSame([2], $data[1]['website_ids']);
     }
 
     /**

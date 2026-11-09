@@ -62,6 +62,13 @@ class HasTagTest extends TestCase
         self::assertFalse($this->condition->isSatisfied(['customer_id' => 42], []));
     }
 
+    public function testNotSatisfiedWhenTagsParamIsNotAnArray(): void
+    {
+        $this->customerTagManager->expects(self::never())->method('hasAnyTag');
+
+        self::assertFalse($this->condition->isSatisfied(['customer_id' => 42], ['tags' => 'vip']));
+    }
+
     public function testTagsAreTrimmedAndEmptyOnesDropped(): void
     {
         $this->customerTagManager->expects(self::once())->method('hasAnyTag')

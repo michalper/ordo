@@ -231,6 +231,32 @@ class DetectAnomaliesTest extends TestCase
         $cron->execute();
     }
 
+    public function testDoesNotRunTheOutlierCheckWhenThePeerAverageConversionRateIsZero(): void
+    {
+        // Two qualifying campaigns (enough for a peer group), but neither has converted anyone
+        // yet - a 0% peer average has no meaningful "deviates from its peers" direction, so the
+        // outlier check must bail out rather than divide by zero.
+        $current = [
+            5 => ['campaign_id' => 5, 'sent' => 25, 'converted' => 0, 'conversion_rate' => 0.0, 'revenue' => 0.0],
+            6 => ['campaign_id' => 6, 'sent' => 25, 'converted' => 0, 'conversion_rate' => 0.0, 'revenue' => 0.0],
+        ];
+
+        $campaignOutcomeLogger = $this->createStub(CampaignOutcomeLogger::class);
+        $campaignOutcomeLogger->method('getStatsForWindow')->willReturnOnConsecutiveCalls($current, []);
+
+        $reminderLogStore = $this->createMock(ReminderLogStore::class);
+        $reminderLogStore->expects(self::never())->method('claim');
+
+        $cron = new DetectAnomalies(
+            $this->makeConfig(),
+            $campaignOutcomeLogger,
+            $reminderLogStore,
+            $this->makeCronRunLogger($this->createStub(LoggerInterface::class))
+        );
+
+        $cron->execute();
+    }
+
     public function testACooldownRejectedClaimIsNotCountedInTheSummary(): void
     {
         $campaignOutcomeLogger = $this->createStub(CampaignOutcomeLogger::class);
