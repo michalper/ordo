@@ -689,6 +689,58 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor initCampaignFlowEditor()',
         assert.strictEqual(global.$('.ordo-flow-variant-block').length, 1);
     });
 
+    QUnit.test('a tag_multiselect field renders the tag chip editor widget, wired to search via fetch', async function (assert) {
+        const typesConfig = JSON.parse(JSON.stringify(TYPES_CONFIG));
+
+        typesConfig.fields.action.add_tag = [
+            { name: 'tag', label: 'Tag', type: 'tag_multiselect', notice: 'Pick one or more tags' }
+        ];
+        initEditor(typesConfig);
+
+        global.window.ordoFlowTestHook.buildChain([{ kind: 'action', type: 'add_tag' }]);
+
+        assert.strictEqual(global.$('[data-tag-editor="tag"]').length, 1, 'placeholder rendered in the fields HTML');
+        assert.strictEqual(global.$('.ordo-flow-field-notice').text(), 'Pick one or more tags');
+        assert.strictEqual(global.$('.ordo-tag-chip-editor').length, 1, 'tagChipEditor.mount() ran on the placeholder');
+        assert.strictEqual(global.$('.ordo-tag-chip-input').length, 1);
+
+        // Add one tag via the real widget, same as a user would - also proves the hidden
+        // data-field input mount() was wired to is the real one buildChain()/Apply would read.
+        global.$('.ordo-tag-chip-input').val('vip').trigger(global.$.Event('keydown', { key: 'Enter' }));
+        assert.strictEqual(global.$('input[data-field="tag"]').val(), JSON.stringify(['vip']));
+
+        // Exercises searchTags() end to end too (hoisted module-level helper, not wired to
+        // anything except this mount() call's own searchFn argument).
+        const calls = stubFetch({ ok: true, json: () => Promise.resolve({ items: [{ tag: 'loyal' }] }) });
+
+        global.$('.ordo-tag-chip-input').val('lo').trigger('input');
+        await new Promise(function (resolve) { setTimeout(resolve, 250); });
+        await flushPromises();
+
+        assert.strictEqual(calls.length, 1);
+        assert.ok(String(calls[0][0]).includes('tag/search?term=lo'), 'searchTags() built the right URL: ' + calls[0][0]);
+        assert.strictEqual(global.$('.ordo-tag-chip-suggest-row').text(), 'loyal', 'searchTags() parsed the response into a suggestion');
+    });
+
+    QUnit.test('searchTags() resolves to an empty array instead of rejecting when the request fails', async function (assert) {
+        const typesConfig = JSON.parse(JSON.stringify(TYPES_CONFIG));
+
+        typesConfig.fields.action.add_tag = [{ name: 'tag', label: 'Tag', type: 'tag_multiselect' }];
+        initEditor(typesConfig);
+
+        global.window.ordoFlowTestHook.buildChain([{ kind: 'action', type: 'add_tag' }]);
+
+        global.fetch = function () {
+            return Promise.reject(new Error('network down'));
+        };
+
+        global.$('.ordo-tag-chip-input').val('lo').trigger('input');
+        await new Promise(function (resolve) { setTimeout(resolve, 250); });
+        await flushPromises();
+
+        assert.strictEqual(global.$('.ordo-tag-chip-suggest').length, 0, 'no dropdown, and nothing thrown');
+    });
+
     QUnit.test('an unmapped condition/action type falls back to a raw JSON params textarea', function (assert) {
         const typesConfig = JSON.parse(JSON.stringify(TYPES_CONFIG));
 
@@ -1257,6 +1309,70 @@ QUnit.module('Ordo_Automation/js/campaign-flow-editor initCampaignFlowEditor()',
             global.$(container).find('.drawflow').css('transform'),
             'a transform was applied to the canvas'
         );
+    });
+
+    QUnit.test('"Full Screen" requests fullscreen on the wrapper when not currently in it', function (assert) {
+        const container = initEditor();
+        const wrapperEl = global.$(container).closest('.ordo-flow-wrapper').get(0);
+        let requestCalls = 0;
+
+        wrapperEl.requestFullscreen = function () {
+            requestCalls++;
+            return Promise.resolve();
+        };
+
+        global.$('[data-flow-action="fullscreen"]').trigger('click');
+
+        assert.strictEqual(requestCalls, 1);
+    });
+
+    QUnit.test('"Full Screen" exits fullscreen instead of requesting it again when already in it', function (assert) {
+        const container = initEditor();
+        const wrapperEl = global.$(container).closest('.ordo-flow-wrapper').get(0);
+        let exitCalls = 0;
+        let requestCalls = 0;
+
+        global.document.fullscreenElement = wrapperEl;
+        global.document.exitFullscreen = function () {
+            exitCalls++;
+            return Promise.resolve();
+        };
+        wrapperEl.requestFullscreen = function () {
+            requestCalls++;
+            return Promise.resolve();
+        };
+
+        try {
+            global.$('[data-flow-action="fullscreen"]').trigger('click');
+
+            assert.strictEqual(exitCalls, 1);
+            assert.strictEqual(requestCalls, 0, 'does not also request fullscreen while already in it');
+        } finally {
+            delete global.document.fullscreenElement;
+            delete global.document.exitFullscreen;
+        }
+    });
+
+    QUnit.test('a fullscreenchange event toggles the button glyph/labels and re-fits the canvas', function (assert) {
+        const container = initEditor();
+        const wrapperEl = global.$(container).closest('.ordo-flow-wrapper').get(0);
+        const $button = global.$('[data-flow-action="fullscreen"]');
+
+        try {
+            global.document.fullscreenElement = wrapperEl;
+            global.$(global.document).trigger('fullscreenchange');
+
+            assert.strictEqual($button.text(), '⤡');
+            assert.strictEqual($button.attr('aria-label'), 'Exit Full Screen');
+
+            global.document.fullscreenElement = null;
+            global.$(global.document).trigger('fullscreenchange');
+
+            assert.strictEqual($button.text(), '⛶');
+            assert.strictEqual($button.attr('aria-label'), 'Full Screen');
+        } finally {
+            delete global.document.fullscreenElement;
+        }
     });
 
     QUnit.test('"Full Screen" does not throw when the Fullscreen API is unavailable (this test environment)', function (assert) {
