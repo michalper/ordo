@@ -114,14 +114,15 @@ class TikTokSyncClient implements SyncClientInterface
             // every _curlUserOptions entry overrides it) - this is how a CURLFile member forces
             // PHP's curl extension into real multipart/form-data encoding instead of a plain
             // urlencoded body, without hand-building MIME boundaries ourselves.
+            // TikTok's own API spec requires file_signature to be the file's literal MD5 - a
+            // server-side integrity checksum the platform itself mandates, not a security
+            // boundary this module controls or could swap for a stronger hash unilaterally.
+            // phpcs:ignore Magento2.Security.InsecureFunction
+            $fileSignature = md5($fileContent);
             $curl->setOption(CURLOPT_POSTFIELDS, [
                 'advertiser_id' => $advertiserId,
                 'file' => new \CURLFile($tmpFile, 'text/csv', 'ordo_audience.csv'),
-                // TikTok's own API spec requires file_signature to be the file's literal MD5 -
-                // a server-side integrity checksum the platform itself mandates, not a security
-                // boundary this module controls or could swap for a stronger hash unilaterally.
-                // phpcs:ignore Magento2.Security.InsecureFunction.Found
-                'file_signature' => md5($fileContent),
+                'file_signature' => $fileSignature,
                 'calculate_type' => self::CALCULATE_TYPE,
             ]);
             $curl->post(self::API_BASE_URL . '/dmp/custom_audience/file/upload/', []);
