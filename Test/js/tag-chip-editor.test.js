@@ -166,6 +166,45 @@ QUnit.module('Ordo_Automation/js/tag-chip-editor', function () {
         assert.equal($input.val(), '');
     });
 
+    QUnit.test('a search with no results renders no dropdown', async function (assert) {
+        const api = loadModule(MODULE_PATH);
+        const $container = global.$('<div></div>');
+        const $hidden = global.$('<input>');
+
+        api.mount($container, [], $hidden, function () {
+            return Promise.resolve([]);
+        });
+
+        const $input = $container.find('.ordo-tag-chip-input');
+
+        $input.val('zz').trigger('input');
+        await wait(250);
+
+        assert.equal($container.find('.ordo-tag-chip-suggest').length, 0);
+    });
+
+    QUnit.test('blurring the input closes an open dropdown after a short delay', async function (assert) {
+        const api = loadModule(MODULE_PATH);
+        const $container = global.$('<div></div>');
+        const $hidden = global.$('<input>');
+
+        api.mount($container, [], $hidden, function () {
+            return Promise.resolve(['vip']);
+        });
+
+        const $input = $container.find('.ordo-tag-chip-input');
+
+        $input.val('vi').trigger('input');
+        await wait(250);
+        assert.equal($container.find('.ordo-tag-chip-suggest').length, 1, 'dropdown open before blur');
+
+        $input.trigger('blur');
+        assert.equal($container.find('.ordo-tag-chip-suggest').length, 1, 'still open immediately after blur');
+
+        await wait(200);
+        assert.equal($container.find('.ordo-tag-chip-suggest').length, 0, 'closed once the delay elapses');
+    });
+
     QUnit.test('clearing the search input closes any open dropdown without a new search', async function (assert) {
         const api = loadModule(MODULE_PATH);
         const $container = global.$('<div></div>');

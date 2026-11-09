@@ -27,6 +27,12 @@ function createDomEnv(bodyHtml) {
 
     global.window = dom.window;
     global.document = dom.window.document;
+    // A bare `MutationObserver` reference (segment-group-modal.js's own initial-render-race
+    // observer) resolves against Node's globals, not dom.window's - Node has no built-in
+    // MutationObserver at all, so without this a module's own `typeof MutationObserver !==
+    // 'undefined'` guard is silently always false and the observer branch can never run under
+    // test (confirmed directly: the guard doesn't throw, it just evaluates to false).
+    global.MutationObserver = dom.window.MutationObserver;
 
     delete require.cache[jqueryModulePath];
     const $ = require('jquery');

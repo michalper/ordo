@@ -5,6 +5,12 @@ const { loadModule } = require('./support/load-module');
 
 const MODULE_PATH = 'view/adminhtml/web/js/segment-group-modal.js';
 
+function wait(ms) {
+    return new Promise(function (resolve) {
+        setTimeout(resolve, ms);
+    });
+}
+
 QUnit.module('Ordo_Automation/js/segment-group-modal', function () {
     QUnit.test('readTypeOptions() excludes "group" and preserves each option\'s label text', function (assert) {
         const api = loadModule(
@@ -142,6 +148,34 @@ QUnit.module('Ordo_Automation/js/segment-group-modal', function () {
         );
 
         assert.deepEqual(api.readRows($rows), [{ type: 'in_segment', params: { segment_id: '7' } }]);
+    });
+
+    QUnit.test('readRows() splits a comma-separated "tag" value into a tags array', function (assert) {
+        const api = loadModule(MODULE_PATH);
+        const $rows = global.$('<div></div>');
+
+        api.appendInlineRow(
+            $rows,
+            [{ value: 'tag', label: 'Has Tag' }],
+            { type: 'tag', params: { tags: 'vip, loyal ,  ' } },
+            function () {}
+        );
+
+        assert.deepEqual(api.readRows($rows), [{ type: 'tag', params: { tags: ['vip', 'loyal'] } }]);
+    });
+
+    QUnit.test('readRows() drops a "tag" value that is only commas/whitespace instead of writing an empty array', function (assert) {
+        const api = loadModule(MODULE_PATH);
+        const $rows = global.$('<div></div>');
+
+        api.appendInlineRow(
+            $rows,
+            [{ value: 'tag', label: 'Has Tag' }],
+            { type: 'tag', params: { tags: ' , , ' } },
+            function () {}
+        );
+
+        assert.deepEqual(api.readRows($rows), [{ type: 'tag', params: {} }]);
     });
 
     QUnit.test('appendInlineRow() tolerates a condition with no params key at all', function (assert) {
@@ -424,6 +458,31 @@ QUnit.module('Ordo_Automation/js/segment-group-modal', function () {
         api.refreshGroupRows();
 
         assert.strictEqual(global.$('.ordo-group-inline').length, 1, 'does not duplicate the panel on a second scan');
+    });
+
+    QUnit.test('a DOM mutation inside the conditions tbody triggers a re-scan via the MutationObserver, with no click/change event at all', async function (assert) {
+        // Covers the dynamicRows-initial-render race this file's own docblock (lines 32-49)
+        // describes: a row appearing in the DOM well after domReady!, with no user-driven
+        // change/click event ever firing - only the MutationObserver on the tbody catches it.
+        loadModule(MODULE_PATH, '<table data-index="conditions"><tbody></tbody></table>');
+
+        const $tbody = global.$('[data-index="conditions"] tbody');
+
+        assert.strictEqual($tbody.find('.ordo-group-inline').length, 0, 'nothing to scan yet at load time');
+
+        $tbody.append(
+            '<tr class="data-row">'
+            + '<td><div data-index="type"><select>'
+            + '<option value="group" selected>Group (nested AND/OR)</option>'
+            + '</select></div></td>'
+            + '<td><div data-index="group_logic"></div></td>'
+            + '<td><textarea name="conditions[0][group_conditions_json]">[]</textarea></td>'
+            + '</tr>'
+        );
+
+        await wait(10);
+
+        assert.strictEqual($tbody.find('.ordo-group-inline').length, 1, 'observer-triggered scan built the panel');
     });
 
     QUnit.test('refreshGroupRows() rebuilds a panel that was built empty before the saved group JSON was available', function (assert) {

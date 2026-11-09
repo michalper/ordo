@@ -27,6 +27,10 @@ const ABSOLUTE_PATH = path.join(__dirname, '..', '..', MODULE_PATH);
  *   window.PushManager at all - stubs both, with pushManager.subscribe() resolving to this object
  *   (needs endpoint + a getKey(name) returning an ArrayBuffer-ish value), for testing
  *   subscribeToPush()'s real happy path
+ * @param {String} [options.preCookie] raw "name=value" set on document.cookie before the script
+ *   loads, for testing a guard that reads a cookie synchronously at load time (e.g.
+ *   startEmailCaptureTimer()'s dismissed-on-a-previous-page-load check) - setting it only after
+ *   loadTracker() returns would be too late, that code already ran once as a load-time side effect
  * @return {Object} dom, recorded fetch calls/timers, and a setter for the next poll response
  */
 function loadTracker(scriptAttrs, options) {
@@ -35,6 +39,10 @@ function loadTracker(scriptAttrs, options) {
     // email-capture tests need a real one so the "dismissed" cookie actually persists.
     dom.reconfigure({ url: 'https://example.test/' });
     const document = dom.window.document;
+
+    if (options?.preCookie) {
+        document.cookie = options.preCookie;
+    }
 
     // Node 21+ ships its own built-in global `navigator` (a Node-specific object, unrelated to
     // jsdom's `dom.window.navigator`) - a bare `navigator` reference inside tracker.js resolves
@@ -256,6 +264,38 @@ QUnit.module('Ordo_Automation/js/tracker (polling)', function () {
         assert.strictEqual(document.getElementById('ordo-popup-banner'), null);
     });
 
+    QUnit.test('a popup with a cta_label/cta_url renders a link button with the right href and text', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({
+            popup: { headline: 'Sale', body: 'Ends soon', cta_label: 'Shop now', cta_url: 'https://example.test/sale' }
+        });
+        env.intervals[0].fn();
+        await flush();
+
+        const banner = document.getElementById('ordo-popup-banner');
+        const cta = banner.querySelector('a');
+
+        assert.true(!!cta, 'cta link rendered');
+        assert.strictEqual(cta.textContent, 'Shop now');
+        assert.strictEqual(cta.getAttribute('href'), 'https://example.test/sale');
+        assert.true(banner.textContent.indexOf('Ends soon') !== -1, 'optional body rendered too');
+    });
+
+    QUnit.test('a popup cta_url that is not http(s) is not rendered as a link', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({
+            popup: { headline: 'Sale', cta_label: 'Shop now', cta_url: 'javascript:alert(1)' }
+        });
+        env.intervals[0].fn();
+        await flush();
+
+        assert.strictEqual(document.getElementById('ordo-popup-banner').querySelector('a'), null);
+    });
+
     QUnit.test('the notification dismiss button removes the card and reports the dismissal', async function (assert) {
         const env = loadTracker({ 'data-poll-enabled': '1' });
         const document = env.dom.window.document;
@@ -272,6 +312,80 @@ QUnit.module('Ordo_Automation/js/tracker (polling)', function () {
         const dismissCall = env.fetchCalls[env.fetchCalls.length - 1];
         assert.strictEqual(dismissCall.url, '/ordo/track/dismissnotification');
         assert.strictEqual(new URLSearchParams(dismissCall.options.body).get('notification_id'), '5');
+    });
+
+    QUnit.test('a notification already on screen is left alone, not rebuilt, on a later tick that still includes it', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({ notifications: [{ id: 5, headline: 'Back in stock' }] });
+        env.intervals[0].fn();
+        await flush();
+
+        const firstCard = document.getElementById('ordo-notification-5');
+
+        env.setPollResponse({ notifications: [{ id: 5, headline: 'Back in stock' }] });
+        env.intervals[0].fn();
+        await flush();
+
+        assert.strictEqual(document.querySelectorAll('#ordo-notification-5').length, 1, 'still only one card');
+        assert.strictEqual(document.getElementById('ordo-notification-5'), firstCard, 'same element, not rebuilt');
+    });
+
+    QUnit.test('a notification with a body and a cta_label/cta_url renders both', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({
+            notifications: [{
+                id: 5,
+                headline: 'Back in stock',
+                body: 'Only a few left',
+                cta_label: 'View product',
+                cta_url: 'https://example.test/product'
+            }]
+        });
+        env.intervals[0].fn();
+        await flush();
+
+        const card = document.getElementById('ordo-notification-5');
+        const cta = card.querySelector('a');
+
+        assert.true(card.textContent.indexOf('Only a few left') !== -1, 'body rendered');
+        assert.true(!!cta, 'cta link rendered');
+        assert.strictEqual(cta.textContent, 'View product');
+        assert.strictEqual(cta.getAttribute('href'), 'https://example.test/product');
+    });
+
+    QUnit.test('a notification cta_url that is not http(s) is not rendered as a link', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({
+            notifications: [{ id: 5, headline: 'Back in stock', cta_label: 'View', cta_url: 'javascript:alert(1)' }]
+        });
+        env.intervals[0].fn();
+        await flush();
+
+        assert.strictEqual(document.getElementById('ordo-notification-5').querySelector('a'), null);
+    });
+
+    QUnit.test('a survey already on screen is left alone on a later tick instead of being rebuilt', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({ survey: { id: 9, question: 'How likely…?' } });
+        env.intervals[0].fn();
+        await flush();
+
+        const firstPrompt = document.getElementById('ordo-survey-prompt');
+
+        env.setPollResponse({ survey: { id: 9, question: 'How likely…?' } });
+        env.intervals[0].fn();
+        await flush();
+
+        assert.strictEqual(document.querySelectorAll('#ordo-survey-prompt').length, 1, 'still only one prompt');
+        assert.strictEqual(document.getElementById('ordo-survey-prompt'), firstPrompt, 'same element, not rebuilt');
     });
 
     QUnit.test('the survey close button hides the prompt without submitting a response', async function (assert) {
@@ -414,6 +528,35 @@ QUnit.module('Ordo_Automation/js/tracker (push subscription)', function () {
         // Base64url: no '+', '/' or '=' padding.
         assert.true(/^[A-Za-z0-9_-]+$/.test(body.get('p256dh')), 'p256dh is base64url: ' + body.get('p256dh'));
         assert.true(/^[A-Za-z0-9_-]+$/.test(body.get('auth')), 'auth is base64url: ' + body.get('auth'));
+    });
+});
+
+QUnit.module('Ordo_Automation/js/tracker (price watch)', function () {
+    QUnit.test('posts product_id/watch_type and resolves with the parsed JSON response', async function (assert) {
+        const env = loadTracker();
+
+        env.setPollResponse({ watch_id: 42 });
+        const result = await env.dom.window.ordoSubscribeToPriceWatch(123, 'price_drop');
+
+        const call = env.fetchCalls[env.fetchCalls.length - 1];
+        assert.strictEqual(call.url, '/ordo/track/registerpricewatch');
+        const body = new URLSearchParams(call.options.body);
+        assert.strictEqual(body.get('product_id'), '123');
+        assert.strictEqual(body.get('watch_type'), 'price_drop');
+        assert.strictEqual(body.has('email'), false, 'no email param when none is given');
+        assert.deepEqual(result, { watch_id: 42 });
+    });
+
+    QUnit.test('includes the email param for a signed-out visitor who gave one', async function (assert) {
+        const env = loadTracker();
+
+        env.setPollResponse({ watch_id: 42 });
+        await env.dom.window.ordoSubscribeToPriceWatch(123, 'back_in_stock', 'jan@example.test');
+
+        const call = env.fetchCalls[env.fetchCalls.length - 1];
+        const body = new URLSearchParams(call.options.body);
+        assert.strictEqual(body.get('watch_type'), 'back_in_stock');
+        assert.strictEqual(body.get('email'), 'jan@example.test');
     });
 });
 
@@ -684,6 +827,15 @@ QUnit.module('Ordo_Automation/js/tracker (email capture)', function () {
         const env = loadTracker({ 'data-email-capture-enabled': '1' });
 
         assert.strictEqual(env.timeouts[0].ms, 8000);
+    });
+
+    QUnit.test('registers no timer at all when the dismissed cookie is already set from a previous page load', function (assert) {
+        const env = loadTracker(
+            { 'data-email-capture-enabled': '1' },
+            { preCookie: 'ordo_email_capture_dismissed=1' }
+        );
+
+        assert.strictEqual(env.timeouts.length, 0);
     });
 
     QUnit.test('renders nothing when the timer fires after the visitor already dismissed it', function (assert) {
