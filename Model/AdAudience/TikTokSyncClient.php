@@ -94,12 +94,17 @@ class TikTokSyncClient implements SyncClientInterface
         // One hashed value per line - see this class's own docblock for why this, specifically,
         // is still not confirmed against a real account.
         $fileContent = implode("\n", $hashedEmails);
+        // A real filesystem path is required here, not a stream - \CURLFile (below) only accepts
+        // one, to hand libcurl the file for real streamed multipart upload. Transient and
+        // request-scoped (deleted in the finally block below), never user-facing content.
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         $tmpFile = tempnam(sys_get_temp_dir(), 'ordo_tiktok_audience_');
         if ($tmpFile === false) {
             throw new RuntimeException('Could not create a temporary file for the TikTok audience upload.');
         }
 
         try {
+            // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
             file_put_contents($tmpFile, $fileContent);
 
             $curl = $this->curlFactory->create();
@@ -112,6 +117,10 @@ class TikTokSyncClient implements SyncClientInterface
             $curl->setOption(CURLOPT_POSTFIELDS, [
                 'advertiser_id' => $advertiserId,
                 'file' => new \CURLFile($tmpFile, 'text/csv', 'ordo_audience.csv'),
+                // TikTok's own API spec requires file_signature to be the file's literal MD5 -
+                // a server-side integrity checksum the platform itself mandates, not a security
+                // boundary this module controls or could swap for a stronger hash unilaterally.
+                // phpcs:ignore Magento2.Security.InsecureFunction.Found
                 'file_signature' => md5($fileContent),
                 'calculate_type' => self::CALCULATE_TYPE,
             ]);
@@ -135,6 +144,7 @@ class TikTokSyncClient implements SyncClientInterface
 
             return $filePath;
         } finally {
+            // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
             unlink($tmpFile);
         }
     }
