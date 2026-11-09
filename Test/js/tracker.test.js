@@ -22,6 +22,9 @@ const ABSOLUTE_PATH = path.join(__dirname, '..', '..', MODULE_PATH);
  */
 function loadTracker(scriptAttrs) {
     const { dom } = createDomEnv();
+    // jsdom silently no-ops document.cookie writes on the default about:blank origin - the
+    // email-capture tests need a real one so the "dismissed" cookie actually persists.
+    dom.reconfigure({ url: 'https://example.test/' });
     const document = dom.window.document;
 
     const script = document.createElement('script');
@@ -488,5 +491,122 @@ QUnit.module('Ordo_Automation/js/tracker (low stock)', function () {
 
         assert.strictEqual(container.textContent, '');
         assert.strictEqual(container.style.display, 'none');
+    });
+});
+
+QUnit.module('Ordo_Automation/js/tracker (email capture)', function () {
+    function submitForm(document, email) {
+        const banner = document.getElementById('ordo-email-capture-banner');
+        const input = banner.querySelector('input[type="email"]');
+        input.value = email;
+
+        const form = banner.querySelector('form');
+        const event = new document.defaultView.Event('submit', { bubbles: true, cancelable: true });
+        form.dispatchEvent(event);
+    }
+
+    QUnit.test('does not register a timer when data-email-capture-enabled is not "1"', function (assert) {
+        const env = loadTracker();
+
+        assert.strictEqual(env.timeouts.length, 0);
+    });
+
+    QUnit.test('registers a timer using the configured delay when enabled', function (assert) {
+        const env = loadTracker({ 'data-email-capture-enabled': '1', 'data-email-capture-delay': '15' });
+
+        assert.strictEqual(env.timeouts.length, 1);
+        assert.strictEqual(env.timeouts[0].ms, 15000);
+    });
+
+    QUnit.test('falls back to 8 seconds when the delay attribute is missing or invalid', function (assert) {
+        const env = loadTracker({ 'data-email-capture-enabled': '1' });
+
+        assert.strictEqual(env.timeouts[0].ms, 8000);
+    });
+
+    QUnit.test('renders nothing when the timer fires after the visitor already dismissed it', function (assert) {
+        const env = loadTracker({ 'data-email-capture-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.timeouts[0].fn();
+        document.getElementById('ordo-email-capture-banner').querySelector('button[aria-label="Close"]').click();
+
+        // Same page load, timer firing a second time (e.g. a stray duplicate call) must not
+        // re-render once the visitor has already dismissed it.
+        env.timeouts[0].fn();
+
+        assert.notOk(document.getElementById('ordo-email-capture-banner'));
+    });
+
+    QUnit.test('renders the popup with the configured copy when the timer fires', function (assert) {
+        const env = loadTracker({
+            'data-email-capture-enabled': '1',
+            'data-email-capture-headline': 'Get 10% off',
+            'data-email-capture-body': 'Sign up now',
+            'data-email-capture-cta-label': 'Join'
+        });
+        const document = env.dom.window.document;
+
+        env.timeouts[0].fn();
+
+        const banner = document.getElementById('ordo-email-capture-banner');
+        assert.ok(banner, 'banner rendered');
+        assert.ok(banner.textContent.indexOf('Get 10% off') !== -1);
+        assert.ok(banner.textContent.indexOf('Sign up now') !== -1);
+        assert.strictEqual(banner.querySelector('button[type="submit"]').textContent, 'Join');
+    });
+
+    QUnit.test('does not render twice if the timer somehow fires again', function (assert) {
+        const env = loadTracker({ 'data-email-capture-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.timeouts[0].fn();
+        env.timeouts[0].fn();
+
+        assert.strictEqual(document.querySelectorAll('#ordo-email-capture-banner').length, 1);
+    });
+
+    QUnit.test('submitting a valid email posts it and removes the banner', async function (assert) {
+        const env = loadTracker({ 'data-email-capture-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.timeouts[0].fn();
+        env.setPollResponse({ ok: true });
+        submitForm(document, 'jane@example.com');
+        await flush();
+
+        const call = env.fetchCalls[env.fetchCalls.length - 1];
+        assert.strictEqual(call.url, '/ordo/track/emailcapture');
+        assert.strictEqual(call.options.credentials, 'same-origin');
+        assert.strictEqual(new URLSearchParams(call.options.body).get('email'), 'jane@example.com');
+        assert.notOk(document.getElementById('ordo-email-capture-banner'), 'banner removed on success');
+        assert.ok(document.cookie.indexOf('ordo_email_capture_dismissed=1') !== -1, 'dismissed cookie set');
+    });
+
+    QUnit.test('shows an error and keeps the banner when the server rejects the email', async function (assert) {
+        const env = loadTracker({ 'data-email-capture-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.timeouts[0].fn();
+        env.setPollResponse({ ok: false, reason: 'invalid_payload' });
+        submitForm(document, 'not-an-email');
+        await flush();
+
+        const banner = document.getElementById('ordo-email-capture-banner');
+        assert.ok(banner, 'banner stays');
+        assert.ok(banner.textContent.indexOf('valid email') !== -1);
+    });
+
+    QUnit.test('the close button dismisses without submitting', function (assert) {
+        const env = loadTracker({ 'data-email-capture-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.timeouts[0].fn();
+        const callsBefore = env.fetchCalls.length;
+        document.getElementById('ordo-email-capture-banner').querySelector('button[aria-label="Close"]').click();
+
+        assert.strictEqual(env.fetchCalls.length, callsBefore, 'no request made');
+        assert.notOk(document.getElementById('ordo-email-capture-banner'));
+        assert.ok(document.cookie.indexOf('ordo_email_capture_dismissed=1') !== -1, 'dismissed cookie set');
     });
 });

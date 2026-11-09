@@ -15,5 +15,10 @@ $viewModel = $block->getData('view_model');
     data-exit-intent-enabled="<?= $viewModel->isExitIntentEnabled() ? '1' : '0' ?>"
     data-social-proof-enabled="<?= $viewModel->isSocialProofEnabled() ? '1' : '0' ?>"
     data-low-stock-enabled="<?= $viewModel->isLowStockWidgetEnabled() ? '1' : '0' ?>"
+    data-email-capture-enabled="<?= $viewModel->isEmailCaptureEnabled() ? '1' : '0' ?>"
+    data-email-capture-delay="<?= (int) $viewModel->getEmailCaptureDelaySeconds() ?>"
+    data-email-capture-headline="<?= $escaper->escapeHtmlAttr($viewModel->getEmailCaptureHeadline()) ?>"
+    data-email-capture-body="<?= $escaper->escapeHtmlAttr($viewModel->getEmailCaptureBody()) ?>"
+    data-email-capture-cta-label="<?= $escaper->escapeHtmlAttr($viewModel->getEmailCaptureCtaLabel()) ?>"
 ></script>
 <?php endif; ?>

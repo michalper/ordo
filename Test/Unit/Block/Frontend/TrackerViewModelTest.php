@@ -117,4 +117,28 @@ class TrackerViewModelTest extends TestCase
 
         self::assertTrue((new TrackerViewModel($config))->isLowStockWidgetEnabled());
     }
+
+    public function testIsEmailCaptureEnabledReflectsConfig(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isEmailCaptureEnabled')->willReturn(true);
+
+        self::assertTrue((new TrackerViewModel($config))->isEmailCaptureEnabled());
+    }
+
+    public function testEmailCaptureCopyDelegatesToConfig(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('getEmailCaptureDelaySeconds')->willReturn(12);
+        $config->method('getEmailCaptureHeadline')->willReturn('Headline');
+        $config->method('getEmailCaptureBody')->willReturn('Body');
+        $config->method('getEmailCaptureCtaLabel')->willReturn('Go');
+
+        $viewModel = new TrackerViewModel($config);
+
+        self::assertSame(12, $viewModel->getEmailCaptureDelaySeconds());
+        self::assertSame('Headline', $viewModel->getEmailCaptureHeadline());
+        self::assertSame('Body', $viewModel->getEmailCaptureBody());
+        self::assertSame('Go', $viewModel->getEmailCaptureCtaLabel());
+    }
 }

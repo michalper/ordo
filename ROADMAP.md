@@ -580,10 +580,13 @@ action classes directly, which is how both were missed initially.
   the social proof widget (ADR 0039): `window.ordoRenderLowStock(sku, containerSelector)`,
   `Controller\Track\LowStock`, real qty via `Model\Track\ProductStockChecker`
   (`StockRegistryInterface`, no MSI awareness - this module uses none anywhere else).
-- **Email-capture popup for anonymous visitors** — not yet built. Unlike the social proof/low-stock
-  widgets, this needs real admin-side UI (a popup content/offer builder), not just a cron or a
-  config-driven message template - closer in shape to the existing "Show Popup" campaign action's
-  own admin authoring than to tracker.js's other theme-integration points.
+- ~~**Email-capture popup for anonymous visitors.**~~ — shipped, see
+  `docs/adr/0043-email-capture-popup.md`. Turned out not to need a real admin-side popup builder
+  after all - five plain `system.xml` fields (same minimalism `exit_intent_enabled` already uses)
+  was enough, since the existing "Show Popup" campaign action's own "admin authoring" is itself
+  just text fields too. Subscribes through Magento's own real newsletter subscription and tags the
+  visitor (`newsletter_signup`), reusing the existing `visitor_tag_added` trigger wiring entirely -
+  zero new campaign-engine plumbing.
 - **Points-based loyalty/rewards program** — not yet built. Distinct from the existing
   `Model\LoyaltyTierCalculator` (pure bronze/silver/gold tier derivation from spend, no points, no
   table, no redemption) - this would be a new, ongoing earn/redeem points balance, its own ledger

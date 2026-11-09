@@ -32,6 +32,11 @@
  *
  * window.ordoRenderLowStock(sku, containerSelector) is the same shape again, for "Only N left in
  * stock" — see renderLowStock below and docs/adr/0042.
+ *
+ * When "tracking > email_capture_enabled" is on, also shows a newsletter-signup popup after a
+ * configurable delay (see startEmailCaptureTimer/renderEmailCapture below and docs/adr/0043) -
+ * unlike the three integration points above, this is a standing, store-wide feature wired
+ * directly off the script tag's own data attributes, not a function the theme calls.
  */
 (function () {
     'use strict';
@@ -47,6 +52,9 @@
     var SURVEY_PROMPT_ID = 'ordo-survey-prompt';
     var SOCIAL_PROOF_ENDPOINT = '/ordo/track/socialproof';
     var LOW_STOCK_ENDPOINT = '/ordo/track/lowstock';
+    var EMAIL_CAPTURE_ENDPOINT = '/ordo/track/emailcapture';
+    var EMAIL_CAPTURE_DISMISSED_COOKIE = 'ordo_email_capture_dismissed';
+    var EMAIL_CAPTURE_BANNER_ID = 'ordo-email-capture-banner';
 
     // Captured synchronously, at the top of this script's own execution — document.currentScript
     // is only reliable for a plain, synchronously-executing <script src> tag like this one; it
@@ -616,6 +624,117 @@
             .catch(function () {});
     }
 
+    /**
+     * Shows a small popup after a configurable delay, inviting an anonymous visitor to sign up
+     * for the store's newsletter — see ADR 0043. Unlike the other widgets above, this is a
+     * standing, store-wide feature (no theme integration call needed) rather than a per-SKU one,
+     * so it's wired directly off the script tag's own data attributes rather than exposed as a
+     * window.ordoRender*() function.
+     *
+     * Never shown twice: a 365-day cookie is set the moment a visitor either submits or
+     * dismisses it, checked both before starting the timer and again right before rendering (a
+     * visitor could submit/dismiss in one tab while this timer is still pending in another).
+     */
+    function startEmailCaptureTimer() {
+        if (!currentScript || currentScript.getAttribute('data-email-capture-enabled') !== '1') {
+            return;
+        }
+        if (readCookie(EMAIL_CAPTURE_DISMISSED_COOKIE)) {
+            return;
+        }
+
+        var delaySeconds = parseInt(currentScript.getAttribute('data-email-capture-delay'), 10);
+        if (!delaySeconds || delaySeconds < 0) {
+            delaySeconds = 8;
+        }
+
+        setTimeout(renderEmailCapture, delaySeconds * 1000);
+    }
+
+    function dismissEmailCapture(banner) {
+        writeCookie(EMAIL_CAPTURE_DISMISSED_COOKIE, '1', 365);
+        banner.parentNode.removeChild(banner);
+    }
+
+    function renderEmailCapture() {
+        if (readCookie(EMAIL_CAPTURE_DISMISSED_COOKIE) || document.getElementById(EMAIL_CAPTURE_BANNER_ID)) {
+            return;
+        }
+
+        var banner = document.createElement('div');
+        banner.id = EMAIL_CAPTURE_BANNER_ID;
+        banner.setAttribute(
+            'style',
+            'position:fixed;right:16px;bottom:16px;max-width:320px;background:#fff;' +
+            'color:#1a1a1a;border:1px solid #ccc;border-radius:6px;box-shadow:0 2px 12px rgba(0,0,0,.15);' +
+            'padding:16px;z-index:2147483000;font-family:sans-serif;font-size:14px;line-height:1.4;'
+        );
+
+        var headline = document.createElement('div');
+        headline.textContent = currentScript.getAttribute('data-email-capture-headline') || '';
+        headline.setAttribute('style', 'font-weight:bold;margin-bottom:6px;padding-right:20px;');
+        banner.appendChild(headline);
+
+        var bodyText = currentScript.getAttribute('data-email-capture-body');
+        if (bodyText) {
+            var body = document.createElement('div');
+            body.textContent = bodyText;
+            body.setAttribute('style', 'margin-bottom:10px;');
+            banner.appendChild(body);
+        }
+
+        var form = document.createElement('form');
+
+        var input = document.createElement('input');
+        input.type = 'email';
+        input.required = true;
+        input.placeholder = 'you@example.com';
+        input.setAttribute(
+            'style',
+            'width:100%;padding:6px;margin-bottom:8px;box-sizing:border-box;border:1px solid #ccc;border-radius:4px;'
+        );
+        form.appendChild(input);
+
+        var message = document.createElement('div');
+        message.setAttribute('style', 'margin-bottom:8px;font-size:12px;color:#b00020;');
+        form.appendChild(message);
+
+        var submit = document.createElement('button');
+        submit.type = 'submit';
+        submit.textContent = currentScript.getAttribute('data-email-capture-cta-label') || 'Subscribe';
+        submit.setAttribute(
+            'style',
+            'background:#1a1a1a;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;'
+        );
+        form.appendChild(submit);
+
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            message.textContent = '';
+
+            var body = new URLSearchParams({ visitor_id: getVisitorId(), email: input.value });
+            fetch(EMAIL_CAPTURE_ENDPOINT, { method: 'POST', body: body, credentials: 'same-origin' })
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (data) {
+                    if (data && data.ok) {
+                        dismissEmailCapture(banner);
+                    } else {
+                        message.textContent = 'Please enter a valid email address.';
+                    }
+                })
+                .catch(function () {});
+        });
+
+        banner.appendChild(form);
+        banner.appendChild(createCloseButton('Close', function () {
+            dismissEmailCapture(banner);
+        }));
+
+        document.body.appendChild(banner);
+    }
+
     window.ordoTrack = track;
     window.ordoSubscribeToPush = subscribeToPush;
     window.ordoSubscribeToPriceWatch = subscribeToPriceWatch;
@@ -624,4 +743,5 @@
     track('page_view');
     startPolling(15, renderPollResponse);
     startExitIntentDetection();
+    startEmailCaptureTimer();
 })();
