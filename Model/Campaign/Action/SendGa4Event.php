@@ -6,11 +6,7 @@ namespace Ordo\Automation\Model\Campaign\Action;
 use Magento\Sales\Api\Data\OrderInterface;
 use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Helper\Config;
-use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
-use Ordo\Automation\Model\Http\JsonApiClient;
-use Ordo\Automation\Model\RateLimit\OutboundRateLimiter;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Reports a real order to Google Analytics 4's Measurement Protocol
@@ -46,10 +42,7 @@ class SendGa4Event implements ActionInterface
     public function __construct(
         private readonly Config $config,
         private readonly OrderContextResolver $orderContextResolver,
-        private readonly JsonApiClient $jsonApiClient,
-        private readonly OutboundRateLimiter $rateLimiter,
-        private readonly SendRetrier $sendRetrier,
-        private readonly MessageSendRetryQueue $messageSendRetryQueue,
+        private readonly OutboundConversionApiSender $sender,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -104,18 +97,16 @@ class SendGa4Event implements ActionInterface
             'api_secret' => $apiSecret,
         ]);
 
-        try {
-            $this->rateLimiter->throttle('ga4_event', (float) $this->config->getWebhookMaxRequestsPerSecond());
-            $this->sendRetrier->attempt(
-                fn () => $this->jsonApiClient->postJson($url, $payload, [], 'GA4 Measurement Protocol')
-            );
-        } catch (Throwable $e) {
-            $this->logger->error(sprintf(
-                'Ordo_Automation: send_ga4_event action failed to reach GA4: %s',
-                $e->getMessage()
-            ));
-            $this->messageSendRetryQueue->enqueueOrRethrow(self::ACTION_TYPE, $context, $params, $e);
-        }
+        $this->sender->send(
+            self::ACTION_TYPE,
+            'ga4_event',
+            (float) $this->config->getWebhookMaxRequestsPerSecond(),
+            $url,
+            $payload,
+            'GA4 Measurement Protocol',
+            $context,
+            $params
+        );
     }
 
     public function getParamFields(): array

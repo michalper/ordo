@@ -8,6 +8,7 @@ use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign\Action\OrderContextResolver;
+use Ordo\Automation\Model\Campaign\Action\OutboundConversionApiSender;
 use Ordo\Automation\Model\Campaign\Action\SendGa4Event;
 use Ordo\Automation\Model\Campaign\Action\SendRetrier;
 use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
@@ -23,6 +24,7 @@ class SendGa4EventTest extends TestCase
     private Config $config;
     private OrderRepositoryInterface $orderRepository;
     private OrderContextResolver $orderContextResolver;
+    private OutboundConversionApiSender $sender;
     private JsonApiClient $jsonApiClient;
     private OutboundRateLimiter $rateLimiter;
     private MessageSendRetryQueue $messageSendRetryQueue;
@@ -50,6 +52,13 @@ class SendGa4EventTest extends TestCase
             }
         );
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->sender = new OutboundConversionApiSender(
+            $this->jsonApiClient,
+            $this->rateLimiter,
+            new SendRetrier(1),
+            $this->messageSendRetryQueue,
+            $this->logger
+        );
     }
 
     private function makeOrder(): OrderInterface
@@ -67,10 +76,7 @@ class SendGa4EventTest extends TestCase
         return new SendGa4Event(
             $this->config,
             $this->orderContextResolver,
-            $this->jsonApiClient,
-            $this->rateLimiter,
-            new SendRetrier(1),
-            $this->messageSendRetryQueue,
+            $this->sender,
             $this->logger
         );
     }
