@@ -21,6 +21,7 @@ class AdAudiencePlatform implements OptionSourceInterface
         return [
             ['value' => AdAudience::PLATFORM_GOOGLE_ADS, 'label' => __('Google Ads')],
             ['value' => AdAudience::PLATFORM_META, 'label' => __('Meta')],
+            ['value' => AdAudience::PLATFORM_TIKTOK, 'label' => __('TikTok')],
         ];
     }
 }

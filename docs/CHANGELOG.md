@@ -11,6 +11,12 @@ it doesn't update itself from this file.
 
 ### Added
 
+- **TikTok ad-audience sync** — new `Model\AdAudience\TikTokSyncClient`, syncing a segment's
+  hashed-email list to a TikTok Custom Audience alongside the existing Google Ads/Meta
+  integration. No ad-spend eligibility wall found for TikTok (unlike Google Ads Customer
+  Match) — the real gate is a discretionary TikTok for Developers app review, now pending. See
+  ADR 0041, including two implementation details honestly flagged as not yet verified against a
+  real account.
 - **GA4 / Meta server-side conversion reporting** — two new campaign actions,
   `send_ga4_event`/`send_meta_conversion_event`, report a real order straight to Google
   Analytics 4's Measurement Protocol or Meta's Conversions API from the server, bypassing ad

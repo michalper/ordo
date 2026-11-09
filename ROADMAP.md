@@ -554,8 +554,16 @@ referral program, and `browse_abandoned` itself all already existed and are not 
   platform's own required payload/auth. Each posts directly to GA4's Measurement Protocol or
   Meta's Conversions API with that platform's own exact shape, closing the loop between Ordo's
   segmentation and a store's ad platforms without needing a verified ad-audience sync account.
-- **TikTok ad-audience sync** — same shape as the existing Google Ads/Meta ad-audience sync, but
-  flagged as a real risk before any work starts: TikTok's own Custom Audience eligibility has
-  comparably strict account-history/spend requirements to Google Ads' Customer Match (see the
-  "Test coverage" section above) — worth confirming eligibility against a real account *before*
-  writing the integration, not after, given this module has now hit that wall twice.
+- **TikTok ad-audience sync** — implemented, see `docs/adr/0041-tiktok-ad-audience-sync.md`.
+  Checked the originally-flagged risk directly against TikTok's own docs before writing any code:
+  no ad-spend/account-age eligibility wall was found (unlike Google Ads Customer Match) - the
+  real gate is a discretionary TikTok for Developers app review (2-14 days, no guaranteed
+  approval), now submitted and pending. `Model\AdAudience\TikTokSyncClient` is implemented,
+  unit-tested, and verified with real (unauthenticated) calls against TikTok's actual live
+  endpoints - which caught two real mistakes the published OpenAPI spec would have shipped with:
+  `Access-Token` only works as a request header, not the spec's documented query parameter, and
+  every response is HTTP 200 regardless of success/failure (real errors only show up in the
+  body's own `code` field). Two remaining details (the response field name for the new audience
+  id, and the raw upload file's exact content format) are honestly flagged in the class's own
+  docblock as still not confirmed against a real, authenticated account - to verify once the app
+  review clears, the same bar every other ad-platform integration here was held to.

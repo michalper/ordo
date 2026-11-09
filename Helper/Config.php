@@ -126,6 +126,9 @@ class Config
         = 'ordo_integrations/ad_audience_sync/google_ads_account_id';
     private const string XML_PATH_META_ACCESS_TOKEN = 'ordo_integrations/ad_audience_sync/meta_access_token';
     private const string XML_PATH_META_AD_ACCOUNT_ID = 'ordo_integrations/ad_audience_sync/meta_ad_account_id';
+    private const string XML_PATH_TIKTOK_ACCESS_TOKEN = 'ordo_integrations/ad_audience_sync/tiktok_access_token';
+    private const string XML_PATH_TIKTOK_ADVERTISER_ID
+        = 'ordo_integrations/ad_audience_sync/tiktok_advertiser_id';
 
     private const string XML_PATH_GA4_ENABLED = 'ordo_integrations/conversion_tracking/ga4_enabled';
     private const string XML_PATH_GA4_MEASUREMENT_ID
@@ -862,6 +865,22 @@ class Config
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
+    }
+
+    public function getTiktokAccessToken(?int $storeId = null): string
+    {
+        return $this->decryptedConfig(self::XML_PATH_TIKTOK_ACCESS_TOKEN, $storeId);
+    }
+
+    public function getTiktokAdvertiserId(?int $storeId = null): string
+    {
+        $value = $this->scopeConfig->getValue(
+            self::XML_PATH_TIKTOK_ADVERTISER_ID,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+
+        return is_string($value) ? $value : '';
     }
 
     public function isGa4Enabled(?int $storeId = null): bool
