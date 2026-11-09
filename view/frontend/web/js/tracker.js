@@ -62,7 +62,7 @@
     var currentScript = document.currentScript;
 
     function readCookie(name) {
-        var match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+        var match = new RegExp('(?:^|; )' + name + '=([^;]*)').exec(document.cookie);
         return match ? decodeURIComponent(match[1]) : null;
     }
 
@@ -72,13 +72,13 @@
     }
 
     function generateVisitorId() {
-        if (window.crypto && window.crypto.randomUUID) {
+        if (window.crypto?.randomUUID) {
             return window.crypto.randomUUID();
         }
         // Fallback for older browsers — not cryptographically strong, doesn't need to be
         // for an anonymous, non-sensitive visitor correlation id.
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-            var r = (Math.random() * 16) | 0;
+            var r = Math.trunc(Math.random() * 16);
             var v = c === 'x' ? r : (r & 0x3) | 0x8;
             return v.toString(16);
         });
@@ -117,7 +117,7 @@
      * same "this is a bridge, not a GTM installer" scope ADR 0036 documents.
      */
     function pushToDataLayer(eventType, eventKey) {
-        if (!currentScript || currentScript.getAttribute('data-gtm-bridge-enabled') !== '1') {
+        if (currentScript?.dataset.gtmBridgeEnabled !== '1') {
             return;
         }
 
@@ -162,17 +162,17 @@
      * @param {Function} render called with the whole parsed response body each tick that returns one
      */
     function startPolling(defaultIntervalSeconds, render) {
-        if (!currentScript || currentScript.getAttribute('data-poll-enabled') !== '1') {
+        if (currentScript?.dataset.pollEnabled !== '1') {
             return;
         }
 
-        var intervalSeconds = parseInt(currentScript.getAttribute('data-poll-interval'), 10);
+        var intervalSeconds = Number.parseInt(currentScript.dataset.pollInterval, 10);
         if (!intervalSeconds || intervalSeconds <= 0) {
             intervalSeconds = defaultIntervalSeconds;
         }
 
         function poll() {
-            if (typeof document.hidden !== 'undefined' && document.hidden) {
+            if (document.hidden !== undefined && document.hidden) {
                 return;
             }
 
@@ -222,7 +222,7 @@
     function renderPopup(popup) {
         var existing = document.getElementById(POPUP_BANNER_ID);
         if (existing) {
-            existing.parentNode.removeChild(existing);
+            existing.remove();
         }
 
         var banner = document.createElement('div');
@@ -259,7 +259,7 @@
         }
 
         banner.appendChild(createCloseButton('Close', function () {
-            banner.parentNode.removeChild(banner);
+            banner.remove();
         }));
 
         document.body.appendChild(banner);
@@ -291,7 +291,7 @@
         // to see their own dismiss take effect. If the request fails, the next poll simply
         // re-adds it (same fail-open-to-"still there" behavior as a missed popup poll).
         if (el.parentNode) {
-            el.parentNode.removeChild(el);
+            el.remove();
         }
 
         fetch(DISMISS_NOTIFICATION_ENDPOINT, { method: 'POST', body: body, keepalive: true })
@@ -358,7 +358,7 @@
         Array.prototype.slice.call(list.children).forEach(function (child) {
             var childId = child.id.replace('ordo-notification-', '');
             if (!seenIds[childId]) {
-                child.parentNode.removeChild(child);
+                child.remove();
             }
         });
     }
@@ -373,7 +373,7 @@
         // Same fail-open reasoning as dismissNotification: pull the widget immediately, don't
         // make the visitor wait on the round-trip to see their own click take effect.
         if (el.parentNode) {
-            el.parentNode.removeChild(el);
+            el.remove();
         }
 
         fetch(SUBMIT_SURVEY_ENDPOINT, { method: 'POST', body: body, keepalive: true }).catch(function () {});
@@ -426,7 +426,7 @@
         // server-side and is swept up later by Cron\PruneSurveyPrompts, same as an ignored popup
         // is never re-shown.
         widget.appendChild(createCloseButton('Close', function () {
-            widget.parentNode.removeChild(widget);
+            widget.remove();
         }));
 
         document.body.appendChild(widget);
@@ -434,11 +434,11 @@
 
     function urlBase64ToUint8Array(base64Url) {
         var padding = '='.repeat((4 - (base64Url.length % 4)) % 4);
-        var base64 = (base64Url + padding).replace(/-/g, '+').replace(/_/g, '/');
+        var base64 = (base64Url + padding).replaceAll('-', '+').replaceAll('_', '/');
         var rawData = window.atob(base64);
         var outputArray = new Uint8Array(rawData.length);
         for (var i = 0; i < rawData.length; i++) {
-            outputArray[i] = rawData.charCodeAt(i);
+            outputArray[i] = rawData.codePointAt(i);
         }
         return outputArray;
     }
@@ -447,9 +447,13 @@
         var bytes = new Uint8Array(buffer);
         var binary = '';
         for (var i = 0; i < bytes.byteLength; i++) {
-            binary += String.fromCharCode(bytes[i]);
+            binary += String.fromCodePoint(bytes[i]);
         }
-        return window.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        var base64 = window.btoa(binary).replaceAll('+', '-').replaceAll('/', '_');
+        while (base64.endsWith('=')) {
+            base64 = base64.slice(0, -1);
+        }
+        return base64;
     }
 
     function registerPushSubscription(subscription) {
@@ -475,14 +479,14 @@
      * quietly auto-blocked by the browser's own spam heuristics.
      */
     function subscribeToPush() {
-        if (!currentScript || currentScript.getAttribute('data-push-enabled') !== '1') {
+        if (currentScript?.dataset.pushEnabled !== '1') {
             return Promise.reject(new Error('Push notifications are disabled.'));
         }
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
             return Promise.reject(new Error('Push notifications are not supported in this browser.'));
         }
 
-        var vapidPublicKey = currentScript.getAttribute('data-push-vapid-public-key');
+        var vapidPublicKey = currentScript.dataset.pushVapidPublicKey;
 
         return navigator.serviceWorker.register('/ordo/track/pushserviceworker', { scope: '/' })
             .then(function () {
@@ -551,7 +555,7 @@
      * further dedup is needed here.
      */
     function startExitIntentDetection() {
-        if (!currentScript || currentScript.getAttribute('data-exit-intent-enabled') !== '1') {
+        if (currentScript?.dataset.exitIntentEnabled !== '1') {
             return;
         }
 
@@ -579,7 +583,7 @@
      * @param {String} containerSelector e.g. "#ordo-social-proof"
      */
     function renderSocialProof(sku, containerSelector) {
-        if (!currentScript || currentScript.getAttribute('data-social-proof-enabled') !== '1') {
+        if (currentScript?.dataset.socialProofEnabled !== '1') {
             return;
         }
 
@@ -593,7 +597,7 @@
                 return response.json();
             })
             .then(function (data) {
-                if (data && data.message) {
+                if (data?.message) {
                     container.textContent = data.message;
                     container.style.display = '';
                 }
@@ -602,7 +606,7 @@
     }
 
     function renderLowStock(sku, containerSelector) {
-        if (!currentScript || currentScript.getAttribute('data-low-stock-enabled') !== '1') {
+        if (currentScript?.dataset.lowStockEnabled !== '1') {
             return;
         }
 
@@ -616,7 +620,7 @@
                 return response.json();
             })
             .then(function (data) {
-                if (data && data.message) {
+                if (data?.message) {
                     container.textContent = data.message;
                     container.style.display = '';
                 }
@@ -636,14 +640,14 @@
      * visitor could submit/dismiss in one tab while this timer is still pending in another).
      */
     function startEmailCaptureTimer() {
-        if (!currentScript || currentScript.getAttribute('data-email-capture-enabled') !== '1') {
+        if (currentScript?.dataset.emailCaptureEnabled !== '1') {
             return;
         }
         if (readCookie(EMAIL_CAPTURE_DISMISSED_COOKIE)) {
             return;
         }
 
-        var delaySeconds = parseInt(currentScript.getAttribute('data-email-capture-delay'), 10);
+        var delaySeconds = Number.parseInt(currentScript.dataset.emailCaptureDelay, 10);
         if (!delaySeconds || delaySeconds < 0) {
             delaySeconds = 8;
         }
@@ -653,7 +657,7 @@
 
     function dismissEmailCapture(banner) {
         writeCookie(EMAIL_CAPTURE_DISMISSED_COOKIE, '1', 365);
-        banner.parentNode.removeChild(banner);
+        banner.remove();
     }
 
     function renderEmailCapture() {
@@ -671,11 +675,11 @@
         );
 
         var headline = document.createElement('div');
-        headline.textContent = currentScript.getAttribute('data-email-capture-headline') || '';
+        headline.textContent = currentScript.dataset.emailCaptureHeadline || '';
         headline.setAttribute('style', 'font-weight:bold;margin-bottom:6px;padding-right:20px;');
         banner.appendChild(headline);
 
-        var bodyText = currentScript.getAttribute('data-email-capture-body');
+        var bodyText = currentScript.dataset.emailCaptureBody;
         if (bodyText) {
             var body = document.createElement('div');
             body.textContent = bodyText;
@@ -701,7 +705,7 @@
 
         var submit = document.createElement('button');
         submit.type = 'submit';
-        submit.textContent = currentScript.getAttribute('data-email-capture-cta-label') || 'Subscribe';
+        submit.textContent = currentScript.dataset.emailCaptureCtaLabel || 'Subscribe';
         submit.setAttribute(
             'style',
             'background:#1a1a1a;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;'
@@ -718,7 +722,7 @@
                     return response.json();
                 })
                 .then(function (data) {
-                    if (data && data.ok) {
+                    if (data?.ok) {
                         dismissEmailCapture(banner);
                     } else {
                         message.textContent = 'Please enter a valid email address.';
