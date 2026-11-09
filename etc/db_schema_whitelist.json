@@ -34,10 +34,13 @@
         "column": {
             "entity_id": true,
             "quote_id": true,
-            "sent_at": true
+            "sent_at": true,
+            "message_log_id": true,
+            "fallback_sent_at": true
         },
         "index": {
-            "ORDO_ABANDONED_CART_REMINDER_LOG_QUOTE_ID": true
+            "ORDO_ABANDONED_CART_REMINDER_LOG_QUOTE_ID": true,
+            "ORDO_ABANDONED_CART_REMINDER_LOG_FALLBACK_SENT_AT_MESSAGE_LOG_ID": true
         },
         "constraint": {
             "PRIMARY": true
@@ -497,7 +500,8 @@
         "index": {
             "ORDO_VISITOR_EVENT_VISITOR_ID": true,
             "ORDO_VISITOR_EVENT_CUSTOMER_ID": true,
-            "ORDO_VISITOR_EVENT_CREATED_AT": true
+            "ORDO_VISITOR_EVENT_CREATED_AT": true,
+            "ORDO_VISITOR_EVENT_EVENT_TYPE_EVENT_KEY_CREATED_AT": true
         },
         "constraint": {
             "PRIMARY": true
@@ -1139,6 +1143,34 @@
         "constraint": {
             "PRIMARY": true,
             "ORDO_CUSTOMER_CONSENT_TOPIC_CUSTOMER_ID_CHANNEL_TOPIC": true
+        }
+    },
+    "ordo_lead_routing_rule": {
+        "column": {
+            "entity_id": true,
+            "name": true,
+            "attribute_code": true,
+            "operator": true,
+            "value": true,
+            "reps": true,
+            "enabled": true,
+            "sort_order": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "ordo_lead_routing_rule_state": {
+        "column": {
+            "rule_id": true,
+            "last_assigned_position": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "FK_D7B0D71C27DD282382B8646888FD25F6": true
         }
     }
 }
