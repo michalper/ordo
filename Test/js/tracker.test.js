@@ -18,14 +18,21 @@ const ABSOLUTE_PATH = path.join(__dirname, '..', '..', MODULE_PATH);
  * ones back).
  *
  * @param {Object} [scriptAttrs] data-* attributes for the stand-in <script> tag
+ * @param {Object} [options]
+ * @param {Boolean} [options.noRandomUUID] deletes window.crypto.randomUUID before the script
+ *   loads, for testing generateVisitorId()'s older-browser fallback path
  * @return {Object} dom, recorded fetch calls/timers, and a setter for the next poll response
  */
-function loadTracker(scriptAttrs) {
+function loadTracker(scriptAttrs, options) {
     const { dom } = createDomEnv();
     // jsdom silently no-ops document.cookie writes on the default about:blank origin - the
     // email-capture tests need a real one so the "dismissed" cookie actually persists.
     dom.reconfigure({ url: 'https://example.test/' });
     const document = dom.window.document;
+
+    if (options?.noRandomUUID) {
+        delete dom.window.crypto.randomUUID;
+    }
 
     const script = document.createElement('script');
     Object.keys(scriptAttrs || {}).forEach(function (name) {
@@ -252,6 +259,78 @@ QUnit.module('Ordo_Automation/js/tracker (polling)', function () {
         close.onclick();
         assert.strictEqual(document.getElementById('ordo-survey-prompt'), null);
         assert.strictEqual(env.fetchCalls.length, callsBefore, 'no submit fired on a plain close');
+    });
+
+    QUnit.test('a second popup while one is showing replaces it, not stacks on top', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({ popup: { headline: 'First' } });
+        env.intervals[0].fn();
+        await flush();
+        assert.true(document.getElementById('ordo-popup-banner').textContent.indexOf('First') !== -1);
+
+        env.setPollResponse({ popup: { headline: 'Second' } });
+        env.intervals[0].fn();
+        await flush();
+
+        assert.strictEqual(document.querySelectorAll('#ordo-popup-banner').length, 1, 'still only one banner');
+        assert.true(document.getElementById('ordo-popup-banner').textContent.indexOf('Second') !== -1);
+        assert.true(document.getElementById('ordo-popup-banner').textContent.indexOf('First') === -1, 'old one gone');
+    });
+
+    QUnit.test('a notification no longer in the poll response is removed on the next tick', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({ notifications: [{ id: 5, headline: 'Back in stock' }] });
+        env.intervals[0].fn();
+        await flush();
+        assert.true(!!document.getElementById('ordo-notification-5'), 'rendered on the first tick');
+
+        env.setPollResponse({ notifications: [] });
+        env.intervals[0].fn();
+        await flush();
+
+        assert.strictEqual(document.getElementById('ordo-notification-5'), null, 'removed once absent from the server list');
+    });
+
+    QUnit.test('clicking a survey score button submits the response and removes the prompt', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({ survey: { id: 9, question: 'How likely…?' } });
+        env.intervals[0].fn();
+        await flush();
+
+        const widget = document.getElementById('ordo-survey-prompt');
+        const scoreButton = Array.prototype.find.call(
+            widget.querySelectorAll('button'),
+            function (button) { return button.textContent === '7'; }
+        );
+        assert.true(!!scoreButton, 'score button 7 rendered');
+
+        scoreButton.onclick();
+
+        assert.strictEqual(document.getElementById('ordo-survey-prompt'), null, 'removed immediately');
+        const submitCall = env.fetchCalls[env.fetchCalls.length - 1];
+        assert.strictEqual(submitCall.url, '/ordo/track/submitsurveyresponse');
+        assert.strictEqual(new URLSearchParams(submitCall.options.body).get('survey_id'), '9');
+        assert.strictEqual(new URLSearchParams(submitCall.options.body).get('score'), '7');
+    });
+});
+
+QUnit.module('Ordo_Automation/js/tracker (visitor id fallback)', function () {
+    QUnit.test('generates a UUID-shaped id even without window.crypto.randomUUID', function (assert) {
+        const env = loadTracker({}, { noRandomUUID: true });
+
+        // The first track() call (the automatic page_view on load) reads/creates the cookie.
+        const match = /ordo_visitor_id=([^;]+)/.exec(env.dom.window.document.cookie);
+        assert.true(!!match, 'visitor id cookie was set');
+        assert.true(
+            /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(decodeURIComponent(match[1])),
+            'looks like a real v4 UUID: ' + match[1]
+        );
     });
 });
 
