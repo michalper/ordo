@@ -11,6 +11,7 @@ use Magento\Sales\Api\OrderRepositoryInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\AdAudience\PiiHasher;
 use Ordo\Automation\Model\Campaign\Action\OrderContextResolver;
+use Ordo\Automation\Model\Campaign\Action\OutboundConversionApiSender;
 use Ordo\Automation\Model\Campaign\Action\SendMetaConversionEvent;
 use Ordo\Automation\Model\Campaign\Action\SendRetrier;
 use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
@@ -28,6 +29,7 @@ class SendMetaConversionEventTest extends TestCase
     private OrderRepositoryInterface $orderRepository;
     private OrderContextResolver $orderContextResolver;
     private PiiHasher $piiHasher;
+    private OutboundConversionApiSender $sender;
     private JsonApiClient $jsonApiClient;
     private OutboundRateLimiter $rateLimiter;
     private MessageSendRetryQueue $messageSendRetryQueue;
@@ -57,6 +59,13 @@ class SendMetaConversionEventTest extends TestCase
             }
         );
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->sender = new OutboundConversionApiSender(
+            $this->jsonApiClient,
+            $this->rateLimiter,
+            new SendRetrier(1),
+            $this->messageSendRetryQueue,
+            $this->logger
+        );
     }
 
     private function makeOrder(): OrderInterface
@@ -83,10 +92,7 @@ class SendMetaConversionEventTest extends TestCase
             $this->customerRepository,
             $this->orderContextResolver,
             $this->piiHasher,
-            $this->jsonApiClient,
-            $this->rateLimiter,
-            new SendRetrier(1),
-            $this->messageSendRetryQueue,
+            $this->sender,
             $this->logger
         );
     }
