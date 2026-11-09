@@ -30,9 +30,6 @@ class JsonApiClient
 {
     private const int TIMEOUT_SECONDS = 30;
 
-    /**
-     * @param CurlFactory $curlFactory
-     */
     public function __construct(
         private readonly CurlFactory $curlFactory
     ) {
@@ -41,7 +38,8 @@ class JsonApiClient
     /**
      * POSTs $payload as JSON and decodes the response.
      *
-     * @param string $url
+     * @param string $url The real request URL - the full one, including any auth query params;
+     *   see $redactQueryParams below for how those stay out of a failure message.
      * @param array<string,mixed> $payload
      * @param array<string,string> $headers Extra headers beyond Content-Type: application/json
      *   (e.g. Authorization) - caller-specific, so not baked in here.
@@ -78,9 +76,9 @@ class JsonApiClient
     /**
      * GET counterpart to postJson() — same mechanics, no body.
      *
-     * @param string $url
+     * @param string $url The real request URL.
      * @param array<string,string> $headers
-     * @param string $serviceName
+     * @param string $serviceName Named in the exception message on failure.
      * @return array<mixed>
      */
     public function getJson(string $url, array $headers, string $serviceName): array
@@ -99,9 +97,9 @@ class JsonApiClient
     /**
      * Checks the real HTTP status and decodes the response body.
      *
-     * @param Curl $curl
-     * @param string $url
-     * @param string $serviceName
+     * @param Curl $curl The real, already-dispatched request this call is reading a response from.
+     * @param string $url Passed through only to build the failure message, redacted below.
+     * @param string $serviceName Named in the exception message on failure.
      * @param string[] $redactQueryParams
      * @return array<mixed>
      */
@@ -133,7 +131,7 @@ class JsonApiClient
      *
      * Never used for the real outbound request itself - that still uses the full $url.
      *
-     * @param string $url
+     * @param string $url The full, unredacted URL to mask a copy of.
      * @param string[] $redactQueryParams
      */
     private function redactUrl(string $url, array $redactQueryParams): string
