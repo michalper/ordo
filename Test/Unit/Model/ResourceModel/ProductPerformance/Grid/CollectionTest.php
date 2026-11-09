@@ -30,7 +30,12 @@ class CollectionTest extends TestCase
 
     public function testInitSelectJoinsMaterializedViewsAndLivePurchasesWithNullifGuardedAbandonRate(): void
     {
-        $mainSelect = $this->createMock(Select::class);
+        // A stub, not a mock: assertions on its joinLeft() calls happen manually below via the
+        // recorded $joinCalls array, not through PHPUnit's own expects()/call-count machinery -
+        // createMock() here (with only lenient method() stubs, no expects()) tripped PHPUnit
+        // 12's "no expectations configured" notice, which this repo's CI turns into a hard
+        // failure via --fail-on-phpunit-notice.
+        $mainSelect = $this->createStub(Select::class);
         $mainSelect->method('from')->willReturnSelf();
         $joinCalls = [];
         $mainSelect->method('joinLeft')->willReturnCallback(
