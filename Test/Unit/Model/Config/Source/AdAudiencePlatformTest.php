@@ -9,13 +9,14 @@ use PHPUnit\Framework\TestCase;
 
 class AdAudiencePlatformTest extends TestCase
 {
-    public function testToOptionArrayListsBothPlatforms(): void
+    public function testToOptionArrayListsAllPlatforms(): void
     {
         $options = (new AdAudiencePlatform())->toOptionArray();
 
         $values = array_column($options, 'value');
         self::assertContains(AdAudience::PLATFORM_GOOGLE_ADS, $values);
         self::assertContains(AdAudience::PLATFORM_META, $values);
-        self::assertCount(2, $options);
+        self::assertContains(AdAudience::PLATFORM_TIKTOK, $values);
+        self::assertCount(3, $options);
     }
 }

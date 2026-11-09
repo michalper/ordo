@@ -159,6 +159,8 @@ class ConfigTest extends TestCase
             ['ordo_integrations/ad_audience_sync/google_ads_account_id', 'store', null, '1234567890'],
             ['ordo_integrations/ad_audience_sync/meta_access_token', 'store', null, 'mtoken'],
             ['ordo_integrations/ad_audience_sync/meta_ad_account_id', 'store', null, '9999'],
+            ['ordo_integrations/ad_audience_sync/tiktok_access_token', 'store', null, 'tiktok-token'],
+            ['ordo_integrations/ad_audience_sync/tiktok_advertiser_id', 'store', null, '555'],
             ['ordo_integrations/conversion_tracking/ga4_measurement_id', 'store', null, 'G-ABC123'],
             ['ordo_integrations/conversion_tracking/ga4_api_secret', 'store', null, 'ga4secret'],
             ['ordo_integrations/conversion_tracking/meta_capi_pixel_id', 'store', null, '1234567890'],
@@ -174,6 +176,8 @@ class ConfigTest extends TestCase
         self::assertSame('1234567890', $this->config->getGoogleAdsAccountId());
         self::assertSame('mtoken', $this->config->getMetaAccessToken());
         self::assertSame('9999', $this->config->getMetaAdAccountId());
+        self::assertSame('tiktok-token', $this->config->getTiktokAccessToken());
+        self::assertSame('555', $this->config->getTiktokAdvertiserId());
         self::assertSame('G-ABC123', $this->config->getGa4MeasurementId());
         self::assertSame('ga4secret', $this->config->getGa4ApiSecret());
         self::assertSame('1234567890', $this->config->getMetaCapiPixelId());

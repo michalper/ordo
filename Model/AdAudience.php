@@ -14,6 +14,7 @@ class AdAudience extends AbstractNamedToggleableEntityModel
 {
     public const string PLATFORM_GOOGLE_ADS = 'google_ads';
     public const string PLATFORM_META = 'meta';
+    public const string PLATFORM_TIKTOK = 'tiktok';
 
     public const string STATUS_SUCCESS = 'success';
     public const string STATUS_ERROR = 'error';

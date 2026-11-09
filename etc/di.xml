@@ -49,6 +49,7 @@
             <argument name="clients" xsi:type="array">
                 <item name="google_ads" xsi:type="object">Ordo\Automation\Model\AdAudience\GoogleAdsSyncClient</item>
                 <item name="meta" xsi:type="object">Ordo\Automation\Model\AdAudience\MetaSyncClient</item>
+                <item name="tiktok" xsi:type="object">Ordo\Automation\Model\AdAudience\TikTokSyncClient</item>
             </argument>
         </arguments>
     </type>

@@ -3159,6 +3159,12 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$name of method Magento\\Framework\\HTTP\\Client\\Curl\:\:setOption\(\) expects string, int given\.$#'
 			identifier: argument.type
+			count: 1
+			path: Model/AdAudience/TikTokSyncClient.php
+
+		-
+			message: '#^Parameter \#1 \$name of method Magento\\Framework\\HTTP\\Client\\Curl\:\:setOption\(\) expects string, int given\.$#'
+			identifier: argument.type
 			count: 3
 			path: Model/Push/PushSender.php
 
