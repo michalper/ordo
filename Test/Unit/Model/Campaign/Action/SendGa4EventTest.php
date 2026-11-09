@@ -99,7 +99,8 @@ class SendGa4EventTest extends TestCase
                         && $event['params']['currency'] === 'USD';
                 }),
                 [],
-                'GA4 Measurement Protocol'
+                'GA4 Measurement Protocol',
+                ['api_secret']
             )
             ->willReturn([]);
 
@@ -116,6 +117,7 @@ class SendGa4EventTest extends TestCase
             ->with(
                 self::anything(),
                 self::callback(static fn (array $p): bool => $p['events'][0]['name'] === 'refund'),
+                self::anything(),
                 self::anything(),
                 self::anything()
             )

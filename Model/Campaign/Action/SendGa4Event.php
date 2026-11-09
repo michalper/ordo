@@ -105,7 +105,8 @@ class SendGa4Event implements ActionInterface
             $payload,
             'GA4 Measurement Protocol',
             $context,
-            $params
+            $params,
+            ['api_secret']
         );
     }
 

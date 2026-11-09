@@ -36,14 +36,31 @@ class JsonApiClient
     }
 
     /**
-     * @param array<string, mixed> $payload
-     * @param array<string, string> $headers Extra headers beyond Content-Type: application/json
+     * POSTs $payload as JSON and decodes the response.
+     *
+     * @param string $url The real request URL - the full one, including any auth query params;
+     *   see $redactQueryParams below for how those stay out of a failure message.
+     * @param array<string,mixed> $payload
+     * @param array<string,string> $headers Extra headers beyond Content-Type: application/json
      *   (e.g. Authorization) - caller-specific, so not baked in here.
      * @param string $serviceName Named in the exception message on failure, e.g. "Google Ads API".
+     * @param string[] $redactQueryParams Names of $url query params to mask (as "[redacted]")
+     *   before building the on-failure exception message - for the rare caller (SendGa4Event,
+     *   SendMetaConversionEvent) whose own API requires its auth secret in the URL itself rather
+     *   than a header; without this, a live api_secret/access_token would otherwise end up
+     *   verbatim in that exception's message, and from there in both the application log
+     *   (OutboundConversionApiSender's logger->error()) and the persisted
+     *   ordo_message_send_retry.last_error column. Does not affect the real request, which still
+     *   uses the full, unredacted $url.
      * @return array<mixed> the decoded JSON response body, or [] if it wasn't a JSON object/array.
      */
-    public function postJson(string $url, array $payload, array $headers, string $serviceName): array
-    {
+    public function postJson(
+        string $url,
+        array $payload,
+        array $headers,
+        string $serviceName,
+        array $redactQueryParams = []
+    ): array {
         $curl = $this->curlFactory->create();
         $curl->setTimeout(self::TIMEOUT_SECONDS);
         $curl->setOption(CURLOPT_FOLLOWLOCATION, false);
@@ -53,13 +70,15 @@ class JsonApiClient
         }
         $curl->post($url, (string) json_encode($payload));
 
-        return $this->interpretResponse($curl, $url, $serviceName);
+        return $this->interpretResponse($curl, $url, $serviceName, $redactQueryParams);
     }
 
     /**
      * GET counterpart to postJson() — same mechanics, no body.
      *
-     * @param array<string, string> $headers
+     * @param string $url The real request URL.
+     * @param array<string,string> $headers
+     * @param string $serviceName Named in the exception message on failure.
      * @return array<mixed>
      */
     public function getJson(string $url, array $headers, string $serviceName): array
@@ -76,20 +95,65 @@ class JsonApiClient
     }
 
     /**
+     * Checks the real HTTP status and decodes the response body.
+     *
+     * @param Curl $curl The real, already-dispatched request this call is reading a response from.
+     * @param string $url Passed through only to build the failure message, redacted below.
+     * @param string $serviceName Named in the exception message on failure.
+     * @param string[] $redactQueryParams
      * @return array<mixed>
      */
-    private function interpretResponse(Curl $curl, string $url, string $serviceName): array
-    {
+    private function interpretResponse(
+        Curl $curl,
+        string $url,
+        string $serviceName,
+        array $redactQueryParams = []
+    ): array {
         $status = $curl->getStatus();
         $responseBody = (string) $curl->getBody();
 
         if ($status < 200 || $status >= 300) {
-            throw new RuntimeException(
-                sprintf('%s request to %s failed (HTTP %d): %s', $serviceName, $url, $status, $responseBody)
-            );
+            throw new RuntimeException(sprintf(
+                '%s request to %s failed (HTTP %d): %s',
+                $serviceName,
+                $this->redactUrl($url, $redactQueryParams),
+                $status,
+                $responseBody
+            ));
         }
 
         $decoded = json_decode($responseBody, true);
         return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * Masks the given query-param names in a copy of $url, for a failure message only.
+     *
+     * Never used for the real outbound request itself - that still uses the full $url.
+     *
+     * @param string $url The full, unredacted URL to mask a copy of.
+     * @param string[] $redactQueryParams
+     */
+    private function redactUrl(string $url, array $redactQueryParams): string
+    {
+        if ($redactQueryParams === []) {
+            return $url;
+        }
+
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        $query = (string) parse_url($url, PHP_URL_QUERY);
+        if ($query === '') {
+            return $url;
+        }
+
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        parse_str($query, $queryParams);
+        foreach ($redactQueryParams as $param) {
+            if (array_key_exists($param, $queryParams)) {
+                $queryParams[$param] = '[redacted]';
+            }
+        }
+
+        return str_replace($query, http_build_query($queryParams), $url);
     }
 }

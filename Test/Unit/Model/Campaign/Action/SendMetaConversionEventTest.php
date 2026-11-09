@@ -118,7 +118,8 @@ class SendMetaConversionEventTest extends TestCase
                         && $event['custom_data']['currency'] === 'usd';
                 }),
                 [],
-                'Meta Conversions API'
+                'Meta Conversions API',
+                ['access_token']
             )
             ->willReturn([]);
 
@@ -136,6 +137,7 @@ class SendMetaConversionEventTest extends TestCase
             ->with(
                 self::anything(),
                 self::callback(static fn (array $p): bool => $p['data'][0]['event_name'] === 'InitiateCheckout'),
+                self::anything(),
                 self::anything(),
                 self::anything()
             )
