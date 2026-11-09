@@ -52,12 +52,42 @@ class OutboundConversionApiSenderTest extends TestCase
     {
         $this->jsonApiClient->expects(self::once())
             ->method('postJson')
-            ->with('https://example.com/events', ['a' => 1], [], 'Example API')
+            ->with('https://example.com/events', ['a' => 1], [], 'Example API', [])
             ->willReturn([]);
 
         $context = [];
         $params = [];
         $this->makeSender()->send('send_example', 'example', 5.0, 'https://example.com/events', ['a' => 1], 'Example API', $context, $params);
+    }
+
+    /**
+     * Regression: SendGa4Event/SendMetaConversionEvent pass their own auth secret as a URL query
+     * param (api_secret/access_token) rather than a header, since that's what both of their own
+     * APIs require - without forwarding $redactQueryParams through to JsonApiClient::postJson(),
+     * a live secret would end up verbatim in the exception message this class both logs and
+     * persists to ordo_message_send_retry.last_error on any failed send.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSendForwardsRedactQueryParamsToJsonApiClient(): void
+    {
+        $this->jsonApiClient->expects(self::once())
+            ->method('postJson')
+            ->with(self::anything(), self::anything(), self::anything(), self::anything(), ['api_secret'])
+            ->willReturn([]);
+
+        $context = [];
+        $params = [];
+        $this->makeSender()->send(
+            'send_example',
+            'example',
+            5.0,
+            'https://example.com/events?api_secret=shh',
+            [],
+            'Example API',
+            $context,
+            $params,
+            ['api_secret']
+        );
     }
 
     #[AllowMockObjectsWithoutExpectations]

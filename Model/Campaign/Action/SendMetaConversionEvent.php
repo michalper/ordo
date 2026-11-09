@@ -124,7 +124,8 @@ class SendMetaConversionEvent implements ActionInterface
             $payload,
             'Meta Conversions API',
             $context,
-            $params
+            $params,
+            ['access_token']
         );
     }
 

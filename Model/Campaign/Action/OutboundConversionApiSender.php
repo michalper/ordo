@@ -31,6 +31,9 @@ class OutboundConversionApiSender
      * @param array<string, mixed> $payload
      * @param array<string, mixed> $context
      * @param array<string, mixed> $params
+     * @param string[] $redactQueryParams Forwarded to JsonApiClient::postJson() - see its own
+     *   docblock. Needed here because $url itself (not just $payload) can carry a live secret,
+     *   e.g. SendGa4Event's api_secret/SendMetaConversionEvent's access_token.
      */
     public function send(
         string $actionType,
@@ -40,12 +43,13 @@ class OutboundConversionApiSender
         array $payload,
         string $serviceName,
         array &$context,
-        array $params
+        array $params,
+        array $redactQueryParams = []
     ): void {
         try {
             $this->rateLimiter->throttle($rateLimitChannel, $maxRequestsPerSecond);
             $this->sendRetrier->attempt(
-                fn () => $this->jsonApiClient->postJson($url, $payload, [], $serviceName)
+                fn () => $this->jsonApiClient->postJson($url, $payload, [], $serviceName, $redactQueryParams)
             );
         } catch (Throwable $e) {
             $this->logger->error(sprintf(

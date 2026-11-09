@@ -72,6 +72,57 @@ class JsonApiClientTest extends TestCase
     }
 
     /**
+     * Regression: SendGa4Event/SendMetaConversionEvent pass their own live secret
+     * (api_secret/access_token) as a $url query param, since that's what both of their own APIs
+     * require. Without redaction, a failed request would put that secret verbatim into the
+     * exception message - which OutboundConversionApiSender both logs and persists to
+     * ordo_message_send_retry.last_error.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPostJsonRedactsNamedQueryParamsFromFailureMessage(): void
+    {
+        $this->curl->method('getStatus')->willReturn(401);
+        $this->curl->method('getBody')->willReturn('invalid token');
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage(
+            'Example API request to https://api.example.com/endpoint?measurement_id=G-ABC123&api_secret=%5Bredacted%5D failed (HTTP 401): invalid token'
+        );
+
+        $this->client->postJson(
+            'https://api.example.com/endpoint?measurement_id=G-ABC123&api_secret=a-real-secret',
+            [],
+            [],
+            'Example API',
+            ['api_secret']
+        );
+    }
+
+    /**
+     * Every other existing caller (webhook, TikTok, Google Ads/Meta ad-audience sync, WhatsApp)
+     * passes no $redactQueryParams at all - confirms the new 5th parameter is fully optional and
+     * changes nothing for them.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPostJsonWithoutRedactQueryParamsLeavesUrlUnchanged(): void
+    {
+        $this->curl->method('getStatus')->willReturn(500);
+        $this->curl->method('getBody')->willReturn('server error');
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage(
+            'Example API request to https://api.example.com/endpoint?api_secret=a-real-secret failed (HTTP 500): server error'
+        );
+
+        $this->client->postJson(
+            'https://api.example.com/endpoint?api_secret=a-real-secret',
+            [],
+            [],
+            'Example API'
+        );
+    }
+
+    /**
      * Regression: a shared Curl instance never clears headers it was told to add, so one
      * caller's Authorization/developer-token headers would otherwise leak into the next,
      * unrelated caller's request within the same process (Cron\SyncAdAudiences calls both
