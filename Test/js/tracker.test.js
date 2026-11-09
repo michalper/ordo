@@ -19,8 +19,14 @@ const ABSOLUTE_PATH = path.join(__dirname, '..', '..', MODULE_PATH);
  *
  * @param {Object} [scriptAttrs] data-* attributes for the stand-in <script> tag
  * @param {Object} [options]
- * @param {Boolean} [options.noRandomUUID] deletes window.crypto.randomUUID before the script
- *   loads, for testing generateVisitorId()'s older-browser fallback path
+ * @param {Boolean} [options.noRandomUUID] shadows window.crypto.randomUUID with undefined before
+ *   the script loads, for testing generateVisitorId()'s older-browser fallback path - a plain
+ *   `delete` doesn't work here, randomUUID lives on Crypto.prototype in jsdom, not as an own
+ *   property, so `delete instance.randomUUID` is a silent no-op (confirmed directly)
+ * @param {Object} [options.pushSubscription] jsdom has neither navigator.serviceWorker nor
+ *   window.PushManager at all - stubs both, with pushManager.subscribe() resolving to this object
+ *   (needs endpoint + a getKey(name) returning an ArrayBuffer-ish value), for testing
+ *   subscribeToPush()'s real happy path
  * @return {Object} dom, recorded fetch calls/timers, and a setter for the next poll response
  */
 function loadTracker(scriptAttrs, options) {
@@ -30,8 +36,32 @@ function loadTracker(scriptAttrs, options) {
     dom.reconfigure({ url: 'https://example.test/' });
     const document = dom.window.document;
 
+    // Node 21+ ships its own built-in global `navigator` (a Node-specific object, unrelated to
+    // jsdom's `dom.window.navigator`) - a bare `navigator` reference inside tracker.js resolves
+    // to THAT (global.navigator is a getter-only accessor, can't be reassigned wholesale -
+    // confirmed directly), so the push stub below must be set as a property on global.navigator,
+    // not on dom.window.navigator. It isn't swapped out fresh per test the way dom.window is, so
+    // it's cleared unconditionally first to avoid leaking a stub into a later, unrelated test.
+    delete global.navigator.serviceWorker;
+
     if (options?.noRandomUUID) {
-        delete dom.window.crypto.randomUUID;
+        dom.window.crypto.randomUUID = undefined;
+    }
+
+    if (options?.pushSubscription) {
+        dom.window.PushManager = function () {};
+        global.navigator.serviceWorker = {
+            register: function () {
+                return Promise.resolve({});
+            },
+            ready: Promise.resolve({
+                pushManager: {
+                    subscribe: function () {
+                        return Promise.resolve(options.pushSubscription);
+                    }
+                }
+            })
+        };
     }
 
     const script = document.createElement('script');
@@ -331,6 +361,59 @@ QUnit.module('Ordo_Automation/js/tracker (visitor id fallback)', function () {
             /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(decodeURIComponent(match[1])),
             'looks like a real v4 UUID: ' + match[1]
         );
+    });
+});
+
+QUnit.module('Ordo_Automation/js/tracker (push subscription)', function () {
+    const fakeSubscription = {
+        endpoint: 'https://push.example.test/abc123',
+        getKey: function (name) {
+            // Real values, not both-zero/empty - exercises the real base64url byte -> char path
+            // (urlBase64ToUint8Array/arrayBufferToBase64Url) rather than an edge case.
+            const bytes = name === 'p256dh' ? [4, 18, 52, 86, 120, 154, 188, 222] : [1, 2, 3, 4, 5];
+            return new Uint8Array(bytes).buffer;
+        }
+    };
+
+    QUnit.test('rejects when data-push-enabled is not "1"', async function (assert) {
+        const env = loadTracker({}, { pushSubscription: fakeSubscription });
+
+        try {
+            await env.dom.window.ordoSubscribeToPush();
+            assert.true(false, 'should have rejected');
+        } catch (e) {
+            assert.strictEqual(e.message, 'Push notifications are disabled.');
+        }
+    });
+
+    QUnit.test('rejects when the browser has no serviceWorker/PushManager support', async function (assert) {
+        const env = loadTracker({ 'data-push-enabled': '1' });
+
+        try {
+            await env.dom.window.ordoSubscribeToPush();
+            assert.true(false, 'should have rejected');
+        } catch (e) {
+            assert.strictEqual(e.message, 'Push notifications are not supported in this browser.');
+        }
+    });
+
+    QUnit.test('registers, waits for an active worker, subscribes, and reports the real subscription', async function (assert) {
+        const env = loadTracker(
+            { 'data-push-enabled': '1', 'data-push-vapid-public-key': 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB' },
+            { pushSubscription: fakeSubscription }
+        );
+
+        const result = await env.dom.window.ordoSubscribeToPush();
+
+        assert.strictEqual(result, fakeSubscription, 'resolves with the real subscription object');
+
+        const registerCall = env.fetchCalls[env.fetchCalls.length - 1];
+        assert.strictEqual(registerCall.url, '/ordo/track/registerpushsubscription');
+        const body = new URLSearchParams(registerCall.options.body);
+        assert.strictEqual(body.get('endpoint'), 'https://push.example.test/abc123');
+        // Base64url: no '+', '/' or '=' padding.
+        assert.true(/^[A-Za-z0-9_-]+$/.test(body.get('p256dh')), 'p256dh is base64url: ' + body.get('p256dh'));
+        assert.true(/^[A-Za-z0-9_-]+$/.test(body.get('auth')), 'auth is base64url: ' + body.get('auth'));
     });
 });
 
