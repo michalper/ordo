@@ -553,6 +553,35 @@ dropdowns never needed a new MFTF test per registered type).
 | `TikTokSyncClient` builds the right two-step upload-then-create/update request shape and auth               | ✅ `TikTokSyncClientTest` (fake `Curl`/`CurlFactory`) + manually live-verified 2026-11-09 against TikTok's real production endpoints with no real account access yet (unauthenticated calls) - caught two real mistakes the published OpenAPI spec would have shipped with (`Access-Token` only works as a header, not the documented query param; every response is HTTP 200 with errors signaled via the body's own `code` field) - see ADR 0041 |
 | A real sync against a live, authenticated TikTok account                                                     | Accepted as a pending (not permanent) gap - TikTok for Developers app review submitted 2026-11-09, awaiting approval; same reasoning §14's own Google Ads/Meta row gives for why this is out of MFTF's scope, but tracked as in-progress in ROADMAP.md rather than a permanent accepted limitation like Google Ads Customer Match |
 
+## 33. Customer birthday / registration anniversary trigger (`Cron/DispatchCustomerAnniversaryCampaigns.php`)
+
+Missed when this feature shipped (PR #314) - caught while re-auditing this document for a later, unrelated
+question about MFTF coverage.
+
+| Scenario                                                                                                   | Status                                                                                                                                                                                                                      |
+|---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| A registered customer whose `dob`/`created_at` matches today's month+day (per campaign, via the trigger's own `date_source` field) fires the trigger exactly once per calendar year, claimed via `ordo_customer_anniversary_trigger_claim` | ✅ `Test/Integration/DispatchCustomerAnniversaryCampaignsTest.php` (real DB, backdated fixture rows, real `add_tag` action application, real claim-table dedup across two runs) - no MFTF, same reasoning §11's own cron-trigger rows give: nothing admin-visible beyond the campaign builder's generic trigger-type dropdown, already covered by every other cron trigger's own MFTF |
+
+## 34. Social proof widget (`Controller/Track/SocialProof.php`, `Model/Track/ProductViewCounter.php`)
+
+Missed when this feature shipped (PR #315), for the same reason as §33 above.
+
+| Scenario                                                                                                   | Status                                                                                                                                                                                                                      |
+|---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `window.ordoRenderSocialProof(sku, containerSelector)` fetches `/ordo/track/socialproof`, fills and reveals the container only when a message comes back | ✅ `Test/js/tracker.test.js` (`Ordo_Automation/js/tracker (social proof)`, 5 cases: disabled, missing container, missing sku, message rendered, no message) |
+| `Controller\Track\SocialProof` returns no message when disabled, no/overlong sku, or below the configured minimum view count; formats `{count}` into the configured template otherwise | ✅ `Test/Unit/Controller/Track/SocialProofTest.php` |
+| `Model\Track\ProductViewCounter::countViewsToday()` counts only today's `product_view` events for the given SKU | ✅ `Test/Unit/Model/Track/ProductViewCounterTest.php` - no MFTF for the controller/widget itself, same reasoning §22's own `send_webhook` row gives: a public JSON endpoint with no admin-visible side effect, already exercised end-to-end by the unit + JS tests above |
+
+## 35. Low-stock PDP widget (`Controller/Track/LowStock.php`, `Model/Track/ProductStockChecker.php`)
+
+Same shape as §34 (social proof) - see ADR 0042.
+
+| Scenario                                                                                                   | Status                                                                                                                                                                                                                      |
+|---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `window.ordoRenderLowStock(sku, containerSelector)` fetches `/ordo/track/lowstock`, fills and reveals the container only when a message comes back | ✅ `Test/js/tracker.test.js` (`Ordo_Automation/js/tracker (low stock)`, 5 cases: disabled, missing container, missing sku, message rendered, no message) |
+| `Controller\Track\LowStock` returns no message when disabled, no/overlong/unresolvable sku, qty above the threshold, or qty at/below zero; formats `{qty}` into the configured template otherwise | ✅ `Test/Unit/Controller/Track/LowStockTest.php` |
+| `Model\Track\ProductStockChecker::getQty()` returns the real stock quantity via `StockRegistryInterface`, or `null` for a product with no stock item | ✅ `Test/Unit/Model/Track/ProductStockCheckerTest.php` - no MFTF, same reasoning §34 gives |
+
 ## Suggested next batch (highest signal per test written)
 
 **Status: the 2026-09-20 re-audit is fully closed (as of 2026-09-23).** Every row from that re-audit — §8, §11,

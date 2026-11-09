@@ -74,6 +74,11 @@ class TrackerViewModel implements ArgumentInterface
         return $this->config->isSocialProofEnabled();
     }
 
+    public function isLowStockWidgetEnabled(): bool
+    {
+        return $this->config->isLowStockWidgetEnabled();
+    }
+
     /**
      * Not a secret - safe to render straight into the page, same as any other applicationServerKey
      * example in the Web Push spec itself.

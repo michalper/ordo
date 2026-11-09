@@ -418,3 +418,75 @@ QUnit.module('Ordo_Automation/js/tracker (social proof)', function () {
         assert.strictEqual(container.style.display, 'none');
     });
 });
+
+QUnit.module('Ordo_Automation/js/tracker (low stock)', function () {
+    function makeContainer(document, id) {
+        const container = document.createElement('div');
+        container.id = id;
+        container.style.display = 'none';
+        document.body.appendChild(container);
+        return container;
+    }
+
+    QUnit.test('does nothing when data-low-stock-enabled is not "1"', async function (assert) {
+        const env = loadTracker();
+        const document = env.dom.window.document;
+        const container = makeContainer(document, 'ordo-low-stock');
+        const callsBefore = env.fetchCalls.length;
+
+        env.dom.window.ordoRenderLowStock('24-MB01', '#ordo-low-stock');
+        await flush();
+
+        assert.strictEqual(env.fetchCalls.length, callsBefore, 'no request made');
+        assert.strictEqual(container.style.display, 'none', 'container left untouched');
+    });
+
+    QUnit.test('does nothing when the container selector matches nothing', async function (assert) {
+        const env = loadTracker({ 'data-low-stock-enabled': '1' });
+        const callsBefore = env.fetchCalls.length;
+
+        env.dom.window.ordoRenderLowStock('24-MB01', '#does-not-exist');
+        await flush();
+
+        assert.strictEqual(env.fetchCalls.length, callsBefore, 'no request made');
+    });
+
+    QUnit.test('does nothing when no sku is given', async function (assert) {
+        const env = loadTracker({ 'data-low-stock-enabled': '1' });
+        const callsBefore = env.fetchCalls.length;
+
+        env.dom.window.ordoRenderLowStock('', '#ordo-low-stock');
+        await flush();
+
+        assert.strictEqual(env.fetchCalls.length, callsBefore, 'no request made');
+    });
+
+    QUnit.test('fills and reveals the container when the server returns a message', async function (assert) {
+        const env = loadTracker({ 'data-low-stock-enabled': '1' });
+        const document = env.dom.window.document;
+        const container = makeContainer(document, 'ordo-low-stock');
+
+        env.setPollResponse({ message: 'Only 3 left in stock' });
+        env.dom.window.ordoRenderLowStock('24-MB01', '#ordo-low-stock');
+        await flush();
+
+        const call = env.fetchCalls[env.fetchCalls.length - 1];
+        assert.strictEqual(call.url, '/ordo/track/lowstock?sku=24-MB01');
+        assert.deepEqual(call.options, { credentials: 'same-origin' });
+        assert.strictEqual(container.textContent, 'Only 3 left in stock');
+        assert.strictEqual(container.style.display, '');
+    });
+
+    QUnit.test('leaves the container hidden when the server returns no message', async function (assert) {
+        const env = loadTracker({ 'data-low-stock-enabled': '1' });
+        const document = env.dom.window.document;
+        const container = makeContainer(document, 'ordo-low-stock');
+
+        env.setPollResponse({ message: null });
+        env.dom.window.ordoRenderLowStock('24-MB01', '#ordo-low-stock');
+        await flush();
+
+        assert.strictEqual(container.textContent, '');
+        assert.strictEqual(container.style.display, 'none');
+    });
+});

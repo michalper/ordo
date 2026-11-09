@@ -567,3 +567,25 @@ referral program, and `browse_abandoned` itself all already existed and are not 
   id, and the raw upload file's exact content format) are honestly flagged in the class's own
   docblock as still not confirmed against a real, authenticated account - to verify once the app
   review clears, the same bar every other ad-platform integration here was held to.
+
+A fresh 2026-11-09 brainstorm round produced 5 more candidates. Two turned out to already exist and
+were dropped before any code was written: browse-abandonment (`TRIGGER_BROWSE_ABANDONED`/
+`Cron\SendBrowseAbandonmentReminders` already covers it, full MFTF) and product recommendations
+inside campaign emails (`Model\Campaign\Action\AddProductRecommendations` already reuses
+`Model\Recommendation\ProductRecommender`) — the research that produced this batch checked
+README.md/ROADMAP.md's own written feature lists but didn't grep the actual trigger constants/
+action classes directly, which is how both were missed initially.
+
+- ~~**Low-stock PDP widget.**~~ — shipped, see `docs/adr/0042-low-stock-widget.md`. Same shape as
+  the social proof widget (ADR 0039): `window.ordoRenderLowStock(sku, containerSelector)`,
+  `Controller\Track\LowStock`, real qty via `Model\Track\ProductStockChecker`
+  (`StockRegistryInterface`, no MSI awareness - this module uses none anywhere else).
+- **Email-capture popup for anonymous visitors** — not yet built. Unlike the social proof/low-stock
+  widgets, this needs real admin-side UI (a popup content/offer builder), not just a cron or a
+  config-driven message template - closer in shape to the existing "Show Popup" campaign action's
+  own admin authoring than to tracker.js's other theme-integration points.
+- **Points-based loyalty/rewards program** — not yet built. Distinct from the existing
+  `Model\LoyaltyTierCalculator` (pure bronze/silver/gold tier derivation from spend, no points, no
+  table, no redemption) - this would be a new, ongoing earn/redeem points balance, its own ledger
+  table, and real product-side scoping (points-to-currency ratio, expiry rules) before any coding
+  starts.

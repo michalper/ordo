@@ -67,6 +67,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isGtmBridgeEnabled());
         self::assertTrue($this->config->isExitIntentEnabled());
         self::assertTrue($this->config->isSocialProofEnabled());
+        self::assertTrue($this->config->isLowStockWidgetEnabled());
         self::assertTrue($this->config->isCustomerAnniversaryTriggerEnabled());
         self::assertTrue($this->config->isGa4Enabled());
         self::assertTrue($this->config->isMetaCapiEnabled());
@@ -98,6 +99,34 @@ class ConfigTest extends TestCase
     public function testGetSocialProofMessageTemplateDefaultsToAStandardMessage(): void
     {
         self::assertSame('{count} people viewed this today', $this->config->getSocialProofMessageTemplate());
+    }
+
+    public function testGetLowStockThresholdDelegatesToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_tracking/tracking/low_stock_threshold', 'store', null, '2'],
+        ]);
+
+        self::assertSame(2, $this->config->getLowStockThreshold());
+    }
+
+    public function testGetLowStockThresholdDefaultsToFive(): void
+    {
+        self::assertSame(5, $this->config->getLowStockThreshold());
+    }
+
+    public function testGetLowStockMessageTemplateDelegatesToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_tracking/tracking/low_stock_message_template', 'store', null, '{qty} left!'],
+        ]);
+
+        self::assertSame('{qty} left!', $this->config->getLowStockMessageTemplate());
+    }
+
+    public function testGetLowStockMessageTemplateDefaultsToAStandardMessage(): void
+    {
+        self::assertSame('Only {qty} left in stock', $this->config->getLowStockMessageTemplate());
     }
 
     public function testPushGettersDelegateToScopeConfig(): void
