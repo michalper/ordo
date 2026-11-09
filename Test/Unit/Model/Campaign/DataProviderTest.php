@@ -8,6 +8,7 @@ use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\Campaign\DataProvider;
 use Ordo\Automation\Model\CampaignAction;
 use Ordo\Automation\Model\CampaignCondition;
+use Ordo\Automation\Model\CampaignWebsite;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\Collection as ActionCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Collection as CampaignCollection;
@@ -118,6 +119,39 @@ class DataProviderTest extends TestCase
 
         // Second call must hit the cached $loadedData branch, not reload from the collection.
         self::assertSame($data, $provider->getData());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetDataPopulatesWebsiteIdsFromTheCampaignWebsiteCollection(): void
+    {
+        $campaign = $this->createStub(Campaign::class);
+        $campaign->method('getData')->willReturn(['entity_id' => 1, 'name' => 'Welcome']);
+        $campaign->method('getEntityId')->willReturn(1);
+
+        $collection = $this->createStub(CampaignCollection::class);
+        $collection->method('getItems')->willReturn([$campaign]);
+
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeEmptyConditionCollection());
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeEmptyActionCollection());
+
+        $websiteRow = $this->createStub(CampaignWebsite::class);
+        $websiteRow->method('getWebsiteId')->willReturn(2);
+        $websiteCollection = $this->createStub(WebsiteCollection::class);
+        $websiteCollection->method('addCampaignFilter');
+        $websiteCollection->method('getIterator')->willReturn(new \ArrayIterator([$websiteRow]));
+        // A fresh stub, not setUp()'s shared $this->websiteCollectionFactory - PHPUnit's mock
+        // matcher uses the FIRST method('create') stub registered for every call, so a second
+        // ->method('create') on the same already-stubbed object would never override setUp()'s
+        // own empty-collection default (confirmed directly).
+        $this->websiteCollectionFactory = $this->createStub(WebsiteCollectionFactory::class);
+        $this->websiteCollectionFactory->method('create')->willReturn($websiteCollection);
+
+        $this->dataPersistor->method('get')->willReturn(null);
+
+        $provider = $this->makeProvider($collection);
+        $data = $provider->getData();
+
+        self::assertSame([2], $data[1]['website_ids']);
     }
 
     /**

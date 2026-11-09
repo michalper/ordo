@@ -254,4 +254,24 @@ class PriceWatchSubscriptionManagerTest extends TestCase
 
         $this->manager->attributeVisitorToCustomer('visitor-1', 42);
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAttributeVisitorToCustomerDeletesTheVisitorRowWhenSaveLosesARaceAgainstAConcurrentAttribution(): void
+    {
+        $row = $this->createMock(PriceWatchSubscription::class);
+        $row->method('getProductId')->willReturn(5);
+        $row->method('getWatchType')->willReturn(PriceWatchSubscription::WATCH_TYPE_PRICE_DROP);
+        // makeCollection()'s own getFirstItem() default (an id-less stub) stands in for "no
+        // customer-owned row existed at the check above" - the race is that one gets created by
+        // someone else between that check and resource->save() below.
+        $collection = $this->makeCollection(items: [$row]);
+        $this->collectionFactory->method('create')->willReturn($collection);
+
+        $row->expects(self::once())->method('setCustomerId')->with(42);
+        $this->resource->expects(self::once())->method('save')->with($row)
+            ->willThrowException(new \Magento\Framework\Exception\AlreadyExistsException(__('dup')));
+        $this->resource->expects(self::once())->method('delete')->with($row);
+
+        $this->manager->attributeVisitorToCustomer('visitor-1', 42);
+    }
 }

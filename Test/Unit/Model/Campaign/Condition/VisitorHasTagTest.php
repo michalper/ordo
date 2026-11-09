@@ -62,6 +62,13 @@ class VisitorHasTagTest extends TestCase
         self::assertFalse($this->condition->isSatisfied(['visitor_id' => 'v1'], []));
     }
 
+    public function testNotSatisfiedWhenTagsParamIsNotAnArray(): void
+    {
+        $this->visitorTagManager->expects(self::never())->method('hasAnyTag');
+
+        self::assertFalse($this->condition->isSatisfied(['visitor_id' => 'v1'], ['tags' => 'vip']));
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testResolveCustomerIdsAlwaysMatchesNobody(): void
     {

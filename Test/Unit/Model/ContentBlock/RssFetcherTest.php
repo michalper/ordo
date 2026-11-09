@@ -350,6 +350,28 @@ XML;
         self::assertSame(['example.com:443:93.184.216.34'], $setOptionCalls[CURLOPT_RESOLVE] ?? null);
     }
 
+    /**
+     * A feed URL whose host is already a literal, safe IP skips HostResolverInterface entirely -
+     * resolveSafeConnectIp() returns it directly once assertSafeIp() has cleared it, the same
+     * address fetchBody() then pins the curl connection to.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAcceptsFeedUrlWithALiteralPublicIpHostWithoutCallingTheResolver(): void
+    {
+        $setOptionCalls = [];
+        $this->curl->method('setOption')->willReturnCallback(function ($option, $value) use (&$setOptionCalls) {
+            $setOptionCalls[$option] = $value;
+            return true;
+        });
+        $this->curl->method('getStatus')->willReturn(200);
+        $this->curl->method('getBody')->willReturn(self::VALID_RSS);
+        $this->hostResolver->expects(self::never())->method('resolve');
+
+        $this->fetcher->fetch($this->makeBlock(['feed_url' => 'http://93.184.216.34/feed.xml']));
+
+        self::assertSame(['93.184.216.34:80:93.184.216.34'], $setOptionCalls[CURLOPT_RESOLVE] ?? null);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testRejectsLocalhostFeedUrlWithoutCallingCurl(): void
     {

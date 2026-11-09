@@ -152,6 +152,61 @@ class ProductFeedRefresherTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testRefreshAllReportsFailureAndKeepsTheOtherGeneratorWhenStartFeedThrows(): void
+    {
+        $product = $this->createStub(Product::class);
+
+        $failing = $this->makeGenerator('google_merchant');
+        $failing->method('isEnabled')->willReturn(true);
+        $failing->method('startFeed')->willThrowException(new \RuntimeException('cannot start'));
+        $failing->expects(self::never())->method('addProduct');
+
+        $surviving = $this->makeGenerator('meta_catalog');
+        $surviving->method('isEnabled')->willReturn(true);
+        $surviving->expects(self::once())->method('addProduct')->with($product);
+        $surviving->expects(self::once())->method('finishFeed')->willReturn(['content' => 'csv', 'productCount' => 1]);
+
+        $this->productFetcher->method('fetchByPage')->willReturn((function () use ($product) {
+            yield $product;
+        })());
+
+        $this->cacheWriter->expects(self::once())->method('writeSuccess')->with('meta_catalog', 1, 'csv', 1);
+        $this->cacheWriter->expects(self::once())->method('writeError')->with('google_merchant', 1, 'cannot start');
+
+        $refresher = $this->makeRefresher(
+            ['google_merchant' => $failing, 'meta_catalog' => $surviving],
+            $this->makeStoreManager([1])
+        );
+        $result = $refresher->refreshAll();
+
+        self::assertSame(1, $result['generated']);
+        self::assertSame(1, $result['failed']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRefreshAllReportsFailureWhenFinishFeedThrows(): void
+    {
+        $product = $this->createStub(Product::class);
+
+        $generator = $this->makeGenerator('google_merchant');
+        $generator->method('isEnabled')->willReturn(true);
+        $generator->method('finishFeed')->willThrowException(new \RuntimeException('cannot finish'));
+
+        $this->productFetcher->method('fetchByPage')->willReturn((function () use ($product) {
+            yield $product;
+        })());
+
+        $this->cacheWriter->expects(self::never())->method('writeSuccess');
+        $this->cacheWriter->expects(self::once())->method('writeError')->with('google_merchant', 1, 'cannot finish');
+
+        $refresher = $this->makeRefresher(['google_merchant' => $generator], $this->makeStoreManager([1]));
+        $result = $refresher->refreshAll();
+
+        self::assertSame(0, $result['generated']);
+        self::assertSame(1, $result['failed']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testRefreshAllWalksEachStoreSeparately(): void
     {
         $generator = $this->makeGenerator('google_merchant');

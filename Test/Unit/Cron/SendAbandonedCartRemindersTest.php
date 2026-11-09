@@ -291,6 +291,13 @@ class SendAbandonedCartRemindersTest extends TestCase
                 'subtotal' => 60.0,
             ],
         ]);
+        // Without this, claimUnderLimit()'s own GET_LOCK() fetchOne() call returns the mock's
+        // unconfigured default (null), so the row is never claimed at all and sendReminder()/
+        // dispatchCampaigns() are never reached - this test would then "pass" for the wrong
+        // reason (dispatch() never called because nothing ran, not because the guest-specific
+        // skip logic in either method actually executed).
+        $this->stubFetchOne($connection, 0);
+        $connection->expects(self::once())->method('insert');
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);

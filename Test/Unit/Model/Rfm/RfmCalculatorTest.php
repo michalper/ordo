@@ -497,6 +497,30 @@ class RfmCalculatorTest extends TestCase
         $calculator->recomputeAndStoreScores();
     }
 
+    public function testRecomputeAndStoreScoresRollsBackAndRethrowsWhenInsertFails(): void
+    {
+        $now = 1700000000;
+        $lastOrderAt = date('Y-m-d H:i:s', $now - 5 * 86400);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchCol')->willReturn(['1']);
+        $connection->method('fetchAll')->willReturn([
+            ['customer_id' => '1', 'frequency' => '1', 'monetary' => '100', 'last_order_at' => $lastOrderAt],
+        ]);
+
+        $connection->expects(self::once())->method('delete')->with('ordo_customer_rfm_score');
+        $connection->method('insertMultiple')->willThrowException(new \RuntimeException('db gone'));
+        $connection->expects(self::once())->method('rollBack');
+        $connection->expects(self::never())->method('commit');
+
+        $calculator = $this->makeCalculator($connection, $now);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('db gone');
+        $calculator->recomputeAndStoreScores();
+    }
+
     public function testRecomputeAndStoreScoresClearsTheTableWithoutInsertingWhenStoreHasNoCustomers(): void
     {
         $connection = $this->createMock(AdapterInterface::class);

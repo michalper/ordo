@@ -76,4 +76,28 @@ class ChooserTest extends TestCase
 
         self::assertSame([['id' => 1, 'code' => 'welcome_email']], $block->getUndraftedTemplates());
     }
+
+    public function testGetNewDraftUrlBuildsTheNewActionRoute(): void
+    {
+        $objectManager = $this->createStub(ObjectManagerInterface::class);
+        $objectManager->method('get')->willReturn($this->createStub(\stdClass::class));
+        ObjectManager::setInstance($objectManager);
+
+        $urlBuilder = $this->createMock(UrlInterface::class);
+        $urlBuilder->expects(self::once())
+            ->method('getUrl')
+            ->with('*/*/new')
+            ->willReturn('https://admin.example.test/emailtemplatedraft/new');
+
+        $context = $this->createStub(Context::class);
+        $context->method('getUrlBuilder')->willReturn($urlBuilder);
+
+        $block = new Chooser(
+            $context,
+            $this->createStub(MagentoTemplateCollectionFactory::class),
+            $this->createStub(EmailTemplateDraftCollectionFactory::class)
+        );
+
+        self::assertSame('https://admin.example.test/emailtemplatedraft/new', $block->getNewDraftUrl());
+    }
 }

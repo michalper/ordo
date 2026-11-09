@@ -132,6 +132,18 @@ class VisitorTagManagerTest extends TestCase
         self::assertFalse($manager->hasAnyTag('v1', []));
     }
 
+    public function testHasAllTagsReturnsFalseForEmptyTagsWithoutQuerying(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::never())->method('select');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+
+        $manager = new VisitorTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
+        self::assertFalse($manager->hasAllTags('v1', []));
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testHasAllTagsReturnsTrueWhenEveryTagMatched(): void
     {

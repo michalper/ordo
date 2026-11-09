@@ -98,6 +98,26 @@ class JsonApiClientTest extends TestCase
         );
     }
 
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPostJsonRedactLeavesUrlUnchangedWhenThereIsNoQueryStringToRedact(): void
+    {
+        $this->curl->method('getStatus')->willReturn(401);
+        $this->curl->method('getBody')->willReturn('invalid token');
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage(
+            'Example API request to https://api.example.com/endpoint failed (HTTP 401): invalid token'
+        );
+
+        $this->client->postJson(
+            'https://api.example.com/endpoint',
+            [],
+            [],
+            'Example API',
+            ['api_secret']
+        );
+    }
+
     /**
      * Every other existing caller (webhook, TikTok, Google Ads/Meta ad-audience sync, WhatsApp)
      * passes no $redactQueryParams at all - confirms the new 5th parameter is fully optional and
