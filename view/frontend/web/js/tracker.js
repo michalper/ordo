@@ -29,6 +29,9 @@
  * shape as window.ordoTrack()/window.ordoSubscribeToPriceWatch(): the PDP template calls it with
  * the product it already knows and a container it has placed in its own markup — see
  * renderSocialProof below and docs/adr/0039.
+ *
+ * window.ordoRenderLowStock(sku, containerSelector) is the same shape again, for "Only N left in
+ * stock" — see renderLowStock below and docs/adr/0042.
  */
 (function () {
     'use strict';
@@ -43,6 +46,7 @@
     var SUBMIT_SURVEY_ENDPOINT = '/ordo/track/submitsurveyresponse';
     var SURVEY_PROMPT_ID = 'ordo-survey-prompt';
     var SOCIAL_PROOF_ENDPOINT = '/ordo/track/socialproof';
+    var LOW_STOCK_ENDPOINT = '/ordo/track/lowstock';
 
     // Captured synchronously, at the top of this script's own execution — document.currentScript
     // is only reliable for a plain, synchronously-executing <script src> tag like this one; it
@@ -589,10 +593,34 @@
             .catch(function () {});
     }
 
+    function renderLowStock(sku, containerSelector) {
+        if (!currentScript || currentScript.getAttribute('data-low-stock-enabled') !== '1') {
+            return;
+        }
+
+        var container = document.querySelector(containerSelector);
+        if (!container || !sku) {
+            return;
+        }
+
+        fetch(LOW_STOCK_ENDPOINT + '?sku=' + encodeURIComponent(sku), { credentials: 'same-origin' })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                if (data && data.message) {
+                    container.textContent = data.message;
+                    container.style.display = '';
+                }
+            })
+            .catch(function () {});
+    }
+
     window.ordoTrack = track;
     window.ordoSubscribeToPush = subscribeToPush;
     window.ordoSubscribeToPriceWatch = subscribeToPriceWatch;
     window.ordoRenderSocialProof = renderSocialProof;
+    window.ordoRenderLowStock = renderLowStock;
     track('page_view');
     startPolling(15, renderPollResponse);
     startExitIntentDetection();

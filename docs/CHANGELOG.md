@@ -11,6 +11,10 @@ it doesn't update itself from this file.
 
 ### Added
 
+- **Low-stock PDP widget** — new `window.ordoRenderLowStock(sku, containerSelector)` theme
+  integration point renders "Only N left in stock" from a real, live stock quantity, once at or
+  below a configurable threshold (and always above zero — that's a different message). Same shape
+  as the existing social proof widget. See ADR 0042.
 - **TikTok ad-audience sync** — new `Model\AdAudience\TikTokSyncClient`, syncing a segment's
   hashed-email list to a TikTok Custom Audience alongside the existing Google Ads/Meta
   integration. No ad-spend eligibility wall found for TikTok (unlike Google Ads Customer

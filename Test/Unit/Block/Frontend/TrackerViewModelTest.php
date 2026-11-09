@@ -109,4 +109,12 @@ class TrackerViewModelTest extends TestCase
 
         self::assertTrue((new TrackerViewModel($config))->isSocialProofEnabled());
     }
+
+    public function testIsLowStockWidgetEnabledReflectsConfig(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isLowStockWidgetEnabled')->willReturn(true);
+
+        self::assertTrue((new TrackerViewModel($config))->isLowStockWidgetEnabled());
+    }
 }

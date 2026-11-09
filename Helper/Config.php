@@ -79,6 +79,10 @@ class Config
         = 'ordo_tracking/tracking/social_proof_minimum_views';
     private const string XML_PATH_TRACKING_SOCIAL_PROOF_MESSAGE_TEMPLATE
         = 'ordo_tracking/tracking/social_proof_message_template';
+    private const string XML_PATH_TRACKING_LOW_STOCK_ENABLED = 'ordo_tracking/tracking/low_stock_enabled';
+    private const string XML_PATH_TRACKING_LOW_STOCK_THRESHOLD = 'ordo_tracking/tracking/low_stock_threshold';
+    private const string XML_PATH_TRACKING_LOW_STOCK_MESSAGE_TEMPLATE
+        = 'ordo_tracking/tracking/low_stock_message_template';
 
     private const string XML_PATH_POPUP_ENABLED = 'ordo_tracking/tracking/popup_enabled';
     private const string XML_PATH_POPUP_POLL_INTERVAL_SECONDS = 'ordo_tracking/tracking/popup_poll_interval_seconds';
@@ -624,6 +628,40 @@ class Config
         );
 
         return is_string($value) && $value !== '' ? $value : '{count} people viewed this today';
+    }
+
+    public function isLowStockWidgetEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_TRACKING_LOW_STOCK_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Controller\Track\LowStock shows nothing at or above this qty, and nothing at/below zero
+     * either (that's out of stock, a different message entirely - see TRIGGER_BACK_IN_STOCK).
+     */
+    public function getLowStockThreshold(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_TRACKING_LOW_STOCK_THRESHOLD, 5, $storeId);
+    }
+
+    /**
+     * "{qty}" is replaced with the product's real current stock quantity by
+     * Controller\Track\LowStock before this ever reaches the browser - same server-side
+     * formatting reasoning as getSocialProofMessageTemplate() above.
+     */
+    public function getLowStockMessageTemplate(?int $storeId = null): string
+    {
+        $value = $this->scopeConfig->getValue(
+            self::XML_PATH_TRACKING_LOW_STOCK_MESSAGE_TEMPLATE,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+
+        return is_string($value) && $value !== '' ? $value : 'Only {qty} left in stock';
     }
 
     public function isPopupEnabled(?int $storeId = null): bool

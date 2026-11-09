@@ -740,6 +740,23 @@
                                 <comment>"{count}" is replaced with today's real view count. Default: "{count} people viewed this today".</comment>
                                 <depends><field id="social_proof_enabled">1</field></depends>
                             </field>
+                            <field id="low_stock_enabled" translate="label comment" type="select" sortOrder="160" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Enable "Only N left in stock" on the product page</label>
+                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                                <comment>Shows a message like "Only 3 left in stock" on the product page, based on real current stock. Needs a small one-time change in your theme to display it (ask your developer to call window.ordoRenderLowStock - see the module's documentation). Requires tracking to be enabled above.</comment>
+                                <depends><field id="enabled">1</field></depends>
+                            </field>
+                            <field id="low_stock_threshold" translate="label comment" type="text" sortOrder="170" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Show the message below this stock quantity</label>
+                                <comment>The message shows once a product's real stock quantity is at or below this number (but still above zero - zero in stock is a different message entirely).</comment>
+                                <validate>validate-digits validate-greater-than-zero</validate>
+                                <depends><field id="low_stock_enabled">1</field></depends>
+                            </field>
+                            <field id="low_stock_message_template" translate="label comment" type="text" sortOrder="180" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Message template</label>
+                                <comment>"{qty}" is replaced with the product's real current stock quantity. Default: "Only {qty} left in stock".</comment>
+                                <depends><field id="low_stock_enabled">1</field></depends>
+                            </field>
                         </group>
             
                         
