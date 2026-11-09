@@ -30,14 +30,20 @@ class JsonApiClient
 {
     private const int TIMEOUT_SECONDS = 30;
 
+    /**
+     * @param CurlFactory $curlFactory
+     */
     public function __construct(
         private readonly CurlFactory $curlFactory
     ) {
     }
 
     /**
-     * @param array<string, mixed> $payload
-     * @param array<string, string> $headers Extra headers beyond Content-Type: application/json
+     * POSTs $payload as JSON and decodes the response.
+     *
+     * @param string $url
+     * @param array<string,mixed> $payload
+     * @param array<string,string> $headers Extra headers beyond Content-Type: application/json
      *   (e.g. Authorization) - caller-specific, so not baked in here.
      * @param string $serviceName Named in the exception message on failure, e.g. "Google Ads API".
      * @param string[] $redactQueryParams Names of $url query params to mask (as "[redacted]")
@@ -72,7 +78,9 @@ class JsonApiClient
     /**
      * GET counterpart to postJson() — same mechanics, no body.
      *
-     * @param array<string, string> $headers
+     * @param string $url
+     * @param array<string,string> $headers
+     * @param string $serviceName
      * @return array<mixed>
      */
     public function getJson(string $url, array $headers, string $serviceName): array
@@ -89,6 +97,11 @@ class JsonApiClient
     }
 
     /**
+     * Checks the real HTTP status and decodes the response body.
+     *
+     * @param Curl $curl
+     * @param string $url
+     * @param string $serviceName
      * @param string[] $redactQueryParams
      * @return array<mixed>
      */
@@ -116,6 +129,11 @@ class JsonApiClient
     }
 
     /**
+     * Masks the given query-param names in a copy of $url, for a failure message only.
+     *
+     * Never used for the real outbound request itself - that still uses the full $url.
+     *
+     * @param string $url
      * @param string[] $redactQueryParams
      */
     private function redactUrl(string $url, array $redactQueryParams): string
@@ -124,11 +142,13 @@ class JsonApiClient
             return $url;
         }
 
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         $query = (string) parse_url($url, PHP_URL_QUERY);
         if ($query === '') {
             return $url;
         }
 
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         parse_str($query, $queryParams);
         foreach ($redactQueryParams as $param) {
             if (array_key_exists($param, $queryParams)) {
