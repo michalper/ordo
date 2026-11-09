@@ -1140,5 +1140,25 @@
             "PRIMARY": true,
             "ORDO_CUSTOMER_CONSENT_TOPIC_CUSTOMER_ID_CHANNEL_TOPIC": true
         }
+    },
+    "ordo_loyalty_points_ledger": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "type": true,
+            "points_delta": true,
+            "order_id": true,
+            "coupon_code": true,
+            "created_at": true,
+            "expired_at": true
+        },
+        "index": {
+            "ORDO_LOYALTY_POINTS_LEDGER_CUSTOMER_ID": true,
+            "ORDO_LOYALTY_POINTS_LEDGER_ORDER_ID": true,
+            "ORDO_LOYALTY_POINTS_LEDGER_TYPE_EXPIRED_AT_CREATED_AT": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
     }
 }

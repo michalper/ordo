@@ -34,6 +34,13 @@ class Config
     private const string XML_PATH_REVIEW_REQUEST_ENABLED = 'ordo_automation/review_request/enabled';
     private const string XML_PATH_REVIEW_REQUEST_DELAY_DAYS = 'ordo_automation/review_request/delay_days';
     private const string XML_PATH_REFERRAL_ENABLED = 'ordo_automation/referral/enabled';
+    private const string XML_PATH_LOYALTY_POINTS_ENABLED = 'ordo_automation/loyalty_points/enabled';
+    private const string XML_PATH_LOYALTY_POINTS_PER_DOLLAR = 'ordo_automation/loyalty_points/points_per_dollar';
+    private const string XML_PATH_LOYALTY_POINTS_REDEMPTION_COST
+        = 'ordo_automation/loyalty_points/redemption_cost';
+    private const string XML_PATH_LOYALTY_POINTS_REDEMPTION_RULE_ID
+        = 'ordo_automation/loyalty_points/redemption_rule_id';
+    private const string XML_PATH_LOYALTY_POINTS_EXPIRY_DAYS = 'ordo_automation/loyalty_points/expiry_days';
 
     private const string XML_PATH_OFFER_ENABLED = 'ordo_automation/offer/enabled';
     private const string XML_PATH_OFFER_LEAD_DAYS = 'ordo_automation/offer/lead_days';
@@ -418,6 +425,49 @@ class Config
     public function isReferralEnabled(?int $storeId = null): bool
     {
         return $this->scopeConfig->isSetFlag(self::XML_PATH_REFERRAL_ENABLED, ScopeInterface::SCOPE_STORE, $storeId);
+    }
+
+    public function isLoyaltyPointsEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_LOYALTY_POINTS_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * How many points a customer earns per whole $1 of an order's grand total - see
+     * Model\LoyaltyPointsManager::earnForOrder().
+     */
+    public function getLoyaltyPointsPerDollar(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_LOYALTY_POINTS_PER_DOLLAR, 1, $storeId);
+    }
+
+    /**
+     * How many points Model\LoyaltyPointsManager::redeem() costs for one coupon.
+     */
+    public function getLoyaltyPointsRedemptionCost(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_LOYALTY_POINTS_REDEMPTION_COST, 500, $storeId);
+    }
+
+    /**
+     * Which cart price rule Model\LoyaltyPointsManager::redeem() generates a coupon against -
+     * 0 means redemption isn't configured yet (fails closed, see that method).
+     */
+    public function getLoyaltyPointsRedemptionRuleId(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_LOYALTY_POINTS_REDEMPTION_RULE_ID, 0, $storeId);
+    }
+
+    /**
+     * 0 means points never expire (the default) - Cron\ExpireLoyaltyPoints no-ops entirely.
+     */
+    public function getLoyaltyPointsExpiryDays(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_LOYALTY_POINTS_EXPIRY_DAYS, 0, $storeId);
     }
 
     public function isOfferReminderEnabled(?int $storeId = null): bool

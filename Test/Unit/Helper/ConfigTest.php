@@ -61,6 +61,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isReviewRequestEnabled());
         self::assertTrue($this->config->isEmailTemplateVersioningEnabled());
         self::assertTrue($this->config->isReferralEnabled());
+        self::assertTrue($this->config->isLoyaltyPointsEnabled());
         self::assertTrue($this->config->isPriceWatchEnabled());
         self::assertTrue($this->config->isAiContentEnabled());
         self::assertTrue($this->config->isAiAgentEnabled());
@@ -515,5 +516,61 @@ class ConfigTest extends TestCase
 
         self::assertSame('123456789012345', $this->config->getWhatsAppPhoneNumberId());
         self::assertSame('987654321098765', $this->config->getWhatsAppBusinessAccountId());
+    }
+
+    public function testGetLoyaltyPointsPerDollarDelegatesToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_automation/loyalty_points/points_per_dollar', 'store', null, '3'],
+        ]);
+
+        self::assertSame(3, $this->config->getLoyaltyPointsPerDollar());
+    }
+
+    public function testGetLoyaltyPointsPerDollarDefaultsToOne(): void
+    {
+        self::assertSame(1, $this->config->getLoyaltyPointsPerDollar());
+    }
+
+    public function testGetLoyaltyPointsRedemptionCostDelegatesToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_automation/loyalty_points/redemption_cost', 'store', null, '250'],
+        ]);
+
+        self::assertSame(250, $this->config->getLoyaltyPointsRedemptionCost());
+    }
+
+    public function testGetLoyaltyPointsRedemptionCostDefaultsToFiveHundred(): void
+    {
+        self::assertSame(500, $this->config->getLoyaltyPointsRedemptionCost());
+    }
+
+    public function testGetLoyaltyPointsRedemptionRuleIdDelegatesToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_automation/loyalty_points/redemption_rule_id', 'store', null, '9'],
+        ]);
+
+        self::assertSame(9, $this->config->getLoyaltyPointsRedemptionRuleId());
+    }
+
+    public function testGetLoyaltyPointsRedemptionRuleIdDefaultsToZero(): void
+    {
+        self::assertSame(0, $this->config->getLoyaltyPointsRedemptionRuleId());
+    }
+
+    public function testGetLoyaltyPointsExpiryDaysDelegatesToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_automation/loyalty_points/expiry_days', 'store', null, '180'],
+        ]);
+
+        self::assertSame(180, $this->config->getLoyaltyPointsExpiryDays());
+    }
+
+    public function testGetLoyaltyPointsExpiryDaysDefaultsToZero(): void
+    {
+        self::assertSame(0, $this->config->getLoyaltyPointsExpiryDays());
     }
 }

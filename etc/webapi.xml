@@ -408,4 +408,18 @@
             <resource ref="Ordo_Automation::credit_limit"/>
         </resources>
     </route>
+    <!-- Same "self" resource shape as /V1/ordo/credit-limit/mine - a customer token alone proves
+         who is asking, no id to guess/enumerate. -->
+    <route url="/V1/ordo/loyalty-points/mine" method="GET">
+        <service class="Ordo\Automation\Api\LoyaltyPointsManagementInterface" method="getMyBalance"/>
+        <resources>
+            <resource ref="self"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/loyalty-points/redeem" method="POST">
+        <service class="Ordo\Automation\Api\LoyaltyPointsManagementInterface" method="selfRedeem"/>
+        <resources>
+            <resource ref="self"/>
+        </resources>
+    </route>
 </routes>

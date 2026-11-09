@@ -587,8 +587,10 @@ action classes directly, which is how both were missed initially.
   just text fields too. Subscribes through Magento's own real newsletter subscription and tags the
   visitor (`newsletter_signup`), reusing the existing `visitor_tag_added` trigger wiring entirely -
   zero new campaign-engine plumbing.
-- **Points-based loyalty/rewards program** — not yet built. Distinct from the existing
-  `Model\LoyaltyTierCalculator` (pure bronze/silver/gold tier derivation from spend, no points, no
-  table, no redemption) - this would be a new, ongoing earn/redeem points balance, its own ledger
-  table, and real product-side scoping (points-to-currency ratio, expiry rules) before any coding
-  starts.
+- ~~**Points-based loyalty/rewards program.**~~ — shipped, see
+  `docs/adr/0044-loyalty-points-program.md`. A new, ongoing earn/redeem points balance, distinct
+  from the existing `Model\LoyaltyTierCalculator` (pure tier derivation, no points, no table).
+  Fixed-tier redemption via the existing `Model\CouponGenerator`/cart-price-rule mechanism, not a
+  continuous points-to-currency conversion - a store wanting several redemption tiers needs a
+  follow-up iteration. Points earned on an order are never clawed back on cancellation/refund - a
+  documented v1 gap, not an oversight.
