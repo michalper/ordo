@@ -68,6 +68,8 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isExitIntentEnabled());
         self::assertTrue($this->config->isSocialProofEnabled());
         self::assertTrue($this->config->isCustomerAnniversaryTriggerEnabled());
+        self::assertTrue($this->config->isGa4Enabled());
+        self::assertTrue($this->config->isMetaCapiEnabled());
     }
 
     public function testGetSocialProofMinimumViewsDelegatesToScopeConfig(): void
@@ -157,6 +159,10 @@ class ConfigTest extends TestCase
             ['ordo_integrations/ad_audience_sync/google_ads_account_id', 'store', null, '1234567890'],
             ['ordo_integrations/ad_audience_sync/meta_access_token', 'store', null, 'mtoken'],
             ['ordo_integrations/ad_audience_sync/meta_ad_account_id', 'store', null, '9999'],
+            ['ordo_integrations/conversion_tracking/ga4_measurement_id', 'store', null, 'G-ABC123'],
+            ['ordo_integrations/conversion_tracking/ga4_api_secret', 'store', null, 'ga4secret'],
+            ['ordo_integrations/conversion_tracking/meta_capi_pixel_id', 'store', null, '1234567890'],
+            ['ordo_integrations/conversion_tracking/meta_capi_access_token', 'store', null, 'capitoken'],
             ['ordo_integrations/shopping_feed/title', 'store', null, 'My Feed'],
             ['ordo_integrations/shopping_feed/description', 'store', null, 'My Feed Description'],
             ['ordo_integrations/meta_catalog_feed/default_brand', 'store', null, 'Acme'],
@@ -168,6 +174,10 @@ class ConfigTest extends TestCase
         self::assertSame('1234567890', $this->config->getGoogleAdsAccountId());
         self::assertSame('mtoken', $this->config->getMetaAccessToken());
         self::assertSame('9999', $this->config->getMetaAdAccountId());
+        self::assertSame('G-ABC123', $this->config->getGa4MeasurementId());
+        self::assertSame('ga4secret', $this->config->getGa4ApiSecret());
+        self::assertSame('1234567890', $this->config->getMetaCapiPixelId());
+        self::assertSame('capitoken', $this->config->getMetaCapiAccessToken());
         self::assertSame('My Feed', $this->config->getShoppingFeedTitle());
         self::assertSame('My Feed Description', $this->config->getShoppingFeedDescription());
         self::assertSame('Acme', $this->config->getMetaCatalogFeedDefaultBrand());

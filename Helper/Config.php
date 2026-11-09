@@ -127,6 +127,16 @@ class Config
     private const string XML_PATH_META_ACCESS_TOKEN = 'ordo_integrations/ad_audience_sync/meta_access_token';
     private const string XML_PATH_META_AD_ACCOUNT_ID = 'ordo_integrations/ad_audience_sync/meta_ad_account_id';
 
+    private const string XML_PATH_GA4_ENABLED = 'ordo_integrations/conversion_tracking/ga4_enabled';
+    private const string XML_PATH_GA4_MEASUREMENT_ID
+        = 'ordo_integrations/conversion_tracking/ga4_measurement_id';
+    private const string XML_PATH_GA4_API_SECRET = 'ordo_integrations/conversion_tracking/ga4_api_secret';
+    private const string XML_PATH_META_CAPI_ENABLED = 'ordo_integrations/conversion_tracking/meta_capi_enabled';
+    private const string XML_PATH_META_CAPI_PIXEL_ID
+        = 'ordo_integrations/conversion_tracking/meta_capi_pixel_id';
+    private const string XML_PATH_META_CAPI_ACCESS_TOKEN
+        = 'ordo_integrations/conversion_tracking/meta_capi_access_token';
+
     private const string XML_PATH_SHOPPING_FEED_ENABLED = 'ordo_integrations/shopping_feed/enabled';
     private const string XML_PATH_SHOPPING_FEED_TITLE = 'ordo_integrations/shopping_feed/title';
     private const string XML_PATH_SHOPPING_FEED_DESCRIPTION = 'ordo_integrations/shopping_feed/description';
@@ -852,6 +862,44 @@ class Config
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
+    }
+
+    public function isGa4Enabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(self::XML_PATH_GA4_ENABLED, ScopeInterface::SCOPE_STORE, $storeId);
+    }
+
+    public function getGa4MeasurementId(?int $storeId = null): string
+    {
+        $value = $this->scopeConfig->getValue(self::XML_PATH_GA4_MEASUREMENT_ID, ScopeInterface::SCOPE_STORE, $storeId);
+
+        return is_string($value) ? $value : '';
+    }
+
+    public function getGa4ApiSecret(?int $storeId = null): string
+    {
+        return $this->decryptedConfig(self::XML_PATH_GA4_API_SECRET, $storeId);
+    }
+
+    public function isMetaCapiEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_META_CAPI_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getMetaCapiPixelId(?int $storeId = null): string
+    {
+        $value = $this->scopeConfig->getValue(self::XML_PATH_META_CAPI_PIXEL_ID, ScopeInterface::SCOPE_STORE, $storeId);
+
+        return is_string($value) ? $value : '';
+    }
+
+    public function getMetaCapiAccessToken(?int $storeId = null): string
+    {
+        return $this->decryptedConfig(self::XML_PATH_META_CAPI_ACCESS_TOKEN, $storeId);
     }
 
     public function isShoppingFeedEnabled(?int $storeId = null): bool
