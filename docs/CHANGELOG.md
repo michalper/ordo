@@ -9,6 +9,8 @@ it doesn't update itself from this file.
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-11-09
+
 ### Added
 
 - **Loyalty points program** — a new, ongoing earn/redeem points balance (`ordo_loyalty_points_ledger`),
