@@ -582,6 +582,17 @@ Same shape as §34 (social proof) - see ADR 0042.
 | `Controller\Track\LowStock` returns no message when disabled, no/overlong/unresolvable sku, qty above the threshold, or qty at/below zero; formats `{qty}` into the configured template otherwise | ✅ `Test/Unit/Controller/Track/LowStockTest.php` |
 | `Model\Track\ProductStockChecker::getQty()` returns the real stock quantity via `StockRegistryInterface`, or `null` for a product with no stock item | ✅ `Test/Unit/Model/Track/ProductStockCheckerTest.php` - no MFTF, same reasoning §34 gives |
 
+## 36. Newsletter signup popup (`Controller/Track/EmailCapture.php`)
+
+See ADR 0043 - no admin screen to test (five plain config fields, same shape every other
+tracker.js toggle already has).
+
+| Scenario                                                                                                   | Status                                                                                                                                                                                                                      |
+|---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| The popup shows after the configured delay, submits the email, and never shows again once dismissed or submitted (365-day cookie, checked before scheduling and again before rendering) | ✅ `Test/js/tracker.test.js` (`Ordo_Automation/js/tracker (email capture)`, 10 cases) |
+| `Controller\Track\EmailCapture` returns `disabled`/`invalid_payload` for a bad email or missing visitor id; subscribes through Magento's own real `Subscriber` and tags the visitor (`newsletter_signup`) on success; fails closed (logs, returns `subscribe_failed`) if the subscribe call itself throws | ✅ `Test/Unit/Controller/Track/EmailCaptureTest.php` - no MFTF, same reasoning §34/§22 give: a public JSON endpoint with no admin-visible side effect, already exercised end-to-end by the unit + JS tests above |
+| A tagged visitor's `newsletter_signup` tag correctly fires a `visitor_tag_added` campaign (e.g. a welcome email) | Already covered generically by `VisitorTagManager`'s own existing tests and `Observer\DispatchVisitorTagAddedCampaigns`'s own coverage - this feature is the Nth caller of an already-proven mechanism, not a new one |
+
 ## Suggested next batch (highest signal per test written)
 
 **Status: the 2026-09-20 re-audit is fully closed (as of 2026-09-23).** Every row from that re-audit — §8, §11,

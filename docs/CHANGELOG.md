@@ -11,6 +11,11 @@ it doesn't update itself from this file.
 
 ### Added
 
+- **Newsletter signup popup** — a standing, config-driven popup invites an anonymous visitor to
+  sign up for the store's newsletter after a configurable delay. Subscribes through Magento's own
+  real newsletter subscription and tags the visitor (`newsletter_signup`) so a campaign can react
+  via the existing `visitor_tag_added` trigger — no new admin screen, no new trigger type. See
+  ADR 0043.
 - **Low-stock PDP widget** — new `window.ordoRenderLowStock(sku, containerSelector)` theme
   integration point renders "Only N left in stock" from a real, live stock quantity, once at or
   below a configurable threshold (and always above zero — that's a different message). Same shape

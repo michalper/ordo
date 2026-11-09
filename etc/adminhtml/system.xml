@@ -757,6 +757,32 @@
                                 <comment>"{qty}" is replaced with the product's real current stock quantity. Default: "Only {qty} left in stock".</comment>
                                 <depends><field id="low_stock_enabled">1</field></depends>
                             </field>
+                            <field id="email_capture_enabled" translate="label comment" type="select" sortOrder="190" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Enable the newsletter signup popup</label>
+                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                                <comment>Shows a small popup after a delay, inviting a visitor to sign up for your newsletter (e.g. for a discount). Signing up subscribes them through your store's own newsletter and tags them so a campaign can react (e.g. send a welcome email). Requires tracking to be enabled above.</comment>
+                                <depends><field id="enabled">1</field></depends>
+                            </field>
+                            <field id="email_capture_delay_seconds" translate="label comment" type="text" sortOrder="200" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Delay before showing the popup (seconds)</label>
+                                <validate>validate-digits validate-greater-than-zero</validate>
+                                <depends><field id="email_capture_enabled">1</field></depends>
+                            </field>
+                            <field id="email_capture_headline" translate="label comment" type="text" sortOrder="210" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Popup headline</label>
+                                <comment>Default: "Get 10% off your first order".</comment>
+                                <depends><field id="email_capture_enabled">1</field></depends>
+                            </field>
+                            <field id="email_capture_body" translate="label comment" type="text" sortOrder="220" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Popup body text</label>
+                                <comment>Default: "Sign up for our newsletter and get 10% off your first order.".</comment>
+                                <depends><field id="email_capture_enabled">1</field></depends>
+                            </field>
+                            <field id="email_capture_cta_label" translate="label comment" type="text" sortOrder="230" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Submit button label</label>
+                                <comment>Default: "Subscribe".</comment>
+                                <depends><field id="email_capture_enabled">1</field></depends>
+                            </field>
                         </group>
             
                         

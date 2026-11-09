@@ -68,6 +68,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isExitIntentEnabled());
         self::assertTrue($this->config->isSocialProofEnabled());
         self::assertTrue($this->config->isLowStockWidgetEnabled());
+        self::assertTrue($this->config->isEmailCaptureEnabled());
         self::assertTrue($this->config->isCustomerAnniversaryTriggerEnabled());
         self::assertTrue($this->config->isGa4Enabled());
         self::assertTrue($this->config->isMetaCapiEnabled());
@@ -127,6 +128,65 @@ class ConfigTest extends TestCase
     public function testGetLowStockMessageTemplateDefaultsToAStandardMessage(): void
     {
         self::assertSame('Only {qty} left in stock', $this->config->getLowStockMessageTemplate());
+    }
+
+    public function testGetEmailCaptureDelaySecondsDelegatesToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_tracking/tracking/email_capture_delay_seconds', 'store', null, '15'],
+        ]);
+
+        self::assertSame(15, $this->config->getEmailCaptureDelaySeconds());
+    }
+
+    public function testGetEmailCaptureDelaySecondsDefaultsToEight(): void
+    {
+        self::assertSame(8, $this->config->getEmailCaptureDelaySeconds());
+    }
+
+    public function testGetEmailCaptureHeadlineDelegatesToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_tracking/tracking/email_capture_headline', 'store', null, 'Join us!'],
+        ]);
+
+        self::assertSame('Join us!', $this->config->getEmailCaptureHeadline());
+    }
+
+    public function testGetEmailCaptureHeadlineDefaultsToAStandardMessage(): void
+    {
+        self::assertSame('Get 10% off your first order', $this->config->getEmailCaptureHeadline());
+    }
+
+    public function testGetEmailCaptureBodyDelegatesToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_tracking/tracking/email_capture_body', 'store', null, 'Custom body'],
+        ]);
+
+        self::assertSame('Custom body', $this->config->getEmailCaptureBody());
+    }
+
+    public function testGetEmailCaptureBodyDefaultsToAStandardMessage(): void
+    {
+        self::assertSame(
+            'Sign up for our newsletter and get 10% off your first order.',
+            $this->config->getEmailCaptureBody()
+        );
+    }
+
+    public function testGetEmailCaptureCtaLabelDelegatesToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_tracking/tracking/email_capture_cta_label', 'store', null, 'Join'],
+        ]);
+
+        self::assertSame('Join', $this->config->getEmailCaptureCtaLabel());
+    }
+
+    public function testGetEmailCaptureCtaLabelDefaultsToSubscribe(): void
+    {
+        self::assertSame('Subscribe', $this->config->getEmailCaptureCtaLabel());
     }
 
     public function testPushGettersDelegateToScopeConfig(): void

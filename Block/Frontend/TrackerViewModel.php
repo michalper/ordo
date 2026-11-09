@@ -79,6 +79,31 @@ class TrackerViewModel implements ArgumentInterface
         return $this->config->isLowStockWidgetEnabled();
     }
 
+    public function isEmailCaptureEnabled(): bool
+    {
+        return $this->config->isEmailCaptureEnabled();
+    }
+
+    public function getEmailCaptureDelaySeconds(): int
+    {
+        return $this->config->getEmailCaptureDelaySeconds();
+    }
+
+    public function getEmailCaptureHeadline(): string
+    {
+        return $this->config->getEmailCaptureHeadline();
+    }
+
+    public function getEmailCaptureBody(): string
+    {
+        return $this->config->getEmailCaptureBody();
+    }
+
+    public function getEmailCaptureCtaLabel(): string
+    {
+        return $this->config->getEmailCaptureCtaLabel();
+    }
+
     /**
      * Not a secret - safe to render straight into the page, same as any other applicationServerKey
      * example in the Web Push spec itself.

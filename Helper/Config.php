@@ -83,6 +83,14 @@ class Config
     private const string XML_PATH_TRACKING_LOW_STOCK_THRESHOLD = 'ordo_tracking/tracking/low_stock_threshold';
     private const string XML_PATH_TRACKING_LOW_STOCK_MESSAGE_TEMPLATE
         = 'ordo_tracking/tracking/low_stock_message_template';
+    private const string XML_PATH_TRACKING_EMAIL_CAPTURE_ENABLED = 'ordo_tracking/tracking/email_capture_enabled';
+    private const string XML_PATH_TRACKING_EMAIL_CAPTURE_DELAY_SECONDS
+        = 'ordo_tracking/tracking/email_capture_delay_seconds';
+    private const string XML_PATH_TRACKING_EMAIL_CAPTURE_HEADLINE
+        = 'ordo_tracking/tracking/email_capture_headline';
+    private const string XML_PATH_TRACKING_EMAIL_CAPTURE_BODY = 'ordo_tracking/tracking/email_capture_body';
+    private const string XML_PATH_TRACKING_EMAIL_CAPTURE_CTA_LABEL
+        = 'ordo_tracking/tracking/email_capture_cta_label';
 
     private const string XML_PATH_POPUP_ENABLED = 'ordo_tracking/tracking/popup_enabled';
     private const string XML_PATH_POPUP_POLL_INTERVAL_SECONDS = 'ordo_tracking/tracking/popup_poll_interval_seconds';
@@ -662,6 +670,60 @@ class Config
         );
 
         return is_string($value) && $value !== '' ? $value : 'Only {qty} left in stock';
+    }
+
+    public function isEmailCaptureEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_TRACKING_EMAIL_CAPTURE_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * How long tracker.js waits, per page load, before showing the email-capture popup to a
+     * visitor who hasn't already dismissed/submitted it (see view/frontend/web/js/tracker.js's
+     * own "ordo_email_capture_dismissed" cookie).
+     */
+    public function getEmailCaptureDelaySeconds(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_TRACKING_EMAIL_CAPTURE_DELAY_SECONDS, 8, $storeId);
+    }
+
+    public function getEmailCaptureHeadline(?int $storeId = null): string
+    {
+        $value = $this->scopeConfig->getValue(
+            self::XML_PATH_TRACKING_EMAIL_CAPTURE_HEADLINE,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+
+        return is_string($value) && $value !== '' ? $value : 'Get 10% off your first order';
+    }
+
+    public function getEmailCaptureBody(?int $storeId = null): string
+    {
+        $value = $this->scopeConfig->getValue(
+            self::XML_PATH_TRACKING_EMAIL_CAPTURE_BODY,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+
+        return is_string($value) && $value !== ''
+            ? $value
+            : 'Sign up for our newsletter and get 10% off your first order.';
+    }
+
+    public function getEmailCaptureCtaLabel(?int $storeId = null): string
+    {
+        $value = $this->scopeConfig->getValue(
+            self::XML_PATH_TRACKING_EMAIL_CAPTURE_CTA_LABEL,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+
+        return is_string($value) && $value !== '' ? $value : 'Subscribe';
     }
 
     public function isPopupEnabled(?int $storeId = null): bool
