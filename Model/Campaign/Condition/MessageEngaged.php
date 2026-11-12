@@ -11,13 +11,14 @@ use Ordo\Automation\Model\Config\Source\MessageEngagementType;
 use Ordo\Automation\Model\Email\MessageEngagementResolver;
 
 /**
- * Params: {"campaign_id": 42, "engagement_type": "opened"|"clicked"
+ * Params: {"campaign_id": 42, "engagement_type": "opened"|"clicked"|"read"
  * (Model\MessageLogEvent::TYPE_*), "engagement_within_days": 14}. Context must include
- * "customer_id" (int). Reads data a prior campaign send's own send_email action and the
- * SendGrid Event Webhook (Controller\Email\StatusCallback) already captured - no tracking of
- * its own, see docs/adr/0016. Named "engagement_*", not "event_*"/"within_days" like
- * EventOccurred's own params, so the admin form fields for the two conditions never collide -
- * they read different source tables with different retention stories.
+ * "customer_id" (int). Reads data a prior campaign send's own send_email/send_whatsapp action and
+ * the SendGrid Event Webhook (Controller\Email\StatusCallback)/Meta Cloud API webhook
+ * (Controller\WhatsApp\Webhook) already captured - no tracking of its own, see docs/adr/0016 and
+ * docs/adr/0051. Named "engagement_*", not "event_*"/"within_days" like EventOccurred's own
+ * params, so the admin form fields for the two conditions never collide - they read different
+ * source tables with different retention stories.
  */
 class MessageEngaged implements ConditionInterface, BulkResolvableConditionInterface
 {
@@ -85,7 +86,7 @@ class MessageEngaged implements ConditionInterface, BulkResolvableConditionInter
             ],
             [
                 'name' => 'engagement_type',
-                'label' => (string) __('Opened or clicked'),
+                'label' => (string) __('Opened, clicked, or read (WhatsApp)'),
                 'options' => OptionSourceFlattener::toMap($this->messageEngagementTypeOptions),
             ],
             ['name' => 'engagement_within_days', 'label' => (string) __('Within days')],

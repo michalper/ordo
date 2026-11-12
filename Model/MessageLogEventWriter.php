@@ -31,6 +31,11 @@ class MessageLogEventWriter
         $this->record($messageLogId, MessageLogEvent::TYPE_CLICKED, $url);
     }
 
+    public function recordRead(int $messageLogId): void
+    {
+        $this->record($messageLogId, MessageLogEvent::TYPE_READ, null);
+    }
+
     /**
      * Writing this event row is deliberately best-effort - same "never let bookkeeping break the
      * actual feature" discipline Model\Sms\MessageLogWriter::save() already follows. A failure

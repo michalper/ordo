@@ -1089,10 +1089,10 @@
         </index>
     </table>
 
-    <table name="ordo_message_log_event" resource="default" engine="innodb" comment="One row per open/click event a delivery-status webhook reported for a given ordo_message_log row — a separate event log rather than another ordo_message_log.status value, since a single message can be opened/clicked more than once and funnel counting needs each stage counted independently rather than collapsed into one terminal status">
+    <table name="ordo_message_log_event" resource="default" engine="innodb" comment="One row per open/click/read event a delivery-status webhook reported for a given ordo_message_log row — a separate event log rather than another ordo_message_log.status value, since a single message can be opened/clicked/read more than once and funnel counting needs each stage counted independently rather than collapsed into one terminal status">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="message_log_id" padding="10" unsigned="true" nullable="false" comment="ordo_message_log.entity_id this event belongs to"/>
-        <column xsi:type="varchar" name="event_type" nullable="false" length="16" comment="opened or clicked"/>
+        <column xsi:type="varchar" name="event_type" nullable="false" length="16" comment="opened, clicked, or read (WhatsApp)"/>
         <column xsi:type="varchar" name="url" nullable="true" length="1024" comment="The clicked URL, for a clicked event — null for opened"/>
         <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="When this event was recorded"/>
         <constraint xsi:type="primary" referenceId="PRIMARY"><column name="entity_id"/></constraint>

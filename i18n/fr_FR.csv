@@ -1233,3 +1233,5 @@
 "Twilio Messaging Service SID","SID du Messaging Service Twilio"
 "The RCS-enabled Messaging Service's SID, used as the ""from"" instead of a phone number.","Le SID du Messaging Service compatible RCS, utilisé comme « from » à la place d'un numéro de téléphone."
 "Paced separately from SMS's own throttle above, even though both share one Twilio account's credentials. 0 disables throttling entirely.","Limité séparément de la limite propre aux SMS ci-dessus, même si les deux partagent les identifiants d'un même compte Twilio. 0 désactive entièrement la limitation."
+"Read (WhatsApp)","Lu (WhatsApp)"
+"Opened, clicked, or read (WhatsApp)","Ouvert, cliqué ou lu (WhatsApp)"

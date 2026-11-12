@@ -1233,3 +1233,5 @@
 "Twilio Messaging Service SID","Twilio Messaging Service SID"
 "The RCS-enabled Messaging Service's SID, used as the ""from"" instead of a phone number.","支持 RCS 的 Messaging Service 的 SID，用作“from”，取代电话号码。"
 "Paced separately from SMS's own throttle above, even though both share one Twilio account's credentials. 0 disables throttling entirely.","与上方 SMS 自身的限流分开调节，尽管两者共用同一个 Twilio 账户的凭据。设为 0 可完全关闭限流。"
+"Read (WhatsApp)","已读（WhatsApp）"
+"Opened, clicked, or read (WhatsApp)","已打开、已点击或已读（WhatsApp）"

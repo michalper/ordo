@@ -72,6 +72,20 @@ class MessageLogEventWriterTest extends TestCase
         self::assertSame('https://example.com/product', $event->getUrl());
     }
 
+    public function testRecordReadSavesAReadRowWithNoUrl(): void
+    {
+        $event = $this->makeEvent();
+        $this->messageLogEventFactory->expects(self::once())->method('create')->willReturn($event);
+        $this->messageLogEventResource->expects(self::once())->method('save')->with($event);
+        $this->logger->expects(self::never())->method('error');
+
+        $this->writer->recordRead(7);
+
+        self::assertSame(7, $event->getMessageLogId());
+        self::assertSame(MessageLogEvent::TYPE_READ, $event->getEventType());
+        self::assertNull($event->getUrl());
+    }
+
     public function testSaveFailureIsLoggedAndSwallowed(): void
     {
         $event = $this->makeEvent();

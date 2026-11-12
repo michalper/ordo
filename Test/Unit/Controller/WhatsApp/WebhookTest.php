@@ -13,6 +13,7 @@ use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\Conversation\InboundMessageProcessor;
 use Ordo\Automation\Model\MessageLog;
 use Ordo\Automation\Model\MessageLog\StatusDowngradeGuard;
+use Ordo\Automation\Model\MessageLogEventWriter;
 use Ordo\Automation\Model\ResourceModel\MessageLog as MessageLogResource;
 use Ordo\Automation\Model\ResourceModel\MessageLog\Collection as MessageLogCollection;
 use Ordo\Automation\Model\ResourceModel\MessageLog\CollectionFactory as MessageLogCollectionFactory;
@@ -43,6 +44,7 @@ class WebhookTest extends AbstractFrontendActionTestCase
     private WhatsAppTemplateCollectionFactory $whatsAppTemplateCollectionFactory;
     private WhatsAppTemplateResource&\PHPUnit\Framework\MockObject\MockObject $whatsAppTemplateResource;
     private InboundMessageProcessor&\PHPUnit\Framework\MockObject\MockObject $inboundMessageProcessor;
+    private MessageLogEventWriter&\PHPUnit\Framework\MockObject\MockObject $messageLogEventWriter;
     private LoggerInterface $logger;
     private Raw $rawResult;
     private Json $jsonResult;
@@ -59,6 +61,7 @@ class WebhookTest extends AbstractFrontendActionTestCase
         $this->whatsAppTemplateCollectionFactory = $this->createMock(WhatsAppTemplateCollectionFactory::class);
         $this->whatsAppTemplateResource = $this->createMock(WhatsAppTemplateResource::class);
         $this->inboundMessageProcessor = $this->createMock(InboundMessageProcessor::class);
+        $this->messageLogEventWriter = $this->createMock(MessageLogEventWriter::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->rawResult = $this->createMock(Raw::class);
@@ -86,6 +89,7 @@ class WebhookTest extends AbstractFrontendActionTestCase
             $this->whatsAppTemplateResource,
             new StatusDowngradeGuard(),
             $this->inboundMessageProcessor,
+            $this->messageLogEventWriter,
             $this->logger
         );
     }
@@ -354,7 +358,7 @@ class WebhookTest extends AbstractFrontendActionTestCase
                 'changes' => [[
                     'value' => [
                         'statuses' => [
-                            ['id' => 'wamid.123', 'status' => 'read'],
+                            ['id' => 'wamid.123', 'status' => 'warehoused'],
                         ],
                     ],
                 ]],
@@ -365,6 +369,69 @@ class WebhookTest extends AbstractFrontendActionTestCase
         $this->request->method('getContent')->willReturn($rawBody);
 
         $this->messageLogCollectionFactory->expects(self::never())->method('create');
+
+        $controller->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPostWithReadStatusWritesAReadEventInsteadOfChangingTheLogStatus(): void
+    {
+        $controller = $this->makeController();
+        $rawBody = json_encode([
+            'entry' => [[
+                'changes' => [[
+                    'value' => [
+                        'statuses' => [
+                            ['id' => 'wamid.123', 'status' => 'read'],
+                        ],
+                    ],
+                ]],
+            ]],
+        ]);
+        $this->request->method('isGet')->willReturn(false);
+        $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
+        $this->request->method('getContent')->willReturn($rawBody);
+
+        $log = $this->makeMessageLog(7);
+        $collection = $this->createMock(MessageLogCollection::class);
+        $collection->expects(self::once())->method('addFieldToFilter')
+            ->with('provider_message_id', 'wamid.123')->willReturnSelf();
+        $collection->expects(self::once())->method('getFirstItem')->willReturn($log);
+        $this->messageLogCollectionFactory->expects(self::once())->method('create')->willReturn($collection);
+
+        $this->messageLogEventWriter->expects(self::once())->method('recordRead')->with(7);
+        $this->messageLogResource->expects(self::never())->method('save');
+        $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
+
+        $controller->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPostWithReadStatusForAnUnknownMessageIdIsIgnored(): void
+    {
+        $controller = $this->makeController();
+        $rawBody = json_encode([
+            'entry' => [[
+                'changes' => [[
+                    'value' => [
+                        'statuses' => [
+                            ['id' => 'wamid.unknown', 'status' => 'read'],
+                        ],
+                    ],
+                ]],
+            ]],
+        ]);
+        $this->request->method('isGet')->willReturn(false);
+        $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
+        $this->request->method('getContent')->willReturn($rawBody);
+
+        $log = $this->makeMessageLog(null);
+        $collection = $this->createMock(MessageLogCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getFirstItem')->willReturn($log);
+        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+
+        $this->messageLogEventWriter->expects(self::never())->method('recordRead');
 
         $controller->execute();
     }

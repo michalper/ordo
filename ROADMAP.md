@@ -657,13 +657,7 @@ column).
   segment to find out whether that customer is even eligible to match either condition. Zero new
   calculation logic - this is purely wiring two already-computed values into the existing
   snapshot and its view template.
-- **WhatsApp read-receipt tracking.** Checked `Controller\WhatsApp\Webhook`'s own
-  `MESSAGE_STATUS_MAP` directly: it maps Meta's `DELIVERED`/`FAILED`/`SENT` statuses to
-  `MessageLog::STATUS_*` constants, but Meta's Cloud API webhook contract also sends a `READ`
-  status (the WhatsApp "seen" receipt) for every template message the recipient actually opens -
-  today that status arrives and is silently dropped, since it isn't in the map and there's no
-  `MessageLog::STATUS_READ`/`MessageLogEvent::TYPE_*` equivalent for it. `message_engaged`
-  (`engagement_type: "opened"|"clicked"`) only ever reads SendGrid's email events
-  (`docs/adr/0016`) - WhatsApp has no engagement signal a campaign can target at all today, even
-  though Meta is already handing this module exactly that signal for free. Closing it is a map
-  entry plus one new `MessageLogEvent::TYPE_READ` row write, no new webhook plumbing.
+- ~~**WhatsApp read-receipt tracking.**~~ — shipped, see
+  `docs/adr/0051-whatsapp-read-receipt-tracking.md`. `Controller\WhatsApp\Webhook` now writes a
+  `MessageLogEvent::TYPE_READ` row for Meta's "seen" receipt instead of silently dropping it,
+  making `message_engaged` usable for WhatsApp sends with zero resolver changes.

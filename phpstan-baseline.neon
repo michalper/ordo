@@ -1245,7 +1245,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 1
+			count: 2
 			path: Controller/WhatsApp/Webhook.php
 
 		-
