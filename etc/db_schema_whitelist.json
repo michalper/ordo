@@ -197,6 +197,20 @@
             "ORDO_OFFER_REMINDER_LOG_OFFER_ID_ORDO_OFFER_ENTITY_ID": true
         }
     },
+    "ordo_stalled_payment_reminder_log": {
+        "column": {
+            "entity_id": true,
+            "order_id": true,
+            "customer_id": true,
+            "sent_at": true
+        },
+        "index": {
+            "ORDO_STALLED_PAYMENT_REMINDER_LOG_ORDER_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
     "ordo_credit_limit_alert_log": {
         "column": {
             "entity_id": true,

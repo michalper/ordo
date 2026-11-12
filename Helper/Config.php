@@ -45,6 +45,8 @@ class Config
 
     private const string XML_PATH_OFFER_ENABLED = 'ordo_automation/offer/enabled';
     private const string XML_PATH_OFFER_LEAD_DAYS = 'ordo_automation/offer/lead_days';
+    private const string XML_PATH_STALLED_PAYMENT_ENABLED = 'ordo_automation/stalled_payment/enabled';
+    private const string XML_PATH_STALLED_PAYMENT_LEAD_HOURS = 'ordo_automation/stalled_payment/lead_hours';
     private const string XML_PATH_OFFER_MAX_SELF_EXTENSIONS = 'ordo_automation/offer/max_self_extensions';
     private const string XML_PATH_OFFER_SELF_EXTENSION_DAYS = 'ordo_automation/offer/self_extension_days';
 
@@ -496,6 +498,27 @@ class Config
     public function getOfferLeadDays(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_OFFER_LEAD_DAYS, 2, $storeId);
+    }
+
+    /**
+     * Gates Cron\SendStalledPaymentReminders.
+     */
+    public function isStalledPaymentReminderEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_STALLED_PAYMENT_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * How many hours an order must have sat in Magento's own pending-payment state before
+     * Cron\SendStalledPaymentReminders reminds the customer about it.
+     */
+    public function getStalledPaymentLeadHours(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_STALLED_PAYMENT_LEAD_HOURS, 24, $storeId);
     }
 
     public function getOfferMaxSelfExtensions(?int $storeId = null): int
