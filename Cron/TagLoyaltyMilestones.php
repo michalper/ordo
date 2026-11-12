@@ -85,7 +85,7 @@ class TagLoyaltyMilestones
                 continue;
             }
 
-            $tag = self::orderCountTag($milestone);
+            $tag = $this->orderCountTag($milestone);
             $alreadyTagged = array_flip(
                 $this->customerTagManager->getCustomerIdsWithTagFromSet($qualifyingIds, $tag)
             );
@@ -117,7 +117,7 @@ class TagLoyaltyMilestones
                 continue;
             }
 
-            $tag = self::tierTag($tier);
+            $tag = $this->tierTag($tier);
             $alreadyTagged = array_flip(
                 $this->customerTagManager->getCustomerIdsWithTag($tag)
             );
@@ -133,12 +133,12 @@ class TagLoyaltyMilestones
         return $tagged;
     }
 
-    public static function orderCountTag(int $milestone): string
+    public function orderCountTag(int $milestone): string
     {
         return 'milestone_order_' . $milestone;
     }
 
-    public static function tierTag(string $tier): string
+    public function tierTag(string $tier): string
     {
         return 'milestone_tier_' . $tier;
     }
