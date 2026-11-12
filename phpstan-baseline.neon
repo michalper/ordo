@@ -1605,6 +1605,18 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
+			count: 3
+			path: Model/Campaign/Action/AbstractPhoneMessageAction.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 4
+			path: Model/Campaign/Action/AbstractPhoneMessageAction.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
 			count: 1
 			path: Model/Campaign/Action/AddDynamicContent.php
 
@@ -1719,25 +1731,25 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 4
+			count: 3
 			path: Model/Campaign/Action/SendRcs.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 4
+			count: 1
 			path: Model/Campaign/Action/SendRcs.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 4
+			count: 3
 			path: Model/Campaign/Action/SendSms.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 4
+			count: 1
 			path: Model/Campaign/Action/SendSms.php
 
 		-

@@ -17,12 +17,30 @@ same Programmable Messaging surface this module already calls for SMS.
 
 - **A new `send_rcs` campaign action and `ConsentChannel::Rcs` case, not a new provider
   integration.** `Model\Rcs\RcsSenderInterface`/`TwilioRcsSender` and
-  `Model\Campaign\Action\SendRcs` mirror `SmsSenderInterface`/`TwilioSmsSender`/`SendSms`
-  structurally — same `ordo_sms_phone` customer attribute and `PhoneNumberResolver` (RCS is still
-  addressed by phone number via carrier routing), same `ConsentManager`/`QuietHoursGate`/
-  `FrequencyCapGate` plumbing, same `ordo_message_log` channel string ('rcs'). All of that
-  plumbing is already channel-agnostic (a plain string parameter), so adding RCS needed no change
-  to any of it.
+  `Model\Campaign\Action\SendRcs` share the same skeleton as `SmsSenderInterface`/
+  `TwilioSmsSender`/`SendSms` — same `ordo_sms_phone` customer attribute and
+  `PhoneNumberResolver` (RCS is still addressed by phone number via carrier routing), same
+  `ConsentManager`/`QuietHoursGate`/`FrequencyCapGate` plumbing, same `ordo_message_log` channel
+  string ('rcs'). That plumbing is already channel-agnostic (a plain string parameter), so adding
+  RCS needed no change to any of it.
+- **Extracted shared base classes instead of letting `SendSms`/`SendRcs` (and
+  `TwilioSmsSender`/`TwilioRcsSender`) duplicate that skeleton outright.** An initial
+  implementation mirrored `SendSms`/`TwilioSmsSender` as independent, parallel classes — the same
+  shape `SendWhatsApp`/`SendPush` already use relative to `SendSms` — but crossed SonarCloud's
+  new-code duplication gate (12.4% vs. the 3% ceiling), correctly: the resulting duplication was
+  real copy-paste, not incidental overlap. Fixed properly rather than suppressed: `Model\Campaign\
+  Action\AbstractPhoneMessageAction` now owns the full shared skeleton (resolve customer, check
+  the channel's own enabled flag, resolve phone, check consent, quiet hours, frequency cap,
+  validate E.164, substitute the `{{recommended_products_text}}` token), with `SendSms`/`SendRcs`
+  as thin subclasses supplying only the channel string, config check, consent channel, and the
+  `sendMessage()` step - the one place SMS's opted-out/retry-queue handling and RCS's simpler
+  single-attempt send genuinely diverge. `Model\Twilio\AbstractTwilioMessageSender` does the same
+  for the two Twilio senders (client construction/caching, rate-limited `messages->create()`
+  call, REST-error handling), with `TwilioSmsSender`/`TwilioRcsSender` supplying only the
+  provider-specific request options and (SMS only) the STOP-keyword-to-`OptedOutException`
+  translation. `SendWhatsApp`/`SendPush` were deliberately left as-is — they didn't trip the
+  duplication gate, so refactoring them now would be unrelated scope creep, not a fix for anything
+  broken.
 - **Reuses SMS's own Twilio Account SID / API Key credentials**, not a separate credential set —
   both are the same Twilio account's Programmable Messaging surface. Only one RCS-specific config
   field is new: `ordo_channels/rcs/twilio_messaging_service_sid`, since RCS is addressed via a
