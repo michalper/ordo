@@ -93,6 +93,18 @@ interface CampaignTriggerInterface
     public const TRIGGER_REFERRAL_CONVERTED = 'referral_converted';
 
     /**
+     * Fires from Observer\RedeemReferralCode the moment a new customer registers with someone
+     * else's referral code and Model\ReferralManager::recordSignup() actually records it (not for
+     * a self-referral or a customer who already has a referral row) - context targets the
+     * REFERRED customer (customer_id = the person who just signed up), plus
+     * "referrer_customer_id". The double-sided counterpart to TRIGGER_REFERRAL_CONVERTED, which
+     * instead targets the referrer once this same customer's first order completes - a campaign
+     * on this trigger is the "you get 10% off your first order" half, independent of whether
+     * that first order ever happens.
+     */
+    public const TRIGGER_REFERRAL_SIGNED_UP = 'referral_signed_up';
+
+    /**
      * Fires from Cron\DispatchCustomerInactiveCampaigns for a registered customer whose most
      * recent non-canceled order (or registration, if they never ordered) is older than this
      * trigger's own `days` param - unlike Cron\TagInactiveCustomers/SendWinBackEmails (a single,

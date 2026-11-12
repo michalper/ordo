@@ -7,7 +7,9 @@ use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\Event;
 use Magento\Framework\Event\Observer as EventObserver;
+use Ordo\Automation\Api\Data\CampaignTriggerInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Queue\CampaignDispatchPublisher;
 use Ordo\Automation\Model\ReferralManager;
 use Ordo\Automation\Observer\RedeemReferralCode;
 use PHPUnit\Framework\TestCase;
@@ -17,9 +19,15 @@ class RedeemReferralCodeTest extends TestCase
     private function makeObserver(
         Config $config,
         CustomerSession $customerSession,
-        ReferralManager $manager
+        ReferralManager $manager,
+        ?CampaignDispatchPublisher $campaignDispatchPublisher = null
     ): RedeemReferralCode {
-        return new RedeemReferralCode($config, $customerSession, $manager);
+        return new RedeemReferralCode(
+            $config,
+            $customerSession,
+            $manager,
+            $campaignDispatchPublisher ?? $this->createStub(CampaignDispatchPublisher::class)
+        );
     }
 
     private function makeEventObserver(array $eventData): EventObserver
@@ -93,7 +101,7 @@ class RedeemReferralCodeTest extends TestCase
             ->execute($this->makeEventObserver(['customer' => $customer]));
     }
 
-    public function testExecuteRecordsSignupWhenCodeResolves(): void
+    public function testExecuteRecordsSignupAndPublishesReferralSignedUpWhenCodeResolves(): void
     {
         $config = $this->createStub(Config::class);
         $config->method('isReferralEnabled')->willReturn(true);
@@ -106,9 +114,43 @@ class RedeemReferralCodeTest extends TestCase
 
         $manager = $this->createMock(ReferralManager::class);
         $manager->method('resolveReferrerCustomerId')->willReturn(1);
-        $manager->expects(self::once())->method('recordSignup')->with(1, 2);
+        $manager->expects(self::once())->method('recordSignup')->with(1, 2)->willReturn(true);
 
-        $this->makeObserver($config, $customerSession, $manager)
+        $publisher = $this->createMock(CampaignDispatchPublisher::class);
+        $publisher->expects(self::once())->method('publish')->with(
+            CampaignTriggerInterface::TRIGGER_REFERRAL_SIGNED_UP,
+            ['customer_id' => 2, 'referrer_customer_id' => 1]
+        );
+
+        $this->makeObserver($config, $customerSession, $manager, $publisher)
+            ->execute($this->makeEventObserver(['customer' => $customer]));
+    }
+
+    /**
+     * Regression-shaped test: Model\ReferralManager::recordSignup() itself no-ops (returns false)
+     * for a self-referral or a customer who already has a referral row - this observer must not
+     * publish referral_signed_up for either case just because resolveReferrerCustomerId()
+     * resolved a real referrer.
+     */
+    public function testExecuteDoesNotPublishWhenRecordSignupNoOps(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isReferralEnabled')->willReturn(true);
+
+        $customerSession = $this->createStub(CustomerSession::class);
+        $customerSession->method('getData')->willReturn('CODE1234');
+
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getId')->willReturn(2);
+
+        $manager = $this->createStub(ReferralManager::class);
+        $manager->method('resolveReferrerCustomerId')->willReturn(1);
+        $manager->method('recordSignup')->willReturn(false);
+
+        $publisher = $this->createMock(CampaignDispatchPublisher::class);
+        $publisher->expects(self::never())->method('publish');
+
+        $this->makeObserver($config, $customerSession, $manager, $publisher)
             ->execute($this->makeEventObserver(['customer' => $customer]));
     }
 }

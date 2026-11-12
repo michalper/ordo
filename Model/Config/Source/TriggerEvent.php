@@ -51,6 +51,10 @@ class TriggerEvent implements OptionSourceInterface
                 'label' => __('Referral Converted (referred customer placed their first order)'),
             ],
             [
+                'value' => CampaignTriggerInterface::TRIGGER_REFERRAL_SIGNED_UP,
+                'label' => __('Referral Signed Up (new customer registered with a referral code)'),
+            ],
+            [
                 'value' => CampaignTriggerInterface::TRIGGER_CUSTOMER_INACTIVE,
                 'label' => __('Customer Inactive For N Days'),
             ],
