@@ -594,3 +594,45 @@ action classes directly, which is how both were missed initially.
   continuous points-to-currency conversion - a store wanting several redemption tiers needs a
   follow-up iteration. Points earned on an order are never clawed back on cancellation/refund - a
   documented v1 gap, not an oversight.
+
+**A fresh 2026-11-12 brainstorm round, checked against established marketing-automation, loyalty, and
+subscription-commerce platforms' own public feature pages before writing anything here.** Several raw
+candidates from that research were dropped before being listed, because grepping the actual codebase (not
+just README.md/ROADMAP.md's own text) showed they already exist: two-way SMS/WhatsApp consent handling
+with mandatory STOP-keyword revocation (`Model\Conversation\InboundMessageProcessor`,
+`StopKeywordDetector` — already unconditional, not a gap); wishlist-add tracking
+(`Observer\TrackWishlistAdd`, the `event_occurred` condition); campaign/subject-line split testing
+(`AutoPickCampaignSplitWinner`); and local-LLM content generation for personalized copy
+(`Model\Campaign\Action\GenerateAiContent`, a self-hosted Ollama call, no external AI vendor dependency).
+Gift-card-based rewards were also considered and dropped for a different reason, not already-shipped: the
+Gift Card product type isn't available on Magento Open Source at all (Commerce-only), so there's no
+storefront primitive for this module to hook into, the same kind of platform ceiling ADR 0008 already
+hit for Commerce SaaS/App Builder.
+
+- **Gamified loyalty milestones.** `Model\LoyaltyTierCalculator` (bronze/silver/gold) and the new points
+  ledger (ADR 0044) are both pure, continuous derivations — there's no discrete "you just unlocked
+  something" moment anywhere in this module, which several loyalty platforms now lean on for engagement
+  (badges/challenges/milestone rewards layered on top of tiers). Fits the existing `AddTag`/`add_tag`
+  trigger shape directly: a new cron or condition check (e.g. "first order this year," "5th order,"
+  "reached Gold") tags the customer and fires the existing `visitor_tag_added`/`tag_added` trigger wiring,
+  so a campaign can react to a milestone with no new trigger type needed, only a few new well-defined
+  milestone checks and a badge tag namespace.
+- **Churn-risk segmentation condition.** Every existing RFM/CLV condition
+  (`RecencyDaysAtMost`, `OrderFrequencyAtLeast`, `MonetaryTotalAtLeast`, the three `*PercentileAtLeast`
+  conditions) reads a point-in-time snapshot; `ReorderCycleAtRisk` is the one self-relative "drifting from
+  their own baseline" signal that exists today, but it only applies to a customer with an already-detected
+  cyclical reorder pattern, so it says nothing about a one-off or irregular buyer quietly going cold. A new
+  `churn_risk_at_least` condition — comparing a customer's recent order-frequency/engagement trend against
+  their own trailing baseline, the same self-relative-drift shape `ReorderCycleAtRisk` and
+  `Cron\DetectAnomalies` already use at the campaign level — would generalize that signal to every
+  customer, not just ones with a detected reorder cycle, and slot into `ConditionPool` like any other
+  segment condition with zero changes to the dispatcher.
+- **Stalled/failed payment recovery.** Checked directly: there is no trigger or cron anywhere in this
+  module keyed off an order sitting in Magento's own pending-payment state (bank transfer, a PayPal
+  pending capture, a declined re-authorization) — not "dunning" in the subscription-billing sense other
+  platforms mean it (Magento Open Source has no recurring billing for this module to hook into at all),
+  but the same, already-precedented "cron scan against a claim column" shape every other reminder feature
+  here uses (CLAUDE.md's own architecture note). A new `Cron\SendStalledPaymentReminders` scanning orders
+  past a configurable age in a pending-payment state, claiming them the same way
+  `Cron\SendAbandonedCartReminders` already does, would recover real, already-placed orders that are one
+  nudge away from completing instead of silently aging out.
