@@ -648,15 +648,10 @@ column).
   New `send_rcs` action and `ConsentChannel::Rcs` case, reusing SMS's own Twilio Account SID / API
   Key credentials and all of `SendSms`'s channel-agnostic consent/quiet-hours/frequency-cap
   plumbing — only a Messaging Service SID config field is new.
-- **Surface CLV and churn-risk on Customer 360.** Checked `Model\Customer360\
-  Customer360SnapshotBuilder::build()` directly: it already pulls lead score, loyalty tier, RFM,
-  tags, NPS, and matching segments onto one page, but never calls `Model\Clv\ClvCalculator::
-  getProjectedClv()` or `Model\ChurnRisk\ChurnRiskCalculator::getChurnRiskRatioForCustomer()` -
-  both single-customer getters that already exist and already back their own segment conditions
-  (`clv_at_least`, `churn_risk_at_least`). A rep looking at one customer today has to go build a
-  segment to find out whether that customer is even eligible to match either condition. Zero new
-  calculation logic - this is purely wiring two already-computed values into the existing
-  snapshot and its view template.
+- ~~**Surface CLV and churn-risk on Customer 360.**~~ — shipped, see
+  `docs/adr/0050-customer360-clv-churn-risk.md`. `Customer360SnapshotBuilder` now wires
+  `ClvCalculator::getProjectedClv()`/`ChurnRiskCalculator::getChurnRiskRatioForCustomer()` into
+  the existing snapshot - zero new calculation logic.
 - ~~**WhatsApp read-receipt tracking.**~~ — shipped, see
   `docs/adr/0051-whatsapp-read-receipt-tracking.md`. `Controller\WhatsApp\Webhook` now writes a
   `MessageLogEvent::TYPE_READ` row for Meta's "seen" receipt instead of silently dropping it,

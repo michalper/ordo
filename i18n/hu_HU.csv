@@ -1235,3 +1235,6 @@
 "Paced separately from SMS's own throttle above, even though both share one Twilio account's credentials. 0 disables throttling entirely.","A fenti SMS-limittől függetlenül korlátozva, bár mindkettő ugyanazon Twilio-fiók hitelesítő adatait használja. A 0 érték teljesen kikapcsolja a korlátozást."
 "Read (WhatsApp)","Elolvasva (WhatsApp)"
 "Opened, clicked, or read (WhatsApp)","Megnyitva, kattintva vagy elolvasva (WhatsApp)"
+"Projected CLV","Becsült CLV"
+"Churn risk ratio","Lemorzsolódási kockázati arány"
+"Not enough order history","Nincs elég rendelési előzmény"

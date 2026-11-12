@@ -37,6 +37,15 @@ class Index extends Template
     }
 
     /**
+     * ChurnRiskCalculator's own ratio (1.0 = exactly on the customer's historical cadence) -
+     * two decimal places is enough precision for a human glancing at this screen.
+     */
+    public function formatRatio(float $ratio): string
+    {
+        return number_format($ratio, 2);
+    }
+
+    /**
      * Renders one "label: value" row of the stat-row markup repeated across this screen's cards.
      * $valueHtml is trusted, already-escaped markup - callers own escaping their own value.
      */

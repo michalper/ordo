@@ -1235,3 +1235,6 @@
 "Paced separately from SMS's own throttle above, even though both share one Twilio account's credentials. 0 disables throttling entirely.","Wordt los van de eigen SMS-limiet hierboven beperkt, ook al delen beide de inloggegevens van één Twilio-account. 0 schakelt de beperking volledig uit."
 "Read (WhatsApp)","Gelezen (WhatsApp)"
 "Opened, clicked, or read (WhatsApp)","Geopend, geklikt of gelezen (WhatsApp)"
+"Projected CLV","Geprojecteerde CLV"
+"Churn risk ratio","Churnrisicoratio"
+"Not enough order history","Onvoldoende bestelgeschiedenis"

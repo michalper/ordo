@@ -8,6 +8,8 @@ use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\DB\Select;
 use Ordo\Automation\Api\CustomerTagManagementInterface;
+use Ordo\Automation\Model\ChurnRisk\ChurnRiskCalculator;
+use Ordo\Automation\Model\Clv\ClvCalculator;
 use Ordo\Automation\Model\CustomerScoreManager;
 use Ordo\Automation\Model\Customer360\Customer360SnapshotBuilder;
 use Ordo\Automation\Model\LoyaltyTierCalculator;
@@ -116,6 +118,12 @@ class Customer360SnapshotBuilderTest extends TestCase
             [6, 42, [], false],
         ]);
 
+        $clvCalculator = $this->createStub(ClvCalculator::class);
+        $clvCalculator->method('getProjectedClv')->willReturn(1234.56);
+
+        $churnRiskCalculator = $this->createStub(ChurnRiskCalculator::class);
+        $churnRiskCalculator->method('getChurnRiskRatioForCustomer')->willReturn(1.35);
+
         $builder = new Customer360SnapshotBuilder(
             $customerScoreManager,
             $loyaltyTierCalculator,
@@ -124,7 +132,9 @@ class Customer360SnapshotBuilderTest extends TestCase
             $surveyPromptCollectionFactory,
             $segmentCollectionFactory,
             $segmentMatcher,
-            $this->makeResourceConnection(3, 199.99)
+            $this->makeResourceConnection(3, 199.99),
+            $clvCalculator,
+            $churnRiskCalculator
         );
 
         $snapshot = $builder->build($customer);
@@ -143,6 +153,8 @@ class Customer360SnapshotBuilderTest extends TestCase
         self::assertSame(['High spenders'], $snapshot->matchingSegmentNames);
         self::assertSame(3, $snapshot->orderCount);
         self::assertSame(199.99, $snapshot->orderTotal);
+        self::assertSame(1234.56, $snapshot->projectedClv);
+        self::assertSame(1.35, $snapshot->churnRiskRatio);
     }
 
     public function testBuildHandlesACustomerWithNoOrdersOrDataGracefully(): void
@@ -183,6 +195,12 @@ class Customer360SnapshotBuilderTest extends TestCase
 
         $segmentMatcher = $this->createStub(SegmentMatcher::class);
 
+        $clvCalculator = $this->createStub(ClvCalculator::class);
+        $clvCalculator->method('getProjectedClv')->willReturn(0.0);
+
+        $churnRiskCalculator = $this->createStub(ChurnRiskCalculator::class);
+        $churnRiskCalculator->method('getChurnRiskRatioForCustomer')->willReturn(null);
+
         $builder = new Customer360SnapshotBuilder(
             $customerScoreManager,
             $loyaltyTierCalculator,
@@ -191,7 +209,9 @@ class Customer360SnapshotBuilderTest extends TestCase
             $surveyPromptCollectionFactory,
             $segmentCollectionFactory,
             $segmentMatcher,
-            $this->makeResourceConnection(0, 0.0)
+            $this->makeResourceConnection(0, 0.0),
+            $clvCalculator,
+            $churnRiskCalculator
         );
 
         $snapshot = $builder->build($customer);
@@ -204,6 +224,8 @@ class Customer360SnapshotBuilderTest extends TestCase
         self::assertSame([], $snapshot->matchingSegmentNames);
         self::assertSame(0, $snapshot->orderCount);
         self::assertSame(0.0, $snapshot->orderTotal);
+        self::assertSame(0.0, $snapshot->projectedClv);
+        self::assertNull($snapshot->churnRiskRatio);
     }
 
     public function testBuildDefaultsOrderStatsToZeroWhenTheAggregateQueryReturnsNoRow(): void
@@ -244,6 +266,9 @@ class Customer360SnapshotBuilderTest extends TestCase
 
         $segmentMatcher = $this->createStub(SegmentMatcher::class);
 
+        $clvCalculator = $this->createStub(ClvCalculator::class);
+        $churnRiskCalculator = $this->createStub(ChurnRiskCalculator::class);
+
         $builder = new Customer360SnapshotBuilder(
             $customerScoreManager,
             $loyaltyTierCalculator,
@@ -252,7 +277,9 @@ class Customer360SnapshotBuilderTest extends TestCase
             $surveyPromptCollectionFactory,
             $segmentCollectionFactory,
             $segmentMatcher,
-            $this->makeResourceConnectionWithNoRow()
+            $this->makeResourceConnectionWithNoRow(),
+            $clvCalculator,
+            $churnRiskCalculator
         );
 
         $snapshot = $builder->build($customer);

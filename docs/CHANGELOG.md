@@ -32,6 +32,9 @@ it doesn't update itself from this file.
   reusing SMS's own Twilio Account SID / API Key credentials through Twilio's RCS Business
   Messaging surface (`Model\Rcs\TwilioRcsSender`) — only a Messaging Service SID config field is
   new. See ADR 0049.
+- **CLV and churn risk on Customer 360** — `Customer360SnapshotBuilder` now surfaces
+  `ClvCalculator::getProjectedClv()` and `ChurnRiskCalculator::getChurnRiskRatioForCustomer()`
+  alongside the existing RFM/order-history stats. See ADR 0050.
 - **WhatsApp read-receipt tracking** — `Controller\WhatsApp\Webhook` now writes a
   `MessageLogEvent::TYPE_READ` row for Meta's "seen" receipt instead of dropping it, making
   `message_engaged` usable for WhatsApp sends. See ADR 0051.

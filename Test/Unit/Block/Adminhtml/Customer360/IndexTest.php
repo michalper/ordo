@@ -114,7 +114,9 @@ class IndexTest extends TestCase
             npsScore: 9,
             matchingSegmentNames: ['High spenders'],
             orderCount: 3,
-            orderTotal: 199.99
+            orderTotal: 199.99,
+            projectedClv: 1234.56,
+            churnRiskRatio: 1.35
         );
 
         $builder = $this->createMock(Customer360SnapshotBuilder::class);
@@ -144,6 +146,12 @@ class IndexTest extends TestCase
         $this->pricingHelper->method('currency')->willReturn('$199.99');
 
         self::assertSame('$199.99', $this->block->formatCurrency(199.99));
+    }
+
+    public function testFormatRatioFormatsToTwoDecimalPlaces(): void
+    {
+        self::assertSame('1.35', $this->block->formatRatio(1.3499));
+        self::assertSame('1.00', $this->block->formatRatio(1.0));
     }
 
     public function testStatRowRendersTheLabelEscapedAndTheValueHtmlAsIs(): void

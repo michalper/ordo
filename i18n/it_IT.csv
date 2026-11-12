@@ -1235,3 +1235,6 @@
 "Paced separately from SMS's own throttle above, even though both share one Twilio account's credentials. 0 disables throttling entirely.","Limitato separatamente dal limite SMS sopra, anche se entrambi condividono le credenziali di uno stesso account Twilio. 0 disabilita completamente la limitazione."
 "Read (WhatsApp)","Letto (WhatsApp)"
 "Opened, clicked, or read (WhatsApp)","Aperto, cliccato o letto (WhatsApp)"
+"Projected CLV","CLV proiettato"
+"Churn risk ratio","Rapporto di rischio di abbandono"
+"Not enough order history","Cronologia ordini insufficiente"

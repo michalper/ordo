@@ -6,6 +6,8 @@ namespace Ordo\Automation\Model\Customer360;
 use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\App\ResourceConnection;
 use Ordo\Automation\Api\CustomerTagManagementInterface;
+use Ordo\Automation\Model\ChurnRisk\ChurnRiskCalculator;
+use Ordo\Automation\Model\Clv\ClvCalculator;
 use Ordo\Automation\Model\CustomerScoreManager;
 use Ordo\Automation\Model\LoyaltyTierCalculator;
 use Ordo\Automation\Model\ResourceModel\Segment\CollectionFactory as SegmentCollectionFactory;
@@ -31,7 +33,9 @@ class Customer360SnapshotBuilder
         private readonly SurveyPromptCollectionFactory $surveyPromptCollectionFactory,
         private readonly SegmentCollectionFactory $segmentCollectionFactory,
         private readonly SegmentMatcher $segmentMatcher,
-        private readonly ResourceConnection $resourceConnection
+        private readonly ResourceConnection $resourceConnection,
+        private readonly ClvCalculator $clvCalculator,
+        private readonly ChurnRiskCalculator $churnRiskCalculator
     ) {
     }
 
@@ -57,7 +61,9 @@ class Customer360SnapshotBuilder
             npsScore: $this->getLatestNpsScore($customerId),
             matchingSegmentNames: $this->getMatchingSegmentNames($customerId),
             orderCount: $orderCount,
-            orderTotal: $orderTotal
+            orderTotal: $orderTotal,
+            projectedClv: $this->clvCalculator->getProjectedClv($customerId),
+            churnRiskRatio: $this->churnRiskCalculator->getChurnRiskRatioForCustomer($customerId)
         );
     }
 
