@@ -118,6 +118,7 @@ class CampaignSaveProcessorTest extends TestCase
                 ['name' => 'within_days'],
             ]),
             'reorder_cycle_at_risk' => $this->stubCondition([['name' => 'ratio_at_least']]),
+            'churn_risk_at_least' => $this->stubCondition([['name' => 'churn_risk_ratio_at_least']]),
         ];
     }
 
@@ -805,6 +806,40 @@ class CampaignSaveProcessorTest extends TestCase
         $processor->process([
             'conditions' => ['conditions' => [
                 ['type' => 'reorder_cycle_at_risk', 'ratio_at_least' => '0.5', 'params_json' => ''],
+            ]],
+            'actions' => ['actions' => []],
+        ]);
+    }
+
+    /**
+     * Same regression shape as the reorder_cycle_at_risk test above: churn_risk_at_least's own
+     * dedicated field is deliberately named churn_risk_ratio_at_least, not ratio_at_least (ADR
+     * 0045), specifically so it doesn't collide with reorder_cycle_at_risk's field/label.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessPersistsChurnRiskAtLeastRatioAtLeastDedicatedField(): void
+    {
+        $processor = $this->makeProcessor();
+
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(1);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
+        $this->actionCollectionFactory->method('create')->willReturn($this->emptyActionCollection());
+
+        $condition = $this->createMock(CampaignCondition::class);
+        $condition->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => json_decode($data['params'], true) === ['churn_risk_ratio_at_least' => '1.2']
+        ));
+
+        $this->campaignConditionFactory->method('create')->willReturn($condition);
+        $this->conditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+        $this->campaignConditionResource->expects(self::once())->method('save');
+
+        $processor->process([
+            'conditions' => ['conditions' => [
+                ['type' => 'churn_risk_at_least', 'churn_risk_ratio_at_least' => '1.2', 'params_json' => ''],
             ]],
             'actions' => ['actions' => []],
         ]);

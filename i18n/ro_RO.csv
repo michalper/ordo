@@ -1222,3 +1222,6 @@
 "Registration Anniversary","Aniversare de înregistrare"
 "Loyalty Milestones","Repere de fidelitate"
 "Tags a customer the moment they cross a fixed order-count milestone (1st, 5th, 10th, 25th, 50th order) or reach a Silver/Gold loyalty tier, so a campaign can react to that moment with the existing ""Has Tag"" condition and ""tag_added"" trigger - no new trigger type, no new table.","Eticheteaza un client in momentul in care atinge un reper fix bazat pe numarul de comenzi (a 1-a, a 5-a, a 10-a, a 25-a, a 50-a comanda) sau atinge nivelul Silver/Gold - o campanie poate reactiona la acel moment cu conditia existenta ""Are eticheta"" si declansatorul ""tag_added"" - fara un nou tip de declansator, fara un nou tabel."
+"Churn Risk At Least (drift ratio vs. own order cadence)","Risc de pierdere a clientului cel puțin (raport de abatere față de propriul ritm de comenzi)"
+"Churn risk ratio, at least (1.0 = exactly on their own cadence)","Raport de risc de pierdere a clientului, cel puțin (1.0 = exact conform propriului ritm)"
+"Churn Risk Ratio, At Least (1.0 = overdue vs. own historical order cadence)","Raport de risc de pierdere a clientului, cel puțin (1.0 = întârziat față de propriul ritm istoric de comenzi)"

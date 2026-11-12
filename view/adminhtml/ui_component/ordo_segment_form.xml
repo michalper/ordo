@@ -278,7 +278,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">true</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">true</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="1">
                                     <value>order_total_gte</value>
@@ -408,7 +408,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="2">
                                     <value>visitor_tag</value>
@@ -538,7 +538,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">true</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">true</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="3">
                                     <value>score_at_least</value>
@@ -668,7 +668,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="4">
                                     <value>recency_days_at_most</value>
@@ -798,7 +798,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="5">
                                     <value>order_frequency_at_least</value>
@@ -928,7 +928,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="6">
                                     <value>monetary_total_at_least</value>
@@ -1058,7 +1058,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="7">
                                     <value>recency_percentile_at_least</value>
@@ -1188,7 +1188,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="8">
                                     <value>order_frequency_percentile_at_least</value>
@@ -1318,7 +1318,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="9">
                                     <value>monetary_percentile_at_least</value>
@@ -1448,7 +1448,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <!--
                                     The 3 types with no dedicated field yet (in_segment,
@@ -1588,7 +1588,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="11">
                                     <value>loyalty_tier_at_least</value>
@@ -1718,7 +1718,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="12">
                                     <value>nps_score_at_least</value>
@@ -1848,7 +1848,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="13">
                                     <value>group</value>
@@ -1978,7 +1978,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="14">
                                     <value>purchased_sku</value>
@@ -2108,7 +2108,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="15">
                                     <value>purchased_category</value>
@@ -2238,7 +2238,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <!--
                                     not_in_segment: same params shape (segment_id) as in_segment
@@ -2375,7 +2375,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <!--
                                     event_occurred: the only type whose dedicated fields are
@@ -2511,7 +2511,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="18">
                                     <value>reorder_cycle_at_risk</value>
@@ -2641,7 +2641,7 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">false</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
                                 <rule name="19">
                                     <value>message_engaged</value>
@@ -2771,10 +2771,10 @@
                                             <params>
                                                 <param name="0" xsi:type="boolean">true</param>
                                             </params>
-                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
+                                        </action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action></actions>
                                 </rule>
 </rules>
-                        </switcherConfig>
+                        <rule name="20"><value>churn_risk_at_least</value><actions><action name="0"><target>${ $.parentName }.tags</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="1"><target>${ $.parentName }.amount</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="2"><target>${ $.parentName }.threshold</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="3"><target>${ $.parentName }.days</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="4"><target>${ $.parentName }.count</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="5"><target>${ $.parentName }.percentile</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="6"><target>${ $.parentName }.params_json</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="7"><target>${ $.parentName }.group_logic</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="8"><target>${ $.parentName }.group_conditions_json</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="9"><target>${ $.parentName }.sku</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="10"><target>${ $.parentName }.category_id</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="11"><target>${ $.parentName }.event_type</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="12"><target>${ $.parentName }.event_key</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="13"><target>${ $.parentName }.within_days</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="14"><target>${ $.parentName }.segment_id</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="15"><target>${ $.parentName }.tier</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="16"><target>${ $.parentName }.event_only_warning</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="17"><target>${ $.parentName }.ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="18"><target>${ $.parentName }.campaign_id</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="19"><target>${ $.parentName }.engagement_type</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="20"><target>${ $.parentName }.engagement_within_days</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="21"><target>${ $.parentName }.match_mode</target><callback>visible</callback><params><param name="0" xsi:type="boolean">false</param></params></action><action name="22"><target>${ $.parentName }.churn_risk_ratio_at_least</target><callback>visible</callback><params><param name="0" xsi:type="boolean">true</param></params></action></actions></rule></switcherConfig>
                     </settings>
                     <formElements>
                         <select>
@@ -2863,6 +2863,16 @@
                     <settings>
                         <dataType>text</dataType>
                         <label translate="true">Reorder Cycle Drift Ratio, At Least (1.0 = exactly on schedule)</label>
+                        <visible>false</visible>
+                        <validation>
+                            <rule name="validate-number" xsi:type="boolean">true</rule>
+                        </validation>
+                    </settings>
+                </field>
+                <field name="churn_risk_ratio_at_least" formElement="input" sortOrder="19">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Churn Risk Ratio, At Least (1.0 = overdue vs. own historical order cadence)</label>
                         <visible>false</visible>
                         <validation>
                             <rule name="validate-number" xsi:type="boolean">true</rule>

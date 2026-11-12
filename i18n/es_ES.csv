@@ -1222,3 +1222,6 @@
 "Registration Anniversary","Aniversario de registro"
 "Loyalty Milestones","Hitos de fidelidad"
 "Tags a customer the moment they cross a fixed order-count milestone (1st, 5th, 10th, 25th, 50th order) or reach a Silver/Gold loyalty tier, so a campaign can react to that moment with the existing ""Has Tag"" condition and ""tag_added"" trigger - no new trigger type, no new table.","Etiqueta a un cliente en el momento en que alcanza un hito fijo segun el numero de pedidos (1.º, 5.º, 10.º, 25.º, 50.º pedido) o alcanza el nivel Silver/Gold - una campana puede reaccionar a ese momento con la condicion existente ""Tiene etiqueta"" y el disparador ""tag_added"" - sin nuevo tipo de disparador ni nueva tabla."
+"Churn Risk At Least (drift ratio vs. own order cadence)","Riesgo de abandono como mínimo (ratio de desviación respecto a su propio ritmo de pedidos)"
+"Churn risk ratio, at least (1.0 = exactly on their own cadence)","Ratio de riesgo de abandono, como mínimo (1.0 = exactamente en su propio ritmo)"
+"Churn Risk Ratio, At Least (1.0 = overdue vs. own historical order cadence)","Ratio de riesgo de abandono, como mínimo (1.0 = retraso respecto a su propio ritmo histórico de pedidos)"

@@ -1222,3 +1222,6 @@
 "Registration Anniversary","Registratie jubileum"
 "Loyalty Milestones","Loyaliteitsmijlpalen"
 "Tags a customer the moment they cross a fixed order-count milestone (1st, 5th, 10th, 25th, 50th order) or reach a Silver/Gold loyalty tier, so a campaign can react to that moment with the existing ""Has Tag"" condition and ""tag_added"" trigger - no new trigger type, no new table.","Tagt een klant op het moment dat deze een vaste bestelaantal-mijlpaal bereikt (1e, 5e, 10e, 25e, 50e bestelling) of het Silver/Gold-niveau bereikt - een campagne kan op dat moment reageren met de bestaande voorwaarde ""Heeft tag"" en de trigger ""tag_added"" - geen nieuw triggertype, geen nieuwe tabel."
+"Churn Risk At Least (drift ratio vs. own order cadence)","Churnrisico ten minste (afwijkingsratio ten opzichte van eigen bestelritme)"
+"Churn risk ratio, at least (1.0 = exactly on their own cadence)","Churnrisicoratio, ten minste (1.0 = precies volgens eigen ritme)"
+"Churn Risk Ratio, At Least (1.0 = overdue vs. own historical order cadence)","Churnrisicoratio, ten minste (1.0 = achterstallig ten opzichte van eigen historisch bestelritme)"

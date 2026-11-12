@@ -1222,3 +1222,6 @@
 "Registration Anniversary","Výročie registrácie"
 "Loyalty Milestones","Mílniky vernosti"
 "Tags a customer the moment they cross a fixed order-count milestone (1st, 5th, 10th, 25th, 50th order) or reach a Silver/Gold loyalty tier, so a campaign can react to that moment with the existing ""Has Tag"" condition and ""tag_added"" trigger - no new trigger type, no new table.","Oznaci zakaznika stitkom vo chvili, ked dosiahne pevne stanoveny milnik podla poctu objednavok (1., 5., 10., 25., 50. objednavka) alebo dosiahne uroven Silver/Gold - kampan moze na tento moment reagovat existujucou podmienkou ""Ma stitok"" a triggerom ""tag_added"" - bez noveho typu triggera, bez novej tabulky."
+"Churn Risk At Least (drift ratio vs. own order cadence)","Riziko odchodu zákazníka aspoň (pomer odchýlky od vlastného cyklu objednávok)"
+"Churn risk ratio, at least (1.0 = exactly on their own cadence)","Pomer rizika odchodu, aspoň (1.0 = presne podľa vlastného cyklu)"
+"Churn Risk Ratio, At Least (1.0 = overdue vs. own historical order cadence)","Pomer rizika odchodu, aspoň (1.0 = oneskorenie oproti vlastnému historickému cyklu objednávok)"

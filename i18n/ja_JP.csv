@@ -1222,3 +1222,6 @@
 "Registration Anniversary","登録記念日"
 "Loyalty Milestones","ロイヤルティ・マイルストーン"
 "Tags a customer the moment they cross a fixed order-count milestone (1st, 5th, 10th, 25th, 50th order) or reach a Silver/Gold loyalty tier, so a campaign can react to that moment with the existing ""Has Tag"" condition and ""tag_added"" trigger - no new trigger type, no new table.","顧客が固定の注文数マイルストーン(1、5、10、25、50回目の注文)に到達した瞬間、またはSilver/Goldのロイヤルティティアに到達した瞬間にタグを付けます - キャンペーンは既存の「タグを持つ」条件と「tag_added」トリガーでその瞬間に反応できます - 新しいトリガータイプや新しいテーブルは不要です。"
+"Churn Risk At Least (drift ratio vs. own order cadence)","チャーンリスク以上（自身の注文サイクルに対する乖離率）"
+"Churn risk ratio, at least (1.0 = exactly on their own cadence)","チャーンリスク比率、以上（1.0 = 自身のサイクル通り）"
+"Churn Risk Ratio, At Least (1.0 = overdue vs. own historical order cadence)","チャーンリスク比率、以上（1.0 = 自身の過去の注文サイクルに対して遅延）"

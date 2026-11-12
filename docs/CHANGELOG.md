@@ -11,6 +11,11 @@ it doesn't update itself from this file.
 
 ### Added
 
+- **Churn-risk segmentation condition** — new `churn_risk_at_least` condition
+  (`Model\Campaign\Condition\ChurnRiskAtLeast`, `Model\ChurnRisk\ChurnRiskCalculator`) generalizes
+  `ReorderCycleAtRisk`'s self-relative "drifting from their own baseline" signal to every customer
+  with at least 2 orders, not just ones with an already-detected, SKU-specific reorder cycle. See
+  ADR 0045.
 - **Gamified loyalty milestones** — new `Cron\TagLoyaltyMilestones` tags a customer the moment they
   cross a fixed order-count milestone (1st/5th/10th/25th/50th order) or reach a Silver/Gold loyalty
   tier, reusing the existing `tag_added` trigger and `Has Tag` condition — no new trigger type or

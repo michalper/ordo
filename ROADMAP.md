@@ -614,16 +614,13 @@ hit for Commerce SaaS/App Builder.
   moment they cross a fixed order-count milestone (1st/5th/10th/25th/50th order) or reach a Silver/Gold
   tier — no new trigger type or table, just the existing idempotent `CustomerTagManager::addTag()` and
   the `tag_added` trigger already fire for it.
-- **Churn-risk segmentation condition.** Every existing RFM/CLV condition
-  (`RecencyDaysAtMost`, `OrderFrequencyAtLeast`, `MonetaryTotalAtLeast`, the three `*PercentileAtLeast`
-  conditions) reads a point-in-time snapshot; `ReorderCycleAtRisk` is the one self-relative "drifting from
-  their own baseline" signal that exists today, but it only applies to a customer with an already-detected
-  cyclical reorder pattern, so it says nothing about a one-off or irregular buyer quietly going cold. A new
-  `churn_risk_at_least` condition — comparing a customer's recent order-frequency/engagement trend against
-  their own trailing baseline, the same self-relative-drift shape `ReorderCycleAtRisk` and
-  `Cron\DetectAnomalies` already use at the campaign level — would generalize that signal to every
-  customer, not just ones with a detected reorder cycle, and slot into `ConditionPool` like any other
-  segment condition with zero changes to the dispatcher.
+- ~~**Churn-risk segmentation condition.**~~ — shipped, see
+  `docs/adr/0045-churn-risk-segmentation-condition.md`. New `churn_risk_at_least` condition and its
+  own `Model\ChurnRisk\ChurnRiskCalculator`, generalizing `ReorderCycleAtRisk`'s self-relative
+  "drifting from their own baseline" signal to every customer with at least 2 orders — a
+  customer-level median order interval, not `ReorderCycleAtRisk`'s per-(customer, sku) one, so an
+  irregular or mixed-basket buyer who would never get a detected reorder cycle is now reachable
+  too.
 - **Stalled/failed payment recovery.** Checked directly: there is no trigger or cron anywhere in this
   module keyed off an order sitting in Magento's own pending-payment state (bank transfer, a PayPal
   pending capture, a declined re-authorization) — not "dunning" in the subscription-billing sense other
