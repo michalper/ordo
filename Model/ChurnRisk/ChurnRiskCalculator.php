@@ -143,7 +143,7 @@ class ChurnRiskCalculator
             return null;
         }
 
-        $elapsedDays = ($this->dateTime->gmtTimestamp() - strtotime((string) end($dates))) / 86400;
+        $elapsedDays = ($this->dateTime->gmtTimestamp() - strtotime(end($dates))) / 86400;
 
         return max(0.0, $elapsedDays) / $medianInterval;
     }
