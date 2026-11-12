@@ -75,6 +75,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isMetaCapiEnabled());
         self::assertTrue($this->config->isCustomerInactiveTriggerEnabled());
         self::assertTrue($this->config->isAnomalyAlertsEnabled());
+        self::assertTrue($this->config->isLoyaltyMilestonesEnabled());
     }
 
     public function testGetSocialProofMinimumViewsDelegatesToScopeConfig(): void
