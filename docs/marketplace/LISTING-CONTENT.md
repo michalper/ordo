@@ -82,6 +82,22 @@ with escalation for unresolved approvals</li>
 <li>Email template version history</li>
 <li>On-site behavior tracking via a dependency-free JS snippet</li>
 <li>Predictive send-time optimization, based on each customer's own historical open/click behavior</li>
+<li>Loyalty points — an ongoing earn/redeem balance, separate from the tier-based loyalty program</li>
+<li>Newsletter signup popup, tied into real Magento newsletter subscriptions</li>
+<li>"Only N left in stock" and "N people viewed this today" storefront widgets, drop-in for any theme</li>
+<li>Server-side conversion reporting to GA4 and Meta Conversions API, bypassing ad blockers and browser
+privacy settings</li>
+<li>Ad-audience sync to Google Ads, Meta, and TikTok</li>
+<li>Birthday / registration-anniversary campaign trigger</li>
+<li>GTM dataLayer bridge and an exit-intent campaign trigger</li>
+<li>GraphQL storefront API for headless/PWA Studio storefronts — tracking, popups/notifications/surveys,
+My Offers, credit limit, price-watch and push subscriptions</li>
+<li>Curated campaign template library (Welcome Series, Cart Abandonment Follow-up, VIP Upsell)</li>
+<li>Email template drafts — edit a template's subject/content separately and publish only when ready</li>
+<li>Revenue/channel, campaign comparison, cohort retention, purchase-funnel, and product performance
+reports, plus automated anomaly alerts on revenue/conversion</li>
+<li>Per-topic consent (Promotional vs. Account &amp; Order Updates)</li>
+<li>Multi-website support — campaigns, segments, and score rules can each be scoped to specific websites</li>
 </ul>
 
 <p>Full documentation, including a PDF setup guide, is linked from the listing.</p>
