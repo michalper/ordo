@@ -1233,6 +1233,8 @@
 "Twilio Messaging Service SID","Twilio Messaging Service SID"
 "The RCS-enabled Messaging Service's SID, used as the ""from"" instead of a phone number.","Telefon numarası yerine ""from"" olarak kullanılan, RCS özellikli Messaging Service'in SID'i."
 "Paced separately from SMS's own throttle above, even though both share one Twilio account's credentials. 0 disables throttling entirely.","Her ikisi de aynı Twilio hesabının kimlik bilgilerini paylaşsa da, yukarıdaki kendi SMS sınırından ayrı olarak sınırlandırılır. 0 değeri sınırlamayı tamamen devre dışı bırakır."
+"Read (WhatsApp)","Okundu (WhatsApp)"
+"Opened, clicked, or read (WhatsApp)","Açıldı, tıklandı veya okundu (WhatsApp)"
 "Projected CLV","Tahmini CLV"
 "Churn risk ratio","Kayıp riski oranı"
 "Not enough order history","Yeterli sipariş geçmişi yok"

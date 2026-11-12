@@ -16,6 +16,13 @@ class MessageLogEvent extends AbstractModel
     public const string TYPE_OPENED = 'opened';
     public const string TYPE_CLICKED = 'clicked';
 
+    /**
+     * WhatsApp's own "seen" receipt (Meta Cloud API's "read" message status, see
+     * Controller\WhatsApp\Webhook) - not a MessageLog::STATUS_* value, since it's an engagement
+     * signal layered on top of an already-delivered message, not a delivery-state change.
+     */
+    public const string TYPE_READ = 'read';
+
     protected function _construct(): void
     {
         $this->_init(MessageLogEventResource::class);

@@ -7,8 +7,9 @@ use Magento\Framework\Data\OptionSourceInterface;
 use Ordo\Automation\Model\MessageLogEvent;
 
 /**
- * Options for the message_engaged condition's event_type field - the two event types
- * Controller\Email\StatusCallback actually writes to ordo_message_log_event.
+ * Options for the message_engaged condition's event_type field - every event type a delivery-
+ * status webhook actually writes to ordo_message_log_event: Controller\Email\StatusCallback
+ * writes Opened/Clicked, Controller\WhatsApp\Webhook writes Read (WhatsApp's own "seen" receipt).
  */
 class MessageEngagementType implements OptionSourceInterface
 {
@@ -20,6 +21,7 @@ class MessageEngagementType implements OptionSourceInterface
         return [
             ['value' => MessageLogEvent::TYPE_OPENED, 'label' => __('Opened')],
             ['value' => MessageLogEvent::TYPE_CLICKED, 'label' => __('Clicked')],
+            ['value' => MessageLogEvent::TYPE_READ, 'label' => __('Read (WhatsApp)')],
         ];
     }
 }

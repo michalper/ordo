@@ -1233,6 +1233,8 @@
 "Twilio Messaging Service SID","Twilio Messaging Service SID"
 "The RCS-enabled Messaging Service's SID, used as the ""from"" instead of a phone number.","電話番号の代わりに「from」として使用する、RCS対応Messaging ServiceのSIDです。"
 "Paced separately from SMS's own throttle above, even though both share one Twilio account's credentials. 0 disables throttling entirely.","同じTwilioアカウントの認証情報を共有していますが、上記のSMS専用の制限とは別に調整されます。0にすると制限を完全に無効化します。"
+"Read (WhatsApp)","既読（WhatsApp）"
+"Opened, clicked, or read (WhatsApp)","開封済み、クリック済み、または既読（WhatsApp）"
 "Projected CLV","予測LTV"
 "Churn risk ratio","離反リスク比率"
 "Not enough order history","注文履歴が不足しています"

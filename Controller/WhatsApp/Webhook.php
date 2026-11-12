@@ -18,6 +18,7 @@ use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\Conversation\InboundMessageProcessor;
 use Ordo\Automation\Model\MessageLog;
 use Ordo\Automation\Model\MessageLog\StatusDowngradeGuard;
+use Ordo\Automation\Model\MessageLogEventWriter;
 use Ordo\Automation\Model\ResourceModel\MessageLog as MessageLogResource;
 use Ordo\Automation\Model\ResourceModel\MessageLog\CollectionFactory as MessageLogCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate as WhatsAppTemplateResource;
@@ -38,7 +39,8 @@ use Psr\Log\LoggerInterface;
  *  - POST is a real event delivery, signature-verified via X-Hub-Signature-256 before anything
  *    else (same trust-boundary-first pattern as every other webhook controller in this module) -
  *    carries message delivery-status updates ("statuses", correlated to ordo_message_log by
- *    provider_message_id, same role Twilio's Sid/SendGrid's smtp-id play for their own channels),
+ *    provider_message_id, same role Twilio's Sid/SendGrid's smtp-id play for their own channels -
+ *    a "read" status among them is handled separately, see processReadReceipt()/docs/adr/0051),
  *    template approval-status updates ("message_template_status_update", correlated to
  *    ordo_whatsapp_template by Meta's own template id), AND inbound customer replies ("messages")
  *    - unlike Twilio, Meta's Cloud API webhook contract carries both statuses and inbound
@@ -57,6 +59,11 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
 
     /**
      * @var array<string, string> Meta's own uppercase message delivery status => MessageLog::STATUS_*
+     *
+     * Deliberately does NOT include "READ" - Meta's own "seen" receipt is an engagement signal
+     * layered on top of an already-delivered message, not a delivery-state change, so it's
+     * handled separately (processReadReceipt()) as a Model\MessageLogEvent::TYPE_READ row,
+     * never as a MessageLog::STATUS_* value - see docs/adr/0051.
      */
     private const array MESSAGE_STATUS_MAP = [
         'DELIVERED' => MessageLog::STATUS_DELIVERED,
@@ -85,6 +92,7 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
         private readonly WhatsAppTemplateResource $whatsAppTemplateResource,
         private readonly StatusDowngradeGuard $statusDowngradeGuard,
         private readonly InboundMessageProcessor $inboundMessageProcessor,
+        private readonly MessageLogEventWriter $messageLogEventWriter,
         private readonly LoggerInterface $logger
     ) {
         parent::__construct($context);
@@ -221,22 +229,23 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
     {
         $providerMessageId = (string) ($status['id'] ?? '');
         $metaStatus = strtoupper((string) ($status['status'] ?? ''));
-        $ourStatus = self::MESSAGE_STATUS_MAP[$metaStatus] ?? null;
 
-        if ($providerMessageId === '' || $ourStatus === null) {
+        if ($providerMessageId === '') {
             return;
         }
 
-        $collection = $this->messageLogCollectionFactory->create();
-        $collection->addFieldToFilter('provider_message_id', $providerMessageId);
-        /** @var MessageLog $log */
-        $log = $collection->getFirstItem();
+        if ($metaStatus === 'READ') {
+            $this->processReadReceipt($providerMessageId);
+            return;
+        }
 
-        if (!$log->getId()) {
-            $this->logger->info(sprintf(
-                'Ordo_Automation: WhatsApp webhook status update for unknown message id "%s".',
-                $providerMessageId
-            ));
+        $ourStatus = self::MESSAGE_STATUS_MAP[$metaStatus] ?? null;
+        if ($ourStatus === null) {
+            return;
+        }
+
+        $log = $this->findMessageLogByProviderMessageId($providerMessageId, 'status update');
+        if (!$log instanceof MessageLog) {
             return;
         }
 
@@ -256,6 +265,48 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
         $errors = $this->toArray($this->toArray($status['errors'] ?? null)[0] ?? null)['code'] ?? null;
         $log->setErrorCode($errors !== null ? (string) $errors : null);
         $this->messageLogResource->save($log);
+    }
+
+    /**
+     * Meta's "seen" receipt - unlike the delivery statuses above, this doesn't change
+     * ordo_message_log's own status (the message was already delivered); it writes a
+     * Model\MessageLogEvent::TYPE_READ row instead, the same table/shape
+     * Controller\Email\StatusCallback already writes Opened/Clicked events into, so
+     * message_engaged campaign conditions work the same way for WhatsApp reads - see
+     * docs/adr/0051.
+     */
+    private function processReadReceipt(string $providerMessageId): void
+    {
+        $log = $this->findMessageLogByProviderMessageId($providerMessageId, 'read receipt');
+        if (!$log instanceof MessageLog) {
+            return;
+        }
+
+        $this->messageLogEventWriter->recordRead((int) $log->getId());
+    }
+
+    /**
+     * The one place every status/event handler above resolves an ordo_message_log row by
+     * Meta's provider_message_id - logs and returns null on no match instead of each caller
+     * repeating its own lookup-and-log block.
+     */
+    private function findMessageLogByProviderMessageId(string $providerMessageId, string $context): ?MessageLog
+    {
+        $collection = $this->messageLogCollectionFactory->create();
+        $collection->addFieldToFilter('provider_message_id', $providerMessageId);
+        /** @var MessageLog $log */
+        $log = $collection->getFirstItem();
+
+        if (!$log->getId()) {
+            $this->logger->info(sprintf(
+                'Ordo_Automation: WhatsApp webhook %s for unknown message id "%s".',
+                $context,
+                $providerMessageId
+            ));
+            return null;
+        }
+
+        return $log;
     }
 
     /**

@@ -1233,6 +1233,8 @@
 "Twilio Messaging Service SID","Twilio Messaging Service SID"
 "The RCS-enabled Messaging Service's SID, used as the ""from"" instead of a phone number.","Az RCS-képes Messaging Service SID-je, amelyet telefonszám helyett „from”-ként használunk."
 "Paced separately from SMS's own throttle above, even though both share one Twilio account's credentials. 0 disables throttling entirely.","A fenti SMS-limittől függetlenül korlátozva, bár mindkettő ugyanazon Twilio-fiók hitelesítő adatait használja. A 0 érték teljesen kikapcsolja a korlátozást."
+"Read (WhatsApp)","Elolvasva (WhatsApp)"
+"Opened, clicked, or read (WhatsApp)","Megnyitva, kattintva vagy elolvasva (WhatsApp)"
 "Projected CLV","Becsült CLV"
 "Churn risk ratio","Lemorzsolódási kockázati arány"
 "Not enough order history","Nincs elég rendelési előzmény"
