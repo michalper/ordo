@@ -41,6 +41,7 @@ class Config
     private const string XML_PATH_LOYALTY_POINTS_REDEMPTION_RULE_ID
         = 'ordo_automation/loyalty_points/redemption_rule_id';
     private const string XML_PATH_LOYALTY_POINTS_EXPIRY_DAYS = 'ordo_automation/loyalty_points/expiry_days';
+    private const string XML_PATH_LOYALTY_MILESTONES_ENABLED = 'ordo_automation/loyalty_milestones/enabled';
 
     private const string XML_PATH_OFFER_ENABLED = 'ordo_automation/offer/enabled';
     private const string XML_PATH_OFFER_LEAD_DAYS = 'ordo_automation/offer/lead_days';
@@ -470,6 +471,19 @@ class Config
     public function getLoyaltyPointsExpiryDays(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_LOYALTY_POINTS_EXPIRY_DAYS, 0, $storeId);
+    }
+
+    /**
+     * Gates Cron\TagLoyaltyMilestones - tags a customer the moment they cross a fixed order-count
+     * or loyalty-tier milestone, independent of whether loyalty points/tiers themselves are in use.
+     */
+    public function isLoyaltyMilestonesEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_LOYALTY_MILESTONES_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
     }
 
     public function isOfferReminderEnabled(?int $storeId = null): bool

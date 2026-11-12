@@ -1220,6 +1220,8 @@
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option.","Sproži enkrat na koledarsko leto, na dan, ko se lastni datum registrirane stranke ujema z današnjim dnem (mesec+dan) – preverja se vsak dan. Stranka brez datuma rojstva v datoteki se nikoli ne ujema z možnostjo »Datum rojstva«."
 "Birth Date","Rojstni datum"
 "Registration Anniversary","Obletnica registracije"
+"Loyalty Milestones","Mejniki zvestobe"
+"Tags a customer the moment they cross a fixed order-count milestone (1st, 5th, 10th, 25th, 50th order) or reach a Silver/Gold loyalty tier, so a campaign can react to that moment with the existing ""Has Tag"" condition and ""tag_added"" trigger - no new trigger type, no new table.","Oznaci stranko v trenutku, ko doseze fiksni mejnik glede na stevilo narocil (1., 5., 10., 25., 50. narocilo) ali doseze raven Silver/Gold - kampanja se lahko odzove na ta trenutek z obstojecim pogojem ""Ima oznako"" in sprozilcem ""tag_added"" - brez novega tipa sprozilca, brez nove tabele."
 "Churn Risk At Least (drift ratio vs. own order cadence)","Tveganje osipa vsaj (razmerje odstopanja od lastnega ritma naročil)"
 "Churn risk ratio, at least (1.0 = exactly on their own cadence)","Razmerje tveganja osipa, vsaj (1.0 = natančno po lastnem ritmu)"
 "Churn Risk Ratio, At Least (1.0 = overdue vs. own historical order cadence)","Razmerje tveganja osipa, vsaj (1.0 = zamuda glede na lasten zgodovinski ritem naročil)"

@@ -1220,6 +1220,8 @@
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option.","Spouští se jednou za kalendářní rok, den, kdy se vlastní datum registrovaného zákazníka shoduje s dneškem (měsíc+den) – kontrolováno každý den. Zákazník bez data narození v záznamech nikdy neodpovídá možnosti „Datum narození“."
 "Birth Date","Datum narození"
 "Registration Anniversary","Výročí registrace"
+"Loyalty Milestones","Milníky věrnosti"
+"Tags a customer the moment they cross a fixed order-count milestone (1st, 5th, 10th, 25th, 50th order) or reach a Silver/Gold loyalty tier, so a campaign can react to that moment with the existing ""Has Tag"" condition and ""tag_added"" trigger - no new trigger type, no new table.","Označí zákazníka štítkem ve chvíli, kdy dosáhne pevně stanoveného milníku podle počtu objednávek (1., 5., 10., 25., 50. objednávka) nebo dosáhne úrovně Silver/Gold - kampaň může na tento okamžik reagovat pomocí existující podmínky ""Má štítek"" a triggeru ""tag_added"" - bez nového typu triggeru či nové tabulky."
 "Churn Risk At Least (drift ratio vs. own order cadence)","Riziko odchodu zákazníka alespoň (poměr odchylky vůči vlastnímu cyklu objednávek)"
 "Churn risk ratio, at least (1.0 = exactly on their own cadence)","Poměr rizika odchodu, alespoň (1.0 = přesně podle vlastního cyklu)"
 "Churn Risk Ratio, At Least (1.0 = overdue vs. own historical order cadence)","Poměr rizika odchodu, alespoň (1.0 = zpoždění oproti vlastnímu historickému cyklu objednávek)"

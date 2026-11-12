@@ -20,6 +20,10 @@ it doesn't update itself from this file.
   registered customer once about an order sitting in Magento's own `pending_payment` state past a
   configurable lead time, with deliberately hedged copy since this module can't tell an abandoned
   online-gateway checkout apart from an offline method awaiting manual confirmation. See ADR 0047.
+- **Gamified loyalty milestones** — new `Cron\TagLoyaltyMilestones` tags a customer the moment they
+  cross a fixed order-count milestone (1st/5th/10th/25th/50th order) or reach a Silver/Gold loyalty
+  tier, reusing the existing `tag_added` trigger and `Has Tag` condition — no new trigger type or
+  table. See ADR 0046.
 
 ## [1.9.0] - 2026-11-09
 

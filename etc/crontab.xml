@@ -40,6 +40,9 @@
         <job name="ordo_automation_tag_reorder_cycle_at_risk_customers" instance="Ordo\Automation\Cron\TagReorderCycleAtRiskCustomers" method="execute">
             <schedule>30 2 * * *</schedule>
         </job>
+        <job name="ordo_automation_tag_loyalty_milestones" instance="Ordo\Automation\Cron\TagLoyaltyMilestones" method="execute">
+            <schedule>0 4 * * *</schedule>
+        </job>
         <job name="ordo_automation_send_win_back_emails" instance="Ordo\Automation\Cron\SendWinBackEmails" method="execute">
             <schedule>0 9 * * *</schedule>
         </job>

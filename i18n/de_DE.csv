@@ -1220,6 +1220,8 @@
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option.","Wird einmal pro Kalenderjahr ausgelöst, an dem Tag, an dem das eigene Datum eines registrierten Kunden mit dem heutigen Tag (Monat+Tag) übereinstimmt – täglich überprüft. Ein Kunde, für den kein Geburtsdatum hinterlegt ist, trifft niemals auf die Option „Geburtsdatum“ zu."
 "Birth Date","Geburtsdatum"
 "Registration Anniversary","Jahrestag der Registrierung"
+"Loyalty Milestones","Treue-Meilensteine"
+"Tags a customer the moment they cross a fixed order-count milestone (1st, 5th, 10th, 25th, 50th order) or reach a Silver/Gold loyalty tier, so a campaign can react to that moment with the existing ""Has Tag"" condition and ""tag_added"" trigger - no new trigger type, no new table.","Markiert einen Kunden in dem Moment, in dem er einen festen Bestellanzahl-Meilenstein (1., 5., 10., 25., 50. Bestellung) erreicht oder die Stufe Silber/Gold erreicht - eine Kampagne kann mit der bestehenden Bedingung ""Hat Tag"" und dem Trigger ""tag_added"" auf diesen Moment reagieren - kein neuer Trigger-Typ, keine neue Tabelle."
 "Churn Risk At Least (drift ratio vs. own order cadence)","Abwanderungsrisiko mindestens (Abweichungsverhältnis zum eigenen Bestellrhythmus)"
 "Churn risk ratio, at least (1.0 = exactly on their own cadence)","Abwanderungsrisiko-Verhältnis, mindestens (1.0 = genau im eigenen Rhythmus)"
 "Churn Risk Ratio, At Least (1.0 = overdue vs. own historical order cadence)","Abwanderungsrisiko-Verhältnis, mindestens (1.0 = überfällig gegenüber dem eigenen historischen Bestellrhythmus)"
