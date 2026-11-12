@@ -626,3 +626,51 @@ hit for Commerce SaaS/App Builder.
   sitting in Magento's own `pending_payment` state past a configurable lead time, with deliberately
   hedged email copy ("if you've already paid, there's nothing more to do") since this module can't
   distinguish an abandoned online-gateway checkout from an offline method awaiting manual confirmation.
+
+**A fresh 2026-11-12 brainstorm round (second pass, after the churn-risk/milestones/stalled-payment
+batch above shipped), checked against established marketing-automation, loyalty, and CDP platforms'
+own public feature pages before writing anything here.** Carries over the same constraint the prior
+round's rejected candidate established: nothing here lets the module itself place or charge an order
+on a customer's behalf without them actively confirming that specific transaction — a few raw ideas
+from this round's research (subscription-loyalty hybrids, auto-replenishment) were excluded on sight
+for exactly that reason, not re-litigated. Two other raw candidates were dropped as already-shipped,
+found by grepping the actual code rather than trusting README/ROADMAP text: AI-generated per-customer
+content (`Model\Campaign\Action\GenerateAiContent`, a local-Ollama action already reading dispatch
+context) and next-order-date prediction (`Cron\CalculateReorderCycle`'s own `next_expected_date`
+column).
+
+- ~~**Double-sided referral rewards.**~~ — shipped, see
+  `docs/adr/0048-double-sided-referral-rewards.md`. New `referral_signed_up` trigger, published
+  from `Observer\RedeemReferralCode` targeting the *referred* customer the moment their signup is
+  actually recorded — the mirror image of the existing `referral_converted` trigger, which still
+  only targets the referrer once a real purchase happens.
+- **RCS as a messaging channel.** Checked `Model\ConsentChannel` and the action pool in
+  `etc/di.xml`: Email, SMS, Push, and WhatsApp exist; RCS (carrier-level rich messaging - think
+  branded sender, read receipts, suggested replies, without needing the recipient to have a
+  specific app installed the way WhatsApp does) doesn't exist anywhere in this codebase.
+  `Model\Sms\TwilioSmsSender` already proves out the provider this would most naturally extend -
+  Twilio's own API supports RCS Business Messaging through the same Programmable Messaging
+  surface this module already calls for SMS, so this is a new `send_rcs` action and
+  `ConsentChannel::Rcs` case alongside the existing one, not a new provider integration. Real risk
+  to flag honestly: RCS carrier/device support is still regional and inconsistent (unlike SMS's
+  universal reach), so this is a genuine additive channel for stores with the right audience, not
+  a wholesale SMS replacement.
+- **Surface CLV and churn-risk on Customer 360.** Checked `Model\Customer360\
+  Customer360SnapshotBuilder::build()` directly: it already pulls lead score, loyalty tier, RFM,
+  tags, NPS, and matching segments onto one page, but never calls `Model\Clv\ClvCalculator::
+  getProjectedClv()` or `Model\ChurnRisk\ChurnRiskCalculator::getChurnRiskRatioForCustomer()` -
+  both single-customer getters that already exist and already back their own segment conditions
+  (`clv_at_least`, `churn_risk_at_least`). A rep looking at one customer today has to go build a
+  segment to find out whether that customer is even eligible to match either condition. Zero new
+  calculation logic - this is purely wiring two already-computed values into the existing
+  snapshot and its view template.
+- **WhatsApp read-receipt tracking.** Checked `Controller\WhatsApp\Webhook`'s own
+  `MESSAGE_STATUS_MAP` directly: it maps Meta's `DELIVERED`/`FAILED`/`SENT` statuses to
+  `MessageLog::STATUS_*` constants, but Meta's Cloud API webhook contract also sends a `READ`
+  status (the WhatsApp "seen" receipt) for every template message the recipient actually opens -
+  today that status arrives and is silently dropped, since it isn't in the map and there's no
+  `MessageLog::STATUS_READ`/`MessageLogEvent::TYPE_*` equivalent for it. `message_engaged`
+  (`engagement_type: "opened"|"clicked"`) only ever reads SendGrid's email events
+  (`docs/adr/0016`) - WhatsApp has no engagement signal a campaign can target at all today, even
+  though Meta is already handing this module exactly that signal for free. Closing it is a map
+  entry plus one new `MessageLogEvent::TYPE_READ` row write, no new webhook plumbing.

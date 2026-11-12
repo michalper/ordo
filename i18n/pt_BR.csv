@@ -1225,3 +1225,4 @@
 "Churn Risk At Least (drift ratio vs. own order cadence)","Risco de churn no mínimo (proporção de desvio em relação ao próprio ritmo de pedidos)"
 "Churn risk ratio, at least (1.0 = exactly on their own cadence)","Proporção de risco de churn, no mínimo (1.0 = exatamente no próprio ritmo)"
 "Churn Risk Ratio, At Least (1.0 = overdue vs. own historical order cadence)","Proporção de risco de churn, no mínimo (1.0 = atrasado em relação ao próprio ritmo histórico de pedidos)"
+"Referral Signed Up (new customer registered with a referral code)","Indicacao registrada (novo cliente se registrou com um codigo de indicacao)"
