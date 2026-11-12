@@ -1220,3 +1220,6 @@
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option.","Uruchamia się raz w roku kalendarzowym, w dniu, w którym data zarejestrowanego klienta jest zgodna z dzisiejszą (miesiąc + dzień) - sprawdzane codziennie. Klient bez zapisanej daty urodzenia nigdy nie pasuje do opcji „Data urodzenia”."
 "Birth Date","Data urodzenia"
 "Registration Anniversary","Rocznica rejestracji"
+"Churn Risk At Least (drift ratio vs. own order cadence)","Ryzyko odejścia klienta co najmniej (wskaźnik odchylenia względem własnego rytmu zamówień)"
+"Churn risk ratio, at least (1.0 = exactly on their own cadence)","Wskaźnik ryzyka odejścia, co najmniej (1.0 = dokładnie zgodnie z własnym rytmem)"
+"Churn Risk Ratio, At Least (1.0 = overdue vs. own historical order cadence)","Wskaźnik ryzyka odejścia, co najmniej (1.0 = opóźnienie względem własnego historycznego rytmu zamówień)"
