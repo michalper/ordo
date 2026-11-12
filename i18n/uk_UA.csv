@@ -1220,3 +1220,6 @@
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option.","Спрацьовує один раз на календарний рік, день, коли дата зареєстрованого клієнта збігається з сьогоднішньою (місяць+день) — перевіряється щодня. Клієнт без дати народження у файлі ніколи не відповідає параметру «Дата народження»."
 "Birth Date","Дата народження"
 "Registration Anniversary","Річниця реєстрації"
+"Churn Risk At Least (drift ratio vs. own order cadence)","Ризик відтоку не менше (коефіцієнт відхилення від власного циклу замовлень)"
+"Churn risk ratio, at least (1.0 = exactly on their own cadence)","Коефіцієнт ризику відтоку, не менше (1.0 = точно за власним циклом)"
+"Churn Risk Ratio, At Least (1.0 = overdue vs. own historical order cadence)","Коефіцієнт ризику відтоку, не менше (1.0 = прострочено відносно власного історичного циклу замовлень)"

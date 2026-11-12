@@ -1220,3 +1220,6 @@
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option.","每个日历年触发一次，即注册客户自己的日期与今天（月+日）匹配的那一天 - 每天检查。没有出生日期记录的客户永远不会与“出生日期”选项匹配。"
 "Birth Date","出生日期"
 "Registration Anniversary","注册周年纪念日"
+"Churn Risk At Least (drift ratio vs. own order cadence)","流失风险至少（相对于自身订单周期的偏差比率）"
+"Churn risk ratio, at least (1.0 = exactly on their own cadence)","流失风险比率，至少（1.0 = 完全符合自身周期）"
+"Churn Risk Ratio, At Least (1.0 = overdue vs. own historical order cadence)","流失风险比率，至少（1.0 = 相对于自身历史订单周期已逾期）"

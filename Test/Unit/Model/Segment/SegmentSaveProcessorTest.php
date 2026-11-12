@@ -79,6 +79,7 @@ class SegmentSaveProcessorTest extends TestCase
             'in_segment' => $this->stubCondition([['name' => 'segment_id']]),
             'loyalty_tier_at_least' => $this->stubCondition([['name' => 'tier']]),
             'reorder_cycle_at_risk' => $this->stubCondition([['name' => 'ratio_at_least']]),
+            'churn_risk_at_least' => $this->stubCondition([['name' => 'churn_risk_ratio_at_least']]),
         ];
     }
 
@@ -375,6 +376,36 @@ class SegmentSaveProcessorTest extends TestCase
         $processor->process([
             'conditions' => ['conditions' => [
                 ['type' => 'reorder_cycle_at_risk', 'ratio_at_least' => '0.5', 'params_json' => ''],
+            ]],
+        ]);
+    }
+
+    /**
+     * Regression test, same reasoning as the reorder_cycle_at_risk test above: churn_risk_at_least's
+     * own dedicated field name is deliberately not "ratio_at_least" (see ADR 0045), so this confirms
+     * the save pipeline reads/writes the field under its own distinct name correctly.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessPersistsChurnRiskAtLeastRatioAtLeastDedicatedField(): void
+    {
+        $processor = $this->makeProcessor();
+
+        $segment = $this->createMock(Segment::class);
+        $segment->method('getEntityId')->willReturn(1);
+        $this->segmentFactory->method('create')->willReturn($segment);
+
+        $this->segmentConditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+
+        $condition = $this->createMock(SegmentCondition::class);
+        $condition->expects(self::once())->method('setData')->with(self::callback(
+            fn (array $data) => $data['type'] === 'churn_risk_at_least'
+                && json_decode($data['params'], true) === ['churn_risk_ratio_at_least' => '1.2']
+        ));
+        $this->segmentConditionFactory->method('create')->willReturn($condition);
+
+        $processor->process([
+            'conditions' => ['conditions' => [
+                ['type' => 'churn_risk_at_least', 'churn_risk_ratio_at_least' => '1.2', 'params_json' => ''],
             ]],
         ]);
     }
