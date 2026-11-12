@@ -81,11 +81,18 @@ $snapshot = $block->getSnapshot();
                     . $escaper->escapeHtml((string) $snapshot->orderCount) . '</span>';
                 $orderTotalValue = '<span class="ordo-trigger-stat-value">'
                     . $escaper->escapeHtml($block->formatCurrency($snapshot->orderTotal)) . '</span>';
+                $projectedClvValue = '<span class="ordo-trigger-stat-value">'
+                    . $escaper->escapeHtml($block->formatCurrency($snapshot->projectedClv)) . '</span>';
+                $churnRiskValue = '<span class="ordo-trigger-stat-value">' . ($snapshot->churnRiskRatio !== null
+                    ? $escaper->escapeHtml($block->formatRatio($snapshot->churnRiskRatio))
+                    : $escaper->escapeHtml(__('Not enough order history'))) . '</span>';
                 ?>
                 <?= /* @noEscape */ $block->statRow((string) __('RFM score'), $rfmScoreValue) ?>
                 <?= /* @noEscape */ $block->statRow((string) __('Days since last order'), $recencyDaysValue) ?>
                 <?= /* @noEscape */ $block->statRow((string) __('Total orders'), $orderCountValue) ?>
                 <?= /* @noEscape */ $block->statRow((string) __('Lifetime spend'), $orderTotalValue) ?>
+                <?= /* @noEscape */ $block->statRow((string) __('Projected CLV'), $projectedClvValue) ?>
+                <?= /* @noEscape */ $block->statRow((string) __('Churn risk ratio'), $churnRiskValue) ?>
             </div>
         </div>
 

@@ -8,8 +8,9 @@ namespace Ordo\Automation\Model\Customer360;
  * customer, individually - closes the "Customer 360 / CDP view" ROADMAP.md candidate. Nothing
  * here is new data: every field is read from the same manager/calculator a campaign
  * condition/trigger already reads at dispatch time (CustomerScoreManager, LoyaltyTierCalculator,
- * RfmCalculator, CustomerTagManager, SurveyPrompt, SegmentMatcher), just gathered into one place
- * for a human to look at instead of cross-referencing five separate screens.
+ * RfmCalculator, CustomerTagManager, SurveyPrompt, SegmentMatcher, Clv\ClvCalculator,
+ * ChurnRisk\ChurnRiskCalculator), just gathered into one place for a human to look at instead of
+ * cross-referencing five separate screens.
  */
 class Customer360Snapshot
 {
@@ -31,7 +32,9 @@ class Customer360Snapshot
         public readonly ?int $npsScore,
         public readonly array $matchingSegmentNames,
         public readonly int $orderCount,
-        public readonly float $orderTotal
+        public readonly float $orderTotal,
+        public readonly float $projectedClv,
+        public readonly ?float $churnRiskRatio
     ) {
     }
 }
