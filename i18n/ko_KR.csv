@@ -1220,3 +1220,6 @@
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option.","1년에 한 번, 등록된 고객의 날짜가 오늘(월+일)과 일치하는 날에 발생 - 매일 확인됩니다. 파일에 생년월일이 없는 고객은 ""생년월일"" 옵션과 일치하지 않습니다."
 "Birth Date","생년월일"
 "Registration Anniversary","등록기념일"
+"Churn Risk At Least (drift ratio vs. own order cadence)","이탈 위험 최소값(자신의 주문 주기 대비 편차 비율)"
+"Churn risk ratio, at least (1.0 = exactly on their own cadence)","이탈 위험 비율, 최소값(1.0 = 자신의 주기와 정확히 일치)"
+"Churn Risk Ratio, At Least (1.0 = overdue vs. own historical order cadence)","이탈 위험 비율, 최소값(1.0 = 자신의 과거 주문 주기보다 지연됨)"

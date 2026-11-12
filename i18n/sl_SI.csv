@@ -1220,3 +1220,6 @@
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option.","Sproži enkrat na koledarsko leto, na dan, ko se lastni datum registrirane stranke ujema z današnjim dnem (mesec+dan) – preverja se vsak dan. Stranka brez datuma rojstva v datoteki se nikoli ne ujema z možnostjo »Datum rojstva«."
 "Birth Date","Rojstni datum"
 "Registration Anniversary","Obletnica registracije"
+"Churn Risk At Least (drift ratio vs. own order cadence)","Tveganje osipa vsaj (razmerje odstopanja od lastnega ritma naročil)"
+"Churn risk ratio, at least (1.0 = exactly on their own cadence)","Razmerje tveganja osipa, vsaj (1.0 = natančno po lastnem ritmu)"
+"Churn Risk Ratio, At Least (1.0 = overdue vs. own historical order cadence)","Razmerje tveganja osipa, vsaj (1.0 = zamuda glede na lasten zgodovinski ritem naročil)"

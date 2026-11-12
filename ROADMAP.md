@@ -617,16 +617,13 @@ hit for Commerce SaaS/App Builder.
   "reached Gold") tags the customer and fires the existing `visitor_tag_added`/`tag_added` trigger wiring,
   so a campaign can react to a milestone with no new trigger type needed, only a few new well-defined
   milestone checks and a badge tag namespace.
-- **Churn-risk segmentation condition.** Every existing RFM/CLV condition
-  (`RecencyDaysAtMost`, `OrderFrequencyAtLeast`, `MonetaryTotalAtLeast`, the three `*PercentileAtLeast`
-  conditions) reads a point-in-time snapshot; `ReorderCycleAtRisk` is the one self-relative "drifting from
-  their own baseline" signal that exists today, but it only applies to a customer with an already-detected
-  cyclical reorder pattern, so it says nothing about a one-off or irregular buyer quietly going cold. A new
-  `churn_risk_at_least` condition — comparing a customer's recent order-frequency/engagement trend against
-  their own trailing baseline, the same self-relative-drift shape `ReorderCycleAtRisk` and
-  `Cron\DetectAnomalies` already use at the campaign level — would generalize that signal to every
-  customer, not just ones with a detected reorder cycle, and slot into `ConditionPool` like any other
-  segment condition with zero changes to the dispatcher.
+- ~~**Churn-risk segmentation condition.**~~ — shipped, see
+  `docs/adr/0045-churn-risk-segmentation-condition.md`. New `churn_risk_at_least` condition and its
+  own `Model\ChurnRisk\ChurnRiskCalculator`, generalizing `ReorderCycleAtRisk`'s self-relative
+  "drifting from their own baseline" signal to every customer with at least 2 orders — a
+  customer-level median order interval, not `ReorderCycleAtRisk`'s per-(customer, sku) one, so an
+  irregular or mixed-basket buyer who would never get a detected reorder cycle is now reachable
+  too.
 - ~~**Stalled/failed payment recovery.**~~ — shipped, see `docs/adr/0047-stalled-payment-recovery.md`.
   New `Cron\SendStalledPaymentReminders` (hourly) reminds a registered customer once about an order
   sitting in Magento's own `pending_payment` state past a configurable lead time, with deliberately

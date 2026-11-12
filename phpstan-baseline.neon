@@ -1846,6 +1846,12 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
+			path: Model/Campaign/Condition/ChurnRiskAtLeast.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
 			path: Model/Campaign/Condition/ClvAtLeast.php
 
 		-

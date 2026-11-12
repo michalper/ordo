@@ -51,6 +51,7 @@ class TypeLabels
             'event_occurred' => (string) __('Event Occurred (cart/wishlist add)'),
             'message_engaged' => (string) __('Opened/Clicked Campaign'),
             'reorder_cycle_at_risk' => (string) __('Reorder Cycle At Risk (drift ratio at least)'),
+            'churn_risk_at_least' => (string) __('Churn Risk At Least (drift ratio vs. own order cadence)'),
         ];
     }
 
@@ -116,6 +117,7 @@ class TypeLabels
             'purchased_sku' => $orderAndPurchaseHistory,
             'purchased_category' => $orderAndPurchaseHistory,
             'reorder_cycle_at_risk' => $orderAndPurchaseHistory,
+            'churn_risk_at_least' => $orderAndPurchaseHistory,
             'score_at_least' => $scoreAndEngagement,
             'loyalty_tier_at_least' => $scoreAndEngagement,
             'nps_score_at_least' => $scoreAndEngagement,
