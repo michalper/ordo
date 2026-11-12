@@ -627,12 +627,8 @@ hit for Commerce SaaS/App Builder.
   `Cron\DetectAnomalies` already use at the campaign level — would generalize that signal to every
   customer, not just ones with a detected reorder cycle, and slot into `ConditionPool` like any other
   segment condition with zero changes to the dispatcher.
-- **Stalled/failed payment recovery.** Checked directly: there is no trigger or cron anywhere in this
-  module keyed off an order sitting in Magento's own pending-payment state (bank transfer, a PayPal
-  pending capture, a declined re-authorization) — not "dunning" in the subscription-billing sense other
-  platforms mean it (Magento Open Source has no recurring billing for this module to hook into at all),
-  but the same, already-precedented "cron scan against a claim column" shape every other reminder feature
-  here uses (CLAUDE.md's own architecture note). A new `Cron\SendStalledPaymentReminders` scanning orders
-  past a configurable age in a pending-payment state, claiming them the same way
-  `Cron\SendAbandonedCartReminders` already does, would recover real, already-placed orders that are one
-  nudge away from completing instead of silently aging out.
+- ~~**Stalled/failed payment recovery.**~~ — shipped, see `docs/adr/0047-stalled-payment-recovery.md`.
+  New `Cron\SendStalledPaymentReminders` (hourly) reminds a registered customer once about an order
+  sitting in Magento's own `pending_payment` state past a configurable lead time, with deliberately
+  hedged email copy ("if you've already paid, there's nothing more to do") since this module can't
+  distinguish an abandoned online-gateway checkout from an offline method awaiting manual confirmation.
