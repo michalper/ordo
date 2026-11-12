@@ -25,6 +25,7 @@ class ConsentStates implements \IteratorAggregate
         private readonly bool $sms,
         private readonly bool $push,
         private readonly bool $whatsapp,
+        private readonly bool $rcs,
         private readonly bool $ads
     ) {
     }
@@ -49,6 +50,11 @@ class ConsentStates implements \IteratorAggregate
         return $this->whatsapp;
     }
 
+    public function isRcsConsented(): bool
+    {
+        return $this->rcs;
+    }
+
     public function isAdsConsented(): bool
     {
         return $this->ads;
@@ -64,6 +70,7 @@ class ConsentStates implements \IteratorAggregate
             ConsentChannel::Sms->value => $this->sms,
             ConsentChannel::Push->value => $this->push,
             ConsentChannel::WhatsApp->value => $this->whatsapp,
+            ConsentChannel::Rcs->value => $this->rcs,
             ConsentChannel::Ads->value => $this->ads,
         ]);
     }

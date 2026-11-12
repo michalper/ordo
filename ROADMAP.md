@@ -644,17 +644,10 @@ column).
   from `Observer\RedeemReferralCode` targeting the *referred* customer the moment their signup is
   actually recorded — the mirror image of the existing `referral_converted` trigger, which still
   only targets the referrer once a real purchase happens.
-- **RCS as a messaging channel.** Checked `Model\ConsentChannel` and the action pool in
-  `etc/di.xml`: Email, SMS, Push, and WhatsApp exist; RCS (carrier-level rich messaging - think
-  branded sender, read receipts, suggested replies, without needing the recipient to have a
-  specific app installed the way WhatsApp does) doesn't exist anywhere in this codebase.
-  `Model\Sms\TwilioSmsSender` already proves out the provider this would most naturally extend -
-  Twilio's own API supports RCS Business Messaging through the same Programmable Messaging
-  surface this module already calls for SMS, so this is a new `send_rcs` action and
-  `ConsentChannel::Rcs` case alongside the existing one, not a new provider integration. Real risk
-  to flag honestly: RCS carrier/device support is still regional and inconsistent (unlike SMS's
-  universal reach), so this is a genuine additive channel for stores with the right audience, not
-  a wholesale SMS replacement.
+- ~~**RCS as a messaging channel.**~~ — shipped, see `docs/adr/0049-rcs-as-a-messaging-channel.md`.
+  New `send_rcs` action and `ConsentChannel::Rcs` case, reusing SMS's own Twilio Account SID / API
+  Key credentials and all of `SendSms`'s channel-agnostic consent/quiet-hours/frequency-cap
+  plumbing — only a Messaging Service SID config field is new.
 - **Surface CLV and churn-risk on Customer 360.** Checked `Model\Customer360\
   Customer360SnapshotBuilder::build()` directly: it already pulls lead score, loyalty tier, RFM,
   tags, NPS, and matching segments onto one page, but never calls `Model\Clv\ClvCalculator::

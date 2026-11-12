@@ -92,6 +92,7 @@ class IndexTest extends TestCase
         self::assertTrue($states->isSmsConsented());
         self::assertTrue($states->isPushConsented());
         self::assertTrue($states->isWhatsAppConsented());
+        self::assertTrue($states->isRcsConsented());
         self::assertTrue($states->isAdsConsented());
         self::assertSame(
             [
@@ -99,6 +100,7 @@ class IndexTest extends TestCase
                 ConsentChannel::Sms->value => true,
                 ConsentChannel::Push->value => true,
                 ConsentChannel::WhatsApp->value => true,
+                ConsentChannel::Rcs->value => true,
                 ConsentChannel::Ads->value => true,
             ],
             iterator_to_array($states)
@@ -166,6 +168,7 @@ class IndexTest extends TestCase
                 ConsentChannel::Sms->value,
                 ConsentChannel::Push->value,
                 ConsentChannel::WhatsApp->value,
+                ConsentChannel::Rcs->value,
             ],
             array_keys($states)
         );

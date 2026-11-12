@@ -69,6 +69,7 @@ class TypeLabels
             'add_product_recommendations' => (string) __('Add Product Recommendations'),
             'add_dynamic_content' => (string) __('Add Dynamic Content'),
             'send_sms' => (string) __('Send SMS'),
+            'send_rcs' => (string) __('Send RCS'),
             'notify' => (string) __('Persistent Notification'),
             'nps_survey' => (string) __('NPS Survey'),
             'send_whatsapp' => (string) __('Send WhatsApp'),
