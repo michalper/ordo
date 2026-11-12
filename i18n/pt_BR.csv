@@ -1220,3 +1220,5 @@
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option.","Dispara uma vez por ano civil, no dia em que a data do cliente registrado corresponde a hoje (mês+dia) - verificada todos os dias. Um cliente sem Data de Nascimento cadastrada nunca corresponde à opção ""Data de Nascimento""."
 "Birth Date","Data de nascimento"
 "Registration Anniversary","Aniversário de registro"
+"Loyalty Milestones","Marcos de fidelidade"
+"Tags a customer the moment they cross a fixed order-count milestone (1st, 5th, 10th, 25th, 50th order) or reach a Silver/Gold loyalty tier, so a campaign can react to that moment with the existing ""Has Tag"" condition and ""tag_added"" trigger - no new trigger type, no new table.","Marca o cliente com uma tag no momento em que ele atinge um marco fixo de contagem de pedidos (1º, 5º, 10º, 25º, 50º pedido) ou atinge o nivel Silver/Gold - uma campanha pode reagir a esse momento com a condicao existente ""Tem tag"" e o gatilho ""tag_added"" - sem novo tipo de gatilho, sem nova tabela."

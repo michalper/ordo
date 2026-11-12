@@ -142,6 +142,14 @@
                             </field>
                         </group>
 
+            <group id="loyalty_milestones" translate="label" type="text" sortOrder="46" showInDefault="1" showInWebsite="1" showInStore="1">
+                            <label>Loyalty Milestones</label>
+                            <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                                <label>Enabled</label>
+                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                                <comment>Tags a customer the moment they cross a fixed order-count milestone (1st, 5th, 10th, 25th, 50th order) or reach a Silver/Gold loyalty tier, so a campaign can react to that moment with the existing "Has Tag" condition and "tag_added" trigger - no new trigger type, no new table.</comment>
+                            </field>
+                        </group>
 
 
             <group id="price_watch" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">

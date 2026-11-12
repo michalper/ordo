@@ -609,14 +609,11 @@ Gift Card product type isn't available on Magento Open Source at all (Commerce-o
 storefront primitive for this module to hook into, the same kind of platform ceiling ADR 0008 already
 hit for Commerce SaaS/App Builder.
 
-- **Gamified loyalty milestones.** `Model\LoyaltyTierCalculator` (bronze/silver/gold) and the new points
-  ledger (ADR 0044) are both pure, continuous derivations — there's no discrete "you just unlocked
-  something" moment anywhere in this module, which several loyalty platforms now lean on for engagement
-  (badges/challenges/milestone rewards layered on top of tiers). Fits the existing `AddTag`/`add_tag`
-  trigger shape directly: a new cron or condition check (e.g. "first order this year," "5th order,"
-  "reached Gold") tags the customer and fires the existing `visitor_tag_added`/`tag_added` trigger wiring,
-  so a campaign can react to a milestone with no new trigger type needed, only a few new well-defined
-  milestone checks and a badge tag namespace.
+- ~~**Gamified loyalty milestones.**~~ — shipped, see
+  `docs/adr/0046-gamified-loyalty-milestones.md`. New `Cron\TagLoyaltyMilestones` tags a customer the
+  moment they cross a fixed order-count milestone (1st/5th/10th/25th/50th order) or reach a Silver/Gold
+  tier — no new trigger type or table, just the existing idempotent `CustomerTagManager::addTag()` and
+  the `tag_added` trigger already fire for it.
 - **Churn-risk segmentation condition.** Every existing RFM/CLV condition
   (`RecencyDaysAtMost`, `OrderFrequencyAtLeast`, `MonetaryTotalAtLeast`, the three `*PercentileAtLeast`
   conditions) reads a point-in-time snapshot; `ReorderCycleAtRisk` is the one self-relative "drifting from

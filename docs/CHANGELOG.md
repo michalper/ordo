@@ -9,6 +9,13 @@ it doesn't update itself from this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Gamified loyalty milestones** — new `Cron\TagLoyaltyMilestones` tags a customer the moment they
+  cross a fixed order-count milestone (1st/5th/10th/25th/50th order) or reach a Silver/Gold loyalty
+  tier, reusing the existing `tag_added` trigger and `Has Tag` condition — no new trigger type or
+  table. See ADR 0046.
+
 ## [1.9.0] - 2026-11-09
 
 ### Added

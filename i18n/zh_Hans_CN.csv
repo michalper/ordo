@@ -1220,3 +1220,5 @@
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option.","每个日历年触发一次，即注册客户自己的日期与今天（月+日）匹配的那一天 - 每天检查。没有出生日期记录的客户永远不会与“出生日期”选项匹配。"
 "Birth Date","出生日期"
 "Registration Anniversary","注册周年纪念日"
+"Loyalty Milestones","忠诚度里程碑"
+"Tags a customer the moment they cross a fixed order-count milestone (1st, 5th, 10th, 25th, 50th order) or reach a Silver/Gold loyalty tier, so a campaign can react to that moment with the existing ""Has Tag"" condition and ""tag_added"" trigger - no new trigger type, no new table.","在客户达到固定的订单数量里程碑(第1、5、10、25、50笔订单)或达到Silver/Gold等级的那一刻为其打标签 - 活动可以通过现有的""有标签""条件和""tag_added""触发器对这一时刻做出反应 - 无需新的触发器类型,也无需新表。"

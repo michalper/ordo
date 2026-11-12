@@ -1220,3 +1220,5 @@
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option.","Naptári évben egyszer tűz ki, azon a napon, amikor a regisztrált ügyfél saját dátuma megegyezik a mai nappal (hónap+nap) – minden nap ellenőrzik. A születési dátum nélküli ügyfél soha nem egyezik a „Születési dátum” opcióval."
 "Birth Date","Születési dátum"
 "Registration Anniversary","Regisztrációs évforduló"
+"Loyalty Milestones","Husegmerfoldkovek"
+"Tags a customer the moment they cross a fixed order-count milestone (1st, 5th, 10th, 25th, 50th order) or reach a Silver/Gold loyalty tier, so a campaign can react to that moment with the existing ""Has Tag"" condition and ""tag_added"" trigger - no new trigger type, no new table.","Megjeloli a vasarlot abban a pillanatban, amikor eler egy rogzitett rendelesszam-merfoldkovet (1., 5., 10., 25., 50. rendeles), vagy eleri a Silver/Gold szintet - egy kampany a meglevo ""Van cimkeje"" feltetellel es a ""tag_added"" triggerrel reagalhat erre a pillanatra - nincs szukseg uj trigger tipusra vagy uj tablara."

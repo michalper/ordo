@@ -1220,3 +1220,5 @@
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option.","Avfyras en gång per kalenderår, den dag då en registrerad kunds eget datum matchar idag (månad+dag) – kontrolleras varje dag. En kund som saknar födelsedatum matchar aldrig alternativet ""Födelsedatum""."
 "Birth Date","Födelsedatum"
 "Registration Anniversary","Registreringsårsdagen"
+"Loyalty Milestones","Lojalitetsmilstolpar"
+"Tags a customer the moment they cross a fixed order-count milestone (1st, 5th, 10th, 25th, 50th order) or reach a Silver/Gold loyalty tier, so a campaign can react to that moment with the existing ""Has Tag"" condition and ""tag_added"" trigger - no new trigger type, no new table.","Taggar en kund i samma ogonblick som de nar en fast milstolpe baserad pa antal bestallningar (1:a, 5:e, 10:e, 25:e, 50:e bestallningen) eller nar Silver/Gold-nivan - en kampanj kan reagera pa det ogonblicket med det befintliga villkoret ""Har tagg"" och triggern ""tag_added"" - ingen ny triggertyp, ingen ny tabell."

@@ -1220,3 +1220,5 @@
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option.","Uruchamia się raz w roku kalendarzowym, w dniu, w którym data zarejestrowanego klienta jest zgodna z dzisiejszą (miesiąc + dzień) - sprawdzane codziennie. Klient bez zapisanej daty urodzenia nigdy nie pasuje do opcji „Data urodzenia”."
 "Birth Date","Data urodzenia"
 "Registration Anniversary","Rocznica rejestracji"
+"Loyalty Milestones","Kamienie milowe lojalnosci"
+"Tags a customer the moment they cross a fixed order-count milestone (1st, 5th, 10th, 25th, 50th order) or reach a Silver/Gold loyalty tier, so a campaign can react to that moment with the existing ""Has Tag"" condition and ""tag_added"" trigger - no new trigger type, no new table.","Oznacza klienta tagiem w momencie osiagniecia ustalonego kamienia milowego liczby zamowien (1., 5., 10., 25., 50. zamowienie) lub osiagniecia poziomu Silver/Gold - kampania moze zareagowac na ten moment istniejacym warunkiem ""Ma tag"" i triggerem ""tag_added"" - bez nowego typu triggera, bez nowej tabeli."
