@@ -8,1021 +8,926 @@
             <label>Engagement &amp; Retention</label>
             <tab>ordo</tab>
             <resource>Ordo_Automation::config</resource>
-
-                        <group id="reorder" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Reorder Reminder</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                            </field>
-                            <field id="min_orders" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Minimum orders to detect a pattern</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="lead_days" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Send reminder N days before the expected date</label>
-                                <validate>validate-digits</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="at_risk_drift_ratio" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>"At risk" drift ratio</label>
-                                <comment>Elapsed days since last order, divided by the customer's own detected average interval. 1.0 = exactly on schedule. Default 0.75 flags a customer before they'd be considered due for a reminder.</comment>
-                                <validate>validate-number</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-            
-                        
-
+            <group id="reorder" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Reorder Reminder</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="min_orders" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Minimum orders to detect a pattern</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="lead_days" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Send reminder N days before the expected date</label>
+                    <validate>validate-digits</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="at_risk_drift_ratio" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>"At risk" drift ratio</label>
+                    <comment>Elapsed days since last order, divided by the customer's own detected average interval. 1.0 = exactly on schedule. Default 0.75 flags a customer before they'd be considered due for a reminder.</comment>
+                    <validate>validate-number</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="abandoned_cart" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Abandoned Cart Recovery</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                            </field>
-                            <field id="delay_minutes" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Send reminder N minutes after last cart activity</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="min_subtotal" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Minimum cart subtotal to trigger a reminder</label>
-                                <validate>validate-number</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="max_reminders" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Maximum reminders per cart</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="fallback_enabled" translate="label comment" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Cross-channel fallback</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Off by default. When on, falls back to SMS or WhatsApp for a registered customer whose reminder email is still unopened (based on real email-open tracking) after the delay below, instead of sending another email.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="fallback_delay_hours" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Fall back after N hours unopened</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="fallback_enabled">1</field></depends>
-                            </field>
-                            <field id="fallback_channel" translate="label" type="select" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Fallback channel</label>
-                                <source_model>Ordo\Automation\Model\Config\Source\AbandonedCartFallbackChannel</source_model>
-                                <depends><field id="fallback_enabled">1</field></depends>
-                            </field>
-                            <field id="fallback_whatsapp_template_id" translate="label comment" type="select" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>WhatsApp template</label>
-                                <comment>Only used when the fallback channel above is WhatsApp - send_whatsapp always sends an approved template message, never free text, so only APPROVED templates are offered here.</comment>
-                                <source_model>Ordo\Automation\Model\Config\Source\WhatsAppTemplateOptions</source_model>
-                                <depends><field id="fallback_enabled">1</field></depends>
-                            </field>
-                        </group>
-            
-                        
-
+                <label>Abandoned Cart Recovery</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="delay_minutes" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Send reminder N minutes after last cart activity</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="min_subtotal" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Minimum cart subtotal to trigger a reminder</label>
+                    <validate>validate-number</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="max_reminders" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Maximum reminders per cart</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="fallback_enabled" translate="label comment" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Cross-channel fallback</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Off by default. When on, falls back to SMS or WhatsApp for a registered customer whose reminder email is still unopened (based on real email-open tracking) after the delay below, instead of sending another email.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="fallback_delay_hours" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Fall back after N hours unopened</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="fallback_enabled">1</field></depends>
+                </field>
+                <field id="fallback_channel" translate="label" type="select" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Fallback channel</label>
+                    <source_model>Ordo\Automation\Model\Config\Source\AbandonedCartFallbackChannel</source_model>
+                    <depends><field id="fallback_enabled">1</field></depends>
+                </field>
+                <field id="fallback_whatsapp_template_id" translate="label comment" type="select" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>WhatsApp template</label>
+                    <comment>Only used when the fallback channel above is WhatsApp - send_whatsapp always sends an approved template message, never free text, so only APPROVED templates are offered here.</comment>
+                    <source_model>Ordo\Automation\Model\Config\Source\WhatsAppTemplateOptions</source_model>
+                    <depends><field id="fallback_enabled">1</field></depends>
+                </field>
+            </group>
             <group id="browse_abandonment" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Browse Abandonment</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                            </field>
-                            <field id="delay_minutes" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Dispatch trigger N minutes after the product view</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="max_reminders" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Maximum triggers per customer/product</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-            
-                        
-
+                <label>Browse Abandonment</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="delay_minutes" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Dispatch trigger N minutes after the product view</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="max_reminders" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Maximum triggers per customer/product</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="referral" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Referral Program</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                            </field>
-                        </group>
-
-
-
+                <label>Referral Program</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+            </group>
             <group id="loyalty_points" translate="label" type="text" sortOrder="45" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Loyalty Points</label>
-                            <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>An ongoing earn/redeem points balance, distinct from any bronze/silver/gold tier a customer already has - customers earn points on every order and redeem them later for a coupon.</comment>
-                            </field>
-                            <field id="points_per_dollar" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Points earned per $1 spent</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="redemption_cost" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Points needed to redeem one coupon</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="redemption_rule_id" translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Redemption coupon rule</label>
-                                <source_model>Ordo\Automation\Model\Config\Source\CartPriceRuleOptions</source_model>
-                                <comment>Which cart price rule a redemption generates a fresh coupon against - set up the discount itself (e.g. "$5 off") as an ordinary cart price rule with coupon type "Specific Coupon" first.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="expiry_days" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Points expire after this many days (0 = never)</label>
-                                <validate>validate-digits</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-
+                <label>Loyalty Points</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>An ongoing earn/redeem points balance, distinct from any bronze/silver/gold tier a customer already has - customers earn points on every order and redeem them later for a coupon.</comment>
+                </field>
+                <field id="points_per_dollar" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Points earned per $1 spent</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="redemption_cost" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Points needed to redeem one coupon</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="redemption_rule_id" translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Redemption coupon rule</label>
+                    <source_model>Ordo\Automation\Model\Config\Source\CartPriceRuleOptions</source_model>
+                    <comment>Which cart price rule a redemption generates a fresh coupon against - set up the discount itself (e.g. "$5 off") as an ordinary cart price rule with coupon type "Specific Coupon" first.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="expiry_days" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Points expire after this many days (0 = never)</label>
+                    <validate>validate-digits</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="loyalty_milestones" translate="label" type="text" sortOrder="46" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Loyalty Milestones</label>
-                            <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Tags a customer the moment they cross a fixed order-count milestone (1st, 5th, 10th, 25th, 50th order) or reach a Silver/Gold loyalty tier, so a campaign can react to that moment with the existing "Has Tag" condition and "tag_added" trigger - no new trigger type, no new table.</comment>
-                            </field>
-                        </group>
-
+                <label>Loyalty Milestones</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Tags a customer the moment they cross a fixed order-count milestone (1st, 5th, 10th, 25th, 50th order) or reach a Silver/Gold loyalty tier, so a campaign can react to that moment with the existing "Has Tag" condition and "tag_added" trigger - no new trigger type, no new table.</comment>
+                </field>
+            </group>
             <group id="stalled_payment" translate="label" type="text" sortOrder="47" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Stalled Payment Reminder</label>
-                            <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Reminds a registered customer about an order still sitting in Magento's own "pending payment" state - a customer who abandoned an online gateway mid-redirect, for example - once it has been there longer than the lead time below. Not sent for guest checkouts, which have no reliable identity to target.</comment>
-                            </field>
-                            <field id="lead_hours" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Remind after this many hours in pending payment</label>
-                                <comment>Default 24. Sent once per order, never repeated.</comment>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-
-
+                <label>Stalled Payment Reminder</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Reminds a registered customer about an order still sitting in Magento's own "pending payment" state - a customer who abandoned an online gateway mid-redirect, for example - once it has been there longer than the lead time below. Not sent for guest checkouts, which have no reliable identity to target.</comment>
+                </field>
+                <field id="lead_hours" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Remind after this many hours in pending payment</label>
+                    <comment>Default 24. Sent once per order, never repeated.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="price_watch" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Price Drop / Back In Stock Alerts</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                            </field>
-                            <field id="scan_batch_size" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Subscriptions scanned per cron run</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-            
-                        
-
+                <label>Price Drop / Back In Stock Alerts</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="scan_batch_size" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Subscriptions scanned per cron run</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="review_request" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Review Request</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                            </field>
-                            <field id="delay_days" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Dispatch trigger N days after a completed order</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-            
-                        
-
+                <label>Review Request</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="delay_days" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Dispatch trigger N days after a completed order</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="offer" translate="label" type="text" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Offer Expiry Reminder</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                            </field>
-                            <field id="lead_days" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Send reminder N days before the offer expires</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="max_self_extensions" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Maximum times a customer can self-extend an offer</label>
-                                <validate>validate-digits</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="self_extension_days" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Days added per self-extension</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-            
-                        
-
+                <label>Offer Expiry Reminder</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="lead_days" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Send reminder N days before the offer expires</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="max_self_extensions" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Maximum times a customer can self-extend an offer</label>
+                    <validate>validate-digits</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="self_extension_days" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Days added per self-extension</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="free_gift" translate="label" type="text" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Free Gift Above Threshold</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Master switch — offers, tiers, and gift pools are managed via the REST API (Ordo_Automation::free_gifts), not this section.</comment>
-                            </field>
-                        </group>
-                        
-
+                <label>Free Gift Above Threshold</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Master switch — offers, tiers, and gift pools are managed via the REST API (Ordo_Automation::free_gifts), not this section.</comment>
+                </field>
+            </group>
             <group id="lifecycle" translate="label" type="text" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>B2C Lifecycle Emails (Welcome / Win-back)</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                            </field>
-                            <field id="win_back_inactive_days" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Tag a customer "inactive" after this many days without an order</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-
-                        <group id="customer_inactive_trigger" translate="label" type="text" sortOrder="95" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Customer Inactive Trigger (Campaign Builder)</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Each campaign's own "Customer Inactive For N Days" trigger sets its own inactivity window - this only controls whether that scan runs at all.</comment>
-                            </field>
-                            <field id="refire_cooldown_days" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Minimum days before the same campaign can refire for the same customer</label>
-                                <comment>A customer who orders again (leaving inactivity) and later goes inactive again can trigger this same campaign once more after this many days.</comment>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-
-                        <group id="customer_anniversary_trigger" translate="label" type="text" sortOrder="96" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Customer Birthday / Anniversary Trigger (Campaign Builder)</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Each campaign's own "Customer Birthday / Registration Anniversary" trigger picks its own date source (Date of Birth or registration date) - this only controls whether that scan runs at all. No cooldown to configure - a birthday/anniversary can only genuinely recur once a calendar year.</comment>
-                            </field>
-                        </group>
-
-                        <group id="anomaly_alerts" translate="label" type="text" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Anomaly / Insight Alerts</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Flags a campaign's revenue dropping vs. its own trailing baseline, or a campaign's conversion rate deviating from its peers' average. See Anomaly Alerts (Diagnostics) for detected alerts.</comment>
-                            </field>
-                            <field id="lookback_days" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Rolling window (days)</label>
-                                <comment>Compared against an equal-length trailing baseline window immediately before it.</comment>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="min_sample_size" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Minimum sent messages before a campaign is considered</label>
-                                <comment>Guards against flagging noise on a just-launched or low-volume campaign.</comment>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="revenue_drop_threshold_percent" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Revenue drop threshold (%)</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="conversion_outlier_threshold_percent" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Conversion rate outlier threshold (%)</label>
-                                <comment>Deviation from the average conversion rate of every other qualifying campaign, either direction.</comment>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="cooldown_days" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Minimum days between repeated alerts for the same campaign + alert type</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-
+                <label>B2C Lifecycle Emails (Welcome / Win-back)</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="win_back_inactive_days" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Tag a customer "inactive" after this many days without an order</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
+            <group id="customer_inactive_trigger" translate="label" type="text" sortOrder="95" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Customer Inactive Trigger (Campaign Builder)</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Each campaign's own "Customer Inactive For N Days" trigger sets its own inactivity window - this only controls whether that scan runs at all.</comment>
+                </field>
+                <field id="refire_cooldown_days" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Minimum days before the same campaign can refire for the same customer</label>
+                    <comment>A customer who orders again (leaving inactivity) and later goes inactive again can trigger this same campaign once more after this many days.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
+            <group id="customer_anniversary_trigger" translate="label" type="text" sortOrder="96" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Customer Birthday / Anniversary Trigger (Campaign Builder)</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Each campaign's own "Customer Birthday / Registration Anniversary" trigger picks its own date source (Date of Birth or registration date) - this only controls whether that scan runs at all. No cooldown to configure - a birthday/anniversary can only genuinely recur once a calendar year.</comment>
+                </field>
+            </group>
+            <group id="anomaly_alerts" translate="label" type="text" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Anomaly / Insight Alerts</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Flags a campaign's revenue dropping vs. its own trailing baseline, or a campaign's conversion rate deviating from its peers' average. See Anomaly Alerts (Diagnostics) for detected alerts.</comment>
+                </field>
+                <field id="lookback_days" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Rolling window (days)</label>
+                    <comment>Compared against an equal-length trailing baseline window immediately before it.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="min_sample_size" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Minimum sent messages before a campaign is considered</label>
+                    <comment>Guards against flagging noise on a just-launched or low-volume campaign.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="revenue_drop_threshold_percent" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Revenue drop threshold (%)</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="conversion_outlier_threshold_percent" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Conversion rate outlier threshold (%)</label>
+                    <comment>Deviation from the average conversion rate of every other qualifying campaign, either direction.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="cooldown_days" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Minimum days between repeated alerts for the same campaign + alert type</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
         </section>
         <section id="ordo_b2b" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
             <label>B2B &amp; Sales Operations</label>
             <tab>ordo</tab>
             <resource>Ordo_Automation::config</resource>
-
             <group id="credit_limit" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Credit Limit Alert</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Requires setting a "Credit Limit" on customers you want to monitor (Customers grid → Edit Customer).</comment>
-                            </field>
-                            <field id="warning_threshold_percent" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Warn at this % of credit limit used</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="cooldown_days" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Minimum days between repeated alerts for the same threshold</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="block_checkout_enabled" translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Block Checkout When Over Credit Limit</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Hard-blocks order placement for a logged-in customer whose credit limit utilization has reached 100%. Disabled by default — separate opt-in from the warning email above.</comment>
-                            </field>
-                        </group>
-            
-                        
-
+                <label>Credit Limit Alert</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Requires setting a "Credit Limit" on customers you want to monitor (Customers grid → Edit Customer).</comment>
+                </field>
+                <field id="warning_threshold_percent" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Warn at this % of credit limit used</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="cooldown_days" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Minimum days between repeated alerts for the same threshold</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="block_checkout_enabled" translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Block Checkout When Over Credit Limit</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Hard-blocks order placement for a logged-in customer whose credit limit utilization has reached 100%. Disabled by default — separate opt-in from the warning email above.</comment>
+                </field>
+            </group>
             <group id="order_approval" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Order Approval Workflow</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Requires setting "Order Spend Limit" and "Order Approval Admin Email" on customers you want held for approval (Customers grid → Edit Customer).</comment>
-                            </field>
-                            <field id="escalation_days" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Escalate (resend) if not decided within this many days</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="escalation_max_reminders_per_tier" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Reminders to send before escalating to the next tier</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="escalation_chain_emails" translate="label comment" type="textarea" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Escalation chain (one email per line)</label>
-                                <comment>Once the current recipient (the customer's own "Order Approval Admin Email" attribute, tier 0) has had this many reminders with no decision, the next still-pending reminder goes to the first email here instead (tier 1), then the second (tier 2), and so on. Leave empty to keep re-reminding the original recipient indefinitely, as before.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-            
-                        
-
+                <label>Order Approval Workflow</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Requires setting "Order Spend Limit" and "Order Approval Admin Email" on customers you want held for approval (Customers grid → Edit Customer).</comment>
+                </field>
+                <field id="escalation_days" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Escalate (resend) if not decided within this many days</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="escalation_max_reminders_per_tier" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Reminders to send before escalating to the next tier</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="escalation_chain_emails" translate="label comment" type="textarea" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Escalation chain (one email per line)</label>
+                    <comment>Once the current recipient (the customer's own "Order Approval Admin Email" attribute, tier 0) has had this many reminders with no decision, the next still-pending reminder goes to the first email here instead (tier 1), then the second (tier 2), and so on. Leave empty to keep re-reminding the original recipient indefinitely, as before.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="sales_rep" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Sales Rep Signature &amp; Digest</label>
-                            <field id="digest_enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Send weekly digest to reps</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>The rep signature on reorder/offer/credit emails is always active once a customer has "Assigned Sales Rep" fields set — this only controls the separate weekly summary email.</comment>
-                            </field>
-                        </group>
-            
-                        
-
+                <label>Sales Rep Signature &amp; Digest</label>
+                <field id="digest_enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Send weekly digest to reps</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>The rep signature on reorder/offer/credit emails is always active once a customer has "Assigned Sales Rep" fields set — this only controls the separate weekly summary email.</comment>
+                </field>
+            </group>
             <group id="lead_routing" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Lead Routing</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Master switch — routing rules and their rep pools are managed under Ordo Automation &gt; Lead Routing Rules (Ordo_Automation::lead_routing_rules), not this section.</comment>
-                            </field>
-                        </group>
-            
-            
-                        
-
+                <label>Lead Routing</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Master switch — routing rules and their rep pools are managed under Ordo Automation &gt; Lead Routing Rules (Ordo_Automation::lead_routing_rules), not this section.</comment>
+                </field>
+            </group>
         </section>
         <section id="ordo_scoring" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
             <label>Segmentation &amp; Scoring</label>
             <tab>ordo</tab>
             <resource>Ordo_Automation::config</resource>
-
             <group id="lead_scoring" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Lead Scoring</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Master switch — demographic-attribute scoring rules are managed under Ordo Automation &gt; Score Rules (Ordo_Automation::score_rules), not this section.</comment>
-                            </field>
-                            <field id="score_threshold" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Score Threshold</label>
-                                <validate>validate-number</validate>
-                                <comment>Total lead score (behavioral + demographic) at which the "score_threshold_crossed" campaign trigger fires.</comment>
-                            </field>
-                            <field id="loyalty_silver_threshold" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Loyalty Tier: Silver Threshold</label>
-                                <validate>validate-number</validate>
-                                <comment>Total lead score at which a customer's loyalty tier becomes Silver (below this, Bronze).</comment>
-                            </field>
-                            <field id="loyalty_gold_threshold" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Loyalty Tier: Gold Threshold</label>
-                                <validate>validate-number</validate>
-                                <comment>Total lead score at which a customer's loyalty tier becomes Gold.</comment>
-                            </field>
-                        </group>
-            
-                        
-
+                <label>Lead Scoring</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Master switch — demographic-attribute scoring rules are managed under Ordo Automation &gt; Score Rules (Ordo_Automation::score_rules), not this section.</comment>
+                </field>
+                <field id="score_threshold" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Score Threshold</label>
+                    <validate>validate-number</validate>
+                    <comment>Total lead score (behavioral + demographic) at which the "score_threshold_crossed" campaign trigger fires.</comment>
+                </field>
+                <field id="loyalty_silver_threshold" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Loyalty Tier: Silver Threshold</label>
+                    <validate>validate-number</validate>
+                    <comment>Total lead score at which a customer's loyalty tier becomes Silver (below this, Bronze).</comment>
+                </field>
+                <field id="loyalty_gold_threshold" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Loyalty Tier: Gold Threshold</label>
+                    <validate>validate-number</validate>
+                    <comment>Total lead score at which a customer's loyalty tier becomes Gold.</comment>
+                </field>
+            </group>
             <group id="clv" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Customer Lifetime Value (CLV)</label>
-                            <field id="projection_years" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Projection window (years)</label>
-                                <comment>How many years of a customer's annualized purchase run rate (average order value x orders/year) to project forward when computing CLV. A longer window suits B2B accounts kept for years; a shorter one suits fast-turnover B2C categories.</comment>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                            </field>
-                            <field id="min_tenure_months" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Minimum tenure floor (months)</label>
-                                <comment>Floor applied to a customer's tenure (time since first order) before annualizing their purchase frequency, so a customer's very first order doesn't get annualized into an unrealistically high run rate.</comment>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                            </field>
-                        </group>
-            
-                        
-
+                <label>Customer Lifetime Value (CLV)</label>
+                <field id="projection_years" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Projection window (years)</label>
+                    <comment>How many years of a customer's annualized purchase run rate (average order value x orders/year) to project forward when computing CLV. A longer window suits B2B accounts kept for years; a shorter one suits fast-turnover B2C categories.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                </field>
+                <field id="min_tenure_months" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Minimum tenure floor (months)</label>
+                    <comment>Floor applied to a customer's tenure (time since first order) before annualizing their purchase frequency, so a customer's very first order doesn't get annualized into an unrealistically high run rate.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                </field>
+            </group>
             <group id="attribution" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Multi-Touch Campaign Attribution</label>
-                            <field id="window_days" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Attribution window (days)</label>
-                                <comment>How many days before an order to look back for campaign emails/messages the same customer clicked through. Every distinct campaign touched within this window shares equal credit for the order's revenue. This is separate from, and additive to, the existing single-touch conversion tracking.</comment>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                            </field>
-                        </group>
-            
-                        
-
+                <label>Multi-Touch Campaign Attribution</label>
+                <field id="window_days" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Attribution window (days)</label>
+                    <comment>How many days before an order to look back for campaign emails/messages the same customer clicked through. Every distinct campaign touched within this window shares equal credit for the order's revenue. This is separate from, and additive to, the existing single-touch conversion tracking.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                </field>
+            </group>
             <group id="ab_test" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>A/B Split Test Auto-Winner</label>
-                            <field id="auto_winner_enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Off by default. When on, automatically compares each split action's variants by click-through rate once every variant has reached the minimum sample size below, and permanently shifts all future traffic to whichever variant is winning - the split's own admin-configured weights otherwise stay fixed forever.</comment>
-                            </field>
-                            <field id="min_sample_size" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Minimum sample size per variant</label>
-                                <comment>How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the "better" CTR is just noise.</comment>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="auto_winner_enabled">1</field></depends>
-                            </field>
-                        </group>
-            
-                        
-
+                <label>A/B Split Test Auto-Winner</label>
+                <field id="auto_winner_enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Off by default. When on, automatically compares each split action's variants by click-through rate once every variant has reached the minimum sample size below, and permanently shifts all future traffic to whichever variant is winning - the split's own admin-configured weights otherwise stay fixed forever.</comment>
+                </field>
+                <field id="min_sample_size" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Minimum sample size per variant</label>
+                    <comment>How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the "better" CTR is just noise.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="auto_winner_enabled">1</field></depends>
+                </field>
+            </group>
         </section>
         <section id="ordo_channels" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
             <label>Messaging Channels</label>
             <tab>ordo</tab>
             <resource>Ordo_Automation::config</resource>
-
             <group id="email" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Email Delivery Tracking (SendGrid)</label>
-                            <field id="sendgrid_webhook_verification_key" translate="label comment" type="obscure" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>SendGrid Event Webhook Verification Key</label>
-                                <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                                <comment>Base64-encoded ECDSA public key from the SendGrid account's Event Webhook settings page (Signed Event Webhook Requests). Register "/ordo/email/statuscallback" as that account's Event Webhook URL to receive delivered/bounce/dropped status updates for "send_email" campaign actions into the same message log "Send SMS" already writes to.</comment>
-                            </field>
-                        </group>
-                        
-
+                <label>Email Delivery Tracking (SendGrid)</label>
+                <field id="sendgrid_webhook_verification_key" translate="label comment" type="obscure" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>SendGrid Event Webhook Verification Key</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment>Base64-encoded ECDSA public key from the SendGrid account's Event Webhook settings page (Signed Event Webhook Requests). Register "/ordo/email/statuscallback" as that account's Event Webhook URL to receive delivered/bounce/dropped status updates for "send_email" campaign actions into the same message log "Send SMS" already writes to.</comment>
+                </field>
+            </group>
             <group id="email_template_versioning" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Email Template Version History</label>
-                            <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Snapshots a Magento email template's content every time it's saved (Marketing &gt; Email Templates), so a "send_email" campaign action's referenced template can be restored if an edit breaks it. Magento's own template editor has no version history of its own.</comment>
-                            </field>
-                        </group>
-                        
-
+                <label>Email Template Version History</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Snapshots a Magento email template's content every time it's saved (Marketing &gt; Email Templates), so a "send_email" campaign action's referenced template can be restored if an edit breaks it. Magento's own template editor has no version history of its own.</comment>
+                </field>
+            </group>
             <group id="sms" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>SMS (Twilio)</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Master switch for the "Send SMS" campaign action. Requires setting "SMS Phone" on customers you want to reach (Customers grid → Edit Customer).</comment>
-                            </field>
-                            <field id="twilio_account_sid" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Twilio Account SID</label>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="twilio_auth_token" translate="label comment" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Twilio Auth Token</label>
-                                <comment>Used only to verify the X-Twilio-Signature on the inbound status-callback webhook — Twilio always signs webhooks with the Auth Token, never with an API Key secret. Not used to authenticate outbound API calls; see "Twilio API Key SID/Secret" below for that.</comment>
-                                <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="twilio_api_key_sid" translate="label comment" type="text" sortOrder="35" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Twilio API Key SID</label>
-                                <comment>A Restricted API Key scoped to Programmable Messaging (Console → Account → API keys &amp; tokens), not the Account SID. Used to authenticate outbound SMS sends, per Twilio's recommendation to avoid granting full-account access for routine API calls.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="twilio_api_key_secret" translate="label" type="obscure" sortOrder="36" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Twilio API Key Secret</label>
-                                <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="twilio_from_number" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Twilio "From" Number</label>
-                                <comment>E.164 format, e.g. "+15551234567".</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="twilio_max_requests_per_second" translate="label comment" type="text" sortOrder="45" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Max Requests Per Second</label>
-                                <comment>Paces outbound Twilio API calls so a campaign/cron reaching many customers in one tick doesn't exceed Twilio's own rate limit. 0 disables throttling entirely.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-                        
-
+                <label>SMS (Twilio)</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Master switch for the "Send SMS" campaign action. Requires setting "SMS Phone" on customers you want to reach (Customers grid → Edit Customer).</comment>
+                </field>
+                <field id="twilio_account_sid" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Twilio Account SID</label>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="twilio_auth_token" translate="label comment" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Twilio Auth Token</label>
+                    <comment>Used only to verify the X-Twilio-Signature on the inbound status-callback webhook — Twilio always signs webhooks with the Auth Token, never with an API Key secret. Not used to authenticate outbound API calls; see "Twilio API Key SID/Secret" below for that.</comment>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="twilio_api_key_sid" translate="label comment" type="text" sortOrder="35" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Twilio API Key SID</label>
+                    <comment>A Restricted API Key scoped to Programmable Messaging (Console → Account → API keys &amp; tokens), not the Account SID. Used to authenticate outbound SMS sends, per Twilio's recommendation to avoid granting full-account access for routine API calls.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="twilio_api_key_secret" translate="label" type="obscure" sortOrder="36" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Twilio API Key Secret</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="twilio_from_number" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Twilio "From" Number</label>
+                    <comment>E.164 format, e.g. "+15551234567".</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="twilio_max_requests_per_second" translate="label comment" type="text" sortOrder="45" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Max Requests Per Second</label>
+                    <comment>Paces outbound Twilio API calls so a campaign/cron reaching many customers in one tick doesn't exceed Twilio's own rate limit. 0 disables throttling entirely.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="whatsapp" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>WhatsApp (Meta Cloud API)</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Master switch for the "Send WhatsApp" campaign action. Requires setting "SMS Phone" on customers you want to reach (the same attribute send_sms uses) and at least one APPROVED template under Ordo Automation &gt; WhatsApp Templates.</comment>
-                            </field>
-                            <field id="access_token" translate="label" type="obscure" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Access Token</label>
-                                <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="phone_number_id" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Phone Number ID</label>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="business_account_id" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>WhatsApp Business Account (WABA) ID</label>
-                                <comment>Where new templates are registered.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="app_secret" translate="label comment" type="obscure" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>App Secret</label>
-                                <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                                <comment>From the Meta App Dashboard - verifies the "X-Hub-Signature-256" header on every incoming webhook call.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="webhook_verify_token" translate="label comment" type="obscure" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Webhook Verify Token</label>
-                                <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                                <comment>An arbitrary string you choose here and enter again when registering "/ordo/whatsapp/webhook" as the Callback URL in the Meta App Dashboard's Webhooks settings - proves the one-time subscription handshake is really Meta.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="max_requests_per_second" translate="label comment" type="text" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Max Requests Per Second</label>
-                                <comment>Paces outbound Graph API calls so a campaign/cron reaching many customers in one tick doesn't exceed Meta's own rate limit. 0 disables throttling entirely.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-                        
-
+                <label>WhatsApp (Meta Cloud API)</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Master switch for the "Send WhatsApp" campaign action. Requires setting "SMS Phone" on customers you want to reach (the same attribute send_sms uses) and at least one APPROVED template under Ordo Automation &gt; WhatsApp Templates.</comment>
+                </field>
+                <field id="access_token" translate="label" type="obscure" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Access Token</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="phone_number_id" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Phone Number ID</label>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="business_account_id" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>WhatsApp Business Account (WABA) ID</label>
+                    <comment>Where new templates are registered.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="app_secret" translate="label comment" type="obscure" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>App Secret</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment>From the Meta App Dashboard - verifies the "X-Hub-Signature-256" header on every incoming webhook call.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="webhook_verify_token" translate="label comment" type="obscure" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Webhook Verify Token</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment>An arbitrary string you choose here and enter again when registering "/ordo/whatsapp/webhook" as the Callback URL in the Meta App Dashboard's Webhooks settings - proves the one-time subscription handshake is really Meta.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="max_requests_per_second" translate="label comment" type="text" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Max Requests Per Second</label>
+                    <comment>Paces outbound Graph API calls so a campaign/cron reaching many customers in one tick doesn't exceed Meta's own rate limit. 0 disables throttling entirely.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="push" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Push Notifications (Web Push)</label>
-                            <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Master switch for the "Send Push" campaign action and for tracker.js offering the browser notification-permission prompt at all. Requires a VAPID key pair below - generate one with `bin/magento ordo:push:vapid:generate`.</comment>
-                            </field>
-                            <field id="vapid_public_key" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>VAPID Public Key</label>
-                                <comment>Not a secret - sent to every visitor's browser as-is. Generate a matching pair with `bin/magento ordo:push:vapid:generate`.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="vapid_private_key" translate="label comment" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>VAPID Private Key</label>
-                                <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                                <comment>Signs every outbound push notification's authentication token - never sent to the browser.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="vapid_subject" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>VAPID Contact (mailto: or https:// URL)</label>
-                                <comment>Required by the Web Push standard (RFC 8292) so a push service (Chrome/Firefox/etc.) can reach this site's operator if its traffic needs attention, e.g. "mailto:ops@example.com".</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="max_requests_per_second" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Max Requests Per Second</label>
-                                <comment>Paces outbound push requests so a campaign/cron reaching many subscribers in one tick doesn't hammer whichever push service (FCM, Mozilla autopush, ...) each subscription's endpoint belongs to. 0 disables throttling entirely.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-            
-                        
-
+                <label>Push Notifications (Web Push)</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Master switch for the "Send Push" campaign action and for tracker.js offering the browser notification-permission prompt at all. Requires a VAPID key pair below - generate one with `bin/magento ordo:push:vapid:generate`.</comment>
+                </field>
+                <field id="vapid_public_key" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>VAPID Public Key</label>
+                    <comment>Not a secret - sent to every visitor's browser as-is. Generate a matching pair with `bin/magento ordo:push:vapid:generate`.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="vapid_private_key" translate="label comment" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>VAPID Private Key</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment>Signs every outbound push notification's authentication token - never sent to the browser.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="vapid_subject" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>VAPID Contact (mailto: or https:// URL)</label>
+                    <comment>Required by the Web Push standard (RFC 8292) so a push service (Chrome/Firefox/etc.) can reach this site's operator if its traffic needs attention, e.g. "mailto:ops@example.com".</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="max_requests_per_second" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Max Requests Per Second</label>
+                    <comment>Paces outbound push requests so a campaign/cron reaching many subscribers in one tick doesn't hammer whichever push service (FCM, Mozilla autopush, ...) each subscription's endpoint belongs to. 0 disables throttling entirely.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="webhook" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Webhooks (generic ERP/CRM/PIM integration)</label>
-                            <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Master switch for the "Send Webhook" campaign action and the "webhook_received" trigger (inbound endpoint "/ordo/webhook/receive").</comment>
-                            </field>
-                            <field id="outbound_url" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Outbound URL</label>
-                                <comment>Where the "Send Webhook" campaign action POSTs its JSON payload, e.g. an ERP/CRM/PIM's own inbound endpoint.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="outbound_secret" translate="label comment" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Outbound Signing Secret</label>
-                                <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                                <comment>Signs every "Send Webhook" outbound POST body with HMAC-SHA256, sent as the "X-Ordo-Signature" header in the form "sha256=&lt;hex digest&gt;" - the receiver verifies it the same way this module verifies inbound signatures.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="inbound_secret" translate="label comment" type="obscure" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Inbound Signing Secret</label>
-                                <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                                <comment>Verifies the "X-Ordo-Signature" header (HMAC-SHA256 over the raw body, same scheme as the outbound signing above) on every call to "/ordo/webhook/receive" before it is trusted to dispatch the "webhook_received" campaign trigger.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="max_requests_per_second" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Max Requests Per Second</label>
-                                <comment>Paces outbound "Send Webhook" calls so a campaign/cron reaching many customers in one tick doesn't hammer the configured endpoint. Also paces the "Send GA4 Purchase Event"/"Send Meta Conversion Event" actions (Conversion Tracking, above), each on its own independent pace. 0 disables throttling entirely.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-            
-                        
-
+                <label>Webhooks (generic ERP/CRM/PIM integration)</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Master switch for the "Send Webhook" campaign action and the "webhook_received" trigger (inbound endpoint "/ordo/webhook/receive").</comment>
+                </field>
+                <field id="outbound_url" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Outbound URL</label>
+                    <comment>Where the "Send Webhook" campaign action POSTs its JSON payload, e.g. an ERP/CRM/PIM's own inbound endpoint.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="outbound_secret" translate="label comment" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Outbound Signing Secret</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment>Signs every "Send Webhook" outbound POST body with HMAC-SHA256, sent as the "X-Ordo-Signature" header in the form "sha256=&lt;hex digest&gt;" - the receiver verifies it the same way this module verifies inbound signatures.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="inbound_secret" translate="label comment" type="obscure" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Inbound Signing Secret</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment>Verifies the "X-Ordo-Signature" header (HMAC-SHA256 over the raw body, same scheme as the outbound signing above) on every call to "/ordo/webhook/receive" before it is trusted to dispatch the "webhook_received" campaign trigger.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="max_requests_per_second" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Max Requests Per Second</label>
+                    <comment>Paces outbound "Send Webhook" calls so a campaign/cron reaching many customers in one tick doesn't hammer the configured endpoint. Also paces the "Send GA4 Purchase Event"/"Send Meta Conversion Event" actions (Conversion Tracking, above), each on its own independent pace. 0 disables throttling entirely.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="quiet_hours" translate="label" type="text" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Quiet Hours</label>
-                            <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Off by default. When on, a send_email/send_sms/send_whatsapp/send_push campaign action due during the customer's local quiet hours is deferred until quiet hours end instead of sending immediately, using the customer's Timezone attribute (falls back to this store's General &gt; Locale Options &gt; Timezone when unset).</comment>
-                            </field>
-                            <field id="start_hour" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Quiet hours start (0-23)</label>
-                                <comment>Local hour of day quiet hours begin, e.g. 21 for 9pm.</comment>
-                                <validate>validate-digits</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="end_hour" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Quiet hours end (0-23)</label>
-                                <comment>Local hour of day quiet hours end, e.g. 8 for 8am. May be numerically less than the start hour - that means the window spans midnight.</comment>
-                                <validate>validate-digits</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-                    
-
+                <label>Quiet Hours</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Off by default. When on, a send_email/send_sms/send_whatsapp/send_push campaign action due during the customer's local quiet hours is deferred until quiet hours end instead of sending immediately, using the customer's Timezone attribute (falls back to this store's General &gt; Locale Options &gt; Timezone when unset).</comment>
+                </field>
+                <field id="start_hour" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Quiet hours start (0-23)</label>
+                    <comment>Local hour of day quiet hours begin, e.g. 21 for 9pm.</comment>
+                    <validate>validate-digits</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="end_hour" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Quiet hours end (0-23)</label>
+                    <comment>Local hour of day quiet hours end, e.g. 8 for 8am. May be numerically less than the start hour - that means the window spans midnight.</comment>
+                    <validate>validate-digits</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="frequency_cap" translate="label" type="text" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Frequency Cap (cross-channel)</label>
-                            <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Off by default. When on, every send_email/send_sms/send_whatsapp/send_push campaign action counts toward one shared cap per customer, across all channels combined, before sending - not a per-channel limit.</comment>
-                            </field>
-                            <field id="max_messages" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Max messages per customer, per window</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="window_hours" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Rolling window (hours)</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-
-                        <group id="message_log" translate="label" type="text" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Message Log Retention</label>
-                            <field id="retention_days" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Delete sent messages older than this many days</label>
-                                <comment>Applies to ordo_message_log (every sms/email/whatsapp send this module made) and its open/click event rows — both channel-generic, shared across sms/email/whatsapp. Keep this at or above any "within days" window used by a message_engaged segment/campaign condition, or that condition will silently stop being able to see older engagement.</comment>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                            </field>
-                        </group>
-
+                <label>Frequency Cap (cross-channel)</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Off by default. When on, every send_email/send_sms/send_whatsapp/send_push campaign action counts toward one shared cap per customer, across all channels combined, before sending - not a per-channel limit.</comment>
+                </field>
+                <field id="max_messages" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Max messages per customer, per window</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="window_hours" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Rolling window (hours)</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
+            <group id="message_log" translate="label" type="text" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Message Log Retention</label>
+                <field id="retention_days" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Delete sent messages older than this many days</label>
+                    <comment>Applies to ordo_message_log (every sms/email/whatsapp send this module made) and its open/click event rows — both channel-generic, shared across sms/email/whatsapp. Keep this at or above any "within days" window used by a message_engaged segment/campaign condition, or that condition will silently stop being able to see older engagement.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                </field>
+            </group>
         </section>
         <section id="ordo_tracking" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
             <label>Tracking &amp; AI Content</label>
             <tab>ordo</tab>
             <resource>Ordo_Automation::config</resource>
-
             <group id="tracking" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>On-Site Behavior Tracking</label>
-                            <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Controls whether the tracker.js snippet renders at all (view/frontend/layout/default.xml only adds the block when this is enabled) and whether the /ordo/track/event endpoint stores anything it receives.</comment>
-                            </field>
-                            <field id="view_threshold" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Tag a customer after this many views of the same item</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="click_threshold" translate="label" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Tag a customer after this many clicks on the same tracked element</label>
-                                <comment>A click is higher-intent than a view — 1 is usually enough, unlike the view threshold above.</comment>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="retention_days" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Delete raw events older than this many days</label>
-                                <comment>Only raw events are pruned — tags already derived from them are unaffected and stay permanently.</comment>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="popup_enabled" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enable on-site popups</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Lets a campaign's "Show Popup" action queue a banner for the visitor/customer's browser to pick up on its next poll (see tracker.js). Requires tracking to be enabled above.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="popup_poll_interval_seconds" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Popup poll interval (seconds)</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends>
-                                    <field id="enabled">1</field>
-                                    <field id="popup_enabled">1</field>
-                                </depends>
-                            </field>
-                            <field id="popup_frequency_cap_hours" translate="label comment" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Popup frequency cap (hours)</label>
-                                <comment>Minimum time between two popups shown to the same visitor/customer. 0 disables the cap.</comment>
-                                <validate>validate-digits</validate>
-                                <depends>
-                                    <field id="enabled">1</field>
-                                    <field id="popup_enabled">1</field>
-                                </depends>
-                            </field>
-                            <field id="notification_enabled" translate="label comment" type="select" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enable persistent in-site notifications</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Lets a campaign's "Notify" action queue a non-modal banner that stays visible across page loads until the visitor/customer dismisses it or it expires - unlike "Show Popup" above, which is one-shot. Requires tracking to be enabled above.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="notification_poll_interval_seconds" translate="label" type="text" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Notification poll interval (seconds)</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends>
-                                    <field id="enabled">1</field>
-                                    <field id="notification_enabled">1</field>
-                                </depends>
-                            </field>
-                            <field id="nps_survey_enabled" translate="label comment" type="select" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enable single-question NPS/satisfaction survey</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Lets a campaign's "NPS Survey" action queue a single 0-10 question, delivered and answered the same poll-and-claim way as "Show Popup"/"Persistent Notification" above. Requires tracking to be enabled above.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="nps_survey_poll_interval_seconds" translate="label" type="text" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>NPS survey poll interval (seconds)</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends>
-                                    <field id="enabled">1</field>
-                                    <field id="nps_survey_enabled">1</field>
-                                </depends>
-                            </field>
-                            <field id="gtm_bridge_enabled" translate="label comment" type="select" sortOrder="110" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Mirror tracked events to Google Tag Manager's dataLayer</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Pushes every event tracker.js already sends (page_view, product_view, category_view, checkout_start, and any custom window.ordoTrack() call) onto window.dataLayer too, tagged with an ordo_-prefixed event name. This lets a store's existing GTM container build GA4/Ads audiences from Ordo's own event taxonomy. GTM itself isn't loaded by this - the store's own container must already be on the page. Requires tracking to be enabled above.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="exit_intent_enabled" translate="label comment" type="select" sortOrder="120" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enable exit-intent detection</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Fires an "Exit Intent" campaign trigger the first time, per page load, a visitor's mouse leaves toward the top of the browser window - the usual "about to close the tab" signal. Lets a campaign show a last-chance popup via the existing "Show Popup" action. Requires tracking to be enabled above.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="social_proof_enabled" translate="label comment" type="select" sortOrder="130" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enable "N people viewed this today" on the product page</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Shows a message like "12 people viewed this today" on the product page, based on real traffic. Needs a small one-time change in your theme to display it (ask your developer to call window.ordoRenderSocialProof - see the module's documentation). Requires tracking to be enabled above.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="social_proof_minimum_views" translate="label comment" type="text" sortOrder="140" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Minimum views today before showing the message</label>
-                                <comment>The message only shows once a product has at least this many real views today - a very low number ("1 person viewed this today") can look unconvincing instead of reassuring.</comment>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="social_proof_enabled">1</field></depends>
-                            </field>
-                            <field id="social_proof_message_template" translate="label comment" type="text" sortOrder="150" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Message template</label>
-                                <comment>"{count}" is replaced with today's real view count. Default: "{count} people viewed this today".</comment>
-                                <depends><field id="social_proof_enabled">1</field></depends>
-                            </field>
-                            <field id="low_stock_enabled" translate="label comment" type="select" sortOrder="160" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enable "Only N left in stock" on the product page</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Shows a message like "Only 3 left in stock" on the product page, based on real current stock. Needs a small one-time change in your theme to display it (ask your developer to call window.ordoRenderLowStock - see the module's documentation). Requires tracking to be enabled above.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="low_stock_threshold" translate="label comment" type="text" sortOrder="170" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Show the message below this stock quantity</label>
-                                <comment>The message shows once a product's real stock quantity is at or below this number (but still above zero - zero in stock is a different message entirely).</comment>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="low_stock_enabled">1</field></depends>
-                            </field>
-                            <field id="low_stock_message_template" translate="label comment" type="text" sortOrder="180" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Message template</label>
-                                <comment>"{qty}" is replaced with the product's real current stock quantity. Default: "Only {qty} left in stock".</comment>
-                                <depends><field id="low_stock_enabled">1</field></depends>
-                            </field>
-                            <field id="email_capture_enabled" translate="label comment" type="select" sortOrder="190" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enable the newsletter signup popup</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Shows a small popup after a delay, inviting a visitor to sign up for your newsletter (e.g. for a discount). Signing up subscribes them through your store's own newsletter and tags them so a campaign can react (e.g. send a welcome email). Requires tracking to be enabled above.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="email_capture_delay_seconds" translate="label comment" type="text" sortOrder="200" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Delay before showing the popup (seconds)</label>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="email_capture_enabled">1</field></depends>
-                            </field>
-                            <field id="email_capture_headline" translate="label comment" type="text" sortOrder="210" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Popup headline</label>
-                                <comment>Default: "Get 10% off your first order".</comment>
-                                <depends><field id="email_capture_enabled">1</field></depends>
-                            </field>
-                            <field id="email_capture_body" translate="label comment" type="text" sortOrder="220" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Popup body text</label>
-                                <comment>Default: "Sign up for our newsletter and get 10% off your first order.".</comment>
-                                <depends><field id="email_capture_enabled">1</field></depends>
-                            </field>
-                            <field id="email_capture_cta_label" translate="label comment" type="text" sortOrder="230" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Submit button label</label>
-                                <comment>Default: "Subscribe".</comment>
-                                <depends><field id="email_capture_enabled">1</field></depends>
-                            </field>
-                        </group>
-            
-                        
-
+                <label>On-Site Behavior Tracking</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Controls whether the tracker.js snippet renders at all (view/frontend/layout/default.xml only adds the block when this is enabled) and whether the /ordo/track/event endpoint stores anything it receives.</comment>
+                </field>
+                <field id="view_threshold" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Tag a customer after this many views of the same item</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="click_threshold" translate="label" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Tag a customer after this many clicks on the same tracked element</label>
+                    <comment>A click is higher-intent than a view — 1 is usually enough, unlike the view threshold above.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="retention_days" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Delete raw events older than this many days</label>
+                    <comment>Only raw events are pruned — tags already derived from them are unaffected and stay permanently.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="popup_enabled" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable on-site popups</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Lets a campaign's "Show Popup" action queue a banner for the visitor/customer's browser to pick up on its next poll (see tracker.js). Requires tracking to be enabled above.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="popup_poll_interval_seconds" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Popup poll interval (seconds)</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends>
+                        <field id="enabled">1</field>
+                        <field id="popup_enabled">1</field>
+                    </depends>
+                </field>
+                <field id="popup_frequency_cap_hours" translate="label comment" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Popup frequency cap (hours)</label>
+                    <comment>Minimum time between two popups shown to the same visitor/customer. 0 disables the cap.</comment>
+                    <validate>validate-digits</validate>
+                    <depends>
+                        <field id="enabled">1</field>
+                        <field id="popup_enabled">1</field>
+                    </depends>
+                </field>
+                <field id="notification_enabled" translate="label comment" type="select" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable persistent in-site notifications</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Lets a campaign's "Notify" action queue a non-modal banner that stays visible across page loads until the visitor/customer dismisses it or it expires - unlike "Show Popup" above, which is one-shot. Requires tracking to be enabled above.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="notification_poll_interval_seconds" translate="label" type="text" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Notification poll interval (seconds)</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends>
+                        <field id="enabled">1</field>
+                        <field id="notification_enabled">1</field>
+                    </depends>
+                </field>
+                <field id="nps_survey_enabled" translate="label comment" type="select" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable single-question NPS/satisfaction survey</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Lets a campaign's "NPS Survey" action queue a single 0-10 question, delivered and answered the same poll-and-claim way as "Show Popup"/"Persistent Notification" above. Requires tracking to be enabled above.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="nps_survey_poll_interval_seconds" translate="label" type="text" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>NPS survey poll interval (seconds)</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends>
+                        <field id="enabled">1</field>
+                        <field id="nps_survey_enabled">1</field>
+                    </depends>
+                </field>
+                <field id="gtm_bridge_enabled" translate="label comment" type="select" sortOrder="110" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Mirror tracked events to Google Tag Manager's dataLayer</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Pushes every event tracker.js already sends (page_view, product_view, category_view, checkout_start, and any custom window.ordoTrack() call) onto window.dataLayer too, tagged with an ordo_-prefixed event name. This lets a store's existing GTM container build GA4/Ads audiences from Ordo's own event taxonomy. GTM itself isn't loaded by this - the store's own container must already be on the page. Requires tracking to be enabled above.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="exit_intent_enabled" translate="label comment" type="select" sortOrder="120" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable exit-intent detection</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Fires an "Exit Intent" campaign trigger the first time, per page load, a visitor's mouse leaves toward the top of the browser window - the usual "about to close the tab" signal. Lets a campaign show a last-chance popup via the existing "Show Popup" action. Requires tracking to be enabled above.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="social_proof_enabled" translate="label comment" type="select" sortOrder="130" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable "N people viewed this today" on the product page</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Shows a message like "12 people viewed this today" on the product page, based on real traffic. Needs a small one-time change in your theme to display it (ask your developer to call window.ordoRenderSocialProof - see the module's documentation). Requires tracking to be enabled above.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="social_proof_minimum_views" translate="label comment" type="text" sortOrder="140" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Minimum views today before showing the message</label>
+                    <comment>The message only shows once a product has at least this many real views today - a very low number ("1 person viewed this today") can look unconvincing instead of reassuring.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="social_proof_enabled">1</field></depends>
+                </field>
+                <field id="social_proof_message_template" translate="label comment" type="text" sortOrder="150" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Message template</label>
+                    <comment>"{count}" is replaced with today's real view count. Default: "{count} people viewed this today".</comment>
+                    <depends><field id="social_proof_enabled">1</field></depends>
+                </field>
+                <field id="low_stock_enabled" translate="label comment" type="select" sortOrder="160" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable "Only N left in stock" on the product page</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Shows a message like "Only 3 left in stock" on the product page, based on real current stock. Needs a small one-time change in your theme to display it (ask your developer to call window.ordoRenderLowStock - see the module's documentation). Requires tracking to be enabled above.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="low_stock_threshold" translate="label comment" type="text" sortOrder="170" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Show the message below this stock quantity</label>
+                    <comment>The message shows once a product's real stock quantity is at or below this number (but still above zero - zero in stock is a different message entirely).</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="low_stock_enabled">1</field></depends>
+                </field>
+                <field id="low_stock_message_template" translate="label comment" type="text" sortOrder="180" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Message template</label>
+                    <comment>"{qty}" is replaced with the product's real current stock quantity. Default: "Only {qty} left in stock".</comment>
+                    <depends><field id="low_stock_enabled">1</field></depends>
+                </field>
+                <field id="email_capture_enabled" translate="label comment" type="select" sortOrder="190" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable the newsletter signup popup</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Shows a small popup after a delay, inviting a visitor to sign up for your newsletter (e.g. for a discount). Signing up subscribes them through your store's own newsletter and tags them so a campaign can react (e.g. send a welcome email). Requires tracking to be enabled above.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="email_capture_delay_seconds" translate="label comment" type="text" sortOrder="200" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Delay before showing the popup (seconds)</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="email_capture_enabled">1</field></depends>
+                </field>
+                <field id="email_capture_headline" translate="label comment" type="text" sortOrder="210" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Popup headline</label>
+                    <comment>Default: "Get 10% off your first order".</comment>
+                    <depends><field id="email_capture_enabled">1</field></depends>
+                </field>
+                <field id="email_capture_body" translate="label comment" type="text" sortOrder="220" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Popup body text</label>
+                    <comment>Default: "Sign up for our newsletter and get 10% off your first order.".</comment>
+                    <depends><field id="email_capture_enabled">1</field></depends>
+                </field>
+                <field id="email_capture_cta_label" translate="label comment" type="text" sortOrder="230" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Submit button label</label>
+                    <comment>Default: "Subscribe".</comment>
+                    <depends><field id="email_capture_enabled">1</field></depends>
+                </field>
+            </group>
             <group id="ai" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>AI Content (self-hosted Ollama)</label>
-                            <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Master switch for the "Generate AI Content" campaign action. Calls a self-hosted Ollama instance (https://ollama.com) only - no data ever leaves the store. A timeout or unreachable instance falls back to the action's own configured static text rather than blocking the send.</comment>
-                            </field>
-                            <field id="ollama_base_url" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Ollama Base URL</label>
-                                <comment>e.g. http://localhost:11434 - a local instance on the same network as this store, not a third-party hosted API.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="ollama_model" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Model</label>
-                                <comment>Any model already pulled on that Ollama instance (e.g. "llama3.2"). Defaults to "llama3.2" if left blank.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="max_requests_per_second" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Max Requests Per Second</label>
-                                <comment>Paces outbound calls so a queue burst reaching many customers in one tick can't flood a local instance. 0 disables throttling entirely.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="test_connection" translate="label" type="button" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Test Connection</label>
-                                <frontend_model>Ordo\Automation\Block\Adminhtml\System\Config\TestOllamaConnection</frontend_model>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-            
-                        
-
+                <label>AI Content (self-hosted Ollama)</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Master switch for the "Generate AI Content" campaign action. Calls a self-hosted Ollama instance (https://ollama.com) only - no data ever leaves the store. A timeout or unreachable instance falls back to the action's own configured static text rather than blocking the send.</comment>
+                </field>
+                <field id="ollama_base_url" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Ollama Base URL</label>
+                    <comment>e.g. http://localhost:11434 - a local instance on the same network as this store, not a third-party hosted API.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="ollama_model" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Model</label>
+                    <comment>Any model already pulled on that Ollama instance (e.g. "llama3.2"). Defaults to "llama3.2" if left blank.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="max_requests_per_second" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Max Requests Per Second</label>
+                    <comment>Paces outbound calls so a queue burst reaching many customers in one tick can't flood a local instance. 0 disables throttling entirely.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="test_connection" translate="label" type="button" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Test Connection</label>
+                    <frontend_model>Ordo\Automation\Block\Adminhtml\System\Config\TestOllamaConnection</frontend_model>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
         </section>
         <section id="ordo_integrations" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
             <label>Feeds &amp; Integrations</label>
             <tab>ordo</tab>
             <resource>Ordo_Automation::config</resource>
-
             <group id="ad_audience_sync" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Ad Audience Sync (Google Ads / Meta)</label>
-                            <field id="data_manager_client_id" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Data Manager API OAuth Client ID</label>
-                                <comment>Google Ads Customer Match sync now goes through the Data Manager API (OfflineUserDataJobService was retired for new integrations) - see ADR 0035.</comment>
-                            </field>
-                            <field id="data_manager_client_secret" translate="label" type="obscure" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Data Manager API OAuth Client Secret</label>
-                                <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                            </field>
-                            <field id="data_manager_refresh_token" translate="label comment" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Data Manager API OAuth Refresh Token</label>
-                                <comment>Needs its own consent grant for the https://www.googleapis.com/auth/datamanager scope - a Google Ads API-only refresh token from before this integration doesn't carry it.</comment>
-                                <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                            </field>
-                            <field id="google_ads_account_id" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Google Ads Account ID</label>
-                                <comment>The Google Ads account the Customer Match audience list belongs to, digits only, no dashes.</comment>
-                            </field>
-                            <field id="meta_access_token" translate="label comment" type="obscure" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Meta Access Token</label>
-                                <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                                <comment>A long-lived system-user token with ads_management permission.</comment>
-                            </field>
-                            <field id="meta_ad_account_id" translate="label comment" type="text" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Meta Ad Account ID</label>
-                                <comment>Digits only, without the "act_" prefix.</comment>
-                            </field>
-                            <field id="tiktok_access_token" translate="label comment" type="obscure" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>TikTok Access Token</label>
-                                <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                                <comment>From a TikTok for Developers app with the Audience Management scope, authorized against this ad account.</comment>
-                            </field>
-                            <field id="tiktok_advertiser_id" translate="label comment" type="text" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>TikTok Advertiser ID</label>
-                                <comment>Found in TikTok Ads Manager account settings.</comment>
-                            </field>
-                        </group>
-
-                        <group id="conversion_tracking" translate="label" type="text" sortOrder="15" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Conversion Tracking (GA4 / Meta)</label>
-                            <field id="ga4_enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enable GA4 server-side purchase events</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Lets a campaign's "Send GA4 Purchase Event" action report a real order straight to Google Analytics 4, bypassing ad blockers and browser privacy settings that often stop the regular on-page tracking tag from ever firing.</comment>
-                            </field>
-                            <field id="ga4_measurement_id" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>GA4 Measurement ID</label>
-                                <comment>Starts with "G-", found in GA4 under Admin &gt; Data Streams &gt; your web stream.</comment>
-                                <depends><field id="ga4_enabled">1</field></depends>
-                            </field>
-                            <field id="ga4_api_secret" translate="label comment" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>GA4 Measurement Protocol API Secret</label>
-                                <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                                <comment>Created in the same Data Stream, under "Measurement Protocol API secrets".</comment>
-                                <depends><field id="ga4_enabled">1</field></depends>
-                            </field>
-                            <field id="meta_capi_enabled" translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enable Meta server-side purchase events</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Lets a campaign's "Send Meta Conversion Event" action report a real order straight to Meta's Conversions API, the same way GA4 above bypasses ad blockers. Separate from, and unrelated to, the Ad Audience Sync integration above - that pushes customer lists for targeting, this reports individual purchases for ad measurement/optimization.</comment>
-                            </field>
-                            <field id="meta_capi_pixel_id" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Meta Pixel ID</label>
-                                <comment>Found in Meta Events Manager, under your Pixel's settings.</comment>
-                                <depends><field id="meta_capi_enabled">1</field></depends>
-                            </field>
-                            <field id="meta_capi_access_token" translate="label comment" type="obscure" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Meta Conversions API Access Token</label>
-                                <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                                <comment>Generated in Meta Events Manager, under your Pixel's "Settings" &gt; "Conversions API" section.</comment>
-                                <depends><field id="meta_capi_enabled">1</field></depends>
-                            </field>
-                        </group>
-                        
-
+                <label>Ad Audience Sync (Google Ads / Meta)</label>
+                <field id="data_manager_client_id" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Data Manager API OAuth Client ID</label>
+                    <comment>Google Ads Customer Match sync now goes through the Data Manager API (OfflineUserDataJobService was retired for new integrations) - see ADR 0035.</comment>
+                </field>
+                <field id="data_manager_client_secret" translate="label" type="obscure" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Data Manager API OAuth Client Secret</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                </field>
+                <field id="data_manager_refresh_token" translate="label comment" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Data Manager API OAuth Refresh Token</label>
+                    <comment>Needs its own consent grant for the https://www.googleapis.com/auth/datamanager scope - a Google Ads API-only refresh token from before this integration doesn't carry it.</comment>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                </field>
+                <field id="google_ads_account_id" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Google Ads Account ID</label>
+                    <comment>The Google Ads account the Customer Match audience list belongs to, digits only, no dashes.</comment>
+                </field>
+                <field id="meta_access_token" translate="label comment" type="obscure" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Meta Access Token</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment>A long-lived system-user token with ads_management permission.</comment>
+                </field>
+                <field id="meta_ad_account_id" translate="label comment" type="text" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Meta Ad Account ID</label>
+                    <comment>Digits only, without the "act_" prefix.</comment>
+                </field>
+                <field id="tiktok_access_token" translate="label comment" type="obscure" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>TikTok Access Token</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment>From a TikTok for Developers app with the Audience Management scope, authorized against this ad account.</comment>
+                </field>
+                <field id="tiktok_advertiser_id" translate="label comment" type="text" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>TikTok Advertiser ID</label>
+                    <comment>Found in TikTok Ads Manager account settings.</comment>
+                </field>
+            </group>
+            <group id="conversion_tracking" translate="label" type="text" sortOrder="15" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Conversion Tracking (GA4 / Meta)</label>
+                <field id="ga4_enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable GA4 server-side purchase events</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Lets a campaign's "Send GA4 Purchase Event" action report a real order straight to Google Analytics 4, bypassing ad blockers and browser privacy settings that often stop the regular on-page tracking tag from ever firing.</comment>
+                </field>
+                <field id="ga4_measurement_id" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>GA4 Measurement ID</label>
+                    <comment>Starts with "G-", found in GA4 under Admin &gt; Data Streams &gt; your web stream.</comment>
+                    <depends><field id="ga4_enabled">1</field></depends>
+                </field>
+                <field id="ga4_api_secret" translate="label comment" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>GA4 Measurement Protocol API Secret</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment>Created in the same Data Stream, under "Measurement Protocol API secrets".</comment>
+                    <depends><field id="ga4_enabled">1</field></depends>
+                </field>
+                <field id="meta_capi_enabled" translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Meta server-side purchase events</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Lets a campaign's "Send Meta Conversion Event" action report a real order straight to Meta's Conversions API, the same way GA4 above bypasses ad blockers. Separate from, and unrelated to, the Ad Audience Sync integration above - that pushes customer lists for targeting, this reports individual purchases for ad measurement/optimization.</comment>
+                </field>
+                <field id="meta_capi_pixel_id" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Meta Pixel ID</label>
+                    <comment>Found in Meta Events Manager, under your Pixel's settings.</comment>
+                    <depends><field id="meta_capi_enabled">1</field></depends>
+                </field>
+                <field id="meta_capi_access_token" translate="label comment" type="obscure" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Meta Conversions API Access Token</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment>Generated in Meta Events Manager, under your Pixel's "Settings" &gt; "Conversions API" section.</comment>
+                    <depends><field id="meta_capi_enabled">1</field></depends>
+                </field>
+            </group>
             <group id="shopping_feed" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Shopping Feed</label>
-                            <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enable Google Merchant Center feed</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Publishes a public Google Merchant Center-compatible XML feed at "/ordo/productfeed/index", refreshed every 6 hours. Distinct from a campaign's "product_feed" content block, which renders a small curated HTML product grid inside emails/on-site, not an exportable feed file.</comment>
-                            </field>
-                            <field id="title" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Feed Title</label>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="description" translate="label" type="textarea" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Feed Description</label>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-                        
-
+                <label>Shopping Feed</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Google Merchant Center feed</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Publishes a public Google Merchant Center-compatible XML feed at "/ordo/productfeed/index", refreshed every 6 hours. Distinct from a campaign's "product_feed" content block, which renders a small curated HTML product grid inside emails/on-site, not an exportable feed file.</comment>
+                </field>
+                <field id="title" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Feed Title</label>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="description" translate="label" type="textarea" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Feed Description</label>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="meta_catalog_feed" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Meta Catalog Feed</label>
-                            <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enable Meta Catalog CSV feed</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Publishes a public Meta (Facebook/Instagram) Commerce Manager-compatible CSV feed at "/ordo/productfeed/metacatalog", refreshed every 6 hours, same as the Google Merchant feed above. Unrelated to the Meta Custom Audiences integration under "Ad Audience Sync" — that pushes hashed customer emails to Meta's API, this is a file Meta's own crawler polls.</comment>
-                            </field>
-                            <field id="default_brand" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Default Brand</label>
-                                <comment>Meta requires a "brand" value per catalog item. This module has no per-product brand/manufacturer mapping, so every item in this feed uses this single store-wide value; a product is skipped from the feed entirely if this is left blank.</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-                        
-
+                <label>Meta Catalog Feed</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Meta Catalog CSV feed</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Publishes a public Meta (Facebook/Instagram) Commerce Manager-compatible CSV feed at "/ordo/productfeed/metacatalog", refreshed every 6 hours, same as the Google Merchant feed above. Unrelated to the Meta Custom Audiences integration under "Ad Audience Sync" — that pushes hashed customer emails to Meta's API, this is a file Meta's own crawler polls.</comment>
+                </field>
+                <field id="default_brand" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Default Brand</label>
+                    <comment>Meta requires a "brand" value per catalog item. This module has no per-product brand/manufacturer mapping, so every item in this feed uses this single store-wide value; a product is skipped from the feed entirely if this is left blank.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="ai_agent" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>AI-Agent Commerce Readiness</label>
-                            <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Enabled</label>
-                                <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                                <comment>Publishes a public JSON product feed for autonomous AI shopping agents at "/ordo/productfeed/aiagent" (refreshed every 6 hours, same as the Google Merchant/Meta Catalog feeds above) plus a discovery manifest at "/.well-known/ai-plugin.json" pointing at it.</comment>
-                            </field>
-                            <field id="name" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Name</label>
-                                <comment>Short store name an agent displays to a user (manifest's "name_for_human"/"name_for_model").</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="description" translate="label" type="textarea" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Description</label>
-                                <comment>What an agent should tell a user this store is for (manifest's "description_for_human"/"description_for_model").</comment>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="contact_email" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Contact Email</label>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                            <field id="rate_limit_per_minute" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Requests Per Minute Per API Key</label>
-                                <comment>Per-API-key request budget for the AI-agent commerce endpoints. 0 disables throttling entirely. Keys are issued/revoked via "bin/magento ordo:ai-agent:api-key:*" - there's no admin grid for them.</comment>
-                                <validate>validate-digits</validate>
-                            </field>
-                            <field id="estimated_delivery_days" translate="label comment" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
-                                <label>Estimated Delivery Days</label>
-                                <comment>Flat, store-wide value returned as "estimated_delivery_days" by POST /V1/ordo/ai-agent/quote - this module has no real per-carrier/per-route logistics data to compute a genuine ETA from.</comment>
-                                <validate>validate-digits validate-greater-than-zero</validate>
-                                <depends><field id="enabled">1</field></depends>
-                            </field>
-                        </group>
-                        
-
+                <label>AI-Agent Commerce Readiness</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Publishes a public JSON product feed for autonomous AI shopping agents at "/ordo/productfeed/aiagent" (refreshed every 6 hours, same as the Google Merchant/Meta Catalog feeds above) plus a discovery manifest at "/.well-known/ai-plugin.json" pointing at it.</comment>
+                </field>
+                <field id="name" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Name</label>
+                    <comment>Short store name an agent displays to a user (manifest's "name_for_human"/"name_for_model").</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="description" translate="label" type="textarea" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Description</label>
+                    <comment>What an agent should tell a user this store is for (manifest's "description_for_human"/"description_for_model").</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="contact_email" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Contact Email</label>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="rate_limit_per_minute" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Requests Per Minute Per API Key</label>
+                    <comment>Per-API-key request budget for the AI-agent commerce endpoints. 0 disables throttling entirely. Keys are issued/revoked via "bin/magento ordo:ai-agent:api-key:*" - there's no admin grid for them.</comment>
+                    <validate>validate-digits</validate>
+                </field>
+                <field id="estimated_delivery_days" translate="label comment" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Estimated Delivery Days</label>
+                    <comment>Flat, store-wide value returned as "estimated_delivery_days" by POST /V1/ordo/ai-agent/quote - this module has no real per-carrier/per-route logistics data to compute a genuine ETA from.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
         </section>
     </system>
 </config>
