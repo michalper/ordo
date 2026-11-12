@@ -49,6 +49,7 @@ class Index extends Template
             sms: $states[ConsentChannel::Sms->value] ?? true,
             push: $states[ConsentChannel::Push->value] ?? true,
             whatsapp: $states[ConsentChannel::WhatsApp->value] ?? true,
+            rcs: $states[ConsentChannel::Rcs->value] ?? true,
             ads: $states[ConsentChannel::Ads->value] ?? true,
         );
     }
@@ -74,7 +75,13 @@ class Index extends Template
         $customerId = $this->getCustomerId();
         $states = [];
 
-        $channels = [ConsentChannel::Email, ConsentChannel::Sms, ConsentChannel::Push, ConsentChannel::WhatsApp];
+        $channels = [
+            ConsentChannel::Email,
+            ConsentChannel::Sms,
+            ConsentChannel::Push,
+            ConsentChannel::WhatsApp,
+            ConsentChannel::Rcs,
+        ];
         foreach ($channels as $channel) {
             $channelStates = $this->consentManager->getTopicConsentStates($customerId, $channel);
             $states[$channel->value] = [

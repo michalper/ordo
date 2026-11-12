@@ -48,7 +48,7 @@ class ExportTest extends AbstractAdminActionTestCase
         $customerDataExporter->expects(self::once())->method('export')->with(42)->willReturn(['tags' => []]);
         $consentManager = $this->createMock(ConsentManager::class);
         $consentManager->expects(self::once())->method('getConsentStates')->with(42)->willReturn(['email' => true]);
-        $consentManager->expects(self::exactly(4))->method('getTopicConsentStates')
+        $consentManager->expects(self::exactly(5))->method('getTopicConsentStates')
             ->with(42, self::isInstanceOf(ConsentChannel::class))
             ->willReturn(['promotional' => false]);
 

@@ -19,6 +19,7 @@ enum ConsentChannel: string
     case Sms = 'sms';
     case Push = 'push';
     case WhatsApp = 'whatsapp';
+    case Rcs = 'rcs';
 
     /**
      * Not a message-delivery channel like the others above - governs whether a customer's

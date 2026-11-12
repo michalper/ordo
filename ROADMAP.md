@@ -639,28 +639,15 @@ content (`Model\Campaign\Action\GenerateAiContent`, a local-Ollama action alread
 context) and next-order-date prediction (`Cron\CalculateReorderCycle`'s own `next_expected_date`
 column).
 
-- **Double-sided referral rewards.** Checked `Model\ReferralManager`/`Observer\
-  DispatchReferralConvertedCampaigns` directly: `referral_converted` only ever targets the
-  *referrer* (`context['customer_id']` is the referrer's id, by design, once the referred
-  customer's first order completes) — the referred customer who actually used the code gets
-  nothing automatic today, only whatever the referrer's own campaign happens to also send them
-  manually. Established referral platforms treat this as two-sided by default ("give $10, get
-  $10"). Closing it needs no new engine concept: `Observer\RedeemReferralCode` already resolves
-  the referrer at signup time, before any order exists, so a second trigger context
-  (`referral_signed_up`, firing for the *referred* customer) slots in next to the existing
-  `referral_converted` one with the same `CampaignDispatchPublisher` plumbing — a merchant builds
-  a `generate_coupon` action on it exactly like any other trigger.
-- **RCS as a messaging channel.** Checked `Model\ConsentChannel` and the action pool in
-  `etc/di.xml`: Email, SMS, Push, and WhatsApp exist; RCS (carrier-level rich messaging - think
-  branded sender, read receipts, suggested replies, without needing the recipient to have a
-  specific app installed the way WhatsApp does) doesn't exist anywhere in this codebase.
-  `Model\Sms\TwilioSmsSender` already proves out the provider this would most naturally extend -
-  Twilio's own API supports RCS Business Messaging through the same Programmable Messaging
-  surface this module already calls for SMS, so this is a new `send_rcs` action and
-  `ConsentChannel::Rcs` case alongside the existing one, not a new provider integration. Real risk
-  to flag honestly: RCS carrier/device support is still regional and inconsistent (unlike SMS's
-  universal reach), so this is a genuine additive channel for stores with the right audience, not
-  a wholesale SMS replacement.
+- ~~**Double-sided referral rewards.**~~ — shipped, see
+  `docs/adr/0048-double-sided-referral-rewards.md`. New `referral_signed_up` trigger, published
+  from `Observer\RedeemReferralCode` targeting the *referred* customer the moment their signup is
+  actually recorded — the mirror image of the existing `referral_converted` trigger, which still
+  only targets the referrer once a real purchase happens.
+- ~~**RCS as a messaging channel.**~~ — shipped, see `docs/adr/0049-rcs-as-a-messaging-channel.md`.
+  New `send_rcs` action and `ConsentChannel::Rcs` case, reusing SMS's own Twilio Account SID / API
+  Key credentials and all of `SendSms`'s channel-agnostic consent/quiet-hours/frequency-cap
+  plumbing — only a Messaging Service SID config field is new.
 - **Surface CLV and churn-risk on Customer 360.** Checked `Model\Customer360\
   Customer360SnapshotBuilder::build()` directly: it already pulls lead score, loyalty tier, RFM,
   tags, NPS, and matching segments onto one page, but never calls `Model\Clv\ClvCalculator::

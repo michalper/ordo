@@ -137,6 +137,10 @@ class Config
     private const string XML_PATH_SMS_TWILIO_API_KEY_SECRET = 'ordo_channels/sms/twilio_api_key_secret';
     private const string XML_PATH_SMS_TWILIO_FROM_NUMBER = 'ordo_channels/sms/twilio_from_number';
     private const string XML_PATH_SMS_TWILIO_MAX_PER_SECOND = 'ordo_channels/sms/twilio_max_requests_per_second';
+    private const string XML_PATH_RCS_ENABLED = 'ordo_channels/rcs/enabled';
+    private const string XML_PATH_RCS_TWILIO_MESSAGING_SERVICE_SID
+        = 'ordo_channels/rcs/twilio_messaging_service_sid';
+    private const string XML_PATH_RCS_TWILIO_MAX_PER_SECOND = 'ordo_channels/rcs/twilio_max_requests_per_second';
 
     private const string XML_PATH_DATA_MANAGER_CLIENT_ID
         = 'ordo_integrations/ad_audience_sync/data_manager_client_id';
@@ -1010,6 +1014,44 @@ class Config
     public function getTwilioMaxRequestsPerSecond(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_SMS_TWILIO_MAX_PER_SECOND, 1, $storeId);
+    }
+
+    /**
+     * Gates Model\Campaign\Action\SendRcs. Reuses the same Twilio Account SID/API Key credentials
+     * already configured for SMS (ordo_channels/sms) — RCS Business Messaging goes through the
+     * same Twilio Programmable Messaging surface, authenticated the same way, just with a
+     * Messaging Service SID as the "from" instead of a phone number.
+     */
+    public function isRcsEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_RCS_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * The RCS-enabled Messaging Service SID (Twilio Console → Messaging → Services) used as
+     * TwilioRcsSender's "from" — not a phone number, unlike getTwilioFromNumber().
+     */
+    public function getTwilioRcsMessagingServiceSid(?int $storeId = null): string
+    {
+        return (string) $this->scopeConfig->getValue(
+            self::XML_PATH_RCS_TWILIO_MESSAGING_SERVICE_SID,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Its own throttle, independent of getTwilioMaxRequestsPerSecond() - RCS and SMS are
+     * different Twilio API call patterns, paced separately even though they share one account's
+     * credentials.
+     */
+    public function getTwilioRcsMaxRequestsPerSecond(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_RCS_TWILIO_MAX_PER_SECOND, 1, $storeId);
     }
 
     public function getDataManagerClientId(?int $storeId = null): string

@@ -77,6 +77,30 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isAnomalyAlertsEnabled());
         self::assertTrue($this->config->isLoyaltyMilestonesEnabled());
         self::assertTrue($this->config->isStalledPaymentReminderEnabled());
+        self::assertTrue($this->config->isRcsEnabled());
+    }
+
+    public function testGetTwilioRcsMessagingServiceSidDelegatesToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_channels/rcs/twilio_messaging_service_sid', 'store', null, 'MG123'],
+        ]);
+
+        self::assertSame('MG123', $this->config->getTwilioRcsMessagingServiceSid());
+    }
+
+    public function testGetTwilioRcsMaxRequestsPerSecondDelegatesToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_channels/rcs/twilio_max_requests_per_second', 'store', null, '5'],
+        ]);
+
+        self::assertSame(5, $this->config->getTwilioRcsMaxRequestsPerSecond());
+    }
+
+    public function testGetTwilioRcsMaxRequestsPerSecondDefaultsToOne(): void
+    {
+        self::assertSame(1, $this->config->getTwilioRcsMaxRequestsPerSecond());
     }
 
     public function testGetSocialProofMinimumViewsDelegatesToScopeConfig(): void

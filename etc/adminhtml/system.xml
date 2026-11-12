@@ -463,6 +463,24 @@
                     <depends><field id="enabled">1</field></depends>
                 </field>
             </group>
+            <group id="rcs" translate="label" type="text" sortOrder="35" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>RCS (Twilio)</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Master switch for the "Send RCS" campaign action. Reuses the same Twilio Account SID / API Key credentials configured above for SMS - requires an RCS-enabled Messaging Service (Twilio Console &gt; Messaging &gt; Services) and "SMS Phone" set on customers you want to reach (the same attribute send_sms uses).</comment>
+                </field>
+                <field id="twilio_messaging_service_sid" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Twilio Messaging Service SID</label>
+                    <comment>The RCS-enabled Messaging Service's SID, used as the "from" instead of a phone number.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="twilio_max_requests_per_second" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Max Requests Per Second</label>
+                    <comment>Paced separately from SMS's own throttle above, even though both share one Twilio account's credentials. 0 disables throttling entirely.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="whatsapp" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>WhatsApp (Meta Cloud API)</label>
                 <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">

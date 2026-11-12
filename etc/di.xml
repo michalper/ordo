@@ -36,6 +36,7 @@
     <preference for="Ordo\Automation\Api\Data\AiAgentQuoteLineInterface" type="Ordo\Automation\Model\AiAgent\AiAgentQuoteLine"/>
     <preference for="Ordo\Automation\Api\Data\AiAgentQuoteResultInterface" type="Ordo\Automation\Model\AiAgent\AiAgentQuoteResult"/>
     <preference for="Ordo\Automation\Model\Sms\SmsSenderInterface" type="Ordo\Automation\Model\Sms\TwilioSmsSender"/>
+    <preference for="Ordo\Automation\Model\Rcs\RcsSenderInterface" type="Ordo\Automation\Model\Rcs\TwilioRcsSender"/>
 
     <type name="Magento\Framework\Mail\EmailMessageInterfaceFactory">
         <plugin name="ordo_automation_email_message_id" type="Ordo\Automation\Plugin\Email\EmailMessageMessageIdPlugin"/>
@@ -379,6 +380,7 @@
                 <item name="add_product_recommendations" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddProductRecommendations</item>
                 <item name="add_dynamic_content" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddDynamicContent</item>
                 <item name="send_sms" xsi:type="object">Ordo\Automation\Model\Campaign\Action\SendSms</item>
+                <item name="send_rcs" xsi:type="object">Ordo\Automation\Model\Campaign\Action\SendRcs</item>
                 <item name="notify" xsi:type="object">Ordo\Automation\Model\Campaign\Action\Notify</item>
                 <item name="nps_survey" xsi:type="object">Ordo\Automation\Model\Campaign\Action\NpsSurvey</item>
                 <item name="send_whatsapp" xsi:type="object">Ordo\Automation\Model\Campaign\Action\SendWhatsApp</item>
