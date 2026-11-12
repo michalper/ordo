@@ -1233,3 +1233,6 @@
 "Twilio Messaging Service SID","Twilio Messaging Service SID"
 "The RCS-enabled Messaging Service's SID, used as the ""from"" instead of a phone number.","Die SID des RCS-fähigen Messaging Service, verwendet als „from“ anstelle einer Telefonnummer."
 "Paced separately from SMS's own throttle above, even though both share one Twilio account's credentials. 0 disables throttling entirely.","Wird unabhängig vom eigenen SMS-Limit oben gedrosselt, auch wenn beide dieselben Twilio-Kontozugangsdaten teilen. 0 deaktiviert die Drosselung vollständig."
+"Projected CLV","Prognostizierter CLV"
+"Churn risk ratio","Abwanderungsrisiko-Verhältnis"
+"Not enough order history","Nicht genügend Bestellverlauf"

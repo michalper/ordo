@@ -1233,3 +1233,6 @@
 "Twilio Messaging Service SID","Twilio Messaging Service SID"
 "The RCS-enabled Messaging Service's SID, used as the ""from"" instead of a phone number.","전화번호 대신 ""from""으로 사용되는 RCS 지원 Messaging Service의 SID입니다."
 "Paced separately from SMS's own throttle above, even though both share one Twilio account's credentials. 0 disables throttling entirely.","두 설정이 동일한 Twilio 계정 자격 증명을 공유하더라도 위의 SMS 자체 제한과는 별도로 조절됩니다. 0으로 설정하면 제한이 완전히 비활성화됩니다."
+"Projected CLV","예상 CLV"
+"Churn risk ratio","이탈 위험 비율"
+"Not enough order history","주문 이력이 충분하지 않음"

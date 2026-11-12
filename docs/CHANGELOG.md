@@ -32,6 +32,9 @@ it doesn't update itself from this file.
   reusing SMS's own Twilio Account SID / API Key credentials through Twilio's RCS Business
   Messaging surface (`Model\Rcs\TwilioRcsSender`) — only a Messaging Service SID config field is
   new. See ADR 0049.
+- **CLV and churn risk on Customer 360** — `Customer360SnapshotBuilder` now surfaces
+  `ClvCalculator::getProjectedClv()` and `ChurnRiskCalculator::getChurnRiskRatioForCustomer()`
+  alongside the existing RFM/order-history stats. See ADR 0050.
 
 ## [1.9.0] - 2026-11-09
 
