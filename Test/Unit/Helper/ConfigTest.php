@@ -75,6 +75,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isMetaCapiEnabled());
         self::assertTrue($this->config->isCustomerInactiveTriggerEnabled());
         self::assertTrue($this->config->isAnomalyAlertsEnabled());
+        self::assertTrue($this->config->isStalledPaymentReminderEnabled());
     }
 
     public function testGetSocialProofMinimumViewsDelegatesToScopeConfig(): void
@@ -354,6 +355,7 @@ class ConfigTest extends TestCase
         self::assertSame(30, $this->config->getAnomalyRevenueDropThresholdPercent());
         self::assertSame(50, $this->config->getAnomalyConversionOutlierThresholdPercent());
         self::assertSame(7, $this->config->getAnomalyAlertCooldownDays());
+        self::assertSame(24, $this->config->getStalledPaymentLeadHours());
     }
 
     public function testOutboundRateLimitGettersReturnAnExplicitZeroRatherThanFallingBackToTheDefault(): void

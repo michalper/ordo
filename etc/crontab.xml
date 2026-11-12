@@ -22,6 +22,9 @@
         <job name="ordo_automation_expire_overdue_offers" instance="Ordo\Automation\Cron\ExpireOverdueOffers" method="execute">
             <schedule>30 8 * * *</schedule>
         </job>
+        <job name="ordo_automation_send_stalled_payment_reminders" instance="Ordo\Automation\Cron\SendStalledPaymentReminders" method="execute">
+            <schedule>20 * * * *</schedule>
+        </job>
         <job name="ordo_automation_send_credit_limit_alerts" instance="Ordo\Automation\Cron\SendCreditLimitAlerts" method="execute">
             <schedule>0 6 * * *</schedule>
         </job>

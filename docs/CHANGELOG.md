@@ -16,6 +16,10 @@ it doesn't update itself from this file.
   `ReorderCycleAtRisk`'s self-relative "drifting from their own baseline" signal to every customer
   with at least 2 orders, not just ones with an already-detected, SKU-specific reorder cycle. See
   ADR 0045.
+- **Stalled payment recovery** — new `Cron\SendStalledPaymentReminders` (hourly) reminds a
+  registered customer once about an order sitting in Magento's own `pending_payment` state past a
+  configurable lead time, with deliberately hedged copy since this module can't tell an abandoned
+  online-gateway checkout apart from an offline method awaiting manual confirmation. See ADR 0047.
 
 ## [1.9.0] - 2026-11-09
 
