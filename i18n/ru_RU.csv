@@ -1225,3 +1225,4 @@
 "Churn Risk At Least (drift ratio vs. own order cadence)","Риск оттока не менее (коэффициент отклонения от собственного цикла заказов)"
 "Churn risk ratio, at least (1.0 = exactly on their own cadence)","Коэффициент риска оттока, не менее (1.0 = точно по собственному циклу)"
 "Churn Risk Ratio, At Least (1.0 = overdue vs. own historical order cadence)","Коэффициент риска оттока, не менее (1.0 = просрочено относительно собственного исторического цикла заказов)"
+"Referral Signed Up (new customer registered with a referral code)","Реферал зарегистрирован (новый клиент зарегистрировался по реферальному коду)"

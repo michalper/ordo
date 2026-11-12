@@ -1225,3 +1225,4 @@
 "Churn Risk At Least (drift ratio vs. own order cadence)","Riziko odchodu zákazníka alespoň (poměr odchylky vůči vlastnímu cyklu objednávek)"
 "Churn risk ratio, at least (1.0 = exactly on their own cadence)","Poměr rizika odchodu, alespoň (1.0 = přesně podle vlastního cyklu)"
 "Churn Risk Ratio, At Least (1.0 = overdue vs. own historical order cadence)","Poměr rizika odchodu, alespoň (1.0 = zpoždění oproti vlastnímu historickému cyklu objednávek)"
+"Referral Signed Up (new customer registered with a referral code)","Doporučení zaregistrováno (nový zákazník se zaregistroval pomocí doporučujícího kódu)"

@@ -24,6 +24,10 @@ it doesn't update itself from this file.
   cross a fixed order-count milestone (1st/5th/10th/25th/50th order) or reach a Silver/Gold loyalty
   tier, reusing the existing `tag_added` trigger and `Has Tag` condition — no new trigger type or
   table. See ADR 0046.
+- **Double-sided referral rewards** — new `referral_signed_up` trigger targets the *referred*
+  customer the moment their signup is recorded, the mirror image of the existing
+  `referral_converted` trigger (which still only targets the referrer once a real purchase
+  happens). See ADR 0048.
 
 ## [1.9.0] - 2026-11-09
 

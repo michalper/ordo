@@ -1225,3 +1225,4 @@
 "Churn Risk At Least (drift ratio vs. own order cadence)","Ryzyko odejścia klienta co najmniej (wskaźnik odchylenia względem własnego rytmu zamówień)"
 "Churn risk ratio, at least (1.0 = exactly on their own cadence)","Wskaźnik ryzyka odejścia, co najmniej (1.0 = dokładnie zgodnie z własnym rytmem)"
 "Churn Risk Ratio, At Least (1.0 = overdue vs. own historical order cadence)","Wskaźnik ryzyka odejścia, co najmniej (1.0 = opóźnienie względem własnego historycznego rytmu zamówień)"
+"Referral Signed Up (new customer registered with a referral code)","Polecenie zarejestrowane (nowy klient zarejestrowal sie za pomoca kodu polecajacego)"
