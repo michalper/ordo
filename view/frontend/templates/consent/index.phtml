@@ -1,0 +1,133 @@
+<?php
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \Magento\Framework\Escaper $escaper */
+/** @var \Ordo\Automation\Block\Frontend\ConsentPreferencesViewModel $viewModel */
+$viewModel = $block->getData('view_model');
+
+$channelLabels = [
+    \Ordo\Automation\Model\ConsentChannel::Email->value => __('Email'),
+    \Ordo\Automation\Model\ConsentChannel::Sms->value => __('SMS'),
+    \Ordo\Automation\Model\ConsentChannel::Push->value => __('Push notifications'),
+    \Ordo\Automation\Model\ConsentChannel::WhatsApp->value => __('WhatsApp'),
+    \Ordo\Automation\Model\ConsentChannel::Rcs->value => __('RCS'),
+];
+?>
+<!--
+    Same Luma-classes-plus-inert-Tailwind-utility-classes dual styling as offer/index.phtml -
+    see that template's own comment for why no separate Hyvä compatibility module is needed here.
+-->
+<div class="block block-ordo-consent-preferences lg:mb-4">
+    <div class="block-title lg:mb-4 lg:text-lg lg:font-semibold">
+        <strong><?= $escaper->escapeHtml(__('Communication Preferences')) ?></strong>
+    </div>
+    <div class="block-content">
+        <p class="lg:mb-4">
+            <?= $escaper->escapeHtml(__(
+                'Choose which channels we may use to reach you, and - for each channel - whether'
+                . ' you want marketing messages, account/order updates, or both.'
+            )) ?>
+        </p>
+        <table class="data table table-order-items lg:w-full lg:border-collapse" id="ordo-consent-preferences-table">
+            <caption class="table-caption lg:sr-only">
+                <?= $escaper->escapeHtml(__('Communication Preferences')) ?>
+            </caption>
+            <thead>
+                <tr>
+                    <th scope="col" class="col channel lg:border-b lg:p-2 lg:text-left">
+                        <?= $escaper->escapeHtml(__('Channel')) ?>
+                    </th>
+                    <th scope="col" class="col channel-status lg:border-b lg:p-2 lg:text-left">
+                        <?= $escaper->escapeHtml(__('Status')) ?>
+                    </th>
+                    <th scope="col" class="col promotional lg:border-b lg:p-2 lg:text-left">
+                        <?= $escaper->escapeHtml(__('Marketing')) ?>
+                    </th>
+                    <th scope="col" class="col account-updates lg:border-b lg:p-2 lg:text-left">
+                        <?= $escaper->escapeHtml(__('Account updates')) ?>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($viewModel->getDeliveryChannels() as $channel): ?>
+                <?php
+                $channelConsented = $viewModel->isChannelConsented($channel);
+                $promotionalConsented = $viewModel->isTopicConsented(
+                    $channel,
+                    \Ordo\Automation\Model\ConsentTopic::Promotional
+                );
+                $accountUpdatesConsented = $viewModel->isTopicConsented(
+                    $channel,
+                    \Ordo\Automation\Model\ConsentTopic::AccountUpdates
+                );
+                ?>
+                <tr>
+                    <td data-th="<?= $escaper->escapeHtmlAttr(__('Channel')) ?>" class="lg:border-b lg:p-2">
+                        <?= $escaper->escapeHtml((string) ($channelLabels[$channel->value] ?? $channel->value)) ?>
+                    </td>
+                    <td data-th="<?= $escaper->escapeHtmlAttr(__('Status')) ?>" class="lg:border-b lg:p-2">
+                        <form method="post" action="<?= $escaper->escapeUrl($block->getUrl('ordo/consent/setchannel')) ?>">
+                            <?= $block->getBlockHtml('formkey') ?>
+                            <input type="hidden" name="channel" value="<?= $escaper->escapeHtmlAttr($channel->value) ?>"/>
+                            <input type="hidden" name="consented" value="<?= $channelConsented ? '0' : '1' ?>"/>
+                            <button type="submit" class="action lg:rounded lg:bg-gray-800 lg:px-3 lg:py-1 lg:text-white">
+                                <?= $channelConsented
+                                    ? $escaper->escapeHtml(__('Subscribed - click to unsubscribe'))
+                                    : $escaper->escapeHtml(__('Unsubscribed - click to subscribe')) ?>
+                            </button>
+                        </form>
+                    </td>
+                    <td data-th="<?= $escaper->escapeHtmlAttr(__('Marketing')) ?>" class="lg:border-b lg:p-2">
+                        <form method="post" action="<?= $escaper->escapeUrl($block->getUrl('ordo/consent/settopic')) ?>">
+                            <?= $block->getBlockHtml('formkey') ?>
+                            <input type="hidden" name="channel" value="<?= $escaper->escapeHtmlAttr($channel->value) ?>"/>
+                            <input type="hidden" name="topic" value="<?= \Ordo\Automation\Model\ConsentTopic::Promotional->value ?>"/>
+                            <input type="hidden" name="consented" value="<?= $promotionalConsented ? '0' : '1' ?>"/>
+                            <button type="submit" class="action lg:rounded lg:border lg:px-3 lg:py-1" <?= !$channelConsented ? 'disabled' : '' ?>>
+                                <?= $promotionalConsented
+                                    ? $escaper->escapeHtml(__('On'))
+                                    : $escaper->escapeHtml(__('Off')) ?>
+                            </button>
+                        </form>
+                    </td>
+                    <td data-th="<?= $escaper->escapeHtmlAttr(__('Account updates')) ?>" class="lg:border-b lg:p-2">
+                        <form method="post" action="<?= $escaper->escapeUrl($block->getUrl('ordo/consent/settopic')) ?>">
+                            <?= $block->getBlockHtml('formkey') ?>
+                            <input type="hidden" name="channel" value="<?= $escaper->escapeHtmlAttr($channel->value) ?>"/>
+                            <input type="hidden" name="topic" value="<?= \Ordo\Automation\Model\ConsentTopic::AccountUpdates->value ?>"/>
+                            <input type="hidden" name="consented" value="<?= $accountUpdatesConsented ? '0' : '1' ?>"/>
+                            <button type="submit" class="action lg:rounded lg:border lg:px-3 lg:py-1" <?= !$channelConsented ? 'disabled' : '' ?>>
+                                <?= $accountUpdatesConsented
+                                    ? $escaper->escapeHtml(__('On'))
+                                    : $escaper->escapeHtml(__('Off')) ?>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+                <tr>
+                    <td data-th="<?= $escaper->escapeHtmlAttr(__('Channel')) ?>" class="lg:border-b lg:p-2">
+                        <?= $escaper->escapeHtml(__('Ad audience matching')) ?>
+                    </td>
+                    <td colspan="3" data-th="<?= $escaper->escapeHtmlAttr(__('Status')) ?>" class="lg:border-b lg:p-2">
+                        <form method="post" action="<?= $escaper->escapeUrl($block->getUrl('ordo/consent/setchannel')) ?>">
+                            <?= $block->getBlockHtml('formkey') ?>
+                            <input type="hidden" name="channel" value="<?= \Ordo\Automation\Model\ConsentChannel::Ads->value ?>"/>
+                            <input type="hidden" name="consented" value="<?= $viewModel->isAdsConsented() ? '0' : '1' ?>"/>
+                            <button type="submit" class="action lg:rounded lg:bg-gray-800 lg:px-3 lg:py-1 lg:text-white">
+                                <?= $viewModel->isAdsConsented()
+                                    ? $escaper->escapeHtml(__('Allowed - click to disallow'))
+                                    : $escaper->escapeHtml(__('Disallowed - click to allow')) ?>
+                            </button>
+                        </form>
+                        <p class="lg:mt-1 lg:text-sm lg:text-gray-600">
+                            <?= $escaper->escapeHtml(__(
+                                'Whether your (hashed) email may be shared with ad platforms for'
+                                . ' audience targeting - this never affects which messages we send you.'
+                            )) ?>
+                        </p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
