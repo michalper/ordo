@@ -1238,3 +1238,8 @@
 "Projected CLV","Geprojecteerde CLV"
 "Churn risk ratio","Churnrisicoratio"
 "Not enough order history","Onvoldoende bestelgeschiedenis"
+"Decide the winner by","Winnaar bepalen op basis van"
+"Click-through rate reads opens/clicks (ordo_message_log_event) - conversion rate/revenue read whether the customer actually placed an order afterward (the same data the campaign funnel report already shows). Defaults to click-through rate, the original behavior.","Doorklikratio leest openingen/klikken (ordo_message_log_event) - conversieratio/omzet lezen of de klant daarna daadwerkelijk een bestelling heeft geplaatst (dezelfde gegevens die het campagnefunnelrapport al toont). Standaard doorklikratio, het oorspronkelijke gedrag."
+"Click-through rate","Doorklikratio"
+"Conversion rate","Conversieratio"
+"How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the ""better"" result is just noise.","Hoeveel echte verzendingen elke variant nodig heeft voordat een winnaar überhaupt wordt overwogen - voorkomt dat een winnaar wordt aangewezen op basis van een handvol verzendingen waarbij het ""betere"" resultaat gewoon ruis is."

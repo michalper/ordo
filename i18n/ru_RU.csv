@@ -1238,3 +1238,8 @@
 "Projected CLV","Прогнозируемый LTV"
 "Churn risk ratio","Коэффициент риска оттока"
 "Not enough order history","Недостаточно истории заказов"
+"Decide the winner by","Определять победителя по"
+"Click-through rate reads opens/clicks (ordo_message_log_event) - conversion rate/revenue read whether the customer actually placed an order afterward (the same data the campaign funnel report already shows). Defaults to click-through rate, the original behavior.","Коэффициент переходов учитывает открытия/клики (ordo_message_log_event) - коэффициент конверсии/доход учитывают, действительно ли клиент оформил заказ после этого (те же данные, которые уже показывает отчёт по воронке кампании). По умолчанию коэффициент переходов, исходное поведение."
+"Click-through rate","Коэффициент переходов"
+"Conversion rate","Коэффициент конверсии"
+"How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the ""better"" result is just noise.","Сколько реальных отправок нужно каждому варианту, прежде чем вообще рассматривается выбор победителя — это предотвращает объявление победителя на основании горстки отправок, где «лучший» результат — просто шум."

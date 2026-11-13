@@ -656,3 +656,8 @@ column).
   `docs/adr/0051-whatsapp-read-receipt-tracking.md`. `Controller\WhatsApp\Webhook` now writes a
   `MessageLogEvent::TYPE_READ` row for Meta's "seen" receipt instead of silently dropping it,
   making `message_engaged` usable for WhatsApp sends with zero resolver changes.
+- ~~**Split-test winner is decided by click-through rate only, never by revenue.**~~ — shipped,
+  see `docs/adr/0053-split-winner-revenue-metric.md`. New `Model\Config\Source\
+  AbTestDecisionMetric` config choice (CTR/conversion rate/revenue, defaults to CTR) -
+  conversion rate/revenue read from the existing `CampaignOutcomeLogger::getStats()` data, not a
+  new ledger.

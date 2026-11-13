@@ -1238,3 +1238,8 @@
 "Projected CLV","予測LTV"
 "Churn risk ratio","離反リスク比率"
 "Not enough order history","注文履歴が不足しています"
+"Decide the winner by","勝者を決定する基準"
+"Click-through rate reads opens/clicks (ordo_message_log_event) - conversion rate/revenue read whether the customer actually placed an order afterward (the same data the campaign funnel report already shows). Defaults to click-through rate, the original behavior.","クリックスルー率は開封/クリック（ordo_message_log_event）を読み取ります。コンバージョン率/収益は、顧客がその後実際に注文したかどうかを読み取ります（キャンペーンファネルレポートが既に表示しているのと同じデータです）。デフォルトはクリックスルー率で、元の動作のままです。"
+"Click-through rate","クリックスルー率"
+"Conversion rate","コンバージョン率"
+"How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the ""better"" result is just noise.","優勝バリアントを検討する前に、各バリアントに必要な実際の送信数です - 送信数がわずかで「優れている」結果が単なるノイズに過ぎない段階で優勝を決定してしまうのを防ぎます。"

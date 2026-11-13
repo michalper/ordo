@@ -1238,3 +1238,8 @@
 "Projected CLV","Prognostiserat CLV"
 "Churn risk ratio","Churnriskkvot"
 "Not enough order history","Otillräcklig orderhistorik"
+"Decide the winner by","Avgör vinnaren efter"
+"Click-through rate reads opens/clicks (ordo_message_log_event) - conversion rate/revenue read whether the customer actually placed an order afterward (the same data the campaign funnel report already shows). Defaults to click-through rate, the original behavior.","Klickfrekvens läser öppningar/klick (ordo_message_log_event) - konverteringsgrad/intäkt läser om kunden faktiskt lade en beställning efteråt (samma data som kampanjens tratt-rapport redan visar). Standard är klickfrekvens, det ursprungliga beteendet."
+"Click-through rate","Klickfrekvens"
+"Conversion rate","Konverteringsgrad"
+"How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the ""better"" result is just noise.","Hur många riktiga sändningar varje variant behöver innan en vinnare övervägs - undviker att utropa en vinnare på en handfull sändningar där det ""bättre"" resultatet bara är brus."

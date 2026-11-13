@@ -1238,3 +1238,8 @@
 "Projected CLV","CLV proyectado"
 "Churn risk ratio","Ratio de riesgo de abandono"
 "Not enough order history","Historial de pedidos insuficiente"
+"Decide the winner by","Decidir el ganador por"
+"Click-through rate reads opens/clicks (ordo_message_log_event) - conversion rate/revenue read whether the customer actually placed an order afterward (the same data the campaign funnel report already shows). Defaults to click-through rate, the original behavior.","La tasa de clics lee aperturas/clics (ordo_message_log_event); la tasa de conversión/ingresos leen si el cliente realmente hizo un pedido después (los mismos datos que ya muestra el informe del embudo de campaña). Por defecto, tasa de clics, el comportamiento original."
+"Click-through rate","Tasa de clics"
+"Conversion rate","Tasa de conversión"
+"How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the ""better"" result is just noise.","Cuántos envíos reales necesita cada variante antes de siquiera considerar un ganador - evita declarar un ganador a partir de un puñado de envíos donde el ""mejor"" resultado es solo ruido."
