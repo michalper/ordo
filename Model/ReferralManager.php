@@ -76,8 +76,17 @@ class ReferralManager
      * Records a successful referral signup. No-op (returns false) for a self-referral, or when
      * the referred customer already has a referral row - a customer can only ever be referred
      * once, by whichever code they registered with first.
+     *
+     * $signupIp (the referred customer's registration IP, Observer\RedeemReferralCode via
+     * RemoteAddress) is a fraud/duplicate-identity *signal*, not a second block guard: a referral
+     * whose IP matches another referred signup already recorded under the same referrer is still
+     * recorded and still returns true (the welcome incentive/referral_signed_up trigger still
+     * fires) - only duplicate_ip_flag is set, surfaced on the admin grid for a human to judge,
+     * the same "detect and surface, don't auto-block" choice this module's AnomalyAlert already
+     * makes, rather than risking false positives on shared-network signups (same office/household/
+     * carrier NAT). See docs/adr/0056.
      */
-    public function recordSignup(int $referrerCustomerId, int $referredCustomerId): bool
+    public function recordSignup(int $referrerCustomerId, int $referredCustomerId, ?string $signupIp = null): bool
     {
         if ($referrerCustomerId === $referredCustomerId) {
             return false;
@@ -94,9 +103,39 @@ class ReferralManager
         $referral->setReferrerCustomerId($referrerCustomerId);
         $referral->setReferredCustomerId($referredCustomerId);
         $referral->setStatus(Referral::STATUS_PENDING);
+        $referral->setSignupIp($signupIp);
+        $referral->setDuplicateIpFlag($this->isDuplicateIpSignup($referrerCustomerId, $signupIp));
         $this->referralResource->save($referral);
 
         return true;
+    }
+
+    /**
+     * Compares against this same referrer's *other* referred signups, not the referrer's own
+     * registration IP - the referrer's IP is never captured anywhere today, so comparing against
+     * it would need new always-on IP capture at every registration (referral or not) and would
+     * still have nothing to compare against for every referrer who signed up before that change
+     * shipped. Two "different" referred accounts sharing one IP, under the same referrer, is also
+     * the stronger farming signal of the two (the exact reward-farming-via-disposable-accounts
+     * shape the roadmap gap named) and needs no data this guard doesn't already capture itself.
+     *
+     * Fails open (no flag) when there's nothing to compare against - no IP captured for this
+     * signup, or this referrer's first-ever referral - the same "no data to compare against"
+     * shape as ChurnRiskCalculator (fewer than 2 orders) and RfmCalculator::getRecencyDays()
+     * (no orders at all): no signal captured is not the same thing as a flag raised.
+     */
+    private function isDuplicateIpSignup(int $referrerCustomerId, ?string $signupIp): bool
+    {
+        if ($signupIp === null || $signupIp === '') {
+            return false;
+        }
+
+        /** @var ReferralCollection $collection */
+        $collection = $this->referralCollectionFactory->create();
+        $collection->addReferrerCustomerFilter($referrerCustomerId);
+        $collection->addSignupIpFilter($signupIp);
+
+        return $collection->getSize() > 0;
     }
 
     /**

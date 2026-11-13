@@ -23,4 +23,20 @@ class CollectionTest extends AbstractCollectionTestCase
 
         self::assertSame($collection, $collection->addStatusFilter('pending'));
     }
+
+    public function testAddReferrerCustomerFilterIsFluent(): void
+    {
+        [$entityFactory, $logger, $fetchStrategy, $eventManager] = $this->makeCollectionDeps();
+        $collection = new Collection($entityFactory, $logger, $fetchStrategy, $eventManager, null, $this->makeResource());
+
+        self::assertSame($collection, $collection->addReferrerCustomerFilter(3));
+    }
+
+    public function testAddSignupIpFilterIsFluent(): void
+    {
+        [$entityFactory, $logger, $fetchStrategy, $eventManager] = $this->makeCollectionDeps();
+        $collection = new Collection($entityFactory, $logger, $fetchStrategy, $eventManager, null, $this->makeResource());
+
+        self::assertSame($collection, $collection->addSignupIpFilter('203.0.113.5'));
+    }
 }

@@ -41,4 +41,39 @@ class ReferralTest extends AbstractModelTestCase
         self::assertSame('pending', Referral::STATUS_PENDING);
         self::assertSame('converted', Referral::STATUS_CONVERTED);
     }
+
+    public function testSignupIpRoundTrip(): void
+    {
+        $model = $this->makeModel();
+        $model->setSignupIp('203.0.113.5');
+
+        self::assertSame('203.0.113.5', $model->getSignupIp());
+    }
+
+    public function testSignupIpIsNullWhenNeverSet(): void
+    {
+        self::assertNull($this->makeModel()->getSignupIp());
+    }
+
+    public function testSignupIpIsNullWhenSetToNull(): void
+    {
+        $model = $this->makeModel();
+        $model->setSignupIp('203.0.113.5');
+        $model->setSignupIp(null);
+
+        self::assertNull($model->getSignupIp());
+    }
+
+    public function testDuplicateIpFlagRoundTrip(): void
+    {
+        $model = $this->makeModel();
+        $model->setDuplicateIpFlag(true);
+
+        self::assertTrue($model->isDuplicateIpFlag());
+    }
+
+    public function testDuplicateIpFlagDefaultsToFalse(): void
+    {
+        self::assertFalse($this->makeModel()->isDuplicateIpFlag());
+    }
 }

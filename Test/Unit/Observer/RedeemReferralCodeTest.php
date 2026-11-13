@@ -7,6 +7,7 @@ use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\Event;
 use Magento\Framework\Event\Observer as EventObserver;
+use Magento\Framework\HTTP\PhpEnvironment\RemoteAddress;
 use Ordo\Automation\Api\Data\CampaignTriggerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Queue\CampaignDispatchPublisher;
@@ -20,13 +21,15 @@ class RedeemReferralCodeTest extends TestCase
         Config $config,
         CustomerSession $customerSession,
         ReferralManager $manager,
-        ?CampaignDispatchPublisher $campaignDispatchPublisher = null
+        ?CampaignDispatchPublisher $campaignDispatchPublisher = null,
+        ?RemoteAddress $remoteAddress = null
     ): RedeemReferralCode {
         return new RedeemReferralCode(
             $config,
             $customerSession,
             $manager,
-            $campaignDispatchPublisher ?? $this->createStub(CampaignDispatchPublisher::class)
+            $campaignDispatchPublisher ?? $this->createStub(CampaignDispatchPublisher::class),
+            $remoteAddress ?? $this->createStub(RemoteAddress::class)
         );
     }
 
@@ -114,7 +117,10 @@ class RedeemReferralCodeTest extends TestCase
 
         $manager = $this->createMock(ReferralManager::class);
         $manager->method('resolveReferrerCustomerId')->willReturn(1);
-        $manager->expects(self::once())->method('recordSignup')->with(1, 2)->willReturn(true);
+        $manager->expects(self::once())->method('recordSignup')->with(1, 2, '203.0.113.5')->willReturn(true);
+
+        $remoteAddress = $this->createStub(RemoteAddress::class);
+        $remoteAddress->method('getRemoteAddress')->willReturn('203.0.113.5');
 
         $publisher = $this->createMock(CampaignDispatchPublisher::class);
         $publisher->expects(self::once())->method('publish')->with(
@@ -122,7 +128,34 @@ class RedeemReferralCodeTest extends TestCase
             ['customer_id' => 2, 'referrer_customer_id' => 1]
         );
 
-        $this->makeObserver($config, $customerSession, $manager, $publisher)
+        $this->makeObserver($config, $customerSession, $manager, $publisher, $remoteAddress)
+            ->execute($this->makeEventObserver(['customer' => $customer]));
+    }
+
+    /**
+     * RemoteAddress::getRemoteAddress() returns false, not null, when it can't resolve one -
+     * recordSignup() must still get a real null (its own fail-open check is `=== null`), not the
+     * literal boolean false.
+     */
+    public function testExecutePassesNullSignupIpWhenRemoteAddressCannotResolveOne(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isReferralEnabled')->willReturn(true);
+
+        $customerSession = $this->createStub(CustomerSession::class);
+        $customerSession->method('getData')->willReturn('CODE1234');
+
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getId')->willReturn(2);
+
+        $manager = $this->createMock(ReferralManager::class);
+        $manager->method('resolveReferrerCustomerId')->willReturn(1);
+        $manager->expects(self::once())->method('recordSignup')->with(1, 2, null)->willReturn(true);
+
+        $remoteAddress = $this->createStub(RemoteAddress::class);
+        $remoteAddress->method('getRemoteAddress')->willReturn(false);
+
+        $this->makeObserver($config, $customerSession, $manager, null, $remoteAddress)
             ->execute($this->makeEventObserver(['customer' => $customer]));
     }
 

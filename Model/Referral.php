@@ -18,6 +18,8 @@ class Referral extends AbstractModel
     public const REFERRER_CUSTOMER_ID = 'referrer_customer_id';
     public const REFERRED_CUSTOMER_ID = 'referred_customer_id';
     public const STATUS = 'status';
+    public const SIGNUP_IP = 'signup_ip';
+    public const DUPLICATE_IP_FLAG = 'duplicate_ip_flag';
     public const CREATED_AT = 'created_at';
     public const CONVERTED_AT = 'converted_at';
 
@@ -59,6 +61,29 @@ class Referral extends AbstractModel
     public function setStatus(string $status): self
     {
         $this->setData(self::STATUS, $status);
+        return $this;
+    }
+
+    public function getSignupIp(): ?string
+    {
+        $value = $this->getData(self::SIGNUP_IP);
+        return $value === null || $value === '' ? null : (string) $value;
+    }
+
+    public function setSignupIp(?string $signupIp): self
+    {
+        $this->setData(self::SIGNUP_IP, $signupIp);
+        return $this;
+    }
+
+    public function isDuplicateIpFlag(): bool
+    {
+        return (bool) $this->getData(self::DUPLICATE_IP_FLAG);
+    }
+
+    public function setDuplicateIpFlag(bool $duplicateIpFlag): self
+    {
+        $this->setData(self::DUPLICATE_IP_FLAG, $duplicateIpFlag);
         return $this;
     }
 }

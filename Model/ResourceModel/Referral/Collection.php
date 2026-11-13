@@ -25,4 +25,16 @@ class Collection extends AbstractCollection
         $this->addFieldToFilter('status', ['eq' => $status]);
         return $this;
     }
+
+    public function addReferrerCustomerFilter(int $referrerCustomerId): self
+    {
+        $this->addFieldToFilter('referrer_customer_id', ['eq' => $referrerCustomerId]);
+        return $this;
+    }
+
+    public function addSignupIpFilter(string $signupIp): self
+    {
+        $this->addFieldToFilter('signup_ip', ['eq' => $signupIp]);
+        return $this;
+    }
 }
