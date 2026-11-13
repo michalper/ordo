@@ -47,11 +47,38 @@ access to that data.
   per-trigger inactivity window for building several differently-shaped win-back campaigns.
 - SMS recovery (Twilio) — a `send_sms` campaign action, with delivery-status tracking and opt-out handling.
 - WhatsApp (Meta Cloud API) — a `send_whatsapp` campaign action sending pre-approved templates, with its own
-  admin-managed template approval lifecycle and delivery-status webhook.
+  admin-managed template approval lifecycle, delivery-status webhook, and read-receipt tracking.
 - Web Push notifications — a `send_push` campaign action delivering real browser/OS notifications (RFC 8291/8292,
   no vendor SDK), to every device a customer has subscribed from.
+- RCS (Rich Communication Services) as a messaging channel — a `send_rcs` campaign action reusing SMS's own
+  Twilio credentials.
 - Price-drop / back-in-stock alerts — a customer/visitor watches a product from its PDP, two scan crons dispatch
   `price_drop`/`back_in_stock` campaign triggers on the first real change.
+- Low-stock and social-proof PDP widgets, and a newsletter signup popup for anonymous visitors.
+- Stalled payment recovery — reminds a registered customer once about an order stuck in `pending_payment` past a
+  configurable lead time.
+- Churn-risk detection — a self-relative "drifting from their own order cadence" signal (median order interval,
+  not a fixed inactivity threshold), usable as a segment/campaign condition and surfaced in the sales-rep digest.
+- Birthday / signup-anniversary campaign trigger, firing once per calendar year.
+
+**Loyalty & Referral**
+
+- Points-based loyalty program — customers earn points on every order and redeem them for a coupon, distinct
+  from the existing order-count/spend-based loyalty tiers.
+- Gamified milestones — automatic customer tagging at a fixed order-count milestone (1st/5th/10th/25th/50th) or
+  on reaching a loyalty tier, feeding the campaign engine's existing tag-based trigger.
+- Double-sided referral rewards — both the referrer (on the referred customer's first purchase) and the referred
+  customer (on signup) can be targeted by their own campaign trigger.
+
+**Advertising & Analytics**
+
+- Ad-audience sync to Google Ads, Meta, and TikTok — push a segment as a Custom Audience / engagement audience
+  for retargeting or lookalike campaigns.
+- GA4 / Meta Conversions API — two campaign actions reporting a conversion straight to Google Analytics 4's
+  Measurement Protocol or Meta's Conversions API from the server, bypassing ad blockers.
+- Automated anomaly alerts — a daily cron flags a campaign's revenue drop or conversion-rate outlier against its
+  own trailing baseline.
+- Split-test winner selection — decided by click-through rate (default), conversion rate, or revenue.
 
 **Shared foundation**
 
@@ -73,6 +100,9 @@ access to that data.
 - Reporting & analytics — RFM/lead scoring, revenue & channel analytics (with coupon-to-campaign attribution) and
   product performance, cross-campaign comparison, cohort retention (optionally narrowed to one acquisition
   campaign), and a daily purchase-funnel/drop-off report.
+- Consent & preferences — per-channel/per-topic opt-out tracked admin-side (GDPR export/erase included), plus a
+  self-service storefront/headless "Communication Preferences" page (REST + GraphQL) a logged-in customer can
+  manage themselves.
 
 Every feature has its own config toggle under **Stores → Configuration → Ordo Automation** and its own cron job.
 
