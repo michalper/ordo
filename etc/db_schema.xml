@@ -164,6 +164,8 @@
         <column xsi:type="int" name="referrer_customer_id" padding="10" unsigned="true" nullable="false" comment="Customer whose referral code was used"/>
         <column xsi:type="int" name="referred_customer_id" padding="10" unsigned="true" nullable="false" comment="Customer who registered using the code - can only be referred once"/>
         <column xsi:type="varchar" name="status" nullable="false" length="20" default="pending" comment="pending|converted - converted once the referred customer places their first order"/>
+        <column xsi:type="varchar" name="signup_ip" nullable="true" length="45" comment="Referred customer's registration IP (RemoteAddress, captured by Observer\RedeemReferralCode) - long enough for IPv6. Null if it could not be read. See docs/adr/0055."/>
+        <column xsi:type="boolean" name="duplicate_ip_flag" nullable="false" default="0" comment="Set at insert time by Model\ReferralManager::recordSignup() when signup_ip matches another referred signup already recorded under the same referrer - a fraud/duplicate-identity signal, not a block. See docs/adr/0055."/>
         <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
         <column xsi:type="timestamp" name="converted_at" nullable="true" comment="Set when status becomes converted"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
@@ -174,6 +176,10 @@
         </constraint>
         <index referenceId="ORDO_REFERRAL_REFERRER_CUSTOMER_ID" indexType="btree">
             <column name="referrer_customer_id"/>
+        </index>
+        <index referenceId="ORDO_REFERRAL_REFERRER_CUSTOMER_ID_SIGNUP_IP" indexType="btree">
+            <column name="referrer_customer_id"/>
+            <column name="signup_ip"/>
         </index>
     </table>
 

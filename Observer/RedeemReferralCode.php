@@ -6,6 +6,7 @@ namespace Ordo\Automation\Observer;
 use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\Event\ObserverInterface;
+use Magento\Framework\HTTP\PhpEnvironment\RemoteAddress;
 use Ordo\Automation\Api\Data\CampaignTriggerInterface;
 use Ordo\Automation\Controller\Referral\Track;
 use Ordo\Automation\Helper\Config;
@@ -25,6 +26,10 @@ use Ordo\Automation\Model\ReferralManager;
  * customer's first order completes) - the "double-sided" half of the referral program a campaign
  * can build an immediate welcome incentive on (e.g. a first-order discount), independent of
  * whether that customer ever actually orders. See docs/adr/0048.
+ *
+ * Also captures this registration's IP (RemoteAddress, same DI/usage pattern
+ * Model\OrderApprovalManagement already uses) and passes it to recordSignup() as a
+ * fraud/duplicate-identity signal - see that method's own docblock and docs/adr/0055.
  */
 class RedeemReferralCode implements ObserverInterface
 {
@@ -32,7 +37,8 @@ class RedeemReferralCode implements ObserverInterface
         private readonly Config $config,
         private readonly CustomerSession $customerSession,
         private readonly ReferralManager $referralManager,
-        private readonly CampaignDispatchPublisher $campaignDispatchPublisher
+        private readonly CampaignDispatchPublisher $campaignDispatchPublisher,
+        private readonly RemoteAddress $remoteAddress
     ) {
     }
 
@@ -56,7 +62,16 @@ class RedeemReferralCode implements ObserverInterface
         }
 
         $referredCustomerId = (int) $customer->getId();
-        if (!$this->referralManager->recordSignup($referrerCustomerId, $referredCustomerId)) {
+        // Same (string) cast OrderApprovalManagement::enforceRateLimit() already uses - the real
+        // return type varies across Magento versions (string|bool|null), '' is the one normalized
+        // falsy value worth checking for explicitly since recordSignup()'s own fail-open check is
+        // `=== null`, not a loose falsy check.
+        $signupIp = (string) $this->remoteAddress->getRemoteAddress();
+        if (!$this->referralManager->recordSignup(
+            $referrerCustomerId,
+            $referredCustomerId,
+            $signupIp !== '' ? $signupIp : null
+        )) {
             return;
         }
 

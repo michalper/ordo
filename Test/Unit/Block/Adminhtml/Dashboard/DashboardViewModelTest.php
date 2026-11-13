@@ -22,6 +22,8 @@ use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\CollectionFactory as FreeG
 use Ordo\Automation\Model\LoyaltyTierCalculator;
 use Ordo\Automation\Model\ResourceModel\OrderApproval\Collection as OrderApprovalCollection;
 use Ordo\Automation\Model\ResourceModel\OrderApproval\CollectionFactory as OrderApprovalCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Referral\Collection as ReferralCollection;
+use Ordo\Automation\Model\ResourceModel\Referral\CollectionFactory as ReferralCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\Collection as ReorderCycleCollection;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory as ReorderCycleCollectionFactory;
 use Ordo\Automation\Model\TriggerOutcomeLogger;
@@ -49,7 +51,8 @@ class DashboardViewModelTest extends TestCase
         ?OrderApprovalCollectionFactory $orderApprovalCollectionFactory = null,
         ?CronRunLogCollectionFactory $cronRunLogCollectionFactory = null,
         ?ClvCalculator $clvCalculator = null,
-        ?AnomalyAlertCollectionFactory $anomalyAlertCollectionFactory = null
+        ?AnomalyAlertCollectionFactory $anomalyAlertCollectionFactory = null,
+        ?ReferralCollectionFactory $referralCollectionFactory = null
     ): DashboardViewModel {
         $pricingHelper ??= $this->createStub(PricingHelper::class);
         $pricingHelper->method('currency')->willReturnCallback(
@@ -74,7 +77,8 @@ class DashboardViewModelTest extends TestCase
             $orderApprovalCollectionFactory ?? $this->createStub(OrderApprovalCollectionFactory::class),
             $cronRunLogCollectionFactory ?? $this->createStub(CronRunLogCollectionFactory::class),
             $clvCalculator ?? $this->createStub(ClvCalculator::class),
-            $anomalyAlertCollectionFactory ?? $this->createStub(AnomalyAlertCollectionFactory::class)
+            $anomalyAlertCollectionFactory ?? $this->createStub(AnomalyAlertCollectionFactory::class),
+            $referralCollectionFactory ?? $this->createStub(ReferralCollectionFactory::class)
         );
     }
 
@@ -556,6 +560,31 @@ class DashboardViewModelTest extends TestCase
             )->getRecentAnomalyAlertCount()
         );
         self::assertArrayHasKey('gteq', $filters['detected_at']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetFlaggedReferralCountFiltersToDuplicateIpFlag(): void
+    {
+        $filters = [];
+        $collection = $this->createMock(ReferralCollection::class);
+        $collection->method('addFieldToFilter')->willReturnCallback(
+            function (string $field, $condition) use (&$filters, $collection) {
+                $filters[$field] = $condition;
+                return $collection;
+            }
+        );
+        $collection->method('getSize')->willReturn(2);
+
+        $referralCollectionFactory = $this->createStub(ReferralCollectionFactory::class);
+        $referralCollectionFactory->method('create')->willReturn($collection);
+
+        self::assertSame(
+            2,
+            $this->makeViewModel(
+                referralCollectionFactory: $referralCollectionFactory
+            )->getFlaggedReferralCount()
+        );
+        self::assertSame('1', $filters['duplicate_ip_flag']);
     }
 
     public function testGetAverageClvScoreDelegatesToClvCalculator(): void

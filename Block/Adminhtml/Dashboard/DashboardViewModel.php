@@ -22,6 +22,7 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as Ca
 use Ordo\Automation\Model\ResourceModel\Cron\CronRunLog\CollectionFactory as CronRunLogCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer\CollectionFactory as FreeGiftOfferCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\OrderApproval\CollectionFactory as OrderApprovalCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\Referral\CollectionFactory as ReferralCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\ReorderCycle\CollectionFactory as ReorderCycleCollectionFactory;
 use Ordo\Automation\Model\TriggerOutcomeLogger;
 
@@ -107,7 +108,8 @@ class DashboardViewModel implements ArgumentInterface
         private readonly OrderApprovalCollectionFactory $orderApprovalCollectionFactory,
         private readonly CronRunLogCollectionFactory $cronRunLogCollectionFactory,
         private readonly ClvCalculator $clvCalculator,
-        private readonly AnomalyAlertCollectionFactory $anomalyAlertCollectionFactory
+        private readonly AnomalyAlertCollectionFactory $anomalyAlertCollectionFactory,
+        private readonly ReferralCollectionFactory $referralCollectionFactory
     ) {
     }
 
@@ -265,6 +267,26 @@ class DashboardViewModel implements ArgumentInterface
 
                 $collection = $this->anomalyAlertCollectionFactory->create();
                 $collection->addFieldToFilter('detected_at', ['gteq' => $cutoff]);
+
+                return $collection->getSize();
+            }
+        );
+    }
+
+    /**
+     * How many referrals Model\ReferralManager::recordSignup() flagged as a possible duplicate
+     * signup (same registration IP as another referred customer already recorded under the same
+     * referrer) - "is something worth looking at right now", the same framing
+     * getRecentAnomalyAlertCount()/getFailedCronCount() already use, not the grid's full history.
+     * See docs/adr/0055.
+     */
+    public function getFlaggedReferralCount(): int
+    {
+        return $this->cachedCount(
+            'flagged_referral',
+            function (): int {
+                $collection = $this->referralCollectionFactory->create();
+                $collection->addFieldToFilter('duplicate_ip_flag', '1');
 
                 return $collection->getSize();
             }
