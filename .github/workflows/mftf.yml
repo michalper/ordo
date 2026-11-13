@@ -272,13 +272,25 @@ jobs:
         # default apt repo only ships PHP 8.3 — the ondrej/php PPA is added here to get 8.4
         # native packages matching the CLI version installed above (unlike the 8.3-only default,
         # this isn't optional).
+        #
+        # Retried: a real CI run (one leg of seven) failed here with "ssl.SSLEOFError: EOF
+        # occurred in violation of protocol" - add-apt-repository shells out to Python's
+        # launchpadlib, which calls Launchpad's own API over HTTPS to validate the PPA before
+        # apt ever gets involved, and that one HTTPS handshake to Launchpad flaked. Same class of
+        # transient-network flakiness already handled elsewhere in this job (composer's own
+        # retries, the mhsendmail download below, the nginx/PHP-FPM health-check loop) - just
+        # missing here. apt-get update/install themselves can hit the same kind of transient
+        # mirror hiccup, so the retry wraps all three calls together, not just the PPA add.
         run: |
-          sudo add-apt-repository -y ppa:ondrej/php
-          sudo apt-get update -qq
           # sodium isn't a separate apt package — it's bundled into PHP core since 7.2.
-          sudo apt-get install -y -qq nginx php8.4-fpm php8.4-bcmath php8.4-curl php8.4-gd \
-            php8.4-intl php8.4-mbstring php8.4-mysql php8.4-soap php8.4-xsl \
-            php8.4-zip php8.4-opcache
+          for i in $(seq 1 5); do
+            sudo add-apt-repository -y ppa:ondrej/php && \
+            sudo apt-get update -qq && \
+            sudo apt-get install -y -qq nginx php8.4-fpm php8.4-bcmath php8.4-curl php8.4-gd \
+              php8.4-intl php8.4-mbstring php8.4-mysql php8.4-soap php8.4-xsl \
+              php8.4-zip php8.4-opcache && break
+            sleep 5
+          done
 
       - name: Configure and start nginx + PHP-FPM for Magento
         working-directory: magento
