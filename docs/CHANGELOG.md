@@ -43,6 +43,9 @@ it doesn't update itself from this file.
 - **WhatsApp read-receipt tracking** — `Controller\WhatsApp\Webhook` now writes a
   `MessageLogEvent::TYPE_READ` row for Meta's "seen" receipt instead of dropping it, making
   `message_engaged` usable for WhatsApp sends. See ADR 0051.
+- **Churn-risk customers in the sales-rep digest** — new `Cron\TagChurnRiskCustomers` mirrors
+  `TagReorderCycleAtRiskCustomers`'s add-then-clear-on-recovery shape, and `SendSalesRepDigest`
+  now groups by it too. See ADR 0052.
 - **Split-test winner by revenue, not just click-through rate** — new `AbTestDecisionMetric`
   config choice (CTR/conversion rate/revenue, defaults to CTR) for `SplitWinnerCalculator`,
   reading conversion rate/revenue from the existing `CampaignOutcomeLogger::getStats()` data. See

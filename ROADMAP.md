@@ -680,15 +680,10 @@ constraint, not re-litigated.
   `SmsSenderInterface`/`WhatsAppSender` dependencies (today it's channel-agnostic, only ever
   revoking consent) just to send one low-value reply. Not worth the added coupling. Revisit only
   if a US-specific compliance push makes this concrete.
-- **Churn-risk customers never reach the sales-rep digest.** Checked `Cron\SendSalesRepDigest`
-  directly: it groups customers by `TagInactiveCustomers::TAG_INACTIVE` and
-  `TagReorderCycleAtRiskCustomers::TAG_REORDER_AT_RISK` only. The newer, more general
-  `churn_risk_at_least` signal (`Model\ChurnRisk\ChurnRiskCalculator`, ADR 0045) has no persistent
-  tag at all — unlike reorder-cycle risk, nothing ever calls `CustomerTagManager::addTag()` for a
-  churn-risk customer, so there's structurally no tag for the digest to group by, even though the
-  underlying signal is already good enough to back a segment/campaign condition. Closing it is a
-  new `Cron\TagChurnRiskCustomers` mirroring `TagReorderCycleAtRiskCustomers`'s exact add-then-
-  clear-on-recovery shape, plus one more `groupCustomersByRep()` call in `SendSalesRepDigest`.
+- ~~**Churn-risk customers never reach the sales-rep digest.**~~ — shipped, see
+  `docs/adr/0052-churn-risk-sales-rep-digest.md`. New `Cron\TagChurnRiskCustomers` mirrors
+  `TagReorderCycleAtRiskCustomers`'s exact add-then-clear-on-recovery shape, and
+  `SendSalesRepDigest` now groups by it too, alongside inactive/reorder-at-risk.
 - ~~**Split-test winner is decided by click-through rate only, never by revenue.**~~ — shipped,
   see `docs/adr/0053-split-winner-revenue-metric.md`. New `Model\Config\Source\
   AbTestDecisionMetric` config choice (CTR/conversion rate/revenue, defaults to CTR) -
