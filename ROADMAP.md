@@ -656,7 +656,52 @@ column).
   `docs/adr/0051-whatsapp-read-receipt-tracking.md`. `Controller\WhatsApp\Webhook` now writes a
   `MessageLogEvent::TYPE_READ` row for Meta's "seen" receipt instead of silently dropping it,
   making `message_engaged` usable for WhatsApp sends with zero resolver changes.
+
+**A fresh 2026-11-12 brainstorm round (third pass), checked against established marketing-automation,
+loyalty, and CDP platforms' own public feature pages before writing anything here.** Several raw
+candidates were dropped as already-shipped or out of reach, found by grepping the actual code rather
+than trusting README/ROADMAP text: GA4/Meta Conversions API event scope (`Model\Campaign\Action\
+SendGa4Event`'s `event_name` param already defaults to, but isn't hardcoded to, "purchase" — already
+generic); on-site search/no-results tracking was considered but not listed as a candidate below, since
+it would need a new `Controller\Track\*` event end to end rather than extending something that already
+half-exists; subscription/auto-replenishment ideas were excluded on sight per the standing no-auto-charge
+constraint, not re-litigated.
+
+- **"HELP" keyword auto-reply for SMS/WhatsApp** — considered, deliberately dropped. Real gap
+  (`Model\Conversation\StopKeywordDetector`'s `KEYWORDS` list has no `HELP`, and
+  `InboundMessageProcessor` never sends a reply of its own), but it's a US carrier/CTIA
+  compliance nicety, not something that fixes a bug or drives value for most stores running this
+  module outside the US — and closing it would mean `InboundMessageProcessor` taking on direct
+  `SmsSenderInterface`/`WhatsAppSender` dependencies (today it's channel-agnostic, only ever
+  revoking consent) just to send one low-value reply. Not worth the added coupling. Revisit only
+  if a US-specific compliance push makes this concrete.
 - ~~**Churn-risk customers never reach the sales-rep digest.**~~ — shipped, see
   `docs/adr/0052-churn-risk-sales-rep-digest.md`. New `Cron\TagChurnRiskCustomers` mirrors
   `TagReorderCycleAtRiskCustomers`'s exact add-then-clear-on-recovery shape, and
   `SendSalesRepDigest` now groups by it too, alongside inactive/reorder-at-risk.
+- **Split-test winner is decided by click-through rate only, never by revenue.** Checked
+  `Model\Campaign\SplitWinnerCalculator::decideOne()` directly: it reads
+  `ordo_message_log_event`'s opened/clicked counts exclusively. But
+  `Model\CampaignOutcomeLogger::getStats($campaignId)` *already* returns sent/converted/
+  conversion_rate/**revenue grouped by variant** (joining `ordo_campaign_outcome_log` to
+  `sales_order.base_grand_total` via each row's own `order_id`) — data this module already
+  computes for the campaign-comparison report, just never read by the winner-decision logic. A
+  campaign with no clickable links at all (plain-text SMS/WhatsApp with no URL) can never
+  auto-decide a split today, even though it has real conversion/revenue data to decide on. Closing
+  it is an admin-configurable metric choice (CTR, the current default, vs. revenue/conversion rate
+  from the already-existing `getStats()` call) on the same `isAbTestAutoWinnerEnabled()` toggle,
+  not a new table or calculator.
+- **No storefront or headless self-service channel/topic preference center.** Checked every
+  non-admin controller and `etc/schema.graphqls` directly: `Model\ConsentManager` is only ever
+  touched by `Controller\Adminhtml\Gdpr\*` (an admin looking up one customer by email) and
+  `Controller\Email\StatusCallback`'s webhook-driven STOP-equivalent revocation — there is no
+  frontend controller or GraphQL mutation anywhere that lets a logged-in customer see or change
+  their own channel (email/SMS/WhatsApp/push/RCS) or topic (promotional/account-updates)
+  consent. This is the same gap `docs/adr/0026-per-topic-consent-granularity.md` already named
+  explicitly in its own Consequences section ("no storefront self-service page") and it's still
+  open today. Closing it needs a `getOrdoConsentPreferences`/`setOrdoConsentPreferences` GraphQL
+  pair (thin wrappers over `ConsentManager::getConsentStates()`/`getTopicConsentStates()`/
+  `setConsent()`/`setTopicConsent()`, the same "no logic duplicated into the resolver" rule every
+  other GraphQL resolver in this module already follows) plus the equivalent REST route and a
+  plain account-area page for server-rendered storefronts, mirroring how `Controller\Offer`/"My
+  Offers" already gives a customer self-service over their own offers.
