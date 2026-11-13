@@ -1,4 +1,4 @@
-# ADR 0055: Referral duplicate-identity signal
+# ADR 0056: Referral duplicate-identity signal
 
 ## Status
 

@@ -713,7 +713,7 @@ a Commerce-only primitive, a paid third-party account this project lacks, or tou
 no-auto-charge constraint.
 
 - ~~**Referral program has no fraud/duplicate-identity signal.**~~ — done, see
-  `docs/adr/0055-referral-fraud-signal.md`. `Observer\RedeemReferralCode` now captures the referred
+  `docs/adr/0056-referral-fraud-signal.md`. `Observer\RedeemReferralCode` now captures the referred
   customer's registration IP (`RemoteAddress`, same pattern `OrderApprovalManagement` already uses)
   and `ReferralManager::recordSignup()` flags (`ordo_referral.duplicate_ip_flag`) a signup whose IP
   matches another referred signup already recorded under the *same referrer* — a stronger, self-
@@ -722,18 +722,15 @@ no-auto-charge constraint.
   block: the referral is still recorded either way, flagged on a new read-only admin grid
   (`ordo/referral/index`) plus a dashboard stat card, same precedent `Model\Anomaly\AnomalyAlert`
   already set for a weak-but-real signal.
-- **A delayed campaign action chain fires its later steps even after the customer already converted.**
-  Checked `CampaignDispatcher::resumeScheduledAction()` directly: once a `delay_minutes` step's wait
-  elapses, the next action in the chain runs unconditionally — the method's own docblock says so
-  explicitly ("must run unconditionally this time"), and the only check beyond that is whether the
-  campaign itself is still enabled. This is fine for the built-in crons (`SendAbandonedCartReminders`
-  re-checks "not converted to an order" fresh on every run, cron-driven rather than chain-driven), but a
-  custom Flow-canvas campaign built on `cart_abandoned`/`customer_inactive` plus a multi-step
-  `delay_minutes` drip has no equivalent: a customer who places the order between step 1 and step 2
-  still gets every later step — the same "goal already met, stop the sequence" gap established
-  journey-builder tools close with an explicit per-campaign goal/exit condition. Closing it would need a
-  new optional "exit if" condition set, re-evaluated at each resume (reusing the same
-  condition-evaluation path `CampaignDispatcher` already has for the initial dispatch), not a new engine.
+- ~~**A delayed campaign action chain fires its later steps even after the customer already
+  converted.**~~ — done, see `docs/adr/0055-campaign-chain-exit-condition.md`. A campaign now has an
+  optional `exit_conditions` JSON column (AND-joined, same `{type, params}` shape as an entry
+  condition), re-checked by `CampaignDispatcher::resumeScheduledAction()` on every resume — first
+  delayed step or a later one, since that method is the single resume entry point for all of them —
+  and if satisfied, the rest of the chain is skipped instead of run unconditionally. Zero exit
+  conditions configured (every pre-existing campaign) behaves exactly as before. v1 admin surface is
+  a single JSON textarea on the classic campaign form, not a Flow-canvas node — an honestly-documented
+  gap, see the ADR's Consequences.
 - **No holdout group — every campaign send is measured against itself, never against a true no-send
   control.** Checked `Model\Campaign\SplitVariantSelector`/`SplitWinnerCalculator` directly: the 'split'
   action only ever divides traffic between message variants that all actually send something — there's

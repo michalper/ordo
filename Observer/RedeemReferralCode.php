@@ -29,7 +29,7 @@ use Ordo\Automation\Model\ReferralManager;
  *
  * Also captures this registration's IP (RemoteAddress, same DI/usage pattern
  * Model\OrderApprovalManagement already uses) and passes it to recordSignup() as a
- * fraud/duplicate-identity signal - see that method's own docblock and docs/adr/0055.
+ * fraud/duplicate-identity signal - see that method's own docblock and docs/adr/0056.
  */
 class RedeemReferralCode implements ObserverInterface
 {

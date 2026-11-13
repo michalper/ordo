@@ -344,6 +344,7 @@
             "trigger_event": true,
             "enabled": true,
             "condition_logic": true,
+            "exit_conditions": true,
             "created_at": true,
             "updated_at": true
         },

@@ -281,7 +281,7 @@ class ReferralManagerTest extends TestCase
     /**
      * Another referred customer, already recorded under this same referrer, shares this
      * signup's IP - flagged, but still recorded and still returns true: detect and surface for
-     * admin review, not an automatic block (see recordSignup()'s own docblock and docs/adr/0055).
+     * admin review, not an automatic block (see recordSignup()'s own docblock and docs/adr/0056).
      */
     public function testRecordSignupSetsDuplicateIpFlagWhenAnotherSiblingReferralSharesTheIp(): void
     {

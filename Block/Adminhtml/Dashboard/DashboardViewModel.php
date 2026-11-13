@@ -278,7 +278,7 @@ class DashboardViewModel implements ArgumentInterface
      * signup (same registration IP as another referred customer already recorded under the same
      * referrer) - "is something worth looking at right now", the same framing
      * getRecentAnomalyAlertCount()/getFailedCronCount() already use, not the grid's full history.
-     * See docs/adr/0055.
+     * See docs/adr/0056.
      */
     public function getFlaggedReferralCount(): int
     {

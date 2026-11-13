@@ -11,7 +11,7 @@ use Magento\Framework\View\Result\PageFactory;
 /**
  * Read-only grid over ordo_referral - every referral signup, with duplicate_ip_flag surfaced as
  * a filterable/sortable column for admin review. Mirrors Controller\Adminhtml\AnomalyAlert\Index,
- * the simplest existing grid controller in this module. See docs/adr/0055.
+ * the simplest existing grid controller in this module. See docs/adr/0056.
  */
 class Index extends Action implements HttpGetActionInterface
 {

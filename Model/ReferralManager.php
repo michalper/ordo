@@ -84,7 +84,7 @@ class ReferralManager
      * fires) - only duplicate_ip_flag is set, surfaced on the admin grid for a human to judge,
      * the same "detect and surface, don't auto-block" choice this module's AnomalyAlert already
      * makes, rather than risking false positives on shared-network signups (same office/household/
-     * carrier NAT). See docs/adr/0055.
+     * carrier NAT). See docs/adr/0056.
      */
     public function recordSignup(int $referrerCustomerId, int $referredCustomerId, ?string $signupIp = null): bool
     {
