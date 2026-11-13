@@ -656,6 +656,11 @@ column).
   `docs/adr/0051-whatsapp-read-receipt-tracking.md`. `Controller\WhatsApp\Webhook` now writes a
   `MessageLogEvent::TYPE_READ` row for Meta's "seen" receipt instead of silently dropping it,
   making `message_engaged` usable for WhatsApp sends with zero resolver changes.
+- ~~**Split-test winner is decided by click-through rate only, never by revenue.**~~ — shipped,
+  see `docs/adr/0053-split-winner-revenue-metric.md`. New `Model\Config\Source\
+  AbTestDecisionMetric` config choice (CTR/conversion rate/revenue, defaults to CTR) -
+  conversion rate/revenue read from the existing `CampaignOutcomeLogger::getStats()` data, not a
+  new ledger.
 
 **A fresh 2026-11-12 brainstorm round (third pass), checked against established marketing-automation,
 loyalty, and CDP platforms' own public feature pages before writing anything here.** Several raw
@@ -679,18 +684,6 @@ constraint, not re-litigated.
   `docs/adr/0052-churn-risk-sales-rep-digest.md`. New `Cron\TagChurnRiskCustomers` mirrors
   `TagReorderCycleAtRiskCustomers`'s exact add-then-clear-on-recovery shape, and
   `SendSalesRepDigest` now groups by it too, alongside inactive/reorder-at-risk.
-- **Split-test winner is decided by click-through rate only, never by revenue.** Checked
-  `Model\Campaign\SplitWinnerCalculator::decideOne()` directly: it reads
-  `ordo_message_log_event`'s opened/clicked counts exclusively. But
-  `Model\CampaignOutcomeLogger::getStats($campaignId)` *already* returns sent/converted/
-  conversion_rate/**revenue grouped by variant** (joining `ordo_campaign_outcome_log` to
-  `sales_order.base_grand_total` via each row's own `order_id`) — data this module already
-  computes for the campaign-comparison report, just never read by the winner-decision logic. A
-  campaign with no clickable links at all (plain-text SMS/WhatsApp with no URL) can never
-  auto-decide a split today, even though it has real conversion/revenue data to decide on. Closing
-  it is an admin-configurable metric choice (CTR, the current default, vs. revenue/conversion rate
-  from the already-existing `getStats()` call) on the same `isAbTestAutoWinnerEnabled()` toggle,
-  not a new table or calculator.
 - **No storefront or headless self-service channel/topic preference center.** Checked every
   non-admin controller and `etc/schema.graphqls` directly: `Model\ConsentManager` is only ever
   touched by `Controller\Adminhtml\Gdpr\*` (an admin looking up one customer by email) and

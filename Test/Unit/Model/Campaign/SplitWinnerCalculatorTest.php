@@ -9,6 +9,8 @@ use Magento\Framework\DB\Select;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign\SplitWinnerCalculator;
 use Ordo\Automation\Model\CampaignAction;
+use Ordo\Automation\Model\CampaignOutcomeLogger;
+use Ordo\Automation\Model\Config\Source\AbTestDecisionMetric;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action as CampaignActionResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\Collection as CampaignActionCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as CampaignActionCollectionFactory;
@@ -36,13 +38,22 @@ class SplitWinnerCalculatorTest extends TestCase
         return $resourceConnection;
     }
 
-    private function makeConfig(bool $enabled, int $minSampleSize = 100): Config
+    private function makeConfig(bool $enabled, int $minSampleSize = 100, string $metric = AbTestDecisionMetric::CTR): Config
     {
         $config = $this->createStub(Config::class);
         $config->method('isAbTestAutoWinnerEnabled')->willReturn($enabled);
         $config->method('getAbTestMinSampleSize')->willReturn($minSampleSize);
+        $config->method('getAbTestDecisionMetric')->willReturn($metric);
 
         return $config;
+    }
+
+    private function makeOutcomeLogger(array $stats): CampaignOutcomeLogger
+    {
+        $logger = $this->createStub(CampaignOutcomeLogger::class);
+        $logger->method('getStats')->willReturn($stats);
+
+        return $logger;
     }
 
     /**
@@ -83,7 +94,8 @@ class SplitWinnerCalculatorTest extends TestCase
             $this->makeConfig(enabled: false),
             $this->makeResourceConnection($connection),
             $this->makeCollectionFactory([$actionRow]),
-            $this->createStub(CampaignActionResource::class)
+            $this->createStub(CampaignActionResource::class),
+            $this->makeOutcomeLogger([])
         );
 
         self::assertSame(0, $calculator->decideWinners());
@@ -109,7 +121,8 @@ class SplitWinnerCalculatorTest extends TestCase
             $this->makeConfig(enabled: true),
             $this->makeResourceConnection($connection),
             $this->makeCollectionFactory([$actionRow]),
-            $resource
+            $resource,
+            $this->makeOutcomeLogger([])
         );
 
         self::assertSame(0, $calculator->decideWinners());
@@ -134,7 +147,8 @@ class SplitWinnerCalculatorTest extends TestCase
             $this->makeConfig(enabled: true, minSampleSize: 100),
             $this->makeResourceConnection($connection),
             $this->makeCollectionFactory([$actionRow]),
-            $resource
+            $resource,
+            $this->makeOutcomeLogger([])
         );
 
         self::assertSame(0, $calculator->decideWinners());
@@ -170,7 +184,8 @@ class SplitWinnerCalculatorTest extends TestCase
             $this->makeConfig(enabled: true, minSampleSize: 100),
             $this->makeResourceConnection($connection),
             $this->makeCollectionFactory([$actionRow]),
-            $resource
+            $resource,
+            $this->makeOutcomeLogger([])
         );
 
         self::assertSame(1, $calculator->decideWinners());
@@ -206,7 +221,8 @@ class SplitWinnerCalculatorTest extends TestCase
             $this->makeConfig(enabled: true),
             $this->makeResourceConnection($connection),
             $this->makeCollectionFactory([$actionRow]),
-            $resource
+            $resource,
+            $this->makeOutcomeLogger([])
         );
 
         self::assertSame(0, $calculator->decideWinners());
@@ -233,7 +249,114 @@ class SplitWinnerCalculatorTest extends TestCase
             $this->makeConfig(enabled: true),
             $this->makeResourceConnection($connection),
             $this->makeCollectionFactory([$actionRow]),
-            $resource
+            $resource,
+            $this->makeOutcomeLogger([])
+        );
+
+        self::assertSame(0, $calculator->decideWinners());
+    }
+
+    public function testDecideWinnersPicksTheHigherConversionRateVariantWhenConfigured(): void
+    {
+        $actionRow = $this->createMock(CampaignAction::class);
+        $actionRow->method('getCampaignId')->willReturn(1);
+        $actionRow->method('getParams')->willReturn(['variants' => [
+            ['key' => 'a', 'weight' => 50, 'actions' => [['type' => 'send_email']]],
+            ['key' => 'b', 'weight' => 50, 'actions' => [['type' => 'send_email']]],
+        ]]);
+
+        $savedParamsJson = null;
+        $actionRow->expects(self::once())->method('setParamsJson')
+            ->willReturnCallback(function (string $json) use (&$savedParamsJson, $actionRow) {
+                $savedParamsJson = $json;
+                return $actionRow;
+            });
+
+        $resource = $this->createMock(CampaignActionResource::class);
+        $resource->expects(self::once())->method('save');
+
+        // Variant "a": 120 sent, 10% conversion. Variant "b": 150 sent, 25% conversion.
+        $outcomeLogger = $this->makeOutcomeLogger([
+            ['campaign_id' => 1, 'variant' => 'a', 'sent' => 120, 'converted' => 12, 'conversion_rate' => 10.0, 'revenue' => 500.0],
+            ['campaign_id' => 1, 'variant' => 'b', 'sent' => 150, 'converted' => 38, 'conversion_rate' => 25.0, 'revenue' => 300.0],
+        ]);
+
+        $calculator = new SplitWinnerCalculator(
+            $this->makeConfig(enabled: true, minSampleSize: 100, metric: AbTestDecisionMetric::CONVERSION_RATE),
+            $this->makeResourceConnection($this->createStub(AdapterInterface::class)),
+            $this->makeCollectionFactory([$actionRow]),
+            $resource,
+            $outcomeLogger
+        );
+
+        self::assertSame(1, $calculator->decideWinners());
+
+        $saved = json_decode((string) $savedParamsJson, true);
+        self::assertSame('b', $saved['winner']);
+    }
+
+    public function testDecideWinnersPicksTheHigherRevenueVariantWhenConfigured(): void
+    {
+        $actionRow = $this->createMock(CampaignAction::class);
+        $actionRow->method('getCampaignId')->willReturn(1);
+        $actionRow->method('getParams')->willReturn(['variants' => [
+            ['key' => 'a', 'weight' => 50, 'actions' => [['type' => 'send_email']]],
+            ['key' => 'b', 'weight' => 50, 'actions' => [['type' => 'send_email']]],
+        ]]);
+
+        $savedParamsJson = null;
+        $actionRow->expects(self::once())->method('setParamsJson')
+            ->willReturnCallback(function (string $json) use (&$savedParamsJson, $actionRow) {
+                $savedParamsJson = $json;
+                return $actionRow;
+            });
+
+        $resource = $this->createMock(CampaignActionResource::class);
+        $resource->expects(self::once())->method('save');
+
+        // Variant "a" has the higher conversion rate but variant "b" brings in more revenue per
+        // order - revenue mode must pick "b" even though conversion_rate mode would pick "a".
+        $outcomeLogger = $this->makeOutcomeLogger([
+            ['campaign_id' => 1, 'variant' => 'a', 'sent' => 120, 'converted' => 30, 'conversion_rate' => 25.0, 'revenue' => 900.0],
+            ['campaign_id' => 1, 'variant' => 'b', 'sent' => 150, 'converted' => 15, 'conversion_rate' => 10.0, 'revenue' => 4500.0],
+        ]);
+
+        $calculator = new SplitWinnerCalculator(
+            $this->makeConfig(enabled: true, minSampleSize: 100, metric: AbTestDecisionMetric::REVENUE),
+            $this->makeResourceConnection($this->createStub(AdapterInterface::class)),
+            $this->makeCollectionFactory([$actionRow]),
+            $resource,
+            $outcomeLogger
+        );
+
+        self::assertSame(1, $calculator->decideWinners());
+
+        $saved = json_decode((string) $savedParamsJson, true);
+        self::assertSame('b', $saved['winner']);
+    }
+
+    public function testDecideWinnersSkipsWhenSampleSizeNotYetReachedUnderOutcomeMetric(): void
+    {
+        $actionRow = $this->makeActionRow(1, ['variants' => [
+            ['key' => 'a', 'weight' => 50, 'actions' => []],
+            ['key' => 'b', 'weight' => 50, 'actions' => []],
+        ]]);
+
+        $resource = $this->createMock(CampaignActionResource::class);
+        $resource->expects(self::never())->method('save');
+
+        // Both variants under the minimum sample size of 100.
+        $outcomeLogger = $this->makeOutcomeLogger([
+            ['campaign_id' => 1, 'variant' => 'a', 'sent' => 10, 'converted' => 1, 'conversion_rate' => 10.0, 'revenue' => 50.0],
+            ['campaign_id' => 1, 'variant' => 'b', 'sent' => 5, 'converted' => 1, 'conversion_rate' => 20.0, 'revenue' => 80.0],
+        ]);
+
+        $calculator = new SplitWinnerCalculator(
+            $this->makeConfig(enabled: true, minSampleSize: 100, metric: AbTestDecisionMetric::CONVERSION_RATE),
+            $this->makeResourceConnection($this->createStub(AdapterInterface::class)),
+            $this->makeCollectionFactory([$actionRow]),
+            $resource,
+            $outcomeLogger
         );
 
         self::assertSame(0, $calculator->decideWinners());

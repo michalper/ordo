@@ -41,6 +41,10 @@ it doesn't update itself from this file.
 - **Churn-risk customers in the sales-rep digest** — new `Cron\TagChurnRiskCustomers` mirrors
   `TagReorderCycleAtRiskCustomers`'s add-then-clear-on-recovery shape, and `SendSalesRepDigest`
   now groups by it too. See ADR 0052.
+- **Split-test winner by revenue, not just click-through rate** — new `AbTestDecisionMetric`
+  config choice (CTR/conversion rate/revenue, defaults to CTR) for `SplitWinnerCalculator`,
+  reading conversion rate/revenue from the existing `CampaignOutcomeLogger::getStats()` data. See
+  ADR 0053.
 
 ## [1.9.0] - 2026-11-09
 

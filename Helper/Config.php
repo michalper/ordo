@@ -7,6 +7,7 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Store\Model\ScopeInterface;
 use Ordo\Automation\Model\Config\Source\AbandonedCartFallbackChannel;
+use Ordo\Automation\Model\Config\Source\AbTestDecisionMetric;
 
 class Config
 {
@@ -223,6 +224,7 @@ class Config
 
     private const string XML_PATH_AB_TEST_AUTO_WINNER_ENABLED = 'ordo_scoring/ab_test/auto_winner_enabled';
     private const string XML_PATH_AB_TEST_MIN_SAMPLE_SIZE = 'ordo_scoring/ab_test/min_sample_size';
+    private const string XML_PATH_AB_TEST_DECISION_METRIC = 'ordo_scoring/ab_test/decision_metric';
 
     private const string XML_PATH_FREQUENCY_CAP_ENABLED = 'ordo_channels/frequency_cap/enabled';
     private const string XML_PATH_FREQUENCY_CAP_MAX_MESSAGES = 'ordo_channels/frequency_cap/max_messages';
@@ -1522,6 +1524,23 @@ class Config
     public function getAbTestMinSampleSize(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_AB_TEST_MIN_SAMPLE_SIZE, 100, $storeId);
+    }
+
+    /**
+     * Which metric Cron\AutoPickCampaignSplitWinner compares a split action's variants by -
+     * Model\Config\Source\AbTestDecisionMetric::CTR/CONVERSION_RATE/REVENUE. Defaults to CTR,
+     * the original behavior, so an existing store with this feature already on sees no change
+     * in what it optimizes for until an admin deliberately picks something else.
+     */
+    public function getAbTestDecisionMetric(?int $storeId = null): string
+    {
+        $value = (string) $this->scopeConfig->getValue(
+            self::XML_PATH_AB_TEST_DECISION_METRIC,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+
+        return $value !== '' ? $value : AbTestDecisionMetric::CTR;
     }
 
     public function isFrequencyCapEnabled(?int $storeId = null): bool
