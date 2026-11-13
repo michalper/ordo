@@ -136,6 +136,7 @@
                 <item name="ordo_campaigncomparison_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\CampaignComparison\Grid\Collection</item>
                 <item name="ordo_cohortretention_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\CohortRetention\Grid\Collection</item>
                 <item name="ordo_anomalyalert_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Anomaly\AnomalyAlert\Grid\Collection</item>
+                <item name="ordo_referral_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Referral\Grid\Collection</item>
             </argument>
         </arguments>
     </type>
@@ -144,6 +145,13 @@
         <arguments>
             <argument name="mainTable" xsi:type="string">ordo_push_subscription</argument>
             <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\PushSubscription</argument>
+        </arguments>
+    </virtualType>
+
+    <virtualType name="Ordo\Automation\Model\ResourceModel\Referral\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">ordo_referral</argument>
+            <argument name="resourceModel" xsi:type="string">Ordo\Automation\Model\ResourceModel\Referral</argument>
         </arguments>
     </virtualType>
 
