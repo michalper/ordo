@@ -696,3 +696,63 @@ constraint, not re-litigated.
   keys get silently dropped and nested arrays come back as literal JSON-encoded strings instead of
   objects. Fixed by giving every nested shape its own typed `Api\Data\*Interface`
   (`ConsentChannelPreferenceInterface`), not a generic array map — see the ADR.
+
+**A fresh 2026-11-13 brainstorm round (fourth pass), checked against established marketing-automation,
+loyalty, and CDP platforms' own public feature pages before writing anything here.** Several raw
+candidates were dropped as already-shipped, found by grepping the actual code rather than trusting
+README/ROADMAP text: loyalty-points expiration (`Cron\ExpireLoyaltyPoints`), tiered/VIP loyalty benefits
+(`Model\LoyaltyTierCalculator`, the `loyalty_tier_at_least` condition), non-purchase point-earning
+(`Model\Campaign\Action\AddPoints` is already a generic action attachable to any trigger, not
+order-only), A/B variant splitting plus auto-winner decision (`Model\Campaign\SplitVariantSelector`/
+`SplitWinnerCalculator`/`Cron\AutoPickCampaignSplitWinner`), predictive CLV/churn scoring
+(`Model\ClvCalculator`, `Model\ChurnRisk\ChurnRiskCalculator`), send-time optimization
+(`Model\Campaign\SendTimeOptimizer`), a generic outbound/inbound webhook integration point
+(`Model\Campaign\Action\SendWebhook` + `Controller\Webhook\Receive`), and a visual branching/delay
+journey builder (the Flow Drawflow canvas plus `delay_minutes` chaining). No candidate this round needed
+a Commerce-only primitive, a paid third-party account this project lacks, or touched the standing
+no-auto-charge constraint.
+
+- **Referral program has no fraud/duplicate-identity signal.** Checked `Model\ReferralManager::recordSignup()`
+  directly: the only two guards are self-referral (`$referrerCustomerId === $referredCustomerId`) and
+  "already has a referral row" (one referral per referred customer, ever) — there's no check against the
+  referred customer sharing an IP address, device, or billing address with the referrer, the exact signal
+  established loyalty/referral tools use to block reward farming via disposable accounts.
+  `Observer\RedeemReferralCode` and `Controller\Referral\Track` never capture or compare a remote
+  address/billing address at all today. Closing it doesn't need a new fraud-scoring engine — a
+  `ReferralManager::recordSignup()` guard comparing the referred customer's first-order billing address
+  (or registration IP, captured the same way `Controller\Track\Event` already captures visitor identity)
+  against the referrer's own would catch the common self-referral-via-second-account case without any
+  new infrastructure.
+- **A delayed campaign action chain fires its later steps even after the customer already converted.**
+  Checked `CampaignDispatcher::resumeScheduledAction()` directly: once a `delay_minutes` step's wait
+  elapses, the next action in the chain runs unconditionally — the method's own docblock says so
+  explicitly ("must run unconditionally this time"), and the only check beyond that is whether the
+  campaign itself is still enabled. This is fine for the built-in crons (`SendAbandonedCartReminders`
+  re-checks "not converted to an order" fresh on every run, cron-driven rather than chain-driven), but a
+  custom Flow-canvas campaign built on `cart_abandoned`/`customer_inactive` plus a multi-step
+  `delay_minutes` drip has no equivalent: a customer who places the order between step 1 and step 2
+  still gets every later step — the same "goal already met, stop the sequence" gap established
+  journey-builder tools close with an explicit per-campaign goal/exit condition. Closing it would need a
+  new optional "exit if" condition set, re-evaluated at each resume (reusing the same
+  condition-evaluation path `CampaignDispatcher` already has for the initial dispatch), not a new engine.
+- **No holdout group — every campaign send is measured against itself, never against a true no-send
+  control.** Checked `Model\Campaign\SplitVariantSelector`/`SplitWinnerCalculator` directly: the 'split'
+  action only ever divides traffic between message variants that all actually send something — there's
+  no way to carve off a small, randomly-assigned percentage of matching customers who receive nothing at
+  all, which is what every established platform's holdout/incremental-lift testing uses to answer "would
+  this customer have converted anyway?" rather than just comparing variant A's conversion rate to variant
+  B's. `CampaignOutcomeLogger::getStats()` already has everything needed to compare a held-out group's
+  organic conversion rate against the sent group's — just nothing upstream feeds it one. Closing it is a
+  new, admin-configurable `holdout_percent` on a campaign, checked once per customer the same place
+  `QuietHoursGate`/`FrequencyCapGate` already gate a dispatch, logging the held-out customer into
+  `ordo_campaign_outcome_log` with a new `is_holdout` flag instead of running any action for them.
+- **`send_email` has no one-click unsubscribe — only a logged-in storefront preference center.** Checked
+  `Model\Campaign\Action\SendEmail` and the new `Controller\Consent\*` pages (ADR 0054) directly: neither
+  sets a `List-Unsubscribe`/`List-Unsubscribe-Post` header, and the only way a customer can opt out of
+  marketing email is logging into the storefront account area first — there's no no-login, single-click
+  unsubscribe link in the email itself, the mechanism Gmail/Yahoo's 2024 bulk-sender rules now expect of
+  any sender and that every established ESP ships by default. Closing it needs a signed, no-login
+  token-based endpoint (same shape `Controller\Approval`'s token-based order-approval links already use
+  in this module) reaching `ConsentManager::setConsent()` directly, plus `SendEmail` adding the two
+  headers and a footer link carrying that token — no new consent model, just a new entry point into the
+  one that already exists.
