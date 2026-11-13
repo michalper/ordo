@@ -89,6 +89,22 @@ class ReferralManagerTest extends TestCase
         return $collection;
     }
 
+    /**
+     * A collection stub shaped for ReferralManager::isDuplicateIpSignup()'s own query
+     * (addReferrerCustomerFilter + addSignupIpFilter, then getSize()) - distinct from
+     * makeReferralCollection() above, which is shaped for the "already referred"/"mark
+     * converted" queries instead.
+     */
+    private function makeDuplicateIpCheckCollection(int $size): ReferralCollection
+    {
+        $collection = $this->createStub(ReferralCollection::class);
+        $collection->method('addReferrerCustomerFilter')->willReturnSelf();
+        $collection->method('addSignupIpFilter')->willReturnSelf();
+        $collection->method('getSize')->willReturn($size);
+
+        return $collection;
+    }
+
     public function testGetOrCreateCodeReturnsExistingCode(): void
     {
         $existing = $this->createStub(ReferralCode::class);
@@ -214,6 +230,75 @@ class ReferralManagerTest extends TestCase
         $this->referralResource->expects(self::once())->method('save')->with($newReferral);
 
         self::assertTrue($this->makeManager()->recordSignup(1, 2));
+    }
+
+    /**
+     * No IP given (e.g. RemoteAddress couldn't resolve one) - isDuplicateIpSignup() fails open,
+     * same "no data to compare against" shape as ChurnRiskCalculator/RfmCalculator, and doesn't
+     * even run the duplicate-IP query (referralCollectionFactory->create() is called exactly once,
+     * for the "already referred" check, not twice).
+     */
+    public function testRecordSignupStoresNullIpAndLeavesFlagFalseWhenNoIpGiven(): void
+    {
+        $this->referralCollectionFactory = $this->createMock(ReferralCollectionFactory::class);
+        $this->referralCollectionFactory->expects(self::once())->method('create')
+            ->willReturn($this->makeReferralCollection(null, 0));
+
+        $newReferral = $this->createMock(Referral::class);
+        $newReferral->expects(self::once())->method('setSignupIp')->with(null);
+        $newReferral->expects(self::once())->method('setDuplicateIpFlag')->with(false);
+        $this->referralFactory->method('create')->willReturn($newReferral);
+
+        $this->referralResource = $this->createMock(ReferralResource::class);
+        $this->referralResource->expects(self::once())->method('save')->with($newReferral);
+
+        self::assertTrue($this->makeManager()->recordSignup(1, 2, null));
+    }
+
+    /**
+     * This referrer's first-ever referral - nothing to compare the IP against yet, so the flag
+     * stays false even though an IP was given (fail open, not "first signup is automatically
+     * suspicious").
+     */
+    public function testRecordSignupLeavesFlagFalseWhenReferrerHasNoOtherSignupFromThatIp(): void
+    {
+        $this->referralCollectionFactory->method('create')->willReturnOnConsecutiveCalls(
+            $this->makeReferralCollection(null, 0),
+            $this->makeDuplicateIpCheckCollection(0)
+        );
+
+        $newReferral = $this->createMock(Referral::class);
+        $newReferral->expects(self::once())->method('setSignupIp')->with('203.0.113.5');
+        $newReferral->expects(self::once())->method('setDuplicateIpFlag')->with(false);
+        $this->referralFactory->method('create')->willReturn($newReferral);
+
+        $this->referralResource = $this->createMock(ReferralResource::class);
+        $this->referralResource->expects(self::once())->method('save')->with($newReferral);
+
+        self::assertTrue($this->makeManager()->recordSignup(1, 2, '203.0.113.5'));
+    }
+
+    /**
+     * Another referred customer, already recorded under this same referrer, shares this
+     * signup's IP - flagged, but still recorded and still returns true: detect and surface for
+     * admin review, not an automatic block (see recordSignup()'s own docblock and docs/adr/0056).
+     */
+    public function testRecordSignupSetsDuplicateIpFlagWhenAnotherSiblingReferralSharesTheIp(): void
+    {
+        $this->referralCollectionFactory->method('create')->willReturnOnConsecutiveCalls(
+            $this->makeReferralCollection(null, 0),
+            $this->makeDuplicateIpCheckCollection(1)
+        );
+
+        $newReferral = $this->createMock(Referral::class);
+        $newReferral->expects(self::once())->method('setSignupIp')->with('203.0.113.5');
+        $newReferral->expects(self::once())->method('setDuplicateIpFlag')->with(true);
+        $this->referralFactory->method('create')->willReturn($newReferral);
+
+        $this->referralResource = $this->createMock(ReferralResource::class);
+        $this->referralResource->expects(self::once())->method('save')->with($newReferral);
+
+        self::assertTrue($this->makeManager()->recordSignup(1, 2, '203.0.113.5'));
     }
 
     public function testMarkConvertedAndGetReferrerReturnsNullWhenNoPendingReferral(): void

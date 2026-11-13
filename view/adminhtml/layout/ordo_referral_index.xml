@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="ordo_referral_listing_intro"
+                   template="Ordo_Automation::listing_intro.phtml" before="ordo_referral_listing">
+                <arguments>
+                    <argument name="intro_text" xsi:type="string">Every referral signup recorded by Model\ReferralManager::recordSignup(). "Possible Duplicate Signup" flags a referred customer whose registration IP matches another referred customer already recorded under the same referrer - a fraud/duplicate-identity signal to review, not an automatic block; the referral is still recorded either way. Configure under Stores → Configuration → Ordo Automation → Referral Program.</argument>
+                </arguments>
+            </block>
+            <uiComponent name="ordo_referral_listing"/>
+        </referenceContainer>
+    </body>
+</page>

@@ -152,11 +152,14 @@
             "referrer_customer_id": true,
             "referred_customer_id": true,
             "status": true,
+            "signup_ip": true,
+            "duplicate_ip_flag": true,
             "created_at": true,
             "converted_at": true
         },
         "index": {
-            "ORDO_REFERRAL_REFERRER_CUSTOMER_ID": true
+            "ORDO_REFERRAL_REFERRER_CUSTOMER_ID": true,
+            "ORDO_REFERRAL_REFERRER_CUSTOMER_ID_SIGNUP_IP": true
         },
         "constraint": {
             "PRIMARY": true,

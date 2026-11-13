@@ -11,6 +11,13 @@ it doesn't update itself from this file.
 
 ### Added
 
+- **Referral duplicate-identity signal** — `Observer\RedeemReferralCode` now captures the referred
+  customer's registration IP, and `ReferralManager::recordSignup()` flags
+  (`ordo_referral.duplicate_ip_flag`) a signup whose IP matches another referred signup already
+  recorded under the same referrer — the common self-referral-via-second-account reward-farming
+  shape, without a new fraud-scoring engine. Detect and surface, not block: the referral is still
+  recorded, flagged on a new read-only "Referrals" admin grid (`ordo/referral/index`) plus a
+  dashboard stat card. See ADR 0056.
 - **Campaign chain exit condition** — a campaign can now set an optional `exit_conditions` JSON
   field (AND-joined, same `{type, params}` shape as an entry condition) that
   `CampaignDispatcher::resumeScheduledAction()` re-checks on every delayed-step resume; if

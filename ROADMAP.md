@@ -712,17 +712,16 @@ journey builder (the Flow Drawflow canvas plus `delay_minutes` chaining). No can
 a Commerce-only primitive, a paid third-party account this project lacks, or touched the standing
 no-auto-charge constraint.
 
-- **Referral program has no fraud/duplicate-identity signal.** Checked `Model\ReferralManager::recordSignup()`
-  directly: the only two guards are self-referral (`$referrerCustomerId === $referredCustomerId`) and
-  "already has a referral row" (one referral per referred customer, ever) — there's no check against the
-  referred customer sharing an IP address, device, or billing address with the referrer, the exact signal
-  established loyalty/referral tools use to block reward farming via disposable accounts.
-  `Observer\RedeemReferralCode` and `Controller\Referral\Track` never capture or compare a remote
-  address/billing address at all today. Closing it doesn't need a new fraud-scoring engine — a
-  `ReferralManager::recordSignup()` guard comparing the referred customer's first-order billing address
-  (or registration IP, captured the same way `Controller\Track\Event` already captures visitor identity)
-  against the referrer's own would catch the common self-referral-via-second-account case without any
-  new infrastructure.
+- ~~**Referral program has no fraud/duplicate-identity signal.**~~ — done, see
+  `docs/adr/0056-referral-fraud-signal.md`. `Observer\RedeemReferralCode` now captures the referred
+  customer's registration IP (`RemoteAddress`, same pattern `OrderApprovalManagement` already uses)
+  and `ReferralManager::recordSignup()` flags (`ordo_referral.duplicate_ip_flag`) a signup whose IP
+  matches another referred signup already recorded under the *same referrer* — a stronger, self-
+  contained farming signal than comparing against the referrer's own IP (which nothing captures
+  anywhere, and would leave every existing referrer permanently uncheckable). Detect and surface, not
+  block: the referral is still recorded either way, flagged on a new read-only admin grid
+  (`ordo/referral/index`) plus a dashboard stat card, same precedent `Model\Anomaly\AnomalyAlert`
+  already set for a weak-but-real signal.
 - ~~**A delayed campaign action chain fires its later steps even after the customer already
   converted.**~~ — done, see `docs/adr/0055-campaign-chain-exit-condition.md`. A campaign now has an
   optional `exit_conditions` JSON column (AND-joined, same `{type, params}` shape as an entry

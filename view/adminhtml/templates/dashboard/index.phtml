@@ -52,6 +52,15 @@ $segmentNavDesc = __(
             ?></div>
             <div class="ordo-stat-label"><?= $escaper->escapeHtml(__('Anomaly alerts (recent)')) ?></div>
         </a>
+        <a
+            class="ordo-stat-card ordo-stat-card-link"
+            href="<?= $escaper->escapeUrl($block->getUrl('ordo/referral/index')) ?>"
+        >
+            <div class="ordo-stat-value"><?=
+                $escaper->escapeHtml((string) $viewModel->getFlaggedReferralCount())
+            ?></div>
+            <div class="ordo-stat-label"><?= $escaper->escapeHtml(__('Possible duplicate referrals')) ?></div>
+        </a>
         <div class="ordo-stat-card">
             <div class="ordo-stat-value"><?=
                 $escaper->escapeHtml($viewModel->formatCurrency($viewModel->getAverageClvScore()))
