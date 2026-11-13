@@ -399,6 +399,26 @@
             <resource ref="self"/>
         </resources>
     </route>
+    <!-- Same "self" resource shape as /V1/ordo/credit-limit/mine - a customer token alone proves
+         who is asking, no id to guess/enumerate. -->
+    <route url="/V1/ordo/consent-preferences/mine" method="GET">
+        <service class="Ordo\Automation\Api\ConsentPreferencesManagementInterface" method="getMyPreferences"/>
+        <resources>
+            <resource ref="self"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/consent-preferences/mine/channel/:channel" method="PUT">
+        <service class="Ordo\Automation\Api\ConsentPreferencesManagementInterface" method="setMyChannelConsent"/>
+        <resources>
+            <resource ref="self"/>
+        </resources>
+    </route>
+    <route url="/V1/ordo/consent-preferences/mine/topic/:channel/:topic" method="PUT">
+        <service class="Ordo\Automation\Api\ConsentPreferencesManagementInterface" method="setMyTopicConsent"/>
+        <resources>
+            <resource ref="self"/>
+        </resources>
+    </route>
     <!-- Its own dedicated resource, not the generic Ordo_Automation::config - a role scoped only
          to "edit Ordo config" (a plausible narrow admin role) must not be able to pull an
          arbitrary customer's credit-limit status via REST just from that. -->

@@ -689,17 +689,20 @@ constraint, not re-litigated.
   underlying signal is already good enough to back a segment/campaign condition. Closing it is a
   new `Cron\TagChurnRiskCustomers` mirroring `TagReorderCycleAtRiskCustomers`'s exact add-then-
   clear-on-recovery shape, plus one more `groupCustomersByRep()` call in `SendSalesRepDigest`.
-- **No storefront or headless self-service channel/topic preference center.** Checked every
-  non-admin controller and `etc/schema.graphqls` directly: `Model\ConsentManager` is only ever
-  touched by `Controller\Adminhtml\Gdpr\*` (an admin looking up one customer by email) and
-  `Controller\Email\StatusCallback`'s webhook-driven STOP-equivalent revocation — there is no
-  frontend controller or GraphQL mutation anywhere that lets a logged-in customer see or change
-  their own channel (email/SMS/WhatsApp/push/RCS) or topic (promotional/account-updates)
-  consent. This is the same gap `docs/adr/0026-per-topic-consent-granularity.md` already named
-  explicitly in its own Consequences section ("no storefront self-service page") and it's still
-  open today. Closing it needs a `getOrdoConsentPreferences`/`setOrdoConsentPreferences` GraphQL
-  pair (thin wrappers over `ConsentManager::getConsentStates()`/`getTopicConsentStates()`/
-  `setConsent()`/`setTopicConsent()`, the same "no logic duplicated into the resolver" rule every
-  other GraphQL resolver in this module already follows) plus the equivalent REST route and a
-  plain account-area page for server-rendered storefronts, mirroring how `Controller\Offer`/"My
-  Offers" already gives a customer self-service over their own offers.
+- ~~**Split-test winner is decided by click-through rate only, never by revenue.**~~ — shipped,
+  see `docs/adr/0053-split-winner-revenue-metric.md`. New `Model\Config\Source\
+  AbTestDecisionMetric` config choice (CTR/conversion rate/revenue, defaults to CTR) -
+  conversion rate/revenue read from the existing `CampaignOutcomeLogger::getStats()` data, not a
+  new ledger.
+- ~~**No storefront or headless self-service channel/topic preference center.**~~ — shipped, see
+  `docs/adr/0054-storefront-consent-preferences.md`. `ConsentPreferencesManagementInterface` is
+  the one service every transport calls: `GET/PUT /V1/ordo/consent-preferences/mine*` REST
+  routes, `ordoConsentPreferences`/`setOrdoConsent`/`setOrdoConsentTopic` GraphQL, and a plain
+  "Communication Preferences" page under the storefront customer account nav
+  (`Controller\Consent\*`), closing the gap `docs/adr/0026-per-topic-consent-granularity.md`
+  named in its own Consequences section. Along the way, found and fixed a genuine Magento WebAPI
+  limitation (undocumented as far as this module's own research turned up): a bare
+  `array<string, bool>` return shape doesn't survive REST output serialization correctly — string
+  keys get silently dropped and nested arrays come back as literal JSON-encoded strings instead of
+  objects. Fixed by giving every nested shape its own typed `Api\Data\*Interface`
+  (`ConsentChannelPreferenceInterface`), not a generic array map — see the ADR.

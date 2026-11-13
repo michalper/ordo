@@ -11,6 +11,11 @@ it doesn't update itself from this file.
 
 ### Added
 
+- **Storefront consent preference center** — a logged-in customer can now see and change their own
+  channel (email/SMS/push/WhatsApp/RCS) and topic (promotional/account-updates) consent from REST
+  (`GET/PUT /V1/ordo/consent-preferences/mine*`), GraphQL (`ordoConsentPreferences`/
+  `setOrdoConsent`/`setOrdoConsentTopic`), or a new "Communication Preferences" storefront account
+  page — all three backed by one `Api\ConsentPreferencesManagementInterface`. See ADR 0054.
 - **Churn-risk segmentation condition** — new `churn_risk_at_least` condition
   (`Model\Campaign\Condition\ChurnRiskAtLeast`, `Model\ChurnRisk\ChurnRiskCalculator`) generalizes
   `ReorderCycleAtRisk`'s self-relative "drifting from their own baseline" signal to every customer
