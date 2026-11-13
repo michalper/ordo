@@ -1238,3 +1238,8 @@
 "Projected CLV","Napovedana CLV"
 "Churn risk ratio","Razmerje tveganja za odhod"
 "Not enough order history","Premalo zgodovine naročil"
+"Churn Risk Digest","Povzetek tveganja osipa"
+"Tag at-risk customers for the sales rep digest","Označi tvegane stranke za povzetek prodajnega zastopnika"
+"The ""churn_risk_at_least"" segment condition always works regardless of this setting - this only controls whether Cron\TagChurnRiskCustomers tags customers so Ordo B2B > Sales Rep Signature & Digest's weekly email includes a churn-risk section.","Segmentni pogoj ""churn_risk_at_least"" vedno deluje ne glede na to nastavitev - ta nadzira le, ali Cron\TagChurnRiskCustomers označi stranke, da tedenski e-poštni sporočilo v razdelku Ordo B2B > Podpis in povzetek prodajnega zastopnika vključuje razdelek o tveganju osipa."
+"""At risk"" churn ratio","Razmerje tveganja ""ogroženo"""
+"Elapsed days since last order, divided by the customer's own median order interval. 1.0 = exactly on schedule. Default 0.75 flags a customer before they'd be considered fully overdue.","Pretečeni dnevi od zadnjega naročila, deljeni s srednjim intervalom naročil stranke. 1.0 = natanko po urniku. Privzeta vrednost 0,75 označi stranko še preden bi veljala za povsem zamujeno."

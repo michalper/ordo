@@ -77,6 +77,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isAnomalyAlertsEnabled());
         self::assertTrue($this->config->isLoyaltyMilestonesEnabled());
         self::assertTrue($this->config->isStalledPaymentReminderEnabled());
+        self::assertTrue($this->config->isChurnRiskDigestEnabled());
         self::assertTrue($this->config->isRcsEnabled());
     }
 
@@ -522,6 +523,20 @@ class ConfigTest extends TestCase
         $this->scopeConfig->method('getValue')->willReturn('0.9');
 
         self::assertSame(0.9, $this->config->getReorderAtRiskDriftRatio());
+    }
+
+    public function testGetChurnRiskAtRiskRatioUsesDefaultWhenUnset(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn(null);
+
+        self::assertSame(0.75, $this->config->getChurnRiskAtRiskRatio());
+    }
+
+    public function testGetChurnRiskAtRiskRatioUsesConfiguredValue(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn('0.9');
+
+        self::assertSame(0.9, $this->config->getChurnRiskAtRiskRatio());
     }
 
     public function testObscureFieldGettersDecryptTheirConfiguredValue(): void

@@ -15,6 +15,7 @@ use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Cron\SendSalesRepDigest;
+use Ordo\Automation\Cron\TagChurnRiskCustomers;
 use Ordo\Automation\Cron\TagInactiveCustomers;
 use Ordo\Automation\Cron\TagReorderCycleAtRiskCustomers;
 use Ordo\Automation\Helper\Config;
@@ -110,6 +111,7 @@ class SendSalesRepDigestTest extends TestCase
         $tagManager->method('getCustomerIdsWithTag')->willReturnMap([
             [TagInactiveCustomers::TAG_INACTIVE, [5, 6]],
             [TagReorderCycleAtRiskCustomers::TAG_REORDER_AT_RISK, []],
+            [TagChurnRiskCustomers::TAG_CHURN_RISK, []],
         ]);
 
         $repAttr = $this->createStub(AttributeInterface::class);
@@ -151,6 +153,9 @@ class SendSalesRepDigestTest extends TestCase
                 self::assertSame(0, $vars['at_risk_count']);
                 self::assertSame([], $vars['at_risk_customer_names']);
                 self::assertFalse($vars['has_at_risk']);
+                self::assertSame(0, $vars['churn_risk_count']);
+                self::assertSame([], $vars['churn_risk_customer_names']);
+                self::assertFalse($vars['has_churn_risk']);
                 self::assertSame(1, $vars['total_count']);
                 return true;
             }))
@@ -184,6 +189,7 @@ class SendSalesRepDigestTest extends TestCase
         $tagManager->method('getCustomerIdsWithTag')->willReturnMap([
             [TagInactiveCustomers::TAG_INACTIVE, []],
             [TagReorderCycleAtRiskCustomers::TAG_REORDER_AT_RISK, [7]],
+            [TagChurnRiskCustomers::TAG_CHURN_RISK, []],
         ]);
 
         $repAttr = $this->createStub(AttributeInterface::class);
@@ -213,6 +219,73 @@ class SendSalesRepDigestTest extends TestCase
                 self::assertSame(1, $vars['at_risk_count']);
                 self::assertSame([['name' => 'Anna Nowak (#7)']], $vars['at_risk_customer_names']);
                 self::assertTrue($vars['has_at_risk']);
+                self::assertSame(0, $vars['churn_risk_count']);
+                self::assertSame([], $vars['churn_risk_customer_names']);
+                self::assertFalse($vars['has_churn_risk']);
+                self::assertSame(1, $vars['total_count']);
+                return true;
+            }))
+            ->willReturnSelf();
+        $transportBuilder->method('setFromByScope')->willReturnSelf();
+        $transportBuilder->expects(self::once())->method('addTo')->with('rep@example.com', '')->willReturnSelf();
+
+        $transport = $this->createMock(TransportInterface::class);
+        $transport->expects(self::once())->method('sendMessage');
+        $transportBuilder->method('getTransport')->willReturn($transport);
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('info')->with(self::stringContains('1 sales rep digests'));
+
+        (new SendSalesRepDigest(
+            $config,
+            $tagManager,
+            $customerMapBuilder,
+            $this->makeEmailSender($transportBuilder, $storeManager),
+            $this->makeCronRunLogger($logger)
+        ))->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSendsADigestForChurnRiskOnlyCustomersToo(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isSalesRepDigestEnabled')->willReturn(true);
+
+        $tagManager = $this->createMock(CustomerTagManager::class);
+        $tagManager->method('getCustomerIdsWithTag')->willReturnMap([
+            [TagInactiveCustomers::TAG_INACTIVE, []],
+            [TagReorderCycleAtRiskCustomers::TAG_REORDER_AT_RISK, []],
+            [TagChurnRiskCustomers::TAG_CHURN_RISK, [8]],
+        ]);
+
+        $repAttr = $this->createStub(AttributeInterface::class);
+        $repAttr->method('getValue')->willReturn('rep@example.com');
+
+        $customer8 = $this->createStub(CustomerInterface::class);
+        $customer8->method('getCustomAttribute')->willReturn($repAttr);
+        $customer8->method('getFirstname')->willReturn('Piotr');
+        $customer8->method('getLastname')->willReturn('Wisniewski');
+        $customer8->method('getId')->willReturn(8);
+
+        $customerMapBuilder = $this->makeCustomerMapBuilder([$customer8]);
+
+        $store = $this->createStub(Store::class);
+        $store->method('getId')->willReturn(1);
+        $storeManager = $this->createStub(StoreManagerInterface::class);
+        $storeManager->method('getStore')->willReturn($store);
+
+        $transportBuilder = $this->createMock(TransportBuilder::class);
+        $transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
+        $transportBuilder->method('setTemplateOptions')->willReturnSelf();
+        $transportBuilder->expects(self::once())->method('setTemplateVars')
+            ->with(self::callback(function (array $vars): bool {
+                self::assertSame(0, $vars['customer_count']);
+                self::assertFalse($vars['has_inactive']);
+                self::assertSame(0, $vars['at_risk_count']);
+                self::assertFalse($vars['has_at_risk']);
+                self::assertSame(1, $vars['churn_risk_count']);
+                self::assertSame([['name' => 'Piotr Wisniewski (#8)']], $vars['churn_risk_customer_names']);
+                self::assertTrue($vars['has_churn_risk']);
                 self::assertSame(1, $vars['total_count']);
                 return true;
             }))

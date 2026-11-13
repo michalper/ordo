@@ -656,3 +656,7 @@ column).
   `docs/adr/0051-whatsapp-read-receipt-tracking.md`. `Controller\WhatsApp\Webhook` now writes a
   `MessageLogEvent::TYPE_READ` row for Meta's "seen" receipt instead of silently dropping it,
   making `message_engaged` usable for WhatsApp sends with zero resolver changes.
+- ~~**Churn-risk customers never reach the sales-rep digest.**~~ — shipped, see
+  `docs/adr/0052-churn-risk-sales-rep-digest.md`. New `Cron\TagChurnRiskCustomers` mirrors
+  `TagReorderCycleAtRiskCustomers`'s exact add-then-clear-on-recovery shape, and
+  `SendSalesRepDigest` now groups by it too, alongside inactive/reorder-at-risk.

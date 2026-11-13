@@ -1238,3 +1238,8 @@
 "Projected CLV","Becsült CLV"
 "Churn risk ratio","Lemorzsolódási kockázati arány"
 "Not enough order history","Nincs elég rendelési előzmény"
+"Churn Risk Digest","Lemorzsolódási kockázat összefoglaló"
+"Tag at-risk customers for the sales rep digest","Kockázatos ügyfelek megjelölése az értékesítési képviselői összefoglalóhoz"
+"The ""churn_risk_at_least"" segment condition always works regardless of this setting - this only controls whether Cron\TagChurnRiskCustomers tags customers so Ordo B2B > Sales Rep Signature & Digest's weekly email includes a churn-risk section.","A ""churn_risk_at_least"" szegmensfeltétel ettől a beállítástól függetlenül mindig működik - ez csak azt szabályozza, hogy a Cron\TagChurnRiskCustomers megjelölje-e az ügyfeleket, hogy az Ordo B2B > Értékesítési képviselő aláírása és összefoglalója heti e-mailje tartalmazzon-e lemorzsolódási kockázat szakaszt."
+"""At risk"" churn ratio","""Kockázatos"" lemorzsolódási arány"
+"Elapsed days since last order, divided by the customer's own median order interval. 1.0 = exactly on schedule. Default 0.75 flags a customer before they'd be considered fully overdue.","Az utolsó rendelés óta eltelt napok száma, elosztva az ügyfél saját rendelései közötti medián időközzel. 1.0 = pontosan a saját ütemezés szerint. Az alapértelmezett 0,75 érték még azelőtt jelzi az ügyfelet, mielőtt teljesen esedékessé válna."

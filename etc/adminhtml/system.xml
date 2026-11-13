@@ -382,6 +382,20 @@
                     <validate>validate-digits validate-greater-than-zero</validate>
                 </field>
             </group>
+            <group id="churn_risk" translate="label" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Churn Risk Digest</label>
+                <field id="digest_enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Tag at-risk customers for the sales rep digest</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>The "churn_risk_at_least" segment condition always works regardless of this setting - this only controls whether Cron\TagChurnRiskCustomers tags customers so Ordo B2B &gt; Sales Rep Signature &amp; Digest's weekly email includes a churn-risk section.</comment>
+                </field>
+                <field id="at_risk_ratio" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>"At risk" churn ratio</label>
+                    <comment>Elapsed days since last order, divided by the customer's own median order interval. 1.0 = exactly on schedule. Default 0.75 flags a customer before they'd be considered fully overdue.</comment>
+                    <validate>validate-number</validate>
+                    <depends><field id="digest_enabled">1</field></depends>
+                </field>
+            </group>
             <group id="attribution" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Multi-Touch Campaign Attribution</label>
                 <field id="window_days" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">

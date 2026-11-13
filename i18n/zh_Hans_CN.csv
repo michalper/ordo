@@ -1238,3 +1238,8 @@
 "Projected CLV","预测 CLV"
 "Churn risk ratio","流失风险比率"
 "Not enough order history","订单历史记录不足"
+"Churn Risk Digest","流失风险摘要"
+"Tag at-risk customers for the sales rep digest","为销售代表摘要标记高风险客户"
+"The ""churn_risk_at_least"" segment condition always works regardless of this setting - this only controls whether Cron\TagChurnRiskCustomers tags customers so Ordo B2B > Sales Rep Signature & Digest's weekly email includes a churn-risk section.","“churn_risk_at_least”细分条件始终生效，与此设置无关——此设置仅控制 Cron\TagChurnRiskCustomers 是否标记客户，以便 Ordo B2B > 销售代表签名和摘要中的每周邮件包含流失风险部分。"
+"""At risk"" churn ratio","“风险”流失比率"
+"Elapsed days since last order, divided by the customer's own median order interval. 1.0 = exactly on schedule. Default 0.75 flags a customer before they'd be considered fully overdue.","自上次下单以来经过的天数，除以客户自身订单的中位间隔。1.0 = 完全按计划进行。默认值 0.75 会在客户被视为完全逾期之前标记该客户。"

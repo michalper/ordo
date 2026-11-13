@@ -1371,7 +1371,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to float\.$#'
 			identifier: cast.double
-			count: 2
+			count: 3
 			path: Helper/Config.php
 
 		-

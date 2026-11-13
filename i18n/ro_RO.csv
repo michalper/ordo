@@ -1238,3 +1238,8 @@
 "Projected CLV","CLV proiectat"
 "Churn risk ratio","Rată de risc de abandon"
 "Not enough order history","Istoric de comenzi insuficient"
+"Churn Risk Digest","Rezumat risc de abandon"
+"Tag at-risk customers for the sales rep digest","Marcați clienții cu risc pentru rezumatul reprezentantului de vânzări"
+"The ""churn_risk_at_least"" segment condition always works regardless of this setting - this only controls whether Cron\TagChurnRiskCustomers tags customers so Ordo B2B > Sales Rep Signature & Digest's weekly email includes a churn-risk section.","Condiția de segment ""churn_risk_at_least"" funcționează mereu indiferent de această setare - aceasta controlează doar dacă Cron\TagChurnRiskCustomers marchează clienții astfel încât e-mailul săptămânal din Ordo B2B > Semnătură și rezumat reprezentant de vânzări să includă o secțiune de risc de abandon."
+"""At risk"" churn ratio","Rată de risc ""în risc"""
+"Elapsed days since last order, divided by the customer's own median order interval. 1.0 = exactly on schedule. Default 0.75 flags a customer before they'd be considered fully overdue.","Zile scurse de la ultima comandă, împărțite la intervalul median propriu de comenzi al clientului. 1.0 = exact conform programului. Valoarea implicită 0,75 semnalează un client înainte ca acesta să fie considerat complet întârziat."

@@ -1238,3 +1238,8 @@
 "Projected CLV","Odhadovaná CLV"
 "Churn risk ratio","Miera rizika odchodu"
 "Not enough order history","Nedostatočná história objednávok"
+"Churn Risk Digest","Súhrn rizika odchodu"
+"Tag at-risk customers for the sales rep digest","Označiť rizikových klientov pre súhrn obchodného zástupcu"
+"The ""churn_risk_at_least"" segment condition always works regardless of this setting - this only controls whether Cron\TagChurnRiskCustomers tags customers so Ordo B2B > Sales Rep Signature & Digest's weekly email includes a churn-risk section.","Podmienka segmentu ""churn_risk_at_least"" funguje vždy bez ohľadu na toto nastavenie - toto len určuje, či Cron\TagChurnRiskCustomers označuje klientov, aby týždenný e-mail v Ordo B2B > Podpis a súhrn obchodného zástupcu obsahoval sekciu rizika odchodu."
+"""At risk"" churn ratio","Poměr rizika ""ohrozený"""
+"Elapsed days since last order, divided by the customer's own median order interval. 1.0 = exactly on schedule. Default 0.75 flags a customer before they'd be considered fully overdue.","Dni od poslednej objednávky, delené mediánom intervalu medzi objednávkami klienta. 1.0 = presne podľa plánu. Východisková hodnota 0,75 označí klienta ešte predtým, než by bol považovaný za úplne po termíne."

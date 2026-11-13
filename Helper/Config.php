@@ -68,6 +68,8 @@ class Config
 
     private const string XML_PATH_CLV_PROJECTION_YEARS = 'ordo_scoring/clv/projection_years';
     private const string XML_PATH_CLV_MIN_TENURE_MONTHS = 'ordo_scoring/clv/min_tenure_months';
+    private const string XML_PATH_CHURN_RISK_DIGEST_ENABLED = 'ordo_scoring/churn_risk/digest_enabled';
+    private const string XML_PATH_CHURN_RISK_AT_RISK_RATIO = 'ordo_scoring/churn_risk/at_risk_ratio';
 
     private const string XML_PATH_APPROVAL_ENABLED = 'ordo_b2b/order_approval/enabled';
     private const string XML_PATH_APPROVAL_ESCALATION_DAYS = 'ordo_b2b/order_approval/escalation_days';
@@ -1599,5 +1601,42 @@ class Config
     public function getClvMinTenureMonths(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_CLV_MIN_TENURE_MONTHS, 1, $storeId);
+    }
+
+    /**
+     * Gates Cron\TagChurnRiskCustomers - "weekly digest to reps" toggle for the churn-risk
+     * signal, same role Config::isSalesRepDigestEnabled() plays for the digest email itself.
+     * Named after the digest, not the calculator, since Model\ChurnRisk\ChurnRiskCalculator's
+     * own single-customer getter is always-on (it backs the churn_risk_at_least segment
+     * condition unconditionally) - only the always-on tagging cron this gates is optional.
+     */
+    public function isChurnRiskDigestEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_CHURN_RISK_DIGEST_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * The churn-risk ratio (Model\ChurnRisk\ChurnRiskCalculator - elapsed days since last order
+     * divided by the customer's own median order interval) at or above which
+     * Cron\TagChurnRiskCustomers tags a customer "at risk" for the sales-rep digest - same
+     * standing-threshold role getReorderAtRiskDriftRatio() plays for reorder-cycle risk, and the
+     * same default (0.75, a customer three-quarters of the way through their own normal cadence)
+     * for the same reason: noteworthy before they'd be considered fully "due" by any other cron.
+     * A separate, standing threshold from the churn_risk_at_least segment condition's own
+     * per-segment param - an admin building a segment picks their own threshold there.
+     */
+    public function getChurnRiskAtRiskRatio(?int $storeId = null): float
+    {
+        $value = $this->scopeConfig->getValue(
+            self::XML_PATH_CHURN_RISK_AT_RISK_RATIO,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+
+        return $value !== null && $value !== '' ? (float) $value : 0.75;
     }
 }

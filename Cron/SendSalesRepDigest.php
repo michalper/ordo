@@ -13,10 +13,11 @@ use Ordo\Automation\Setup\Patch\Data\AddSalesRepAttributes;
 /**
  * One digest email per rep instead of one alert per signal — a rep with 40 accounts should not
  * get 40 separate emails the day a batch of them goes inactive. Groups every customer currently
- * tagged "inactive" (TagInactiveCustomers) or "reorder cycle at risk" (
- * TagReorderCycleAtRiskCustomers) by their assigned rep's email and sends each rep a single
- * weekly list per signal — a rep with only one of the two signals still gets exactly one email,
- * not a second empty one, since sendDigest() is only called when at least one list is non-empty.
+ * tagged "inactive" (TagInactiveCustomers), "reorder cycle at risk" (
+ * TagReorderCycleAtRiskCustomers), or "churn risk" (TagChurnRiskCustomers) by their assigned
+ * rep's email and sends each rep a single weekly list per signal — a rep with only one of the
+ * three signals still gets exactly one email, not empty sections for the other two, since
+ * sendDigest() is only called when at least one list is non-empty.
  */
 class SendSalesRepDigest
 {
@@ -39,16 +40,22 @@ class SendSalesRepDigest
 
         $inactiveByRep = $this->groupCustomersByRep(TagInactiveCustomers::TAG_INACTIVE);
         $atRiskByRep = $this->groupCustomersByRep(TagReorderCycleAtRiskCustomers::TAG_REORDER_AT_RISK);
+        $churnRiskByRep = $this->groupCustomersByRep(TagChurnRiskCustomers::TAG_CHURN_RISK);
 
-        $repEmails = array_unique(array_merge(array_keys($inactiveByRep), array_keys($atRiskByRep)));
+        $repEmails = array_unique(array_merge(
+            array_keys($inactiveByRep),
+            array_keys($atRiskByRep),
+            array_keys($churnRiskByRep)
+        ));
 
         $sent = 0;
         foreach ($repEmails as $repEmail) {
             $inactiveNames = $inactiveByRep[$repEmail] ?? [];
             $atRiskNames = $atRiskByRep[$repEmail] ?? [];
+            $churnRiskNames = $churnRiskByRep[$repEmail] ?? [];
 
             try {
-                $this->sendDigest($repEmail, $inactiveNames, $atRiskNames);
+                $this->sendDigest($repEmail, $inactiveNames, $atRiskNames, $churnRiskNames);
                 $sent++;
             } catch (\Throwable $e) {
                 $this->cronRunLogger->logFailure(
@@ -108,15 +115,21 @@ class SendSalesRepDigest
     /**
      * @param array{name: string}[] $inactiveNames
      * @param array{name: string}[] $atRiskNames
+     * @param array{name: string}[] $churnRiskNames
      */
-    private function sendDigest(string $repEmail, array $inactiveNames, array $atRiskNames): void
-    {
-        // has_inactive/has_at_risk (not customer_count/at_risk_count) drive the template's own
-        // {{if}} blocks - Magento's IfDirective evaluates a condition as "empty" via `== ''`,
-        // and in PHP 8 an int 0 is NOT loosely equal to '' (0 == '' is false, unlike PHP 7), so
-        // {{if customer_count}} with customer_count=0 would render its TRUTHY branch instead of
-        // being skipped. A real bool resolves correctly either way (false == '' is true), so the
-        // counts stay in their own separate variables purely for display via {{var}}.
+    private function sendDigest(
+        string $repEmail,
+        array $inactiveNames,
+        array $atRiskNames,
+        array $churnRiskNames
+    ): void {
+        // has_inactive/has_at_risk/has_churn_risk (not customer_count/at_risk_count/
+        // churn_risk_count) drive the template's own {{if}} blocks - Magento's IfDirective
+        // evaluates a condition as "empty" via `== ''`, and in PHP 8 an int 0 is NOT loosely
+        // equal to '' (0 == '' is false, unlike PHP 7), so {{if customer_count}} with
+        // customer_count=0 would render its TRUTHY branch instead of being skipped. A real bool
+        // resolves correctly either way (false == '' is true), so the counts stay in their own
+        // separate variables purely for display via {{var}}.
         $this->emailSender->send(
             self::XML_PATH_EMAIL_TEMPLATE,
             [
@@ -126,7 +139,10 @@ class SendSalesRepDigest
                 'at_risk_count' => count($atRiskNames),
                 'at_risk_customer_names' => $atRiskNames,
                 'has_at_risk' => $atRiskNames !== [],
-                'total_count' => count($inactiveNames) + count($atRiskNames),
+                'churn_risk_count' => count($churnRiskNames),
+                'churn_risk_customer_names' => $churnRiskNames,
+                'has_churn_risk' => $churnRiskNames !== [],
+                'total_count' => count($inactiveNames) + count($atRiskNames) + count($churnRiskNames),
             ],
             $repEmail
         );
