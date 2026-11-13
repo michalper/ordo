@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!--
+    Deliberately NOT extending the "customer_account" handle (unlike ordo_consent_index.xml /
+    ordo_offer_index.xml) - this page must render for a logged-out recipient with no account
+    context at all, which is the whole point of a no-login unsubscribe link.
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd" layout="1column" cacheable="false">
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="ordo.email.unsubscribe" template="Ordo_Automation::email/unsubscribe.phtml"/>
+        </referenceContainer>
+    </body>
+</page>

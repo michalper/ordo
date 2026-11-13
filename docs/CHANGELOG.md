@@ -11,6 +11,11 @@ it doesn't update itself from this file.
 
 ### Added
 
+- **Email one-click unsubscribe** — `send_email` campaign sends now carry a no-login
+  `List-Unsubscribe`/`List-Unsubscribe-Post` header pair (RFC 8058) plus a visible footer link in
+  `campaign_generic.html`, pointing at a new `Controller\Email\Unsubscribe` endpoint backed by a
+  stateless, signed token (`Model\Email\UnsubscribeTokenManager` — no new table, no DB lookup to
+  verify) that calls `ConsentManager::setConsent()` directly. See ADR 0055.
 - **Storefront consent preference center** — a logged-in customer can now see and change their own
   channel (email/SMS/push/WhatsApp/RCS) and topic (promotional/account-updates) consent from REST
   (`GET/PUT /V1/ordo/consent-preferences/mine*`), GraphQL (`ordoConsentPreferences`/

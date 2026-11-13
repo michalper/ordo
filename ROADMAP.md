@@ -746,13 +746,16 @@ no-auto-charge constraint.
   new, admin-configurable `holdout_percent` on a campaign, checked once per customer the same place
   `QuietHoursGate`/`FrequencyCapGate` already gate a dispatch, logging the held-out customer into
   `ordo_campaign_outcome_log` with a new `is_holdout` flag instead of running any action for them.
-- **`send_email` has no one-click unsubscribe — only a logged-in storefront preference center.** Checked
-  `Model\Campaign\Action\SendEmail` and the new `Controller\Consent\*` pages (ADR 0054) directly: neither
-  sets a `List-Unsubscribe`/`List-Unsubscribe-Post` header, and the only way a customer can opt out of
-  marketing email is logging into the storefront account area first — there's no no-login, single-click
-  unsubscribe link in the email itself, the mechanism Gmail/Yahoo's 2024 bulk-sender rules now expect of
-  any sender and that every established ESP ships by default. Closing it needs a signed, no-login
-  token-based endpoint (same shape `Controller\Approval`'s token-based order-approval links already use
-  in this module) reaching `ConsentManager::setConsent()` directly, plus `SendEmail` adding the two
-  headers and a footer link carrying that token — no new consent model, just a new entry point into the
-  one that already exists.
+- ~~**`send_email` has no one-click unsubscribe — only a logged-in storefront preference center.**~~ —
+  shipped, see `docs/adr/0055-email-one-click-unsubscribe.md`. `Model\Email\UnsubscribeTokenManager`
+  issues a stateless, signed HMAC token (`EncryptorInterface::hash()`, keyed by the installation's own
+  crypt key — no new table, no admin secret to configure) verified with zero DB lookup by the new
+  no-login `Controller\Email\Unsubscribe` (GET and RFC 8058 `List-Unsubscribe-Post` on the same action),
+  which calls `ConsentManager::setConsent()` directly. `SendEmail` now sets both
+  `List-Unsubscribe`/`List-Unsubscribe-Post` headers (`Plugin\Email\EmailMessageUnsubscribeHeaderPlugin`,
+  same `EmailMessageInterfaceFactory` interception seam as the existing Message-ID plugin) and injects
+  an `unsubscribe_url` template var (`Model\Email\UnsubscribeContext`, same shared-context shape as
+  `SalesRepEmailContext`) — `campaign_generic.html` renders it as a visible footer link. Deliberately
+  scoped to `send_email` only, not the reminder crons/sales-rep digest outside the campaign engine — see
+  the ADR for why, and for why this needed no rate limiting unlike the order-approval token it borrows
+  its token-link shape from.

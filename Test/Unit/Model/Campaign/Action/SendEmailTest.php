@@ -24,6 +24,8 @@ use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\Email\MessageIdGenerator;
 use Ordo\Automation\Model\Email\PendingMessageIdHolder;
+use Ordo\Automation\Model\Email\PendingUnsubscribeHeaderHolder;
+use Ordo\Automation\Model\Email\UnsubscribeContext;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
@@ -47,6 +49,8 @@ class SendEmailTest extends TestCase
     private StoreInterface $store;
     private CustomerStoreResolver $customerStoreResolver;
     private EmailTemplateOptions $emailTemplateOptions;
+    private UnsubscribeContext $unsubscribeContext;
+    private PendingUnsubscribeHeaderHolder&\PHPUnit\Framework\MockObject\MockObject $pendingUnsubscribeHeaderHolder;
 
     protected function setUp(): void
     {
@@ -87,6 +91,11 @@ class SendEmailTest extends TestCase
         $this->store = $this->createStub(StoreInterface::class);
         $this->store->method('getId')->willReturn(1);
         $this->storeManager->method('getStore')->willReturn($this->store);
+
+        $this->unsubscribeContext = $this->createStub(UnsubscribeContext::class);
+        $this->unsubscribeContext->method('getForCustomer')
+            ->willReturn(['unsubscribe_url' => 'https://example.com/ordo/email/unsubscribe/token/42.email.sig']);
+        $this->pendingUnsubscribeHeaderHolder = $this->createMock(PendingUnsubscribeHeaderHolder::class);
     }
 
     private function makeAction(): SendEmail
@@ -107,7 +116,9 @@ class SendEmailTest extends TestCase
             $this->messageSendRetryQueue,
             $this->logger,
             $this->customerStoreResolver,
-            $this->emailTemplateOptions
+            $this->emailTemplateOptions,
+            $this->unsubscribeContext,
+            $this->pendingUnsubscribeHeaderHolder
         );
     }
 
@@ -216,11 +227,53 @@ class SendEmailTest extends TestCase
 
         $this->pendingMessageIdHolder->expects(self::once())->method('set')->with('abc123@example.com');
         $this->pendingMessageIdHolder->expects(self::once())->method('consume');
+        $this->pendingUnsubscribeHeaderHolder->expects(self::once())->method('set')
+            ->with('https://example.com/ordo/email/unsubscribe/token/42.email.sig');
+        $this->pendingUnsubscribeHeaderHolder->expects(self::once())->method('consume');
         $this->messageLogWriter->expects(self::once())->method('recordSent')
             ->with('email', 42, 'jan@example.com', '<abc123@example.com>');
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecutePassesTheUnsubscribeUrlIntoTemplateVars(): void
+    {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getFirstname')->willReturn('Jan');
+        $customer->method('getEmail')->willReturn('jan@example.com');
+        $this->customerRepository->method('getById')->willReturn($customer);
+
+        $this->unsubscribeContext = $this->createMock(UnsubscribeContext::class);
+        $this->unsubscribeContext->expects(self::once())->method('getForCustomer')
+            ->with(42, $this->store)
+            ->willReturn(['unsubscribe_url' => 'https://example.com/ordo/email/unsubscribe/token/42.email.sig']);
+
+        $this->transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
+        $this->transportBuilder->method('setTemplateOptions')->willReturnSelf();
+        $this->transportBuilder->method('setFromByScope')->willReturnSelf();
+        $this->transportBuilder->method('addTo')->willReturnSelf();
+
+        $capturedVars = null;
+        $this->transportBuilder->method('setTemplateVars')->willReturnCallback(
+            function (array $vars) use (&$capturedVars) {
+                $capturedVars = $vars;
+                return $this->transportBuilder;
+            }
+        );
+
+        $transport = $this->createStub(TransportInterface::class);
+        $this->transportBuilder->method('getTransport')->willReturn($transport);
+
+        $context = ['customer_id' => 42];
+        $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
+
+        self::assertIsArray($capturedVars);
+        self::assertSame(
+            'https://example.com/ordo/email/unsubscribe/token/42.email.sig',
+            $capturedVars['unsubscribe_url']
+        );
     }
 
     #[AllowMockObjectsWithoutExpectations]

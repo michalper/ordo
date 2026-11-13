@@ -1,0 +1,15 @@
+<?php
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \Magento\Framework\Escaper $escaper */
+?>
+<!--
+    The actual outcome (success/error) is the standard flash message already added via
+    Controller\Email\Unsubscribe's own messageManager calls - this block is just the page's own
+    plain heading, same Luma-classes-plus-inert-Tailwind-utility-classes dual styling as
+    consent/index.phtml.
+-->
+<div class="block block-ordo-email-unsubscribe lg:mb-4">
+    <div class="block-title lg:mb-4 lg:text-lg lg:font-semibold">
+        <strong><?= $escaper->escapeHtml(__('Email Preferences')) ?></strong>
+    </div>
+</div>
