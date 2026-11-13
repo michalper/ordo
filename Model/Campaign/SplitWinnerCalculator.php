@@ -6,6 +6,8 @@ namespace Ordo\Automation\Model\Campaign;
 use Magento\Framework\App\ResourceConnection;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CampaignAction;
+use Ordo\Automation\Model\CampaignOutcomeLogger;
+use Ordo\Automation\Model\Config\Source\AbTestDecisionMetric;
 use Ordo\Automation\Model\MessageLogEvent;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action as CampaignActionResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as CampaignActionCollectionFactory;
@@ -26,6 +28,13 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as Cam
  * variants in the admin (which rewrites params.variants entirely, see CampaignSaveProcessor)
  * clears that marker along with the old weights, so a genuinely new test naturally gets a fresh
  * decision instead of the old one lingering.
+ *
+ * The comparison metric is configurable (Config::getAbTestDecisionMetric() - CTR, conversion
+ * rate, or revenue; see AbTestDecisionMetric), not hardcoded to CTR. Conversion rate/revenue are
+ * read from the existing Model\CampaignOutcomeLogger::getStats() data (already computed
+ * sent/converted/revenue per variant for the campaign funnel report) - not a new ledger. CTR
+ * keeps reading ordo_message_log/ordo_message_log_event directly, the original data source,
+ * since CampaignOutcomeLogger has no notion of opens/clicks.
  */
 class SplitWinnerCalculator
 {
@@ -37,7 +46,8 @@ class SplitWinnerCalculator
         private readonly Config $config,
         private readonly ResourceConnection $resourceConnection,
         private readonly CampaignActionCollectionFactory $campaignActionCollectionFactory,
-        private readonly CampaignActionResource $campaignActionResource
+        private readonly CampaignActionResource $campaignActionResource,
+        private readonly CampaignOutcomeLogger $campaignOutcomeLogger
     ) {
     }
 
@@ -89,13 +99,17 @@ class SplitWinnerCalculator
             return false;
         }
 
-        $stats = $this->fetchStats($actionRow->getCampaignId(), $keys);
+        $metric = $this->config->getAbTestDecisionMetric();
+        $campaignId = $actionRow->getCampaignId();
+        $stats = $metric === AbTestDecisionMetric::CTR
+            ? $this->fetchStats($campaignId, $keys)
+            : $this->fetchOutcomeStats($campaignId, $keys);
 
         // $keys is never empty here (the count($keys) < 2 guard above already returned), and
-        // $ctr is always >= 0.0 > this loop's own initial -1.0, so its first iteration always
-        // sets $bestKey - there is no code path where it stays unset.
+        // every metric's own score is always >= 0.0 > this loop's own initial -1.0, so its first
+        // iteration always sets $bestKey - there is no code path where it stays unset.
         $bestKey = $keys[0];
-        $bestCtr = -1.0;
+        $bestScore = -1.0;
         foreach ($keys as $key) {
             $sent = $stats[$key]['sent'] ?? 0;
             if ($sent < $minSampleSize) {
@@ -104,9 +118,13 @@ class SplitWinnerCalculator
                 return false;
             }
 
-            $ctr = $sent > 0 ? ($stats[$key]['clicked'] ?? 0) / $sent : 0.0;
-            if ($ctr > $bestCtr) {
-                $bestCtr = $ctr;
+            $score = match ($metric) {
+                AbTestDecisionMetric::CONVERSION_RATE => $stats[$key]['conversion_rate'] ?? 0.0,
+                AbTestDecisionMetric::REVENUE => $stats[$key]['revenue'] ?? 0.0,
+                default => $sent > 0 ? ($stats[$key]['clicked'] ?? 0) / $sent : 0.0,
+            };
+            if ($score > $bestScore) {
+                $bestScore = $score;
                 $bestKey = $key;
             }
         }
@@ -172,6 +190,38 @@ class SplitWinnerCalculator
             $stats[$key] = [
                 'sent' => (int) ($sentRows[$key] ?? 0),
                 'clicked' => (int) ($clickedRows[$key] ?? 0),
+            ];
+        }
+
+        return $stats;
+    }
+
+    /**
+     * Same {variant key => stats} shape as fetchStats(), but sourced from
+     * CampaignOutcomeLogger::getStats() (sent/converted/conversion_rate/revenue, already grouped
+     * by campaign_id+variant) for the conversion-rate/revenue metrics - a deliberately separate
+     * "sent" count from fetchStats()'s own (ordo_campaign_outcome_log vs. ordo_message_log), so
+     * the minimum-sample-size gate always matches whichever table the chosen metric actually
+     * reads from.
+     *
+     * @param string[] $variantKeys
+     * @return array<string, array{sent: int, conversion_rate: float, revenue: float}>
+     */
+    private function fetchOutcomeStats(int $campaignId, array $variantKeys): array
+    {
+        $byVariant = [];
+        foreach ($this->campaignOutcomeLogger->getStats($campaignId) as $row) {
+            if ($row['variant'] !== null) {
+                $byVariant[$row['variant']] = $row;
+            }
+        }
+
+        $stats = [];
+        foreach ($variantKeys as $key) {
+            $stats[$key] = [
+                'sent' => $byVariant[$key]['sent'] ?? 0,
+                'conversion_rate' => $byVariant[$key]['conversion_rate'] ?? 0.0,
+                'revenue' => $byVariant[$key]['revenue'] ?? 0.0,
             ];
         }
 

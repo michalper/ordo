@@ -1238,3 +1238,8 @@
 "Projected CLV","Napovedana CLV"
 "Churn risk ratio","Razmerje tveganja za odhod"
 "Not enough order history","Premalo zgodovine naročil"
+"Decide the winner by","Zmagovalca določi glede na"
+"Click-through rate reads opens/clicks (ordo_message_log_event) - conversion rate/revenue read whether the customer actually placed an order afterward (the same data the campaign funnel report already shows). Defaults to click-through rate, the original behavior.","Razmerje prekliknjenja bere odprtja/klike (ordo_message_log_event) - razmerje konverzij/prihodki berejo, ali je stranka pozneje dejansko oddala naročilo (ista podatka, ki ju že prikazuje poročilo o lijaku kampanje). Privzeto razmerje prekliknjenja, prvotno vedenje."
+"Click-through rate","Razmerje prekliknjenja"
+"Conversion rate","Razmerje konverzij"
+"How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the ""better"" result is just noise.","Koliko resničnih pošiljanj potrebuje posamezna različica, preden se zmagovalec sploh upošteva - izogiba se razglasitvi zmagovalca pri peščici pošiljanj, kjer je ""boljši"" rezultat le šum."

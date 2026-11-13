@@ -1238,3 +1238,8 @@
 "Projected CLV","预测 CLV"
 "Churn risk ratio","流失风险比率"
 "Not enough order history","订单历史记录不足"
+"Decide the winner by","按以下指标决定获胜者"
+"Click-through rate reads opens/clicks (ordo_message_log_event) - conversion rate/revenue read whether the customer actually placed an order afterward (the same data the campaign funnel report already shows). Defaults to click-through rate, the original behavior.","点击率读取打开/点击数据（ordo_message_log_event）——转化率/收入则读取客户之后是否真的下单（与营销活动漏斗报告已显示的数据相同）。默认使用点击率，即原始行为。"
+"Click-through rate","点击率"
+"Conversion rate","转化率"
+"How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the ""better"" result is just noise.","每个变体在被纳入获胜者评估之前所需的真实发送次数 —— 避免仅凭少量发送就宣布获胜者，而“更优”的结果其实只是噪声。"

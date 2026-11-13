@@ -1238,3 +1238,8 @@
 "Projected CLV","예상 CLV"
 "Churn risk ratio","이탈 위험 비율"
 "Not enough order history","주문 이력이 충분하지 않음"
+"Decide the winner by","다음 기준으로 승자 결정"
+"Click-through rate reads opens/clicks (ordo_message_log_event) - conversion rate/revenue read whether the customer actually placed an order afterward (the same data the campaign funnel report already shows). Defaults to click-through rate, the original behavior.","클릭률은 열람/클릭(ordo_message_log_event)을 읽습니다 - 전환율/매출은 고객이 이후 실제로 주문했는지를 읽습니다(캠페인 퍼널 리포트가 이미 보여주는 것과 동일한 데이터). 기본값은 클릭률이며, 원래 동작입니다."
+"Click-through rate","클릭률"
+"Conversion rate","전환율"
+"How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the ""better"" result is just noise.","승자를 고려하기 전에 각 변형에 필요한 실제 전송 수는 몇 개입니까? ""더 나은"" 결과가 잡음일 뿐인 소수의 전송에서 승자를 선언하는 것을 방지합니다."

@@ -1238,3 +1238,8 @@
 "Projected CLV","CLV proiectat"
 "Churn risk ratio","Rată de risc de abandon"
 "Not enough order history","Istoric de comenzi insuficient"
+"Decide the winner by","Decide câștigătorul după"
+"Click-through rate reads opens/clicks (ordo_message_log_event) - conversion rate/revenue read whether the customer actually placed an order afterward (the same data the campaign funnel report already shows). Defaults to click-through rate, the original behavior.","Rata de clic citește deschiderile/clicurile (ordo_message_log_event) - rata de conversie/veniturile citesc dacă clientul a plasat efectiv o comandă ulterior (aceleași date pe care raportul de funnel al campaniei le arată deja). Implicit rata de clic, comportamentul original."
+"Click-through rate","Rata de clic"
+"Conversion rate","Rata de conversie"
+"How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the ""better"" result is just noise.","De câte trimiteri reale are nevoie fiecare variantă înainte ca un câștigător să fie luat în considerare - evită declararea unui câștigător dintr-o mână de trimiteri în care rezultatul „mai bun"" este doar zgomot."

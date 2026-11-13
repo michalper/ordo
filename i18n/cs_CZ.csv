@@ -1238,3 +1238,8 @@
 "Projected CLV","Odhadovaná CLV"
 "Churn risk ratio","Míra rizika odchodu"
 "Not enough order history","Nedostatečná historie objednávek"
+"Decide the winner by","Vítěze urči podle"
+"Click-through rate reads opens/clicks (ordo_message_log_event) - conversion rate/revenue read whether the customer actually placed an order afterward (the same data the campaign funnel report already shows). Defaults to click-through rate, the original behavior.","Míra prokliku čte otevření/kliknutí (ordo_message_log_event) - míra konverze/tržby čtou, zda si klient následně skutečně objednal (stejná data, která už zobrazuje report trychtýře kampaně). Výchozí je míra prokliku, původní chování."
+"Click-through rate","Míra prokliku"
+"Conversion rate","Míra konverze"
+"How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the ""better"" result is just noise.","Kolik skutečných odeslání potřebuje každá varianta, než se vůbec uvažuje o vítězi - zabraňuje vyhlášení vítěze na základě hrstky odeslání, kde je „lepší"" výsledek jen šum."
