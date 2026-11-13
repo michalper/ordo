@@ -323,6 +323,59 @@ class CampaignSaveProcessorTest extends TestCase
         ]);
     }
 
+    /**
+     * exit_conditions is a single JSON blob directly on the campaign row (no dedicated per-type
+     * fields, no ParamFieldsNormalizer involvement - see Model\Campaign\ExitConditionSpecs) -
+     * process() re-encodes it into its canonical form rather than storing the admin's raw input
+     * verbatim, dropping the malformed second entry.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessSanitizesExitConditionsJsonBeforeSaving(): void
+    {
+        $processor = $this->makeProcessor();
+
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(7);
+        $campaign->expects(self::once())->method('setExitConditions')->with(
+            json_encode([['type' => 'has_converted', 'params' => ['within_days' => 7]]])
+        );
+        $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
+        $this->conditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+        $this->actionCollectionFactory->method('create')->willReturn($this->emptyActionCollection());
+
+        $processor->process([
+            'entity_id' => 0,
+            'name' => 'Welcome',
+            'exit_conditions' => json_encode([
+                ['type' => 'has_converted', 'params' => ['within_days' => 7]],
+                ['type' => ''],
+            ]),
+        ]);
+    }
+
+    /**
+     * Backward-compatible default: no exit_conditions posted at all (every save before this
+     * feature existed) must persist null, not an empty-but-truthy string.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testProcessPersistsNullExitConditionsWhenNonePosted(): void
+    {
+        $processor = $this->makeProcessor();
+
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(7);
+        $campaign->expects(self::once())->method('setExitConditions')->with(null);
+        $this->campaignFactory->method('create')->willReturn($campaign);
+
+        $this->triggerCollectionFactory->method('create')->willReturn($this->emptyTriggerCollection());
+        $this->conditionCollectionFactory->method('create')->willReturn($this->emptyConditionCollection());
+        $this->actionCollectionFactory->method('create')->willReturn($this->emptyActionCollection());
+
+        $processor->process(['entity_id' => 0, 'name' => 'Welcome']);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testProcessNormalizesScheduledAtTriggerParamsLikeAConditionOrAction(): void
     {
