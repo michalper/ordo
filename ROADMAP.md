@@ -723,20 +723,17 @@ no-auto-charge constraint.
   (or registration IP, captured the same way `Controller\Track\Event` already captures visitor identity)
   against the referrer's own would catch the common self-referral-via-second-account case without any
   new infrastructure.
-- **A delayed campaign action chain fires its later steps even after the customer already converted.**
-  Checked `CampaignDispatcher::resumeScheduledAction()` directly: once a `delay_minutes` step's wait
-  elapses, the next action in the chain runs unconditionally — the method's own docblock says so
-  explicitly ("must run unconditionally this time"), and the only check beyond that is whether the
-  campaign itself is still enabled. This is fine for the built-in crons (`SendAbandonedCartReminders`
-  re-checks "not converted to an order" fresh on every run, cron-driven rather than chain-driven), but a
-  custom Flow-canvas campaign built on `cart_abandoned`/`customer_inactive` plus a multi-step
-  `delay_minutes` drip has no equivalent: a customer who places the order between step 1 and step 2
-  still gets every later step — the same "goal already met, stop the sequence" gap established
-  journey-builder tools close with an explicit per-campaign goal/exit condition. Closing it would need a
-  new optional "exit if" condition set, re-evaluated at each resume (reusing the same
-  condition-evaluation path `CampaignDispatcher` already has for the initial dispatch), not a new engine.
+- ~~**A delayed campaign action chain fires its later steps even after the customer already
+  converted.**~~ — done, see `docs/adr/0055-campaign-chain-exit-condition.md`. A campaign now has an
+  optional `exit_conditions` JSON column (AND-joined, same `{type, params}` shape as an entry
+  condition), re-checked by `CampaignDispatcher::resumeScheduledAction()` on every resume — first
+  delayed step or a later one, since that method is the single resume entry point for all of them —
+  and if satisfied, the rest of the chain is skipped instead of run unconditionally. Zero exit
+  conditions configured (every pre-existing campaign) behaves exactly as before. v1 admin surface is
+  a single JSON textarea on the classic campaign form, not a Flow-canvas node — an honestly-documented
+  gap, see the ADR's Consequences.
 - ~~**No holdout group — every campaign send is measured against itself, never against a true no-send
-  control.**~~ — shipped, see `docs/adr/0055-split-test-holdout-group.md`. New admin-configurable
+  control.**~~ — shipped, see `docs/adr/0057-split-test-holdout-group.md`. New admin-configurable
   `ordo_campaign.holdout_percent` (0-100, default off), checked once in
   `CampaignDispatcher::runCampaign()` right after conditions pass and before any action runs (not
   per-action like `QuietHoursGate`/`FrequencyCapGate` — the roadmap bullet's own framing on that point

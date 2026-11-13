@@ -19,6 +19,13 @@ Directory/class map for anyone working on the code. Not shipped documentation fo
 - `SendOfferExpiryReminders.php`, `ExpireOverdueOffers.php`
 - `SendCreditLimitAlerts.php`
 - `TagInactiveCustomers.php`, `SendWinBackEmails.php`
+- `TagReorderCycleAtRiskCustomers.php`, `TagChurnRiskCustomers.php` — nightly "classify, don't send"
+  passes feeding `SendSalesRepDigest.php`'s per-signal grouping
+- `TagLoyaltyMilestones.php`, `ExpireLoyaltyPoints.php`
+- `SendStalledPaymentReminders.php`
+- `DispatchCustomerAnniversaryCampaigns.php` — birthday/signup-anniversary trigger
+- `DetectAnomalies.php` — per-campaign revenue-drop/conversion-outlier alerts
+- `AutoPickCampaignSplitWinner.php`
 - `EscalateStalePendingApprovals.php`
 - `SendSalesRepDigest.php`
 - `RecomputeRfmScores.php`, `SyncAdAudiences.php`
@@ -103,13 +110,45 @@ Directory/class map for anyone working on the code. Not shipped documentation fo
 
 - `Model/AdAudience.php`, `Api/AdAudience/SyncClientInterface.php` — audience definitions synced to
   an external ad platform
-- `Model/AdAudience/GoogleAdsSyncClient.php`, `Model/AdAudience/MetaSyncClient.php` — one client per
-  platform, registered in `Model/AdAudience/SyncClientPool.php`
+- `Model/AdAudience/GoogleAdsSyncClient.php`, `Model/AdAudience/MetaSyncClient.php`,
+  `Model/AdAudience/TikTokSyncClient.php` — one client per platform, registered in
+  `Model/AdAudience/SyncClientPool.php`
 - `Model/AdAudience/PiiHasher.php` — hashes customer PII (email/phone) before it ever leaves this
   module, per each platform's Customer Match / Custom Audience upload format
 - `Model/AdAudience/GoogleOAuthTokenProvider.php` — OAuth token exchange/refresh for Google Ads
 - `Cron/SyncAdAudiences.php` — periodic sync driving the clients above
 - `Controller/Adminhtml/AdAudience/` — admin CRUD
+- `Model/Campaign/Action/SendGa4Event.php`, `Model/Campaign/Action/SendMetaConversionEvent.php` —
+  server-side conversion reporting (GA4 Measurement Protocol / Meta Conversions API), independent
+  of the audience-sync accounts above
+
+## Automated anomaly alerts
+
+- `Model/Anomaly/AnomalyAlert.php`, `Cron/DetectAnomalies.php` — daily per-campaign revenue-drop
+  (vs. its own trailing baseline) and conversion-rate-outlier (vs. its peers) detection, gated by a
+  minimum sample size and deduplicated via `Model/Cron/ReminderLogStore`'s cooldown pattern
+- `Controller/Adminhtml/AnomalyAlert/Index.php` — read-only admin grid
+
+## Loyalty, milestones & referrals
+
+- `Model/LoyaltyPointsManager.php`, `Model/LoyaltyPointsManagement.php`,
+  `Api/LoyaltyPointsManagementInterface.php` — ongoing earn/redeem points balance, distinct from
+  the order-count/spend-based `Model/LoyaltyTierCalculator.php`
+- `Observer/EarnLoyaltyPointsForOrder.php`, `Cron/ExpireLoyaltyPoints.php`
+- `Model/GraphQl/Resolver/LoyaltyPointsBalance.php`, `Model/GraphQl/Resolver/RedeemLoyaltyPoints.php`
+- `Cron/TagLoyaltyMilestones.php` — tags a customer at a fixed order-count milestone or loyalty
+  tier reached, feeding the existing tag-based trigger (no new trigger type)
+- `Model/ReferralManager.php` — `referral_converted` (referrer, on purchase) and
+  `referral_signed_up` (referred customer, on signup) triggers
+
+## Churn-risk signal
+
+- `Model/ChurnRisk/ChurnRiskCalculator.php` — a customer-level "elapsed days since last order ÷
+  own median order interval" ratio, generalizing `Model/ReorderCycle/ReorderCycleDriftCalculator`'s
+  self-relative signal to every customer with ≥2 orders (not just one with an already-detected,
+  SKU-specific reorder cycle)
+- `Model/Campaign/Condition/ChurnRiskAtLeast.php` — the segment/campaign condition backed by it
+- `Cron/TagChurnRiskCustomers.php` — see "Cron jobs" above
 
 ## WhatsApp & Web Push
 
@@ -127,6 +166,14 @@ Directory/class map for anyone working on the code. Not shipped documentation fo
   (SSRF guard on the customer-supplied push endpoint), enforced at registration and again before
   every send
 - `Controller/Adminhtml/WhatsAppTemplate/` — admin CRUD + approval lifecycle actions
+- `Controller/WhatsApp/Webhook.php` also writes a `MessageLogEvent::TYPE_READ` row for Meta's "seen"
+  receipt, making `message_engaged` usable for WhatsApp sends
+
+## RCS messaging
+
+- `Model/Rcs/RcsSenderInterface.php`, `Model/Rcs/TwilioRcsSender.php` — the `send_rcs` campaign
+  action, reusing SMS's own Twilio Account SID / API Key and all of `SendSms`'s channel-agnostic
+  consent/quiet-hours/frequency-cap plumbing
 
 ## Price-drop & back-in-stock alerts
 
@@ -152,8 +199,13 @@ Directory/class map for anyone working on the code. Not shipped documentation fo
 - `Model/Gdpr/CustomerDataExporter.php`, `Model/Gdpr/CustomerDataEraser.php` — per-customer data
   export/erasure across this module's own tables
 - `Model/Gdpr/ConsentStates.php`, `Model/CustomerConsent.php`, `Model/ConsentManager.php`,
-  `Model/ConsentChannel.php` — per-channel (email/SMS/WhatsApp/push) consent tracking
+  `Model/ConsentChannel.php` — per-channel (email/SMS/WhatsApp/push/RCS) consent tracking, plus a
+  second, additive per-topic register (`Model/ConsentTopic.php`, promotional/account-updates)
 - `Controller/Adminhtml/Gdpr/` — admin export/erase/set-consent actions
+- `Api/ConsentPreferencesManagementInterface.php` — the one service every self-service transport
+  calls: `GET/PUT /V1/ordo/consent-preferences/mine*` REST, `ordoConsentPreferences`/
+  `setOrdoConsent`/`setOrdoConsentTopic` GraphQL, and `Controller/Consent/*` (a storefront
+  "Communication Preferences" account page) — see ADR 0054
 
 ## Dashboard
 
@@ -204,7 +256,13 @@ Directory/class map for anyone working on the code. Not shipped documentation fo
 - `Controller/Track/Event.php` — public, CSRF-exempt tracking endpoint
 - `Model/VisitorEventLogger.php` — writes `ordo_visitor_event`, triggers aggregation when identity is known
 - `Model/VisitorAggregator.php` — raw events → `ordo_customer_tag` threshold-crossing tags
-- `view/frontend/web/js/tracker.js` — dependency-free visitor cookie + event snippet
+- `view/frontend/web/js/tracker.js` — dependency-free visitor cookie + event snippet; also mirrors
+  events onto `window.dataLayer` (GTM bridge) and fires an `exit_intent` trigger on a `mouseout`-
+  based listener, both opt-in
+- `Controller/Track/LowStock.php`, `Controller/Track/SocialProof.php` — `window.ordoRenderLowStock()`/
+  `window.ordoRenderSocialProof()` PDP theme integration points
+- `Controller/Track/EmailCapture.php` — newsletter signup popup for anonymous visitors, subscribes
+  through Magento's own `Subscriber` and tags the visitor (`newsletter_signup`)
 
 ## SMS & delivery tracking
 
@@ -218,4 +276,4 @@ Directory/class map for anyone working on the code. Not shipped documentation fo
 - `Test/Unit/` — PHPUnit tests
 - `Test/Mftf/` — full-stack acceptance tests (see `Test/Mftf/SCENARIOS.md`, `Test/Mftf/README.md`)
 - `Test/Api/` — REST endpoint tests against a live instance (see `Test/Api/README.md`)
-- `i18n/` — translation CSVs (`en_US`, `pl_PL`, + 10 machine-translated locales)
+- `i18n/` — translation CSVs (`en_US`, `pl_PL` native-reviewed, + 18 machine-translated locales)

@@ -68,4 +68,23 @@ class Campaign extends AbstractNamedToggleableEntityModel implements CampaignInt
         $this->setData('holdout_percent', max(0, min(100, $percent)));
         return $this;
     }
+
+    /**
+     * JSON-encoded array of {type, params} specs (see Campaign\ExitConditionSpecs) — null when
+     * none are configured, the backward-compatible default every campaign predating this
+     * feature already satisfies. Same "plain model accessor, not CampaignInterface/REST" reasoning
+     * as getConditionLogic() above — there's no dedicated admin UI for this yet beyond a raw JSON
+     * textarea (see ordo_campaign_form.xml), so it isn't a stable field to commit to in the API.
+     */
+    public function getExitConditions(): ?string
+    {
+        $value = $this->getData('exit_conditions');
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    public function setExitConditions(?string $exitConditions): self
+    {
+        $this->setData('exit_conditions', $exitConditions);
+        return $this;
+    }
 }

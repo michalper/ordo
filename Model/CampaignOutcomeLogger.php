@@ -61,7 +61,7 @@ class CampaignOutcomeLogger
     /**
      * The holdout counterpart of logSent() — CampaignDispatcher::runCampaign() calls this instead
      * of ever running an action, once a customer lands in a campaign's deliberate no-send holdout
-     * group (Model\Campaign\HoldoutSelector, docs/adr/0055). variant is always null here: a
+     * group (Model\Campaign\HoldoutSelector, docs/adr/0057). variant is always null here: a
      * held-out customer was never routed into any split action's variant, there's nothing to
      * attribute. The same catch-up/markActed() machinery logSent() uses still applies afterward -
      * a held-out customer's own later order still needs to count toward this group's organic
@@ -150,7 +150,7 @@ class CampaignOutcomeLogger
      * across every campaign instead, one row per campaign_id+variant pair.
      *
      * Excludes is_holdout rows — a deliberately-held-out customer (Model\Campaign\HoldoutSelector,
-     * docs/adr/0055) was never actually sent anything, so counting their row here would skew
+     * docs/adr/0057) was never actually sent anything, so counting their row here would skew
      * "sent"/"conversion_rate" for every existing caller of this method (the campaign funnel
      * report, SplitWinnerCalculator's auto-winner decision). getHoldoutStats() below is the
      * deliberate counterpart that reads is_holdout rows exclusively.
@@ -292,7 +292,7 @@ class CampaignOutcomeLogger
      * a holdout's conversion_rate against a sent variant's in the same loop without realizing
      * they come from disjoint customer groups answering different questions.
      *
-     * No new admin grid for this - see docs/adr/0055 for why this data-only, no-UI scope was
+     * No new admin grid for this - see docs/adr/0057 for why this data-only, no-UI scope was
      * chosen for v1. A future caller (e.g. the campaign funnel report) can read this directly.
      *
      * @return array<int, array{

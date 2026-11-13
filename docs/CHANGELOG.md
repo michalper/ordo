@@ -16,7 +16,13 @@ it doesn't update itself from this file.
   action, logging them into `ordo_campaign_outcome_log` with a new `is_holdout` flag
   (`Model\Campaign\HoldoutSelector`, `CampaignOutcomeLogger::logHeldOut()`/`getHoldoutStats()`) so
   their organic conversion rate can be compared against the sent group's — true incremental-lift
-  measurement, not just split-variant comparison. See ADR 0055.
+  measurement, not just split-variant comparison. See ADR 0057.
+- **Campaign chain exit condition** — a campaign can now set an optional `exit_conditions` JSON
+  field (AND-joined, same `{type, params}` shape as an entry condition) that
+  `CampaignDispatcher::resumeScheduledAction()` re-checks on every delayed-step resume; if
+  satisfied, the rest of a `delay_minutes` drip is skipped instead of running unconditionally
+  regardless of whether the customer already converted. Every pre-existing campaign (no exit
+  conditions configured) is unaffected. See ADR 0055.
 - **Storefront consent preference center** — a logged-in customer can now see and change their own
   channel (email/SMS/push/WhatsApp/RCS) and topic (promotional/account-updates) consent from REST
   (`GET/PUT /V1/ordo/consent-preferences/mine*`), GraphQL (`ordoConsentPreferences`/

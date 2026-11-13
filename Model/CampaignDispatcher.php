@@ -8,6 +8,7 @@ use Magento\Framework\App\CacheInterface;
 use Magento\Framework\Serialize\SerializerInterface;
 use Ordo\Automation\Model\Campaign\ActionPool;
 use Ordo\Automation\Model\Campaign\CampaignEntryGuard;
+use Ordo\Automation\Model\Campaign\ExitConditionSpecs;
 use Ordo\Automation\Model\Campaign\HoldoutSelector;
 use Ordo\Automation\Model\Campaign\SplitVariantSelector;
 use Ordo\Automation\Model\Condition\ConditionGroupEvaluator;
@@ -47,6 +48,12 @@ use Psr\Log\LoggerInterface;
  * match a trigger: the "which campaigns are enabled for this trigger event" lookup is cached
  * (see campaignIdsForTrigger()), and conditions/actions for ALL matched campaigns are loaded in
  * one query each (addCampaignIdsFilter) rather than one query per campaign.
+ *
+ * A campaign's optional exit conditions (Campaign::getExitConditions(), see ExitConditionSpecs)
+ * are re-checked on every resumeScheduledAction() call, not just dispatch()/runCampaign()'s
+ * initial entry conditions - a multi-step delay_minutes chain otherwise has no way to notice the
+ * customer already reached the campaign's goal (placed the order, etc.) between two delayed
+ * steps and keeps running every remaining action regardless.
  */
 class CampaignDispatcher
 {
@@ -218,7 +225,7 @@ class CampaignDispatcher
      * and so a loader failure lands in the caller's own per-campaign error boundary, keeping its
      * original log wording. dispatch() just hands over its already-batch-loaded slices.
      *
-     * Holdout check (docs/adr/0055) sits right here — after conditionsSatisfied() returns true,
+     * Holdout check (docs/adr/0057) sits right here — after conditionsSatisfied() returns true,
      * before runActionsFrom() ever runs — so a held-out customer is logged once, for this whole
      * campaign run, instead of per-action the way QuietHoursGate/FrequencyCapGate gate each
      * Send* action individually. $holdoutPercent <= 0 (the default - no campaign is held out
@@ -460,7 +467,7 @@ class CampaignDispatcher
      *
      * @param array<string, mixed> $context
      * @param array{
-     *     enabled?: array<int, bool>,
+     *     campaign?: array<int, Campaign|false>,
      *     plan?: array<string, array{actions: array<int, CampaignAction>, start: int}|null>
      * } $lookupMemo
      */
@@ -470,8 +477,9 @@ class CampaignDispatcher
         array $context,
         array &$lookupMemo = []
     ): void {
-        $lookupMemo['enabled'][$campaignId] ??= $this->isCampaignEnabled($campaignId);
-        if (!$lookupMemo['enabled'][$campaignId]) {
+        $lookupMemo['campaign'][$campaignId] ??= $this->loadEnabledCampaignForResume($campaignId);
+        $campaign = $lookupMemo['campaign'][$campaignId];
+        if ($campaign === false) {
             return;
         }
 
@@ -487,6 +495,16 @@ class CampaignDispatcher
             return;
         }
 
+        if ($this->exitConditionMet($campaign, $context)) {
+            // The campaign's own "stop the sequence early" condition set (if any) is re-evaluated
+            // on every resume — first delayed step or a later one, resumeScheduledAction() is the
+            // single resume entry point for all of them — so a customer who already converted
+            // between steps (e.g. placed the order a delayed abandoned-cart drip was chasing)
+            // never gets the remaining steps, instead of running them unconditionally the way the
+            // method's own history (see its docblock above) used to.
+            return;
+        }
+
         // The action at the plan's start index is the one that WAS delayed — its wait is exactly
         // what just elapsed to get here, so it must run unconditionally this time, not be
         // re-scheduled again for another delay_minutes just because that column is still > 0 on
@@ -496,20 +514,49 @@ class CampaignDispatcher
         $this->runActionsFrom($campaignId, $plan['actions'], $plan['start'] + 1, $context);
     }
 
-    private function isCampaignEnabled(int $campaignId): bool
+    /**
+     * Reported directly: disabling a campaign is documented as pausing it ("disable to pause it
+     * without deleting it" - README/CLAUDE.md), but a customer already parked mid-chain on a
+     * delay_minutes step would still get every remaining action run once the resume cron reached
+     * them, since (unlike dispatch()/dispatchScheduledTrigger() above) nothing here re-checked
+     * the campaign was still enabled. Same "not found" shape as the resume-row guard in
+     * loadResumePlan() - existing but disabled isn't an error, just nothing to resume into.
+     *
+     * Returns the loaded campaign model itself, not just a bool, so resumeScheduledAction() can
+     * read its exit_conditions column off the one row this already fetches, rather than a
+     * second per-campaign query just for that.
+     */
+    private function loadEnabledCampaignForResume(int $campaignId): Campaign|false
     {
-        // Reported directly: disabling a campaign is documented as pausing it ("disable to pause
-        // it without deleting it" - README/CLAUDE.md), but a customer already parked mid-chain on
-        // a delay_minutes step would still get every remaining action run once the resume cron
-        // reached them, since (unlike dispatch()/dispatchScheduledTrigger() above) nothing here
-        // re-checked the campaign was still enabled. Same "not found" shape as the resume-row
-        // guard in loadResumePlan() - existing but disabled isn't an error, just nothing to
-        // resume into.
         $campaigns = $this->campaignCollectionFactory->create();
         $campaigns->addIdsFilter([$campaignId]);
         $campaigns->addEnabledFilter();
 
-        return (bool) $campaigns->getFirstItem()->getId();
+        $campaign = $campaigns->getFirstItem();
+
+        return $campaign instanceof Campaign && $campaign->getId() ? $campaign : false;
+    }
+
+    /**
+     * The opposite polarity from conditionsSatisfied(): zero exit conditions configured means
+     * "never exits" (the backward-compatible default - every campaign predating this feature
+     * behaves exactly as before), not "always exits" - so this deliberately does NOT reuse
+     * conditionsSatisfied()'s own "zero conditions = true" short-circuit, which exists for the
+     * opposite ("must be true to proceed") caller. Always AND-joined regardless of the
+     * campaign's own entry condition_logic - see docs/adr/0055-campaign-chain-exit-condition.md
+     * for why a per-exit-set logic toggle wasn't worth it for v1.
+     *
+     * @param array<string, mixed> $context
+     */
+    private function exitConditionMet(Campaign $campaign, array $context): bool
+    {
+        $rawExitConditions = $campaign->getData('exit_conditions');
+        $specs = ExitConditionSpecs::decode(is_string($rawExitConditions) ? $rawExitConditions : null);
+        if ($specs === []) {
+            return false;
+        }
+
+        return $this->conditionGroupEvaluator->evaluate($specs, 'all', $context, 'campaign exit condition');
     }
 
     /**

@@ -5,7 +5,7 @@ namespace Ordo\Automation\Model\Campaign;
 
 /**
  * Decides whether a given customer belongs to a campaign's deliberate no-send holdout group —
- * closes the ROADMAP.md "no holdout group" gap (docs/adr/0055). Deterministic per
+ * closes the ROADMAP.md "no holdout group" gap (docs/adr/0057). Deterministic per
  * (campaign, customer), the same crc32-bucket technique SplitVariantSelector already uses to
  * keep a customer on the same side of a split across repeat dispatches: hashing in a
  * 'holdout:<campaign>:<customer>' string keeps this class's own bucket space independent of

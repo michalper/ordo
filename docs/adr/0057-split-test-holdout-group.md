@@ -1,4 +1,4 @@
-# ADR 0055: Campaign holdout group for incremental-lift measurement
+# ADR 0057: Campaign holdout group for incremental-lift measurement
 
 ## Status
 

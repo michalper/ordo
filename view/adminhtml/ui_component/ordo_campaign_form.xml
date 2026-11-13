@@ -94,7 +94,7 @@
             </formElements>
         </field>
         <!-- 0/blank (the default) means holdout is off - see Model\Campaign::getHoldoutPercent()
-             and docs/adr/0055. Not "validate-range" - see the "percentile" field's own comment
+             and docs/adr/0057. Not "validate-range" - see the "percentile" field's own comment
              above in this file for why that Magento core rule silently fails every value;
              out-of-range input is clamped server-side in CampaignSaveProcessor instead. -->
         <field name="holdout_percent" formElement="input" sortOrder="45">
@@ -111,6 +111,32 @@
                     <rule name="validate-digits" xsi:type="boolean">true</rule>
                 </validation>
             </settings>
+        </field>
+        <!-- v1, no dedicated per-type fields yet (unlike conditions_fieldset below) - a raw JSON
+             textarea, same {type, params} shape as a campaign condition - see
+             Model\Campaign\ExitConditionSpecs / docs/adr/0055-campaign-chain-exit-condition.md.
+             dataScope matches the column name directly (not nested like conditions/actions)
+             since this is one plain JSON blob on ordo_campaign, not a dynamicRows child-row
+             collection. -->
+        <field name="exit_conditions" formElement="textarea" sortOrder="46">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Exit Conditions (JSON, advanced)</label>
+                <dataScope>exit_conditions</dataScope>
+                <notice translate="true">
+                    Optional. A JSON array of {"type": "...", "params": {...}} objects (same shape
+                    as a condition). Checked every time a delayed action chain resumes; if ALL are
+                    true, the rest of the chain is skipped instead of run. Leave empty to disable
+                    (default - matches every existing campaign's behavior).
+                </notice>
+            </settings>
+            <formElements>
+                <textarea>
+                    <settings>
+                        <rows>4</rows>
+                    </settings>
+                </textarea>
+            </formElements>
         </field>
     </fieldset>
 
