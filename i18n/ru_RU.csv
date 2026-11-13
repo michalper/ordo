@@ -1252,3 +1252,8 @@
 "Disallowed - click to allow","Запрещено - нажмите, чтобы разрешить"
 "Whether your (hashed) email may be shared with ad platforms for audience targeting - this never affects which messages we send you.","Может ли ваш (хешированный) email передаваться рекламным платформам для таргетинга аудитории - это никогда не влияет на то, какие сообщения мы вам отправляем."
 "Your preferences have been saved.","Ваши настройки сохранены."
+"Decide the winner by","Определять победителя по"
+"Click-through rate reads opens/clicks (ordo_message_log_event) - conversion rate/revenue read whether the customer actually placed an order afterward (the same data the campaign funnel report already shows). Defaults to click-through rate, the original behavior.","Коэффициент переходов учитывает открытия/клики (ordo_message_log_event) - коэффициент конверсии/доход учитывают, действительно ли клиент оформил заказ после этого (те же данные, которые уже показывает отчёт по воронке кампании). По умолчанию коэффициент переходов, исходное поведение."
+"Click-through rate","Коэффициент переходов"
+"Conversion rate","Коэффициент конверсии"
+"How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the ""better"" result is just noise.","Сколько реальных отправок нужно каждому варианту, прежде чем вообще рассматривается выбор победителя — это предотвращает объявление победителя на основании горстки отправок, где «лучший» результат — просто шум."

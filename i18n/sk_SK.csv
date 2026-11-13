@@ -1252,3 +1252,8 @@
 "Disallowed - click to allow","Zakázané - kliknutím povolíte"
 "Whether your (hashed) email may be shared with ad platforms for audience targeting - this never affects which messages we send you.","Či môže byť váš (hashovaný) e-mail zdieľaný s reklamnými platformami na cielenie publika - nikdy to neovplyvní, aké správy vám posielame."
 "Your preferences have been saved.","Vaše predvoľby boli uložené."
+"Decide the winner by","Rozhodnúť o víťazovi podľa"
+"Click-through rate reads opens/clicks (ordo_message_log_event) - conversion rate/revenue read whether the customer actually placed an order afterward (the same data the campaign funnel report already shows). Defaults to click-through rate, the original behavior.","Miera prekliknutia čerpá z otvorení/kliknutí (ordo_message_log_event) - miera konverzie/tržby čerpajú z toho, či klient následne skutočne zadal objednávku (rovnaké údaje, aké už zobrazuje report lievika kampane). Predvolene miera prekliknutia, pôvodné chovanie."
+"Click-through rate","Miera prekliknutia"
+"Conversion rate","Miera konverzie"
+"How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the ""better"" result is just noise.","Koľko skutočných odoslaní potrebuje každý variant, kým sa vôbec zvažuje víťaz – vyhne sa vyhláseniu víťaza z niekoľkých odoslaní, pri ktorých je „lepší"" výsledok iba šum."

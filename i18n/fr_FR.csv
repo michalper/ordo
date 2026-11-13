@@ -1252,3 +1252,8 @@
 "Disallowed - click to allow","Interdit - cliquez pour autoriser"
 "Whether your (hashed) email may be shared with ad platforms for audience targeting - this never affects which messages we send you.","Indique si votre e-mail (haché) peut être partagé avec des plateformes publicitaires pour le ciblage d'audience - cela n'affecte jamais les messages que nous vous envoyons."
 "Your preferences have been saved.","Vos préférences ont été enregistrées."
+"Decide the winner by","Décider du gagnant selon"
+"Click-through rate reads opens/clicks (ordo_message_log_event) - conversion rate/revenue read whether the customer actually placed an order afterward (the same data the campaign funnel report already shows). Defaults to click-through rate, the original behavior.","Le taux de clic lit les ouvertures/clics (ordo_message_log_event) - le taux de conversion/le chiffre d'affaires indiquent si le client a réellement passé une commande ensuite (les mêmes données déjà affichées dans le rapport d'entonnoir de campagne). Par défaut, taux de clic, le comportement d'origine."
+"Click-through rate","Taux de clic"
+"Conversion rate","Taux de conversion"
+"How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the ""better"" result is just noise.","Nombre d'envois réels requis pour chaque variante avant même d'envisager un gagnant - évite de déclarer un gagnant sur une poignée d'envois où le « meilleur » résultat n'est que du bruit statistique."

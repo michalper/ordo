@@ -656,6 +656,11 @@ column).
   `docs/adr/0051-whatsapp-read-receipt-tracking.md`. `Controller\WhatsApp\Webhook` now writes a
   `MessageLogEvent::TYPE_READ` row for Meta's "seen" receipt instead of silently dropping it,
   making `message_engaged` usable for WhatsApp sends with zero resolver changes.
+- ~~**Split-test winner is decided by click-through rate only, never by revenue.**~~ — shipped,
+  see `docs/adr/0053-split-winner-revenue-metric.md`. New `Model\Config\Source\
+  AbTestDecisionMetric` config choice (CTR/conversion rate/revenue, defaults to CTR) -
+  conversion rate/revenue read from the existing `CampaignOutcomeLogger::getStats()` data, not a
+  new ledger.
 
 **A fresh 2026-11-12 brainstorm round (third pass), checked against established marketing-automation,
 loyalty, and CDP platforms' own public feature pages before writing anything here.** Several raw
@@ -684,18 +689,11 @@ constraint, not re-litigated.
   underlying signal is already good enough to back a segment/campaign condition. Closing it is a
   new `Cron\TagChurnRiskCustomers` mirroring `TagReorderCycleAtRiskCustomers`'s exact add-then-
   clear-on-recovery shape, plus one more `groupCustomersByRep()` call in `SendSalesRepDigest`.
-- **Split-test winner is decided by click-through rate only, never by revenue.** Checked
-  `Model\Campaign\SplitWinnerCalculator::decideOne()` directly: it reads
-  `ordo_message_log_event`'s opened/clicked counts exclusively. But
-  `Model\CampaignOutcomeLogger::getStats($campaignId)` *already* returns sent/converted/
-  conversion_rate/**revenue grouped by variant** (joining `ordo_campaign_outcome_log` to
-  `sales_order.base_grand_total` via each row's own `order_id`) — data this module already
-  computes for the campaign-comparison report, just never read by the winner-decision logic. A
-  campaign with no clickable links at all (plain-text SMS/WhatsApp with no URL) can never
-  auto-decide a split today, even though it has real conversion/revenue data to decide on. Closing
-  it is an admin-configurable metric choice (CTR, the current default, vs. revenue/conversion rate
-  from the already-existing `getStats()` call) on the same `isAbTestAutoWinnerEnabled()` toggle,
-  not a new table or calculator.
+- ~~**Split-test winner is decided by click-through rate only, never by revenue.**~~ — shipped,
+  see `docs/adr/0053-split-winner-revenue-metric.md`. New `Model\Config\Source\
+  AbTestDecisionMetric` config choice (CTR/conversion rate/revenue, defaults to CTR) -
+  conversion rate/revenue read from the existing `CampaignOutcomeLogger::getStats()` data, not a
+  new ledger.
 - ~~**No storefront or headless self-service channel/topic preference center.**~~ — shipped, see
   `docs/adr/0054-storefront-consent-preferences.md`. `ConsentPreferencesManagementInterface` is
   the one service every transport calls: `GET/PUT /V1/ordo/consent-preferences/mine*` REST

@@ -1252,3 +1252,8 @@
 "Disallowed - click to allow","İzinsiz - izin vermek için tıklayın"
 "Whether your (hashed) email may be shared with ad platforms for audience targeting - this never affects which messages we send you.","(Hash'lenmiş) e-posta adresinizin hedef kitle belirleme amacıyla reklam platformlarıyla paylaşılıp paylaşılamayacağı - bu, size gönderdiğimiz mesajları asla etkilemez."
 "Your preferences have been saved.","Tercihleriniz kaydedildi."
+"Decide the winner by","Kazananı şuna göre belirle"
+"Click-through rate reads opens/clicks (ordo_message_log_event) - conversion rate/revenue read whether the customer actually placed an order afterward (the same data the campaign funnel report already shows). Defaults to click-through rate, the original behavior.","Tıklama oranı açılma/tıklamaları okur (ordo_message_log_event) - dönüşüm oranı/gelir, müşterinin daha sonra gerçekten sipariş verip vermediğini okur (kampanya hunisi raporunun zaten gösterdiği aynı veriler). Varsayılan olarak tıklama oranı, orijinal davranış."
+"Click-through rate","Tıklama oranı"
+"Conversion rate","Dönüşüm oranı"
+"How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the ""better"" result is just noise.","Kazanan dikkate alınmadan önce her bir varyantın kaç tane gerçek gönderime ihtiyaç duyduğu, ""daha iyi"" sonucun sadece gürültüden ibaret olduğu bir avuç gönderimin kazananını ilan etmekten kaçınır."

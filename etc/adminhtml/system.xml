@@ -399,8 +399,14 @@
                 </field>
                 <field id="min_sample_size" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Minimum sample size per variant</label>
-                    <comment>How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the "better" CTR is just noise.</comment>
+                    <comment>How many real sends each variant needs before a winner is even considered - avoids declaring a winner off a handful of sends where the "better" result is just noise.</comment>
                     <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="auto_winner_enabled">1</field></depends>
+                </field>
+                <field id="decision_metric" translate="label comment" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Decide the winner by</label>
+                    <source_model>Ordo\Automation\Model\Config\Source\AbTestDecisionMetric</source_model>
+                    <comment>Click-through rate reads opens/clicks (ordo_message_log_event) - conversion rate/revenue read whether the customer actually placed an order afterward (the same data the campaign funnel report already shows). Defaults to click-through rate, the original behavior.</comment>
                     <depends><field id="auto_winner_enabled">1</field></depends>
                 </field>
             </group>

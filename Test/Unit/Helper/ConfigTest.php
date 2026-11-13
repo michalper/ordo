@@ -7,6 +7,7 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Config\Source\AbandonedCartFallbackChannel;
+use Ordo\Automation\Model\Config\Source\AbTestDecisionMetric;
 use PHPUnit\Framework\TestCase;
 
 class ConfigTest extends TestCase
@@ -372,6 +373,7 @@ class ConfigTest extends TestCase
         self::assertSame(24, $this->config->getAbandonedCartFallbackDelayHours());
         self::assertSame(0, $this->config->getAbandonedCartFallbackWhatsAppTemplateId());
         self::assertSame(100, $this->config->getAbTestMinSampleSize());
+        self::assertSame(AbTestDecisionMetric::CTR, $this->config->getAbTestDecisionMetric());
         self::assertSame(60, $this->config->getAiAgentRateLimitPerMinute());
         self::assertSame(5, $this->config->getAiAgentEstimatedDeliveryDays());
         self::assertSame(30, $this->config->getCustomerInactiveRefireCooldownDays());
@@ -522,6 +524,13 @@ class ConfigTest extends TestCase
         $this->scopeConfig->method('getValue')->willReturn('0.9');
 
         self::assertSame(0.9, $this->config->getReorderAtRiskDriftRatio());
+    }
+
+    public function testGetAbTestDecisionMetricUsesConfiguredValue(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn(AbTestDecisionMetric::REVENUE);
+
+        self::assertSame(AbTestDecisionMetric::REVENUE, $this->config->getAbTestDecisionMetric());
     }
 
     public function testObscureFieldGettersDecryptTheirConfiguredValue(): void
