@@ -12,11 +12,13 @@ use Ordo\Automation\Api\Campaign\ConditionInterface;
 use Ordo\Automation\Model\Campaign\ActionPool;
 use Ordo\Automation\Model\Campaign\CampaignEntryGuard;
 use Ordo\Automation\Model\Campaign\ConditionPool;
+use Ordo\Automation\Model\Campaign\HoldoutSelector;
 use Ordo\Automation\Model\Campaign\SplitVariantSelector;
 use Ordo\Automation\Model\CampaignAction;
 use Ordo\Automation\Model\CampaignActionFactory;
 use Ordo\Automation\Model\CampaignCondition;
 use Ordo\Automation\Model\CampaignDispatcher;
+use Ordo\Automation\Model\CampaignOutcomeLogger;
 use Ordo\Automation\Model\CampaignScheduledAction;
 use Ordo\Automation\Model\CampaignScheduledActionFactory;
 use Ordo\Automation\Model\CampaignTrigger;
@@ -58,6 +60,8 @@ class CampaignDispatcherTest extends TestCase
     private WebsiteCollectionFactory $campaignWebsiteCollectionFactory;
     private CustomerRepositoryInterface $customerRepository;
     private CustomerStoreResolver $customerStoreResolver;
+    private HoldoutSelector&\PHPUnit\Framework\MockObject\MockObject $holdoutSelector;
+    private CampaignOutcomeLogger&\PHPUnit\Framework\MockObject\MockObject $campaignOutcomeLogger;
 
     protected function setUp(): void
     {
@@ -83,6 +87,13 @@ class CampaignDispatcherTest extends TestCase
         $this->cache = $this->createStub(CacheInterface::class);
         $this->cache->method('load')->willReturn(false);
         $this->logger = $this->createMock(LoggerInterface::class);
+        // Mocked, not real HoldoutSelector/CampaignOutcomeLogger - the determinism/hashing
+        // property of HoldoutSelector itself is covered by its own dedicated unit test
+        // (Test/Unit/Model/Campaign/HoldoutSelectorTest.php); every test here that doesn't care
+        // about holdout at all relies on holdout_percent defaulting to 0 (see makeCampaign()),
+        // which short-circuits runCampaign() before isHeldOut() is ever called.
+        $this->holdoutSelector = $this->createMock(HoldoutSelector::class);
+        $this->campaignOutcomeLogger = $this->createMock(CampaignOutcomeLogger::class);
     }
 
     private function makeRealCampaignAction(): CampaignAction
@@ -121,7 +132,9 @@ class CampaignDispatcherTest extends TestCase
             $this->logger,
             $this->campaignWebsiteCollectionFactory,
             $this->customerRepository,
-            $this->customerStoreResolver
+            $this->customerStoreResolver,
+            $this->holdoutSelector,
+            $this->campaignOutcomeLogger
         );
     }
 
@@ -200,12 +213,20 @@ class CampaignDispatcherTest extends TestCase
     private function makeCampaign(
         int $id,
         string $conditionLogic = 'all',
+        int $holdoutPercent = 0,
         ?string $exitConditions = null
     ): \Ordo\Automation\Model\Campaign {
         $campaign = $this->createStub(\Ordo\Automation\Model\Campaign::class);
         $campaign->method('getId')->willReturn($id);
+        // CampaignDispatcher reads holdout_percent via getData(), not the typed
+        // getHoldoutPercent() accessor - see its own comment on why (PHPStan can't narrow a
+        // collection's getFirstItem() result past DataObject, so a typed accessor call resolves
+        // as mixed there). Every pre-existing test here relies on this defaulting to 0 (holdout
+        // off) - see CampaignDispatcher::runCampaign()'s own "$holdoutPercent <= 0 ... skips the
+        // check entirely" docblock - so none of them needed updating for this column to exist.
         $campaign->method('getData')->willReturnMap([
             ['condition_logic', $conditionLogic],
+            ['holdout_percent', $holdoutPercent],
             ['exit_conditions', $exitConditions],
         ]);
         return $campaign;
@@ -1562,7 +1583,7 @@ class CampaignDispatcherTest extends TestCase
         $this->makeResumeActionCollections(
             $resumeAction,
             [$resumeAction],
-            $this->makeCampaign(1, 'all', $exitConditions)
+            $this->makeCampaign(1, 'all', exitConditions: $exitConditions)
         );
 
         $exitCondition = $this->createStub(ConditionInterface::class);
@@ -1594,7 +1615,7 @@ class CampaignDispatcherTest extends TestCase
         $this->makeResumeActionCollections(
             $resumeAction,
             [$resumeAction],
-            $this->makeCampaign(1, 'all', $exitConditions)
+            $this->makeCampaign(1, 'all', exitConditions: $exitConditions)
         );
 
         $exitCondition = $this->createStub(ConditionInterface::class);
@@ -1678,5 +1699,155 @@ class CampaignDispatcherTest extends TestCase
         $this->campaignScheduledActionResource->expects(self::once())->method('save')->with($scheduled);
 
         $this->makeDispatcher()->deferActionUntil(3, 15, '2026-01-16 08:00:00', ['customer_id' => 9]);
+    }
+
+    /**
+     * ROADMAP.md "No holdout group" (docs/adr/0057): a customer the HoldoutSelector says is held
+     * out gets logged once, via CampaignOutcomeLogger::logHeldOut() - and never reaches
+     * runActionsFrom() at all.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchHoldsOutCustomerLoggingInsteadOfRunningAnyAction(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn(
+            $this->makeCampaignCollection([$this->makeCampaign(1, 'all', 50)])
+        );
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $actionRow = $this->createMock(CampaignAction::class);
+        $actionRow->method('getCampaignId')->willReturn(1);
+        $actionRow->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $actionRow->method('getParams')->willReturn(['tag' => 'vip']);
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$actionRow]));
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::never())->method('execute');
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->holdoutSelector->expects(self::once())->method('isHeldOut')->with(1, 7, 50)->willReturn(true);
+        $this->campaignOutcomeLogger->expects(self::once())->method('logHeldOut')->with(1, 7, 100);
+        $this->campaignOutcomeLogger->expects(self::never())->method('logSent');
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 7, 'order_id' => 100]);
+    }
+
+    /**
+     * A positive holdout_percent that HoldoutSelector says this particular customer is NOT in
+     * must still run the campaign's actions exactly as if holdout didn't exist.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchRunsActionsNormallyWhenHoldoutSelectorSaysCustomerIsNotHeldOut(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn(
+            $this->makeCampaignCollection([$this->makeCampaign(1, 'all', 50)])
+        );
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $actionRow = $this->createMock(CampaignAction::class);
+        $actionRow->method('getCampaignId')->willReturn(1);
+        $actionRow->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $actionRow->method('getParams')->willReturn(['tag' => 'vip']);
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$actionRow]));
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute')->with(self::anything(), ['tag' => 'vip']);
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->holdoutSelector->method('isHeldOut')->willReturn(false);
+        $this->campaignOutcomeLogger->expects(self::never())->method('logHeldOut');
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 7]);
+    }
+
+    /**
+     * Backward compatibility: holdout_percent unset/0 (every pre-existing campaign, since this is
+     * a new nullable column) must never consult HoldoutSelector at all - not "consult it and get
+     * false back", genuinely skipped, so a campaign nobody configured this on behaves byte-for-
+     * byte as it did before this feature existed.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchNeverConsultsHoldoutSelectorWhenHoldoutPercentIsZero(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn(
+            $this->makeCampaignCollection([$this->makeCampaign(1)])
+        );
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $actionRow = $this->createMock(CampaignAction::class);
+        $actionRow->method('getCampaignId')->willReturn(1);
+        $actionRow->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $actionRow->method('getParams')->willReturn([]);
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$actionRow]));
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute');
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->holdoutSelector->expects(self::never())->method('isHeldOut');
+        $this->campaignOutcomeLogger->expects(self::never())->method('logHeldOut');
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 7]);
+    }
+
+    /**
+     * No stable customer identity in context (e.g. a purely visitor-scoped trigger) - skips the
+     * holdout check entirely rather than holding out "as" nobody, same guard shape
+     * customerIdFromContext() already gives the entry-guard check above it.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchSkipsHoldoutCheckWhenContextHasNoCustomerId(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn(
+            $this->makeCampaignCollection([$this->makeCampaign(1, 'all', 100)])
+        );
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $actionRow = $this->createMock(CampaignAction::class);
+        $actionRow->method('getCampaignId')->willReturn(1);
+        $actionRow->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $actionRow->method('getParams')->willReturn([]);
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$actionRow]));
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute');
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->holdoutSelector->expects(self::never())->method('isHeldOut');
+
+        $this->makeDispatcher()->dispatch('order_placed', []);
+    }
+
+    /**
+     * dispatchScheduledTrigger() (the scheduled_at/recurring_schedule entry path) reads
+     * holdout_percent straight off the loaded campaign model, not off the cached trigger-lookup
+     * payload dispatch() uses - same "both paths end at runCampaign()" sharing as the entry-guard
+     * test above this one.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchScheduledTriggerHoldsOutCustomerLoggingInsteadOfRunningAnyAction(): void
+    {
+        $this->campaignCollectionFactory->method('create')->willReturn(
+            $this->makeSingleCampaignCollection($this->makeCampaign(5, 'all', 100))
+        );
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $actionRow = $this->createMock(CampaignAction::class);
+        $actionRow->method('getCampaignId')->willReturn(5);
+        $actionRow->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $actionRow->method('getParams')->willReturn([]);
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$actionRow]));
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::never())->method('execute');
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->holdoutSelector->expects(self::once())->method('isHeldOut')->with(5, 42, 100)->willReturn(true);
+        $this->campaignOutcomeLogger->expects(self::once())->method('logHeldOut')->with(5, 42, null);
+
+        $this->makeDispatcher()->dispatchScheduledTrigger(5, ['customer_id' => 42]);
     }
 }

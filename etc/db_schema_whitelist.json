@@ -346,7 +346,8 @@
             "condition_logic": true,
             "exit_conditions": true,
             "created_at": true,
-            "updated_at": true
+            "updated_at": true,
+            "holdout_percent": true
         },
         "index": {
             "ORDO_CAMPAIGN_ENABLED": true
@@ -994,7 +995,8 @@
             "sent_at": true,
             "acted_at": true,
             "order_id": true,
-            "trigger_order_id": true
+            "trigger_order_id": true,
+            "is_holdout": true
         },
         "index": {
             "ORDO_CAMPAIGN_OUTCOME_LOG_CAMPAIGN_ID_VARIANT": true,
