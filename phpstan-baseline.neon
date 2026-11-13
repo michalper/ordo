@@ -1111,6 +1111,18 @@ parameters:
 			path: Controller/Adminhtml/WhatsAppTemplate/SubmitForReview.php
 
 		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Controller/Consent/SetChannel.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Controller/Consent/SetTopic.php
+
+		-
 			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getContent\(\)\.$#'
 			identifier: method.notFound
 			count: 1
