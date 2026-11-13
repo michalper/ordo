@@ -44,11 +44,39 @@ strukturalnie nie widzą.
   oknem nieaktywności, do budowania kilku różnych kampanii win-back.
 - SMS (Twilio) — akcja kampanii `send_sms`, ze śledzeniem statusu dostarczenia i obsługą opt-out.
 - WhatsApp (Meta Cloud API) — akcja kampanii `send_whatsapp` wysyłająca zatwierdzone wcześniej szablony, z własnym
-  cyklem zatwierdzania szablonów w adminie i webhookiem statusu dostarczenia.
+  cyklem zatwierdzania szablonów w adminie, webhookiem statusu dostarczenia i śledzeniem potwierdzeń odczytu.
 - Powiadomienia Web Push — akcja kampanii `send_push` dostarczająca prawdziwe powiadomienia przeglądarki/systemu
   (RFC 8291/8292, bez SDK dostawcy), na każde urządzenie, z którego klient się zasubskrybował.
+- RCS (Rich Communication Services) jako kanał wiadomości — akcja kampanii `send_rcs`, korzystająca z tych samych
+  danych Twilio co SMS.
 - Alerty o spadku ceny / powrocie do sprzedaży — klient lub gość obserwuje produkt z poziomu strony produktu,
   dwa cykliczne zadania cron wysyłają triggery kampanii `price_drop`/`back_in_stock` przy pierwszej realnej zmianie.
+- Widgety "mało sztuk w magazynie" i "social proof" na stronie produktu, oraz popup zapisu do newslettera dla
+  anonimowych odwiedzających.
+- Odzyskiwanie zawieszonych płatności — jedno przypomnienie dla zarejestrowanego klienta o zamówieniu zablokowanym
+  w statusie `pending_payment` dłużej niż konfigurowalny czas.
+- Wykrywanie ryzyka odejścia (churn) — sygnał własnego rytmu zamówień klienta (mediana interwału, nie sztywny próg
+  nieaktywności), dostępny jako warunek segmentu/kampanii i uwzględniony w cotygodniowym digeście dla opiekuna.
+- Trigger kampanii na urodziny / rocznicę rejestracji, odpalający się raz w roku kalendarzowym.
+
+**Lojalność i polecenia**
+
+- Program lojalnościowy punktowy — klient zdobywa punkty za każde zamówienie i wymienia je na kupon, odrębny od
+  istniejących progów lojalnościowych liczonych od liczby zamówień/wydatków.
+- Grywalizowane kamienie milowe — automatyczne tagowanie klienta po osiągnięciu stałego progu liczby zamówień
+  (1./5./10./25./50.) albo progu lojalnościowego, wykorzystujące istniejący trigger oparty na tagach.
+- Dwustronne nagrody za polecenia — zarówno polecający (po pierwszym zamówieniu poleconego klienta), jak i
+  polecony (po rejestracji) mogą być celem własnego triggera kampanii.
+
+**Reklama i analityka**
+
+- Synchronizacja grup odbiorców reklamowych z Google Ads, Meta i TikTok — eksport segmentu jako Custom Audience /
+  grupy zaangażowania do remarketingu lub kampanii lookalike.
+- GA4 / Meta Conversions API — dwie akcje kampanii raportujące konwersję bezpośrednio do Measurement Protocol
+  Google Analytics 4 albo Meta Conversions API po stronie serwera, z pominięciem adblocków.
+- Automatyczne alerty anomalii — dzienny cron wykrywa spadek przychodu kampanii albo odstający wskaźnik konwersji
+  względem jej własnej, historycznej bazy.
+- Wybór zwycięzcy testu A/B — decyzja na podstawie CTR (domyślnie), wskaźnika konwersji albo przychodu.
 
 **Wspólny fundament**
 
@@ -72,6 +100,9 @@ strukturalnie nie widzą.
 - Raporty i analityka — RFM/punktacja leadów, analityka przychodów i kanałów (z atrybucją kuponu do kampanii) oraz
   wydajność produktów, porównanie kampanii, retencja kohortowa (opcjonalnie zwężona do jednej kampanii
   pozyskującej), oraz dzienny raport lejka zakupowego/odpadania klientów.
+- Zgody i preferencje — śledzenie opt-out per kanał/temat po stronie admina (łącznie z eksportem/usunięciem RODO),
+  a dodatkowo samoobsługowa strona "Preferencje komunikacji" dla zalogowanego klienta (REST + GraphQL, działa
+  też headless).
 
 Każda funkcja ma własny przełącznik w **Stores → Configuration → Ordo Automation** i własne zadanie cron.
 
