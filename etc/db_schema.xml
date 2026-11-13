@@ -374,6 +374,7 @@
         <column xsi:type="varchar" name="trigger_event" nullable="true" length="64" comment="DEPRECATED — superseded by ordo_campaign_trigger (a campaign can have more than one trigger now). Kept nullable, unread by any code path, purely so Setup\Patch\Data\MigrateCampaignTriggerToChildTable has a column to read from on upgrade. Safe to drop in a follow-up schema-only release once every install has run that patch."/>
         <column xsi:type="boolean" name="enabled" nullable="false" default="0" comment="Enabled"/>
         <column xsi:type="varchar" name="condition_logic" nullable="false" length="3" default="all" comment="'all' (AND, default) or 'any' (OR) across this campaign's conditions - see CampaignDispatcher::allConditionsSatisfied()"/>
+        <column xsi:type="text" name="exit_conditions" nullable="true" comment="Optional JSON array of type/params specs (see Campaign/ExitConditionSpecs) - always AND-joined - checked at every resumeScheduledAction() call, and if satisfied, the rest of this campaign's delayed action chain is skipped instead of run. Null (the default) means never exits."/>
         <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
         <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">

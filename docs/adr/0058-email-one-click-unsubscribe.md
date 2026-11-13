@@ -1,4 +1,4 @@
-# ADR 0055: Email one-click unsubscribe
+# ADR 0058: Email one-click unsubscribe
 
 ## Status
 

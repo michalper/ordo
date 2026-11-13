@@ -16,7 +16,7 @@ use Ordo\Automation\Model\Email\PendingUnsubscribeHeaderHolder;
  * Sets the RFC 8058 one-click-unsubscribe headers (List-Unsubscribe + List-Unsubscribe-Post) -
  * Gmail/Yahoo's 2024 bulk-sender rules require both on any marketing send. List-Unsubscribe-Post
  * is the fixed value every mail client that supports one-click POST sends against the URL in
- * List-Unsubscribe - see docs/adr/0055-email-one-click-unsubscribe.md.
+ * List-Unsubscribe - see docs/adr/0058-email-one-click-unsubscribe.md.
  *
  * Sets nothing when PendingUnsubscribeHeaderHolder has no url queued (every campaign action
  * other than send_email, and any other TransportBuilder-based email in this Magento install) -

@@ -60,7 +60,7 @@ use Psr\Log\LoggerInterface;
  * into templateVars as "unsubscribe_url" (so a template can render a visible footer link) and
  * into PendingUnsubscribeHeaderHolder (so Plugin\Email\EmailMessageUnsubscribeHeaderPlugin can
  * set the actual List-Unsubscribe/List-Unsubscribe-Post headers) - see
- * docs/adr/0055-email-one-click-unsubscribe.md for why this is scoped to send_email only, not
+ * docs/adr/0058-email-one-click-unsubscribe.md for why this is scoped to send_email only, not
  * every TransportBuilder-based email this module sends.
  */
 class SendEmail implements ActionInterface

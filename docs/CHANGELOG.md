@@ -15,7 +15,13 @@ it doesn't update itself from this file.
   `List-Unsubscribe`/`List-Unsubscribe-Post` header pair (RFC 8058) plus a visible footer link in
   `campaign_generic.html`, pointing at a new `Controller\Email\Unsubscribe` endpoint backed by a
   stateless, signed token (`Model\Email\UnsubscribeTokenManager` — no new table, no DB lookup to
-  verify) that calls `ConsentManager::setConsent()` directly. See ADR 0055.
+  verify) that calls `ConsentManager::setConsent()` directly. See ADR 0058.
+- **Campaign chain exit condition** — a campaign can now set an optional `exit_conditions` JSON
+  field (AND-joined, same `{type, params}` shape as an entry condition) that
+  `CampaignDispatcher::resumeScheduledAction()` re-checks on every delayed-step resume; if
+  satisfied, the rest of a `delay_minutes` drip is skipped instead of running unconditionally
+  regardless of whether the customer already converted. Every pre-existing campaign (no exit
+  conditions configured) is unaffected. See ADR 0055.
 - **Storefront consent preference center** — a logged-in customer can now see and change their own
   channel (email/SMS/push/WhatsApp/RCS) and topic (promotional/account-updates) consent from REST
   (`GET/PUT /V1/ordo/consent-preferences/mine*`), GraphQL (`ordoConsentPreferences`/

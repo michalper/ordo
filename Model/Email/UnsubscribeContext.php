@@ -9,7 +9,7 @@ use Ordo\Automation\Model\ConsentChannel;
 /**
  * Shared "what a marketing email's unsubscribe footer link and List-Unsubscribe header both
  * need" builder - Model\Campaign\Action\SendEmail is the only caller (see
- * docs/adr/0055-email-one-click-unsubscribe.md's own scope note: deliberately just the campaign
+ * docs/adr/0058-email-one-click-unsubscribe.md's own scope note: deliberately just the campaign
  * engine's own send_email action, not every TransportBuilder-based email this module sends), but
  * kept as its own class rather than inlined there, the same reasoning Model\SalesRepEmailContext
  * already established for a signature block shared across every automated email - a second

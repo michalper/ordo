@@ -197,11 +197,17 @@ class CampaignDispatcherTest extends TestCase
         return $row;
     }
 
-    private function makeCampaign(int $id, string $conditionLogic = 'all'): \Ordo\Automation\Model\Campaign
-    {
+    private function makeCampaign(
+        int $id,
+        string $conditionLogic = 'all',
+        ?string $exitConditions = null
+    ): \Ordo\Automation\Model\Campaign {
         $campaign = $this->createStub(\Ordo\Automation\Model\Campaign::class);
         $campaign->method('getId')->willReturn($id);
-        $campaign->method('getData')->willReturnMap([['condition_logic', $conditionLogic]]);
+        $campaign->method('getData')->willReturnMap([
+            ['condition_logic', $conditionLogic],
+            ['exit_conditions', $exitConditions],
+        ]);
         return $campaign;
     }
 
@@ -794,14 +800,18 @@ class CampaignDispatcherTest extends TestCase
      *
      * @param CampaignAction[] $mainRows
      */
-    private function makeResumeActionCollections(?CampaignAction $resumeRow, array $mainRows): void
-    {
+    private function makeResumeActionCollections(
+        ?CampaignAction $resumeRow,
+        array $mainRows,
+        ?\Ordo\Automation\Model\Campaign $campaign = null
+    ): void {
         // resumeScheduledAction() now re-checks the campaign is still enabled before doing
         // anything else - default every resume test to "yes, enabled" so only the one test that
         // cares about this (testResumeScheduledActionDoesNothingWhenCampaignIsDisabled) needs to
-        // override it.
+        // override it. $campaign lets exit-condition tests swap in a campaign stub whose
+        // getData('exit_conditions') returns something other than this default's null.
         $this->campaignCollectionFactory->method('create')->willReturn(
-            $this->makeCampaignCollection([$this->makeCampaign(1)])
+            $this->makeCampaignCollection([$campaign ?? $this->makeCampaign(1)])
         );
 
         $lookupCollection = $this->createStub(ActionCollection::class);
@@ -1531,6 +1541,96 @@ class CampaignDispatcherTest extends TestCase
         $this->campaignEntryGuard->expects(self::never())->method('hasPendingEntry');
 
         $this->makeDispatcher()->resumeScheduledAction(1, 11, ['customer_id' => 42]);
+    }
+
+    /**
+     * The roadmap gap this feature closes: a customer who already reached the campaign's goal
+     * (e.g. placed the order a delayed abandoned-cart drip was chasing) between two delayed
+     * steps must not get the remaining ones just because delay_minutes elapsed.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResumeScheduledActionSkipsRemainingActionsWhenExitConditionIsMet(): void
+    {
+        $resumeAction = $this->createMock(CampaignAction::class);
+        $resumeAction->method('getEntityId')->willReturn(11);
+        $resumeAction->method('getSortOrder')->willReturn(20);
+        $resumeAction->method('getDelayMinutes')->willReturn(0);
+        $resumeAction->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $resumeAction->method('getParams')->willReturn([]);
+
+        $exitConditions = json_encode([['type' => 'has_converted', 'params' => []]]);
+        $this->makeResumeActionCollections(
+            $resumeAction,
+            [$resumeAction],
+            $this->makeCampaign(1, 'all', $exitConditions)
+        );
+
+        $exitCondition = $this->createStub(ConditionInterface::class);
+        $exitCondition->method('isSatisfied')->willReturn(true);
+        $this->conditionPool = new ConditionPool(['has_converted' => $exitCondition]);
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::never())->method('execute');
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->resumeScheduledAction(1, 11, ['customer_id' => 1]);
+    }
+
+    /**
+     * Same chain, but the exit condition isn't satisfied this time - the resumed action (and
+     * everything after it) must still run exactly as if no exit conditions were configured.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResumeScheduledActionRunsNormallyWhenExitConditionIsNotMet(): void
+    {
+        $resumeAction = $this->createMock(CampaignAction::class);
+        $resumeAction->method('getEntityId')->willReturn(11);
+        $resumeAction->method('getSortOrder')->willReturn(20);
+        $resumeAction->method('getDelayMinutes')->willReturn(0);
+        $resumeAction->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $resumeAction->method('getParams')->willReturn(['tag' => 'reactivated']);
+
+        $exitConditions = json_encode([['type' => 'has_converted', 'params' => []]]);
+        $this->makeResumeActionCollections(
+            $resumeAction,
+            [$resumeAction],
+            $this->makeCampaign(1, 'all', $exitConditions)
+        );
+
+        $exitCondition = $this->createStub(ConditionInterface::class);
+        $exitCondition->method('isSatisfied')->willReturn(false);
+        $this->conditionPool = new ConditionPool(['has_converted' => $exitCondition]);
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute')->with(self::anything(), ['tag' => 'reactivated']);
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->resumeScheduledAction(1, 11, ['customer_id' => 1]);
+    }
+
+    /**
+     * Backward-compatible default: a campaign with no exit_conditions configured at all (every
+     * campaign that predates this feature) must behave exactly as before - resumeScheduledAction()
+     * never skips anything on its account. makeCampaign()'s own default (null) already covers
+     * this in every other resume test in this file; this test makes that coverage explicit.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResumeScheduledActionRunsNormallyWhenNoExitConditionsAreConfigured(): void
+    {
+        $resumeAction = $this->createMock(CampaignAction::class);
+        $resumeAction->method('getEntityId')->willReturn(11);
+        $resumeAction->method('getSortOrder')->willReturn(20);
+        $resumeAction->method('getDelayMinutes')->willReturn(0);
+        $resumeAction->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $resumeAction->method('getParams')->willReturn(['tag' => 'reactivated']);
+
+        $this->makeResumeActionCollections($resumeAction, [$resumeAction], $this->makeCampaign(1));
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute')->with(self::anything(), ['tag' => 'reactivated']);
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->resumeScheduledAction(1, 11, ['customer_id' => 1]);
     }
 
     /**

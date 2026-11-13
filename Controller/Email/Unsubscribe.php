@@ -19,7 +19,7 @@ use Ordo\Automation\Model\Email\UnsubscribeTokenManager;
 /**
  * The no-login, one-click unsubscribe endpoint every send_email footer link and
  * List-Unsubscribe header (Model\Email\UnsubscribeContext, Plugin\Email\
- * EmailMessageUnsubscribeHeaderPlugin) points at - see docs/adr/0055-email-one-click-unsubscribe.md.
+ * EmailMessageUnsubscribeHeaderPlugin) points at - see docs/adr/0058-email-one-click-unsubscribe.md.
  *
  * Accepts both GET (a human clicking the footer link) and POST (RFC 8058's
  * List-Unsubscribe-Post, a mail client's own one-click button) on the same action - the token

@@ -8,7 +8,7 @@ use Ordo\Automation\Model\ConsentChannel;
 
 /**
  * Stateless, no-DB-lookup unsubscribe link token for the no-login one-click unsubscribe endpoint
- * (Controller\Email\Unsubscribe) - see docs/adr/0055-email-one-click-unsubscribe.md for why this
+ * (Controller\Email\Unsubscribe) - see docs/adr/0058-email-one-click-unsubscribe.md for why this
  * is a signed, deterministic token rather than a stored-per-row one like
  * Model\Approval\ApprovalTokenGenerator's order-approval token.
  *
