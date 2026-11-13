@@ -1617,6 +1617,12 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
+			count: 1
+			path: Model/Campaign.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
 			count: 3
 			path: Model/Campaign/Action/AbstractPhoneMessageAction.php
 
@@ -1821,7 +1827,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 2
+			count: 3
 			path: Model/Campaign/CampaignSaveProcessor.php
 
 		-
@@ -2125,15 +2131,21 @@ parameters:
 			path: Model/CampaignDispatcher.php
 
 		-
-			message: '#^Parameter \#3 \$loadConditions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:runCampaign\(\) expects callable\(\)\: array\<Ordo\\Automation\\Model\\CampaignCondition\>, Closure\(\)\: array\<int, Ordo\\Automation\\Model\\CampaignAction\|Ordo\\Automation\\Model\\CampaignCondition\> given\.$#'
+			message: '#^Parameter \#4 \$loadConditions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:runCampaign\(\) expects callable\(\)\: array\<Ordo\\Automation\\Model\\CampaignCondition\>, Closure\(\)\: array\<int, Ordo\\Automation\\Model\\CampaignAction\|Ordo\\Automation\\Model\\CampaignCondition\> given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Model/CampaignDispatcher.php
 
 		-
-			message: '#^Parameter \#4 \$loadActions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:runCampaign\(\) expects callable\(\)\: array\<Ordo\\Automation\\Model\\CampaignAction\>, Closure\(\)\: array\<int, Ordo\\Automation\\Model\\CampaignAction\|Ordo\\Automation\\Model\\CampaignCondition\> given\.$#'
+			message: '#^Parameter \#5 \$loadActions of method Ordo\\Automation\\Model\\CampaignDispatcher\:\:runCampaign\(\) expects callable\(\)\: array\<Ordo\\Automation\\Model\\CampaignAction\>, Closure\(\)\: array\<int, Ordo\\Automation\\Model\\CampaignAction\|Ordo\\Automation\\Model\\CampaignCondition\> given\.$#'
 			identifier: argument.type
 			count: 1
+			path: Model/CampaignDispatcher.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 3
 			path: Model/CampaignDispatcher.php
 
 		-

@@ -90,6 +90,7 @@ class CampaignSaveProcessor
         $campaign->setName((string) ($data['name'] ?? ''));
         $campaign->setEnabled(!empty($data['enabled']));
         $campaign->setConditionLogic((string) ($data['condition_logic'] ?? 'all'));
+        $campaign->setHoldoutPercent((int) ($data['holdout_percent'] ?? 0));
 
         /** @var array<int, array<string, mixed>> $triggerRows */
         $triggerRows = (array) ($data['triggers']['triggers'] ?? []);

@@ -50,4 +50,22 @@ class Campaign extends AbstractNamedToggleableEntityModel implements CampaignInt
         $this->setData('condition_logic', $logic === 'any' ? 'any' : 'all');
         return $this;
     }
+
+    /**
+     * 0 (the stored default, including every pre-existing campaign row from before this column
+     * existed, which reads back as null) means holdout is off - nobody is ever held out unless an
+     * admin deliberately sets this above zero. Clamped defensively here too, in addition to
+     * CampaignSaveProcessor's own clamp on save, so a row written any other way (a direct API
+     * call, a hand-edited fixture) can't hand CampaignDispatcher an out-of-range percent.
+     */
+    public function getHoldoutPercent(): int
+    {
+        return max(0, min(100, (int) $this->getData('holdout_percent')));
+    }
+
+    public function setHoldoutPercent(int $percent): self
+    {
+        $this->setData('holdout_percent', max(0, min(100, $percent)));
+        return $this;
+    }
 }

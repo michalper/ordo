@@ -272,7 +272,13 @@ class CampaignOutcomeLoggerTest extends TestCase
         $select->method('from')->willReturnSelf();
         $select->method('joinLeft')->willReturnSelf();
         $select->method('group')->willReturnSelf();
-        $select->expects(self::once())->method('where')->with('o.campaign_id = ?', 5)->willReturnSelf();
+        $seenWhereConditions = [];
+        $select->method('where')->willReturnCallback(
+            function (string $condition, mixed $value) use ($select, &$seenWhereConditions) {
+                $seenWhereConditions[$condition] = $value;
+                return $select;
+            }
+        );
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($select);
@@ -284,6 +290,42 @@ class CampaignOutcomeLoggerTest extends TestCase
 
         $logger = new CampaignOutcomeLogger($resourceConnection);
         self::assertSame([], $logger->getStats(5));
+
+        self::assertSame(5, $seenWhereConditions['o.campaign_id = ?'] ?? null);
+    }
+
+    /**
+     * The exact "never let a held-out customer count as sent" bug this feature must not
+     * introduce - getStats() has to filter is_holdout, unconditionally, not only when a
+     * $campaignId is also given.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetStatsAlwaysExcludesHoldoutRows(): void
+    {
+        $select = $this->createMock(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('joinLeft')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+        $seenWhereConditions = [];
+        $select->method('where')->willReturnCallback(
+            function (string $condition, mixed $value) use ($select, &$seenWhereConditions) {
+                $seenWhereConditions[$condition] = $value;
+                return $select;
+            }
+        );
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchAll')->willReturn([]);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $logger = new CampaignOutcomeLogger($resourceConnection);
+        $logger->getStats();
+
+        self::assertSame(0, $seenWhereConditions['o.is_holdout = ?'] ?? null);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -343,7 +385,7 @@ class CampaignOutcomeLoggerTest extends TestCase
         $select->method('joinLeft')->willReturnSelf();
         $select->method('group')->willReturnSelf();
         $seenWhereConditions = [];
-        $select->expects(self::exactly(2))->method('where')->willReturnCallback(
+        $select->expects(self::exactly(3))->method('where')->willReturnCallback(
             function (string $condition, mixed $value) use ($select, &$seenWhereConditions) {
                 $seenWhereConditions[$condition] = $value;
                 return $select;
@@ -363,5 +405,153 @@ class CampaignOutcomeLoggerTest extends TestCase
 
         self::assertSame('2026-01-01 00:00:00', $seenWhereConditions['o.sent_at >= ?'] ?? null);
         self::assertSame('2026-01-08 00:00:00', $seenWhereConditions['o.sent_at < ?'] ?? null);
+        self::assertSame(0, $seenWhereConditions['o.is_holdout = ?'] ?? null);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testLogHeldOutInsertsRowWithIsHoldoutTrueAndNoVariant(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::once())->method('insert')->with(
+            'ordo_campaign_outcome_log',
+            self::callback(function (array $data): bool {
+                return $data['campaign_id'] === 5
+                    && $data['variant'] === null
+                    && $data['customer_id'] === 42
+                    && $data['is_holdout'] === true
+                    && array_key_exists('trigger_order_id', $data)
+                    && $data['trigger_order_id'] === null;
+            })
+        );
+        $connection->expects(self::never())->method('fetchRow');
+        $connection->expects(self::never())->method('update');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $logger = new CampaignOutcomeLogger($resourceConnection);
+        $logger->logHeldOut(5, 42);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testLogSentInsertsRowWithIsHoldoutFalse(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::once())->method('insert')->with(
+            'ordo_campaign_outcome_log',
+            self::callback(fn (array $data): bool => $data['is_holdout'] === false)
+        );
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $logger = new CampaignOutcomeLogger($resourceConnection);
+        $logger->logSent(5, 'b', 42);
+    }
+
+    /**
+     * Same race-protection catch-up logSent() already has (markActed() on an already-existing
+     * later order) must also apply to a held-out customer's row - their own organic conversion
+     * still has to be captured even if the catch-up query happens to run before their own next
+     * order's sales_order_save_after observer does.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testLogHeldOutWithTriggerOrderIdMarksAnAlreadyExistingLaterOrderAsConverted(): void
+    {
+        $select = $this->createMock(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('order')->willReturnSelf();
+        $select->method('limit')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->expects(self::once())->method('insert');
+        $connection->expects(self::once())->method('fetchRow')->willReturn(['entity_id' => '555']);
+        $connection->expects(self::once())->method('update')->with(
+            'ordo_campaign_outcome_log',
+            self::callback(fn (array $data): bool => $data['order_id'] === 555 && isset($data['acted_at'])),
+            self::anything()
+        );
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $logger = new CampaignOutcomeLogger($resourceConnection);
+        $logger->logHeldOut(5, 42, 100);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetHoldoutStatsComputesConversionRatePerCampaign(): void
+    {
+        $select = $this->createMock(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchAll')->willReturn([
+            ['campaign_id' => '5', 'holdout_count' => '20', 'holdout_converted' => '2'],
+            ['campaign_id' => '7', 'holdout_count' => '0', 'holdout_converted' => '0'],
+        ]);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $logger = new CampaignOutcomeLogger($resourceConnection);
+        $stats = $logger->getHoldoutStats();
+
+        self::assertSame(
+            [
+                'campaign_id' => 5,
+                'holdout_count' => 20,
+                'holdout_converted' => 2,
+                'holdout_conversion_rate' => 10.0,
+            ],
+            $stats[5]
+        );
+        self::assertSame(
+            [
+                'campaign_id' => 7,
+                'holdout_count' => 0,
+                'holdout_converted' => 0,
+                'holdout_conversion_rate' => 0.0,
+            ],
+            $stats[7]
+        );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetHoldoutStatsFiltersToHoldoutRowsOnly(): void
+    {
+        $select = $this->createMock(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+        $seenWhereConditions = [];
+        $select->method('where')->willReturnCallback(
+            function (string $condition, mixed $value) use ($select, &$seenWhereConditions) {
+                $seenWhereConditions[$condition] = $value;
+                return $select;
+            }
+        );
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchAll')->willReturn([]);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $logger = new CampaignOutcomeLogger($resourceConnection);
+        $logger->getHoldoutStats(5);
+
+        self::assertSame(1, $seenWhereConditions['o.is_holdout = ?'] ?? null);
+        self::assertSame(5, $seenWhereConditions['o.campaign_id = ?'] ?? null);
     }
 }

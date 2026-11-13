@@ -11,6 +11,12 @@ it doesn't update itself from this file.
 
 ### Added
 
+- **Campaign holdout group** — new admin-configurable `holdout_percent` (0-100, default off) on a
+  campaign deterministically, randomly withholds that percent of matching customers from every
+  action, logging them into `ordo_campaign_outcome_log` with a new `is_holdout` flag
+  (`Model\Campaign\HoldoutSelector`, `CampaignOutcomeLogger::logHeldOut()`/`getHoldoutStats()`) so
+  their organic conversion rate can be compared against the sent group's — true incremental-lift
+  measurement, not just split-variant comparison. See ADR 0055.
 - **Storefront consent preference center** — a logged-in customer can now see and change their own
   channel (email/SMS/push/WhatsApp/RCS) and topic (promotional/account-updates) consent from REST
   (`GET/PUT /V1/ordo/consent-preferences/mine*`), GraphQL (`ordoConsentPreferences`/
