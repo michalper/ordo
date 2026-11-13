@@ -90,6 +90,10 @@ class CampaignSaveProcessor
         $campaign->setName((string) ($data['name'] ?? ''));
         $campaign->setEnabled(!empty($data['enabled']));
         $campaign->setConditionLogic((string) ($data['condition_logic'] ?? 'all'));
+        // No dedicated per-type fields for this yet (a single JSON textarea, see
+        // ordo_campaign_form.xml) - sanitizeForSave() drops malformed rows rather than this
+        // going through ParamFieldsNormalizer's dedicated-field merge at all.
+        $campaign->setExitConditions(ExitConditionSpecs::sanitizeForSave((string) ($data['exit_conditions'] ?? '')));
 
         /** @var array<int, array<string, mixed>> $triggerRows */
         $triggerRows = (array) ($data['triggers']['triggers'] ?? []);

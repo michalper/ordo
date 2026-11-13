@@ -67,4 +67,26 @@ class CampaignTest extends AbstractModelTestCase
 
         self::assertSame('all', $model->getConditionLogic());
     }
+
+    public function testExitConditionsDefaultsToNullWhenNeverSet(): void
+    {
+        self::assertNull($this->makeModel()->getExitConditions());
+    }
+
+    public function testExitConditionsRoundTrips(): void
+    {
+        $model = $this->makeModel();
+        $json = json_encode([['type' => 'has_converted', 'params' => []]]);
+        $model->setExitConditions($json);
+
+        self::assertSame($json, $model->getExitConditions());
+    }
+
+    public function testExitConditionsTreatsAnEmptyStringAsNull(): void
+    {
+        $model = $this->makeModel();
+        $model->setExitConditions('');
+
+        self::assertNull($model->getExitConditions());
+    }
 }

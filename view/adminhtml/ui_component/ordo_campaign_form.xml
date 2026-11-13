@@ -93,6 +93,32 @@
                 </multiselect>
             </formElements>
         </field>
+        <!-- v1, no dedicated per-type fields yet (unlike conditions_fieldset below) - a raw JSON
+             textarea, same {type, params} shape as a campaign condition - see
+             Model\Campaign\ExitConditionSpecs / docs/adr/0055-campaign-chain-exit-condition.md.
+             dataScope matches the column name directly (not nested like conditions/actions)
+             since this is one plain JSON blob on ordo_campaign, not a dynamicRows child-row
+             collection. -->
+        <field name="exit_conditions" formElement="textarea" sortOrder="45">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Exit Conditions (JSON, advanced)</label>
+                <dataScope>exit_conditions</dataScope>
+                <notice translate="true">
+                    Optional. A JSON array of {"type": "...", "params": {...}} objects (same shape
+                    as a condition). Checked every time a delayed action chain resumes; if ALL are
+                    true, the rest of the chain is skipped instead of run. Leave empty to disable
+                    (default - matches every existing campaign's behavior).
+                </notice>
+            </settings>
+            <formElements>
+                <textarea>
+                    <settings>
+                        <rows>4</rows>
+                    </settings>
+                </textarea>
+            </formElements>
+        </field>
     </fieldset>
 
     <!-- Hidden, not removed: same reasoning as conditions_fieldset/actions_fieldset below — the
