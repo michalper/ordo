@@ -661,3 +661,45 @@ column).
   AbTestDecisionMetric` config choice (CTR/conversion rate/revenue, defaults to CTR) -
   conversion rate/revenue read from the existing `CampaignOutcomeLogger::getStats()` data, not a
   new ledger.
+
+**A fresh 2026-11-12 brainstorm round (third pass), checked against established marketing-automation,
+loyalty, and CDP platforms' own public feature pages before writing anything here.** Several raw
+candidates were dropped as already-shipped or out of reach, found by grepping the actual code rather
+than trusting README/ROADMAP text: GA4/Meta Conversions API event scope (`Model\Campaign\Action\
+SendGa4Event`'s `event_name` param already defaults to, but isn't hardcoded to, "purchase" — already
+generic); on-site search/no-results tracking was considered but not listed as a candidate below, since
+it would need a new `Controller\Track\*` event end to end rather than extending something that already
+half-exists; subscription/auto-replenishment ideas were excluded on sight per the standing no-auto-charge
+constraint, not re-litigated.
+
+- **"HELP" keyword auto-reply for SMS/WhatsApp** — considered, deliberately dropped. Real gap
+  (`Model\Conversation\StopKeywordDetector`'s `KEYWORDS` list has no `HELP`, and
+  `InboundMessageProcessor` never sends a reply of its own), but it's a US carrier/CTIA
+  compliance nicety, not something that fixes a bug or drives value for most stores running this
+  module outside the US — and closing it would mean `InboundMessageProcessor` taking on direct
+  `SmsSenderInterface`/`WhatsAppSender` dependencies (today it's channel-agnostic, only ever
+  revoking consent) just to send one low-value reply. Not worth the added coupling. Revisit only
+  if a US-specific compliance push makes this concrete.
+- **Churn-risk customers never reach the sales-rep digest.** Checked `Cron\SendSalesRepDigest`
+  directly: it groups customers by `TagInactiveCustomers::TAG_INACTIVE` and
+  `TagReorderCycleAtRiskCustomers::TAG_REORDER_AT_RISK` only. The newer, more general
+  `churn_risk_at_least` signal (`Model\ChurnRisk\ChurnRiskCalculator`, ADR 0045) has no persistent
+  tag at all — unlike reorder-cycle risk, nothing ever calls `CustomerTagManager::addTag()` for a
+  churn-risk customer, so there's structurally no tag for the digest to group by, even though the
+  underlying signal is already good enough to back a segment/campaign condition. Closing it is a
+  new `Cron\TagChurnRiskCustomers` mirroring `TagReorderCycleAtRiskCustomers`'s exact add-then-
+  clear-on-recovery shape, plus one more `groupCustomersByRep()` call in `SendSalesRepDigest`.
+- **No storefront or headless self-service channel/topic preference center.** Checked every
+  non-admin controller and `etc/schema.graphqls` directly: `Model\ConsentManager` is only ever
+  touched by `Controller\Adminhtml\Gdpr\*` (an admin looking up one customer by email) and
+  `Controller\Email\StatusCallback`'s webhook-driven STOP-equivalent revocation — there is no
+  frontend controller or GraphQL mutation anywhere that lets a logged-in customer see or change
+  their own channel (email/SMS/WhatsApp/push/RCS) or topic (promotional/account-updates)
+  consent. This is the same gap `docs/adr/0026-per-topic-consent-granularity.md` already named
+  explicitly in its own Consequences section ("no storefront self-service page") and it's still
+  open today. Closing it needs a `getOrdoConsentPreferences`/`setOrdoConsentPreferences` GraphQL
+  pair (thin wrappers over `ConsentManager::getConsentStates()`/`getTopicConsentStates()`/
+  `setConsent()`/`setTopicConsent()`, the same "no logic duplicated into the resolver" rule every
+  other GraphQL resolver in this module already follows) plus the equivalent REST route and a
+  plain account-area page for server-rendered storefronts, mirroring how `Controller\Offer`/"My
+  Offers" already gives a customer self-service over their own offers.
