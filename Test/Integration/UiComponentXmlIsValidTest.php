@@ -6,6 +6,7 @@ namespace Ordo\Automation\Test\Integration;
 use Magento\Framework\App\Bootstrap;
 use Magento\Framework\Config\DataInterfaceFactory;
 use Magento\Framework\ObjectManagerInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -55,9 +56,7 @@ class UiComponentXmlIsValidTest extends TestCase
         return $cases;
     }
 
-    /**
-     * @dataProvider uiComponentFileProvider
-     */
+    #[DataProvider('uiComponentFileProvider')]
     public function testUiComponentXmlPassesMagentosOwnSchemaValidation(string $componentName): void
     {
         /** @var DataInterfaceFactory $configFactory */
