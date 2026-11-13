@@ -684,11 +684,6 @@ constraint, not re-litigated.
   `docs/adr/0052-churn-risk-sales-rep-digest.md`. New `Cron\TagChurnRiskCustomers` mirrors
   `TagReorderCycleAtRiskCustomers`'s exact add-then-clear-on-recovery shape, and
   `SendSalesRepDigest` now groups by it too, alongside inactive/reorder-at-risk.
-- ~~**Split-test winner is decided by click-through rate only, never by revenue.**~~ — shipped,
-  see `docs/adr/0053-split-winner-revenue-metric.md`. New `Model\Config\Source\
-  AbTestDecisionMetric` config choice (CTR/conversion rate/revenue, defaults to CTR) -
-  conversion rate/revenue read from the existing `CampaignOutcomeLogger::getStats()` data, not a
-  new ledger.
 - ~~**No storefront or headless self-service channel/topic preference center.**~~ — shipped, see
   `docs/adr/0054-storefront-consent-preferences.md`. `ConsentPreferencesManagementInterface` is
   the one service every transport calls: `GET/PUT /V1/ordo/consent-preferences/mine*` REST
