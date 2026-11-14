@@ -42,3 +42,12 @@ npm run test:js:coverage
 `Test/Api/` (REST functional tests) and MFTF (`Test/Mftf/`) both need a real running instance —
 see `Test/Api/README.md`, `Test/Mftf/README.md`/`SCENARIOS.md`, and `AGENTS.md` for the concrete
 commands and every environment-specific pitfall already found and fixed.
+
+## Before calling a new feature done
+
+See `AGENTS.md`'s "New code needs its own tests" section — a new feature isn't done until it has
+both: unit tests covering 100% of the new/changed lines (`codecov/patch` is a required, blocking
+CI check now, not informational), and a real `Test/Integration/` or `Test/Mftf/` test proving it
+actually works, whichever layer this codebase's own established criteria (`CONTRIBUTING.md`,
+`Test/Mftf/SCENARIOS.md`) say is appropriate for what it does. Don't report a feature as done, or
+open its PR, with only mocked-collaborator unit tests behind it.
