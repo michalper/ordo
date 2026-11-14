@@ -34,6 +34,7 @@ class TriggerEventTest extends TestCase
                 CampaignTriggerInterface::TRIGGER_CUSTOMER_INACTIVE,
                 CampaignTriggerInterface::TRIGGER_EXIT_INTENT,
                 CampaignTriggerInterface::TRIGGER_CUSTOMER_ANNIVERSARY,
+                CampaignTriggerInterface::TRIGGER_WISHLIST_ABANDONED,
             ],
             $values
         );
