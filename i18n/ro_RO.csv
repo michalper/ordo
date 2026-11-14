@@ -247,6 +247,8 @@
 "Reorder cycle with id ""%1"" does not exist.","Ciclul de reordonare cu id-ul „%1” nu există."
 "Responded","A răspuns"
 "Response rate","Rata de răspuns"
+"Reward tiers (JSON)","Niveluri de recompensă (JSON)"
+"Optional: a JSON array of weighted reward tiers (label, weight, coupon_rule_id). One tier is randomly picked per popup; leave blank for a plain static popup.","Opțional: un tablou JSON cu niveluri de recompensă ponderate (label, weight, coupon_rule_id). La fiecare popup este ales aleatoriu un nivel; lăsați necompletat pentru un popup static obișnuit."
 "Reusable HTML snippet, RSS, and product feed blocks for campaign emails","Blocuri reutilizabile de fragmente HTML, RSS și fluxuri de produse pentru e-mailurile de campanie"
 "Run Bulk Action","Rulați acțiune în bloc"
 "Runs against everyone currently matching this segment's conditions. The action is queued and applied asynchronously.","Confruntă cu toți cei care se potrivesc în prezent cu condițiile acestui segment. Acțiunea este pusă în coadă și aplicată asincron."

@@ -52,7 +52,10 @@ class TrackerPollReader
     }
 
     /**
-     * @return array{headline: string, body: ?string, cta_label: ?string, cta_url: ?string}|null
+     * @return array{
+     *     headline: string, body: ?string, cta_label: ?string, cta_url: ?string,
+     *     reward_label: ?string, coupon_code: ?string
+     * }|null
      */
     private function resolvePopup(?int $customerId, string $visitorId, string $now): ?array
     {
@@ -74,6 +77,10 @@ class TrackerPollReader
             'body' => $popup->getBody(),
             'cta_label' => $popup->getCtaLabel(),
             'cta_url' => $popup->getCtaUrl(),
+            // Both null for an ordinary static popup (no reward_tiers on the action that queued
+            // this row) — see Model\Campaign\Action\ShowPopup's own docblock.
+            'reward_label' => $popup->getRewardLabel(),
+            'coupon_code' => $popup->getCouponCode(),
         ];
     }
 

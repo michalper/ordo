@@ -247,6 +247,8 @@
 "Reorder cycle with id ""%1"" does not exist.","Цикл повторного заказа с ID «%1» не существует."
 "Responded","Ответили"
 "Response rate","Доля ответивших"
+"Reward tiers (JSON)","Уровни наград (JSON)"
+"Optional: a JSON array of weighted reward tiers (label, weight, coupon_rule_id). One tier is randomly picked per popup; leave blank for a plain static popup.","Необязательно: массив JSON с взвешенными уровнями наград (label, weight, coupon_rule_id). При каждом попапе случайным образом выбирается один уровень; оставьте пустым для обычного статического попапа."
 "Reusable HTML snippet, RSS, and product feed blocks for campaign emails","Переиспользуемые блоки контента (HTML-фрагменты, RSS и товарные ленты) для писем кампаний"
 "Run Bulk Action","Выполнить массовое действие"
 "Runs against everyone currently matching this segment's conditions. The action is queued and applied asynchronously.","Выполняется для всех, кто в данный момент соответствует условиям этого сегмента. Действие ставится в очередь и применяется асинхронно."

@@ -159,6 +159,8 @@ class TrackerPollReaderTest extends TestCase
         $popup->method('getBody')->willReturn('Come back soon');
         $popup->method('getCtaLabel')->willReturn('Shop now');
         $popup->method('getCtaUrl')->willReturn('https://example.test/sale');
+        $popup->method('getRewardLabel')->willReturn(null);
+        $popup->method('getCouponCode')->willReturn(null);
 
         $notification = $this->createStub(Notification::class);
         $notification->method('getId')->willReturn(5);
@@ -183,6 +185,8 @@ class TrackerPollReaderTest extends TestCase
                     'body' => 'Come back soon',
                     'cta_label' => 'Shop now',
                     'cta_url' => 'https://example.test/sale',
+                    'reward_label' => null,
+                    'coupon_code' => null,
                 ],
                 'notifications' => [
                     [
@@ -196,6 +200,39 @@ class TrackerPollReaderTest extends TestCase
                 'survey' => [
                     'id' => 12,
                     'question' => 'How likely are you to recommend us?',
+                ],
+            ],
+            $reader->resolve(null, 'v1')
+        );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAPopupWithAWonRewardTierForwardsRewardLabelAndCouponCode(): void
+    {
+        $reader = $this->makeReader();
+        $this->disableEverythingExcept('popup');
+
+        $popup = $this->createStub(PendingPopup::class);
+        $popup->method('getId')->willReturn(9);
+        $popup->method('getHeadline')->willReturn('Spin to win!');
+        $popup->method('getBody')->willReturn(null);
+        $popup->method('getCtaLabel')->willReturn(null);
+        $popup->method('getCtaUrl')->willReturn(null);
+        $popup->method('getRewardLabel')->willReturn('10% off');
+        $popup->method('getCouponCode')->willReturn('ORDO-WHEEL-ABC123');
+
+        $this->pendingPopupCollectionFactory->method('create')->willReturn($this->makePopupCollection([$popup]));
+        $this->connection->method('update')->willReturn(1);
+
+        self::assertSame(
+            [
+                'popup' => [
+                    'headline' => 'Spin to win!',
+                    'body' => null,
+                    'cta_label' => null,
+                    'cta_url' => null,
+                    'reward_label' => '10% off',
+                    'coupon_code' => 'ORDO-WHEEL-ABC123',
                 ],
             ],
             $reader->resolve(null, 'v1')
@@ -217,6 +254,8 @@ class TrackerPollReaderTest extends TestCase
         $won->method('getBody')->willReturn(null);
         $won->method('getCtaLabel')->willReturn(null);
         $won->method('getCtaUrl')->willReturn(null);
+        $won->method('getRewardLabel')->willReturn(null);
+        $won->method('getCouponCode')->willReturn(null);
 
         $this->pendingPopupCollectionFactory->method('create')->willReturn($this->makePopupCollection([$lost, $won]));
         $this->connection->method('update')->willReturnOnConsecutiveCalls(0, 1);
@@ -228,6 +267,8 @@ class TrackerPollReaderTest extends TestCase
                     'body' => null,
                     'cta_label' => null,
                     'cta_url' => null,
+                    'reward_label' => null,
+                    'coupon_code' => null,
                 ],
             ],
             $reader->resolve(null, 'v1')

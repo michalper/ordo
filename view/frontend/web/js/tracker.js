@@ -37,6 +37,14 @@
  * configurable delay (see startEmailCaptureTimer/renderEmailCapture below and docs/adr/0043) -
  * unlike the three integration points above, this is a standing, store-wide feature wired
  * directly off the script tag's own data attributes, not a function the theme calls.
+ *
+ * A popup whose poll response carries a "reward_label" (Model\Campaign\Action\ShowPopup's own
+ * gamified reward_tiers param — see docs/adr/0059) renders a brief "spin the wheel" suspense
+ * animation before revealing that label and, if the winning tier had one, a coupon code the
+ * visitor can copy. The winning tier was already picked server-side the moment this popup was
+ * queued — there is nothing left to randomize here, this is purely cosmetic suspense leading up
+ * to a predetermined result, kept deliberately simple (no canvas/SVG wheel, no CSS keyframes
+ * requiring an injected <style> tag) to match this file's existing plain-DOM conventions.
  */
 (function () {
     'use strict';
@@ -55,6 +63,8 @@
     var EMAIL_CAPTURE_ENDPOINT = '/ordo/track/emailcapture';
     var EMAIL_CAPTURE_DISMISSED_COOKIE = 'ordo_email_capture_dismissed';
     var EMAIL_CAPTURE_BANNER_ID = 'ordo-email-capture-banner';
+    var REWARD_SPIN_DURATION_MS = 1200;
+    var REWARD_COPY_FLASH_MS = 1500;
 
     // Captured synchronously, at the top of this script's own execution — document.currentScript
     // is only reliable for a plain, synchronously-executing <script src> tag like this one; it
@@ -246,7 +256,9 @@
             banner.appendChild(body);
         }
 
-        if (popup.cta_label && popup.cta_url && /^https?:\/\//i.test(popup.cta_url)) {
+        if (popup.reward_label) {
+            appendRewardReveal(banner, popup);
+        } else if (popup.cta_label && popup.cta_url && /^https?:\/\//i.test(popup.cta_url)) {
             var cta = document.createElement('a');
             cta.textContent = popup.cta_label;
             cta.href = popup.cta_url;
@@ -263,6 +275,98 @@
         }));
 
         document.body.appendChild(banner);
+    }
+
+    /**
+     * The gamified "spin the wheel"/scratch-card reveal appended to a popup banner whose server
+     * response already carries the winning reward_label (and, for a coupon-bearing tier,
+     * coupon_code) — see this file's own top-level docblock for why nothing is randomized here.
+     * Shows a brief spinning placeholder, then swaps it in place for the won label and, when
+     * present, a copyable coupon code box.
+     *
+     * @param {HTMLElement} banner
+     * @param {Object} popup
+     */
+    function appendRewardReveal(banner, popup) {
+        var spinner = document.createElement('div');
+        spinner.id = 'ordo-reward-spinner';
+        spinner.textContent = '🎡 Spinning…';
+        spinner.setAttribute('style', 'text-align:center;font-size:18px;margin:10px 0;');
+        banner.appendChild(spinner);
+
+        setTimeout(function () {
+            // The banner (and this spinner with it) may already be gone from the live document -
+            // the visitor closed it, or a later poll tick replaced it with a different popup
+            // entirely (renderPopup() always removes any existing #ordo-popup-banner first) -
+            // before this timer fired. Checking isConnected rather than spinner.parentNode: an
+            // Element.remove() call only detaches the removed node from ITS OWN parent, not from
+            // its own children - spinner.parentNode (the banner) stays set to that same, now
+            // orphaned banner element either way, so that check would never actually catch this.
+            if (!spinner.isConnected) {
+                return;
+            }
+
+            spinner.textContent = '🎉 ' + popup.reward_label;
+            spinner.setAttribute('style', 'text-align:center;font-weight:bold;font-size:16px;margin:10px 0;');
+
+            if (popup.coupon_code) {
+                banner.insertBefore(buildRewardCouponBox(popup.coupon_code), spinner.nextSibling);
+            }
+        }, REWARD_SPIN_DURATION_MS);
+    }
+
+    /**
+     * @param {String} couponCode
+     * @return {HTMLElement}
+     */
+    function buildRewardCouponBox(couponCode) {
+        var codeBox = document.createElement('div');
+        codeBox.setAttribute(
+            'style',
+            'display:flex;align-items:center;justify-content:space-between;gap:8px;' +
+            'background:#f5f5f5;border:1px dashed #999;border-radius:4px;padding:8px 10px;margin-bottom:10px;'
+        );
+
+        var code = document.createElement('code');
+        code.textContent = couponCode;
+        code.setAttribute('style', 'font-weight:bold;letter-spacing:.5px;');
+        codeBox.appendChild(code);
+
+        var copy = document.createElement('button');
+        copy.type = 'button';
+        copy.textContent = 'Copy';
+        copy.setAttribute(
+            'style',
+            'background:#1a1a1a;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;'
+        );
+        copy.onclick = function () {
+            copyRewardCode(couponCode, copy);
+        };
+        codeBox.appendChild(copy);
+
+        return codeBox;
+    }
+
+    /**
+     * Best-effort only - a browser with no Clipboard API (or that denies the permission) simply
+     * leaves the button unchanged; the code is still right there in the box to select/copy by
+     * hand, so there's nothing to fall back to and nothing worth surfacing as an error.
+     *
+     * @param {String} couponCode
+     * @param {HTMLButtonElement} button
+     */
+    function copyRewardCode(couponCode, button) {
+        if (!navigator.clipboard || !navigator.clipboard.writeText) {
+            return;
+        }
+
+        var originalLabel = button.textContent;
+        navigator.clipboard.writeText(couponCode).then(function () {
+            button.textContent = 'Copied!';
+            setTimeout(function () {
+                button.textContent = originalLabel;
+            }, REWARD_COPY_FLASH_MS);
+        }).catch(function () {});
     }
 
     function getNotificationList() {

@@ -1807,6 +1807,12 @@ parameters:
 			path: Model/Campaign/Action/SendWhatsApp.php
 
 		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Campaign/Action/ShowPopup.php
+
+		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
 			count: 1
@@ -3171,7 +3177,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 6
+			count: 8
 			path: Model/PendingPopup.php
 
 		-

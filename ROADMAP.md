@@ -793,15 +793,15 @@ than silently assuming it away.
   a new `survey_response_equals` segment/campaign condition reading the latest answered row for a given
   question — `NpsScoreAtLeast` already shows the exact "read the customer's most recent answered row"
   query shape to reuse.
-- **No gamified, randomized-reward popup — `ShowPopup` is a single static headline/body/CTA, never a
-  weighted prize selection.** Every popup today (exit-intent, email-capture, campaign-triggered) shows the
-  same fixed content to everyone; there's no "spin the wheel" / scratch-card mechanic offering one of
-  several weighted reward tiers (10% off, free shipping, "try again"), a widely-used email/SMS-capture
-  gamification pattern on other platforms' own popup builders. Closing it would need a new reward-tier
-  params shape (an array of `{label, weight, coupon_rule_id}` entries) on top of `ShowPopup`'s existing
-  `ordo_pending_popup` queue-and-poll delivery, a new weighted-random selector class, and a call into the
-  existing `Model\CouponGenerator` for whichever tier is picked — frequency-capped the same way `ShowPopup`
-  already caps repeat popups, so a visitor can't just keep re-spinning.
+- ~~**No gamified, randomized-reward popup — `ShowPopup` is a single static headline/body/CTA, never a
+  weighted prize selection.**~~ — shipped, see `docs/adr/0059-gamified-reward-popup.md`. `ShowPopup`'s
+  params gain an optional `reward_tiers` array of `{label, weight, coupon_rule_id}` entries; a new
+  `Model\Campaign\RewardTierSelector` picks one with a real, re-rolled-per-delivery random weight (not
+  `SplitVariantSelector`'s sticky-per-customer determinism — the ADR explains why that class was the wrong
+  fit despite the superficially similar shape), and a tier with a `coupon_rule_id` gets a real coupon
+  minted via the existing `Model\CouponGenerator`. Frequency-capped by `ShowPopup`'s own existing cap, so a
+  visitor can't just keep re-spinning. `view/frontend/web/js/tracker.js` renders a brief spin reveal and a
+  copyable coupon code, dependency-free.
 - **Inbound SMS/WhatsApp replies can only be viewed, never answered, from the admin.**
   `Controller\Adminhtml\ConversationMessage\Index` implements `HttpGetActionInterface` only — a read-only
   grid over `ordo_conversation_message` — and `Model\Conversation\InboundMessageProcessor`'s own docblock

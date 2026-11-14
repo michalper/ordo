@@ -25,6 +25,8 @@ class PendingPopup extends AbstractModel
     public const CTA_URL = 'cta_url';
     public const DELIVERED_AT = 'delivered_at';
     public const EXPIRES_AT = 'expires_at';
+    public const REWARD_LABEL = 'reward_label';
+    public const COUPON_CODE = 'coupon_code';
 
     protected function _construct(): void
     {
@@ -93,6 +95,39 @@ class PendingPopup extends AbstractModel
     public function setExpiresAt(?string $expiresAt): self
     {
         $this->setData(self::EXPIRES_AT, $expiresAt);
+        return $this;
+    }
+
+    /**
+     * Set only when the popup action was configured with weighted reward_tiers and this is the
+     * tier that was randomly picked - see Model\Campaign\Action\ShowPopup. Null for an ordinary
+     * static popup.
+     */
+    public function getRewardLabel(): ?string
+    {
+        $value = $this->getData(self::REWARD_LABEL);
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setRewardLabel(?string $rewardLabel): self
+    {
+        $this->setData(self::REWARD_LABEL, $rewardLabel);
+        return $this;
+    }
+
+    /**
+     * Set only when the winning reward tier had a coupon_rule_id - a tier with none (e.g. a "Try
+     * again" tier) leaves this null even though rewardLabel is set.
+     */
+    public function getCouponCode(): ?string
+    {
+        $value = $this->getData(self::COUPON_CODE);
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setCouponCode(?string $couponCode): self
+    {
+        $this->setData(self::COUPON_CODE, $couponCode);
         return $this;
     }
 }

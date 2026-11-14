@@ -11,6 +11,14 @@ it doesn't update itself from this file.
 
 ### Added
 
+- **Gamified "spin the wheel" reward popup** — `ShowPopup`'s params gain an optional
+  `reward_tiers` array of `{label, weight, coupon_rule_id}` entries; a new
+  `Model\Campaign\RewardTierSelector` picks one with a real, re-rolled-per-delivery random weight
+  (deliberately not `SplitVariantSelector`'s sticky-per-customer determinism), and a tier with a
+  `coupon_rule_id` gets a real single-use coupon minted via the existing `Model\CouponGenerator`.
+  Frequency-capped by `ShowPopup`'s own existing cap, so a visitor can't just keep re-spinning.
+  `view/frontend/web/js/tracker.js` renders a brief spin reveal and a copyable coupon code,
+  dependency-free. See ADR 0059.
 - **Email one-click unsubscribe** — `send_email` campaign sends now carry a no-login
   `List-Unsubscribe`/`List-Unsubscribe-Post` header pair (RFC 8058) plus a visible footer link in
   `campaign_generic.html`, pointing at a new `Controller\Email\Unsubscribe` endpoint backed by a

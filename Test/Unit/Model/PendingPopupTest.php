@@ -84,4 +84,30 @@ class PendingPopupTest extends AbstractModelTestCase
 
         self::assertSame('2026-02-01 12:00:00', $model->getData(PendingPopup::EXPIRES_AT));
     }
+
+    public function testRewardLabelDefaultsToNull(): void
+    {
+        self::assertNull($this->makeModel()->getRewardLabel());
+    }
+
+    public function testRewardLabelRoundTrip(): void
+    {
+        $model = $this->makeModel();
+        $model->setRewardLabel('10% off');
+
+        self::assertSame('10% off', $model->getRewardLabel());
+    }
+
+    public function testCouponCodeDefaultsToNull(): void
+    {
+        self::assertNull($this->makeModel()->getCouponCode());
+    }
+
+    public function testCouponCodeRoundTrip(): void
+    {
+        $model = $this->makeModel();
+        $model->setCouponCode('ORDO-WHEEL-ABC123');
+
+        self::assertSame('ORDO-WHEEL-ABC123', $model->getCouponCode());
+    }
 }

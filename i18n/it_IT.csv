@@ -247,6 +247,8 @@
 "Reorder cycle with id ""%1"" does not exist.","Il ciclo di riordino con id ""%1"" non esiste."
 "Responded","Ha risposto"
 "Response rate","Tasso di risposta"
+"Reward tiers (JSON)","Livelli di premio (JSON)"
+"Optional: a JSON array of weighted reward tiers (label, weight, coupon_rule_id). One tier is randomly picked per popup; leave blank for a plain static popup.","Opzionale: un array JSON di livelli di premio ponderati (label, weight, coupon_rule_id). Per ogni popup viene scelto casualmente un livello; lasciare vuoto per un popup statico normale."
 "Reusable HTML snippet, RSS, and product feed blocks for campaign emails","Blocchi riutilizzabili di frammenti HTML, RSS e feed prodotti per le email di campagna"
 "Run Bulk Action","Esegui azione massiva"
 "Runs against everyone currently matching this segment's conditions. The action is queued and applied asynchronously.","Viene eseguita su tutti quelli che attualmente soddisfano le condizioni di questo segmento. L'azione viene messa in coda e applicata in modo asincrono."
