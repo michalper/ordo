@@ -54,6 +54,8 @@ cases separately from the type-by-type ones.
 | `wishlist_abandoned`      | `Cron/SendWishlistAbandonmentReminders.php`'s own dispatch, not a live observer | ✅ see §39 — Integration-level, no MFTF needed (same reasoning as §33's row) |
 | `visitor_tag_added`       | `Observer/DispatchVisitorTagAddedCampaigns.php` (`ordo_visitor_tag_added`)    | ✅ `AdminCampaignVisitorTagConditionTest`         |
 | `score_threshold_crossed` | `Observer/DispatchScoreThresholdCampaigns.php` (lead scoring, see §4)         | ✅ `AdminScoreThresholdCampaignTest`              |
+| `customer_inactive`       | `Cron/DispatchCustomerInactiveCampaigns.php` (docs/adr/0030) — a per-trigger `days` threshold, re-derived from `sales_order` directly, independent of `Cron\TagInactiveCustomers`' own fixed-threshold tag | ✅ `Test/Integration/DispatchCustomerInactiveCampaignsTest.php` (found during the 2026-11-14 full-sweep audit — the test already existed with real DB/claim/cooldown coverage, it simply had no SCENARIOS.md row at all despite its own ADR) |
+| `exit_intent`              | `Controller/Track/Event.php` → `ordo_visitor_exit_intent` → `Observer/DispatchExitIntentCampaigns.php` (docs/adr/0037) — anonymous-only, mirrors `DispatchVisitorTagAddedCampaigns` exactly | ⬜ found during the 2026-11-14 full-sweep audit — only `Test/Unit/Observer/DispatchExitIntentCampaignsTest.php` exists; the real event→publish→consume wiring for *this specific* event (`etc/events.xml`'s own binding) has never been exercised against a real queue the way `CampaignQueueWiringTest` does for `customer_register_success` — see "Suggested next batch" |
 
 ### 1b. Conditions (`Model\Campaign\ConditionPool`)
 
@@ -79,6 +81,8 @@ cases separately from the type-by-type ones.
 | `event_occurred`                      | `{event_type, event_key?, within_days}` (dedicated fields in both the segment form and the campaign Flow editor, cart_add/wishlist_add)                                                                         | ✅ `AdminEventOccurredConditionTest` (also covers `Observer\TrackCartAdd`'s real storefront add-to-cart flow; `TrackWishlistAdd` not separately covered - same `EventOccurredResolver` path, different producer) |
 | `not_in_segment`                      | `{segment_id}` (dedicated field, same options source as `in_segment`) — the exclusion counterpart to `in_segment`; fails closed (not "over-included") on a segment-reference cycle, same as `in_segment` itself | ✅ `AdminCampaignNotInSegmentConditionTest` (plus unit-tested, `NotInSegmentTest`)                                                                                                                               |
 | `reorder_cycle_at_risk`               | `{ratio_at_least}` (`Model\ReorderCycle\ReorderCycleDriftCalculator` — elapsed days since last order / the customer's own detected average interval)                                                          | ✅ `AdminReorderCycleAtRiskTest` (also covers `Cron\TagReorderCycleAtRiskCustomers` feeding the sales-rep digest — see §8/§11)                                                                                  |
+| `churn_risk_at_least`                 | `{churn_risk_ratio_at_least}` (`Model\ChurnRisk\ChurnRiskCalculator` — generalizes `reorder_cycle_at_risk` to every customer with ≥2 orders of any SKU, not just a detected per-SKU cycle)                    | ✅ `Test/Integration/ChurnRiskAtLeastConditionScenarioTest.php` — found during the 2026-11-14 full-sweep audit with ZERO SCENARIOS.md footprint and only `Test/Unit` (mocked connection/clock) coverage despite gating a real dispatched action; same generic-numeric-field reasoning as `loyalty_tier_at_least`/`survey_response_equals` for staying Integration-only, no MFTF needed |
+| `message_engaged`                     | `{campaign_id, engagement_type, engagement_within_days}` (`Model\Email\MessageEngagementResolver` — reads a prior send's own `ordo_message_log`/`ordo_message_log_event` rows)                               | ⬜ found during the 2026-11-14 full-sweep audit — only `Test/Unit/Model/Campaign/Condition/MessageEngagedTest.php` (mocked resolver); the real `MessageEngagementResolver` query against real `ordo_message_log_event` rows has no DB-backed proof — see "Suggested next batch" |
 
 ### 1c. Actions (`Model\Campaign\ActionPool`)
 
@@ -100,6 +104,7 @@ cases separately from the type-by-type ones.
 | `send_push`                                                                     | `{title, body, url}`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | ✅ `Test/Unit/Model/Campaign/Action/SendPushTest.php` — consent gate, multi-subscription fan-out, dead-subscription cleanup on 404/410; `Test/Unit/Model/Push/*` covers the RFC 8291/8292 crypto itself in depth (real browser/push service still needed for an actual delivered notification, see ROADMAP.md); correctly out of MFTF's own scope, same reasoning as `send_sms`'s own row above |
 | `generate_ai_content`                                                           | `{prompt, output_key, fallback}`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | ✅ unit-tested (`GenerateAiContentTest`) plus `Test/Integration/GenerateAiContentActionTest` — the latter proves a REAL unreachable Ollama host (`Model\Http\JsonApiClient`'s real cURL call, not mocked) is actually caught by `OllamaClient::generate()`'s own `catch (Throwable)`, not just simulated by a mock returning null                                                        |
 | `split` (A/B testing)                                                           | `{variants: [{key, weight, actions: [...]}]}` — see §28                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | ⬜ unit-tested (`SplitVariantSelectorTest`), no MFTF yet                                                                                                                                                                                                                                                                                                                                        |
+| `send_rcs`                                                                      | `{message}` (RCS — Google's Rich Communication Services, same channel-action shape as `send_sms`/`send_whatsapp`/`send_push`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | ⬜ found during the 2026-11-14 full-sweep audit with ZERO SCENARIOS.md footprint — only `Test/Unit/Model/Campaign/Action/SendRcsTest.php`; correctly out of MFTF's scope either way (no live provider account, same reasoning `send_whatsapp`/`send_push` already give), but unlike `send_sms` never got the real-DI/database `Test/Integration` treatment either — see "Suggested next batch" |
 
 ### 1d. Structural cases (not type-specific)
 
@@ -711,7 +716,60 @@ real: `OK (4 tests, 12 assertions)`. Re-ran immediately afterward with `SELECT C
 `ordo_anomaly_alert`/`ordo_campaign_outcome_log`/`sales_order`/`core_config_data` to confirm `tearDown()`/
 `tearDownAfterClass()` left zero rows behind.
 
+## 42. Full-sweep audit (2026-11-14) — standalone analytics/reporting grids with zero footprint
+
+A systematic sweep of every `Controller/Adminhtml/*/Index.php`, every `ConditionPool`/`ActionPool`
+entry, every `CampaignTriggerInterface::TRIGGER_*` constant, and every `etc/crontab.xml` job
+against this document (not just the five items PRs #367/#368 already named) turned up a cluster of
+standalone analytics/reporting admin grids shipped with real, non-trivial SQL in their own backing
+`Grid\Collection` classes but **never enumerated in this document at all** - distinct from §29's
+campaign-performance subsystem, these are cross-cutting reports with no entity table of their own.
+
+| Grid / cron (`Controller/Adminhtml/*`, `Cron/*`) | What it does | Status |
+|---|---|---|
+| Campaign Comparison (`ordo/campaigncomparison/index`, `Model\ResourceModel\CampaignComparison\Grid\Collection`) | One row per campaign (sent/converted/conversion-rate/attributed-revenue/avg-converted-CLV), built entirely from derived-table joins in `_initSelect()` — zero-sends campaigns still show an honest 0/0/$0 row, revenue reads `ordo_campaign_attribution` (not the non-unique `ordo_campaign_outcome_log.order_id`), `avg_converted_clv` counts each converted customer once even if they converted twice | ✅ `Test/Integration/CampaignComparisonGridCollectionTest.php` — real DB proof of all three of those claims, following the same "no backing table, prove the real SQL" precedent `Test/Integration/CohortRetentionGridCollectionTest.php` already set for its sibling grid |
+| Revenue Analytics (`ordo/revenueanalytics/index`, `Model\ResourceModel\RevenueAnalytics\Grid\Collection`) | One row per order — coupon code, country/city, new-vs-returning (own-customer first-order detection), `campaign_name` (outcome-log attribution) vs. `coupon_campaign_name` (a *different*, coupon-keyed attribution via `ordo_coupon_campaign_log`) | ⬜ only the plain controller's `Test/Unit`; the multi-subquery SQL (first-order-per-customer, primary-outcome tie-break, coupon-campaign join) has no real-DB proof — see "Suggested next batch" |
+| Funnel Report (`ordo/funnelreport/index`, `Model\ResourceModel\FunnelReport\Grid\Collection`) | One row per day, extending the real `ordo_funnel_daily_stats` table with a live `sales_order` join for the final stage and computed drop-off-rate columns; overrides `addFieldToFilter()` to resolve an otherwise-ambiguous `date` column | ⬜ only `Test/Unit`; `Cron\CalculateFunnelMetrics` (which populates the underlying table) already has `Test/Integration/CalculateFunnelMetricsTest.php`, but nothing exercises this grid's own live join/drop-off-rate math or its `addFieldToFilter()` override — see "Suggested next batch" |
+| Cohort Retention (`ordo/cohortretention/index`, `Model\ResourceModel\CohortRetention\Grid\Collection`) | Month-cohort retention, acquisition-campaign narrowing via a `ROW_NUMBER()` window function | ✅ already had real coverage (`Test/Integration/CohortRetentionGridCollectionTest.php`) — simply never had a SCENARIOS.md row; documented here, nothing new written |
+| Product Performance (`ordo/productperformance/index`, `Cron\CalculateProductPerformance`) | Cron incrementally sums `product_view` events into `ordo_product_performance.view_count` via a flag-manager watermark + per-SKU `INSERT ... ON DUPLICATE KEY UPDATE ... = value + VALUES(value)` upsert (deliberately not a full rescan); the grid live-joins `sales_order_item` for purchase counts | ⬜ only `Test/Unit` (mocked connection) for both the cron and the grid; the watermark/batching/upsert-increment logic in particular is exactly the kind of thing a mock can hide a bug behind — see "Suggested next batch" |
+| Customer 360 (`ordo/customer360/index`, `Model\Customer360\Customer360SnapshotBuilder`, docs/adr/0050) | Single-customer dashboard aggregating RFM/CLV/churn-risk/loyalty/segment membership into one snapshot | ⬜ only `Test/Unit` (every collaborator mocked) — the real aggregation across several real tables has no DB-backed proof — see "Suggested next batch" |
+| Email Template Draft (`ordo/emailtemplatedraft/*`) | Draft/preview/publish workflow for `send_email` templates | ✅ already had real coverage (`Test/Integration/EmailTemplateDraftScenarioTest.php`) — simply never had a SCENARIOS.md row; documented here, nothing new written |
+| Email Template Version (`ordo/emailtemplateversion/index`) | Version history + restore, snapshotted by `Plugin\Email\SnapshotEmailTemplateVersion` | ✅ already had real coverage (`Test/Integration/EmailTemplateVersioningScenarioTest.php`, referenced only in this document's own closing notes until now) — documented here with its own row |
+
+Also found in the same cron/trigger sweep, outside this grid cluster: `Cron\PruneMessageLog`,
+`Cron\SendStalledPaymentReminders`, and `Cron\TagLoyaltyMilestones` each have zero
+Integration/MFTF coverage and zero SCENARIOS.md footprint (only `Test/Unit`) - see "Suggested next
+batch" for all of these, prioritized.
+
 ## Suggested next batch (highest signal per test written)
+
+**From the 2026-11-14 full-sweep audit (§42, plus the `customer_inactive`/`exit_intent` triggers
+and `message_engaged`/`send_rcs` condition/action rows added to §1a-§1c above) - not yet closed,
+in priority order (real write/aggregation path with zero coverage first):**
+
+1. `Model\ResourceModel\RevenueAnalytics\Grid\Collection` - the most complex untested SQL found
+   this pass (new-vs-returning first-order detection, dual campaign/coupon-campaign attribution,
+   canceled-order exclusion) - same "no backing table, prove the real SQL" treatment this pass
+   already gave `CampaignComparison`'s sibling grid.
+2. `Cron\CalculateProductPerformance` - the watermark/batching/per-SKU-increment upsert logic is
+   real, stateful, and only unit-tested against a mocked connection.
+3. `Model\ResourceModel\FunnelReport\Grid\Collection` - the live join + drop-off-rate math + the
+   `addFieldToFilter()` ambiguous-column override.
+4. `Model\Campaign\Condition\MessageEngaged` / `Model\Email\MessageEngagementResolver` - same
+   "real engine condition, zero DB-backed proof" shape this pass already closed for
+   `churn_risk_at_least`.
+5. `Observer\DispatchExitIntentCampaigns` - the real event→publish→consume wiring for
+   `ordo_visitor_exit_intent` specifically has never been exercised end to end (only a mocked
+   publisher in `Test/Unit`).
+6. `Model\Customer360\Customer360SnapshotBuilder` - real aggregation across several real tables,
+   currently only proven with every collaborator mocked.
+7. `Cron\PruneMessageLog` / `Cron\SendStalledPaymentReminders` / `Cron\TagLoyaltyMilestones` -
+   lower priority than the above (simpler, more mechanical DB operations each), but all three are
+   genuine zero-coverage crons with real write paths.
+8. `Model\Campaign\Action\SendRcs` - lowest priority of this batch; same accepted "no live
+   provider account, unit-only" posture `send_whatsapp`/`send_push` already have, but never even
+   got `send_sms`'s own extra `Test/Integration` treatment (real DI/DB, faked transport tail) -
+   worth it only for consistency, not because of any real risk found.
 
 **Status: the 2026-09-20 re-audit is fully closed (as of 2026-09-23).** Every row from that re-audit — §8, §11,
 §18, §26, §27, §28, §29, and §1c's `generate_ai_content`/`RetryFailedPushSends` — is now ✅. Re-audit this
