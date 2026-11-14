@@ -19,7 +19,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Real DI, real DB, no mocks (see magento-integration-test-lite / this suite's other tests) -
- * proves the REST/service-layer plumbing docs/adr/0059 describes actually works: a real
+ * proves the REST/service-layer plumbing docs/adr/0062 describes actually works: a real
  * customer, a real ordo_loyalty_points_ledger balance (earned through the real
  * LoyaltyPointsManager::earnForOrder() path, not inserted directly), a real ordo_customer_score
  * row giving a real Silver tier, and GoogleWalletPassLinkBuilder (auto-wired by the real Magento
@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
  * service account key would be. The JWT is independently decoded and signature-verified here,
  * and its embedded LoyaltyObject payload is asserted against the customer's real DB rows.
  *
- * Deliberately scoped to what this stops short of, per docs/adr/0059's own Consequences:
+ * Deliberately scoped to what this stops short of, per docs/adr/0062's own Consequences:
  * - The thin customer-id-resolution wrapper around this (Model\LoyaltyWalletPassManagement,
  *   which the real webapi.xml route under test dispatches to) is covered by its own
  *   Test\Unit\Model\LoyaltyWalletPassManagementTest - UserContextInterface is a real token-auth
@@ -39,7 +39,7 @@ use PHPUnit\Framework\TestCase;
  *   is instead covered by Test\Api\LoyaltyWalletPassApiTest.php, a real-HTTP, real-customer-token
  *   test environment-gated the same way its sibling LoyaltyPointsApiTest already is.
  * - No real Google-issued service account key, no real Issuer ID, and no real device ever
- *   receives this JWT - that gap is permanent and accepted, not pending (docs/adr/0059).
+ *   receives this JWT - that gap is permanent and accepted, not pending (docs/adr/0062).
  *
  * Run from the Magento root: vendor/bin/phpunit --bootstrap app/bootstrap.php
  * vendor/michalper/ordo/Test/Integration/LoyaltyWalletPassEndpointTest.php

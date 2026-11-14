@@ -1,4 +1,4 @@
-# ADR 0059: Digital loyalty wallet pass - Google Wallet only, real-device verification accepted as a permanent gap
+# ADR 0062: Digital loyalty wallet pass - Google Wallet only, real-device verification accepted as a permanent gap
 
 ## Status
 

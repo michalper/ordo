@@ -17,7 +17,7 @@ use Ordo\Automation\Model\LoyaltyTierCalculator;
  * tier concept, just a read-only projection of what already exists onto Google's schema.
  *
  * This never calls the real Google Wallet Objects REST API to create the object ahead of time -
- * doing so needs a live Issuer account this project doesn't have (see docs/adr/0059). Instead the
+ * doing so needs a live Issuer account this project doesn't have (see docs/adr/0062). Instead the
  * full object is embedded inline in the JWT (GoogleWalletJwtBuilder's job), which Google's own
  * "Save to Google Wallet" flow accepts in lieu of a pre-created one - the loyalty *class*
  * (program name/branding) still has to be created once, out of band, in the Google Pay & Wallet

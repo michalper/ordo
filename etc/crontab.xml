@@ -133,6 +133,9 @@
         <job name="ordo_automation_scan_review_request_due" instance="Ordo\Automation\Cron\ScanReviewRequestDue" method="execute">
             <schedule>0 * * * *</schedule>
         </job>
+        <job name="ordo_automation_send_wishlist_abandonment_reminders" instance="Ordo\Automation\Cron\SendWishlistAbandonmentReminders" method="execute">
+            <schedule>0 9 * * *</schedule>
+        </job>
         <job name="ordo_automation_detect_anomalies" instance="Ordo\Automation\Cron\DetectAnomalies" method="execute">
             <schedule>0 11 * * *</schedule>
         </job>

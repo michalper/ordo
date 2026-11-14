@@ -9,7 +9,7 @@ namespace Ordo\Automation\Test\Api;
  * credentials (issuer id, class id, service account email/private key) configured on the target
  * instance, which this portable client has no way to set up on an arbitrary instance - same
  * "exercise the real not-configured failure path instead" reasoning LoyaltyPointsApiTest already
- * gives for redemption. See docs/adr/0059 for why that gap is permanent, not pending.
+ * gives for redemption. See docs/adr/0062 for why that gap is permanent, not pending.
  */
 class LoyaltyWalletPassApiTest extends AbstractApiTestCase
 {

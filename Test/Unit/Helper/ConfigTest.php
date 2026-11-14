@@ -60,6 +60,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isQuietHoursEnabled());
         self::assertTrue($this->config->isMetaCatalogFeedEnabled());
         self::assertTrue($this->config->isReviewRequestEnabled());
+        self::assertTrue($this->config->isWishlistAbandonmentEnabled());
         self::assertTrue($this->config->isEmailTemplateVersioningEnabled());
         self::assertTrue($this->config->isReferralEnabled());
         self::assertTrue($this->config->isLoyaltyPointsEnabled());
@@ -370,6 +371,8 @@ class ConfigTest extends TestCase
         self::assertSame(7, $this->config->getOfferSelfExtensionDays());
         self::assertSame(80, $this->config->getCreditLimitWarningThreshold());
         self::assertSame(14, $this->config->getReviewRequestDelayDays());
+        self::assertSame(7, $this->config->getWishlistAbandonmentDelayDays());
+        self::assertSame(1, $this->config->getWishlistAbandonmentMaxReminders());
         self::assertSame(7, $this->config->getCreditLimitAlertCooldownDays());
         self::assertSame(90, $this->config->getWinBackInactiveDays());
         self::assertSame(3, $this->config->getClvProjectionYears());

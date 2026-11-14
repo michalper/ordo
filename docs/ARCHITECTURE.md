@@ -144,7 +144,7 @@ Directory/class map for anyone working on the code. Not shipped documentation fo
   `Api/LoyaltyWalletPassManagementInterface.php`, `Controller/LoyaltyWalletPass/Google.php` — a real,
   RS256-signed "Add to Google Wallet" link for the customer's existing points balance/tier, no vendor
   SDK, same precedent as `Model/Push/WebPushCrypto.php` below. Google Wallet only, no Apple Wallet - see
-  ADR 0059
+  ADR 0062
 
 ## Churn-risk signal
 
