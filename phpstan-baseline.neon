@@ -1407,7 +1407,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 24
+			count: 27
 			path: Helper/Config.php
 
 		-
@@ -3941,6 +3941,12 @@ parameters:
 			identifier: return.type
 			count: 1
 			path: Model/VisitorTagManager.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/Wallet/GoogleWalletJwtBuilder.php
 
 		-
 			message: '#^Cannot access offset ''id'' on mixed\.$#'

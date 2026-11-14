@@ -1,0 +1,31 @@
+<?php
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \Magento\Framework\Escaper $escaper */
+/** @var \Ordo\Automation\Block\Frontend\LoyaltyWalletPassViewModel $viewModel */
+$viewModel = $block->getData('view_model');
+?>
+<!-- Same Luma + inert-on-Luma Tailwind utility classes as offer/index.phtml - see that
+     template's own comment for why both class sets are present together. -->
+<?php if ($viewModel->isAvailable()): ?>
+<div class="block block-ordo-wallet-pass lg:mb-4">
+    <div class="block-title lg:mb-4 lg:text-lg lg:font-semibold">
+        <strong><?= $escaper->escapeHtml(__('Loyalty Wallet Pass')) ?></strong>
+    </div>
+    <div class="block-content">
+        <p class="lg:mb-2">
+            <?= $escaper->escapeHtml(__('Add your loyalty points and tier to Google Wallet as a scannable card.')) ?>
+        </p>
+        <p class="lg:mb-2">
+            <?= $escaper->escapeHtml(
+                __('%1 points - %2 tier', $viewModel->getPointsBalance(), $viewModel->getTierLabel())
+            ) ?>
+        </p>
+        <a
+            href="<?= $escaper->escapeUrl($block->getUrl('ordo/loyaltywalletpass/google')) ?>"
+            class="action primary lg:rounded lg:bg-gray-800 lg:px-3 lg:py-1 lg:text-white"
+        >
+            <?= $escaper->escapeHtml(__('Add to Google Wallet')) ?>
+        </a>
+    </div>
+</div>
+<?php endif; ?>

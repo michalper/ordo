@@ -11,6 +11,16 @@ it doesn't update itself from this file.
 
 ### Added
 
+- **Digital loyalty wallet pass (Google Wallet)** — a logged-in customer's "My Offers" account
+  page now has an "Add to Google Wallet" button producing a real, RS256-signed "Save to Google
+  Wallet" link embedding their live points balance (`LoyaltyPointsManager`) and tier
+  (`LoyaltyTierCalculator`) as a scannable membership card (`Model\Wallet\GoogleWalletLoyaltyObjectBuilder`/
+  `GoogleWalletJwtBuilder`/`GoogleWalletPassLinkBuilder`), no vendor SDK - same hand-rolled-protocol
+  precedent as `Model\Push\WebPushCrypto`. Also exposed over REST
+  (`GET /V1/ordo/loyalty-wallet-pass/google`) for a headless/PWA storefront. Apple Wallet is
+  deliberately out of scope for v1, and real on-device verification is a permanent, accepted test
+  gap, same class as the existing Google Ads Customer Match/WhatsApp Business verification gaps -
+  see ADR 0059 and `ROADMAP.md`'s "Test coverage" section.
 - **Email one-click unsubscribe** — `send_email` campaign sends now carry a no-login
   `List-Unsubscribe`/`List-Unsubscribe-Post` header pair (RFC 8058) plus a visible footer link in
   `campaign_generic.html`, pointing at a new `Controller\Email\Unsubscribe` endpoint backed by a

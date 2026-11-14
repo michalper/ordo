@@ -607,6 +607,31 @@ No admin screen to test (five plain config fields, same shape as §36). See ADR 
 | The real REST routes (`/V1/ordo/loyalty-points/mine` GET, `/V1/ordo/loyalty-points/redeem` POST) against a live instance - balance read, redeem's real failure reasons, auth requirement, and a full real earn-then-redeem cycle | ✅ `Test/Api/LoyaltyPointsApiTest.php` (auth/business-rule paths) + manually live-verified 2026-11-09 against the sandbox's real `php -S`/Varnish stack with a real customer token: anonymous → 401; authenticated, feature disabled → `{"message":"Loyalty points are not enabled."}`; a real order (`entity_id` 233, $77.50) credited via `LoyaltyPointsManager::earnForOrder()` → balance 77 → `POST .../redeem` → real coupon `LOYALTY-TT2KMWCMK2` minted against a real cart price rule (confirmed in `salesrule_coupon`, `usage_limit` 1, unused) → balance correctly dropped to 27 |
 | The GraphQL schema additions (`ordoLoyaltyPointsBalance`, `redeemOrdoLoyaltyPoints`) parse and resolve for real | ✅ Live-verified 2026-11-09 via real introspection (`__type`/`__schema` queries confirm both the new type's fields and both new root fields are registered) and real execution with/without a customer token - **caught a real bug this way**: `LoyaltyPointsManagement`'s guest check only tested `=== null`, but `UserContextInterface::getUserId()` returns `0` for an anonymous GraphQL request (the exact trap `Resolver\CreditLimit`'s own docblock already documents for its own service) - an anonymous `ordoLoyaltyPointsBalance` query silently returned `0` instead of a GraphQL authorization error until fixed to check for `0` too, re-verified live after the fix |
 
+## 38. Digital loyalty wallet pass - Google Wallet (`Model/Wallet/{GoogleWalletLoyaltyObjectBuilder,
+GoogleWalletJwtBuilder,GoogleWalletPassLinkBuilder}.php`, `Api/LoyaltyWalletPassManagementInterface.php`,
+`Controller/LoyaltyWalletPass/Google.php`)
+
+No admin screen to test (five plain config fields, same shape as §36/§37). See ADR 0059. The storefront
+"My Offers" page does get a new, real button ("Add to Google Wallet") - genuinely browser-observable, the
+kind of thing MFTF normally covers. **Deliberately no MFTF here anyway**: the button's only real action is
+a redirect to `pay.google.com`, a real external domain this module doesn't control and Selenium shouldn't
+be made to navigate to in CI, and completing that flow needs a real Google-issued service account key this
+project doesn't have (ADR 0059) - an MFTF test could at most assert the button's presence/absence by config
+flag, which the view model's own unit test already covers more directly and without a browser. Same
+reasoning `send_sms`/`send_push`/`SyncAdAudiences` rows already give for staying out of MFTF's scope.
+
+| Scenario                                                                                                   | Status                                                                                                                                                                                                                      |
+|---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `GoogleWalletLoyaltyObjectBuilder` projects the real points balance/tier onto Google's `LoyaltyObject` shape | ✅ `Test/Unit/Model/Wallet/GoogleWalletLoyaltyObjectBuilderTest.php` |
+| `GoogleWalletJwtBuilder` RS256-signs a real, independently-verifiable JWT; private-key-load/signing-failure branches | ✅ `Test/Unit/Model/Wallet/GoogleWalletJwtBuilderTest.php` (real RSA keypair, real `openssl_verify()`) |
+| `GoogleWalletPassLinkBuilder`'s config gate - feature disabled, and each of the four Google Wallet credentials missing individually | ✅ `Test/Unit/Model/Wallet/GoogleWalletPassLinkBuilderTest.php` |
+| `LoyaltyWalletPassManagement`'s REST-shared identity resolution (`UserContextInterface`, including the guest-returns-0 trap - see §37's own row) | ✅ `Test/Unit/Model/LoyaltyWalletPassManagementTest.php` |
+| `Controller\LoyaltyWalletPass\Google`'s redirect-to-save-URL / error-and-redirect-to-My-Offers paths | ✅ `Test/Unit/Controller/LoyaltyWalletPass/GoogleTest.php` |
+| `LoyaltyWalletPassViewModel`'s availability gate (feature flag + logged-in customer) and balance/tier passthrough | ✅ `Test/Unit/Block/Frontend/LoyaltyWalletPassViewModelTest.php` |
+| Real DI wiring end to end: a real customer, a real `ordo_loyalty_points_ledger` balance (earned via the real `LoyaltyPointsManager::earnForOrder()` path), a real `ordo_customer_score` row crossing the Silver threshold, and the real, auto-wired `GoogleWalletPassLinkBuilder` producing a byte-correct, independently-verifiable RS256 JWT embedding both | ✅ `Test/Integration/LoyaltyWalletPassEndpointTest.php` (not executed against the shared sandbox by the agent that wrote it - see its own docblock for exactly what it does and doesn't cover) |
+| The real REST route (`GET /V1/ordo/loyalty-wallet-pass/google`) against a live instance - auth requirement, real not-configured failure reason | ✅ `Test/Api/LoyaltyWalletPassApiTest.php` (same env-gated shape as `LoyaltyPointsApiTest.php`; not executed against the shared sandbox either - needs real Google Wallet credentials for a success-path run, which is the permanent gap itself) |
+| Real on-device verification - a real Google Wallet Issuer account, a real phone | ❌ **Permanent, accepted gap, not a pending task** - see ADR 0059 and `ROADMAP.md`'s "Test coverage" section |
+
 ## Suggested next batch (highest signal per test written)
 
 **Status: the 2026-09-20 re-audit is fully closed (as of 2026-09-23).** Every row from that re-audit — §8, §11,

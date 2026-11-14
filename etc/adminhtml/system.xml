@@ -136,6 +136,35 @@
                     <comment>Tags a customer the moment they cross a fixed order-count milestone (1st, 5th, 10th, 25th, 50th order) or reach a Silver/Gold loyalty tier, so a campaign can react to that moment with the existing "Has Tag" condition and "tag_added" trigger - no new trigger type, no new table.</comment>
                 </field>
             </group>
+            <group id="loyalty_wallet_pass" translate="label" type="text" sortOrder="465" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Loyalty Wallet Pass</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Lets a customer add their loyalty points balance and tier to Google Wallet as a scannable membership card pass, from the storefront "My Offers" account page. Needs a Google Wallet Issuer account and a service account key configured below - see docs/adr/0059. No Apple Wallet support yet (deliberately out of scope for v1, see that ADR).</comment>
+                </field>
+                <field id="google_issuer_id" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Google Wallet Issuer ID</label>
+                    <comment>The numeric Issuer ID from the Google Pay &amp; Wallet Console, after completing Google's Loyalty program business verification.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="google_class_id" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Google Wallet Loyalty Class ID</label>
+                    <comment>The loyalty class id (without the issuer id prefix) created for this program in the Google Pay &amp; Wallet Console - this module never creates the class itself.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="google_service_account_email" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Google Wallet Service Account Email</label>
+                    <comment>The "client_email" field from the service account's downloaded JSON key.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="google_private_key" translate="label" type="obscure" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Google Wallet Service Account Private Key</label>
+                    <comment>The "private_key" field (PEM, including the BEGIN/END PRIVATE KEY lines) from the same JSON key. Signs every "Add to Google Wallet" link - never sent to the browser.</comment>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="stalled_payment" translate="label" type="text" sortOrder="47" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Stalled Payment Reminder</label>
                 <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
