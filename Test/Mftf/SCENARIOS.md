@@ -651,7 +651,40 @@ already covered by every other cron trigger's own MFTF.
 | A registered customer who added a product to their wishlist more than `delay_days` ago, with no non-canceled order line for that exact SKU placed since, fires `wishlist_abandoned` once, claimed via `ordo_wishlist_abandoned_reminder_log` so a second run doesn't re-fire it | ✅ `Test/Integration/SendWishlistAbandonmentRemindersTest.php` (real DB `wishlist`/`wishlist_item` rows, real dispatch, real claim-table dedup across two runs) |
 | Config gate (disabled), the per-SKU "already bought it" exclusion, and the batched scan/claim/dispatch logic in isolation | ✅ `Test/Unit/Cron/SendWishlistAbandonmentRemindersTest.php` |
 
+## 40. Fourth-round brainstorm features (2026-11-13) - referral fraud signal, campaign chain exit
+condition, campaign holdout group, email one-click unsubscribe
+
+Four features (PRs #354-357) shipped with 100% unit coverage but, per `AGENTS.md`'s "New code needs its own
+tests" section, no real system-level proof at all - closed here via a 2026-11-14 audit against the real code
+and each feature's own ADR (0055-0058), applying this document's own MFTF-vs-Integration criteria (genuinely
+admin/browser-observable AND not already covered by generic rendering → MFTF; a new wiring path a mock could
+hide a bug behind → Integration) rather than defaulting to MFTF for everything new.
+
+| Feature | Admin/browser surface | Decision | Why |
+|---|---|---|---|
+| Referral duplicate-identity signal (`Model\ReferralManager::recordSignup()`'s `isDuplicateIpSignup()`, ADR 0056) | New read-only "Referrals" grid (`ordo/referral/index`, `Controller\Adminhtml\Referral\Index`) with a `duplicate_ip_flag` column, mirroring `Controller\Adminhtml\AnomalyAlert\Index` | ✅ `Test/Integration/ReferralDuplicateIpSignalScenarioTest.php` for the flagging logic itself; **no new MFTF for the grid** | The grid is the exact same `Magento_Ui` listing-component shape `AdminRfmReportGridReflectsRealDataTest`/`AdminMessageLogGridReflectsRealDataTest` already prove generically (a real grid renders real column data) - a new column on an already-proven grid shape doesn't need its own MFTF test, same reasoning §32 gives for a new dropdown option. What's genuinely untested is the real DB-backed flagging decision (`ordo_referral.signup_ip`/`duplicate_ip_flag`, the new `(referrer_customer_id, signup_ip)` index, `Collection::addReferrerCustomerFilter()`/`addSignupIpFilter()`) - `ReferralProgramScenarioTest` predates this feature and never touches it, and `Test/Unit/Model/ReferralManagerTest.php` mocks the collection, so neither proves the real schema/query actually works. Also fixed in the same pass: `etc/db_schema.xml`'s `signup_ip`/`duplicate_ip_flag`/`is_holdout` column comments referenced the wrong ADR number (0055, the exit-condition ADR) - corrected to 0056/0057 respectively. |
+| Campaign chain exit condition (`CampaignDispatcher::resumeScheduledAction()`'s `exitConditionMet()`, ADR 0055) | One JSON textarea field (`exit_conditions`) on the classic campaign form - ADR 0055 itself documents "no dedicated admin UI beyond a raw JSON field" as the v1 scope | ✅ `Test/Integration/CampaignChainExitConditionScenarioTest.php`; **no MFTF** | A plain textarea on the classic form saving/reloading a column is the same generic field-save mechanism `AdminEditCampaignConditionReplacesNotDuplicatesTest` and this module's other classic-form fields already exercise - nothing newly admin-visible to click through. The real, previously-unverified risk is dispatcher logic: does a real multi-step `delay_minutes` chain, backed by a real `ordo_campaign.exit_conditions` column and a real `Cron\RunScheduledCampaignActions` resume, actually stop early once the condition is satisfied, while never checking it during the initial synchronous dispatch (a deliberate asymmetry the ADR calls out) - exactly ADR 0055's own "Consequences" section flags as unverified ("No Integration/MFTF coverage was added... left to CI's own Integration Tests job"). |
+| Campaign holdout group (`CampaignDispatcher::runCampaign()`'s holdout check, `Model\Campaign\HoldoutSelector`, ADR 0057) | One plain `holdout_percent` number field on the classic campaign form | ✅ `Test/Integration/CampaignHoldoutGroupScenarioTest.php`; **no MFTF** | Same reasoning as the exit condition row above - a plain numeric field on an already-MFTF-proven form. ADR 0057's own "Consequences" section explicitly flags this as unverified against a real instance ("implemented and verified with this repo's own standalone unit-test toolchain only... the schema migration, admin form rendering, and the dispatcher's real DB-backed behavior are NOT verified"). The Integration test proves a real `holdout_percent=100` customer gets zero actions run (not even a non-sending `add_tag`) while a real `ordo_campaign_outcome_log` row is still written with `is_holdout=1`, that `holdout_percent=0`/no `customer_id` in context never holds anyone out, and that `getStats()`/`getHoldoutStats()` genuinely partition the same real table. |
+| Email one-click unsubscribe (`Controller\Email\Unsubscribe`, `Model\Email\UnsubscribeTokenManager`, ADR 0058) | No admin UI - a storefront, no-login GET/POST controller and a `List-Unsubscribe` email header | ✅ `Test/Integration/EmailUnsubscribeTokenScenarioTest.php`; **no MFTF** | The controller itself (request parsing, the rendered confirmation page) stays correctly `Test/Unit`-only, same reasoning this document already gives `Controller\Webhook\Receive`/`Controller\Sms\Reply` (§22/§23) - a public, no-login endpoint with no admin UI and no meaningfully browser-distinctive effect beyond a flash message doesn't earn its own MFTF test. What every existing test (`UnsubscribeTokenManagerTest`, `UnsubscribeTest`) mocks away, and genuinely needed real-DI/DB proof, is whether the signed-HMAC token actually round-trips through this installation's REAL crypt key (`EncryptorInterface`, not a stub) and whether acting on a resolved token - `ConsentManager::setConsent($customerId, $channel, false, 'unsubscribe_link')`, exactly what the controller's `execute()` does - writes a real, durable `ordo_customer_consent`/`ordo_customer_consent_log` row a later `send_email`/`send_sms` dispatch will actually see. |
+
+All four Integration tests above were written against this audit's own reading of the real code and run against
+the shared `magento-ordo-test` sandbox - see this document's own git history / the PR that added this section for
+whether they were observed passing for real or only written and left for CI, the same honesty bar
+ADR 0057's own "Consequences" section already modeled for its own pre-existing gap.
+
 ## Suggested next batch (highest signal per test written)
+
+**Not yet closed (found during the 2026-11-14 audit, lower priority than §40 above):** `Controller\Adminhtml\
+AnomalyAlert\Index` (`ordo/anomalyalert/index`) is a read-only grid - same shape as the new Referrals grid in §40
+above, same `Magento_Ui` listing component - with literally zero SCENARIOS.md row and zero MFTF/Integration
+coverage of its own (`Test/Unit/Controller/Adminhtml/AnomalyAlert/*` and `Test/Unit/Model/Anomaly/
+AnomalyAlertTest.php` only). Per §40's own reasoning, the grid rendering itself likely doesn't need a dedicated
+MFTF test (already-proven generic shape), but `Model\Anomaly\AnomalyAlert`'s own real detection/write path
+(whatever cron or observer populates `ordo_anomaly_alert` - not traced as part of this pass) has no real-DB
+proof either. Worth a future pass to trace what writes to that table and apply the same MFTF-vs-Integration
+judgment §39 did for the Referrals grid.
+
+
 
 **Status: the 2026-09-20 re-audit is fully closed (as of 2026-09-23).** Every row from that re-audit — §8, §11,
 §18, §26, §27, §28, §29, and §1c's `generate_ai_content`/`RetryFailedPushSends` — is now ✅. Re-audit this
