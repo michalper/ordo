@@ -55,6 +55,30 @@ class CampaignOutcomeLogger
      */
     public function logSent(int $campaignId, ?string $variant, int $customerId, ?int $triggerOrderId = null): void
     {
+        $this->insertOutcomeRow($campaignId, $variant, $customerId, $triggerOrderId, false);
+    }
+
+    /**
+     * The holdout counterpart of logSent() — CampaignDispatcher::runCampaign() calls this instead
+     * of ever running an action, once a customer lands in a campaign's deliberate no-send holdout
+     * group (Model\Campaign\HoldoutSelector, docs/adr/0057). variant is always null here: a
+     * held-out customer was never routed into any split action's variant, there's nothing to
+     * attribute. The same catch-up/markActed() machinery logSent() uses still applies afterward -
+     * a held-out customer's own later order still needs to count toward this group's organic
+     * conversion rate (getHoldoutStats()), exactly the number this feature exists to produce.
+     */
+    public function logHeldOut(int $campaignId, int $customerId, ?int $triggerOrderId = null): void
+    {
+        $this->insertOutcomeRow($campaignId, null, $customerId, $triggerOrderId, true);
+    }
+
+    private function insertOutcomeRow(
+        int $campaignId,
+        ?string $variant,
+        int $customerId,
+        ?int $triggerOrderId,
+        bool $isHoldout
+    ): void {
         $connection = $this->resourceConnection->getConnection();
         $connection->insert($this->resourceConnection->getTableName('ordo_campaign_outcome_log'), [
             'campaign_id' => $campaignId,
@@ -62,6 +86,7 @@ class CampaignOutcomeLogger
             'customer_id' => $customerId,
             'sent_at' => date('Y-m-d H:i:s'),
             'trigger_order_id' => $triggerOrderId,
+            'is_holdout' => $isHoldout,
         ]);
 
         if ($triggerOrderId === null) {
@@ -124,6 +149,12 @@ class CampaignOutcomeLogger
      * the null/no-split variant, since array keys can't be null) — null $campaignId aggregates
      * across every campaign instead, one row per campaign_id+variant pair.
      *
+     * Excludes is_holdout rows — a deliberately-held-out customer (Model\Campaign\HoldoutSelector,
+     * docs/adr/0057) was never actually sent anything, so counting their row here would skew
+     * "sent"/"conversion_rate" for every existing caller of this method (the campaign funnel
+     * report, SplitWinnerCalculator's auto-winner decision). getHoldoutStats() below is the
+     * deliberate counterpart that reads is_holdout rows exclusively.
+     *
      * revenue sums base_grand_total, not grand_total — same reasoning as
      * CreditLimitCalculator's own base_total_due choice: a multi-store install can have orders
      * placed under more than one currency, and summing the order-currency grand_total would mix
@@ -153,6 +184,7 @@ class CampaignOutcomeLogger
                 'revenue' => 'SUM(so.base_grand_total)',
             ])
             ->joinLeft(['so' => $orderTable], 'so.entity_id = o.order_id', [])
+            ->where('o.is_holdout = ?', 0)
             ->group(['campaign_id', 'variant']);
 
         if ($campaignId !== null) {
@@ -219,6 +251,7 @@ class CampaignOutcomeLogger
                 'revenue' => 'SUM(so.base_grand_total)',
             ])
             ->joinLeft(['so' => $orderTable], 'so.entity_id = o.order_id', [])
+            ->where('o.is_holdout = ?', 0)
             ->where('o.sent_at >= ?', $from->format('Y-m-d H:i:s'))
             ->where('o.sent_at < ?', $to->format('Y-m-d H:i:s'))
             ->group('campaign_id');
@@ -244,6 +277,64 @@ class CampaignOutcomeLogger
                 'converted' => $converted,
                 'conversion_rate' => $sent > 0 ? round($converted / $sent * 100, 1) : 0.0,
                 'revenue' => $row['revenue'] !== null ? (float) $row['revenue'] : 0.0,
+            ];
+        }
+
+        return $stats;
+    }
+
+    /**
+     * The holdout group's own organic conversion rate per campaign — the deliberate counterpart
+     * to getStats() answering a different question (would these customers have converted anyway,
+     * absent any campaign action at all). Never merged into getStats()'s own return shape: a
+     * holdout row has no variant, no revenue attribution concept of its own (it was never sent
+     * anything to attribute to), and mixing the two would make it trivial to accidentally compare
+     * a holdout's conversion_rate against a sent variant's in the same loop without realizing
+     * they come from disjoint customer groups answering different questions.
+     *
+     * No new admin grid for this - see docs/adr/0057 for why this data-only, no-UI scope was
+     * chosen for v1. A future caller (e.g. the campaign funnel report) can read this directly.
+     *
+     * @return array<int, array{
+     *     campaign_id: int,
+     *     holdout_count: int,
+     *     holdout_converted: int,
+     *     holdout_conversion_rate: float
+     * }>
+     */
+    public function getHoldoutStats(?int $campaignId = null): array
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $outcomeTable = $this->resourceConnection->getTableName('ordo_campaign_outcome_log');
+
+        $select = $connection->select()
+            ->from(['o' => $outcomeTable], [
+                'campaign_id',
+                'holdout_count' => 'COUNT(*)',
+                'holdout_converted' => 'SUM(CASE WHEN o.acted_at IS NOT NULL THEN 1 ELSE 0 END)',
+            ])
+            ->where('o.is_holdout = ?', 1)
+            ->group('campaign_id');
+
+        if ($campaignId !== null) {
+            $select->where('o.campaign_id = ?', $campaignId);
+        }
+
+        /**
+         * @var array<int, array{campaign_id: string|int, holdout_count: string|int, holdout_converted: string|int}> $rows
+         */
+        $rows = $connection->fetchAll($select);
+
+        $stats = [];
+        foreach ($rows as $row) {
+            $count = (int) $row['holdout_count'];
+            $converted = (int) $row['holdout_converted'];
+
+            $stats[(int) $row['campaign_id']] = [
+                'campaign_id' => (int) $row['campaign_id'],
+                'holdout_count' => $count,
+                'holdout_converted' => $converted,
+                'holdout_conversion_rate' => $count > 0 ? round($converted / $count * 100, 1) : 0.0,
             ];
         }
 

@@ -731,17 +731,17 @@ no-auto-charge constraint.
   conditions configured (every pre-existing campaign) behaves exactly as before. v1 admin surface is
   a single JSON textarea on the classic campaign form, not a Flow-canvas node — an honestly-documented
   gap, see the ADR's Consequences.
-- **No holdout group — every campaign send is measured against itself, never against a true no-send
-  control.** Checked `Model\Campaign\SplitVariantSelector`/`SplitWinnerCalculator` directly: the 'split'
-  action only ever divides traffic between message variants that all actually send something — there's
-  no way to carve off a small, randomly-assigned percentage of matching customers who receive nothing at
-  all, which is what every established platform's holdout/incremental-lift testing uses to answer "would
-  this customer have converted anyway?" rather than just comparing variant A's conversion rate to variant
-  B's. `CampaignOutcomeLogger::getStats()` already has everything needed to compare a held-out group's
-  organic conversion rate against the sent group's — just nothing upstream feeds it one. Closing it is a
-  new, admin-configurable `holdout_percent` on a campaign, checked once per customer the same place
-  `QuietHoursGate`/`FrequencyCapGate` already gate a dispatch, logging the held-out customer into
-  `ordo_campaign_outcome_log` with a new `is_holdout` flag instead of running any action for them.
+- ~~**No holdout group — every campaign send is measured against itself, never against a true no-send
+  control.**~~ — shipped, see `docs/adr/0057-split-test-holdout-group.md`. New admin-configurable
+  `ordo_campaign.holdout_percent` (0-100, default off), checked once in
+  `CampaignDispatcher::runCampaign()` right after conditions pass and before any action runs (not
+  per-action like `QuietHoursGate`/`FrequencyCapGate` — the roadmap bullet's own framing on that point
+  turned out to be inaccurate, see the ADR), via a new `Model\Campaign\HoldoutSelector` mirroring
+  `SplitVariantSelector`'s own deterministic crc32-bucket technique. A held-out customer is logged into
+  `ordo_campaign_outcome_log` with a new `is_holdout` flag (`CampaignOutcomeLogger::logHeldOut()`)
+  instead of ever reaching an action; `getStats()`/`getStatsForWindow()` now exclude those rows so a
+  holdout customer never counts as sent, and a new `getHoldoutStats()` computes the holdout group's own
+  organic conversion rate for comparison — data-only for v1, no new admin grid (see the ADR for why).
 - ~~**`send_email` has no one-click unsubscribe — only a logged-in storefront preference center.**~~ —
   shipped, see `docs/adr/0058-email-one-click-unsubscribe.md`. `Model\Email\UnsubscribeTokenManager`
   issues a stateless, signed HMAC token (`EncryptorInterface::hash()`, keyed by the installation's own

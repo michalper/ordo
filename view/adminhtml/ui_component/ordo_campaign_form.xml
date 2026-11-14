@@ -93,13 +93,32 @@
                 </multiselect>
             </formElements>
         </field>
+        <!-- 0/blank (the default) means holdout is off - see Model\Campaign::getHoldoutPercent()
+             and docs/adr/0057. Not "validate-range" - see the "percentile" field's own comment
+             above in this file for why that Magento core rule silently fails every value;
+             out-of-range input is clamped server-side in CampaignSaveProcessor instead. -->
+        <field name="holdout_percent" formElement="input" sortOrder="45">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Holdout Percent (0-100)</label>
+                <notice translate="true">
+                    Leave at 0 to send to every matching customer as usual. A value above 0
+                    randomly, consistently withholds that percent of matching customers from
+                    every action in this campaign, so their organic conversion rate can be
+                    compared against the sent group's (see the campaign funnel report).
+                </notice>
+                <validation>
+                    <rule name="validate-digits" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+        </field>
         <!-- v1, no dedicated per-type fields yet (unlike conditions_fieldset below) - a raw JSON
              textarea, same {type, params} shape as a campaign condition - see
              Model\Campaign\ExitConditionSpecs / docs/adr/0055-campaign-chain-exit-condition.md.
              dataScope matches the column name directly (not nested like conditions/actions)
              since this is one plain JSON blob on ordo_campaign, not a dynamicRows child-row
              collection. -->
-        <field name="exit_conditions" formElement="textarea" sortOrder="45">
+        <field name="exit_conditions" formElement="textarea" sortOrder="46">
             <settings>
                 <dataType>text</dataType>
                 <label translate="true">Exit Conditions (JSON, advanced)</label>

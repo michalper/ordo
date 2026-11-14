@@ -16,6 +16,12 @@ it doesn't update itself from this file.
   `campaign_generic.html`, pointing at a new `Controller\Email\Unsubscribe` endpoint backed by a
   stateless, signed token (`Model\Email\UnsubscribeTokenManager` — no new table, no DB lookup to
   verify) that calls `ConsentManager::setConsent()` directly. See ADR 0058.
+- **Campaign holdout group** — new admin-configurable `holdout_percent` (0-100, default off) on a
+  campaign deterministically, randomly withholds that percent of matching customers from every
+  action, logging them into `ordo_campaign_outcome_log` with a new `is_holdout` flag
+  (`Model\Campaign\HoldoutSelector`, `CampaignOutcomeLogger::logHeldOut()`/`getHoldoutStats()`) so
+  their organic conversion rate can be compared against the sent group's — true incremental-lift
+  measurement, not just split-variant comparison. See ADR 0057.
 - **Referral duplicate-identity signal** — `Observer\RedeemReferralCode` now captures the referred
   customer's registration IP, and `ReferralManager::recordSignup()` flags
   (`ordo_referral.duplicate_ip_flag`) a signup whose IP matches another referred signup already

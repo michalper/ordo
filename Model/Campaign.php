@@ -52,6 +52,24 @@ class Campaign extends AbstractNamedToggleableEntityModel implements CampaignInt
     }
 
     /**
+     * 0 (the stored default, including every pre-existing campaign row from before this column
+     * existed, which reads back as null) means holdout is off - nobody is ever held out unless an
+     * admin deliberately sets this above zero. Clamped defensively here too, in addition to
+     * CampaignSaveProcessor's own clamp on save, so a row written any other way (a direct API
+     * call, a hand-edited fixture) can't hand CampaignDispatcher an out-of-range percent.
+     */
+    public function getHoldoutPercent(): int
+    {
+        return max(0, min(100, (int) $this->getData('holdout_percent')));
+    }
+
+    public function setHoldoutPercent(int $percent): self
+    {
+        $this->setData('holdout_percent', max(0, min(100, $percent)));
+        return $this;
+    }
+
+    /**
      * JSON-encoded array of {type, params} specs (see Campaign\ExitConditionSpecs) — null when
      * none are configured, the backward-compatible default every campaign predating this
      * feature already satisfies. Same "plain model accessor, not CampaignInterface/REST" reasoning

@@ -9,6 +9,7 @@ use Magento\Framework\Serialize\SerializerInterface;
 use Ordo\Automation\Model\Campaign\ActionPool;
 use Ordo\Automation\Model\Campaign\CampaignEntryGuard;
 use Ordo\Automation\Model\Campaign\ExitConditionSpecs;
+use Ordo\Automation\Model\Campaign\HoldoutSelector;
 use Ordo\Automation\Model\Campaign\SplitVariantSelector;
 use Ordo\Automation\Model\Condition\ConditionGroupEvaluator;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as CampaignActionCollectionFactory;
@@ -95,7 +96,9 @@ class CampaignDispatcher
         private readonly LoggerInterface $logger,
         private readonly CampaignWebsiteCollectionFactory $campaignWebsiteCollectionFactory,
         private readonly CustomerRepositoryInterface $customerRepository,
-        private readonly CustomerStoreResolver $customerStoreResolver
+        private readonly CustomerStoreResolver $customerStoreResolver,
+        private readonly HoldoutSelector $holdoutSelector,
+        private readonly CampaignOutcomeLogger $campaignOutcomeLogger
     ) {
     }
 
@@ -104,19 +107,19 @@ class CampaignDispatcher
      */
     public function dispatch(string $triggerEvent, array $context): void
     {
-        $conditionLogicByCampaign = $this->campaignIdsForTrigger($triggerEvent);
+        $campaignMetaById = $this->campaignIdsForTrigger($triggerEvent);
 
-        if ($conditionLogicByCampaign === []) {
+        if ($campaignMetaById === []) {
             return;
         }
 
-        $conditionLogicByCampaign = $this->filterByWebsite($conditionLogicByCampaign, $context);
+        $campaignMetaById = $this->filterByWebsite($campaignMetaById, $context);
 
-        if ($conditionLogicByCampaign === []) {
+        if ($campaignMetaById === []) {
             return;
         }
 
-        $campaignIds = array_keys($conditionLogicByCampaign);
+        $campaignIds = array_keys($campaignMetaById);
 
         // Loaded once for every matched campaign, not per-campaign (that's the N+1 this batching
         // avoids) — which also means a failure here can't be isolated to one campaign the way
@@ -141,9 +144,11 @@ class CampaignDispatcher
 
         foreach ($campaignIds as $campaignId) {
             try {
+                $meta = $campaignMetaById[$campaignId] ?? ['logic' => 'all', 'holdout_percent' => 0];
                 $this->runCampaign(
                     $campaignId,
-                    $conditionLogicByCampaign[$campaignId] ?? 'all',
+                    $meta['logic'],
+                    $meta['holdout_percent'],
                     static fn (): array => $conditionsByCampaign[$campaignId] ?? [],
                     static fn (): array => $actionsByCampaign[$campaignId] ?? [],
                     $context
@@ -187,6 +192,11 @@ class CampaignDispatcher
             $this->runCampaign(
                 $campaignId,
                 (string) $campaign->getData('condition_logic') === 'any' ? 'any' : 'all',
+                // Not $campaign->getHoldoutPercent() - same reason condition_logic above reads
+                // getData() directly rather than calling Campaign::getConditionLogic(): $campaign
+                // here is a collection's getFirstItem() result, which PHPStan can't narrow past
+                // \Magento\Framework\DataObject, so a typed accessor call resolves as mixed.
+                max(0, min(100, (int) $campaign->getData('holdout_percent'))),
                 function () use ($campaignId): array {
                     $conditionCollection = $this->campaignConditionCollectionFactory->create();
                     $conditionCollection->addCampaignFilter($campaignId);
@@ -215,6 +225,14 @@ class CampaignDispatcher
      * and so a loader failure lands in the caller's own per-campaign error boundary, keeping its
      * original log wording. dispatch() just hands over its already-batch-loaded slices.
      *
+     * Holdout check (docs/adr/0057) sits right here — after conditionsSatisfied() returns true,
+     * before runActionsFrom() ever runs — so a held-out customer is logged once, for this whole
+     * campaign run, instead of per-action the way QuietHoursGate/FrequencyCapGate gate each
+     * Send* action individually. $holdoutPercent <= 0 (the default - no campaign is held out
+     * unless an admin deliberately raises it above zero) and a context with no customer_id (no
+     * stable identity to hold out *as*) both skip the check entirely, same fail-open-to-normal-
+     * behavior as "zero conditions always passes" above conditionsSatisfied().
+     *
      * @param 'all'|'any' $logic
      * @param callable(): CampaignCondition[] $loadConditions
      * @param callable(): CampaignAction[] $loadActions
@@ -223,6 +241,7 @@ class CampaignDispatcher
     private function runCampaign(
         int $campaignId,
         string $logic,
+        int $holdoutPercent,
         callable $loadConditions,
         callable $loadActions,
         array $context
@@ -239,13 +258,21 @@ class CampaignDispatcher
             return;
         }
 
+        if ($customerId !== null && $holdoutPercent > 0
+            && $this->holdoutSelector->isHeldOut($campaignId, $customerId, $holdoutPercent)
+        ) {
+            $this->campaignOutcomeLogger->logHeldOut($campaignId, $customerId, $this->triggerOrderIdFromContext($context));
+            return;
+        }
+
         $this->runActionsFrom($campaignId, $loadActions(), 0, $context);
     }
 
     /**
-     * @return array<int, 'all'|'any'> enabled campaign ids with a trigger row for
-     *  $triggerEvent, mapped to that campaign's condition_logic — carrying it through the
-     *  cache here avoids a second per-campaign query just to read it back in dispatch().
+     * @return array<int, array{logic: 'all'|'any', holdout_percent: int}> enabled campaign ids
+     *  with a trigger row for $triggerEvent, mapped to that campaign's condition_logic and
+     *  holdout_percent — carrying both through the cache here avoids a second per-campaign query
+     *  just to read them back in dispatch().
      */
     private function campaignIdsForTrigger(string $triggerEvent): array
     {
@@ -255,14 +282,20 @@ class CampaignDispatcher
         if ($cached !== false) {
             $decoded = $this->serializer->unserialize($cached);
             // The cache round-trip erases the value type the writer below guarantees —
-            // re-normalizing on read keeps the 'all'|'any' contract honest even against a
-            // stale/foreign cache entry, at the cost of one array_map over a small map.
-            $logicByCampaign = [];
-            foreach (is_array($decoded) ? $decoded : [] as $campaignId => $logic) {
-                $logicByCampaign[(int) $campaignId] = $logic === 'any' ? 'any' : 'all';
+            // re-normalizing on read keeps the contract honest even against a stale/foreign
+            // cache entry (including one written by a pre-holdout version of this class, back
+            // when the cached value was a bare 'all'/'any' string).
+            $metaByCampaign = [];
+            foreach (is_array($decoded) ? $decoded : [] as $campaignId => $meta) {
+                $metaByCampaign[(int) $campaignId] = is_array($meta)
+                    ? [
+                        'logic' => ($meta['logic'] ?? null) === 'any' ? 'any' : 'all',
+                        'holdout_percent' => max(0, min(100, (int) ($meta['holdout_percent'] ?? 0))),
+                    ]
+                    : ['logic' => $meta === 'any' ? 'any' : 'all', 'holdout_percent' => 0];
             }
 
-            return $logicByCampaign;
+            return $metaByCampaign;
         }
 
         $triggers = $this->campaignTriggerCollectionFactory->create();
@@ -273,7 +306,7 @@ class CampaignDispatcher
             $candidateIds[(int) $trigger->getCampaignId()] = true;
         }
 
-        $conditionLogicByCampaign = [];
+        $metaByCampaign = [];
         if ($candidateIds !== []) {
             $campaigns = $this->campaignCollectionFactory->create();
             $campaigns->addIdsFilter(array_keys($candidateIds));
@@ -281,17 +314,37 @@ class CampaignDispatcher
 
             foreach ($campaigns as $campaign) {
                 $conditionLogic = (string) $campaign->getData('condition_logic');
-                $conditionLogicByCampaign[(int) $campaign->getId()] = $conditionLogic === 'any' ? 'any' : 'all';
+                // Same reason as dispatchScheduledTrigger()'s own holdout_percent read below -
+                // not $campaign->getHoldoutPercent(), for consistency with condition_logic right
+                // above it in this same loop.
+                $metaByCampaign[(int) $campaign->getId()] = [
+                    'logic' => $conditionLogic === 'any' ? 'any' : 'all',
+                    'holdout_percent' => max(0, min(100, (int) $campaign->getData('holdout_percent'))),
+                ];
             }
         }
 
         $this->cache->save(
-            $this->serializer->serialize($conditionLogicByCampaign),
+            $this->serializer->serialize($metaByCampaign),
             $cacheKey,
             [self::CACHE_TAG, self::CACHE_KEY_PREFIX . $triggerEvent]
         );
 
-        return $conditionLogicByCampaign;
+        return $metaByCampaign;
+    }
+
+    /**
+     * context['order_id'] is the convention every order-scoped trigger's own observer populates
+     * (DispatchOrderPlacedCampaigns, ...) — the same key SendSms/SendEmail already read for
+     * CampaignOutcomeLogger::logSent()'s own $triggerOrderId, reused here identically so a
+     * held-out customer's row gets the same race protection a sent row's does (see that method's
+     * own docblock).
+     *
+     * @param array<string, mixed> $context
+     */
+    private function triggerOrderIdFromContext(array $context): ?int
+    {
+        return isset($context['order_id']) ? (int) $context['order_id'] : null;
     }
 
     /**
@@ -304,14 +357,14 @@ class CampaignDispatcher
      * that cache hit/miss, against the already-narrowed candidate set, so none of the existing
      * cache-invalidation call sites for that cached lookup need to change.
      *
-     * @param array<int, 'all'|'any'> $conditionLogicByCampaign
+     * @param array<int, array{logic: 'all'|'any', holdout_percent: int}> $campaignMetaById
      * @param array<string, mixed> $context
-     * @return array<int, 'all'|'any'>
+     * @return array<int, array{logic: 'all'|'any', holdout_percent: int}>
      */
-    private function filterByWebsite(array $conditionLogicByCampaign, array $context): array
+    private function filterByWebsite(array $campaignMetaById, array $context): array
     {
         $websiteRows = $this->campaignWebsiteCollectionFactory->create()
-            ->addCampaignIdsFilter(array_keys($conditionLogicByCampaign));
+            ->addCampaignIdsFilter(array_keys($campaignMetaById));
 
         $websiteIdsByCampaign = [];
         foreach ($websiteRows as $row) {
@@ -322,7 +375,7 @@ class CampaignDispatcher
         if ($websiteIdsByCampaign === []) {
             // None of this trigger's candidate campaigns are website-scoped at all (by far the
             // common case) - skip resolving the customer's own website for nothing.
-            return $conditionLogicByCampaign;
+            return $campaignMetaById;
         }
 
         $customerWebsiteId = $this->customerWebsiteIdFromContext($context);
@@ -333,11 +386,11 @@ class CampaignDispatcher
             // "can't verify, don't run" philosophy as an unknown condition/action type, rather
             // than silently running every website-scoped campaign for everyone.
             if ($customerWebsiteId === null || !in_array($customerWebsiteId, $websiteIds, true)) {
-                unset($conditionLogicByCampaign[$campaignId]);
+                unset($campaignMetaById[$campaignId]);
             }
         }
 
-        return $conditionLogicByCampaign;
+        return $campaignMetaById;
     }
 
     /**
