@@ -67,6 +67,20 @@
         </index>
     </table>
 
+    <table name="ordo_wishlist_abandoned_reminder_log" resource="default" engine="innodb" comment="Log of dispatched wishlist_abandoned triggers, to cap reminders per customer/sku">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
+        <column xsi:type="varchar" name="event_key" nullable="false" length="255" comment="SKU of the wishlist item"/>
+        <column xsi:type="timestamp" name="sent_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Sent At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="ORDO_WISHLIST_ABANDONED_LOG_CUSTOMER_ID_EVENT_KEY" indexType="btree">
+            <column name="customer_id"/>
+            <column name="event_key"/>
+        </index>
+    </table>
+
     <table name="ordo_review_request_log" resource="default" engine="innodb" comment="Log of dispatched review_request_due triggers, one row per order, to dispatch at most once per order">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="order_id" padding="10" unsigned="true" nullable="false" comment="sales_order.entity_id"/>
