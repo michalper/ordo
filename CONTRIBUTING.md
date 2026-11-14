@@ -82,6 +82,11 @@ directly once your PR is up.
 - If you fix a bug, add a regression test in whichever layer actually would have caught it — usually `Test/Unit`
   for a logic bug, `Test/Integration` for a DI-wiring or real-database bug, MFTF only when the bug is genuinely
   about the browser/UI, since MFTF is the slowest and most environment-sensitive layer.
+- **A new feature needs both of these, not just one** (see `AGENTS.md`'s "New code needs its own tests" for the
+  full reasoning): unit tests covering 100% of the new/changed lines (a required, blocking `codecov/patch` check
+  on every PR — see `codecov.yml`), *and* a real system-level test (`Test/Integration/` or `Test/Mftf/`,
+  whichever layer is actually appropriate for what the feature does) proving the feature works against the real
+  mechanism, not just against mocked collaborators.
 - Match the existing comment style: comments explain *why*, not *what* — a hidden constraint, a workaround for a
   specific bug, a non-obvious invariant. Don't add a comment a well-named identifier already makes obvious.
 - Update `Test/Mftf/SCENARIOS.md` if you add or close a scenario gap it tracks, and `ROADMAP.md` if you complete

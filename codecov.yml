@@ -11,18 +11,24 @@ coverage:
         target: auto
         threshold: 1%
         informational: true
+    # Blocking, not informational — every new/changed line in a PR must be covered by a unit
+    # test. This is deliberately scoped to the *patch* (diff), not the whole project: it holds
+    # new work to 100% without retroactively failing every PR over pre-existing gaps in old
+    # code. "codecov/patch" is a required status check in main's branch protection (added
+    # alongside this change) specifically so this can't silently stay informational-only the
+    # way it was before — see AGENTS.md's "New code needs its own tests" section.
     patch:
       default:
-        target: auto
-        threshold: 1%
-        informational: true
+        target: 100%
+        threshold: 0%
+        informational: false
 
 # Surfaces Codecov's own pass/fail as a native GitHub check on the commit/PR (in addition to the
 # dashboard-only comment already posted) — confirmed via the GitHub API that no such check-run
 # exists today, so this was a real gap, not something codecov-action already did automatically.
 # annotations: true additionally puts inline "not covered" markers directly on changed lines in
-# the PR diff view. informational: true above means these checks can never fail the build on
-# their own — this only adds visibility, it doesn't change what blocks a merge.
+# the PR diff view. The project status above stays informational: true (visibility only); the
+# patch status does not — see the comment on it.
 github_checks:
   annotations: true
 
@@ -52,9 +58,9 @@ flag_management:
         threshold: 1%
         informational: true
       - type: patch
-        target: auto
-        threshold: 1%
-        informational: true
+        target: 100%
+        threshold: 0%
+        informational: false
   individual_flags:
     - name: unittests
       # No paths restriction: this flag covers the whole codebase, same scope as `ignore` above.

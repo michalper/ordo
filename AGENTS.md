@@ -108,6 +108,38 @@ Once the required checks go green, GitHub merges the PR (squash) and deletes the
 
 If a PR genuinely needs manual review/hold before merging, say so explicitly instead of enabling auto-merge on it.
 
+## New code needs its own tests — 100% unit coverage + a real system-level test
+
+Every new feature (a new condition/action/trigger type, cron, controller, API endpoint, admin
+page, etc.) ships with both of these, not just one:
+
+1. **Unit tests covering 100% of the new/changed lines.** Enforced, not just hoped for:
+   `codecov/patch` is a required status check on `main` (`codecov.yml`'s `coverage.status.patch`,
+   `target: 100%`, `informational: false`) — it fails the PR if any new/changed line in the diff
+   isn't exercised by a test, same way `unit-tests`/`static-analysis`/etc. already do. This is
+   scoped to the *patch* (the diff), not the whole project — it doesn't retroactively fail a PR
+   over a pre-existing gap in old code it didn't touch, and the project-wide coverage status
+   (`coverage.status.project`) stays informational-only on purpose. If a PR's patch coverage check
+   is red, add the missing test case before merging — don't lower the target, don't mark the line
+   `@codeCoverageIgnore` to make it go away.
+2. **A real, unmocked system-level test proving the feature actually works** — `Test/Integration/`
+   or `Test/Mftf/`, whichever this codebase's own established criteria say is the right layer (see
+   `CONTRIBUTING.md`'s "Making a change" section and `Test/Mftf/SCENARIOS.md`'s own legend): MFTF
+   only when the behavior is genuinely browser/UI-observable (a new admin grid, a new form field
+   that has to actually save and reload correctly); an Integration test otherwise (a new cron, a
+   new condition/action type, a new REST/GraphQL endpoint, anything a `Test/Unit` mock could hide
+   a real wiring bug behind). This repo's own `docs/adr/*`/`ROADMAP.md` history has many examples
+   of "no MFTF needed here, nothing admin-visible beyond a generic dropdown already covered
+   elsewhere, an Integration test is the correct and complete coverage" — that reasoning is still
+   correct and this rule doesn't override it. What it does rule out is shipping a new feature with
+   *only* `Test/Unit` mocks and no real-system proof at all — several merged PRs' own commit
+   messages and ADRs document finding real wiring/integration bugs this way (a plugin never
+   actually firing, a DI-registered class with the wrong virtual type, a save path silently
+   dropping a field) that no amount of mocked-collaborator unit testing would have caught.
+
+This applies going forward, to new work — it isn't a mandate to retrofit every pre-existing gap
+`Test/Mftf/SCENARIOS.md` already tracks as an accepted, explained one.
+
 ## Campaign dispatch is asynchronous (Magento queue)
 
 Triggers (`order_placed`, `customer_registered`, `tag_added`) no longer call `CampaignDispatcher::dispatch()` directly from the observer — they publish a message on the `ordo.automation.campaign.dispatch` topic (`Model/Queue/CampaignDispatchPublisher.php`), consumed by `Model/Queue/CampaignDispatchConsumer.php`. This is so checkout/customer registration doesn't wait on condition/action evaluation.
