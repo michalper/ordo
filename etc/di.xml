@@ -331,6 +331,7 @@
                 <item name="not_in_segment" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\NotInSegment</item>
                 <item name="loyalty_tier_at_least" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\LoyaltyTierAtLeast</item>
                 <item name="nps_score_at_least" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\NpsScoreAtLeast</item>
+                <item name="survey_response_equals" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\SurveyResponseEquals</item>
                 <item name="purchased_sku" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\PurchasedSku</item>
                 <item name="purchased_category" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\PurchasedCategory</item>
                 <item name="event_occurred" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\EventOccurred</item>
@@ -395,6 +396,7 @@
                 <item name="send_rcs" xsi:type="object">Ordo\Automation\Model\Campaign\Action\SendRcs</item>
                 <item name="notify" xsi:type="object">Ordo\Automation\Model\Campaign\Action\Notify</item>
                 <item name="nps_survey" xsi:type="object">Ordo\Automation\Model\Campaign\Action\NpsSurvey</item>
+                <item name="generic_survey" xsi:type="object">Ordo\Automation\Model\Campaign\Action\GenericSurvey</item>
                 <item name="send_whatsapp" xsi:type="object">Ordo\Automation\Model\Campaign\Action\SendWhatsApp</item>
                 <item name="send_push" xsi:type="object">Ordo\Automation\Model\Campaign\Action\SendPush</item>
                 <item name="send_webhook" xsi:type="object">Ordo\Automation\Model\Campaign\Action\SendWebhook</item>

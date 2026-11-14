@@ -50,4 +50,13 @@ class CollectionTest extends AbstractCollectionTestCase
 
         self::assertSame($collection, $result);
     }
+
+    public function testAddLatestResponseFilterForQuestionIsFluent(): void
+    {
+        $collection = $this->makeCollection();
+
+        $result = $collection->addLatestResponseFilterForQuestion(42, 'Favorite color?');
+
+        self::assertSame($collection, $result);
+    }
 }
