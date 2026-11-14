@@ -11,6 +11,16 @@ it doesn't update itself from this file.
 
 ### Added
 
+- **Zero-party-data survey question (text/choice)** — a new `generic_survey` campaign action
+  (`Model\Campaign\Action\GenericSurvey`) asks a free-text or multiple-choice question, on the
+  same `ordo_survey_prompt` claim/deliver/respond lifecycle as the existing `nps_survey` action
+  (three new nullable columns: `question_type`, `choices`, `response_text`), and a new
+  `survey_response_equals` segment/campaign condition
+  (`Model\Campaign\Condition\SurveyResponseEquals`) reads back the customer's most recent
+  answered row for that specific question. `nps_survey`/`nps_score_at_least` are completely
+  unchanged. The storefront widget (`tracker.js`) still only renders the legacy 0-10 NPS prompt —
+  rendering a text/choice question in the bundled widget is a known, separate follow-up. See ADR
+  0059.
 - **Email one-click unsubscribe** — `send_email` campaign sends now carry a no-login
   `List-Unsubscribe`/`List-Unsubscribe-Post` header pair (RFC 8058) plus a visible footer link in
   `campaign_generic.html`, pointing at a new `Controller\Email\Unsubscribe` endpoint backed by a

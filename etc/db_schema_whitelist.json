@@ -619,7 +619,10 @@
             "delivered_at": true,
             "score": true,
             "responded_at": true,
-            "expires_at": true
+            "expires_at": true,
+            "question_type": true,
+            "choices": true,
+            "response_text": true
         },
         "index": {
             "ORDO_SURVEY_PROMPT_CUSTOMER_ID": true,

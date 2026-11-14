@@ -76,4 +76,40 @@ class SurveyPromptTest extends AbstractModelTestCase
         $model->setExpiresAt('2026-02-01 00:00:00');
         self::assertSame('2026-02-01 00:00:00', $model->getData(SurveyPrompt::EXPIRES_AT));
     }
+
+    public function testQuestionTypeRoundTrip(): void
+    {
+        $model = $this->makeModel();
+        self::assertNull($model->getQuestionType());
+
+        $model->setQuestionType('choice');
+        self::assertSame('choice', $model->getQuestionType());
+
+        $model->setQuestionType(null);
+        self::assertNull($model->getQuestionType());
+    }
+
+    public function testChoicesRoundTrip(): void
+    {
+        $model = $this->makeModel();
+        self::assertNull($model->getChoices());
+
+        $model->setChoices('Red,Blue,Green');
+        self::assertSame('Red,Blue,Green', $model->getChoices());
+
+        $model->setChoices(null);
+        self::assertNull($model->getChoices());
+    }
+
+    public function testResponseTextRoundTrip(): void
+    {
+        $model = $this->makeModel();
+        self::assertNull($model->getResponseText());
+
+        $model->setResponseText('Blue');
+        self::assertSame('Blue', $model->getResponseText());
+
+        $model->setResponseText(null);
+        self::assertNull($model->getResponseText());
+    }
 }
