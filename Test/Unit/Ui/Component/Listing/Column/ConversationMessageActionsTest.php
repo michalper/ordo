@@ -34,9 +34,13 @@ class ConversationMessageActionsTest extends TestCase
     public function testPrepareDataSourceAddsAReplyLinkForAnInboundRow(): void
     {
         $urlBuilder = $this->createStub(UrlInterface::class);
-        $urlBuilder->method('getUrl')
-            ->with('ordo/conversationmessage/index', ['reply_to' => 5])
-            ->willReturn('https://example.com/admin/ordo/conversationmessage/index/reply_to/5/');
+        $urlBuilder->method('getUrl')->willReturnMap([
+            [
+                'ordo/conversationmessage/index',
+                ['reply_to' => 5],
+                'https://example.com/admin/ordo/conversationmessage/index/reply_to/5/',
+            ],
+        ]);
 
         $column = $this->makeColumn($urlBuilder);
         $dataSource = [

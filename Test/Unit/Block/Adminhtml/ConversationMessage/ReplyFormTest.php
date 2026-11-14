@@ -35,7 +35,7 @@ class ReplyFormTest extends TestCase
         );
 
         $request = $this->createStub(RequestInterface::class);
-        $request->method('getParam')->with('reply_to')->willReturn($replyToParam);
+        $request->method('getParam')->willReturn($replyToParam);
 
         $context = $this->createStub(Context::class);
         $context->method('getUrlBuilder')->willReturn($urlBuilder);
