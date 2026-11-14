@@ -81,6 +81,32 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isStalledPaymentReminderEnabled());
         self::assertTrue($this->config->isChurnRiskDigestEnabled());
         self::assertTrue($this->config->isRcsEnabled());
+        self::assertTrue($this->config->isWalletPassEnabled());
+    }
+
+    public function testWalletPassGettersDelegateToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_automation/loyalty_wallet_pass/google_issuer_id', 'store', null, '3388000000022199568'],
+            ['ordo_automation/loyalty_wallet_pass/google_class_id', 'store', null, 'rewards_class'],
+            ['ordo_automation/loyalty_wallet_pass/google_service_account_email', 'store', null, 'svc@example.com'],
+            ['ordo_automation/loyalty_wallet_pass/google_private_key', 'store', null, 'private-key-pem'],
+        ]);
+
+        self::assertSame('3388000000022199568', $this->config->getWalletPassGoogleIssuerId());
+        self::assertSame('rewards_class', $this->config->getWalletPassGoogleClassId());
+        self::assertSame('svc@example.com', $this->config->getWalletPassGoogleServiceAccountEmail());
+        self::assertSame('private-key-pem', $this->config->getWalletPassGooglePrivateKey());
+    }
+
+    public function testWalletPassGettersReturnEmptyStringWhenUnset(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn(null);
+
+        self::assertSame('', $this->config->getWalletPassGoogleIssuerId());
+        self::assertSame('', $this->config->getWalletPassGoogleClassId());
+        self::assertSame('', $this->config->getWalletPassGoogleServiceAccountEmail());
+        self::assertSame('', $this->config->getWalletPassGooglePrivateKey());
     }
 
     public function testGetTwilioRcsMessagingServiceSidDelegatesToScopeConfig(): void
