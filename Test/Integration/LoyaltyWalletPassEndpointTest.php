@@ -66,7 +66,14 @@ class LoyaltyWalletPassEndpointTest extends TestCase
         self::$objectManager->get(\Magento\Framework\Registry::class)->register('isSecureArea', true);
 
         $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
-        openssl_pkey_export($key, self::$privateKeyPem);
+        // openssl_pkey_export() takes its second argument by reference - PHP refuses to pass an
+        // uninitialized typed static property by reference ("Cannot access uninitialized
+        // non-nullable property ... by reference"), even though this call only ever writes to
+        // it. A plain local variable has no such restriction; assign it to the static property
+        // afterward.
+        $privateKeyPem = '';
+        openssl_pkey_export($key, $privateKeyPem);
+        self::$privateKeyPem = $privateKeyPem;
         self::$publicKeyPem = openssl_pkey_get_details($key)['key'];
 
         self::$storeId = (int) self::$objectManager->get(StoreManagerInterface::class)->getStore()->getId();
