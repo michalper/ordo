@@ -672,19 +672,46 @@ the shared `magento-ordo-test` sandbox - see this document's own git history / t
 whether they were observed passing for real or only written and left for CI, the same honesty bar
 ADR 0057's own "Consequences" section already modeled for its own pre-existing gap.
 
+## 41. Anomaly / insight alerts (`Cron/DetectAnomalies.php`, `Model/Anomaly/AnomalyAlert.php`,
+`Controller/Adminhtml/AnomalyAlert/Index.php`, `docs/adr/0025-automated-anomaly-insight-alerts.md`)
+
+Closes the gap §40 left open (found during that same 2026-11-14 audit but not traced as part of it):
+`Controller\Adminhtml\AnomalyAlert\Index` (`ordo/anomalyalert/index`) had zero SCENARIOS.md row and zero
+Integration/MFTF coverage of its own - only `Test/Unit/Controller/Adminhtml/AnomalyAlert/IndexTest.php` and
+`Test/Unit/Cron/DetectAnomaliesTest.php`'s mocked-collaborator branching tests.
+
+Tracing the real write path (`Cron\DetectAnomalies::execute()` → `Model\CampaignOutcomeLogger::
+getStatsForWindow()` reads + `Model\Cron\ReminderLogStore::claim()` writes to `ordo_anomaly_alert`) and the
+admin surface (`view/adminhtml/ui_component/ordo_anomalyalert_listing.xml`) confirms this is the exact same
+shape §40's own table already gave for the Referrals grid: a plain `Magento_Ui` read-only listing - same
+columns/filters/export-button pattern as `Cron\CronRunLog`'s own grid (ADR 0025 explicitly says it
+"mirror[s] `Cron\CronRunLog`'s - the simplest existing grid in this module") - with no dedicated field or
+widget of its own beyond a `Model\Config\Source\AnomalyAlertType`-backed select filter, the same generic
+column-filter rendering `AdminRfmReportGridReflectsRealDataTest`/`AdminMessageLogGridReflectsRealDataTest`
+already prove end to end for this exact grid shape. **No new MFTF for the grid itself.**
+
+What's genuinely untested is `Cron\DetectAnomalies`'s own real detection logic against a real database - the
+two checks ADR 0025 documents (`campaign_revenue_drop`, `campaign_conversion_outlier`), the minimum-sample-size
+noise gate, and the cooldown/dedup via `ReminderLogStore::claim()` - exactly what `Test/Unit/Cron/
+DetectAnomaliesTest.php`'s mocked `CampaignOutcomeLogger`/`ReminderLogStore` can't prove actually wires up
+(the real `getStatsForWindow()` SQL join against `sales_order.base_grand_total`, the real `GET_LOCK()`-
+serialized claim against a real `ordo_anomaly_alert` table).
+
+| Scenario | Status |
+|---|---|
+| A real campaign's revenue drops ≥30% in the current window vs. its own trailing baseline (real seeded `ordo_campaign_outcome_log`/`sales_order` rows) - flagged `campaign_revenue_drop` | ✅ `Test/Integration/DetectAnomaliesScenarioTest.php::testFlagsARealRevenueDropAgainstItsOwnTrailingBaseline` |
+| A real campaign's conversion rate deviates ≥50% from its peers' average in either direction - flagged `campaign_conversion_outlier` (outperforming and underperforming both exercised) | ✅ `Test/Integration/DetectAnomaliesScenarioTest.php::testFlagsRealConversionOutliersInBothDirections` |
+| A low-volume campaign below the configured minimum sample size is never flagged, however large the swing (noise gate) | ✅ `Test/Integration/DetectAnomaliesScenarioTest.php::testSuppressesNoiseOnALowVolumeCampaignBelowTheMinimumSampleSize` |
+| A second cron run within the cooldown window does not insert a second alert for the same campaign+type (real `ReminderLogStore::claim()` dedup, not a mocked one) | ✅ `Test/Integration/DetectAnomaliesScenarioTest.php::testCooldownPreventsASecondAlertForTheSameCampaignAndTypeWithinItsWindow` |
+| Admin grid renders real alert rows with real column data (Type/Campaign/Message/Deviation %/Detected) | Not separately tested - same reasoning as §40's own Referrals-grid row: the generic `Magento_Ui` listing shape this grid uses is already proven end to end by `AdminRfmReportGridReflectsRealDataTest`/`AdminMessageLogGridReflectsRealDataTest`, and a new grid built from that same, unmodified shape doesn't need its own MFTF test to re-prove the mechanism |
+
+All four Integration test methods above were run against the real `magento-ordo-test` sandbox (real DI, real
+database, queue consumers stopped first, though this cron never touches the queue) and observed passing for
+real: `OK (4 tests, 12 assertions)`. Re-ran immediately afterward with `SELECT COUNT(*)` against
+`ordo_anomaly_alert`/`ordo_campaign_outcome_log`/`sales_order`/`core_config_data` to confirm `tearDown()`/
+`tearDownAfterClass()` left zero rows behind.
+
 ## Suggested next batch (highest signal per test written)
-
-**Not yet closed (found during the 2026-11-14 audit, lower priority than §40 above):** `Controller\Adminhtml\
-AnomalyAlert\Index` (`ordo/anomalyalert/index`) is a read-only grid - same shape as the new Referrals grid in §40
-above, same `Magento_Ui` listing component - with literally zero SCENARIOS.md row and zero MFTF/Integration
-coverage of its own (`Test/Unit/Controller/Adminhtml/AnomalyAlert/*` and `Test/Unit/Model/Anomaly/
-AnomalyAlertTest.php` only). Per §40's own reasoning, the grid rendering itself likely doesn't need a dedicated
-MFTF test (already-proven generic shape), but `Model\Anomaly\AnomalyAlert`'s own real detection/write path
-(whatever cron or observer populates `ordo_anomaly_alert` - not traced as part of this pass) has no real-DB
-proof either. Worth a future pass to trace what writes to that table and apply the same MFTF-vs-Integration
-judgment §39 did for the Referrals grid.
-
-
 
 **Status: the 2026-09-20 re-audit is fully closed (as of 2026-09-23).** Every row from that re-audit — §8, §11,
 §18, §26, §27, §28, §29, and §1c's `generate_ai_content`/`RetryFailedPushSends` — is now ✅. Re-audit this
