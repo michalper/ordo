@@ -15,15 +15,22 @@ use Ordo\Automation\Model\SurveyPromptFactory;
 use Ordo\Automation\Model\Track\VisitorIdentityResolver;
 
 /**
- * Public, unauthenticated POST endpoint the frontend JS tracker calls when the visitor picks a
- * 0-10 score for a delivered survey prompt - the only way an ordo_survey_prompt row's
- * score/responded_at ever get set.
+ * Public, unauthenticated POST endpoint the frontend JS tracker calls when the visitor answers a
+ * delivered survey prompt - the only way an ordo_survey_prompt row's score/response_text/
+ * responded_at ever get set.
  *
  * Ownership is checked before recording a response (VisitorIdentityFieldsTrait::belongsTo()) - a
  * request can only answer a prompt that actually belongs to the requester's own
  * customer_id/visitor_id, same reasoning as Controller\Track\DismissNotification. A prompt
  * already answered is never overwritten (kept exactly once, silently rejected on a second
  * attempt).
+ *
+ * Which field gets recorded depends on the prompt's own question_type, not on which params the
+ * request happened to send: a legacy nps_survey row (question_type null) keeps exactly the
+ * original 0-10 "score" validation untouched (see docs/adr 0061 - a generic_survey feature must
+ * not change existing NPS campaign behavior), while a text/choice row (set only by the
+ * generic_survey action) instead validates and records "response_text" - a non-empty string
+ * that, for a "choice" question, must be one of the prompt's own offered choices.
  */
 class SubmitSurveyResponse extends Action implements HttpPostActionInterface, CsrfAwareActionInterface
 {
@@ -42,14 +49,8 @@ class SubmitSurveyResponse extends Action implements HttpPostActionInterface, Cs
         $result = $this->resultJsonFactory->create();
 
         $promptId = (int) $this->getRequest()->getParam('survey_id');
-        $score = $this->getRequest()->getParam('score');
 
-        if ($promptId <= 0 || !is_numeric($score)) {
-            return $result->setData(['ok' => false]);
-        }
-
-        $score = (int) $score;
-        if ($score < 0 || $score > 10) {
+        if ($promptId <= 0) {
             return $result->setData(['ok' => false]);
         }
 
@@ -66,7 +67,35 @@ class SubmitSurveyResponse extends Action implements HttpPostActionInterface, Cs
             return $result->setData(['ok' => false]);
         }
 
-        $prompt->setScore($score);
+        if ($prompt->getQuestionType() === null) {
+            // Legacy nps_survey row - unchanged 0-10 score validation.
+            $score = $this->getRequest()->getParam('score');
+            if (!is_numeric($score)) {
+                return $result->setData(['ok' => false]);
+            }
+
+            $score = (int) $score;
+            if ($score < 0 || $score > 10) {
+                return $result->setData(['ok' => false]);
+            }
+
+            $prompt->setScore($score);
+        } else {
+            $responseText = trim((string) $this->getRequest()->getParam('response_text'));
+            if ($responseText === '') {
+                return $result->setData(['ok' => false]);
+            }
+
+            if ($prompt->getQuestionType() === 'choice') {
+                $choices = array_map('trim', explode(',', (string) $prompt->getChoices()));
+                if (!in_array($responseText, $choices, true)) {
+                    return $result->setData(['ok' => false]);
+                }
+            }
+
+            $prompt->setResponseText($responseText);
+        }
+
         $prompt->setRespondedAt(date('Y-m-d H:i:s'));
         $this->surveyPromptResource->save($prompt);
 
