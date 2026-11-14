@@ -115,4 +115,53 @@ class WhatsAppSenderTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->sender->send('+15551234567', 'order_shipped_v1', 'en_US', []);
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSendFreeformPostsAPlainTextMessage(): void
+    {
+        $capturedUrl = null;
+        $capturedBody = null;
+        $this->curl->method('post')->willReturnCallback(function (string $url, string $body) use (&$capturedUrl, &$capturedBody) {
+            $capturedUrl = $url;
+            $capturedBody = json_decode($body, true);
+        });
+        $this->curl->method('getStatus')->willReturn(200);
+        $this->curl->method('getBody')->willReturn(json_encode(['messages' => [['id' => 'wamid.789']]]));
+
+        $result = $this->sender->sendFreeform('+15551234567', 'Your order shipped yesterday!');
+
+        self::assertSame('wamid.789', $result);
+        self::assertStringEndsWith('/1234567890/messages', $capturedUrl);
+        self::assertSame('+15551234567', $capturedBody['to']);
+        self::assertSame('text', $capturedBody['type']);
+        self::assertSame('Your order shipped yesterday!', $capturedBody['text']['body']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSendFreeformThrottlesOnTheWhatsappChannelAtTheConfiguredRate(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('getWhatsAppAccessToken')->willReturn('access-token');
+        $config->method('getWhatsAppPhoneNumberId')->willReturn('1234567890');
+        $config->method('getWhatsAppMaxRequestsPerSecond')->willReturn(7);
+
+        $rateLimiter = $this->createMock(OutboundRateLimiter::class);
+        $rateLimiter->expects(self::once())->method('throttle')->with('whatsapp', 7.0);
+        $this->sender = new WhatsAppSender(new JsonApiClient($this->curlFactory), $config, $rateLimiter);
+
+        $this->curl->method('getStatus')->willReturn(200);
+        $this->curl->method('getBody')->willReturn(json_encode(['messages' => [['id' => 'wamid.789']]]));
+
+        $this->sender->sendFreeform('+15551234567', 'Hi there!');
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSendFreeformThrowsWhenResponseHasNoMessageId(): void
+    {
+        $this->curl->method('getStatus')->willReturn(200);
+        $this->curl->method('getBody')->willReturn(json_encode([]));
+
+        $this->expectException(\RuntimeException::class);
+        $this->sender->sendFreeform('+15551234567', 'Hi there!');
+    }
 }

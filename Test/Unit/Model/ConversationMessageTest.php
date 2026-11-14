@@ -55,4 +55,29 @@ class ConversationMessageTest extends AbstractModelTestCase
 
         self::assertFalse($message->isStopKeyword());
     }
+
+    public function testDirectionDefaultsToInboundWhenNeverSet(): void
+    {
+        $message = $this->makeModel();
+
+        self::assertSame('inbound', $message->getDirection());
+    }
+
+    public function testSetDirectionRoundTrips(): void
+    {
+        $message = $this->makeModel();
+
+        $message->setDirection(ConversationMessage::DIRECTION_OUTBOUND);
+
+        self::assertSame('outbound', $message->getDirection());
+    }
+
+    public function testDirectionDefaultsToInboundWhenExplicitlySetToEmptyString(): void
+    {
+        $message = $this->makeModel();
+
+        $message->setDirection('');
+
+        self::assertSame('inbound', $message->getDirection());
+    }
 }

@@ -11,6 +11,13 @@ it doesn't update itself from this file.
 
 ### Added
 
+- **Two-way conversation replies** — an admin can now reply to an inbound SMS/WhatsApp message
+  directly from the "Conversations" grid: a new `Controller\Adminhtml\ConversationMessage\Reply`
+  (POST) re-checks consent via `ConsentManager` and calls `SmsSenderInterface`/a new
+  `WhatsAppSender::sendFreeform()` directly, based on the original message's own channel, through a
+  new `Model\Conversation\OutboundReplySender` service — `InboundMessageProcessor` itself stays
+  receive-only and unchanged. A new `direction` column on `ordo_conversation_message` (default
+  `inbound`, zero backfill) lets the grid render both directions. See ADR 0059.
 - **Email one-click unsubscribe** — `send_email` campaign sends now carry a no-login
   `List-Unsubscribe`/`List-Unsubscribe-Post` header pair (RFC 8058) plus a visible footer link in
   `campaign_generic.html`, pointing at a new `Controller\Email\Unsubscribe` endpoint backed by a
