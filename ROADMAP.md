@@ -781,17 +781,22 @@ than silently assuming it away.
   trigger, and claims via a new `ordo_wishlist_abandoned_reminder_log` table the same way every other
   reminder cron here avoids double-sends. New "Wishlist Abandonment" `system.xml` group mirrors "Browse
   Abandonment"'s own field shape.
-- **The only "survey" primitive is a hardcoded 0-10 NPS score, not a general zero-party-data question.**
-  `ordo_survey_prompt`'s own `score smallint` column, `Model\Campaign\Action\NpsSurvey`, and
-  `Model\Campaign\Condition\NpsScoreAtLeast` are built for exactly one shape — "how likely are you to
-  recommend us, 0-10" — with no way to ask a free-text or multiple-choice preference question (favorite
-  category, size, skin type, …) and later segment on the answer, a common CDP pattern for "zero-party
-  data" personalization that this module's existing NPS machinery can't be reused for as-is. Closing it
-  would need a sibling answer shape (a nullable `response_text` alongside `score`, or a parallel table) on
-  the same claim/deliver/respond lifecycle `Controller\Track\SubmitSurveyResponse` already implements, plus
-  a new `survey_response_equals` segment/campaign condition reading the latest answered row for a given
-  question — `NpsScoreAtLeast` already shows the exact "read the customer's most recent answered row"
-  query shape to reuse.
+- ~~**The only "survey" primitive is a hardcoded 0-10 NPS score, not a general zero-party-data
+  question.**~~ — shipped, see `docs/adr/0061-zero-party-survey-question.md`. `ordo_survey_prompt` gained
+  three nullable columns (`question_type`, `choices`, `response_text`) on the same claim/deliver/respond
+  lifecycle; `NpsSurvey`/`NpsScoreAtLeast` are completely untouched, and a new, separate `generic_survey`
+  action (`Model\Campaign\Action\GenericSurvey`) asks a free-text or multiple-choice question, with a new
+  `survey_response_equals` segment/campaign condition (`Model\Campaign\Condition\SurveyResponseEquals`)
+  reading the customer's most recent answered row *for that specific question text* — unlike
+  `NpsScoreAtLeast`, which reads the most recent answered row overall, since NPS has one implicit question
+  concept and a generic survey question doesn't. Real end-to-end round trip (action → claim → respond →
+  condition, including a downstream campaign gated on the real answer) is proven in
+  `Test/Integration/GenericSurveyScenarioTest`. **Known gap, not yet closed:** `tracker.js`'s own
+  `renderSurvey()` still only renders the legacy 0-10 NPS widget — a `question_type`-aware storefront
+  widget (free-text input / choice buttons) plus the matching `TrackerPollReader`/`submitOrdoSurveyResponse`
+  GraphQL field additions to carry `question_type`/`choices` to the browser is real, separable follow-up
+  work (see the ADR's Consequences); `Controller\Track\SubmitSurveyResponse` already accepts and validates
+  a real `response_text` answer today for any caller that posts one.
 - ~~**No gamified, randomized-reward popup — `ShowPopup` is a single static headline/body/CTA, never a
   weighted prize selection.**~~ — shipped, see `docs/adr/0063-gamified-reward-popup.md`. `ShowPopup`'s
   params gain an optional `reward_tiers` array of `{label, weight, coupon_rule_id}` entries; a new

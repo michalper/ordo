@@ -24,6 +24,9 @@ class SurveyPrompt extends AbstractModel
     public const SCORE = 'score';
     public const RESPONDED_AT = 'responded_at';
     public const EXPIRES_AT = 'expires_at';
+    public const QUESTION_TYPE = 'question_type';
+    public const CHOICES = 'choices';
+    public const RESPONSE_TEXT = 'response_text';
 
     protected function _construct(): void
     {
@@ -80,6 +83,53 @@ class SurveyPrompt extends AbstractModel
     public function setExpiresAt(?string $expiresAt): self
     {
         $this->setData(self::EXPIRES_AT, $expiresAt);
+        return $this;
+    }
+
+    /**
+     * "text" or "choice", set only by the generic_survey action - null means a legacy nps_survey
+     * row (always a 0-10 score, see SCORE above), kept exactly as-is for backward compatibility.
+     */
+    public function getQuestionType(): ?string
+    {
+        $value = $this->getData(self::QUESTION_TYPE);
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setQuestionType(?string $questionType): self
+    {
+        $this->setData(self::QUESTION_TYPE, $questionType);
+        return $this;
+    }
+
+    /**
+     * Comma-separated list of options offered for a "choice" question_type - null for text/nps.
+     */
+    public function getChoices(): ?string
+    {
+        $value = $this->getData(self::CHOICES);
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setChoices(?string $choices): self
+    {
+        $this->setData(self::CHOICES, $choices);
+        return $this;
+    }
+
+    /**
+     * The free-text answer, or the chosen option's own text, for a text/choice question - never
+     * set for a legacy nps question, which stores its answer in SCORE instead.
+     */
+    public function getResponseText(): ?string
+    {
+        $value = $this->getData(self::RESPONSE_TEXT);
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setResponseText(?string $responseText): self
+    {
+        $this->setData(self::RESPONSE_TEXT, $responseText);
         return $this;
     }
 }

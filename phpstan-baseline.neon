@@ -1249,6 +1249,12 @@ parameters:
 			path: Controller/Track/SubmitSurveyResponse.php
 
 		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Controller/Track/SubmitSurveyResponse.php
+
+		-
 			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getContent\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -1759,6 +1765,12 @@ parameters:
 			path: Model/Campaign/Action/NpsSurvey.php
 
 		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
+			path: Model/Campaign/Action/GenericSurvey.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 4
@@ -2021,6 +2033,24 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Model/Campaign/Condition/NpsScoreAtLeast.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Campaign/Condition/SurveyResponseEquals.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 4
+			path: Model/Campaign/Condition/SurveyResponseEquals.php
+
+		-
+			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''intval'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Campaign/Condition/SurveyResponseEquals.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -3939,7 +3969,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 4
+			count: 7
 			path: Model/SurveyPrompt.php
 
 		-
