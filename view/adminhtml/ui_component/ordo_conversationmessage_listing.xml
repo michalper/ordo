@@ -104,6 +104,27 @@
                 </options>
             </settings>
         </column>
+        <!-- Plain select+options rendering, same "even a plain text label is fine for v1" shape
+             is_stop_keyword above already uses - this is the smallest change that lets the grid
+             render a real back-and-forth thread (ROADMAP.md's two-way conversation replies item)
+             without building a dedicated per-thread detail page. -->
+        <column name="direction" class="Magento\Ui\Component\Listing\Columns\Column">
+            <settings>
+                <filter>select</filter>
+                <dataType>select</dataType>
+                <label translate="true">Direction</label>
+                <options>
+                    <option name="inbound" xsi:type="array">
+                        <item name="value" xsi:type="string">inbound</item>
+                        <item name="label" xsi:type="string" translate="true">Inbound</item>
+                    </option>
+                    <option name="outbound" xsi:type="array">
+                        <item name="value" xsi:type="string">outbound</item>
+                        <item name="label" xsi:type="string" translate="true">Outbound</item>
+                    </option>
+                </options>
+            </settings>
+        </column>
         <column name="provider_message_id">
             <settings>
                 <filter>text</filter>
@@ -118,5 +139,10 @@
                 <label translate="true">Received At</label>
             </settings>
         </column>
+        <actionsColumn name="actions" class="Ordo\Automation\Ui\Component\Listing\Column\ConversationMessageActions">
+            <settings>
+                <indexField>entity_id</indexField>
+            </settings>
+        </actionsColumn>
     </columns>
 </listing>

@@ -9,10 +9,12 @@
             <block class="Magento\Framework\View\Element\Template" name="ordo_conversationmessage_listing_intro"
                    template="Ordo_Automation::listing_intro.phtml" before="ordo_conversationmessage_listing">
                 <arguments>
-                    <argument name="intro_text" xsi:type="string">Inbound SMS/WhatsApp replies captured against a customer — filter by Customer to see one customer's conversation. A row flagged Stop Keyword revoked that customer's consent for the channel automatically.</argument>
+                    <argument name="intro_text" xsi:type="string">Inbound SMS/WhatsApp replies captured against a customer — filter by Customer to see one customer's conversation. A row flagged Stop Keyword revoked that customer's consent for the channel automatically. Use the Reply link on an inbound row (or the form below) to answer a customer directly - consent is re-checked before sending.</argument>
                 </arguments>
             </block>
             <uiComponent name="ordo_conversationmessage_listing"/>
+            <block class="Ordo\Automation\Block\Adminhtml\ConversationMessage\ReplyForm" name="ordo_conversationmessage_reply_form"
+                   template="Ordo_Automation::conversationmessage/replyform.phtml" after="ordo_conversationmessage_listing"/>
         </referenceContainer>
     </body>
 </page>
