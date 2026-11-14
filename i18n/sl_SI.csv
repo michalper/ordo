@@ -247,6 +247,8 @@
 "Reorder cycle with id ""%1"" does not exist.","Cikel prerazporeditve z ID-jem ""%1"" ne obstaja."
 "Responded","Odgovoril"
 "Response rate","Stopnja odziva"
+"Reward tiers (JSON)","Nivoji nagrad (JSON)"
+"Optional: a JSON array of weighted reward tiers (label, weight, coupon_rule_id). One tier is randomly picked per popup; leave blank for a plain static popup.","Neobvezno: JSON tabela uteženih nivojev nagrad (label, weight, coupon_rule_id). Pri vsakem pojavnem oknu se naključno izbere en nivo; pustite prazno za navadno statično pojavno okno."
 "Reusable HTML snippet, RSS, and product feed blocks for campaign emails","Izrezek HTML, RSS in bloki virov izdelkov za večkratno uporabo za e-poštna sporočila oglaševalske akcije"
 "Run Bulk Action","Zaženi množično dejanje"
 "Runs against everyone currently matching this segment's conditions. The action is queued and applied asynchronously.","Deluje proti vsem, ki trenutno ustrezajo pogojem tega segmenta. Dejanje je postavljeno v čakalno vrsto in uporabljeno asinhrono."

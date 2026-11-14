@@ -247,6 +247,8 @@
 "Reorder cycle with id ""%1"" does not exist.","Herbestelcyclus met id ""%1"" bestaat niet."
 "Responded","Gereageerd"
 "Response rate","Reactiepercentage"
+"Reward tiers (JSON)","Beloningsniveaus (JSON)"
+"Optional: a JSON array of weighted reward tiers (label, weight, coupon_rule_id). One tier is randomly picked per popup; leave blank for a plain static popup.","Optioneel: een JSON-array met gewogen beloningsniveaus (label, weight, coupon_rule_id). Bij elke popup wordt willekeurig één niveau gekozen; laat leeg voor een gewone statische popup."
 "Reusable HTML snippet, RSS, and product feed blocks for campaign emails","Herbruikbare HTML-snippet-, RSS- en productfeedblokken voor campagne-e-mails"
 "Run Bulk Action","Bulkactie uitvoeren"
 "Runs against everyone currently matching this segment's conditions. The action is queued and applied asynchronously.","Wordt uitgevoerd voor iedereen die momenteel voldoet aan de voorwaarden van dit segment. De actie wordt in de wachtrij geplaatst en asynchroon toegepast."

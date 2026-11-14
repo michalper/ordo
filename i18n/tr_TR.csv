@@ -247,6 +247,8 @@
 "Reorder cycle with id ""%1"" does not exist.","""%1"" kimliğine sahip yeniden sipariş döngüsü mevcut değil."
 "Responded","Yanıtlandı"
 "Response rate","Yanıt oranı"
+"Reward tiers (JSON)","Ödül kademeleri (JSON)"
+"Optional: a JSON array of weighted reward tiers (label, weight, coupon_rule_id). One tier is randomly picked per popup; leave blank for a plain static popup.","İsteğe bağlı: ağırlıklı ödül kademelerinin JSON dizisi (label, weight, coupon_rule_id). Her pop-up'ta rastgele bir kademe seçilir; sade bir statik pop-up için boş bırakın."
 "Reusable HTML snippet, RSS, and product feed blocks for campaign emails","Kampanya e-postaları için yeniden kullanılabilir HTML pasajı, RSS ve ürün akışı blokları"
 "Run Bulk Action","Toplu İşlem Çalıştır"
 "Runs against everyone currently matching this segment's conditions. The action is queued and applied asynchronously.","Şu anda bu segmentin koşullarını karşılayan herkese karşı yarışıyor. Eylem sıraya alınır ve eşzamansız olarak uygulanır."

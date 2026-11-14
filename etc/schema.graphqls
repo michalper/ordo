@@ -84,6 +84,8 @@ type OrdoPopup {
     body: String
     cta_label: String
     cta_url: String
+    reward_label: String @doc(description: "Set only when the popup action was configured with weighted reward_tiers and this is the tier that was randomly picked (\"spin the wheel\") - null for an ordinary static popup.")
+    coupon_code: String @doc(description: "Set only when the winning reward tier had a coupon_rule_id - a tier with none (e.g. a \"Try again\" tier) leaves this null even though reward_label is set.")
 }
 
 type OrdoNotification {

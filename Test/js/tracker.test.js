@@ -143,6 +143,31 @@ function flush() {
     });
 }
 
+/**
+ * The reward-popup reveal (appendRewardReveal in tracker.js) schedules its own setTimeout well
+ * after loadTracker() already restored the real global.setTimeout (see that function's own
+ * comment on why only load-time timers are captured) - this swaps it back out for the duration
+ * of `action` only, so a later, dynamically-scheduled timer can still be captured and fired
+ * deterministically instead of actually waiting out the real delay.
+ *
+ * @param {Function} action async, invoked with the fake timer installed
+ * @return {Promise<Array<{fn: Function, ms: Number}>>}
+ */
+async function captureTimeouts(action) {
+    var calls = [];
+    var real = global.setTimeout;
+    global.setTimeout = function (fn, ms) {
+        calls.push({ fn: fn, ms: ms });
+        return 0;
+    };
+    try {
+        await action();
+    } finally {
+        global.setTimeout = real;
+    }
+    return calls;
+}
+
 QUnit.module('Ordo_Automation/js/tracker (polling)', function () {
     QUnit.test('loading the script fires a page_view tracking event', function (assert) {
         const env = loadTracker();
@@ -461,6 +486,209 @@ QUnit.module('Ordo_Automation/js/tracker (polling)', function () {
         assert.strictEqual(submitCall.url, '/ordo/track/submitsurveyresponse');
         assert.strictEqual(new URLSearchParams(submitCall.options.body).get('survey_id'), '9');
         assert.strictEqual(new URLSearchParams(submitCall.options.body).get('score'), '7');
+    });
+});
+
+QUnit.module('Ordo_Automation/js/tracker (reward popup)', function () {
+    QUnit.test('a popup with no reward_label renders exactly as before, with its cta', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({
+            popup: { headline: 'Sale', cta_label: 'Shop now', cta_url: 'https://example.test/sale' }
+        });
+        const timeouts = await captureTimeouts(async function () {
+            env.intervals[0].fn();
+            await flush();
+        });
+
+        assert.strictEqual(timeouts.length, 0, 'no reward reveal timer scheduled');
+        assert.strictEqual(document.getElementById('ordo-reward-spinner'), null);
+        assert.ok(document.getElementById('ordo-popup-banner').querySelector('a'), 'cta link still rendered');
+    });
+
+    QUnit.test('a popup with a reward_label shows a spinning placeholder and no cta link', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({
+            popup: {
+                headline: 'Spin to win!',
+                reward_label: '10% off',
+                cta_label: 'Shop now',
+                cta_url: 'https://example.test/sale'
+            }
+        });
+        const timeouts = await captureTimeouts(async function () {
+            env.intervals[0].fn();
+            await flush();
+        });
+
+        const spinner = document.getElementById('ordo-reward-spinner');
+        assert.ok(spinner, 'spinner rendered');
+        assert.true(spinner.textContent.indexOf('Spinning') !== -1);
+        assert.strictEqual(document.getElementById('ordo-popup-banner').querySelector('a'), null, 'no cta link for a reward popup');
+        assert.strictEqual(timeouts.length, 1, 'one reveal timer scheduled');
+        assert.strictEqual(timeouts[0].ms, 1200);
+    });
+
+    QUnit.test('after the spin delay, the won label replaces the spinner text', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({ popup: { headline: 'Spin to win!', reward_label: 'Free shipping' } });
+        const timeouts = await captureTimeouts(async function () {
+            env.intervals[0].fn();
+            await flush();
+        });
+
+        timeouts[0].fn();
+
+        const spinner = document.getElementById('ordo-reward-spinner');
+        assert.true(spinner.textContent.indexOf('Free shipping') !== -1);
+        assert.true(spinner.textContent.indexOf('Spinning') === -1);
+    });
+
+    QUnit.test('a won tier with no coupon_code reveals the label but no coupon box', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({ popup: { headline: 'Spin to win!', reward_label: 'Try again next time' } });
+        const timeouts = await captureTimeouts(async function () {
+            env.intervals[0].fn();
+            await flush();
+        });
+        timeouts[0].fn();
+
+        assert.strictEqual(document.getElementById('ordo-popup-banner').querySelector('code'), null);
+    });
+
+    QUnit.test('a won tier with a coupon_code reveals a copyable coupon box', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({
+            popup: { headline: 'Spin to win!', reward_label: '10% off', coupon_code: 'ORDO-WHEEL-ABC123' }
+        });
+        const timeouts = await captureTimeouts(async function () {
+            env.intervals[0].fn();
+            await flush();
+        });
+        timeouts[0].fn();
+
+        const code = document.getElementById('ordo-popup-banner').querySelector('code');
+        assert.ok(code, 'coupon code rendered');
+        assert.strictEqual(code.textContent, 'ORDO-WHEEL-ABC123');
+        assert.ok(document.getElementById('ordo-popup-banner').querySelector('button[type="submit"]') === null);
+    });
+
+    QUnit.test('the reveal timer firing after the banner was already closed does nothing', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({ popup: { headline: 'Spin to win!', reward_label: '10% off' } });
+        const timeouts = await captureTimeouts(async function () {
+            env.intervals[0].fn();
+            await flush();
+        });
+
+        document.getElementById('ordo-popup-banner').remove();
+
+        // Must not throw even though the spinner (and its parent banner) are gone.
+        timeouts[0].fn();
+        assert.strictEqual(document.getElementById('ordo-popup-banner'), null);
+    });
+
+    QUnit.test('clicking Copy with no Clipboard API support does nothing', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({
+            popup: { headline: 'Spin to win!', reward_label: '10% off', coupon_code: 'ORDO-WHEEL-ABC123' }
+        });
+        const timeouts = await captureTimeouts(async function () {
+            env.intervals[0].fn();
+            await flush();
+        });
+        timeouts[0].fn();
+
+        const copyButton = document.getElementById('ordo-popup-banner').querySelector('button[type="button"]');
+        assert.strictEqual(copyButton.textContent, 'Copy');
+
+        copyButton.onclick();
+
+        assert.strictEqual(copyButton.textContent, 'Copy', 'unchanged - no Clipboard API in this environment');
+    });
+
+    QUnit.test('clicking Copy with Clipboard API support flashes "Copied!" then reverts', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        const writeTextCalls = [];
+        global.navigator.clipboard = {
+            writeText: function (text) {
+                writeTextCalls.push(text);
+                return Promise.resolve();
+            }
+        };
+
+        try {
+            env.setPollResponse({
+                popup: { headline: 'Spin to win!', reward_label: '10% off', coupon_code: 'ORDO-WHEEL-ABC123' }
+            });
+            const revealTimeouts = await captureTimeouts(async function () {
+                env.intervals[0].fn();
+                await flush();
+            });
+            revealTimeouts[0].fn();
+
+            const copyButton = document.getElementById('ordo-popup-banner').querySelector('button[type="button"]');
+
+            const flashTimeouts = await captureTimeouts(async function () {
+                copyButton.onclick();
+                await flush();
+            });
+
+            assert.deepEqual(writeTextCalls, ['ORDO-WHEEL-ABC123']);
+            assert.strictEqual(copyButton.textContent, 'Copied!');
+            assert.strictEqual(flashTimeouts.length, 1);
+            assert.strictEqual(flashTimeouts[0].ms, 1500);
+
+            flashTimeouts[0].fn();
+            assert.strictEqual(copyButton.textContent, 'Copy', 'reverted after the flash delay');
+        } finally {
+            delete global.navigator.clipboard;
+        }
+    });
+
+    QUnit.test('a Clipboard API rejection is swallowed, button left unchanged', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        global.navigator.clipboard = {
+            writeText: function () {
+                return Promise.reject(new Error('denied'));
+            }
+        };
+
+        try {
+            env.setPollResponse({
+                popup: { headline: 'Spin to win!', reward_label: '10% off', coupon_code: 'ORDO-WHEEL-ABC123' }
+            });
+            const revealTimeouts = await captureTimeouts(async function () {
+                env.intervals[0].fn();
+                await flush();
+            });
+            revealTimeouts[0].fn();
+
+            const copyButton = document.getElementById('ordo-popup-banner').querySelector('button[type="button"]');
+            copyButton.onclick();
+            await flush();
+
+            assert.strictEqual(copyButton.textContent, 'Copy');
+        } finally {
+            delete global.navigator.clipboard;
+        }
     });
 });
 

@@ -247,6 +247,8 @@
 "Reorder cycle with id ""%1"" does not exist.","Beställningscykel med id ""%1"" finns inte."
 "Responded","Svarade"
 "Response rate","Svarsfrekvens"
+"Reward tiers (JSON)","Belöningsnivåer (JSON)"
+"Optional: a JSON array of weighted reward tiers (label, weight, coupon_rule_id). One tier is randomly picked per popup; leave blank for a plain static popup.","Valfritt: en JSON-array med viktade belöningsnivåer (label, weight, coupon_rule_id). En nivå väljs slumpmässigt per popup; lämna tomt för en vanlig statisk popup."
 "Reusable HTML snippet, RSS, and product feed blocks for campaign emails","Återanvändbara HTML-kodavsnitt, RSS och produktflödesblock för e-postkampanjer"
 "Run Bulk Action","Kör Bulk Action"
 "Runs against everyone currently matching this segment's conditions. The action is queued and applied asynchronously.","Körs mot alla som för närvarande matchar detta segments villkor. Åtgärden köas och tillämpas asynkront."

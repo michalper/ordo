@@ -247,6 +247,8 @@
 "Reorder cycle with id ""%1"" does not exist.","A ""%1"" azonosítójú átrendezési ciklus nem létezik."
 "Responded","Válaszolt"
 "Response rate","Válaszadási arány"
+"Reward tiers (JSON)","Jutalomszintek (JSON)"
+"Optional: a JSON array of weighted reward tiers (label, weight, coupon_rule_id). One tier is randomly picked per popup; leave blank for a plain static popup.","Opcionális: súlyozott jutalomszintek JSON tömbje (label, weight, coupon_rule_id). Minden felugró ablaknál véletlenszerűen kiválasztott egy szint; hagyja üresen egy egyszerű, statikus felugró ablakhoz."
 "Reusable HTML snippet, RSS, and product feed blocks for campaign emails","Újrafelhasználható HTML-kódrészlet, RSS és termékhírcsatorna blokkok kampány e-mailekhez"
 "Run Bulk Action","Tömeges művelet futtatása"
 "Runs against everyone currently matching this segment's conditions. The action is queued and applied asynchronously.","Mindenki ellen fut, aki jelenleg megfelel ennek a szegmensnek. A művelet sorba kerül, és aszinkron módon kerül végrehajtásra."

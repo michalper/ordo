@@ -592,7 +592,9 @@
             "cta_url": true,
             "created_at": true,
             "delivered_at": true,
-            "expires_at": true
+            "expires_at": true,
+            "reward_label": true,
+            "coupon_code": true
         },
         "index": {
             "ORDO_PENDING_POPUP_CUSTOMER_ID": true,

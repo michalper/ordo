@@ -247,6 +247,8 @@
 "Reorder cycle with id ""%1"" does not exist.","Cyklus zmeny poradia s ID ""%1"" neexistuje."
 "Responded","Odpovedali"
 "Response rate","Miera odozvy"
+"Reward tiers (JSON)","Úrovne odmien (JSON)"
+"Optional: a JSON array of weighted reward tiers (label, weight, coupon_rule_id). One tier is randomly picked per popup; leave blank for a plain static popup.","Nepovinné: pole JSON s váženými úrovňami odmien (label, weight, coupon_rule_id). Pri každom popupe sa náhodne vyberie jedna úroveň; nechajte prázdne pre bežný statický popup."
 "Reusable HTML snippet, RSS, and product feed blocks for campaign emails","Opätovne použiteľné úryvky HTML, RSS a bloky informačného kanála produktov pre e-maily kampaní"
 "Run Bulk Action","Spustite hromadnú akciu"
 "Runs against everyone currently matching this segment's conditions. The action is queued and applied asynchronously.","Beží proti všetkým, ktorí momentálne spĺňajú podmienky tohto segmentu. Akcia je zaradená do frontu a aplikovaná asynchrónne."

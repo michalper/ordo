@@ -684,6 +684,8 @@
 "Reset the cached RFM score for the selected customer(s)? It will be recomputed on the next scheduled run (or live in the meantime).","Resetovat uložené skóre RFM pro vybrané zákazníky? Bude přepočítáno při příštím naplánovaném běhu (nebo průběžně mezitím)."
 "Responded","Odpovězeno"
 "Response rate","Míra odezvy"
+"Reward tiers (JSON)","Úrovně odměn (JSON)"
+"Optional: a JSON array of weighted reward tiers (label, weight, coupon_rule_id). One tier is randomly picked per popup; leave blank for a plain static popup.","Nepovinné: pole JSON s váženými úrovněmi odměn (label, weight, coupon_rule_id). Při každém popupu se náhodně vybere jedna úroveň; nechte prázdné pro běžný statický popup."
 "Restore","Obnovit"
 "Restore template version(s)","Obnovit verze šablony"
 "Restore the selected version(s)? This overwrites each version's template with this snapshot's subject/content, and itself creates a new snapshot of the resulting state.","Obnovit vybrané verze? Tím se přepíše šablona každé verze předmětem/obsahem z tohoto snímku a zároveň se vytvoří nový snímek výsledného stavu."

@@ -247,6 +247,8 @@
 "Reorder cycle with id ""%1"" does not exist.","ID 为""%1""的复购周期不存在。"
 "Responded","已响应"
 "Response rate","响应率"
+"Reward tiers (JSON)","奖励等级（JSON）"
+"Optional: a JSON array of weighted reward tiers (label, weight, coupon_rule_id). One tier is randomly picked per popup; leave blank for a plain static popup.","可选：加权奖励等级的JSON数组（label、weight、coupon_rule_id）。每次弹窗会随机选择一个等级；留空则为普通的静态弹窗。"
 "Reusable HTML snippet, RSS, and product feed blocks for campaign emails","可复用于活动邮件的 HTML 代码片段、RSS 及商品订阅源内容块"
 "Run Bulk Action","执行批量操作"
 "Runs against everyone currently matching this segment's conditions. The action is queued and applied asynchronously.","将对当前所有符合此客户群组条件的客户执行。该操作会排队并异步执行。"

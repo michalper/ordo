@@ -247,6 +247,8 @@
 "Reorder cycle with id ""%1"" does not exist.","ID가 ""%1""인 재주문 주기가 존재하지 않습니다."
 "Responded","응답함"
 "Response rate","응답률"
+"Reward tiers (JSON)","리워드 등급 (JSON)"
+"Optional: a JSON array of weighted reward tiers (label, weight, coupon_rule_id). One tier is randomly picked per popup; leave blank for a plain static popup.","선택 사항: 가중치가 적용된 리워드 등급의 JSON 배열(label, weight, coupon_rule_id). 팝업마다 하나의 등급이 무작위로 선택됩니다. 일반 정적 팝업으로 사용하려면 비워 두세요."
 "Reusable HTML snippet, RSS, and product feed blocks for campaign emails","캠페인 이메일을 위한 재사용 가능한 HTML 스니펫, RSS 및 제품 피드 블록"
 "Run Bulk Action","대량 작업 실행"
 "Runs against everyone currently matching this segment's conditions. The action is queued and applied asynchronously.","현재 이 세그먼트의 조건과 일치하는 모든 사람에 대해 실행됩니다. 작업이 대기열에 추가되고 비동기적으로 적용됩니다."

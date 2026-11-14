@@ -247,6 +247,8 @@
 "Reorder cycle with id ""%1"" does not exist.","ID「%1」のリピート購入サイクルは存在しません。"
 "Responded","反応あり"
 "Response rate","反応率"
+"Reward tiers (JSON)","リワード階層（JSON）"
+"Optional: a JSON array of weighted reward tiers (label, weight, coupon_rule_id). One tier is randomly picked per popup; leave blank for a plain static popup.","任意：重み付けされたリワード階層のJSON配列（label, weight, coupon_rule_id）。ポップアップごとに1つの階層がランダムに選ばれます。通常の静的なポップアップにする場合は空のままにしてください。"
 "Reusable HTML snippet, RSS, and product feed blocks for campaign emails","キャンペーンメールで再利用できるHTMLスニペット、RSS、商品フィードのコンテンツブロック"
 "Run Bulk Action","一括操作を実行"
 "Runs against everyone currently matching this segment's conditions. The action is queued and applied asynchronously.","現在このセグメントの条件に一致するすべての顧客に対して実行されます。処理はキューに追加され、非同期で適用されます。"
