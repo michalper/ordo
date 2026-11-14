@@ -990,6 +990,7 @@
             "body": true,
             "provider_message_id": true,
             "is_stop_keyword": true,
+            "direction": true,
             "received_at": true
         },
         "index": {
