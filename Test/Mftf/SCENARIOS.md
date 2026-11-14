@@ -51,6 +51,7 @@ cases separately from the type-by-type ones.
 | `tag_added`               | `Observer/DispatchTagAddedCampaigns.php` (`ordo_customer_tag_added`)          | ✅ `AdminCampaignTagAddedTriggerTest`             |
 | `cart_abandoned`          | `Cron/SendAbandonedCartReminders.php`'s own dispatch, not a live observer     | ✅ `AdminSendAbandonedCartReminderAndTriggerTest` |
 | `browse_abandoned`        | `Cron/SendBrowseAbandonmentReminders.php`'s own dispatch, not a live observer | ✅ `AdminBrowseAbandonmentReminderAndTriggerTest` |
+| `wishlist_abandoned`      | `Cron/SendWishlistAbandonmentReminders.php`'s own dispatch, not a live observer | ✅ see §39 — Integration-level, no MFTF needed (same reasoning as §33's row) |
 | `visitor_tag_added`       | `Observer/DispatchVisitorTagAddedCampaigns.php` (`ordo_visitor_tag_added`)    | ✅ `AdminCampaignVisitorTagConditionTest`         |
 | `score_threshold_crossed` | `Observer/DispatchScoreThresholdCampaigns.php` (lead scoring, see §4)         | ✅ `AdminScoreThresholdCampaignTest`              |
 
@@ -635,6 +636,20 @@ reasoning `send_sms`/`send_push`/`SyncAdAudiences` rows already give for staying
 | Real DI wiring end to end: a real customer, a real `ordo_loyalty_points_ledger` balance (earned via the real `LoyaltyPointsManager::earnForOrder()` path), a real `ordo_customer_score` row crossing the Silver threshold, and the real, auto-wired `GoogleWalletPassLinkBuilder` producing a byte-correct, independently-verifiable RS256 JWT embedding both | ✅ `Test/Integration/LoyaltyWalletPassEndpointTest.php` (not executed against the shared sandbox by the agent that wrote it - see its own docblock for exactly what it does and doesn't cover) |
 | The real REST route (`GET /V1/ordo/loyalty-wallet-pass/google`) against a live instance - auth requirement, real not-configured failure reason | ✅ `Test/Api/LoyaltyWalletPassApiTest.php` (same env-gated shape as `LoyaltyPointsApiTest.php`; not executed against the shared sandbox either - needs real Google Wallet credentials for a success-path run, which is the permanent gap itself) |
 | Real on-device verification - a real Google Wallet Issuer account, a real phone | ❌ **Permanent, accepted gap, not a pending task** - see ADR 0062 and `ROADMAP.md`'s "Test coverage" section |
+
+## 39. Wishlist-abandonment reminder trigger (`Cron/SendWishlistAbandonmentReminders.php`)
+
+Missed when this feature shipped (PR #361) - caught while re-auditing this document for the same reason
+§33-§38 above were.
+
+No admin screen beyond the generic trigger-type dropdown the campaign Flow canvas already renders for
+every other cron trigger (§1a) - nothing newly admin-visible. No MFTF, same reasoning §33's own row gives:
+already covered by every other cron trigger's own MFTF.
+
+| Scenario                                                                                                   | Status                                                                                                                                                                                                                      |
+|---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| A registered customer who added a product to their wishlist more than `delay_days` ago, with no non-canceled order line for that exact SKU placed since, fires `wishlist_abandoned` once, claimed via `ordo_wishlist_abandoned_reminder_log` so a second run doesn't re-fire it | ✅ `Test/Integration/SendWishlistAbandonmentRemindersTest.php` (real DB `wishlist`/`wishlist_item` rows, real dispatch, real claim-table dedup across two runs) |
+| Config gate (disabled), the per-SKU "already bought it" exclusion, and the batched scan/claim/dispatch logic in isolation | ✅ `Test/Unit/Cron/SendWishlistAbandonmentRemindersTest.php` |
 
 ## Suggested next batch (highest signal per test written)
 
