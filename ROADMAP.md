@@ -755,3 +755,78 @@ no-auto-charge constraint.
   scoped to `send_email` only, not the reminder crons/sales-rep digest outside the campaign engine — see
   the ADR for why, and for why this needed no rate limiting unlike the order-approval token it borrows
   its token-link shape from.
+
+**A fresh 2026-11-14 brainstorm round (fifth pass), checked against established marketing-automation,
+loyalty, and CDP platforms' own public feature pages before writing anything here.** Several raw candidates
+were dropped as already-shipped, found by grepping the actual code rather than trusting README/ROADMAP
+text: post-purchase review-request automation (`Cron\ScanReviewRequestDue`, trigger-only shape a store
+wires any action onto); a curated campaign starting-point gallery (`Model\Campaign\TemplateLibrary`,
+`Controller\Adminhtml\Campaign\Library`); segment-to-CSV export for ad platforms this module doesn't
+integrate with directly (`Controller\Adminhtml\Segment\Export`); email bounce/spam-complaint/unsubscribe
+handling and status-downgrade protection (`Controller\Email\StatusCallback`'s `unsubscribe`/
+`group_unsubscribe`/`spamreport` mapping, `MessageLog::STATUS_SUPPRESSED`, `MessageLog\StatusDowngradeGuard`);
+and a selectable attribution model (first-touch/time-decay) — `Model\Campaign\AttributionCalculator`'s own
+docblock already weighs those alternatives against its chosen equal-weight linear model and explains why
+it picked linear, so re-raising this would just re-litigate a deliberate, already-documented decision, not
+close a gap. No candidate below needs a Commerce-only primitive or touches the standing no-auto-charge
+constraint; one flags a real third-party credential gate explicitly, per the research directive, rather
+than silently assuming it away.
+
+- **No wishlist-abandonment reminder — only cart/browse abandonment are periodic scan-and-dispatch
+  triggers.** `Observer\TrackWishlistAdd` and `Model\Config\Source\EventType`'s `wishlist_add` value only
+  feed the one-shot `event_occurred` segment condition; there is no `Cron\*` scan mirroring
+  `Cron\SendBrowseAbandonmentReminders`/`TRIGGER_BROWSE_ABANDONED` for "this registered customer still has
+  an item in their wishlist N days later and never bought it," which established tools ship as a standard
+  retention flow distinct from cart recovery. Closing it would need a new `wishlist_abandoned` trigger
+  constant and a scan cron reading Magento's own native `wishlist`/`wishlist_item` tables (not this
+  module's `ordo_visitor_event`, which Magento's native Wishlist module doesn't write to) for items added
+  more than a configurable number of days ago with no matching later order line for that SKU, claimed
+  before dispatch the same way every other reminder cron here avoids double-sends.
+- **The only "survey" primitive is a hardcoded 0-10 NPS score, not a general zero-party-data question.**
+  `ordo_survey_prompt`'s own `score smallint` column, `Model\Campaign\Action\NpsSurvey`, and
+  `Model\Campaign\Condition\NpsScoreAtLeast` are built for exactly one shape — "how likely are you to
+  recommend us, 0-10" — with no way to ask a free-text or multiple-choice preference question (favorite
+  category, size, skin type, …) and later segment on the answer, a common CDP pattern for "zero-party
+  data" personalization that this module's existing NPS machinery can't be reused for as-is. Closing it
+  would need a sibling answer shape (a nullable `response_text` alongside `score`, or a parallel table) on
+  the same claim/deliver/respond lifecycle `Controller\Track\SubmitSurveyResponse` already implements, plus
+  a new `survey_response_equals` segment/campaign condition reading the latest answered row for a given
+  question — `NpsScoreAtLeast` already shows the exact "read the customer's most recent answered row"
+  query shape to reuse.
+- **No gamified, randomized-reward popup — `ShowPopup` is a single static headline/body/CTA, never a
+  weighted prize selection.** Every popup today (exit-intent, email-capture, campaign-triggered) shows the
+  same fixed content to everyone; there's no "spin the wheel" / scratch-card mechanic offering one of
+  several weighted reward tiers (10% off, free shipping, "try again"), a widely-used email/SMS-capture
+  gamification pattern on other platforms' own popup builders. Closing it would need a new reward-tier
+  params shape (an array of `{label, weight, coupon_rule_id}` entries) on top of `ShowPopup`'s existing
+  `ordo_pending_popup` queue-and-poll delivery, a new weighted-random selector class, and a call into the
+  existing `Model\CouponGenerator` for whichever tier is picked — frequency-capped the same way `ShowPopup`
+  already caps repeat popups, so a visitor can't just keep re-spinning.
+- **Inbound SMS/WhatsApp replies can only be viewed, never answered, from the admin.**
+  `Controller\Adminhtml\ConversationMessage\Index` implements `HttpGetActionInterface` only — a read-only
+  grid over `ordo_conversation_message` — and `Model\Conversation\InboundMessageProcessor`'s own docblock
+  describes it as a one-way "every inbound reply passes through" funnel that only ever revokes consent on a
+  STOP keyword, never sends anything back. There's no agent-assisted two-way messaging: a merchant seeing a
+  customer's reply in the grid today has to call or text them from outside Magento entirely. Closing it
+  would need a new POST action (e.g. `Controller\Adminhtml\ConversationMessage\Reply`) calling
+  `SmsSenderInterface`/`Model\WhatsApp\WhatsAppSender` directly — not through `InboundMessageProcessor`,
+  keeping that class's receive-only shape intact, the same boundary the "HELP keyword auto-reply" candidate
+  above was dropped for crossing — re-checking consent via `ConsentManager` first, and a new `direction`
+  column on `ordo_conversation_message` (today implicitly always inbound) so the grid can render a real
+  back-and-forth thread.
+- **Digital loyalty wallet pass (Apple Wallet / Google Wallet) — real gap, but flagging the credential risk
+  explicitly rather than assuming it away.** This module's points balance (`Model\LoyaltyPointsManager`) and
+  tier (`Model\LoyaltyTierCalculator`) only ever surface through My Offers/account pages and emails — there's
+  no scannable membership card a customer can add to their phone's wallet, a feature established loyalty
+  platforms ship as a standard retention surface. The pass-building/signing logic itself (constructing a
+  signed `.pkpass` bundle or a Google Wallet `LoyaltyObject` JSON payload) is fully unit-testable with a
+  locally-generated, self-signed test certificate — no live account needed, the same "no vendor SDK, build
+  the protocol" precedent `Model\Push\WebPushCrypto`/`VapidTokenBuilder` already set for Web Push. But unlike
+  Web Push, a pass a real iPhone or Android device will actually accept needs credentials from a gated
+  program on each side — Apple Developer Program enrollment (paid, currently out of reach the same way this
+  project hasn't gone through it for anything else) for a Pass Type ID signing certificate, and a Google
+  Wallet Issuer account (Google Pay & Wallet Console business verification) for the Google side. Until
+  either is obtained, real end-to-end "does a real phone display and update this pass" verification would be
+  the same kind of permanent, accepted test-coverage gap this file already documents for Google Ads Customer
+  Match and WhatsApp Business verification — worth flagging now, before any code is written, not discovering
+  it mid-implementation.
