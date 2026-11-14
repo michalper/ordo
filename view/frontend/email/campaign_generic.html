@@ -25,4 +25,14 @@
     {{/depend}}
 </table>
 
+{{depend unsubscribe_url}}
+<table role="presentation">
+    <tr class="email-unsubscribe">
+        <td style="text-align:center;font-size:11px;color:#999999;padding-top:16px;">
+            <a href="{{var unsubscribe_url}}">{{trans "Unsubscribe from marketing email"}}</a>
+        </td>
+    </tr>
+</table>
+{{/depend}}
+
 {{template config_path="design/email/footer_template"}}

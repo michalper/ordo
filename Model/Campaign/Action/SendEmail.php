@@ -22,6 +22,8 @@ use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\Email\MessageIdGenerator;
 use Ordo\Automation\Model\Email\PendingMessageIdHolder;
+use Ordo\Automation\Model\Email\PendingUnsubscribeHeaderHolder;
+use Ordo\Automation\Model\Email\UnsubscribeContext;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
 use Psr\Log\LoggerInterface;
 
@@ -52,6 +54,14 @@ use Psr\Log\LoggerInterface;
  * plays for send_sms. MessageLogWriter itself is namespaced under Model\Sms only because it was
  * written first — it is already channel-generic, hence reused here as-is rather than duplicated
  * or relocated.
+ *
+ * Also the one place a no-login one-click unsubscribe link is attached to an outgoing email -
+ * UnsubscribeContext builds the signed URL (Model\Email\UnsubscribeTokenManager) and hands it
+ * into templateVars as "unsubscribe_url" (so a template can render a visible footer link) and
+ * into PendingUnsubscribeHeaderHolder (so Plugin\Email\EmailMessageUnsubscribeHeaderPlugin can
+ * set the actual List-Unsubscribe/List-Unsubscribe-Post headers) - see
+ * docs/adr/0058-email-one-click-unsubscribe.md for why this is scoped to send_email only, not
+ * every TransportBuilder-based email this module sends.
  */
 class SendEmail implements ActionInterface
 {
@@ -75,7 +85,9 @@ class SendEmail implements ActionInterface
         private readonly MessageSendRetryQueue $messageSendRetryQueue,
         private readonly LoggerInterface $logger,
         private readonly CustomerStoreResolver $customerStoreResolver,
-        private readonly EmailTemplateOptions $emailTemplateOptions
+        private readonly EmailTemplateOptions $emailTemplateOptions,
+        private readonly UnsubscribeContext $unsubscribeContext,
+        private readonly PendingUnsubscribeHeaderHolder $pendingUnsubscribeHeaderHolder
     ) {
     }
 
@@ -134,19 +146,22 @@ class SendEmail implements ActionInterface
         // happens to be first/default, wrong for any customer not actually on that store.
         // getStore() falls back to the current store if the resolved id is null, same as before.
         $store = $this->storeManager->getStore($this->customerStoreResolver->resolveStoreId($customer));
+        $unsubscribeContext = $this->unsubscribeContext->getForCustomer($customerId, $store);
         $templateVars = array_merge(
             array_filter($context, is_scalar(...)),
             [
                 'customer_name' => $customer->getFirstname(),
                 'message' => (string) ($params['message'] ?? ''),
                 'store' => $store,
-            ]
+            ],
+            $unsubscribeContext
         );
 
         $this->inlineTranslation->suspend();
 
         $messageId = $this->messageIdGenerator->generate();
         $this->pendingMessageIdHolder->set($messageId);
+        $this->pendingUnsubscribeHeaderHolder->set($unsubscribeContext['unsubscribe_url']);
 
         try {
             // Only the actual network send is retried, not building the transport - a transient
@@ -191,6 +206,7 @@ class SendEmail implements ActionInterface
             $this->messageSendRetryQueue->enqueueOrRethrow(self::ACTION_TYPE, $context, $params, $e);
         } finally {
             $this->pendingMessageIdHolder->consume();
+            $this->pendingUnsubscribeHeaderHolder->consume();
             $this->inlineTranslation->resume();
         }
     }

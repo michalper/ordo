@@ -43,6 +43,7 @@
 
     <type name="Magento\Framework\Mail\EmailMessageInterfaceFactory">
         <plugin name="ordo_automation_email_message_id" type="Ordo\Automation\Plugin\Email\EmailMessageMessageIdPlugin"/>
+        <plugin name="ordo_automation_email_unsubscribe_header" type="Ordo\Automation\Plugin\Email\EmailMessageUnsubscribeHeaderPlugin"/>
     </type>
 
     <type name="Magento\Email\Model\ResourceModel\Template">

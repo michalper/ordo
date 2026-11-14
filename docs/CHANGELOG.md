@@ -11,6 +11,11 @@ it doesn't update itself from this file.
 
 ### Added
 
+- **Email one-click unsubscribe** — `send_email` campaign sends now carry a no-login
+  `List-Unsubscribe`/`List-Unsubscribe-Post` header pair (RFC 8058) plus a visible footer link in
+  `campaign_generic.html`, pointing at a new `Controller\Email\Unsubscribe` endpoint backed by a
+  stateless, signed token (`Model\Email\UnsubscribeTokenManager` — no new table, no DB lookup to
+  verify) that calls `ConsentManager::setConsent()` directly. See ADR 0058.
 - **Campaign holdout group** — new admin-configurable `holdout_percent` (0-100, default off) on a
   campaign deterministically, randomly withholds that percent of matching customers from every
   action, logging them into `ordo_campaign_outcome_log` with a new `is_holdout` flag
