@@ -29,9 +29,18 @@ mind: add a new ADR and set the old one's Status to "Superseded by ADR NNNN".
 This directory is a standalone module repo — there's no `vendor/` here, so tests can't be run directly from it. Unit tests run in a separate Magento environment:
 
 - Test environment: `/Users/michalper/Projects/magento-ordo-test/`
-  - `docker-compose.yml` — services `db` (MySQL 8), `opensearch`, `php` (container `ordo_test_php`), `selenium`.
+  - `docker-compose.yml` — services `db` (MySQL 8), `opensearch`, `php` (container `ordo_test_php` by default), `selenium`.
   - `magento/` — a full Magento Open Source 2.4.7 install.
-  - This directory (`mma`) is mounted into the php container as `/var/www/mma`.
+  - This directory (`mma`) is mounted into the php container as `/var/www/mma`, from a host path
+    set by `ORDO_SOURCE_PATH` in that directory's own `.env` (defaults to this repo's own checkout).
+
+**Only one branch/worktree can be live-tested per instance at a time** — the `php` container's
+`/var/www/mma` mount reflects whatever's actually checked out at `ORDO_SOURCE_PATH` on the host, so
+two agents/processes must not run `Test/Integration`/MFTF against the *same* instance concurrently
+(composer refreshes and queue-consumer stop/start would race). Everything in `docker-compose.yml`
+(container names, host ports, the mount path) is parametrized via `.env` specifically so a second,
+independent instance can run in parallel against a second worktree instead — see that directory's
+own `README.md`, "Running a second, parallel instance".
 
 **Important pitfall:** the module is wired into Magento via a composer path repository with `"options": {"symlink": false}` — meaning Composer **copies** files into `vendor/michalper/ordo` instead of symlinking. **Changes to files in this repo aren't visible in the test environment until you refresh the copy via `composer update`.**
 
