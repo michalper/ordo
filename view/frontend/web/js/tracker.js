@@ -39,7 +39,7 @@
  * directly off the script tag's own data attributes, not a function the theme calls.
  *
  * A popup whose poll response carries a "reward_label" (Model\Campaign\Action\ShowPopup's own
- * gamified reward_tiers param — see docs/adr/0059) renders a brief "spin the wheel" suspense
+ * gamified reward_tiers param — see docs/adr/0063) renders a brief "spin the wheel" suspense
  * animation before revealing that label and, if the winning tier had one, a coupon code the
  * visitor can copy. The winning tier was already picked server-side the moment this popup was
  * queued — there is nothing left to randomize here, this is purely cosmetic suspense leading up

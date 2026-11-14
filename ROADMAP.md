@@ -772,16 +772,15 @@ close a gap. No candidate below needs a Commerce-only primitive or touches the s
 constraint; one flags a real third-party credential gate explicitly, per the research directive, rather
 than silently assuming it away.
 
-- **No wishlist-abandonment reminder — only cart/browse abandonment are periodic scan-and-dispatch
-  triggers.** `Observer\TrackWishlistAdd` and `Model\Config\Source\EventType`'s `wishlist_add` value only
-  feed the one-shot `event_occurred` segment condition; there is no `Cron\*` scan mirroring
-  `Cron\SendBrowseAbandonmentReminders`/`TRIGGER_BROWSE_ABANDONED` for "this registered customer still has
-  an item in their wishlist N days later and never bought it," which established tools ship as a standard
-  retention flow distinct from cart recovery. Closing it would need a new `wishlist_abandoned` trigger
-  constant and a scan cron reading Magento's own native `wishlist`/`wishlist_item` tables (not this
-  module's `ordo_visitor_event`, which Magento's native Wishlist module doesn't write to) for items added
-  more than a configurable number of days ago with no matching later order line for that SKU, claimed
-  before dispatch the same way every other reminder cron here avoids double-sends.
+- ~~**No wishlist-abandonment reminder — only cart/browse abandonment are periodic scan-and-dispatch
+  triggers.**~~ — done, see `docs/adr/0059-wishlist-abandonment-reminder.md`. New
+  `Cron\SendWishlistAbandonmentReminders` scans Magento core's own native `wishlist`/`wishlist_item`
+  tables (not `ordo_visitor_event`, which Magento's native Wishlist module doesn't write to) for items
+  added more than a configurable `delay_days` ago with no non-canceled `sales_order_item` row for that
+  exact SKU placed since, dispatches a new `TRIGGER_WISHLIST_ABANDONED` (`wishlist_abandoned`) campaign
+  trigger, and claims via a new `ordo_wishlist_abandoned_reminder_log` table the same way every other
+  reminder cron here avoids double-sends. New "Wishlist Abandonment" `system.xml` group mirrors "Browse
+  Abandonment"'s own field shape.
 - **The only "survey" primitive is a hardcoded 0-10 NPS score, not a general zero-party-data question.**
   `ordo_survey_prompt`'s own `score smallint` column, `Model\Campaign\Action\NpsSurvey`, and
   `Model\Campaign\Condition\NpsScoreAtLeast` are built for exactly one shape — "how likely are you to
@@ -794,7 +793,7 @@ than silently assuming it away.
   question — `NpsScoreAtLeast` already shows the exact "read the customer's most recent answered row"
   query shape to reuse.
 - ~~**No gamified, randomized-reward popup — `ShowPopup` is a single static headline/body/CTA, never a
-  weighted prize selection.**~~ — shipped, see `docs/adr/0059-gamified-reward-popup.md`. `ShowPopup`'s
+  weighted prize selection.**~~ — shipped, see `docs/adr/0063-gamified-reward-popup.md`. `ShowPopup`'s
   params gain an optional `reward_tiers` array of `{label, weight, coupon_rule_id}` entries; a new
   `Model\Campaign\RewardTierSelector` picks one with a real, re-rolled-per-delivery random weight (not
   `SplitVariantSelector`'s sticky-per-customer determinism — the ADR explains why that class was the wrong

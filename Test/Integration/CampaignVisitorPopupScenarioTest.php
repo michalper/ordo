@@ -41,7 +41,7 @@ use PHPUnit\Framework\TestCase;
  * prove the OR-across-columns filter and the conditional UPDATE actually behave as intended in
  * real MySQL).
  *
- * Also covers the gamified reward_tiers param (docs/adr/0059) at this same real-system level, in
+ * Also covers the gamified reward_tiers param (docs/adr/0063) at this same real-system level, in
  * preference to a new MFTF scenario: `AdminCampaignPopupActionTest` (Test/Mftf/SCENARIOS.md §10)
  * already proves the popup action's queue-and-poll-and-render delivery mechanism end to end in a
  * real browser, and reward_tiers doesn't change that mechanism at all — it only changes what gets

@@ -1,4 +1,4 @@
-# ADR 0059: Gamified "spin the wheel" reward popup
+# ADR 0063: Gamified "spin the wheel" reward popup
 
 ## Status
 

@@ -139,7 +139,7 @@ class ShowPopup implements ActionInterface
      * action, same fail-closed philosophy as CampaignDispatcher::normalizeVariants() for split's
      * own weighted-list param. Accepts either a real array (params saved via a direct API/JSON
      * call) or a JSON-encoded string (the admin's own plain-text param field for this, which has
-     * no dedicated array-editor widget — see docs/adr/0059 for why that trade-off was accepted).
+     * no dedicated array-editor widget — see docs/adr/0063 for why that trade-off was accepted).
      *
      * @return array<int, array{label: string, weight: float, coupon_rule_id: int|null}>
      */
