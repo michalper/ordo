@@ -21,6 +21,13 @@ it doesn't update itself from this file.
   deliberately out of scope for v1, and real on-device verification is a permanent, accepted test
   gap, same class as the existing Google Ads Customer Match/WhatsApp Business verification gaps -
   see ADR 0062 and `ROADMAP.md`'s "Test coverage" section.
+- **Two-way conversation replies** — an admin can now reply to an inbound SMS/WhatsApp message
+  directly from the "Conversations" grid: a new `Controller\Adminhtml\ConversationMessage\Reply`
+  (POST) re-checks consent via `ConsentManager` and calls `SmsSenderInterface`/a new
+  `WhatsAppSender::sendFreeform()` directly, based on the original message's own channel, through a
+  new `Model\Conversation\OutboundReplySender` service — `InboundMessageProcessor` itself stays
+  receive-only and unchanged. A new `direction` column on `ordo_conversation_message` (default
+  `inbound`, zero backfill) lets the grid render both directions. See ADR 0060.
 - **Wishlist abandonment reminder** — new `Cron\SendWishlistAbandonmentReminders` scans Magento
   core's own native `wishlist`/`wishlist_item` tables for items added more than a configurable
   number of days ago with no non-canceled order line for that exact SKU placed since, and
