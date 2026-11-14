@@ -204,4 +204,28 @@ class ReminderLogStoreTest extends TestCase
             ['quote_id' => 10]
         ));
     }
+
+    public function testClaimUnderLimitFailsClosedWhenTheLockCannotBeAcquired(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('fetchOne')->willReturnCallback(
+            fn ($query) => is_string($query) && str_contains($query, 'GET_LOCK') ? 0 : 0
+        );
+        $connection->expects(self::never())->method('select');
+        $connection->expects(self::never())->method('insert');
+        $connection->expects(self::never())->method('query');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnArgument(0);
+
+        $store = new ReminderLogStore($resourceConnection);
+
+        self::assertFalse($store->claimUnderLimit(
+            'ordo_abandoned_cart_reminder_log',
+            ['quote_id = ?' => 10],
+            1,
+            ['quote_id' => 10]
+        ));
+    }
 }

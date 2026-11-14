@@ -637,6 +637,26 @@ class CampaignDispatcherTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchUsesCachedHoldoutPercentFromTheCurrentArrayShapedCacheEntry(): void
+    {
+        $this->cache = $this->createStub(CacheInterface::class);
+        // The array shape campaignIdsForTrigger() itself now writes (not the bare
+        // campaign_id => 'all'/'any' string the sibling cache-hit test above still covers for
+        // backward compatibility with a pre-holdout cache entry).
+        $this->cache->method('load')->willReturn('{"1":{"logic":"any","holdout_percent":50}}');
+
+        $this->triggerCollectionFactory->expects(self::never())->method('create');
+        $this->campaignCollectionFactory->expects(self::never())->method('create');
+
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([]));
+
+        $this->holdoutSelector->expects(self::once())->method('isHeldOut')->with(1, 7, 50)->willReturn(false);
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 7]);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testDispatchDeduplicatesCampaignWithMultipleMatchingTriggers(): void
     {
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1, 1]));

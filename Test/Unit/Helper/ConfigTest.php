@@ -391,6 +391,7 @@ class ConfigTest extends TestCase
         self::assertSame(500, $this->config->getLoyaltyGoldThreshold());
         self::assertSame(5, $this->config->getFrequencyCapMaxMessages());
         self::assertSame(24, $this->config->getFrequencyCapWindowHours());
+        self::assertSame(180, $this->config->getMessageLogRetentionDays());
         self::assertSame(14, $this->config->getAttributionWindowDays());
         self::assertSame(21, $this->config->getQuietHoursStartHour());
         self::assertSame(8, $this->config->getQuietHoursEndHour());

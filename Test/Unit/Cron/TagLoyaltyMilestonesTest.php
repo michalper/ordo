@@ -135,6 +135,55 @@ class TagLoyaltyMilestonesTest extends TestCase
         self::assertCount(2, $addedTags);
     }
 
+    /**
+     * LoyaltyTierCalculator::getMinimumScoreForTier() is typed `?int` for any caller, even
+     * though neither Helper\Config getter it reads from (both plain `int`, with a default) can
+     * actually return null for Silver/Gold today - this proves tagTierMilestones() still
+     * degrades correctly (skips that one tier, keeps processing the other) if that ever changed,
+     * rather than crashing on a null threshold.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSkipsATierWithNoConfiguredThreshold(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isLoyaltyMilestonesEnabled')->willReturn(true);
+
+        $rfmCalculator = $this->createStub(RfmCalculator::class);
+        $rfmCalculator->method('getAggregatesForAllCustomers')->willReturn([]);
+
+        $loyaltyTierCalculator = $this->createStub(LoyaltyTierCalculator::class);
+        $loyaltyTierCalculator->method('getMinimumScoreForTier')->willReturnMap([
+            [LoyaltyTierCalculator::SILVER, null],
+            [LoyaltyTierCalculator::GOLD, 200],
+        ]);
+
+        $scoreManager = $this->createStub(CustomerScoreManager::class);
+        $scoreManager->method('getCustomerIdsWithScoreAtLeast')->willReturnMap([
+            [200, [7]],
+        ]);
+
+        $tagManager = $this->createMock(CustomerTagManager::class);
+        $tagManager->method('getCustomerIdsWithTag')->willReturn([]);
+
+        $addedTags = [];
+        $tagManager->method('addTag')->willReturnCallback(
+            function (int $customerId, string $tag) use (&$addedTags): void {
+                $addedTags[] = [$customerId, $tag];
+            }
+        );
+
+        (new TagLoyaltyMilestones(
+            $config,
+            $rfmCalculator,
+            $scoreManager,
+            $loyaltyTierCalculator,
+            $tagManager,
+            $this->makeCronRunLogger($this->createStub(LoggerInterface::class))
+        ))->execute();
+
+        self::assertSame([[7, 'milestone_tier_gold']], $addedTags);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteDoesNotReTagAlreadyEarnedMilestones(): void
     {

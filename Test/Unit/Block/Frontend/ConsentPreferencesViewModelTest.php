@@ -42,9 +42,9 @@ class ConsentPreferencesViewModelTest extends TestCase
         $preferences = (new ConsentPreferences())
             ->setEmail((new ConsentChannelPreference())->setConsented(false))
             ->setSms((new ConsentChannelPreference())->setConsented(true))
-            ->setPush(new ConsentChannelPreference())
-            ->setWhatsapp(new ConsentChannelPreference())
-            ->setRcs(new ConsentChannelPreference())
+            ->setPush((new ConsentChannelPreference())->setConsented(false))
+            ->setWhatsapp((new ConsentChannelPreference())->setConsented(true))
+            ->setRcs((new ConsentChannelPreference())->setConsented(false))
             ->setAds(true);
         $this->consentPreferencesManagement->method('getMyPreferences')->willReturn($preferences);
 
@@ -52,6 +52,9 @@ class ConsentPreferencesViewModelTest extends TestCase
 
         self::assertFalse($viewModel->isChannelConsented(ConsentChannel::Email));
         self::assertTrue($viewModel->isChannelConsented(ConsentChannel::Sms));
+        self::assertFalse($viewModel->isChannelConsented(ConsentChannel::Push));
+        self::assertTrue($viewModel->isChannelConsented(ConsentChannel::WhatsApp));
+        self::assertFalse($viewModel->isChannelConsented(ConsentChannel::Rcs));
     }
 
     #[AllowMockObjectsWithoutExpectations]
