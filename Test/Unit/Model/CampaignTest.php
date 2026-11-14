@@ -89,4 +89,41 @@ class CampaignTest extends AbstractModelTestCase
 
         self::assertNull($model->getExitConditions());
     }
+
+    public function testHoldoutPercentDefaultsToZeroWhenNeverSet(): void
+    {
+        self::assertSame(0, $this->makeModel()->getHoldoutPercent());
+    }
+
+    public function testHoldoutPercentRoundTrips(): void
+    {
+        $model = $this->makeModel();
+        $model->setHoldoutPercent(25);
+
+        self::assertSame(25, $model->getHoldoutPercent());
+    }
+
+    public function testSetHoldoutPercentClampsAboveOneHundred(): void
+    {
+        $model = $this->makeModel();
+        $model->setHoldoutPercent(150);
+
+        self::assertSame(100, $model->getHoldoutPercent());
+    }
+
+    public function testSetHoldoutPercentClampsBelowZero(): void
+    {
+        $model = $this->makeModel();
+        $model->setHoldoutPercent(-10);
+
+        self::assertSame(0, $model->getHoldoutPercent());
+    }
+
+    public function testGetHoldoutPercentClampsAnOutOfRangeValueWrittenDirectly(): void
+    {
+        $model = $this->makeModel();
+        $model->setData('holdout_percent', 200);
+
+        self::assertSame(100, $model->getHoldoutPercent());
+    }
 }

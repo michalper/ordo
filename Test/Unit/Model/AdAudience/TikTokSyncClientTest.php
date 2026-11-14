@@ -6,6 +6,7 @@ namespace Ordo\Automation\Test\Unit\Model\AdAudience;
 use Magento\Framework\HTTP\Client\Curl;
 use Magento\Framework\HTTP\Client\CurlFactory;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\AdAudience\TempFileFactory;
 use Ordo\Automation\Model\AdAudience\TikTokSyncClient;
 use Ordo\Automation\Model\Http\JsonApiClient;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -49,7 +50,32 @@ class TikTokSyncClientTest extends TestCase
         $this->config->method('getTiktokAccessToken')->willReturn('tiktok-token');
         $this->config->method('getTiktokAdvertiserId')->willReturn('555');
 
-        $this->client = new TikTokSyncClient(new JsonApiClient($curlFactory), $curlFactory, $this->config);
+        $this->client = new TikTokSyncClient(
+            new JsonApiClient($curlFactory),
+            $curlFactory,
+            $this->config,
+            new TempFileFactory()
+        );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSyncThrowsWhenNoTemporaryFileCanBeCreated(): void
+    {
+        $tempFileFactory = $this->createStub(TempFileFactory::class);
+        $tempFileFactory->method('create')->willReturn(false);
+        $curlFactory = $this->createStub(CurlFactory::class);
+
+        $client = new TikTokSyncClient(
+            new JsonApiClient($curlFactory),
+            $curlFactory,
+            $this->config,
+            $tempFileFactory
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Could not create a temporary file for the TikTok audience upload.');
+
+        $client->sync(null, ['hashed-email']);
     }
 
     #[AllowMockObjectsWithoutExpectations]

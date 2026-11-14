@@ -66,7 +66,8 @@ class TikTokSyncClient implements SyncClientInterface
     public function __construct(
         private readonly JsonApiClient $jsonApiClient,
         private readonly CurlFactory $curlFactory,
-        private readonly Config $config
+        private readonly Config $config,
+        private readonly TempFileFactory $tempFileFactory
     ) {
     }
 
@@ -97,8 +98,7 @@ class TikTokSyncClient implements SyncClientInterface
         // A real filesystem path is required here, not a stream - \CURLFile (below) only accepts
         // one, to hand libcurl the file for real streamed multipart upload. Transient and
         // request-scoped (deleted in the finally block below), never user-facing content.
-        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
-        $tmpFile = tempnam(sys_get_temp_dir(), 'ordo_tiktok_audience_');
+        $tmpFile = $this->tempFileFactory->create();
         if ($tmpFile === false) {
             throw new RuntimeException('Could not create a temporary file for the TikTok audience upload.');
         }

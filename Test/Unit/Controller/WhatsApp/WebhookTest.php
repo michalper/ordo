@@ -350,6 +350,32 @@ class WebhookTest extends AbstractFrontendActionTestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testPostWithAStatusEntryMissingAMessageIdIsIgnoredWithoutQueryingTheLog(): void
+    {
+        $controller = $this->makeController();
+        $rawBody = json_encode([
+            'entry' => [[
+                'changes' => [[
+                    'value' => [
+                        'statuses' => [
+                            ['status' => 'sent'],
+                        ],
+                    ],
+                ]],
+            ]],
+        ]);
+        $this->request->method('isGet')->willReturn(false);
+        $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
+        $this->request->method('getContent')->willReturn($rawBody);
+
+        $this->messageLogCollectionFactory->expects(self::never())->method('create');
+        $this->messageLogResource->expects(self::never())->method('save');
+        $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
+
+        $controller->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testPostWithUnrecognizedMessageStatusIsIgnored(): void
     {
         $controller = $this->makeController();

@@ -364,6 +364,46 @@ class SendAbandonedCartRemindersTest extends TestCase
         ))->execute();
     }
 
+    /**
+     * `claimUnderLimit()` re-checks "reminders already logged < maxReminders" atomically under
+     * its own lock - when a quote is already at the configured limit (e.g. a second cron tick
+     * racing the first), it returns false and this row must be skipped entirely: no email sent,
+     * no campaign dispatched.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSkipsAQuoteAlreadyAtTheMaxReminderLimit(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isAbandonedCartEnabled')->willReturn(true);
+        $config->method('getAbandonedCartDelayMinutes')->willReturn(120);
+        $config->method('getAbandonedCartMinSubtotal')->willReturn(0.0);
+        $config->method('getAbandonedCartMaxReminders')->willReturn(1);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            [
+                'entity_id' => 10,
+                'customer_id' => 5,
+                'customer_email' => 'jan@example.com',
+                'customer_firstname' => 'Jan',
+                'subtotal' => 150.0,
+            ],
+        ]);
+        // 1 already-logged reminder >= the configured max of 1 - claimUnderLimit() must refuse.
+        $this->stubFetchOne($connection, 1);
+        $connection->expects(self::never())->method('insert');
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $dispatcher = $this->createMock(CampaignDispatcher::class);
+        $dispatcher->expects(self::never())->method('dispatch');
+
+        $this->makeCron($config, $resourceConnection, $dispatcher)->execute();
+    }
+
     private function makeQuoteFactoryStub(): QuoteFactory
     {
         $quoteItem = $this->createStub(\Magento\Quote\Model\Quote\Item::class);

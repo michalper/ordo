@@ -75,14 +75,12 @@ class CalculateProductPerformance
     }
 
     /**
-     * @param array<string, int> $viewCountsBySku
+     * @param non-empty-array<string, int> $viewCountsBySku its only caller, execute()'s own
+     *     loop, never builds this from an empty $rows (the loop breaks before calling this at
+     *     all when $rows is empty) - no empty-array guard needed here.
      */
     private function flushCounts(array $viewCountsBySku): void
     {
-        if ($viewCountsBySku === []) {
-            return;
-        }
-
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName(self::TABLE);
 
