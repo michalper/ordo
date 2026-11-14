@@ -178,7 +178,7 @@ class OutboundReplySenderTest extends TestCase
             'from_address' => '+15551234567',
             'direction' => ConversationMessage::DIRECTION_INBOUND,
         ]);
-        $this->consentManager->method('hasConsent')->with(42, ConsentChannel::Sms)->willReturn(false);
+        $this->consentManager->method('hasConsent')->willReturnMap([[42, ConsentChannel::Sms, false]]);
         $this->smsSender->expects(self::never())->method('send');
 
         $this->expectException(\RuntimeException::class);
@@ -202,7 +202,7 @@ class OutboundReplySenderTest extends TestCase
             'from_address' => 'customer@example.test',
             'direction' => ConversationMessage::DIRECTION_INBOUND,
         ]);
-        $this->consentManager->method('hasConsent')->with(42, ConsentChannel::Email)->willReturn(true);
+        $this->consentManager->method('hasConsent')->willReturnMap([[42, ConsentChannel::Email, true]]);
 
         $this->expectException(\RuntimeException::class);
         $this->makeSender()->reply(5, 'Hi there!');
@@ -219,7 +219,7 @@ class OutboundReplySenderTest extends TestCase
             'from_address' => '+15551234567',
             'direction' => ConversationMessage::DIRECTION_INBOUND,
         ]);
-        $this->consentManager->method('hasConsent')->with(42, ConsentChannel::Sms)->willReturn(true);
+        $this->consentManager->method('hasConsent')->willReturnMap([[42, ConsentChannel::Sms, true]]);
         $this->smsSender->expects(self::once())->method('send')
             ->with('+15551234567', 'Your order shipped!')
             ->willReturn('SM123');
@@ -256,7 +256,7 @@ class OutboundReplySenderTest extends TestCase
             'from_address' => '+15557654321',
             'direction' => ConversationMessage::DIRECTION_INBOUND,
         ]);
-        $this->consentManager->method('hasConsent')->with(42, ConsentChannel::WhatsApp)->willReturn(true);
+        $this->consentManager->method('hasConsent')->willReturnMap([[42, ConsentChannel::WhatsApp, true]]);
         $this->whatsAppSender->expects(self::once())->method('sendFreeform')
             ->with('+15557654321', 'Yes, in stock!')
             ->willReturn('wamid.123');

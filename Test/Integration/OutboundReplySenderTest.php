@@ -35,7 +35,7 @@ use PHPUnit\Framework\TestCase;
  * the two provider calls at the very tail end (Twilio/Meta) are faked, via
  * RecordingTwilioSmsSender/RecordingWhatsAppSender (the latter overriding WhatsAppSender's own
  * sendFreeform(), the same "extend the real class, override only the network call" shape
- * RecordingTransportBuilder already uses for CampaignSendEmailActionTest). See docs/adr/0059 for
+ * RecordingTransportBuilder already uses for CampaignSendEmailActionTest). See docs/adr/0060 for
  * why this class, not a browser-level MFTF test, is the chosen system-level proof for this change.
  *
  * Run from the Magento root: vendor/bin/phpunit --bootstrap app/bootstrap.php

@@ -143,6 +143,17 @@ interface CampaignTriggerInterface
     public const TRIGGER_CUSTOMER_ANNIVERSARY = 'customer_anniversary';
 
     /**
+     * One step earlier in the wishlist funnel, the same shape TRIGGER_BROWSE_ABANDONED already
+     * established for product views - fires from Cron\SendWishlistAbandonmentReminders for a
+     * registered customer who added a product to their wishlist (Magento core's own native
+     * `wishlist`/`wishlist_item` tables, NOT `ordo_visitor_event` - a Magento wishlist always
+     * requires a logged-in customer, unlike a product view) at least `delay_days` ago and has no
+     * non-canceled `sales_order_item` row for that same SKU placed since the item was added. See
+     * that cron's own docblock.
+     */
+    public const TRIGGER_WISHLIST_ABANDONED = 'wishlist_abandoned';
+
+    /**
      * @return int|null
      */
     public function getEntityId(): ?int;

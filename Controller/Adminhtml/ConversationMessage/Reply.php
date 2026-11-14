@@ -13,7 +13,7 @@ use Ordo\Automation\Model\Conversation\OutboundReplySender;
  * only new path that ever sends FROM the admin back to a customer over SMS/WhatsApp. A thin
  * controller on purpose: every real decision (consent re-check, which sender to call, writing the
  * new outbound row) lives in Model\Conversation\OutboundReplySender, not here and not in
- * Model\Conversation\InboundMessageProcessor - see that service's own docblock and docs/adr/0059.
+ * Model\Conversation\InboundMessageProcessor - see that service's own docblock and docs/adr/0060.
  */
 class Reply extends Action implements HttpPostActionInterface
 {

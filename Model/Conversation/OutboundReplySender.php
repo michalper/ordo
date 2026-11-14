@@ -18,7 +18,7 @@ use Psr\Log\LoggerInterface;
  * write path that ever sends FROM the admin back to a customer over SMS/WhatsApp, invoked only by
  * Controller\Adminhtml\ConversationMessage\Reply — never by InboundMessageProcessor itself, and
  * never by the campaign engine (Model\Campaign\Action\SendSms/SendWhatsApp keep their own,
- * separate consent/quiet-hours/frequency-cap gated path). See docs/adr/0059 for why this is a
+ * separate consent/quiet-hours/frequency-cap gated path). See docs/adr/0060 for why this is a
  * separate class rather than a change to InboundMessageProcessor.
  *
  * Replies always go back to the ORIGINAL inbound message's own from_address — the admin is

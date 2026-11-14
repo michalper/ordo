@@ -13,7 +13,7 @@ use Ordo\Automation\Model\ResourceModel\ConversationMessage as ConversationMessa
  * and Controller\WhatsApp\Webhook funnel every inbound reply through. An outbound row (an
  * admin-initiated reply) is written by the separate Model\Conversation\OutboundReplySender —
  * deliberately NOT through InboundMessageProcessor, see that class's own docblock and
- * docs/adr/0059 for why the receive-only funnel stays untouched.
+ * docs/adr/0060 for why the receive-only funnel stays untouched.
  */
 class ConversationMessage extends AbstractModel
 {

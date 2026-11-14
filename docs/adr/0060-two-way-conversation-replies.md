@@ -1,4 +1,4 @@
-# ADR 0059: Two-way conversation replies
+# ADR 0060: Two-way conversation replies
 
 ## Status
 
