@@ -34,6 +34,7 @@
     <preference for="Ordo\Automation\Api\Data\CreditLimitStatusInterface" type="Ordo\Automation\Model\CreditLimitStatus"/>
     <preference for="Ordo\Automation\Api\CreditLimitManagementInterface" type="Ordo\Automation\Model\CreditLimitManagement"/>
     <preference for="Ordo\Automation\Api\LoyaltyPointsManagementInterface" type="Ordo\Automation\Model\LoyaltyPointsManagement"/>
+    <preference for="Ordo\Automation\Api\LoyaltyWalletPassManagementInterface" type="Ordo\Automation\Model\LoyaltyWalletPassManagement"/>
     <preference for="Ordo\Automation\Api\AiAgentQuoteManagementInterface" type="Ordo\Automation\Model\AiAgent\AiAgentQuoteManagement"/>
     <preference for="Ordo\Automation\Api\Data\AiAgentQuoteItemInterface" type="Ordo\Automation\Model\AiAgent\AiAgentQuoteItem"/>
     <preference for="Ordo\Automation\Api\Data\AiAgentQuoteLineInterface" type="Ordo\Automation\Model\AiAgent\AiAgentQuoteLine"/>

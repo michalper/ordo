@@ -50,6 +50,16 @@ class Config
     private const string XML_PATH_LOYALTY_POINTS_EXPIRY_DAYS = 'ordo_automation/loyalty_points/expiry_days';
     private const string XML_PATH_LOYALTY_MILESTONES_ENABLED = 'ordo_automation/loyalty_milestones/enabled';
 
+    private const string XML_PATH_WALLET_PASS_ENABLED = 'ordo_automation/loyalty_wallet_pass/enabled';
+    private const string XML_PATH_WALLET_PASS_GOOGLE_ISSUER_ID
+        = 'ordo_automation/loyalty_wallet_pass/google_issuer_id';
+    private const string XML_PATH_WALLET_PASS_GOOGLE_CLASS_ID
+        = 'ordo_automation/loyalty_wallet_pass/google_class_id';
+    private const string XML_PATH_WALLET_PASS_GOOGLE_SERVICE_ACCOUNT_EMAIL
+        = 'ordo_automation/loyalty_wallet_pass/google_service_account_email';
+    private const string XML_PATH_WALLET_PASS_GOOGLE_PRIVATE_KEY
+        = 'ordo_automation/loyalty_wallet_pass/google_private_key';
+
     private const string XML_PATH_OFFER_ENABLED = 'ordo_automation/offer/enabled';
     private const string XML_PATH_OFFER_LEAD_DAYS = 'ordo_automation/offer/lead_days';
     private const string XML_PATH_STALLED_PAYMENT_ENABLED = 'ordo_automation/stalled_payment/enabled';
@@ -517,6 +527,72 @@ class Config
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
+    }
+
+    /**
+     * Gates the "Add to Google Wallet" link on the storefront "My Offers" page and the
+     * Api\LoyaltyWalletPassManagementInterface REST endpoint - see docs/adr/0062. Independent of
+     * the Google Wallet credentials below being configured; Model\Wallet\GoogleWalletPassLinkBuilder
+     * checks both.
+     */
+    public function isWalletPassEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_WALLET_PASS_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * The numeric Issuer ID from the Google Pay &amp; Wallet Console, after completing Google's
+     * Loyalty program business verification - the prefix of both the LoyaltyClass and
+     * LoyaltyObject ids Model\Wallet\GoogleWalletLoyaltyObjectBuilder builds.
+     */
+    public function getWalletPassGoogleIssuerId(?int $storeId = null): string
+    {
+        return (string) $this->scopeConfig->getValue(
+            self::XML_PATH_WALLET_PASS_GOOGLE_ISSUER_ID,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * The loyalty class id (without the issuer id prefix) created for this program in the
+     * Google Pay &amp; Wallet Console - this module never creates the class itself via the
+     * Wallet Objects REST API (see docs/adr/0062).
+     */
+    public function getWalletPassGoogleClassId(?int $storeId = null): string
+    {
+        return (string) $this->scopeConfig->getValue(
+            self::XML_PATH_WALLET_PASS_GOOGLE_CLASS_ID,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * The "client_email" field from the service account's downloaded JSON key - becomes every
+     * "Save to Google Wallet" JWT's `iss` claim.
+     */
+    public function getWalletPassGoogleServiceAccountEmail(?int $storeId = null): string
+    {
+        return (string) $this->scopeConfig->getValue(
+            self::XML_PATH_WALLET_PASS_GOOGLE_SERVICE_ACCOUNT_EMAIL,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * The "private_key" field (PEM) from the same JSON key - signs every "Add to Google Wallet"
+     * JWT (Model\Wallet\GoogleWalletJwtBuilder). Never sent to the browser. Obscure/encrypted,
+     * same as getVapidPrivateKey().
+     */
+    public function getWalletPassGooglePrivateKey(?int $storeId = null): string
+    {
+        return $this->decryptedConfig(self::XML_PATH_WALLET_PASS_GOOGLE_PRIVATE_KEY, $storeId);
     }
 
     public function isOfferReminderEnabled(?int $storeId = null): bool

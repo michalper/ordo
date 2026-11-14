@@ -8,6 +8,15 @@
                     <argument name="view_model" xsi:type="object">Ordo\Automation\Block\Frontend\OfferViewModel</argument>
                 </arguments>
             </block>
+            <!-- No dedicated loyalty account page exists yet - "My Offers" is this module's only
+                 server-rendered storefront customer-account page, so the wallet pass button lives
+                 here too rather than behind a whole new route, same reasoning the Offer entity
+                 itself (REST-only, no admin CRUD UI) already established for staying lean. -->
+            <block class="Magento\Framework\View\Element\Template" name="ordo.loyalty.wallet_pass" template="Ordo_Automation::walletpass/google_button.phtml" cacheable="false">
+                <arguments>
+                    <argument name="view_model" xsi:type="object">Ordo\Automation\Block\Frontend\LoyaltyWalletPassViewModel</argument>
+                </arguments>
+            </block>
         </referenceContainer>
     </body>
 </page>

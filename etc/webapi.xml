@@ -442,4 +442,15 @@
             <resource ref="self"/>
         </resources>
     </route>
+    <!-- Same "self" resource shape as the loyalty points routes above - a customer token alone
+         proves who is asking. Returns the full "https://pay.google.com/gp/v/save/<jwt>" URL as a
+         plain string, for a headless/PWA storefront; the server-rendered storefront's own "My
+         Offers" page instead links to Controller\LoyaltyWalletPass\Google, which redirects there
+         - see docs/adr/0062. -->
+    <route url="/V1/ordo/loyalty-wallet-pass/google" method="GET">
+        <service class="Ordo\Automation\Api\LoyaltyWalletPassManagementInterface" method="getMyGoogleWalletSaveUrl"/>
+        <resources>
+            <resource ref="self"/>
+        </resources>
+    </route>
 </routes>

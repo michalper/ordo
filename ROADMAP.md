@@ -94,6 +94,16 @@ protocol has nothing browser-observable for Selenium to assert on.
   non-"use case" app-creation flow) with identical results, so this isn't an app-level bug. Creating a Facebook
   Page would very likely fix it, but the user has declined to create one — real-account verification of
   `send_whatsapp` stays untested for that reason, independent of anything in this module.
+- The Google Wallet loyalty pass (`Model\Wallet\GoogleWalletPassLinkBuilder` and friends, see ADR 0062) has
+  no test against a real Google Wallet Issuer account or a real device — the signing/payload-construction
+  logic is fully unit-tested with a locally-generated, self-signed test RSA key
+  (`Test\Unit\Model\Wallet\GoogleWalletJwtBuilderTest` signs a real JWT and verifies it with
+  `openssl_verify()`), and `Test\Integration\LoyaltyWalletPassEndpointTest` proves the real DI wiring against
+  a real customer/loyalty-ledger row, but nothing has ever handed a resulting save URL to an actual Google
+  Wallet app on an actual phone. **Accepted as a permanent gap, not a pending task:** that needs enrolling in
+  the Google Wallet Issuer program (Google Pay & Wallet Console business verification) — the same category of
+  gated-credential blocker as the two Google Ads/WhatsApp rows above, not attempted here for the same reason
+  neither of those has been retried.
 
 ### MFTF/scenario coverage
 
@@ -816,19 +826,12 @@ than silently assuming it away.
   the grid render both directions — a plain "Reply" row action plus a small server-rendered inline form,
   not a knockout modal — and `Test\Integration\OutboundReplySenderTest` proves the real send/consent wiring
   with only the two provider calls faked at the transport tail.
-- **Digital loyalty wallet pass (Apple Wallet / Google Wallet) — real gap, but flagging the credential risk
-  explicitly rather than assuming it away.** This module's points balance (`Model\LoyaltyPointsManager`) and
-  tier (`Model\LoyaltyTierCalculator`) only ever surface through My Offers/account pages and emails — there's
-  no scannable membership card a customer can add to their phone's wallet, a feature established loyalty
-  platforms ship as a standard retention surface. The pass-building/signing logic itself (constructing a
-  signed `.pkpass` bundle or a Google Wallet `LoyaltyObject` JSON payload) is fully unit-testable with a
-  locally-generated, self-signed test certificate — no live account needed, the same "no vendor SDK, build
-  the protocol" precedent `Model\Push\WebPushCrypto`/`VapidTokenBuilder` already set for Web Push. But unlike
-  Web Push, a pass a real iPhone or Android device will actually accept needs credentials from a gated
-  program on each side — Apple Developer Program enrollment (paid, currently out of reach the same way this
-  project hasn't gone through it for anything else) for a Pass Type ID signing certificate, and a Google
-  Wallet Issuer account (Google Pay & Wallet Console business verification) for the Google side. Until
-  either is obtained, real end-to-end "does a real phone display and update this pass" verification would be
-  the same kind of permanent, accepted test-coverage gap this file already documents for Google Ads Customer
-  Match and WhatsApp Business verification — worth flagging now, before any code is written, not discovering
-  it mid-implementation.
+- ~~**Digital loyalty wallet pass (Apple Wallet / Google Wallet).**~~ — closed, Google Wallet only (see
+  ADR 0062 for why Apple Wallet was deliberately left out of v1): `Model\Wallet\GoogleWalletLoyaltyObjectBuilder`/
+  `GoogleWalletJwtBuilder`/`GoogleWalletPassLinkBuilder` build and RS256-sign a real "Save to Google Wallet"
+  link from `Model\LoyaltyPointsManager`'s balance and `Model\LoyaltyTierCalculator`'s tier, no vendor SDK -
+  same precedent `Model\Push\WebPushCrypto`/`VapidTokenBuilder` set for Web Push. Exposed both on the
+  storefront "My Offers" page (`Controller\LoyaltyWalletPass\Google`) and over REST
+  (`GET /V1/ordo/loyalty-wallet-pass/google`). Real on-device verification against a real Google Wallet
+  Issuer account remains a permanent, accepted gap - see this file's own "Test coverage" section below.
+  Apple Wallet itself stays open as a future candidate if the Apple Developer Program gap ever closes.
