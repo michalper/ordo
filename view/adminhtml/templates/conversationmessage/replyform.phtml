@@ -1,0 +1,44 @@
+<?php
+/**
+ * @var \Ordo\Automation\Block\Adminhtml\ConversationMessage\ReplyForm $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+$prefilledEntityId = $block->getPrefilledEntityId();
+?>
+<div class="admin__fieldset-wrapper ordo-conversation-reply">
+    <div class="admin__fieldset-wrapper-title">
+        <strong><?= $escaper->escapeHtml(__('Reply to a Conversation')) ?></strong>
+    </div>
+    <div class="admin__fieldset-wrapper-content">
+        <form method="post" action="<?= $escaper->escapeUrl($block->getReplyUrl()) ?>">
+            <?= $block->getBlockHtml('formkey') ?>
+            <div class="admin__field">
+                <label class="admin__field-label" for="ordo-reply-entity-id">
+                    <?= $escaper->escapeHtml(__('Message ID')) ?>
+                </label>
+                <div class="admin__field-control">
+                    <input
+                        type="number"
+                        min="1"
+                        name="entity_id"
+                        id="ordo-reply-entity-id"
+                        class="admin__control-text"
+                        value="<?= $prefilledEntityId > 0 ? (int) $prefilledEntityId : '' ?>"
+                        required
+                    >
+                </div>
+            </div>
+            <div class="admin__field">
+                <label class="admin__field-label" for="ordo-reply-body">
+                    <?= $escaper->escapeHtml(__('Message')) ?>
+                </label>
+                <div class="admin__field-control">
+                    <textarea name="body" id="ordo-reply-body" class="admin__control-textarea" required></textarea>
+                </div>
+            </div>
+            <button type="submit" class="action-primary">
+                <span><?= $escaper->escapeHtml(__('Send Reply')) ?></span>
+            </button>
+        </form>
+    </div>
+</div>

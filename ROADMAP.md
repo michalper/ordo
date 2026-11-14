@@ -806,18 +806,16 @@ than silently assuming it away.
   `ordo_pending_popup` queue-and-poll delivery, a new weighted-random selector class, and a call into the
   existing `Model\CouponGenerator` for whichever tier is picked — frequency-capped the same way `ShowPopup`
   already caps repeat popups, so a visitor can't just keep re-spinning.
-- **Inbound SMS/WhatsApp replies can only be viewed, never answered, from the admin.**
-  `Controller\Adminhtml\ConversationMessage\Index` implements `HttpGetActionInterface` only — a read-only
-  grid over `ordo_conversation_message` — and `Model\Conversation\InboundMessageProcessor`'s own docblock
-  describes it as a one-way "every inbound reply passes through" funnel that only ever revokes consent on a
-  STOP keyword, never sends anything back. There's no agent-assisted two-way messaging: a merchant seeing a
-  customer's reply in the grid today has to call or text them from outside Magento entirely. Closing it
-  would need a new POST action (e.g. `Controller\Adminhtml\ConversationMessage\Reply`) calling
-  `SmsSenderInterface`/`Model\WhatsApp\WhatsAppSender` directly — not through `InboundMessageProcessor`,
-  keeping that class's receive-only shape intact, the same boundary the "HELP keyword auto-reply" candidate
-  above was dropped for crossing — re-checking consent via `ConsentManager` first, and a new `direction`
-  column on `ordo_conversation_message` (today implicitly always inbound) so the grid can render a real
-  back-and-forth thread.
+- ~~**Inbound SMS/WhatsApp replies can only be viewed, never answered, from the admin.**~~ — shipped,
+  see `docs/adr/0060-two-way-conversation-replies.md`. A new `Model\Conversation\OutboundReplySender`
+  (a sibling of `InboundMessageProcessor`, which stays receive-only and untouched) re-checks consent via
+  `ConsentManager`, then calls `SmsSenderInterface`/a new `WhatsAppSender::sendFreeform()` directly based
+  on the original inbound row's own channel, and writes the reply back as a new `ordo_conversation_message`
+  row. `Controller\Adminhtml\ConversationMessage\Reply` (POST, reusing the existing `conversation_message`
+  ACL resource) is the only caller. A new `direction` column (default `inbound`, zero backfill needed) lets
+  the grid render both directions — a plain "Reply" row action plus a small server-rendered inline form,
+  not a knockout modal — and `Test\Integration\OutboundReplySenderTest` proves the real send/consent wiring
+  with only the two provider calls faked at the transport tail.
 - **Digital loyalty wallet pass (Apple Wallet / Google Wallet) — real gap, but flagging the credential risk
   explicitly rather than assuming it away.** This module's points balance (`Model\LoyaltyPointsManager`) and
   tier (`Model\LoyaltyTierCalculator`) only ever surface through My Offers/account pages and emails — there's
