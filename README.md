@@ -60,15 +60,24 @@ access to that data.
 - Churn-risk detection — a self-relative "drifting from their own order cadence" signal (median order interval,
   not a fixed inactivity threshold), usable as a segment/campaign condition and surfaced in the sales-rep digest.
 - Birthday / signup-anniversary campaign trigger, firing once per calendar year.
+- Wishlist abandonment reminder — the gap left between cart and browse abandonment, for items added to a
+  wishlist with no order since.
+- Zero-party-data surveys — an NPS prompt or a custom text/choice question, answered directly by the customer
+  and usable as its own segment/campaign condition.
+- Gamified "spin the wheel" reward popup — a frequency-capped popup awarding one of several configured reward
+  tiers, optionally minting a real single-use coupon.
 
 **Loyalty & Referral**
 
 - Points-based loyalty program — customers earn points on every order and redeem them for a coupon, distinct
   from the existing order-count/spend-based loyalty tiers.
+- Digital loyalty wallet pass — an "Add to Google Wallet" button showing a customer's live points balance and
+  tier as a scannable membership card.
 - Gamified milestones — automatic customer tagging at a fixed order-count milestone (1st/5th/10th/25th/50th) or
   on reaching a loyalty tier, feeding the campaign engine's existing tag-based trigger.
 - Double-sided referral rewards — both the referrer (on the referred customer's first purchase) and the referred
-  customer (on signup) can be targeted by their own campaign trigger.
+  customer (on signup) can be targeted by their own campaign trigger, with a duplicate-registration-IP signal
+  flagging likely self-referral on the admin Referrals grid.
 
 **Advertising & Analytics**
 
@@ -85,7 +94,12 @@ access to that data.
 - Behavioral tagging — the segmentation primitive every trigger above reads or writes.
 - Sales-rep signature on automated emails; a weekly digest groups inactive customers by rep.
 - Campaign engine — a "when X happens and Y is true, do Z" rule engine, with conditions/actions as
-  `di.xml`-registered plug-ins and a full REST service contract.
+  `di.xml`-registered plug-ins and a full REST service contract. A multi-step `delay_minutes` chain can set an
+  exit condition re-checked before every delayed step, skipping the rest once satisfied (e.g. the customer
+  already converted), and a campaign can hold out a configurable percent of matching customers from every
+  action for true incremental-lift measurement against the sent group.
+- Two-way conversations — an admin can reply directly to an inbound SMS/WhatsApp message from the
+  Conversations grid, not just receive and tag it.
 - Predictive send-time optimization — opt-in per `send_email` action, defers to each customer's own
   historically-best email open/click hour (email-only: the only channel with open/click data).
 - On-site behavior tracking — a dependency-free JS snippet turning page/product/category views into campaign-engine
@@ -97,12 +111,13 @@ access to that data.
 - Admin UI — dashboard, campaign builder (editable [Drawflow](https://github.com/jerosoler/Drawflow) trigger(s) →
   conditions → actions canvas, multiple triggers per campaign), campaign calendar (trigger/action timing across all
   campaigns), free gift offer builder, reorder-cycles diagnostic grid.
-- Reporting & analytics — RFM/lead scoring, revenue & channel analytics (with coupon-to-campaign attribution) and
-  product performance, cross-campaign comparison, cohort retention (optionally narrowed to one acquisition
-  campaign), and a daily purchase-funnel/drop-off report.
+- Reporting & analytics — RFM/lead scoring, a per-customer Customer 360 view (RFM, projected CLV, churn risk,
+  loyalty, segment membership in one snapshot), revenue & channel analytics (with coupon-to-campaign
+  attribution) and product performance, cross-campaign comparison, cohort retention (optionally narrowed to one
+  acquisition campaign), and a daily purchase-funnel/drop-off report.
 - Consent & preferences — per-channel/per-topic opt-out tracked admin-side (GDPR export/erase included), plus a
   self-service storefront/headless "Communication Preferences" page (REST + GraphQL) a logged-in customer can
-  manage themselves.
+  manage themselves, and a no-login one-click unsubscribe (RFC 8058) on every `send_email` send.
 
 Every feature has its own config toggle under **Stores → Configuration → Ordo Automation** and its own cron job.
 

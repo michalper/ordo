@@ -58,15 +58,24 @@ strukturalnie nie widzą.
 - Wykrywanie ryzyka odejścia (churn) — sygnał własnego rytmu zamówień klienta (mediana interwału, nie sztywny próg
   nieaktywności), dostępny jako warunek segmentu/kampanii i uwzględniony w cotygodniowym digeście dla opiekuna.
 - Trigger kampanii na urodziny / rocznicę rejestracji, odpalający się raz w roku kalendarzowym.
+- Przypomnienie o porzuconej liście życzeń — wypełnia pustkę między porzuconym koszykiem a samym przeglądaniem,
+  dla produktów dodanych do listy życzeń bez kolejnego zamówienia.
+- Ankiety zero-party-data — pytanie NPS albo własne pytanie tekstowe/wyboru, odpowiedź wprost od klienta, do
+  wykorzystania jako warunek segmentu/kampanii.
+- Grywalizowany popup "zakręć kołem" — popup z limitem częstotliwości, losujący jedną z kilku skonfigurowanych
+  nagród, opcjonalnie generujący prawdziwy, jednorazowy kupon.
 
 **Lojalność i polecenia**
 
 - Program lojalnościowy punktowy — klient zdobywa punkty za każde zamówienie i wymienia je na kupon, odrębny od
   istniejących progów lojalnościowych liczonych od liczby zamówień/wydatków.
+- Cyfrowa karta lojalnościowa w portfelu — przycisk "Dodaj do Google Wallet" pokazujący aktualny stan punktów i
+  próg lojalnościowy klienta jako skanowalną kartę.
 - Grywalizowane kamienie milowe — automatyczne tagowanie klienta po osiągnięciu stałego progu liczby zamówień
   (1./5./10./25./50.) albo progu lojalnościowego, wykorzystujące istniejący trigger oparty na tagach.
 - Dwustronne nagrody za polecenia — zarówno polecający (po pierwszym zamówieniu poleconego klienta), jak i
-  polecony (po rejestracji) mogą być celem własnego triggera kampanii.
+  polecony (po rejestracji) mogą być celem własnego triggera kampanii, z sygnałem duplikatu IP rejestracji
+  oznaczającym podejrzenie samopolecenia na gridzie poleceń w adminie.
 
 **Reklama i analityka**
 
@@ -84,7 +93,12 @@ strukturalnie nie widzą.
 - Podpis opiekuna handlowego w automatycznych e-mailach; tygodniowy digest grupujący nieaktywnych klientów per
   opiekun.
 - Silnik kampanii — reguła "gdy X i Y, zrób Z", z warunkami/akcjami jako wtyczkami rejestrowanymi w `di.xml` i
-  pełnym kontraktem REST.
+  pełnym kontraktem REST. Wieloetapowy łańcuch `delay_minutes` może mieć warunek wyjścia sprawdzany przed każdym
+  odłożonym krokiem, pomijający resztę po jego spełnieniu (np. klient już skonwertował), a kampania może
+  wyłączyć z każdej akcji konfigurowalny procent dopasowanych klientów (grupa kontrolna) do prawdziwego pomiaru
+  przyrostowego efektu względem grupy, która dostała wysyłkę.
+- Dwustronne konwersacje — administrator może odpowiedzieć wprost na przychodzącą wiadomość SMS/WhatsApp z
+  gridu Konwersacji, nie tylko odebrać i otagować.
 - Przewidywana najlepsza pora wysyłki — opcja do włączenia per akcja `send_email`, wysyła w
   historycznie najlepszej godzinie otwarcia/kliknięcia dla danego klienta (tylko e-mail — jedyny
   kanał z danymi o otwarciach/kliknięciach).
@@ -97,12 +111,13 @@ strukturalnie nie widzą.
 - Panel administracyjny — dashboard, kreator kampanii (edytowalny diagram [Drawflow](https://github.com/jerosoler/Drawflow)
   trigger(y) → warunki → akcje, wiele triggerów na kampanię), kalendarz kampanii (trigger/harmonogram akcji wszystkich
   kampanii w jednym miejscu), kreator ofert gratisów, diagnostyczny grid cykli reorder.
-- Raporty i analityka — RFM/punktacja leadów, analityka przychodów i kanałów (z atrybucją kuponu do kampanii) oraz
-  wydajność produktów, porównanie kampanii, retencja kohortowa (opcjonalnie zwężona do jednej kampanii
-  pozyskującej), oraz dzienny raport lejka zakupowego/odpadania klientów.
+- Raporty i analityka — RFM/punktacja leadów, widok Customer 360 dla jednego klienta (RFM, prognozowane CLV,
+  ryzyko odejścia, lojalność i przynależność do segmentów w jednym miejscu), analityka przychodów i kanałów
+  (z atrybucją kuponu do kampanii) oraz wydajność produktów, porównanie kampanii, retencja kohortowa
+  (opcjonalnie zwężona do jednej kampanii pozyskującej), oraz dzienny raport lejka zakupowego/odpadania klientów.
 - Zgody i preferencje — śledzenie opt-out per kanał/temat po stronie admina (łącznie z eksportem/usunięciem RODO),
   a dodatkowo samoobsługowa strona "Preferencje komunikacji" dla zalogowanego klienta (REST + GraphQL, działa
-  też headless).
+  też headless), oraz wypisanie się jednym kliknięciem bez logowania (RFC 8058) przy każdej wysyłce `send_email`.
 
 Każda funkcja ma własny przełącznik w **Stores → Configuration → Ordo Automation** i własne zadanie cron.
 

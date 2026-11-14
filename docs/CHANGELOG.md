@@ -9,6 +9,8 @@ it doesn't update itself from this file.
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-11-14
+
 ### Added
 
 - **Gamified "spin the wheel" reward popup** — `ShowPopup`'s params gain an optional
