@@ -15,7 +15,7 @@ use Psr\Log\LoggerInterface;
  * same no-frequency-cap reasoning) — kept as a separate class and a separate "generic_survey"
  * di.xml entry rather than widening NpsSurvey itself with a question_type param, so an existing
  * nps_survey campaign action's params/behavior are untouched by this feature (see docs/adr
- * 0059). Where this differs from NpsSurvey: it asks a free-text or multiple-choice question
+ * 0061). Where this differs from NpsSurvey: it asks a free-text or multiple-choice question
  * instead of a fixed 0-10 score, so Controller\Track\SubmitSurveyResponse records the answer in
  * response_text rather than score.
  *

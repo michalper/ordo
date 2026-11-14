@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Real end-to-end coverage of the generic_survey action / survey_response_equals condition
- * added alongside the existing nps_survey/nps_score_at_least pair (see docs/adr 0059) — real DI,
+ * added alongside the existing nps_survey/nps_score_at_least pair (see docs/adr 0061) — real DI,
  * real dev database, no mocks. Proves the whole claim/deliver/respond lifecycle for the new
  * text/choice question shape:
  *

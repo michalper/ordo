@@ -66,6 +66,10 @@ class TriggerEvent implements OptionSourceInterface
                 'value' => CampaignTriggerInterface::TRIGGER_CUSTOMER_ANNIVERSARY,
                 'label' => __('Customer Birthday / Registration Anniversary'),
             ],
+            [
+                'value' => CampaignTriggerInterface::TRIGGER_WISHLIST_ABANDONED,
+                'label' => __('Wishlist Abandoned (added to wishlist, no order since)'),
+            ],
         ];
     }
 }

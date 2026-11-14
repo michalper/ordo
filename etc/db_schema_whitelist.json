@@ -60,6 +60,20 @@
             "PRIMARY": true
         }
     },
+    "ordo_wishlist_abandoned_reminder_log": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "event_key": true,
+            "sent_at": true
+        },
+        "index": {
+            "ORDO_WISHLIST_ABANDONED_LOG_CUSTOMER_ID_EVENT_KEY": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
     "ordo_review_request_log": {
         "column": {
             "entity_id": true,

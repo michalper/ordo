@@ -27,7 +27,7 @@ use Ordo\Automation\Model\Track\VisitorIdentityResolver;
  *
  * Which field gets recorded depends on the prompt's own question_type, not on which params the
  * request happened to send: a legacy nps_survey row (question_type null) keeps exactly the
- * original 0-10 "score" validation untouched (see docs/adr 0059 - a generic_survey feature must
+ * original 0-10 "score" validation untouched (see docs/adr 0061 - a generic_survey feature must
  * not change existing NPS campaign behavior), while a text/choice row (set only by the
  * generic_survey action) instead validates and records "response_text" - a non-empty string
  * that, for a "choice" question, must be one of the prompt's own offered choices.

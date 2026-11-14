@@ -20,7 +20,15 @@ it doesn't update itself from this file.
   answered row for that specific question. `nps_survey`/`nps_score_at_least` are completely
   unchanged. The storefront widget (`tracker.js`) still only renders the legacy 0-10 NPS prompt —
   rendering a text/choice question in the bundled widget is a known, separate follow-up. See ADR
-  0059.
+  0061.
+- **Wishlist abandonment reminder** — new `Cron\SendWishlistAbandonmentReminders` scans Magento
+  core's own native `wishlist`/`wishlist_item` tables for items added more than a configurable
+  number of days ago with no non-canceled order line for that exact SKU placed since, and
+  dispatches a new `wishlist_abandoned` campaign trigger (`TRIGGER_WISHLIST_ABANDONED`) — the
+  gap left between cart and browse abandonment, claimed via a new
+  `ordo_wishlist_abandoned_reminder_log` table the same way every other reminder cron here avoids
+  double-sends. New "Wishlist Abandonment" section under Stores > Configuration > Ordo
+  Automation. See ADR 0059.
 - **Email one-click unsubscribe** — `send_email` campaign sends now carry a no-login
   `List-Unsubscribe`/`List-Unsubscribe-Post` header pair (RFC 8058) plus a visible footer link in
   `campaign_generic.html`, pointing at a new `Controller\Email\Unsubscribe` endpoint backed by a
