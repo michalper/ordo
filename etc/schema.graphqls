@@ -26,9 +26,10 @@ type Mutation {
 
     submitOrdoSurveyResponse(
         surveyId: Int!
-        score: Int! @doc(description: "0-10.")
+        score: Int @doc(description: "0-10 - required for a legacy NPS prompt (OrdoSurveyPrompt.question_type null), ignored otherwise.")
+        responseText: String @doc(description: "The free-text answer, or the chosen option's own text, for a generic_survey prompt (OrdoSurveyPrompt.question_type \"text\" or \"choice\") - required for those, ignored for a legacy NPS prompt. A \"choice\" prompt's answer must be one of its own OrdoSurveyPrompt.choices, exactly as offered.")
         visitorId: String
-    ): OrdoSubmitSurveyResponseOutput @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\SubmitSurveyResponse") @doc(description: "Records the visitor's answer to a delivered NPS/satisfaction survey prompt. Ownership-checked, same as dismissOrdoNotification; a prompt already answered is never overwritten.")
+    ): OrdoSubmitSurveyResponseOutput @resolver(class: "Ordo\\Automation\\Model\\GraphQl\\Resolver\\SubmitSurveyResponse") @doc(description: "Records the visitor's answer to a delivered survey prompt - a 0-10 NPS score, or a generic_survey free-text/choice answer (see ADR 0061/0064). Ownership-checked, same as dismissOrdoNotification; a prompt already answered is never overwritten.")
 
     extendOrdoOffer(
         offerId: Int!
@@ -99,6 +100,8 @@ type OrdoNotification {
 type OrdoSurveyPrompt {
     id: Int
     question: String
+    question_type: String @doc(description: "\"text\" or \"choice\" for a generic_survey prompt, null for a legacy NPS prompt (see ADR 0061) - decides whether submitOrdoSurveyResponse expects score or responseText.")
+    choices: [String] @doc(description: "The offered options for a question_type \"choice\" prompt, null otherwise.")
 }
 
 type OrdoTrackEventOutput {

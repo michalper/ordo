@@ -45,6 +45,11 @@
  * queued — there is nothing left to randomize here, this is purely cosmetic suspense leading up
  * to a predetermined result, kept deliberately simple (no canvas/SVG wheel, no CSS keyframes
  * requiring an injected <style> tag) to match this file's existing plain-DOM conventions.
+ *
+ * A survey prompt's question_type decides how renderSurvey() renders it: null/undefined is the
+ * original legacy 0-10 NPS button row, "text" is a single free-text input, and "choice" is a row
+ * of buttons, one per survey.choices entry (a generic_survey campaign action — see docs/adr/0061
+ * for the backend half of this and docs/adr/0064 for this storefront widget half).
  */
 (function () {
     'use strict';
@@ -467,12 +472,17 @@
         });
     }
 
-    function submitSurveyResponse(surveyId, score, el) {
-        var body = new URLSearchParams({
+    /**
+     * @param {Number} surveyId
+     * @param {Object} params score (legacy nps) or response_text (generic_survey text/choice) -
+     *   see Controller\Track\SubmitSurveyResponse's own branching on the prompt's question_type.
+     * @param {HTMLElement} el
+     */
+    function submitSurveyResponse(surveyId, params, el) {
+        var body = new URLSearchParams(Object.assign({
             visitor_id: getVisitorId(),
-            survey_id: surveyId,
-            score: score
-        });
+            survey_id: surveyId
+        }, params));
 
         // Same fail-open reasoning as dismissNotification: pull the widget immediately, don't
         // make the visitor wait on the round-trip to see their own click take effect.
@@ -484,9 +494,109 @@
     }
 
     /**
-     * One 0-10 button row — deliberately minimal, no rating widget dependency, matching the rest
-     * of this file. Only one prompt shown at a time (there is realistically only ever one
-     * unclaimed survey queued per visitor at once, same as popup).
+     * The legacy 0-10 NPS button row - survey.question_type null/undefined. Deliberately
+     * minimal, no rating widget dependency, matching the rest of this file.
+     *
+     * @param {HTMLElement} widget
+     * @param {Object} survey
+     */
+    function appendSurveyScoreButtons(widget, survey) {
+        var buttons = document.createElement('div');
+        buttons.setAttribute('style', 'display:flex;flex-wrap:wrap;gap:4px;');
+        for (var score = 0; score <= 10; score++) {
+            (function (score) {
+                var button = document.createElement('button');
+                button.textContent = String(score);
+                button.setAttribute(
+                    'style',
+                    'min-width:26px;padding:4px 6px;border:1px solid #ccc;border-radius:4px;' +
+                    'background:#f5f5f5;cursor:pointer;'
+                );
+                button.onclick = function () {
+                    submitSurveyResponse(survey.id, { score: score }, widget);
+                };
+                buttons.appendChild(button);
+            })(score);
+        }
+        widget.appendChild(buttons);
+    }
+
+    /**
+     * A free-text answer (generic_survey question_type "text", see ADR 0061/0064) - a single-line
+     * input plus a submit button. No client-side `required` attribute: an empty submit is just a
+     * no-op here, not a browser validation popup for a throwaway widget - the real, authoritative
+     * non-empty check is Controller\Track\SubmitSurveyResponse's own.
+     *
+     * @param {HTMLElement} widget
+     * @param {Object} survey
+     */
+    function appendSurveyTextInput(widget, survey) {
+        var form = document.createElement('form');
+
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.setAttribute(
+            'style',
+            'width:100%;padding:6px;margin-bottom:8px;box-sizing:border-box;border:1px solid #ccc;border-radius:4px;'
+        );
+        form.appendChild(input);
+
+        var submit = document.createElement('button');
+        submit.type = 'submit';
+        submit.textContent = 'Send';
+        submit.setAttribute(
+            'style',
+            'background:#1a1a1a;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;'
+        );
+        form.appendChild(submit);
+
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            var responseText = input.value.trim();
+            if (responseText === '') {
+                return;
+            }
+            submitSurveyResponse(survey.id, { response_text: responseText }, widget);
+        });
+
+        widget.appendChild(form);
+    }
+
+    /**
+     * A multiple-choice answer (generic_survey question_type "choice", see ADR 0061/0064) - one
+     * button per offered choice, same row-of-buttons shape as the legacy score row.
+     * survey.choices already arrives split into an array (Model\Track\TrackerPollReader's own
+     * resolveSurvey(), from the comma-separated column it's stored as) - this function has no
+     * string-splitting of its own to do.
+     *
+     * @param {HTMLElement} widget
+     * @param {Object} survey
+     */
+    function appendSurveyChoiceButtons(widget, survey) {
+        var buttons = document.createElement('div');
+        buttons.setAttribute('style', 'display:flex;flex-wrap:wrap;gap:4px;');
+        (survey.choices || []).forEach(function (choice) {
+            var button = document.createElement('button');
+            button.textContent = choice;
+            button.setAttribute(
+                'style',
+                'padding:4px 10px;border:1px solid #ccc;border-radius:4px;' +
+                'background:#f5f5f5;cursor:pointer;'
+            );
+            button.onclick = function () {
+                submitSurveyResponse(survey.id, { response_text: choice }, widget);
+            };
+            buttons.appendChild(button);
+        });
+        widget.appendChild(buttons);
+    }
+
+    /**
+     * Renders the one unclaimed survey prompt - a 0-10 button row for a legacy nps_survey prompt
+     * (question_type null/undefined), or a free-text input / choice button row for a
+     * generic_survey prompt (question_type "text"/"choice", see ADR 0061/0064). Only one prompt
+     * shown at a time (there is realistically only ever one unclaimed survey queued per visitor
+     * at once, same as popup).
      */
     function renderSurvey(survey) {
         if (document.getElementById(SURVEY_PROMPT_ID)) {
@@ -507,24 +617,13 @@
         question.setAttribute('style', 'font-weight:bold;margin-bottom:10px;padding-right:20px;');
         widget.appendChild(question);
 
-        var buttons = document.createElement('div');
-        buttons.setAttribute('style', 'display:flex;flex-wrap:wrap;gap:4px;');
-        for (var score = 0; score <= 10; score++) {
-            (function (score) {
-                var button = document.createElement('button');
-                button.textContent = String(score);
-                button.setAttribute(
-                    'style',
-                    'min-width:26px;padding:4px 6px;border:1px solid #ccc;border-radius:4px;' +
-                    'background:#f5f5f5;cursor:pointer;'
-                );
-                button.onclick = function () {
-                    submitSurveyResponse(survey.id, score, widget);
-                };
-                buttons.appendChild(button);
-            })(score);
+        if (survey.question_type === 'text') {
+            appendSurveyTextInput(widget, survey);
+        } else if (survey.question_type === 'choice') {
+            appendSurveyChoiceButtons(widget, survey);
+        } else {
+            appendSurveyScoreButtons(widget, survey);
         }
-        widget.appendChild(buttons);
 
         // Closing without answering just hides it locally — the row stays delivered-unanswered
         // server-side and is swept up later by Cron\PruneSurveyPrompts, same as an ignored popup

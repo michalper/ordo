@@ -489,6 +489,144 @@ QUnit.module('Ordo_Automation/js/tracker (polling)', function () {
     });
 });
 
+QUnit.module('Ordo_Automation/js/tracker (generic survey)', function () {
+    QUnit.test('a question_type "text" prompt renders a free-text input instead of score buttons', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({ survey: { id: 9, question: 'What should we sell more of?', question_type: 'text' } });
+        env.intervals[0].fn();
+        await flush();
+
+        const widget = document.getElementById('ordo-survey-prompt');
+        assert.strictEqual(widget.querySelectorAll('button[style*="min-width:26px"]').length, 0, 'no 0-10 score buttons');
+        const input = widget.querySelector('input[type="text"]');
+        assert.true(!!input, 'text input rendered');
+    });
+
+    QUnit.test('submitting a non-empty text answer posts response_text and removes the prompt', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({ survey: { id: 9, question: 'What should we sell more of?', question_type: 'text' } });
+        env.intervals[0].fn();
+        await flush();
+
+        const widget = document.getElementById('ordo-survey-prompt');
+        const input = widget.querySelector('input[type="text"]');
+        input.value = 'More hats, please';
+        widget.querySelector('form').dispatchEvent(new env.dom.window.Event('submit', { cancelable: true }));
+
+        assert.strictEqual(document.getElementById('ordo-survey-prompt'), null, 'removed immediately');
+        const submitCall = env.fetchCalls[env.fetchCalls.length - 1];
+        assert.strictEqual(submitCall.url, '/ordo/track/submitsurveyresponse');
+        assert.strictEqual(new URLSearchParams(submitCall.options.body).get('survey_id'), '9');
+        assert.strictEqual(new URLSearchParams(submitCall.options.body).get('response_text'), 'More hats, please');
+        assert.strictEqual(new URLSearchParams(submitCall.options.body).get('score'), null, 'no score param for a text answer');
+    });
+
+    QUnit.test('submitting a blank/whitespace-only text answer is a no-op, the prompt stays on screen', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({ survey: { id: 9, question: 'What should we sell more of?', question_type: 'text' } });
+        env.intervals[0].fn();
+        await flush();
+
+        const callsBefore = env.fetchCalls.length;
+        const widget = document.getElementById('ordo-survey-prompt');
+        widget.querySelector('input[type="text"]').value = '   ';
+        widget.querySelector('form').dispatchEvent(new env.dom.window.Event('submit', { cancelable: true }));
+
+        assert.strictEqual(env.fetchCalls.length, callsBefore, 'no submit posted');
+        assert.true(!!document.getElementById('ordo-survey-prompt'), 'prompt still on screen');
+    });
+
+    QUnit.test('a question_type "choice" prompt renders one button per offered choice', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({
+            survey: {
+                id: 9,
+                question: 'Favorite color?',
+                question_type: 'choice',
+                choices: ['Red', 'Blue', 'Green']
+            }
+        });
+        env.intervals[0].fn();
+        await flush();
+
+        const widget = document.getElementById('ordo-survey-prompt');
+        const labels = Array.prototype.map.call(widget.querySelectorAll('button'), function (button) {
+            return button.textContent;
+        });
+        assert.true(labels.indexOf('Red') !== -1 && labels.indexOf('Blue') !== -1 && labels.indexOf('Green') !== -1);
+    });
+
+    QUnit.test('clicking a choice button posts that exact choice as response_text and removes the prompt', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({
+            survey: {
+                id: 9,
+                question: 'Favorite color?',
+                question_type: 'choice',
+                choices: ['Red', 'Blue', 'Green']
+            }
+        });
+        env.intervals[0].fn();
+        await flush();
+
+        const widget = document.getElementById('ordo-survey-prompt');
+        const blueButton = Array.prototype.find.call(
+            widget.querySelectorAll('button'),
+            function (button) { return button.textContent === 'Blue'; }
+        );
+        assert.true(!!blueButton, 'Blue button rendered');
+
+        blueButton.onclick();
+
+        assert.strictEqual(document.getElementById('ordo-survey-prompt'), null, 'removed immediately');
+        const submitCall = env.fetchCalls[env.fetchCalls.length - 1];
+        assert.strictEqual(submitCall.url, '/ordo/track/submitsurveyresponse');
+        assert.strictEqual(new URLSearchParams(submitCall.options.body).get('response_text'), 'Blue');
+        assert.strictEqual(new URLSearchParams(submitCall.options.body).get('score'), null, 'no score param for a choice answer');
+    });
+
+    QUnit.test('a question_type "choice" prompt with no choices array renders no buttons instead of throwing', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({ survey: { id: 9, question: 'Favorite color?', question_type: 'choice' } });
+        env.intervals[0].fn();
+        await flush();
+
+        const widget = document.getElementById('ordo-survey-prompt');
+        assert.true(!!widget, 'prompt still rendered');
+        assert.strictEqual(widget.querySelectorAll('button').length, 1, 'only the Close button, no choice buttons');
+    });
+
+    QUnit.test('a legacy prompt with no question_type still renders the original 0-10 score buttons', async function (assert) {
+        const env = loadTracker({ 'data-poll-enabled': '1' });
+        const document = env.dom.window.document;
+
+        env.setPollResponse({ survey: { id: 9, question: 'How likely…?' } });
+        env.intervals[0].fn();
+        await flush();
+
+        const widget = document.getElementById('ordo-survey-prompt');
+        assert.strictEqual(widget.querySelector('input[type="text"]'), null, 'no text input');
+        assert.true(
+            Array.prototype.some.call(widget.querySelectorAll('button'), function (button) {
+                return button.textContent === '10';
+            }),
+            'score button 10 rendered'
+        );
+    });
+});
+
 QUnit.module('Ordo_Automation/js/tracker (reward popup)', function () {
     QUnit.test('a popup with no reward_label renders exactly as before, with its cta', async function (assert) {
         const env = loadTracker({ 'data-poll-enabled': '1' });
