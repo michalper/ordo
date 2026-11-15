@@ -9,6 +9,8 @@ it doesn't update itself from this file.
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-11-15
+
 ### Added
 
 - **Storefront widget for `generic_survey` questions** — `tracker.js`'s `renderSurvey()` now
