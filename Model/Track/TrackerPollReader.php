@@ -109,7 +109,7 @@ class TrackerPollReader
     }
 
     /**
-     * @return array{id: int, question: string}|null
+     * @return array{id: int, question: string, question_type: ?string, choices: ?array<int, string>}|null
      */
     private function resolveSurvey(?int $customerId, string $visitorId, string $now): ?array
     {
@@ -125,10 +125,16 @@ class TrackerPollReader
         }
 
         $promptId = $prompt->getId();
+        $choices = $prompt->getChoices();
 
         return [
             'id' => is_numeric($promptId) ? (int) $promptId : 0,
             'question' => $prompt->getQuestion(),
+            // Both null for a legacy nps_survey row - see SurveyPrompt::getQuestionType()'s own
+            // docblock. "choice" is stored as a plain comma-separated column (ADR 0061); split
+            // into an array here, once, so tracker.js never has to parse the raw string itself.
+            'question_type' => $prompt->getQuestionType(),
+            'choices' => $choices === null ? null : array_map('trim', explode(',', $choices)),
         ];
     }
 }

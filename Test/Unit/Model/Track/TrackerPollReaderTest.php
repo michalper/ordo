@@ -200,6 +200,8 @@ class TrackerPollReaderTest extends TestCase
                 'survey' => [
                     'id' => 12,
                     'question' => 'How likely are you to recommend us?',
+                    'question_type' => null,
+                    'choices' => null,
                 ],
             ],
             $reader->resolve(null, 'v1')
@@ -292,7 +294,63 @@ class TrackerPollReaderTest extends TestCase
         $this->connection->method('update')->willReturnOnConsecutiveCalls(0, 1);
 
         self::assertSame(
-            ['survey' => ['id' => 10, 'question' => 'Second in line']],
+            ['survey' => ['id' => 10, 'question' => 'Second in line', 'question_type' => null, 'choices' => null]],
+            $reader->resolve(null, 'v1')
+        );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAGenericSurveyChoicePromptSplitsItsCommaSeparatedChoicesIntoAnArray(): void
+    {
+        $reader = $this->makeReader();
+        $this->disableEverythingExcept('survey');
+
+        $prompt = $this->createStub(SurveyPrompt::class);
+        $prompt->method('getId')->willReturn(12);
+        $prompt->method('getQuestion')->willReturn('Favorite color?');
+        $prompt->method('getQuestionType')->willReturn('choice');
+        $prompt->method('getChoices')->willReturn('Red, Blue,Green');
+
+        $this->surveyPromptCollectionFactory->method('create')->willReturn($this->makeSurveyCollection([$prompt]));
+        $this->connection->method('update')->willReturn(1);
+
+        self::assertSame(
+            [
+                'survey' => [
+                    'id' => 12,
+                    'question' => 'Favorite color?',
+                    'question_type' => 'choice',
+                    'choices' => ['Red', 'Blue', 'Green'],
+                ],
+            ],
+            $reader->resolve(null, 'v1')
+        );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAGenericSurveyTextPromptHasNullChoices(): void
+    {
+        $reader = $this->makeReader();
+        $this->disableEverythingExcept('survey');
+
+        $prompt = $this->createStub(SurveyPrompt::class);
+        $prompt->method('getId')->willReturn(12);
+        $prompt->method('getQuestion')->willReturn('What should we sell more of?');
+        $prompt->method('getQuestionType')->willReturn('text');
+        $prompt->method('getChoices')->willReturn(null);
+
+        $this->surveyPromptCollectionFactory->method('create')->willReturn($this->makeSurveyCollection([$prompt]));
+        $this->connection->method('update')->willReturn(1);
+
+        self::assertSame(
+            [
+                'survey' => [
+                    'id' => 12,
+                    'question' => 'What should we sell more of?',
+                    'question_type' => 'text',
+                    'choices' => null,
+                ],
+            ],
             $reader->resolve(null, 'v1')
         );
     }

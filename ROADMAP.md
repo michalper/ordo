@@ -807,6 +807,14 @@ than silently assuming it away.
   GraphQL field additions to carry `question_type`/`choices` to the browser is real, separable follow-up
   work (see the ADR's Consequences); `Controller\Track\SubmitSurveyResponse` already accepts and validates
   a real `response_text` answer today for any caller that posts one.
+- ~~**Close the `generic_survey` storefront gap flagged above — `tracker.js`'s `renderSurvey()` still only
+  renders the legacy 0-10 NPS widget, nothing for a `question_type` of `text`/`choice`.**~~ — done, see
+  `docs/adr/0064-generic-survey-storefront-widget.md`. `renderSurvey()` now branches on
+  `question_type`: a free-text input for `"text"`, one button per offered choice for `"choice"`, the
+  unchanged legacy 0-10 row otherwise. `Model\Track\TrackerPollReader::resolveSurvey()` now returns
+  `question_type`/`choices` (split into an array), and the GraphQL `submitOrdoSurveyResponse` mutation
+  gained an optional `responseText` arg mirroring the REST transport's own branching (`score` widened
+  from `Int!` to `Int`, a non-breaking change).
 - ~~**No gamified, randomized-reward popup — `ShowPopup` is a single static headline/body/CTA, never a
   weighted prize selection.**~~ — shipped, see `docs/adr/0063-gamified-reward-popup.md`. `ShowPopup`'s
   params gain an optional `reward_tiers` array of `{label, weight, coupon_rule_id}` entries; a new

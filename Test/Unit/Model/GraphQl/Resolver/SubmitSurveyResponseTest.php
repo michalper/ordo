@@ -63,11 +63,20 @@ class SubmitSurveyResponseTest extends TestCase
     {
         $resolver = $this->makeResolver();
 
-        $this->surveyPromptFactory->expects(self::never())->method('create');
+        // A loaded, owned, legacy (question_type null) prompt - which args are checked (score
+        // vs responseText) depends on the prompt actually loaded, not which args the request
+        // happened to send, so the prompt must load successfully to reach that branch at all.
+        $prompt = $this->createStub(SurveyPrompt::class);
+        $prompt->method('getId')->willReturn(5);
+        $prompt->method('getRespondedAt')->willReturn(null);
+        $prompt->method('belongsTo')->willReturn(true);
+        $this->surveyPromptFactory->method('create')->willReturn($prompt);
+
+        $this->surveyPromptResource->expects(self::never())->method('save');
 
         self::assertSame(
             ['ok' => false],
-            $this->resolve($resolver, ['surveyId' => 5, 'score' => 'high'])
+            $this->resolve($resolver, ['surveyId' => 5, 'score' => 'high', 'visitorId' => 'v1'])
         );
     }
 
@@ -76,11 +85,17 @@ class SubmitSurveyResponseTest extends TestCase
     {
         $resolver = $this->makeResolver();
 
-        $this->surveyPromptFactory->expects(self::never())->method('create');
+        $prompt = $this->createStub(SurveyPrompt::class);
+        $prompt->method('getId')->willReturn(5);
+        $prompt->method('getRespondedAt')->willReturn(null);
+        $prompt->method('belongsTo')->willReturn(true);
+        $this->surveyPromptFactory->method('create')->willReturn($prompt);
+
+        $this->surveyPromptResource->expects(self::never())->method('save');
 
         self::assertSame(
             ['ok' => false],
-            $this->resolve($resolver, ['surveyId' => 5, 'score' => 11])
+            $this->resolve($resolver, ['surveyId' => 5, 'score' => 11, 'visitorId' => 'v1'])
         );
     }
 
@@ -178,6 +193,92 @@ class SubmitSurveyResponseTest extends TestCase
         self::assertSame(
             ['ok' => true],
             $this->resolve($resolver, ['surveyId' => 5, 'score' => 0], userId: 42)
+        );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testReturnsFalseWhenResponseTextIsEmptyForATextQuestion(): void
+    {
+        $resolver = $this->makeResolver();
+
+        $prompt = $this->createStub(SurveyPrompt::class);
+        $prompt->method('getId')->willReturn(5);
+        $prompt->method('getRespondedAt')->willReturn(null);
+        $prompt->method('belongsTo')->willReturn(true);
+        $prompt->method('getQuestionType')->willReturn('text');
+        $this->surveyPromptFactory->method('create')->willReturn($prompt);
+
+        $this->surveyPromptResource->expects(self::never())->method('save');
+
+        self::assertSame(
+            ['ok' => false],
+            $this->resolve($resolver, ['surveyId' => 5, 'responseText' => '', 'visitorId' => 'v1'])
+        );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testReturnsFalseWhenChoiceAnswerIsNotOneOfTheOfferedChoices(): void
+    {
+        $resolver = $this->makeResolver();
+
+        $prompt = $this->createStub(SurveyPrompt::class);
+        $prompt->method('getId')->willReturn(5);
+        $prompt->method('getRespondedAt')->willReturn(null);
+        $prompt->method('belongsTo')->willReturn(true);
+        $prompt->method('getQuestionType')->willReturn('choice');
+        $prompt->method('getChoices')->willReturn('Red,Blue,Green');
+        $this->surveyPromptFactory->method('create')->willReturn($prompt);
+
+        $this->surveyPromptResource->expects(self::never())->method('save');
+
+        self::assertSame(
+            ['ok' => false],
+            $this->resolve($resolver, ['surveyId' => 5, 'responseText' => 'Purple', 'visitorId' => 'v1'])
+        );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRecordsResponseTextAndReturnsTrueForAChoiceQuestion(): void
+    {
+        $resolver = $this->makeResolver();
+
+        $prompt = $this->createMock(SurveyPrompt::class);
+        $prompt->method('getId')->willReturn(5);
+        $prompt->method('getRespondedAt')->willReturn(null);
+        $prompt->expects(self::once())->method('belongsTo')->with(null, 'v1')->willReturn(true);
+        $prompt->method('getQuestionType')->willReturn('choice');
+        $prompt->method('getChoices')->willReturn('Red,Blue,Green');
+        $prompt->expects(self::once())->method('setResponseText')->with('Blue');
+        $prompt->expects(self::once())->method('setRespondedAt')->with(self::callback('is_string'));
+        $this->surveyPromptFactory->method('create')->willReturn($prompt);
+
+        $this->surveyPromptResource->expects(self::once())->method('save')->with($prompt);
+
+        self::assertSame(
+            ['ok' => true],
+            $this->resolve($resolver, ['surveyId' => 5, 'responseText' => ' Blue ', 'visitorId' => 'v1'])
+        );
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRecordsResponseTextAndReturnsTrueForATextQuestion(): void
+    {
+        $resolver = $this->makeResolver();
+
+        $prompt = $this->createMock(SurveyPrompt::class);
+        $prompt->method('getId')->willReturn(5);
+        $prompt->method('getRespondedAt')->willReturn(null);
+        $prompt->expects(self::once())->method('belongsTo')->with(null, 'v1')->willReturn(true);
+        $prompt->method('getQuestionType')->willReturn('text');
+        $prompt->expects(self::once())->method('setResponseText')->with('Running shoes');
+        $prompt->expects(self::once())->method('setRespondedAt')->with(self::callback('is_string'));
+        $this->surveyPromptFactory->method('create')->willReturn($prompt);
+
+        $this->surveyPromptResource->expects(self::once())->method('save')->with($prompt);
+
+        self::assertSame(
+            ['ok' => true],
+            $this->resolve($resolver, ['surveyId' => 5, 'responseText' => 'Running shoes', 'visitorId' => 'v1'])
         );
     }
 }

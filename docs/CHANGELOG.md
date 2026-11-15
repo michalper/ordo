@@ -9,6 +9,15 @@ it doesn't update itself from this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Storefront widget for `generic_survey` questions** — `tracker.js`'s `renderSurvey()` now
+  renders a free-text input or choice buttons for a `generic_survey` prompt's `question_type`
+  (previously it only ever rendered the legacy 0-10 NPS row, even for a text/choice question),
+  and the GraphQL `submitOrdoSurveyResponse` mutation gained a `responseText` arg (mirroring the
+  REST transport's own `question_type` branching), closing the gap ADR 0061 explicitly left open.
+  See ADR 0064.
+
 ### Fixed
 
 - **Product performance report grid's live `sales_order_item` join had no real-database test** —
