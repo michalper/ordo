@@ -9,6 +9,13 @@ it doesn't update itself from this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Product performance report grid's live `sales_order_item` join had no real-database test** —
+  only ever unit-tested against a mocked connection. New
+  `Test/Integration/ProductPerformanceGridCollectionTest` proves the real purchase-count join
+  (summed, canceled orders excluded) and the NULLIF-guarded abandon rate against a real database.
+
 ## [1.10.0] - 2026-11-14
 
 ### Added
