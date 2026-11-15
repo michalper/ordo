@@ -207,8 +207,14 @@ class ShowPopupTest extends TestCase
 
         $this->rewardTierSelector->expects(self::once())->method('selectTier')->with($this->tiers())
             ->willReturn(['label' => '10% off', 'weight' => 50, 'coupon_rule_id' => 3]);
+        // Full positional args, including the defaulted usageLimit (1) - same convention
+        // GenerateCouponTest already uses for this identical generate() call shape. Mixing
+        // positional args with a non-adjacent named one (e.g. "...->with(3, 'ORDO-WHEEL",
+        // campaignId: 7)", skipping usageLimit) mis-maps the named arg onto the skipped
+        // positional slot under PHPUnit 12.5 - a real PHPUnit regression, not a code bug; this
+        // is the robust form that isn't affected by it.
         $this->couponGenerator->expects(self::once())->method('generate')
-            ->with(3, 'ORDO-WHEEL', campaignId: 7)
+            ->with(3, 'ORDO-WHEEL', 1, 7)
             ->willReturn('ORDO-WHEEL-ABC123');
 
         $context = ['customer_id' => 42, 'campaign_id' => 7];
@@ -323,7 +329,9 @@ class ShowPopupTest extends TestCase
         $this->rewardTierSelector->expects(self::once())->method('selectTier')
             ->with([['label' => 'Half off', 'weight' => 1.0, 'coupon_rule_id' => 3]])
             ->willReturn(['label' => 'Half off', 'weight' => 1.0, 'coupon_rule_id' => 3]);
-        $this->couponGenerator->expects(self::once())->method('generate')->with(3, 'ORDO-WHEEL', campaignId: null)
+        // Full positional args - see the identical comment on the other generate() expectation
+        // above for why (a PHPUnit 12.5 named-arg mock-matching regression, not a code bug).
+        $this->couponGenerator->expects(self::once())->method('generate')->with(3, 'ORDO-WHEEL', 1, null)
             ->willReturn('ORDO-WHEEL-XYZ');
 
         $context = ['customer_id' => 42];
