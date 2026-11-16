@@ -47,6 +47,9 @@ use Throwable;
  */
 class ShowPopup implements ActionInterface
 {
+    use LogsSaveFailureTrait;
+    use HeadlineBodyCtaParamFieldsTrait;
+
     private const string ACTION_LABEL = 'popup';
 
     public function __construct(
@@ -93,19 +96,12 @@ class ShowPopup implements ActionInterface
 
         $this->applyRewardTier($popup, $params, $context);
 
-        try {
-            $this->pendingPopupResource->save($popup);
-        } catch (Throwable $e) {
-            // Same fail-closed convention every other action in this module follows - a save
-            // failure here must not propagate out of execute() and abort the rest of this
-            // dispatch's own action chain (CampaignDispatcher::runOneAction() calls execute()
-            // with no try/catch of its own).
-            $this->logger->error(sprintf(
-                'Ordo_Automation: campaign %s action failed to save: %s',
-                self::ACTION_LABEL,
-                $e->getMessage()
-            ));
-        }
+        $this->saveOrLogFailure(fn () => $this->pendingPopupResource->save($popup));
+    }
+
+    protected function actionLabel(): string
+    {
+        return self::ACTION_LABEL;
     }
 
     /**
@@ -190,10 +186,7 @@ class ShowPopup implements ActionInterface
     public function getParamFields(): array
     {
         return [
-            ['name' => 'headline', 'label' => (string) __('Popup headline')],
-            ['name' => 'body', 'label' => (string) __('Popup body')],
-            ['name' => 'cta_label', 'label' => (string) __('CTA button label')],
-            ['name' => 'cta_url', 'label' => (string) __('CTA button URL')],
+            ...$this->headlineBodyCtaParamFields(),
             [
                 'name' => 'reward_tiers',
                 'label' => (string) __('Reward tiers (JSON)'),

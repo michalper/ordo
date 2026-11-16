@@ -7,7 +7,6 @@ use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Model\ResourceModel\SurveyPrompt as SurveyPromptResource;
 use Ordo\Automation\Model\SurveyPromptFactory;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Params: {"question": "...", "question_type": "text"|"choice", "choices": "Red,Blue,Green"}.
@@ -26,6 +25,8 @@ use Throwable;
  */
 class GenericSurvey implements ActionInterface
 {
+    use LogsSaveFailureTrait;
+
     private const string ACTION_LABEL = 'generic_survey';
     private const array QUESTION_TYPES = ['text', 'choice'];
 
@@ -69,19 +70,12 @@ class GenericSurvey implements ActionInterface
         $prompt->setQuestionType($questionType);
         $prompt->setChoices($questionType === 'choice' ? $choices : null);
 
-        try {
-            $this->surveyPromptResource->save($prompt);
-        } catch (Throwable $e) {
-            // Same fail-closed convention every other action in this module follows - a save
-            // failure here must not propagate out of execute() and abort the rest of this
-            // dispatch's own action chain (CampaignDispatcher::runOneAction() calls execute()
-            // with no try/catch of its own).
-            $this->logger->error(sprintf(
-                'Ordo_Automation: campaign %s action failed to save: %s',
-                self::ACTION_LABEL,
-                $e->getMessage()
-            ));
-        }
+        $this->saveOrLogFailure(fn () => $this->surveyPromptResource->save($prompt));
+    }
+
+    protected function actionLabel(): string
+    {
+        return self::ACTION_LABEL;
     }
 
     public function getParamFields(): array
