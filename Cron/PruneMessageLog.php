@@ -15,27 +15,33 @@ use Ordo\Automation\Model\Cron\CronRunLogger;
  * automatically by the table's own ON DELETE CASCADE foreign key to ordo_message_log - no
  * separate delete needed here.
  */
-class PruneMessageLog
+class PruneMessageLog extends AbstractSingleColumnRetentionPruneCron
 {
     public function __construct(
         private readonly Config $config,
-        private readonly ResourceConnection $resourceConnection,
-        private readonly CronRunLogger $cronRunLogger
+        ResourceConnection $resourceConnection,
+        CronRunLogger $cronRunLogger
     ) {
+        parent::__construct($resourceConnection, $cronRunLogger);
     }
 
-    public function execute(): void
+    protected function tableName(): string
     {
-        $retentionDays = $this->config->getMessageLogRetentionDays();
-        $cutoff = date('Y-m-d H:i:s', (int) strtotime("-{$retentionDays} days"));
+        return 'ordo_message_log';
+    }
 
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('ordo_message_log');
+    protected function timestampColumn(): string
+    {
+        return 'sent_at';
+    }
 
-        $deleted = $connection->delete($table, ['sent_at < ?' => $cutoff]);
+    protected function retentionDays(): int
+    {
+        return $this->config->getMessageLogRetentionDays();
+    }
 
-        $this->cronRunLogger->logSummary(
-            sprintf('pruned %d message log rows older than %d days', $deleted, $retentionDays)
-        );
+    protected function rowNounPhrase(): string
+    {
+        return 'message log rows';
     }
 }
