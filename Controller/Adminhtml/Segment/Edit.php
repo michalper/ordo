@@ -5,13 +5,18 @@ namespace Ordo\Automation\Controller\Adminhtml\Segment;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\Model\AbstractModel;
 use Magento\Framework\Registry;
 use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\RendersEditPageTrait;
 use Ordo\Automation\Model\ResourceModel\Segment as SegmentResource;
+use Ordo\Automation\Model\Segment;
 use Ordo\Automation\Model\SegmentFactory;
 
 class Edit extends AbstractSegmentAction implements HttpGetActionInterface
 {
+    use RendersEditPageTrait;
+
     public function __construct(
         Context $context,
         private readonly PageFactory $resultPageFactory,
@@ -22,27 +27,34 @@ class Edit extends AbstractSegmentAction implements HttpGetActionInterface
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function newEntity(): AbstractModel
     {
-        $entityId = (int) $this->getRequest()->getParam('entity_id');
-        $segment = $this->segmentFactory->create();
+        return $this->segmentFactory->create();
+    }
 
-        if ($entityId) {
-            $this->segmentResource->load($segment, $entityId);
-            if (!$segment->getEntityId()) {
-                $this->messageManager->addErrorMessage(__('This segment no longer exists.'));
-                return $this->resultRedirectFactory->create()->setPath('*/*/');
-            }
-        }
+    protected function loadEntityById(AbstractModel $entity, int $entityId): void
+    {
+        $this->segmentResource->load($entity, $entityId);
+    }
 
-        $this->registry->register('ordo_segment', $segment);
+    protected function registryKey(): string
+    {
+        return 'ordo_segment';
+    }
 
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::campaigns');
-        $resultPage->getConfig()->getTitle()->prepend(
-            $entityId ? __('Edit Segment "%1"', $segment->getName()) : __('New Segment')
-        );
+    protected function editEntityLabel(): string
+    {
+        return 'Segment';
+    }
 
-        return $resultPage;
+    protected function missingEntityLabel(): string
+    {
+        return 'segment';
+    }
+
+    protected function entityDisplayName(AbstractModel $entity): string
+    {
+        /** @var Segment $entity */
+        return (string) $entity->getName();
     }
 }

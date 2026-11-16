@@ -5,13 +5,18 @@ namespace Ordo\Automation\Controller\Adminhtml\AdAudience;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\Model\AbstractModel;
 use Magento\Framework\Registry;
 use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\RendersEditPageTrait;
+use Ordo\Automation\Model\AdAudience;
 use Ordo\Automation\Model\AdAudienceFactory;
 use Ordo\Automation\Model\ResourceModel\AdAudience as AdAudienceResource;
 
 class Edit extends AbstractAdAudienceAction implements HttpGetActionInterface
 {
+    use RendersEditPageTrait;
+
     public function __construct(
         Context $context,
         private readonly PageFactory $resultPageFactory,
@@ -22,27 +27,34 @@ class Edit extends AbstractAdAudienceAction implements HttpGetActionInterface
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function newEntity(): AbstractModel
     {
-        $entityId = (int) $this->getRequest()->getParam('entity_id');
-        $adAudience = $this->adAudienceFactory->create();
+        return $this->adAudienceFactory->create();
+    }
 
-        if ($entityId) {
-            $this->adAudienceResource->load($adAudience, $entityId);
-            if (!$adAudience->getEntityId()) {
-                $this->messageManager->addErrorMessage(__('This ad audience no longer exists.'));
-                return $this->resultRedirectFactory->create()->setPath('*/*/');
-            }
-        }
+    protected function loadEntityById(AbstractModel $entity, int $entityId): void
+    {
+        $this->adAudienceResource->load($entity, $entityId);
+    }
 
-        $this->registry->register('ordo_ad_audience', $adAudience);
+    protected function registryKey(): string
+    {
+        return 'ordo_ad_audience';
+    }
 
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::campaigns');
-        $resultPage->getConfig()->getTitle()->prepend(
-            $entityId ? __('Edit Ad Audience "%1"', $adAudience->getName()) : __('New Ad Audience')
-        );
+    protected function editEntityLabel(): string
+    {
+        return 'Ad Audience';
+    }
 
-        return $resultPage;
+    protected function missingEntityLabel(): string
+    {
+        return 'ad audience';
+    }
+
+    protected function entityDisplayName(AbstractModel $entity): string
+    {
+        /** @var AdAudience $entity */
+        return (string) $entity->getName();
     }
 }

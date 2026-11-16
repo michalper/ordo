@@ -5,13 +5,18 @@ namespace Ordo\Automation\Controller\Adminhtml\ScoreRule;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\Model\AbstractModel;
 use Magento\Framework\Registry;
 use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\RendersEditPageTrait;
 use Ordo\Automation\Model\ResourceModel\ScoreRule as ScoreRuleResource;
+use Ordo\Automation\Model\ScoreRule;
 use Ordo\Automation\Model\ScoreRuleFactory;
 
 class Edit extends AbstractScoreRuleAction implements HttpGetActionInterface
 {
+    use RendersEditPageTrait;
+
     public function __construct(
         Context $context,
         private readonly PageFactory $resultPageFactory,
@@ -22,27 +27,34 @@ class Edit extends AbstractScoreRuleAction implements HttpGetActionInterface
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function newEntity(): AbstractModel
     {
-        $entityId = (int) $this->getRequest()->getParam('entity_id');
-        $scoreRule = $this->scoreRuleFactory->create();
+        return $this->scoreRuleFactory->create();
+    }
 
-        if ($entityId) {
-            $this->scoreRuleResource->load($scoreRule, $entityId);
-            if (!$scoreRule->getEntityId()) {
-                $this->messageManager->addErrorMessage(__('This score rule no longer exists.'));
-                return $this->resultRedirectFactory->create()->setPath('*/*/');
-            }
-        }
+    protected function loadEntityById(AbstractModel $entity, int $entityId): void
+    {
+        $this->scoreRuleResource->load($entity, $entityId);
+    }
 
-        $this->registry->register('ordo_score_rule', $scoreRule);
+    protected function registryKey(): string
+    {
+        return 'ordo_score_rule';
+    }
 
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::campaigns');
-        $resultPage->getConfig()->getTitle()->prepend(
-            $entityId ? __('Edit Score Rule "%1"', $scoreRule->getAttributeCode()) : __('New Score Rule')
-        );
+    protected function editEntityLabel(): string
+    {
+        return 'Score Rule';
+    }
 
-        return $resultPage;
+    protected function missingEntityLabel(): string
+    {
+        return 'score rule';
+    }
+
+    protected function entityDisplayName(AbstractModel $entity): string
+    {
+        /** @var ScoreRule $entity */
+        return (string) $entity->getAttributeCode();
     }
 }

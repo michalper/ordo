@@ -139,12 +139,6 @@ parameters:
 			path: Controller/Adminhtml/AdAudience/Delete.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/AdAudience/Edit.php
-
-		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
@@ -227,12 +221,6 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Controller/Adminhtml/Campaign/Delete.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Campaign/Edit.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -335,12 +323,6 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Controller/Adminhtml/ContentBlock/Delete.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/ContentBlock/Edit.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -511,12 +493,6 @@ parameters:
 			path: Controller/Adminhtml/FreeGiftOffer/Delete.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/FreeGiftOffer/Edit.php
-
-		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
@@ -623,12 +599,6 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Controller/Adminhtml/LeadRoutingRule/Delete.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/LeadRoutingRule/Edit.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -847,12 +817,6 @@ parameters:
 			path: Controller/Adminhtml/ScoreRule/Delete.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/ScoreRule/Edit.php
-
-		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
@@ -935,12 +899,6 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Controller/Adminhtml/Segment/Delete.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Segment/Edit.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
@@ -1067,12 +1025,6 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Controller/Adminhtml/WhatsAppTemplate/Delete.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/WhatsAppTemplate/Edit.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'

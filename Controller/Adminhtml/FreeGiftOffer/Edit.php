@@ -5,13 +5,18 @@ namespace Ordo\Automation\Controller\Adminhtml\FreeGiftOffer;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\Model\AbstractModel;
 use Magento\Framework\Registry;
 use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\RendersEditPageTrait;
+use Ordo\Automation\Model\FreeGiftOffer;
 use Ordo\Automation\Model\FreeGiftOfferFactory;
 use Ordo\Automation\Model\ResourceModel\FreeGiftOffer as FreeGiftOfferResource;
 
 class Edit extends AbstractFreeGiftOfferAction implements HttpGetActionInterface
 {
+    use RendersEditPageTrait;
+
     public function __construct(
         Context $context,
         private readonly PageFactory $resultPageFactory,
@@ -22,27 +27,34 @@ class Edit extends AbstractFreeGiftOfferAction implements HttpGetActionInterface
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function newEntity(): AbstractModel
     {
-        $entityId = (int) $this->getRequest()->getParam('entity_id');
-        $offer = $this->offerFactory->create();
+        return $this->offerFactory->create();
+    }
 
-        if ($entityId) {
-            $this->offerResource->load($offer, $entityId);
-            if (!$offer->getEntityId()) {
-                $this->messageManager->addErrorMessage(__('This free gift offer no longer exists.'));
-                return $this->resultRedirectFactory->create()->setPath('*/*/');
-            }
-        }
+    protected function loadEntityById(AbstractModel $entity, int $entityId): void
+    {
+        $this->offerResource->load($entity, $entityId);
+    }
 
-        $this->registry->register('ordo_free_gift_offer', $offer);
+    protected function registryKey(): string
+    {
+        return 'ordo_free_gift_offer';
+    }
 
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::campaigns');
-        $resultPage->getConfig()->getTitle()->prepend(
-            $entityId ? __('Edit Free Gift Offer "%1"', $offer->getName()) : __('New Free Gift Offer')
-        );
+    protected function editEntityLabel(): string
+    {
+        return 'Free Gift Offer';
+    }
 
-        return $resultPage;
+    protected function missingEntityLabel(): string
+    {
+        return 'free gift offer';
+    }
+
+    protected function entityDisplayName(AbstractModel $entity): string
+    {
+        /** @var FreeGiftOffer $entity */
+        return (string) $entity->getName();
     }
 }

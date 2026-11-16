@@ -5,13 +5,18 @@ namespace Ordo\Automation\Controller\Adminhtml\ContentBlock;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\Model\AbstractModel;
 use Magento\Framework\Registry;
 use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\RendersEditPageTrait;
+use Ordo\Automation\Model\ContentBlock;
 use Ordo\Automation\Model\ContentBlockFactory;
 use Ordo\Automation\Model\ResourceModel\ContentBlock as ContentBlockResource;
 
 class Edit extends AbstractContentBlockAction implements HttpGetActionInterface
 {
+    use RendersEditPageTrait;
+
     public function __construct(
         Context $context,
         private readonly PageFactory $resultPageFactory,
@@ -22,27 +27,34 @@ class Edit extends AbstractContentBlockAction implements HttpGetActionInterface
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function newEntity(): AbstractModel
     {
-        $entityId = (int) $this->getRequest()->getParam('entity_id');
-        $contentBlock = $this->contentBlockFactory->create();
+        return $this->contentBlockFactory->create();
+    }
 
-        if ($entityId) {
-            $this->contentBlockResource->load($contentBlock, $entityId);
-            if (!$contentBlock->getEntityId()) {
-                $this->messageManager->addErrorMessage(__('This content block no longer exists.'));
-                return $this->resultRedirectFactory->create()->setPath('*/*/');
-            }
-        }
+    protected function loadEntityById(AbstractModel $entity, int $entityId): void
+    {
+        $this->contentBlockResource->load($entity, $entityId);
+    }
 
-        $this->registry->register('ordo_content_block', $contentBlock);
+    protected function registryKey(): string
+    {
+        return 'ordo_content_block';
+    }
 
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::campaigns');
-        $resultPage->getConfig()->getTitle()->prepend(
-            $entityId ? __('Edit Content Block "%1"', $contentBlock->getName()) : __('New Content Block')
-        );
+    protected function editEntityLabel(): string
+    {
+        return 'Content Block';
+    }
 
-        return $resultPage;
+    protected function missingEntityLabel(): string
+    {
+        return 'content block';
+    }
+
+    protected function entityDisplayName(AbstractModel $entity): string
+    {
+        /** @var ContentBlock $entity */
+        return (string) $entity->getName();
     }
 }

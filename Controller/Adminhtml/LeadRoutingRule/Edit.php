@@ -5,13 +5,18 @@ namespace Ordo\Automation\Controller\Adminhtml\LeadRoutingRule;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\Model\AbstractModel;
 use Magento\Framework\Registry;
 use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\RendersEditPageTrait;
+use Ordo\Automation\Model\LeadRoutingRule;
 use Ordo\Automation\Model\LeadRoutingRuleFactory;
 use Ordo\Automation\Model\ResourceModel\LeadRoutingRule as LeadRoutingRuleResource;
 
 class Edit extends AbstractLeadRoutingRuleAction implements HttpGetActionInterface
 {
+    use RendersEditPageTrait;
+
     public function __construct(
         Context $context,
         private readonly PageFactory $resultPageFactory,
@@ -22,27 +27,34 @@ class Edit extends AbstractLeadRoutingRuleAction implements HttpGetActionInterfa
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function newEntity(): AbstractModel
     {
-        $entityId = (int) $this->getRequest()->getParam('entity_id');
-        $leadRoutingRule = $this->leadRoutingRuleFactory->create();
+        return $this->leadRoutingRuleFactory->create();
+    }
 
-        if ($entityId) {
-            $this->leadRoutingRuleResource->load($leadRoutingRule, $entityId);
-            if (!$leadRoutingRule->getEntityId()) {
-                $this->messageManager->addErrorMessage(__('This lead routing rule no longer exists.'));
-                return $this->resultRedirectFactory->create()->setPath('*/*/');
-            }
-        }
+    protected function loadEntityById(AbstractModel $entity, int $entityId): void
+    {
+        $this->leadRoutingRuleResource->load($entity, $entityId);
+    }
 
-        $this->registry->register('ordo_lead_routing_rule', $leadRoutingRule);
+    protected function registryKey(): string
+    {
+        return 'ordo_lead_routing_rule';
+    }
 
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::campaigns');
-        $resultPage->getConfig()->getTitle()->prepend(
-            $entityId ? __('Edit Lead Routing Rule "%1"', $leadRoutingRule->getName()) : __('New Lead Routing Rule')
-        );
+    protected function editEntityLabel(): string
+    {
+        return 'Lead Routing Rule';
+    }
 
-        return $resultPage;
+    protected function missingEntityLabel(): string
+    {
+        return 'lead routing rule';
+    }
+
+    protected function entityDisplayName(AbstractModel $entity): string
+    {
+        /** @var LeadRoutingRule $entity */
+        return (string) $entity->getName();
     }
 }

@@ -5,13 +5,18 @@ namespace Ordo\Automation\Controller\Adminhtml\Campaign;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\Model\AbstractModel;
 use Magento\Framework\Registry;
 use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\RendersEditPageTrait;
+use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\CampaignFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign as CampaignResource;
 
 class Edit extends AbstractCampaignAction implements HttpGetActionInterface
 {
+    use RendersEditPageTrait;
+
     public function __construct(
         Context $context,
         private readonly PageFactory $resultPageFactory,
@@ -22,27 +27,34 @@ class Edit extends AbstractCampaignAction implements HttpGetActionInterface
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function newEntity(): AbstractModel
     {
-        $entityId = (int) $this->getRequest()->getParam('entity_id');
-        $campaign = $this->campaignFactory->create();
+        return $this->campaignFactory->create();
+    }
 
-        if ($entityId) {
-            $this->campaignResource->load($campaign, $entityId);
-            if (!$campaign->getEntityId()) {
-                $this->messageManager->addErrorMessage(__('This campaign no longer exists.'));
-                return $this->resultRedirectFactory->create()->setPath('*/*/');
-            }
-        }
+    protected function loadEntityById(AbstractModel $entity, int $entityId): void
+    {
+        $this->campaignResource->load($entity, $entityId);
+    }
 
-        $this->registry->register('ordo_campaign', $campaign);
+    protected function registryKey(): string
+    {
+        return 'ordo_campaign';
+    }
 
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::campaigns');
-        $resultPage->getConfig()->getTitle()->prepend(
-            $entityId ? __('Edit Campaign "%1"', $campaign->getName()) : __('New Campaign')
-        );
+    protected function editEntityLabel(): string
+    {
+        return 'Campaign';
+    }
 
-        return $resultPage;
+    protected function missingEntityLabel(): string
+    {
+        return 'campaign';
+    }
+
+    protected function entityDisplayName(AbstractModel $entity): string
+    {
+        /** @var Campaign $entity */
+        return (string) $entity->getName();
     }
 }
