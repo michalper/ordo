@@ -6,8 +6,8 @@ namespace Ordo\Automation\Cron;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
+use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\App\ResourceConnection;
-use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\Cron\CronRunLogger;
@@ -36,6 +36,7 @@ abstract class AbstractPriceWatchScanCron
         private readonly Config $config,
         private readonly ResourceConnection $resourceConnection,
         private readonly ProductRepositoryInterface $productRepository,
+        private readonly SearchCriteriaBuilder $searchCriteriaBuilder,
         private readonly CampaignDispatcher $campaignDispatcher,
         private readonly GuestPriceWatchNotifier $guestPriceWatchNotifier,
         private readonly CronRunLogger $cronRunLogger
@@ -115,10 +116,12 @@ abstract class AbstractPriceWatchScanCron
          */
         $rows = $connection->fetchAll($select);
 
+        $productMap = $this->loadProductMap($rows);
+
         $dispatched = 0;
         foreach ($rows as $row) {
             try {
-                if ($this->processRow($row)) {
+                if ($this->processRow($row, $productMap)) {
                     $dispatched++;
                 }
             } catch (\Throwable $e) {
@@ -133,29 +136,52 @@ abstract class AbstractPriceWatchScanCron
     }
 
     /**
+     * @param array<int, array{entity_id: int|string, customer_id: int|string|null, guest_email: string|null, product_id: int|string}> $rows
+     * @return array<int, Product> product_id => product, for every distinct product_id among $rows
+     *   that still exists - watch rows are per customer+product, so a single batch can watch the
+     *   same product many times over; loading each row's product individually would repeat the
+     *   same product load once per watcher instead of once per distinct product.
+     */
+    private function loadProductMap(array $rows): array
+    {
+        $productIds = array_values(array_unique(array_map(static fn (array $row): int => (int) $row['product_id'], $rows)));
+        if ($productIds === []) {
+            return [];
+        }
+
+        $searchCriteria = $this->searchCriteriaBuilder->addFilter('entity_id', $productIds, 'in')->create();
+
+        $productMap = [];
+        /** @var Product $product ProductRepositoryInterface::getList() always returns concrete
+         *  Product models in practice — only the interface is declared, same reasoning
+         *  PriceWatchSubscriptionManager::register() applies. Narrowed here (not just cast) so it
+         *  type-checks against GuestPriceWatchNotifier::notify()'s concrete Product parameter. */
+        foreach ($this->productRepository->getList($searchCriteria)->getItems() as $product) {
+            $productMap[(int) $product->getId()] = $product;
+        }
+
+        return $productMap;
+    }
+
+    /**
      * @param array{
      *     entity_id: int|string,
      *     customer_id: int|string|null,
      *     guest_email: string|null,
      *     product_id: int|string
      * } $row
+     * @param array<int, Product> $productMap
      * @return bool whether a campaign trigger or a guest notification was actually sent for this row
      */
-    private function processRow(array $row): bool
+    private function processRow(array $row, array $productMap): bool
     {
         $entityId = (int) $row['entity_id'];
         $productId = (int) $row['product_id'];
         $snapshotColumn = $this->snapshotColumn();
         $oldValue = $row[$snapshotColumn] ?? null;
 
-        try {
-            /** @var Product $product ProductRepositoryInterface::getById() always returns the
-             *  concrete Product model in practice — only its interface is declared, same
-             *  reasoning PriceWatchSubscriptionManager::register() applies. Narrowed here (not
-             *  just cast) so it type-checks against GuestPriceWatchNotifier::notify()'s concrete
-             *  Product parameter below. */
-            $product = $this->productRepository->getById($productId);
-        } catch (NoSuchEntityException) {
+        $product = $productMap[$productId] ?? null;
+        if ($product === null) {
             // Product deleted since this watch was registered - nothing left to compare against.
             // Still advance the cursor: left unstamped, this orphaned row would sit at the front
             // of the last_scanned_at ASC order forever and shrink the usable batch window.

@@ -3,12 +3,14 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Cron;
 
+use Magento\Catalog\Api\Data\ProductSearchResultsInterface;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
+use Magento\Framework\Api\SearchCriteria;
+use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\DB\Select;
-use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Api\Data\CampaignTriggerInterface;
 use Ordo\Automation\Cron\ScanPriceDropAlerts;
 use Ordo\Automation\Helper\Config;
@@ -33,18 +35,37 @@ class ScanPriceDropAlertsTest extends TestCase
         return $select;
     }
 
+    private function makeSearchResults(array $products): ProductSearchResultsInterface
+    {
+        $searchResults = $this->createStub(ProductSearchResultsInterface::class);
+        $searchResults->method('getItems')->willReturn($products);
+
+        return $searchResults;
+    }
+
+    private function makeSearchCriteriaBuilder(): SearchCriteriaBuilder
+    {
+        $searchCriteriaBuilder = $this->createStub(SearchCriteriaBuilder::class);
+        $searchCriteriaBuilder->method('addFilter')->willReturnSelf();
+        $searchCriteriaBuilder->method('create')->willReturn($this->createStub(SearchCriteria::class));
+
+        return $searchCriteriaBuilder;
+    }
+
     private function makeCron(
         Config $config,
         ResourceConnection $resourceConnection,
         ?ProductRepositoryInterface $productRepository = null,
         ?CampaignDispatcher $dispatcher = null,
         ?LoggerInterface $logger = null,
-        ?GuestPriceWatchNotifier $guestNotifier = null
+        ?GuestPriceWatchNotifier $guestNotifier = null,
+        ?SearchCriteriaBuilder $searchCriteriaBuilder = null
     ): ScanPriceDropAlerts {
         return new ScanPriceDropAlerts(
             $config,
             $resourceConnection,
             $productRepository ?? $this->createStub(ProductRepositoryInterface::class),
+            $searchCriteriaBuilder ?? $this->makeSearchCriteriaBuilder(),
             $dispatcher ?? $this->createStub(CampaignDispatcher::class),
             $guestNotifier ?? $this->createStub(GuestPriceWatchNotifier::class),
             $this->makeCronRunLogger($logger ?? $this->createStub(LoggerInterface::class))
@@ -92,9 +113,10 @@ class ScanPriceDropAlertsTest extends TestCase
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $product = $this->createStub(Product::class);
+        $product->method('getId')->willReturn(10);
         $product->method('getFinalPrice')->willReturn(80.0);
         $productRepository = $this->createStub(ProductRepositoryInterface::class);
-        $productRepository->method('getById')->willReturn($product);
+        $productRepository->method('getList')->willReturn($this->makeSearchResults([$product]));
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
         $dispatcher->expects(self::once())->method('dispatch')->with(
@@ -135,9 +157,10 @@ class ScanPriceDropAlertsTest extends TestCase
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $product = $this->createStub(Product::class);
+        $product->method('getId')->willReturn(10);
         $product->method('getFinalPrice')->willReturn(80.0);
         $productRepository = $this->createStub(ProductRepositoryInterface::class);
-        $productRepository->method('getById')->willReturn($product);
+        $productRepository->method('getList')->willReturn($this->makeSearchResults([$product]));
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
         $dispatcher->expects(self::never())->method('dispatch');
@@ -178,9 +201,10 @@ class ScanPriceDropAlertsTest extends TestCase
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $product = $this->createStub(Product::class);
+        $product->method('getId')->willReturn(10);
         $product->method('getFinalPrice')->willReturn(80.0);
         $productRepository = $this->createStub(ProductRepositoryInterface::class);
-        $productRepository->method('getById')->willReturn($product);
+        $productRepository->method('getList')->willReturn($this->makeSearchResults([$product]));
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
         $dispatcher->expects(self::never())->method('dispatch');
@@ -213,9 +237,10 @@ class ScanPriceDropAlertsTest extends TestCase
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $product = $this->createStub(Product::class);
+        $product->method('getId')->willReturn(10);
         $product->method('getFinalPrice')->willReturn(80.0);
         $productRepository = $this->createStub(ProductRepositoryInterface::class);
-        $productRepository->method('getById')->willReturn($product);
+        $productRepository->method('getList')->willReturn($this->makeSearchResults([$product]));
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
         $dispatcher->expects(self::never())->method('dispatch');
@@ -261,9 +286,10 @@ class ScanPriceDropAlertsTest extends TestCase
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $product = $this->createStub(Product::class);
+        $product->method('getId')->willReturn(10);
         $product->method('getFinalPrice')->willReturn(80.0);
         $productRepository = $this->createStub(ProductRepositoryInterface::class);
-        $productRepository->method('getById')->willReturn($product);
+        $productRepository->method('getList')->willReturn($this->makeSearchResults([$product]));
 
         $guestNotifier = $this->createMock(GuestPriceWatchNotifier::class);
         $guestNotifier->method('notify')->willThrowException(new \RuntimeException('send failed'));
@@ -299,9 +325,10 @@ class ScanPriceDropAlertsTest extends TestCase
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $product = $this->createStub(Product::class);
+        $product->method('getId')->willReturn(10);
         $product->method('getFinalPrice')->willReturn(120.0);
         $productRepository = $this->createStub(ProductRepositoryInterface::class);
-        $productRepository->method('getById')->willReturn($product);
+        $productRepository->method('getList')->willReturn($this->makeSearchResults([$product]));
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
         $dispatcher->expects(self::never())->method('dispatch');
@@ -332,7 +359,7 @@ class ScanPriceDropAlertsTest extends TestCase
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $productRepository = $this->createStub(ProductRepositoryInterface::class);
-        $productRepository->method('getById')->willThrowException(new NoSuchEntityException(__('gone')));
+        $productRepository->method('getList')->willReturn($this->makeSearchResults([]));
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
         $dispatcher->expects(self::never())->method('dispatch');
@@ -360,9 +387,10 @@ class ScanPriceDropAlertsTest extends TestCase
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $product = $this->createStub(Product::class);
+        $product->method('getId')->willReturn(10);
         $product->method('getFinalPrice')->willReturn(80.0);
         $productRepository = $this->createStub(ProductRepositoryInterface::class);
-        $productRepository->method('getById')->willReturn($product);
+        $productRepository->method('getList')->willReturn($this->makeSearchResults([$product]));
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
         $dispatcher->method('dispatch')->willThrowException(new \RuntimeException('dispatch failed'));
@@ -398,9 +426,10 @@ class ScanPriceDropAlertsTest extends TestCase
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $product = $this->createStub(Product::class);
+        $product->method('getId')->willReturn(10);
         $product->method('getFinalPrice')->willReturn(80.0);
         $productRepository = $this->createStub(ProductRepositoryInterface::class);
-        $productRepository->method('getById')->willReturn($product);
+        $productRepository->method('getList')->willReturn($this->makeSearchResults([$product]));
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
         $dispatcher->expects(self::never())->method('dispatch');
@@ -441,9 +470,10 @@ class ScanPriceDropAlertsTest extends TestCase
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $product = $this->createStub(Product::class);
+        $product->method('getId')->willReturn(10);
         $product->method('getFinalPrice')->willReturn(80.0);
         $productRepository = $this->createStub(ProductRepositoryInterface::class);
-        $productRepository->method('getById')->willReturn($product);
+        $productRepository->method('getList')->willReturn($this->makeSearchResults([$product]));
 
         $guestNotifier = $this->createMock(GuestPriceWatchNotifier::class);
         $guestNotifier->expects(self::never())->method('notify');
@@ -513,13 +543,62 @@ class ScanPriceDropAlertsTest extends TestCase
 
         // Same price as the snapshot ('100.0000' as the raw DB value) - no change to record.
         $product = $this->createStub(Product::class);
+        $product->method('getId')->willReturn(10);
         $product->method('getFinalPrice')->willReturn(100.0);
         $productRepository = $this->createStub(ProductRepositoryInterface::class);
-        $productRepository->method('getById')->willReturn($product);
+        $productRepository->method('getList')->willReturn($this->makeSearchResults([$product]));
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
         $dispatcher->expects(self::never())->method('dispatch');
 
         $this->makeCron($config, $resourceConnection, $productRepository, $dispatcher)->execute();
+    }
+
+    /**
+     * Regression: watch rows are per customer+product, so a batch can watch the same product
+     * many times over - the product must be loaded once per distinct id, not once per row.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteLoadsEachDistinctProductOnlyOnceAcrossMultipleRows(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isPriceWatchEnabled')->willReturn(true);
+        $config->method('getPriceWatchScanBatchSize')->willReturn(200);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            ['entity_id' => 1, 'customer_id' => 5, 'product_id' => 10, 'last_known_price' => '100.0000'],
+            ['entity_id' => 2, 'customer_id' => 6, 'product_id' => 10, 'last_known_price' => '100.0000'],
+        ]);
+        $connection->method('update')->willReturn(1);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $product = $this->createStub(Product::class);
+        $product->method('getId')->willReturn(10);
+        $product->method('getFinalPrice')->willReturn(80.0);
+
+        $searchCriteriaBuilder = $this->createMock(SearchCriteriaBuilder::class);
+        $searchCriteriaBuilder->expects(self::once())->method('addFilter')
+            ->with('entity_id', [10], 'in')->willReturnSelf();
+        $searchCriteriaBuilder->method('create')->willReturn($this->createStub(SearchCriteria::class));
+
+        $productRepository = $this->createMock(ProductRepositoryInterface::class);
+        $productRepository->expects(self::once())->method('getList')
+            ->willReturn($this->makeSearchResults([$product]));
+
+        $dispatcher = $this->createMock(CampaignDispatcher::class);
+        $dispatcher->expects(self::exactly(2))->method('dispatch');
+
+        $this->makeCron(
+            $config,
+            $resourceConnection,
+            $productRepository,
+            $dispatcher,
+            searchCriteriaBuilder: $searchCriteriaBuilder
+        )->execute();
     }
 }

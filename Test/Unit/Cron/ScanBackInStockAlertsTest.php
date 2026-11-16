@@ -3,12 +3,14 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Cron;
 
+use Magento\Catalog\Api\Data\ProductSearchResultsInterface;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
+use Magento\Framework\Api\SearchCriteria;
+use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\DB\Select;
-use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Api\Data\CampaignTriggerInterface;
 use Ordo\Automation\Cron\ScanBackInStockAlerts;
 use Ordo\Automation\Helper\Config;
@@ -33,6 +35,23 @@ class ScanBackInStockAlertsTest extends TestCase
         return $select;
     }
 
+    private function makeSearchResults(array $products): ProductSearchResultsInterface
+    {
+        $searchResults = $this->createStub(ProductSearchResultsInterface::class);
+        $searchResults->method('getItems')->willReturn($products);
+
+        return $searchResults;
+    }
+
+    private function makeSearchCriteriaBuilder(): SearchCriteriaBuilder
+    {
+        $searchCriteriaBuilder = $this->createStub(SearchCriteriaBuilder::class);
+        $searchCriteriaBuilder->method('addFilter')->willReturnSelf();
+        $searchCriteriaBuilder->method('create')->willReturn($this->createStub(SearchCriteria::class));
+
+        return $searchCriteriaBuilder;
+    }
+
     private function makeCron(
         Config $config,
         ResourceConnection $resourceConnection,
@@ -45,6 +64,7 @@ class ScanBackInStockAlertsTest extends TestCase
             $config,
             $resourceConnection,
             $productRepository ?? $this->createStub(ProductRepositoryInterface::class),
+            $this->makeSearchCriteriaBuilder(),
             $dispatcher ?? $this->createStub(CampaignDispatcher::class),
             $guestNotifier ?? $this->createStub(GuestPriceWatchNotifier::class),
             $this->makeCronRunLogger($logger ?? $this->createStub(LoggerInterface::class))
@@ -81,9 +101,10 @@ class ScanBackInStockAlertsTest extends TestCase
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $product = $this->createStub(Product::class);
+        $product->method('getId')->willReturn(10);
         $product->method('isSalable')->willReturn(true);
         $productRepository = $this->createStub(ProductRepositoryInterface::class);
-        $productRepository->method('getById')->willReturn($product);
+        $productRepository->method('getList')->willReturn($this->makeSearchResults([$product]));
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
         $dispatcher->expects(self::once())->method('dispatch')->with(
@@ -124,9 +145,10 @@ class ScanBackInStockAlertsTest extends TestCase
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $product = $this->createStub(Product::class);
+        $product->method('getId')->willReturn(10);
         $product->method('isSalable')->willReturn(true);
         $productRepository = $this->createStub(ProductRepositoryInterface::class);
-        $productRepository->method('getById')->willReturn($product);
+        $productRepository->method('getList')->willReturn($this->makeSearchResults([$product]));
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
         $dispatcher->expects(self::never())->method('dispatch');
@@ -159,9 +181,10 @@ class ScanBackInStockAlertsTest extends TestCase
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $product = $this->createStub(Product::class);
+        $product->method('getId')->willReturn(10);
         $product->method('isSalable')->willReturn(true);
         $productRepository = $this->createStub(ProductRepositoryInterface::class);
-        $productRepository->method('getById')->willReturn($product);
+        $productRepository->method('getList')->willReturn($this->makeSearchResults([$product]));
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
         $dispatcher->expects(self::never())->method('dispatch');
@@ -204,9 +227,10 @@ class ScanBackInStockAlertsTest extends TestCase
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $product = $this->createStub(Product::class);
+        $product->method('getId')->willReturn(10);
         $product->method('isSalable')->willReturn(true);
         $productRepository = $this->createStub(ProductRepositoryInterface::class);
-        $productRepository->method('getById')->willReturn($product);
+        $productRepository->method('getList')->willReturn($this->makeSearchResults([$product]));
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
         $dispatcher->expects(self::never())->method('dispatch');
@@ -237,7 +261,7 @@ class ScanBackInStockAlertsTest extends TestCase
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $productRepository = $this->createStub(ProductRepositoryInterface::class);
-        $productRepository->method('getById')->willThrowException(new NoSuchEntityException(__('gone')));
+        $productRepository->method('getList')->willReturn($this->makeSearchResults([]));
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
         $dispatcher->expects(self::never())->method('dispatch');
@@ -264,9 +288,10 @@ class ScanBackInStockAlertsTest extends TestCase
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $product = $this->createStub(Product::class);
+        $product->method('getId')->willReturn(10);
         $product->method('isSalable')->willReturn(true);
         $productRepository = $this->createStub(ProductRepositoryInterface::class);
-        $productRepository->method('getById')->willReturn($product);
+        $productRepository->method('getList')->willReturn($this->makeSearchResults([$product]));
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
         $dispatcher->method('dispatch')->willThrowException(new \RuntimeException('dispatch failed'));
