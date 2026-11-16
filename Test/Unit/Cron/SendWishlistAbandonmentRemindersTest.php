@@ -10,12 +10,10 @@ use Ordo\Automation\Api\Data\CampaignTriggerInterface;
 use Ordo\Automation\Cron\SendWishlistAbandonmentReminders;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CampaignDispatcher;
-use Ordo\Automation\Model\Cron\CronRunLogger;
 use Ordo\Automation\Model\Cron\ReminderLogStore;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class SendWishlistAbandonmentRemindersTest extends TestCase
 {
@@ -82,7 +80,7 @@ class SendWishlistAbandonmentRemindersTest extends TestCase
         $config->method('getWishlistAbandonmentMaxReminders')->willReturn(1);
 
         $connection = $this->makeConnection([
-            ['customer_id' => 5, 'sku' => 'SKU-1', 'reminders_sent' => 0],
+            ['customer_id' => 5, 'event_key' => 'SKU-1', 'reminders_sent' => 0],
         ]);
         $connection->expects(self::once())->method('insert');
 
@@ -113,7 +111,7 @@ class SendWishlistAbandonmentRemindersTest extends TestCase
         $config->method('getWishlistAbandonmentMaxReminders')->willReturn(1);
 
         $connection = $this->makeConnection([
-            ['customer_id' => 5, 'sku' => 'SKU-1', 'reminders_sent' => 0],
+            ['customer_id' => 5, 'event_key' => 'SKU-1', 'reminders_sent' => 0],
         ]);
         $connection->expects(self::once())->method('insert');
         $connection->expects(self::once())->method('delete');
@@ -143,7 +141,7 @@ class SendWishlistAbandonmentRemindersTest extends TestCase
         $config->method('getWishlistAbandonmentMaxReminders')->willReturn(1);
 
         $connection = $this->makeConnection(
-            [['customer_id' => 5, 'sku' => 'SKU-1', 'reminders_sent' => 0]],
+            [['customer_id' => 5, 'event_key' => 'SKU-1', 'reminders_sent' => 0]],
             concurrentClaimCount: 1
         );
         $connection->expects(self::never())->method('insert');
