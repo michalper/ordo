@@ -75,7 +75,11 @@ abstract class AbstractRetryFailedCron
         $succeeded = 0;
         $exhausted = 0;
         foreach ($this->dueRetries($now) as $retry) {
-            $this->retryOne($retry, $now, $succeeded, $exhausted);
+            match ($this->retryOne($retry, $now)) {
+                true => $succeeded++,
+                false => $exhausted++,
+                null => null,
+            };
         }
 
         $this->cronRunLogger->logSummary(sprintf(
@@ -88,34 +92,36 @@ abstract class AbstractRetryFailedCron
 
     /**
      * @param TRetry $retry
+     * @return bool|null true toward execute()'s "retried" tally, false toward its "exhausted"
+     *   tally, null for everything that moves neither - the claim race was lost, the row was
+     *   dropped (not a retryable failure), or it failed but still has retries left.
      */
-    private function retryOne(
-        AbstractModel&RetryRecordInterface $retry,
-        string $now,
-        int &$succeeded,
-        int &$exhausted
-    ): void {
+    private function retryOne(AbstractModel&RetryRecordInterface $retry, string $now): ?bool
+    {
         $attemptNumber = $retry->getAttempts() + 1;
         $tentativeNextRetryAt = $this->nextRetryAt($attemptNumber);
 
         if (!$this->retryResource->claim($retry, $now, $tentativeNextRetryAt)) {
             // Lost the race to another overlapping cron run - it already claimed this row.
-            return;
+            return null;
         }
 
         try {
+            $result = null;
             switch ($this->attempt($retry)) {
                 case RetryAttemptOutcome::Sent:
                     $this->retryResource->delete($retry);
-                    $succeeded++;
+                    $result = true;
                     break;
                 case RetryAttemptOutcome::Dropped:
                     $this->retryResource->delete($retry);
                     break;
                 case RetryAttemptOutcome::DeadLettered:
-                    $exhausted++;
+                    $result = false;
                     break;
             }
+
+            return $result;
         } catch (\Throwable $e) {
             $retry->setAttempts($attemptNumber);
             $retry->setLastError($e->getMessage());
@@ -124,9 +130,7 @@ abstract class AbstractRetryFailedCron
 
             $this->cronRunLogger->logFailure($this->failureLabel($retry, $attemptNumber), $e);
 
-            if ($attemptNumber >= $this->maxAttempts()) {
-                $exhausted++;
-            }
+            return $attemptNumber >= $this->maxAttempts() ? false : null;
         }
     }
 }
