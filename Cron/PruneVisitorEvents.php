@@ -14,27 +14,33 @@ use Ordo\Automation\Model\Cron\CronRunLogger;
  * ordo_campaign/ordo_customer_tag do — only the tags VisitorAggregator derives from them are
  * long-lived.
  */
-class PruneVisitorEvents
+class PruneVisitorEvents extends AbstractSingleColumnRetentionPruneCron
 {
     public function __construct(
         private readonly Config $config,
-        private readonly ResourceConnection $resourceConnection,
-        private readonly CronRunLogger $cronRunLogger
+        ResourceConnection $resourceConnection,
+        CronRunLogger $cronRunLogger
     ) {
+        parent::__construct($resourceConnection, $cronRunLogger);
     }
 
-    public function execute(): void
+    protected function tableName(): string
     {
-        $retentionDays = $this->config->getTrackingRetentionDays();
-        $cutoff = date('Y-m-d H:i:s', (int) strtotime("-{$retentionDays} days"));
+        return 'ordo_visitor_event';
+    }
 
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('ordo_visitor_event');
+    protected function timestampColumn(): string
+    {
+        return 'created_at';
+    }
 
-        $deleted = $connection->delete($table, ['created_at < ?' => $cutoff]);
+    protected function retentionDays(): int
+    {
+        return $this->config->getTrackingRetentionDays();
+    }
 
-        $this->cronRunLogger->logSummary(
-            sprintf('pruned %d visitor events older than %d days', $deleted, $retentionDays)
-        );
+    protected function rowNounPhrase(): string
+    {
+        return 'visitor events';
     }
 }
