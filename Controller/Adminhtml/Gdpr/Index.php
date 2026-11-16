@@ -4,12 +4,12 @@ declare(strict_types=1);
 namespace Ordo\Automation\Controller\Adminhtml\Gdpr;
 
 use Magento\Backend\App\Action\Context;
-use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\Phrase;
 use Magento\Framework\View\Result\PageFactory;
 use Ordo\Automation\Controller\Adminhtml\CustomerLookupByEmailRegistrar;
 use Ordo\Automation\Controller\Adminhtml\RendersGridPageTrait;
+use Ordo\Automation\Controller\Adminhtml\SearchesCustomerByEmailTrait;
 
 /**
  * Search-by-email admin page — the single entry point into this module's GDPR tooling
@@ -20,6 +20,9 @@ use Ordo\Automation\Controller\Adminhtml\RendersGridPageTrait;
 class Index extends AbstractGdprAction implements HttpGetActionInterface
 {
     use RendersGridPageTrait;
+    use SearchesCustomerByEmailTrait {
+        SearchesCustomerByEmailTrait::beforeRender insteadof RendersGridPageTrait;
+    }
 
     public function __construct(
         Context $context,
@@ -39,15 +42,8 @@ class Index extends AbstractGdprAction implements HttpGetActionInterface
         return __('GDPR / Consent');
     }
 
-    protected function beforeRender(): void
+    protected function customerSearchRegistryPrefix(): string
     {
-        $email = trim((string) $this->getRequest()->getParam('email'));
-        if ($email === '') {
-            return;
-        }
-
-        if (!$this->customerLookup->resolveAndRegister($email, 'ordo_gdpr') instanceof CustomerInterface) {
-            $this->messageManager->addErrorMessage(__('No customer found for that email.'));
-        }
+        return 'ordo_gdpr';
     }
 }

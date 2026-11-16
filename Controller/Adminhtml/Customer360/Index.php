@@ -5,12 +5,12 @@ namespace Ordo\Automation\Controller\Adminhtml\Customer360;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
-use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\Phrase;
 use Magento\Framework\View\Result\PageFactory;
 use Ordo\Automation\Controller\Adminhtml\CustomerLookupByEmailRegistrar;
 use Ordo\Automation\Controller\Adminhtml\RendersGridPageTrait;
+use Ordo\Automation\Controller\Adminhtml\SearchesCustomerByEmailTrait;
 
 /**
  * Search-by-email admin page aggregating everything this module already knows about one
@@ -19,6 +19,9 @@ use Ordo\Automation\Controller\Adminhtml\RendersGridPageTrait;
 class Index extends Action implements HttpGetActionInterface
 {
     use RendersGridPageTrait;
+    use SearchesCustomerByEmailTrait {
+        SearchesCustomerByEmailTrait::beforeRender insteadof RendersGridPageTrait;
+    }
 
     public const ADMIN_RESOURCE = 'Ordo_Automation::customer_360';
 
@@ -40,15 +43,8 @@ class Index extends Action implements HttpGetActionInterface
         return __('Customer 360');
     }
 
-    protected function beforeRender(): void
+    protected function customerSearchRegistryPrefix(): string
     {
-        $email = trim((string) $this->getRequest()->getParam('email'));
-        if ($email === '') {
-            return;
-        }
-
-        if (!$this->customerLookup->resolveAndRegister($email, 'ordo_customer_360') instanceof CustomerInterface) {
-            $this->messageManager->addErrorMessage(__('No customer found for that email.'));
-        }
+        return 'ordo_customer_360';
     }
 }
