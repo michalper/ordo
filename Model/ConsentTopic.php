@@ -51,4 +51,17 @@ enum ConsentTopic: string
             self::AccountUpdates => true,
         };
     }
+
+    /**
+     * Every send_* campaign action's "topic" param resolves the same way: an explicit, valid
+     * value if given, Promotional otherwise (an unset/blank/garbage value is never an error here
+     * - Promotional is the documented default every action's own getParamFields() notice says).
+     *
+     * @param array<string, mixed> $params
+     */
+    // phpcs:ignore Magento2.Functions.StaticFunction -- a plain param-to-enum lookup, nothing to intercept
+    public static function fromParams(array $params): self
+    {
+        return self::tryFrom((string) ($params['topic'] ?? '')) ?? self::Promotional;
+    }
 }

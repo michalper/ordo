@@ -79,7 +79,7 @@ class SendPush implements ActionInterface
             return;
         }
 
-        $topic = ConsentTopic::tryFrom((string) ($params['topic'] ?? '')) ?? ConsentTopic::Promotional;
+        $topic = ConsentTopic::fromParams($params);
         if (!$this->consentManager->hasTopicConsent($customerId, ConsentChannel::Push, $topic)) {
             $this->logger->info(sprintf(
                 'Ordo_Automation: send_push action skipped for customer #%d, push consent withdrawn.',
@@ -139,15 +139,7 @@ class SendPush implements ActionInterface
                     . ' notification is clicked - defaults to "/" if left blank.'
                 ),
             ],
-            [
-                'name' => 'topic',
-                'label' => (string) __('Consent topic'),
-                'options' => ConsentTopicOptions::toMap(),
-                'notice' => (string) __(
-                    'Which opt-out preference this send is checked against, beyond the'
-                    . ' customer\'s own per-channel consent. Defaults to Promotional if left blank.'
-                ),
-            ],
+            ConsentTopicOptions::field(),
         ];
     }
 }

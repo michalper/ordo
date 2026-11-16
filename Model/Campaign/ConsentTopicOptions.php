@@ -27,4 +27,26 @@ class ConsentTopicOptions
             ConsentTopic::AccountUpdates->value => (string) __('Account & Order Updates'),
         ];
     }
+
+    /**
+     * The full "topic" param field definition, not just its options - byte-for-byte identical
+     * across every send_* campaign action (SendEmail, SendPush, and - via
+     * AbstractPhoneMessageAction::consentTopicField() - SendSms/SendRcs/SendWhatsApp), so this is
+     * the one place its label/notice text lives.
+     *
+     * @return array{name: string, label: string, notice: string, options: array<string, string>}
+     */
+    // phpcs:ignore Magento2.Functions.StaticFunction -- fixed field definition, nothing to intercept
+    public static function field(): array
+    {
+        return [
+            'name' => 'topic',
+            'label' => (string) __('Consent topic'),
+            'options' => self::toMap(),
+            'notice' => (string) __(
+                'Which opt-out preference this send is checked against, beyond the'
+                . ' customer\'s own per-channel consent. Defaults to Promotional if left blank.'
+            ),
+        ];
+    }
 }

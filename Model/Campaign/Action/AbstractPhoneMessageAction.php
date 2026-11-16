@@ -147,7 +147,7 @@ abstract class AbstractPhoneMessageAction implements ActionInterface
             return;
         }
 
-        $topic = ConsentTopic::tryFrom((string) ($params['topic'] ?? '')) ?? ConsentTopic::Promotional;
+        $topic = ConsentTopic::fromParams($params);
         if (!$this->consentManager->hasTopicConsent($customerId, $this->consentChannel(), $topic)) {
             $this->logger->info(sprintf(
                 'Ordo_Automation: %s action skipped for customer #%d, %s consent withdrawn.',
@@ -228,22 +228,13 @@ abstract class AbstractPhoneMessageAction implements ActionInterface
     }
 
     /**
-     * Byte-for-byte identical across every phone-message channel - the opt-out preference a
-     * send is checked against is a module-wide concept (Model\ConsentTopic), not a per-channel
-     * one.
+     * Byte-for-byte identical across every send_* campaign action, phone-addressed or not - see
+     * ConsentTopicOptions::field()'s own docblock.
      *
      * @return array{name: string, label: string, notice: string, options: array<string, string>}
      */
     protected function consentTopicField(): array
     {
-        return [
-            'name' => 'topic',
-            'label' => (string) __('Consent topic'),
-            'options' => ConsentTopicOptions::toMap(),
-            'notice' => (string) __(
-                'Which opt-out preference this send is checked against, beyond the'
-                . ' customer\'s own per-channel consent. Defaults to Promotional if left blank.'
-            ),
-        ];
+        return ConsentTopicOptions::field();
     }
 }
