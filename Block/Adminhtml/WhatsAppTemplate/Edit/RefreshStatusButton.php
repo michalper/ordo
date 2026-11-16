@@ -20,17 +20,9 @@ class RefreshStatusButton extends GenericButton implements ButtonProviderInterfa
         return [
             'label' => __('Refresh Status from Meta'),
             'class' => 'action-secondary',
-            // deleteConfirm's 3-argument form (mage/dataPost.js) submits a real POST with
-            // form_key auto-attached - needed because RefreshStatus implements
-            // HttpPostActionInterface only, so the 2-argument form's plain GET navigation
-            // (mage/adminhtml/globals.js's setLocation()) 404s before ever reaching the
-            // controller (app/etc/di.xml's HTTP method map). See
-            // Block\Adminhtml\Shared\Edit\DeleteButton's own docblock for the full story - this
-            // button had the exact same bug, found and fixed separately.
-            'on_click' => sprintf(
-                "deleteConfirm('%s', '%s', {data: {}})",
+            'on_click' => $this->confirmedPostOnClick(
                 __('Refresh this template\'s status from Meta?'),
-                $this->getUrl('*/*/refreshstatus', ['entity_id' => $this->getEntityId()])
+                '*/*/refreshstatus'
             ),
             'sort_order' => 30,
         ];

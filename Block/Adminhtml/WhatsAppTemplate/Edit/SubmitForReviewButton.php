@@ -29,17 +29,9 @@ class SubmitForReviewButton extends GenericButton implements ButtonProviderInter
         return [
             'label' => __('Submit for Review'),
             'class' => 'action-secondary',
-            // deleteConfirm's 3-argument form (mage/dataPost.js) submits a real POST with
-            // form_key auto-attached - the 2-argument form navigates via a plain GET
-            // (mage/adminhtml/globals.js's setLocation()), which 404s because SubmitForReview
-            // implements HttpPostActionInterface only (app/etc/di.xml's HTTP method map rejects
-            // the GET before it dispatches). This button had that exact bug - the comment here
-            // used to claim the 2-argument form already POSTed, which isn't true; see
-            // Block\Adminhtml\Shared\Edit\DeleteButton's own docblock for the full story.
-            'on_click' => sprintf(
-                "deleteConfirm('%s', '%s', {data: {}})",
+            'on_click' => $this->confirmedPostOnClick(
                 __('Submit this template to Meta for approval?'),
-                $this->getUrl('*/*/submitforreview', ['entity_id' => $this->getEntityId()])
+                '*/*/submitforreview'
             ),
             'sort_order' => 40,
         ];

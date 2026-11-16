@@ -26,14 +26,9 @@ class PublishButton extends GenericButton implements ButtonProviderInterface
         return [
             'label' => __('Publish'),
             'class' => 'action-secondary',
-            // The 3-argument deleteConfirm() form (mage/dataPost.js) submits a real POST with
-            // form_key auto-attached - needed because Publish implements HttpPostActionInterface
-            // only, so the 2-argument form's plain GET navigation 404s before reaching the
-            // controller (app/etc/di.xml's HTTP method map). See DeleteButton's own docblock.
-            'on_click' => sprintf(
-                "deleteConfirm('%s', '%s', {data: {}})",
+            'on_click' => $this->confirmedPostOnClick(
                 __('Publish this draft onto the live template? This immediately changes what send_email sends.'),
-                $this->getUrl('*/*/publish', ['entity_id' => $this->getEntityId()])
+                '*/*/publish'
             ),
             'sort_order' => 40,
         ];
