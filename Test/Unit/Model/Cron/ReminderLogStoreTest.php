@@ -228,4 +228,202 @@ class ReminderLogStoreTest extends TestCase
             ['quote_id' => 10]
         ));
     }
+
+    public function testClaimAndRunRunsActionAndReturnsTrueWhenTheClaimSucceeds(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchOne')->willReturnCallback(
+            fn ($query) => is_string($query) && str_contains($query, 'GET_LOCK') ? 1 : 0
+        );
+        $connection->expects(self::once())->method('insert')
+            ->with('ordo_offer_reminder_log', ['offer_id' => 9]);
+        $connection->expects(self::never())->method('delete');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnArgument(0);
+
+        $store = new ReminderLogStore($resourceConnection);
+
+        $actionRan = false;
+        $result = $store->claimAndRun(
+            'ordo_offer_reminder_log',
+            ['offer_id = ?' => 9],
+            ['offer_id' => 9],
+            function () use (&$actionRan): void {
+                $actionRan = true;
+            }
+        );
+
+        self::assertTrue($result);
+        self::assertTrue($actionRan);
+    }
+
+    public function testClaimAndRunNeverRunsActionAndReturnsFalseWhenTheClaimFails(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchOne')->willReturnCallback(
+            fn ($query) => is_string($query) && str_contains($query, 'GET_LOCK') ? 1 : 1
+        );
+        $connection->expects(self::never())->method('insert');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnArgument(0);
+
+        $store = new ReminderLogStore($resourceConnection);
+
+        $actionRan = false;
+        $result = $store->claimAndRun(
+            'ordo_offer_reminder_log',
+            ['offer_id = ?' => 9],
+            ['offer_id' => 9],
+            function () use (&$actionRan): void {
+                $actionRan = true;
+            }
+        );
+
+        self::assertFalse($result);
+        self::assertFalse($actionRan);
+    }
+
+    /**
+     * Regression: a failed action must never leave a claim row behind - the customer/row would be
+     * permanently skipped by a row that says "already sent" for a send that never actually
+     * happened.
+     */
+    public function testClaimAndRunRollsBackTheClaimAndRethrowsWhenTheActionThrows(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('quoteIdentifier')->willReturnCallback(fn (string $s) => "`{$s}`");
+        $connection->method('quoteInto')->willReturnCallback(
+            fn (string $text, $value) => str_replace('?', "'{$value}'", $text)
+        );
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchOne')->willReturnCallback(
+            fn ($query) => is_string($query) && str_contains($query, 'GET_LOCK') ? 1 : 0
+        );
+        $connection->expects(self::once())->method('insert')
+            ->with('ordo_offer_reminder_log', ['offer_id' => 9]);
+        $connection->expects(self::once())->method('delete')
+            ->with('ordo_offer_reminder_log', "`offer_id` = '9'");
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnArgument(0);
+
+        $store = new ReminderLogStore($resourceConnection);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('send failed');
+
+        $store->claimAndRun(
+            'ordo_offer_reminder_log',
+            ['offer_id = ?' => 9],
+            ['offer_id' => 9],
+            function (): void {
+                throw new \RuntimeException('send failed');
+            }
+        );
+    }
+
+    public function testClaimAndRunUnderLimitRunsActionAndReturnsTrueWhenTheClaimSucceeds(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchOne')->willReturnCallback(
+            fn ($query) => is_string($query) && str_contains($query, 'GET_LOCK') ? 1 : 0
+        );
+        $connection->expects(self::once())->method('insert')
+            ->with('ordo_abandoned_cart_reminder_log', ['quote_id' => 10]);
+        $connection->expects(self::never())->method('delete');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnArgument(0);
+
+        $store = new ReminderLogStore($resourceConnection);
+
+        $actionRan = false;
+        $result = $store->claimAndRunUnderLimit(
+            'ordo_abandoned_cart_reminder_log',
+            ['quote_id = ?' => 10],
+            1,
+            ['quote_id' => 10],
+            function () use (&$actionRan): void {
+                $actionRan = true;
+            }
+        );
+
+        self::assertTrue($result);
+        self::assertTrue($actionRan);
+    }
+
+    public function testClaimAndRunUnderLimitNeverRunsActionAndReturnsFalseWhenAlreadyAtTheLimit(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchOne')->willReturnCallback(
+            fn ($query) => is_string($query) && str_contains($query, 'GET_LOCK') ? 1 : 1
+        );
+        $connection->expects(self::never())->method('insert');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnArgument(0);
+
+        $store = new ReminderLogStore($resourceConnection);
+
+        $actionRan = false;
+        $result = $store->claimAndRunUnderLimit(
+            'ordo_abandoned_cart_reminder_log',
+            ['quote_id = ?' => 10],
+            1,
+            ['quote_id' => 10],
+            function () use (&$actionRan): void {
+                $actionRan = true;
+            }
+        );
+
+        self::assertFalse($result);
+        self::assertFalse($actionRan);
+    }
+
+    public function testClaimAndRunUnderLimitRollsBackTheClaimAndRethrowsWhenTheActionThrows(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('quoteIdentifier')->willReturnCallback(fn (string $s) => "`{$s}`");
+        $connection->method('quoteInto')->willReturnCallback(
+            fn (string $text, $value) => str_replace('?', "'{$value}'", $text)
+        );
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchOne')->willReturnCallback(
+            fn ($query) => is_string($query) && str_contains($query, 'GET_LOCK') ? 1 : 0
+        );
+        $connection->expects(self::once())->method('insert')
+            ->with('ordo_abandoned_cart_reminder_log', ['quote_id' => 10]);
+        $connection->expects(self::once())->method('delete')
+            ->with('ordo_abandoned_cart_reminder_log', "`quote_id` = '10'");
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnArgument(0);
+
+        $store = new ReminderLogStore($resourceConnection);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('dispatch failed');
+
+        $store->claimAndRunUnderLimit(
+            'ordo_abandoned_cart_reminder_log',
+            ['quote_id = ?' => 10],
+            1,
+            ['quote_id' => 10],
+            function (): void {
+                throw new \RuntimeException('dispatch failed');
+            }
+        );
+    }
 }

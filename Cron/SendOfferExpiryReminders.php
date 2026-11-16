@@ -94,40 +94,43 @@ class SendOfferExpiryReminders
                 continue;
             }
 
-            // Claim (log) BEFORE sending, not after - a crash between a successful send and the
-            // log write must never cause a resend on the next tick. If the send itself then
-            // fails, the claim is rolled back so this offer is retried next run. claim() (not a
-            // plain insert()) re-checks "already sent" atomically - the cheap reminderAlreadySent()
-            // check above is only a fast pre-filter, not the actual guard against a double-send.
-            $reminderLogRow = $this->buildReminderLogRow(
-                (int) $offer->getEntityId(),
-                self::REMINDER_TYPE_EXPIRING_SOON
-            );
-            if (!$this->reminderLogStore->claim(
-                self::REMINDER_LOG_TABLE,
-                $this->reminderLogMatchConditions((int) $offer->getEntityId(), self::REMINDER_TYPE_EXPIRING_SOON),
-                $reminderLogRow
-            )) {
-                continue;
-            }
+            $customer = $customerMap[$customerId];
 
             try {
-                $customer = $customerMap[$customerId];
-                $this->emailSender->send(
-                    self::XML_PATH_EMAIL_TEMPLATE,
-                    $this->buildTemplateVars($offer, $customer),
-                    $customer->getEmail(),
-                    $customer->getFirstname(),
-                    $this->emailSender->getStore($this->customerStoreResolver->resolveStoreId($customer))
+                // Claim (log) BEFORE sending, not after - a crash between a successful send and
+                // the log write must never cause a resend on the next tick. If the send itself
+                // then fails, the claim is rolled back so this offer is retried next run. claim()
+                // (not a plain insert()) re-checks "already sent" atomically - the cheap
+                // reminderAlreadySent() check above is only a fast pre-filter, not the actual
+                // guard against a double-send.
+                $claimed = $this->reminderLogStore->claimAndRun(
+                    self::REMINDER_LOG_TABLE,
+                    $this->reminderLogMatchConditions(
+                        (int) $offer->getEntityId(),
+                        self::REMINDER_TYPE_EXPIRING_SOON
+                    ),
+                    $this->buildReminderLogRow((int) $offer->getEntityId(), self::REMINDER_TYPE_EXPIRING_SOON),
+                    function () use ($offer, $customer, $customerId): void {
+                        $this->emailSender->send(
+                            self::XML_PATH_EMAIL_TEMPLATE,
+                            $this->buildTemplateVars($offer, $customer),
+                            $customer->getEmail(),
+                            $customer->getFirstname(),
+                            $this->emailSender->getStore($this->customerStoreResolver->resolveStoreId($customer))
+                        );
+                        $this->triggerOutcomeLogger->logSent(TriggerOutcomeLogger::TRIGGER_OFFER_EXPIRY, $customerId);
+                    }
                 );
-                $this->triggerOutcomeLogger->logSent(TriggerOutcomeLogger::TRIGGER_OFFER_EXPIRY, $customerId);
-                $sent++;
             } catch (\Throwable $e) {
-                $this->reminderLogStore->deleteMatching(self::REMINDER_LOG_TABLE, $reminderLogRow);
                 $this->cronRunLogger->logFailure(
                     sprintf('send offer expiry reminder for offer #%d', $offer->getEntityId()),
                     $e
                 );
+                continue;
+            }
+
+            if ($claimed) {
+                $sent++;
             }
         }
 

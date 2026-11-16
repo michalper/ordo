@@ -131,6 +131,66 @@ class ReminderLogStore
     }
 
     /**
+     * Claim (see claim()'s own docblock), then run $action only if the claim succeeded, rolling
+     * the claim back (deleteMatching()) and rethrowing if $action throws. This is the "claim
+     * before send/dispatch, so a crash before the send can never double-send, and a genuine send
+     * failure doesn't permanently skip the row" skeleton every claim()-based cron in this module
+     * used to hand-roll for itself around its own try/catch — extracted here for the same reason
+     * claim() itself was: the control flow around the primitive was the part actually duplicated,
+     * not just the primitive. See Cron\AbstractPriceWatchScanCron::claimAndRun() for the same
+     * shape against that class's own column-based claim mechanism, which this store's insert-based
+     * claim() doesn't share a table/column with and so can't be unified into one method.
+     *
+     * @param array<string, int|string> $matchConditions same shape as countMatching()'s own $conditions
+     * @param array<string, mixed> $insertData
+     * @return bool whether $action actually ran (i.e. this call won the claim)
+     */
+    public function claimAndRun(string $table, array $matchConditions, array $insertData, callable $action): bool
+    {
+        if (!$this->claim($table, $matchConditions, $insertData)) {
+            return false;
+        }
+
+        try {
+            $action();
+        } catch (\Throwable $e) {
+            $this->deleteMatching($table, $insertData);
+            throw $e;
+        }
+
+        return true;
+    }
+
+    /**
+     * Same as claimAndRun(), using claimUnderLimit() instead of claim() - for a caller whose cap
+     * allows more than one send per $matchConditions.
+     *
+     * @param array<string, int|string> $matchConditions same shape as countMatching()'s own $conditions
+     * @param array<string, mixed> $insertData
+     * @return bool whether $action actually ran (i.e. this call won the claim)
+     */
+    public function claimAndRunUnderLimit(
+        string $table,
+        array $matchConditions,
+        int $limit,
+        array $insertData,
+        callable $action
+    ): bool {
+        if (!$this->claimUnderLimit($table, $matchConditions, $limit, $insertData)) {
+            return false;
+        }
+
+        try {
+            $action();
+        } catch (\Throwable $e) {
+            $this->deleteMatching($table, $insertData);
+            throw $e;
+        }
+
+        return true;
+    }
+
+    /**
      * Updates the claim row previously written by insert()/claim(), matched by the exact data
      * that call wrote (not a captured entity_id/lastInsertId() - same reasoning as
      * deleteMatching() below) - for callers that only learn a column's value after the claim row

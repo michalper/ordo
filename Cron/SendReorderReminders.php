@@ -92,38 +92,43 @@ class SendReorderReminders
                 continue;
             }
 
-            // Claim (log) BEFORE sending, not after - see ReminderLogStore::deleteMatching()'s
-            // own docblock for why: a crash between a successful send and the log write must
-            // never cause a resend next tick, and a genuine send failure rolls the claim back so
-            // this cycle is retried. claim() (not a plain insert()) re-checks "already sent
-            // today" atomically - the cheap reminderAlreadySentToday() check above is only a
-            // fast pre-filter, not the actual guard against a double-send.
-            $reminderLogRow = $this->buildReminderLogRow((int) $cycle->getEntityId());
-            if (!$this->reminderLogStore->claim(
-                self::REMINDER_LOG_TABLE,
-                $this->reminderLogMatchConditions((int) $cycle->getEntityId()),
-                $reminderLogRow
-            )) {
-                continue;
-            }
+            $customer = $customerMap[$customerId];
 
             try {
-                $customer = $customerMap[$customerId];
-                $this->emailSender->send(
-                    self::XML_PATH_EMAIL_TEMPLATE,
-                    $this->buildTemplateVars($cycle, $customer),
-                    $customer->getEmail(),
-                    $customer->getFirstname(),
-                    $this->emailSender->getStore($this->customerStoreResolver->resolveStoreId($customer))
+                // Claim (log) BEFORE sending, not after - see ReminderLogStore::deleteMatching()'s
+                // own docblock for why: a crash between a successful send and the log write must
+                // never cause a resend next tick, and a genuine send failure rolls the claim back
+                // so this cycle is retried. claim() (not a plain insert()) re-checks "already sent
+                // today" atomically - the cheap reminderAlreadySentToday() check above is only a
+                // fast pre-filter, not the actual guard against a double-send.
+                $claimed = $this->reminderLogStore->claimAndRun(
+                    self::REMINDER_LOG_TABLE,
+                    $this->reminderLogMatchConditions((int) $cycle->getEntityId()),
+                    $this->buildReminderLogRow((int) $cycle->getEntityId()),
+                    function () use ($cycle, $customer, $customerId): void {
+                        $this->emailSender->send(
+                            self::XML_PATH_EMAIL_TEMPLATE,
+                            $this->buildTemplateVars($cycle, $customer),
+                            $customer->getEmail(),
+                            $customer->getFirstname(),
+                            $this->emailSender->getStore($this->customerStoreResolver->resolveStoreId($customer))
+                        );
+                        $this->triggerOutcomeLogger->logSent(
+                            TriggerOutcomeLogger::TRIGGER_REORDER_REMINDER,
+                            $customerId
+                        );
+                    }
                 );
-                $this->triggerOutcomeLogger->logSent(TriggerOutcomeLogger::TRIGGER_REORDER_REMINDER, $customerId);
-                $sent++;
             } catch (\Throwable $e) {
-                $this->reminderLogStore->deleteMatching(self::REMINDER_LOG_TABLE, $reminderLogRow);
                 $this->cronRunLogger->logFailure(
                     sprintf('send reorder reminder for cycle #%d', (int) $cycle->getEntityId()),
                     $e
                 );
+                continue;
+            }
+
+            if ($claimed) {
+                $sent++;
             }
         }
 

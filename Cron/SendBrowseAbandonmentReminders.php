@@ -94,47 +94,51 @@ class SendBrowseAbandonmentReminders
 
         $dispatched = 0;
         foreach ($rows as $row) {
-            // Claim (log) BEFORE dispatching, not after - a crash between a successful dispatch
-            // and the log write must never cause a duplicate trigger on the next tick. If the
-            // dispatch itself then fails, the claim is rolled back so this row is retried next
-            // run. claim() (not a plain insert()) atomically re-checks that no overlapping run
-            // already claimed this customer/product since this run started - the select's HAVING
-            // cap alone is only a pre-filter: two overlapping runs can both count the same
-            // reminders_sent before either inserts, and both would dispatch.
-            $reminderLogRow = [
-                'customer_id' => (int) $row['customer_id'],
-                'event_key' => (string) $row['event_key'],
-                'sent_at' => date('Y-m-d H:i:s'),
-            ];
-            $claimed = $this->reminderLogStore->claim(
-                self::LOG_TABLE,
-                [
-                    'customer_id = ?' => (int) $row['customer_id'],
-                    'event_key = ?' => (string) $row['event_key'],
-                    'sent_at >= ?' => $runStartedAt,
-                ],
-                $reminderLogRow
-            );
-            if (!$claimed) {
-                continue;
-            }
+            $customerId = (int) $row['customer_id'];
+            $eventKey = (string) $row['event_key'];
 
             try {
-                $this->campaignDispatcher->dispatch('browse_abandoned', [
-                    'customer_id' => (int) $row['customer_id'],
-                    'product_sku' => (string) $row['event_key'],
-                ]);
-                $dispatched++;
+                // Claim (log) BEFORE dispatching, not after - a crash between a successful
+                // dispatch and the log write must never cause a duplicate trigger on the next
+                // tick. If the dispatch itself then fails, the claim is rolled back so this row
+                // is retried next run. claim() (not a plain insert()) atomically re-checks that no
+                // overlapping run already claimed this customer/product since this run started -
+                // the select's HAVING cap alone is only a pre-filter: two overlapping runs can
+                // both count the same reminders_sent before either inserts, and both would
+                // dispatch.
+                $claimed = $this->reminderLogStore->claimAndRun(
+                    self::LOG_TABLE,
+                    [
+                        'customer_id = ?' => $customerId,
+                        'event_key = ?' => $eventKey,
+                        'sent_at >= ?' => $runStartedAt,
+                    ],
+                    [
+                        'customer_id' => $customerId,
+                        'event_key' => $eventKey,
+                        'sent_at' => date('Y-m-d H:i:s'),
+                    ],
+                    function () use ($customerId, $eventKey): void {
+                        $this->campaignDispatcher->dispatch('browse_abandoned', [
+                            'customer_id' => $customerId,
+                            'product_sku' => $eventKey,
+                        ]);
+                    }
+                );
             } catch (\Throwable $e) {
-                $this->reminderLogStore->deleteMatching(self::LOG_TABLE, $reminderLogRow);
                 $this->cronRunLogger->logFailure(
                     sprintf(
                         'dispatch browse_abandoned trigger for customer #%d / %s',
-                        (int) $row['customer_id'],
-                        (string) $row['event_key']
+                        $customerId,
+                        $eventKey
                     ),
                     $e
                 );
+                continue;
+            }
+
+            if ($claimed) {
+                $dispatched++;
             }
         }
 

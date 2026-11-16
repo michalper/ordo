@@ -106,46 +106,49 @@ class SendWishlistAbandonmentReminders
 
         $dispatched = 0;
         foreach ($rows as $row) {
-            // Claim (log) BEFORE dispatching, not after - same reasoning as every other reminder
-            // cron in this module: a crash between a successful dispatch and the log write must
-            // never cause a duplicate trigger on the next tick, and a failed dispatch must roll
-            // the claim back so this row is retried next run. claim() atomically re-checks that
-            // no overlapping run already claimed this customer/sku since this run started - the
-            // select's HAVING cap alone is only a pre-filter.
-            $reminderLogRow = [
-                'customer_id' => (int) $row['customer_id'],
-                'event_key' => (string) $row['sku'],
-                'sent_at' => date('Y-m-d H:i:s'),
-            ];
-            $claimed = $this->reminderLogStore->claim(
-                self::LOG_TABLE,
-                [
-                    'customer_id = ?' => (int) $row['customer_id'],
-                    'event_key = ?' => (string) $row['sku'],
-                    'sent_at >= ?' => $runStartedAt,
-                ],
-                $reminderLogRow
-            );
-            if (!$claimed) {
-                continue;
-            }
+            $customerId = (int) $row['customer_id'];
+            $sku = (string) $row['sku'];
 
             try {
-                $this->campaignDispatcher->dispatch(CampaignTriggerInterface::TRIGGER_WISHLIST_ABANDONED, [
-                    'customer_id' => (int) $row['customer_id'],
-                    'product_sku' => (string) $row['sku'],
-                ]);
-                $dispatched++;
+                // Claim (log) BEFORE dispatching, not after - same reasoning as every other
+                // reminder cron in this module: a crash between a successful dispatch and the log
+                // write must never cause a duplicate trigger on the next tick, and a failed
+                // dispatch must roll the claim back so this row is retried next run. claim()
+                // atomically re-checks that no overlapping run already claimed this customer/sku
+                // since this run started - the select's HAVING cap alone is only a pre-filter.
+                $claimed = $this->reminderLogStore->claimAndRun(
+                    self::LOG_TABLE,
+                    [
+                        'customer_id = ?' => $customerId,
+                        'event_key = ?' => $sku,
+                        'sent_at >= ?' => $runStartedAt,
+                    ],
+                    [
+                        'customer_id' => $customerId,
+                        'event_key' => $sku,
+                        'sent_at' => date('Y-m-d H:i:s'),
+                    ],
+                    function () use ($customerId, $sku): void {
+                        $this->campaignDispatcher->dispatch(CampaignTriggerInterface::TRIGGER_WISHLIST_ABANDONED, [
+                            'customer_id' => $customerId,
+                            'product_sku' => $sku,
+                        ]);
+                    }
+                );
             } catch (\Throwable $e) {
-                $this->reminderLogStore->deleteMatching(self::LOG_TABLE, $reminderLogRow);
                 $this->cronRunLogger->logFailure(
                     sprintf(
                         'dispatch wishlist_abandoned trigger for customer #%d / %s',
-                        (int) $row['customer_id'],
-                        (string) $row['sku']
+                        $customerId,
+                        $sku
                     ),
                     $e
                 );
+                continue;
+            }
+
+            if ($claimed) {
+                $dispatched++;
             }
         }
 

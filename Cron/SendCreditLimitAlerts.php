@@ -96,31 +96,35 @@ class SendCreditLimitAlerts
                 continue;
             }
 
-            // Claim (log) BEFORE sending, not after - see ReminderLogStore::deleteMatching()'s
-            // own docblock: a crash between a successful send and the log write must never cause
-            // a duplicate alert next tick, and a genuine send failure rolls the claim back so
-            // this customer/band is retried. claim() (not a plain insert()) re-checks the
-            // cooldown window atomically - the cheap alertedRecently() check above is only a
-            // fast pre-filter, not the actual guard against a double-send.
-            $alertLogRow = $this->buildAlertLogRow($customerId, $band, $utilization);
-            if (!$this->reminderLogStore->claim(
-                self::REMINDER_LOG_TABLE,
-                $this->alertLogMatchConditions($customerId, $band),
-                $alertLogRow
-            )) {
-                continue;
-            }
-
             try {
-                $this->sendAlert($customer, $utilization, $limit, $used, $band);
-                $this->triggerOutcomeLogger->logSent(TriggerOutcomeLogger::TRIGGER_CREDIT_LIMIT_ALERT, $customerId);
-                $sent++;
+                // Claim (log) BEFORE sending, not after - see ReminderLogStore::deleteMatching()'s
+                // own docblock: a crash between a successful send and the log write must never
+                // cause a duplicate alert next tick, and a genuine send failure rolls the claim
+                // back so this customer/band is retried. claim() (not a plain insert()) re-checks
+                // the cooldown window atomically - the cheap alertedRecently() check above is only
+                // a fast pre-filter, not the actual guard against a double-send.
+                $claimed = $this->reminderLogStore->claimAndRun(
+                    self::REMINDER_LOG_TABLE,
+                    $this->alertLogMatchConditions($customerId, $band),
+                    $this->buildAlertLogRow($customerId, $band, $utilization),
+                    function () use ($customer, $utilization, $limit, $used, $band, $customerId): void {
+                        $this->sendAlert($customer, $utilization, $limit, $used, $band);
+                        $this->triggerOutcomeLogger->logSent(
+                            TriggerOutcomeLogger::TRIGGER_CREDIT_LIMIT_ALERT,
+                            $customerId
+                        );
+                    }
+                );
             } catch (\Throwable $e) {
-                $this->reminderLogStore->deleteMatching(self::REMINDER_LOG_TABLE, $alertLogRow);
                 $this->cronRunLogger->logFailure(
                     sprintf('send credit limit alert for customer #%d', $customerId),
                     $e
                 );
+                continue;
+            }
+
+            if ($claimed) {
+                $sent++;
             }
         }
 

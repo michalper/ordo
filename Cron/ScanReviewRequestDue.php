@@ -69,34 +69,39 @@ class ScanReviewRequestDue
             $orderId = (int) $row['order_id'];
             $customerId = (int) $row['customer_id'];
 
-            // Claim (log) BEFORE dispatching, not after - a crash between a successful dispatch
-            // and the log write must never cause a duplicate trigger on the next tick. If the
-            // dispatch itself then fails, the claim is rolled back so this order is retried next
-            // run. claim() (not a plain insert()) re-checks "already logged for this order"
-            // atomically - two overlapping runs can both pass the select's l.entity_id IS NULL
-            // filter before either inserts, so the select alone is only a pre-filter, not the
-            // actual guard against a double-dispatch.
-            $logRow = [
-                'order_id' => $orderId,
-                'customer_id' => $customerId,
-                'dispatched_at' => date('Y-m-d H:i:s'),
-            ];
-            if (!$this->reminderLogStore->claim(self::LOG_TABLE, ['order_id = ?' => $orderId], $logRow)) {
-                continue;
-            }
-
             try {
-                $this->campaignDispatcher->dispatch(CampaignTriggerInterface::TRIGGER_REVIEW_REQUEST_DUE, [
-                    'customer_id' => $customerId,
-                    'order_id' => $orderId,
-                ]);
-                $dispatched++;
+                // Claim (log) BEFORE dispatching, not after - a crash between a successful
+                // dispatch and the log write must never cause a duplicate trigger on the next
+                // tick. If the dispatch itself then fails, the claim is rolled back so this order
+                // is retried next run. claim() (not a plain insert()) re-checks "already logged
+                // for this order" atomically - two overlapping runs can both pass the select's
+                // l.entity_id IS NULL filter before either inserts, so the select alone is only a
+                // pre-filter, not the actual guard against a double-dispatch.
+                $claimed = $this->reminderLogStore->claimAndRun(
+                    self::LOG_TABLE,
+                    ['order_id = ?' => $orderId],
+                    [
+                        'order_id' => $orderId,
+                        'customer_id' => $customerId,
+                        'dispatched_at' => date('Y-m-d H:i:s'),
+                    ],
+                    function () use ($customerId, $orderId): void {
+                        $this->campaignDispatcher->dispatch(CampaignTriggerInterface::TRIGGER_REVIEW_REQUEST_DUE, [
+                            'customer_id' => $customerId,
+                            'order_id' => $orderId,
+                        ]);
+                    }
+                );
             } catch (\Throwable $e) {
-                $this->reminderLogStore->deleteMatching(self::LOG_TABLE, $logRow);
                 $this->cronRunLogger->logFailure(
                     sprintf('dispatch review_request_due trigger for order #%d', $orderId),
                     $e
                 );
+                continue;
+            }
+
+            if ($claimed) {
+                $dispatched++;
             }
         }
 

@@ -75,38 +75,40 @@ class SendStalledPaymentReminders
                 continue;
             }
 
-            $reminderLogRow = [
-                'order_id' => $order['order_id'],
-                'customer_id' => $customerId,
-                'sent_at' => date('Y-m-d H:i:s'),
-            ];
-
-            // Claim BEFORE sending, not after - same reasoning as every other reminder cron here:
-            // a crash between a successful send and the log write must never cause a resend.
-            if (!$this->reminderLogStore->claim(
-                self::REMINDER_LOG_TABLE,
-                ['order_id = ?' => $order['order_id']],
-                $reminderLogRow
-            )) {
-                continue;
-            }
+            $customer = $customerMap[$customerId];
 
             try {
-                $customer = $customerMap[$customerId];
-                $this->emailSender->send(
-                    self::XML_PATH_EMAIL_TEMPLATE,
-                    $this->buildTemplateVars($order, $customer->getFirstname()),
-                    $customer->getEmail(),
-                    $customer->getFirstname(),
-                    $this->emailSender->getStore($this->customerStoreResolver->resolveStoreId($customer))
+                // Claim BEFORE sending, not after - same reasoning as every other reminder cron
+                // here: a crash between a successful send and the log write must never cause a
+                // resend.
+                $claimed = $this->reminderLogStore->claimAndRun(
+                    self::REMINDER_LOG_TABLE,
+                    ['order_id = ?' => $order['order_id']],
+                    [
+                        'order_id' => $order['order_id'],
+                        'customer_id' => $customerId,
+                        'sent_at' => date('Y-m-d H:i:s'),
+                    ],
+                    function () use ($order, $customer): void {
+                        $this->emailSender->send(
+                            self::XML_PATH_EMAIL_TEMPLATE,
+                            $this->buildTemplateVars($order, $customer->getFirstname()),
+                            $customer->getEmail(),
+                            $customer->getFirstname(),
+                            $this->emailSender->getStore($this->customerStoreResolver->resolveStoreId($customer))
+                        );
+                    }
                 );
-                $sent++;
             } catch (\Throwable $e) {
-                $this->reminderLogStore->deleteMatching(self::REMINDER_LOG_TABLE, $reminderLogRow);
                 $this->cronRunLogger->logFailure(
                     sprintf('send stalled payment reminder for order #%d', $order['order_id']),
                     $e
                 );
+                continue;
+            }
+
+            if ($claimed) {
+                $sent++;
             }
         }
 

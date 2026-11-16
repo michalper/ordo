@@ -119,44 +119,49 @@ class SendAbandonedCartReminders
             $hasEmailConsent = empty($row['customer_id'])
                 || ($consentByCustomer[(int) $row['customer_id']] ?? true);
 
-            // Claim (log) BEFORE sending, not after - a crash between a successful send and the
-            // log write must never cause a duplicate reminder on the next tick. If the send
-            // itself then fails, the claim is rolled back so this quote is retried next run.
-            // claimUnderLimit() (not a plain insert()) re-checks "reminders_sent < maxReminders"
-            // atomically - the batch SELECT's own HAVING clause above is only a fast pre-filter,
-            // not the actual guard against two overlapping cron runs both inserting for this quote.
             $reminderLogRow = $this->buildReminderLogRow((int) $row['entity_id']);
-            if (!$this->reminderLogStore->claimUnderLimit(
-                self::LOG_TABLE,
-                ['quote_id = ?' => (int) $row['entity_id']],
-                $maxReminders,
-                $reminderLogRow
-            )) {
-                continue;
-            }
 
             try {
-                if ($hasEmailConsent) {
-                    $messageLogId = $this->sendReminder($row);
-                    if ($messageLogId !== null) {
-                        // Fills in the message_log_id a successful sendReminder() only learns
-                        // after the claim row already exists (see this class's own docblock on
-                        // that column), matched by the exact claim values just inserted.
-                        $this->reminderLogStore->updateMatching(
-                            self::LOG_TABLE,
-                            $reminderLogRow,
-                            ['message_log_id' => $messageLogId]
-                        );
+                // Claim (log) BEFORE sending, not after - a crash between a successful send and
+                // the log write must never cause a duplicate reminder on the next tick. If the
+                // send itself then fails, the claim is rolled back so this quote is retried next
+                // run. claimUnderLimit() (not a plain insert()) re-checks "reminders_sent <
+                // maxReminders" atomically - the batch SELECT's own HAVING clause above is only a
+                // fast pre-filter, not the actual guard against two overlapping cron runs both
+                // inserting for this quote.
+                $claimed = $this->reminderLogStore->claimAndRunUnderLimit(
+                    self::LOG_TABLE,
+                    ['quote_id = ?' => (int) $row['entity_id']],
+                    $maxReminders,
+                    $reminderLogRow,
+                    function () use ($row, $hasEmailConsent, $reminderLogRow): void {
+                        if ($hasEmailConsent) {
+                            $messageLogId = $this->sendReminder($row);
+                            if ($messageLogId !== null) {
+                                // Fills in the message_log_id a successful sendReminder() only
+                                // learns after the claim row already exists (see this class's own
+                                // docblock on that column), matched by the exact claim values just
+                                // inserted.
+                                $this->reminderLogStore->updateMatching(
+                                    self::LOG_TABLE,
+                                    $reminderLogRow,
+                                    ['message_log_id' => $messageLogId]
+                                );
+                            }
+                        }
+                        $this->dispatchCampaigns($row);
                     }
-                }
-                $this->dispatchCampaigns($row);
-                $sent++;
+                );
             } catch (\Throwable $e) {
-                $this->reminderLogStore->deleteMatching(self::LOG_TABLE, $reminderLogRow);
                 $this->cronRunLogger->logFailure(
                     sprintf('send abandoned cart reminder for quote #%d', (int) $row['entity_id']),
                     $e
                 );
+                continue;
+            }
+
+            if ($claimed) {
+                $sent++;
             }
         }
 
