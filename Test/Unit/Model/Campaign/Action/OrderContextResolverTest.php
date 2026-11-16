@@ -50,4 +50,38 @@ class OrderContextResolverTest extends TestCase
 
         self::assertNull($result);
     }
+
+    /**
+     * SendGa4Event and SendMetaConversionEvent both resolve the same order_id when chained on
+     * one order_placed dispatch - the second call must not re-hit the repository.
+     */
+    public function testResolveOrderCachesTheLastResolvedOrderId(): void
+    {
+        $order = $this->createStub(OrderInterface::class);
+        $orderRepository = $this->createMock(OrderRepositoryInterface::class);
+        $orderRepository->expects(self::once())->method('get')->with(55)->willReturn($order);
+
+        $resolver = new OrderContextResolver($orderRepository);
+
+        self::assertSame($order, $resolver->resolveOrder(['order_id' => 55]));
+        self::assertSame($order, $resolver->resolveOrder(['order_id' => 55]));
+    }
+
+    /**
+     * The cache is a single slot, not a growing map - a later dispatch for a different order_id
+     * must not return the previous order, and must hit the repository again.
+     */
+    public function testResolveOrderDoesNotReturnAStaleOrderForADifferentOrderId(): void
+    {
+        $firstOrder = $this->createStub(OrderInterface::class);
+        $secondOrder = $this->createStub(OrderInterface::class);
+        $orderRepository = $this->createMock(OrderRepositoryInterface::class);
+        $orderRepository->expects(self::exactly(2))->method('get')
+            ->willReturnMap([[55, $firstOrder], [56, $secondOrder]]);
+
+        $resolver = new OrderContextResolver($orderRepository);
+
+        self::assertSame($firstOrder, $resolver->resolveOrder(['order_id' => 55]));
+        self::assertSame($secondOrder, $resolver->resolveOrder(['order_id' => 56]));
+    }
 }
