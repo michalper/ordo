@@ -49,7 +49,7 @@ trait RendersGridPageTrait
      */
     protected function beforeRender(): void
     {
-        // no-op by default - see class docblock
+        return;
     }
 
     public function execute()
