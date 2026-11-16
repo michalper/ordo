@@ -8,9 +8,9 @@ use Ordo\Automation\Model\Campaign\Action\GenericSurvey;
 use Ordo\Automation\Model\ResourceModel\SurveyPrompt as SurveyPromptResource;
 use Ordo\Automation\Model\SurveyPrompt;
 use Ordo\Automation\Model\SurveyPromptFactory;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class GenericSurveyTest extends TestCase
 {
@@ -27,7 +27,7 @@ class GenericSurveyTest extends TestCase
         $this->action = new GenericSurvey(
             $this->surveyPromptFactory,
             $this->surveyPromptResource,
-            new ContextTargetResolver(),
+            new ContextTargetResolver($this->logger),
             $this->logger
         );
     }
@@ -108,6 +108,23 @@ class GenericSurveyTest extends TestCase
 
         $context = ['customer_id' => 42];
         $this->action->execute($context, ['question' => 'Favorite color?', 'question_type' => 'choice']);
+    }
+
+    /**
+     * CampaignDispatcher::runOneAction() calls execute() with no try/catch of its own - a save
+     * failure here must be swallowed, not propagate and abort the rest of this dispatch's own
+     * action chain.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteLogsAndSwallowsWhenSaveFails(): void
+    {
+        $prompt = $this->createStub(SurveyPrompt::class);
+        $this->surveyPromptFactory->method('create')->willReturn($prompt);
+        $this->surveyPromptResource->method('save')->willThrowException(new \RuntimeException('db down'));
+        $this->logger->expects(self::once())->method('error')->with(self::stringContains('db down'));
+
+        $context = ['customer_id' => 42];
+        $this->action->execute($context, ['question' => 'Favorite color?', 'question_type' => 'text']);
     }
 
     #[AllowMockObjectsWithoutExpectations]

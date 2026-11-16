@@ -7,6 +7,7 @@ use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Model\ResourceModel\SurveyPrompt as SurveyPromptResource;
 use Ordo\Automation\Model\SurveyPromptFactory;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Params: {"question": "..."}. Same queue-and-poll delivery shape as ShowPopup — queues a row in
@@ -25,6 +26,8 @@ use Psr\Log\LoggerInterface;
  */
 class NpsSurvey implements ActionInterface
 {
+    private const string ACTION_LABEL = 'nps_survey';
+
     public function __construct(
         private readonly SurveyPromptFactory $surveyPromptFactory,
         private readonly SurveyPromptResource $surveyPromptResource,
@@ -35,27 +38,32 @@ class NpsSurvey implements ActionInterface
 
     public function execute(array &$context, array $params): void
     {
-        $target = $this->contextTargetResolver->resolveCustomerOrVisitor($context);
-        $question = trim((string) ($params['question'] ?? ''));
-
-        if ($target->isEmpty()) {
-            $this->logger->error(
-                'Ordo_Automation: nps_survey action has no customer_id or visitor_id in context to target.'
-            );
+        $resolved = $this->contextTargetResolver
+            ->resolveTargetAndRequiredField($context, $params, 'question', self::ACTION_LABEL);
+        if ($resolved === null) {
             return;
         }
-
-        if ($question === '') {
-            $this->logger->error('Ordo_Automation: nps_survey action is missing a question.');
-            return;
-        }
+        $target = $resolved['target'];
+        $question = $resolved['value'];
 
         $prompt = $this->surveyPromptFactory->create();
         $prompt->setCustomerId($target->customerId);
         $prompt->setVisitorId($target->visitorId);
         $prompt->setQuestion($question);
 
-        $this->surveyPromptResource->save($prompt);
+        try {
+            $this->surveyPromptResource->save($prompt);
+        } catch (Throwable $e) {
+            // Same fail-closed convention every other action in this module follows - a save
+            // failure here must not propagate out of execute() and abort the rest of this
+            // dispatch's own action chain (CampaignDispatcher::runOneAction() calls execute()
+            // with no try/catch of its own).
+            $this->logger->error(sprintf(
+                'Ordo_Automation: campaign %s action failed to save: %s',
+                self::ACTION_LABEL,
+                $e->getMessage()
+            ));
+        }
     }
 
     public function getParamFields(): array

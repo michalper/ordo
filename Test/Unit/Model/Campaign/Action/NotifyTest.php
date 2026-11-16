@@ -8,9 +8,9 @@ use Ordo\Automation\Model\Campaign\Action\Notify;
 use Ordo\Automation\Model\Notification;
 use Ordo\Automation\Model\NotificationFactory;
 use Ordo\Automation\Model\ResourceModel\Notification as NotificationResource;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class NotifyTest extends TestCase
 {
@@ -27,7 +27,7 @@ class NotifyTest extends TestCase
         $this->action = new Notify(
             $this->notificationFactory,
             $this->notificationResource,
-            new ContextTargetResolver(),
+            new ContextTargetResolver($this->logger),
             $this->logger
         );
     }
@@ -98,6 +98,23 @@ class NotifyTest extends TestCase
 
         $context = ['customer_id' => 42];
         $this->action->execute($context, []);
+    }
+
+    /**
+     * CampaignDispatcher::runOneAction() calls execute() with no try/catch of its own - a save
+     * failure here must be swallowed, not propagate and abort the rest of this dispatch's own
+     * action chain.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteLogsAndSwallowsWhenSaveFails(): void
+    {
+        $notification = $this->createStub(Notification::class);
+        $this->notificationFactory->method('create')->willReturn($notification);
+        $this->notificationResource->method('save')->willThrowException(new \RuntimeException('db down'));
+        $this->logger->expects(self::once())->method('error')->with(self::stringContains('db down'));
+
+        $context = ['customer_id' => 42];
+        $this->action->execute($context, ['headline' => 'Hello!']);
     }
 
     #[AllowMockObjectsWithoutExpectations]

@@ -7,6 +7,7 @@ use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Model\ResourceModel\SurveyPrompt as SurveyPromptResource;
 use Ordo\Automation\Model\SurveyPromptFactory;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Params: {"question": "...", "question_type": "text"|"choice", "choices": "Red,Blue,Green"}.
@@ -25,6 +26,7 @@ use Psr\Log\LoggerInterface;
  */
 class GenericSurvey implements ActionInterface
 {
+    private const string ACTION_LABEL = 'generic_survey';
     private const array QUESTION_TYPES = ['text', 'choice'];
 
     public function __construct(
@@ -37,22 +39,16 @@ class GenericSurvey implements ActionInterface
 
     public function execute(array &$context, array $params): void
     {
-        $target = $this->contextTargetResolver->resolveCustomerOrVisitor($context);
-        $question = trim((string) ($params['question'] ?? ''));
+        $resolved = $this->contextTargetResolver
+            ->resolveTargetAndRequiredField($context, $params, 'question', self::ACTION_LABEL);
+        if ($resolved === null) {
+            return;
+        }
+        $target = $resolved['target'];
+        $question = $resolved['value'];
+
         $questionType = trim((string) ($params['question_type'] ?? ''));
         $choices = trim((string) ($params['choices'] ?? ''));
-
-        if ($target->isEmpty()) {
-            $this->logger->error(
-                'Ordo_Automation: generic_survey action has no customer_id or visitor_id in context to target.'
-            );
-            return;
-        }
-
-        if ($question === '') {
-            $this->logger->error('Ordo_Automation: generic_survey action is missing a question.');
-            return;
-        }
 
         if (!in_array($questionType, self::QUESTION_TYPES, true)) {
             $this->logger->error(
@@ -73,7 +69,19 @@ class GenericSurvey implements ActionInterface
         $prompt->setQuestionType($questionType);
         $prompt->setChoices($questionType === 'choice' ? $choices : null);
 
-        $this->surveyPromptResource->save($prompt);
+        try {
+            $this->surveyPromptResource->save($prompt);
+        } catch (Throwable $e) {
+            // Same fail-closed convention every other action in this module follows - a save
+            // failure here must not propagate out of execute() and abort the rest of this
+            // dispatch's own action chain (CampaignDispatcher::runOneAction() calls execute()
+            // with no try/catch of its own).
+            $this->logger->error(sprintf(
+                'Ordo_Automation: campaign %s action failed to save: %s',
+                self::ACTION_LABEL,
+                $e->getMessage()
+            ));
+        }
     }
 
     public function getParamFields(): array
