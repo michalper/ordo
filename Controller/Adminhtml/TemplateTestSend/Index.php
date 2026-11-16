@@ -6,7 +6,9 @@ namespace Ordo\Automation\Controller\Adminhtml\TemplateTestSend;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\RendersGridPageTrait;
 
 /**
  * "Test Send" admin page - see Send.php's own docblock for what it actually does and why it
@@ -14,6 +16,8 @@ use Magento\Framework\View\Result\PageFactory;
  */
 class Index extends Action implements HttpGetActionInterface
 {
+    use RendersGridPageTrait;
+
     public const ADMIN_RESOURCE = 'Ordo_Automation::campaigns';
 
     public function __construct(
@@ -23,12 +27,13 @@ class Index extends Action implements HttpGetActionInterface
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function activeMenu(): string
     {
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::campaigns');
-        $resultPage->getConfig()->getTitle()->prepend(__('Template Test Send'));
+        return 'Ordo_Automation::campaigns';
+    }
 
-        return $resultPage;
+    protected function pageTitle(): Phrase
+    {
+        return __('Template Test Send');
     }
 }

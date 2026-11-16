@@ -6,7 +6,9 @@ namespace Ordo\Automation\Controller\Adminhtml\ProductFeed;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\RendersGridPageTrait;
 
 /**
  * Read-only health grid over ordo_product_feed_run_log - "did the shopping feed actually
@@ -16,6 +18,8 @@ use Magento\Framework\View\Result\PageFactory;
  */
 class Index extends Action implements HttpGetActionInterface
 {
+    use RendersGridPageTrait;
+
     public const ADMIN_RESOURCE = 'Ordo_Automation::product_feed';
 
     public function __construct(
@@ -25,12 +29,13 @@ class Index extends Action implements HttpGetActionInterface
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function activeMenu(): string
     {
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::campaigns');
-        $resultPage->getConfig()->getTitle()->prepend(__('Product Feed Health'));
+        return 'Ordo_Automation::campaigns';
+    }
 
-        return $resultPage;
+    protected function pageTitle(): Phrase
+    {
+        return __('Product Feed Health');
     }
 }

@@ -151,12 +151,6 @@ parameters:
 			path: Controller/Adminhtml/AdAudience/Edit.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/AdAudience/Index.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
@@ -191,12 +185,6 @@ parameters:
 			identifier: cast.string
 			count: 3
 			path: Controller/Adminhtml/AdAudience/Save.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/AdminActionLog/Index.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
@@ -245,12 +233,6 @@ parameters:
 			identifier: cast.string
 			count: 1
 			path: Controller/Adminhtml/Campaign/ImportFromLibrary.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Campaign/Index.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
@@ -313,12 +295,6 @@ parameters:
 			path: Controller/Adminhtml/ContentBlock/Edit.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/ContentBlock/Index.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
@@ -361,12 +337,6 @@ parameters:
 			path: Controller/Adminhtml/ContentBlock/Save.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/ConversationMessage/Index.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
@@ -385,22 +355,10 @@ parameters:
 			path: Controller/Adminhtml/ConversationMessage/Reply.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/CronRunLog/Index.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/CronRunLog/Index.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/AnomalyAlert/Index.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
@@ -409,22 +367,10 @@ parameters:
 			path: Controller/Adminhtml/AnomalyAlert/Index.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Referral/Index.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/Referral/Index.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Customer360/Index.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
@@ -439,22 +385,10 @@ parameters:
 			path: Controller/Adminhtml/Customer360/Index.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Dashboard/Index.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/Dashboard/Index.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/EmailTemplateVersion/Index.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
@@ -479,12 +413,6 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/FreeGiftOffer/Edit.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/FreeGiftOffer/Index.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
@@ -527,12 +455,6 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Controller/Adminhtml/Gdpr/Export.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Gdpr/Index.php
 
 		-
 			message: '#^Cannot cast mixed to string\.$#'
@@ -589,12 +511,6 @@ parameters:
 			path: Controller/Adminhtml/LeadRoutingRule/Edit.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/LeadRoutingRule/Index.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
@@ -637,22 +553,10 @@ parameters:
 			path: Controller/Adminhtml/LeadRoutingRule/Save.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/MessageLog/Index.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/MessageLog/Index.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/OrderApproval/Index.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
@@ -661,22 +565,10 @@ parameters:
 			path: Controller/Adminhtml/OrderApproval/Index.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/PriceWatch/Index.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/PriceWatch/Index.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/ProductFeed/Index.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
@@ -685,22 +577,10 @@ parameters:
 			path: Controller/Adminhtml/ProductFeed/Index.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/ProductPerformance/Index.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/ProductPerformance/Index.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/PushSubscription/Index.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
@@ -715,22 +595,10 @@ parameters:
 			path: Controller/Adminhtml/ReorderCycle/AbstractReorderCycleAction.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/ReorderCycle/Index.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/ReorderCycle/Index.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/RevenueAnalytics/Index.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
@@ -739,22 +607,10 @@ parameters:
 			path: Controller/Adminhtml/RevenueAnalytics/Index.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/CampaignComparison/Index.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/CampaignComparison/Index.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/CohortRetention/Index.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
@@ -763,22 +619,10 @@ parameters:
 			path: Controller/Adminhtml/CohortRetention/Index.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/FunnelReport/Index.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/FunnelReport/Index.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Rfm/Index.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
@@ -803,12 +647,6 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/ScoreRule/Edit.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/ScoreRule/Index.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
@@ -901,12 +739,6 @@ parameters:
 			path: Controller/Adminhtml/Segment/ImportForm.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Segment/Index.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
@@ -949,22 +781,10 @@ parameters:
 			path: Controller/Adminhtml/Segment/Save.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Setup/Index.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/Setup/Index.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/TemplateTestSend/Index.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
@@ -1001,12 +821,6 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/WhatsAppTemplate/Edit.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/WhatsAppTemplate/Index.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
@@ -4572,12 +4386,6 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/EmailTemplateDraft/Edit.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/EmailTemplateDraft/Index.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'

@@ -6,7 +6,9 @@ namespace Ordo\Automation\Controller\Adminhtml\PushSubscription;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\RendersGridPageTrait;
 
 /**
  * Read-only view of ordo_push_subscription — closes the round-2 admin UI/UX audit finding
@@ -17,6 +19,8 @@ use Magento\Framework\View\Result\PageFactory;
  */
 class Index extends Action implements HttpGetActionInterface
 {
+    use RendersGridPageTrait;
+
     public const ADMIN_RESOURCE = 'Ordo_Automation::push_subscriptions';
 
     public function __construct(
@@ -26,12 +30,13 @@ class Index extends Action implements HttpGetActionInterface
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function activeMenu(): string
     {
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::push_subscriptions');
-        $resultPage->getConfig()->getTitle()->prepend(__('Push Subscriptions'));
+        return 'Ordo_Automation::push_subscriptions';
+    }
 
-        return $resultPage;
+    protected function pageTitle(): Phrase
+    {
+        return __('Push Subscriptions');
     }
 }

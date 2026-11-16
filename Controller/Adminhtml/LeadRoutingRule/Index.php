@@ -5,10 +5,14 @@ namespace Ordo\Automation\Controller\Adminhtml\LeadRoutingRule;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\RendersGridPageTrait;
 
 class Index extends AbstractLeadRoutingRuleAction implements HttpGetActionInterface
 {
+    use RendersGridPageTrait;
+
     public function __construct(
         Context $context,
         private readonly PageFactory $resultPageFactory
@@ -16,12 +20,13 @@ class Index extends AbstractLeadRoutingRuleAction implements HttpGetActionInterf
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function activeMenu(): string
     {
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::campaigns');
-        $resultPage->getConfig()->getTitle()->prepend(__('Lead Routing Rules'));
+        return 'Ordo_Automation::campaigns';
+    }
 
-        return $resultPage;
+    protected function pageTitle(): Phrase
+    {
+        return __('Lead Routing Rules');
     }
 }

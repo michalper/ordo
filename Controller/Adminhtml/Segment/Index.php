@@ -5,10 +5,14 @@ namespace Ordo\Automation\Controller\Adminhtml\Segment;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\RendersGridPageTrait;
 
 class Index extends AbstractSegmentAction implements HttpGetActionInterface
 {
+    use RendersGridPageTrait;
+
     public function __construct(
         Context $context,
         private readonly PageFactory $resultPageFactory
@@ -16,12 +20,13 @@ class Index extends AbstractSegmentAction implements HttpGetActionInterface
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function activeMenu(): string
     {
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::campaigns');
-        $resultPage->getConfig()->getTitle()->prepend(__('Segments'));
+        return 'Ordo_Automation::campaigns';
+    }
 
-        return $resultPage;
+    protected function pageTitle(): Phrase
+    {
+        return __('Segments');
     }
 }
