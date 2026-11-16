@@ -1665,7 +1665,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 4
+			count: 3
 			path: Model/Campaign/Action/AbstractPhoneMessageAction.php
 
 		-
@@ -1773,7 +1773,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 4
+			count: 3
 			path: Model/Campaign/Action/SendEmail.php
 
 		-
@@ -1785,8 +1785,14 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 6
+			count: 5
 			path: Model/Campaign/Action/SendPush.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/ConsentTopic.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'

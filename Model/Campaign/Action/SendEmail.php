@@ -106,7 +106,7 @@ class SendEmail implements ActionInterface
             return;
         }
 
-        $topic = ConsentTopic::tryFrom((string) ($params['topic'] ?? '')) ?? ConsentTopic::Promotional;
+        $topic = ConsentTopic::fromParams($params);
         if (!$this->consentManager->hasTopicConsent($customerId, ConsentChannel::Email, $topic)) {
             $this->logger->info(sprintf(
                 'Ordo_Automation: send_email action skipped for customer #%d, email consent withdrawn.',
@@ -231,15 +231,7 @@ class SendEmail implements ActionInterface
                     ),
                 ],
             ],
-            [
-                'name' => 'topic',
-                'label' => (string) __('Consent topic'),
-                'options' => ConsentTopicOptions::toMap(),
-                'notice' => (string) __(
-                    'Which opt-out preference this send is checked against, beyond the'
-                    . ' customer\'s own per-channel consent. Defaults to Promotional if left blank.'
-                ),
-            ],
+            ConsentTopicOptions::field(),
         ];
     }
 }
