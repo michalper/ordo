@@ -21,21 +21,15 @@ class AddTagTest extends TestCase
 
     public function testAddsEveryConfiguredTagToTheCustomerInContext(): void
     {
-        $calls = [];
-        $this->customerTagManager->expects(self::exactly(2))->method('addTag')
-            ->willReturnCallback(function (int $customerId, string $tag) use (&$calls): void {
-                $calls[] = [$customerId, $tag];
-            });
+        $this->customerTagManager->expects(self::once())->method('addTags')->with(42, ['vip', 'loyal']);
 
         $context = ['customer_id' => 42];
         $this->action->execute($context, ['tags' => ['vip', 'loyal']]);
-
-        self::assertSame([[42, 'vip'], [42, 'loyal']], $calls);
     }
 
     public function testTagsAreTrimmedAndEmptyOnesSkipped(): void
     {
-        $this->customerTagManager->expects(self::once())->method('addTag')->with(42, 'vip');
+        $this->customerTagManager->expects(self::once())->method('addTags')->with(42, ['vip']);
 
         $context = ['customer_id' => 42];
         $this->action->execute($context, ['tags' => [' vip ', '', '  ']]);
@@ -43,7 +37,7 @@ class AddTagTest extends TestCase
 
     public function testDoesNothingWhenContextIsMissingCustomerId(): void
     {
-        $this->customerTagManager->expects(self::never())->method('addTag');
+        $this->customerTagManager->expects(self::never())->method('addTags');
 
         $context = [];
         $this->action->execute($context, ['tags' => ['vip']]);
@@ -51,10 +45,18 @@ class AddTagTest extends TestCase
 
     public function testDoesNothingWhenParamsIsMissingTags(): void
     {
-        $this->customerTagManager->expects(self::never())->method('addTag');
+        $this->customerTagManager->expects(self::never())->method('addTags');
 
         $context = ['customer_id' => 42];
         $this->action->execute($context, []);
+    }
+
+    public function testDoesNothingWhenEveryTagIsBlankAfterTrimming(): void
+    {
+        $this->customerTagManager->expects(self::never())->method('addTags');
+
+        $context = ['customer_id' => 42];
+        $this->action->execute($context, ['tags' => ['', '  ']]);
     }
 
     #[AllowMockObjectsWithoutExpectations]
