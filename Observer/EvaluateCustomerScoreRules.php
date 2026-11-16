@@ -35,6 +35,8 @@ use Psr\Log\LoggerInterface;
  */
 class EvaluateCustomerScoreRules implements ObserverInterface
 {
+    use ResolvesEventCustomerIdTrait;
+
     public function __construct(
         private readonly Config $config,
         private readonly ScoreRuleEvaluator $scoreRuleEvaluator,
@@ -51,13 +53,7 @@ class EvaluateCustomerScoreRules implements ObserverInterface
             return;
         }
 
-        $eventCustomer = $observer->getEvent()->getData('customer');
-        $rawId = match (true) {
-            $eventCustomer instanceof \Magento\Framework\DataObject => $eventCustomer->getId(),
-            $eventCustomer instanceof CustomerInterface => $eventCustomer->getId(),
-            default => null,
-        };
-        $customerId = is_scalar($rawId) ? (int) $rawId : 0;
+        $customerId = $this->resolveEventCustomerId($observer->getEvent()->getData('customer'));
         if (!$customerId) {
             return;
         }
