@@ -211,12 +211,6 @@ parameters:
 			path: Controller/Adminhtml/AdminActionLog/Index.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Campaign/Calendar.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
@@ -253,12 +247,6 @@ parameters:
 			path: Controller/Adminhtml/Campaign/Export.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Campaign/ImportForm.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
@@ -281,12 +269,6 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Controller/Adminhtml/Campaign/Index.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Campaign/Library.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
@@ -317,12 +299,6 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Controller/Adminhtml/Campaign/Save.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Campaign/ScheduleCalendar.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
@@ -961,12 +937,6 @@ parameters:
 			path: Controller/Adminhtml/Segment/Export.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Segment/ImportForm.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
@@ -995,12 +965,6 @@ parameters:
 			identifier: method.void
 			count: 1
 			path: Controller/Adminhtml/Segment/NewAction.php
-
-		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/Segment/Overlap.php
 
 		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'

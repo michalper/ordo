@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Controller\Adminhtml\Campaign;
 
 use Magento\Backend\App\Action\Context;
+use Magento\Backend\Model\View\Result\Page;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\View\Result\PageFactory;
 
@@ -24,6 +25,7 @@ class Library extends AbstractCampaignAction implements HttpGetActionInterface
 
     public function execute()
     {
+        /** @var Page $resultPage */
         $resultPage = $this->resultPageFactory->create();
         $resultPage->setActiveMenu('Ordo_Automation::campaigns');
         $resultPage->getConfig()->getTitle()->prepend(__('Campaign Template Library'));

@@ -5,6 +5,7 @@ namespace Ordo\Automation\Controller\Adminhtml\Campaign;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
+use Magento\Backend\Model\View\Result\Page;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\View\Result\PageFactory;
 
@@ -27,6 +28,7 @@ class Calendar extends Action implements HttpGetActionInterface
 
     public function execute()
     {
+        /** @var Page $resultPage */
         $resultPage = $this->resultPageFactory->create();
         $resultPage->setActiveMenu('Ordo_Automation::top_level');
         // Renamed from "Campaign Calendar" - reported directly, correctly: this shows relative
