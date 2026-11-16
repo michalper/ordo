@@ -9,6 +9,27 @@ it doesn't update itself from this file.
 
 ## [Unreleased]
 
+## [1.11.1] - 2026-11-16
+
+### Fixed
+
+- **`CampaignDispatcher::resumeScheduledAction()` had no exception handling at all** around the
+  resumed action - a throw from a `delay_minutes`-deferred or quiet-hours-deferred action escaped
+  uncaught straight to `Cron\RunScheduledCampaignActions`, which retries from the same resume
+  point and could re-run already-succeeded actions earlier in the same chain. Now caught, logged,
+  and the rest of that campaign's own action chain stops - consistent with how an unknown
+  condition/action type already failed closed, extended to a known type's own thrown exception.
+  See ADR 0068.
+- **`OllamaClient` could throw instead of failing soft** - the rate limiter's own `throttle()`
+  call ran before the `try` block wrapping the actual HTTP request, so a throttle-store failure
+  (e.g. a transient DB error) escaped uncaught instead of being treated the same fail-soft way
+  this class documents for every other failure mode ("never throws").
+- **N+1 product loads in the price-watch scan crons** (`ScanPriceDropAlerts`/
+  `ScanBackInStockAlerts`) - `AbstractPriceWatchScanCron` loaded one product per watch row even
+  when many rows in the same batch watched the same product; now batch-loaded once per distinct
+  product via `ProductRepositoryInterface::getList()`, mirroring this module's existing
+  `CustomerMapBuilder` batch-load shape.
+
 ## [1.11.0] - 2026-11-15
 
 ### Added
