@@ -18,6 +18,7 @@ use Ordo\Automation\Model\Config\Source\WhatsAppTemplateOptions;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\ConsentTopic;
+use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate as WhatsAppTemplateResource;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
 use Ordo\Automation\Model\Sms\PhoneNumberResolver;
@@ -42,6 +43,7 @@ class SendWhatsAppTest extends TestCase
     private MessageSendRetryQueue&\PHPUnit\Framework\MockObject\MockObject $messageSendRetryQueue;
     private LoggerInterface $logger;
     private WhatsAppTemplateOptions $whatsAppTemplateOptions;
+    private CustomerStoreResolver $customerStoreResolver;
 
     protected function setUp(): void
     {
@@ -73,6 +75,8 @@ class SendWhatsAppTest extends TestCase
             }
         );
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->customerStoreResolver = $this->createStub(CustomerStoreResolver::class);
+        $this->customerStoreResolver->method('resolveStoreId')->willReturn(1);
     }
 
     private function makeAction(): SendWhatsApp
@@ -91,7 +95,8 @@ class SendWhatsAppTest extends TestCase
             $this->messageSendRetryQueue,
             $this->logger,
             new PhoneNumberResolver(),
-            $this->whatsAppTemplateOptions
+            $this->whatsAppTemplateOptions,
+            $this->customerStoreResolver
         );
     }
 
@@ -182,6 +187,7 @@ class SendWhatsAppTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsQuietlyWhenWhatsAppDisabled(): void
     {
+        $this->customerRepository->method('getById')->willReturn($this->customerWithPhone('+15551234567'));
         $this->config = $this->createMock(Config::class);
         $this->config->method('isWhatsAppEnabled')->willReturn(false);
 
@@ -193,9 +199,31 @@ class SendWhatsAppTest extends TestCase
         $this->makeAction()->execute($context, ['template_id' => '3']);
     }
 
+    /**
+     * Regression: send_whatsapp's enabled check used to be global-only (no $storeId passed to
+     * Config::isWhatsAppEnabled()), unlike every other phone-addressed channel (see
+     * AbstractPhoneMessageAction::execute()) - it must be scoped to the customer's own store, not
+     * Magento's ambient "current store".
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteChecksWhatsAppEnabledScopedToTheCustomersOwnStore(): void
+    {
+        $this->stubApprovedTemplate();
+        $this->customerRepository->method('getById')->willReturn($this->customerWithPhone('+15551234567'));
+        $this->customerStoreResolver = $this->createStub(CustomerStoreResolver::class);
+        $this->customerStoreResolver->method('resolveStoreId')->willReturn(7);
+
+        $this->config = $this->createMock(Config::class);
+        $this->config->expects(self::once())->method('isWhatsAppEnabled')->with(7)->willReturn(true);
+
+        $context = ['customer_id' => 42];
+        $this->makeAction()->execute($context, ['template_id' => '3']);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsErrorWhenTemplateIdMissing(): void
     {
+        $this->customerRepository->method('getById')->willReturn($this->customerWithPhone('+15551234567'));
         $this->whatsAppTemplateFactory->expects(self::never())->method('create');
         $this->whatsAppSender->expects(self::never())->method('send');
         $this->logger->expects(self::once())->method('error');
@@ -214,7 +242,7 @@ class SendWhatsAppTest extends TestCase
         );
         $this->whatsAppTemplateFactory->method('create')->willReturn($emptyTemplate);
 
-        $this->customerRepository->expects(self::never())->method('getById');
+        $this->customerRepository->method('getById')->willReturn($this->customerWithPhone('+15551234567'));
         $this->whatsAppSender->expects(self::never())->method('send');
         $this->logger->expects(self::once())->method('error');
 
@@ -235,7 +263,7 @@ class SendWhatsAppTest extends TestCase
             }
         );
 
-        $this->customerRepository->expects(self::never())->method('getById');
+        $this->customerRepository->method('getById')->willReturn($this->customerWithPhone('+15551234567'));
         $this->whatsAppSender->expects(self::never())->method('send');
         $this->logger->expects(self::once())->method('error');
 

@@ -15,6 +15,7 @@ use Ordo\Automation\Model\Config\Source\WhatsAppTemplateOptions;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\ConsentTopic;
+use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate as WhatsAppTemplateResource;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
 use Ordo\Automation\Model\Sms\PhoneNumberResolver;
@@ -60,7 +61,8 @@ class SendWhatsApp implements ActionInterface
         private readonly MessageSendRetryQueue $messageSendRetryQueue,
         private readonly LoggerInterface $logger,
         private readonly PhoneNumberResolver $phoneNumberResolver,
-        private readonly WhatsAppTemplateOptions $whatsAppTemplateOptions
+        private readonly WhatsAppTemplateOptions $whatsAppTemplateOptions,
+        private readonly CustomerStoreResolver $customerStoreResolver
     ) {
     }
 
@@ -75,7 +77,16 @@ class SendWhatsApp implements ActionInterface
             return;
         }
 
-        if (!$this->config->isWhatsAppEnabled()) {
+        try {
+            $customer = $this->customerRepository->getById($customerId);
+        } catch (Throwable $e) {
+            return;
+        }
+
+        // The customer's own store, not Magento's ambient "current store" - fetched before the
+        // config check specifically so this check is store-scoped, same as every other phone-
+        // addressed channel (see AbstractPhoneMessageAction::execute()'s identical ordering).
+        if (!$this->config->isWhatsAppEnabled($this->customerStoreResolver->resolveStoreId($customer))) {
             $this->logger->debug(
                 'Ordo_Automation: send_whatsapp action skipped, WhatsApp sending is disabled in config.'
             );
@@ -96,12 +107,6 @@ class SendWhatsApp implements ActionInterface
                 . ' WhatsApp template.',
                 $templateId
             ));
-            return;
-        }
-
-        try {
-            $customer = $this->customerRepository->getById($customerId);
-        } catch (Throwable $e) {
             return;
         }
 
