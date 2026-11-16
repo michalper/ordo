@@ -7,6 +7,7 @@ use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Model\NotificationFactory;
 use Ordo\Automation\Model\ResourceModel\Notification as NotificationResource;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Params: {"headline": "...", "body": "...", "cta_label": "...", "cta_url": "..."} - same shape
@@ -24,6 +25,8 @@ use Psr\Log\LoggerInterface;
  */
 class Notify implements ActionInterface
 {
+    private const string ACTION_LABEL = 'notify';
+
     public function __construct(
         private readonly NotificationFactory $notificationFactory,
         private readonly NotificationResource $notificationResource,
@@ -34,20 +37,13 @@ class Notify implements ActionInterface
 
     public function execute(array &$context, array $params): void
     {
-        $target = $this->contextTargetResolver->resolveCustomerOrVisitor($context);
-        $headline = trim((string) ($params['headline'] ?? ''));
-
-        if ($target->isEmpty()) {
-            $this->logger->error(
-                'Ordo_Automation: notify action has no customer_id or visitor_id in context to target.'
-            );
+        $resolved = $this->contextTargetResolver
+            ->resolveTargetAndRequiredField($context, $params, 'headline', self::ACTION_LABEL);
+        if ($resolved === null) {
             return;
         }
-
-        if ($headline === '') {
-            $this->logger->error('Ordo_Automation: notify action is missing a headline.');
-            return;
-        }
+        $target = $resolved['target'];
+        $headline = $resolved['value'];
 
         $notification = $this->notificationFactory->create();
         $notification->setCustomerId($target->customerId);
@@ -57,7 +53,19 @@ class Notify implements ActionInterface
         $notification->setCtaLabel($this->contextTargetResolver->nullableString($params['cta_label'] ?? null));
         $notification->setCtaUrl($this->contextTargetResolver->nullableString($params['cta_url'] ?? null));
 
-        $this->notificationResource->save($notification);
+        try {
+            $this->notificationResource->save($notification);
+        } catch (Throwable $e) {
+            // Same fail-closed convention every other action in this module follows - a save
+            // failure here must not propagate out of execute() and abort the rest of this
+            // dispatch's own action chain (CampaignDispatcher::runOneAction() calls execute()
+            // with no try/catch of its own).
+            $this->logger->error(sprintf(
+                'Ordo_Automation: campaign %s action failed to save: %s',
+                self::ACTION_LABEL,
+                $e->getMessage()
+            ));
+        }
     }
 
     public function getParamFields(): array

@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Campaign\Action;
 
+use Psr\Log\LoggerInterface;
+
 /**
  * Extracted after a design-review pass found this exact 8-line block, byte-for-byte identical,
  * duplicated across three campaign actions (ShowPopup, Notify, NpsSurvey) - each targets
@@ -15,6 +17,11 @@ namespace Ordo\Automation\Model\Campaign\Action;
  */
 class ContextTargetResolver
 {
+    public function __construct(
+        private readonly LoggerInterface $logger
+    ) {
+    }
+
     /**
      * @param array<string, mixed> $context
      */
@@ -34,5 +41,42 @@ class ContextTargetResolver
         $value = trim((string) $value);
 
         return $value === '' ? null : $value;
+    }
+
+    /**
+     * Shared validation gate for every action that targets a customer/visitor and requires a
+     * non-blank text param to go with it (ShowPopup/Notify's "headline", NpsSurvey/
+     * GenericSurvey's "question") - logs its own action/field-specific error and returns null
+     * when either the target or the field is missing, so the caller bails before building/
+     * saving anything. Same two error messages each of those four classes used to write out by
+     * hand, byte-for-byte, parameterized here by $actionLabel/$fieldName.
+     *
+     * @param array<string, mixed> $context
+     * @param array<string, mixed> $params
+     * @return array{target: ContextTarget, value: string}|null
+     */
+    public function resolveTargetAndRequiredField(
+        array $context,
+        array $params,
+        string $fieldName,
+        string $actionLabel
+    ): ?array {
+        $target = $this->resolveCustomerOrVisitor($context);
+        $value = trim((string) ($params[$fieldName] ?? ''));
+
+        if ($target->isEmpty()) {
+            $this->logger->error(sprintf(
+                'Ordo_Automation: %s action has no customer_id or visitor_id in context to target.',
+                $actionLabel
+            ));
+            return null;
+        }
+
+        if ($value === '') {
+            $this->logger->error(sprintf('Ordo_Automation: %s action is missing a %s.', $actionLabel, $fieldName));
+            return null;
+        }
+
+        return ['target' => $target, 'value' => $value];
     }
 }

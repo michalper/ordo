@@ -14,9 +14,9 @@ use Ordo\Automation\Model\PendingPopupFactory;
 use Ordo\Automation\Model\ResourceModel\PendingPopup as PendingPopupResource;
 use Ordo\Automation\Model\ResourceModel\PendingPopup\Collection as PendingPopupCollection;
 use Ordo\Automation\Model\ResourceModel\PendingPopup\CollectionFactory as PendingPopupCollectionFactory;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class ShowPopupTest extends TestCase
 {
@@ -57,7 +57,7 @@ class ShowPopupTest extends TestCase
             $this->pendingPopupCollectionFactory,
             $this->config,
             $this->dateTime,
-            new ContextTargetResolver(),
+            new ContextTargetResolver($this->logger),
             $this->rewardTierSelector,
             $this->couponGenerator,
             $this->logger
@@ -146,7 +146,7 @@ class ShowPopupTest extends TestCase
             $collectionFactory,
             $this->config,
             $this->dateTime,
-            new ContextTargetResolver(),
+            new ContextTargetResolver($this->logger),
             $this->rewardTierSelector,
             $this->couponGenerator,
             $this->logger
@@ -339,5 +339,22 @@ class ShowPopupTest extends TestCase
             'headline' => 'Hello!',
             'reward_tiers' => [['label' => 'Half off', 'weight' => 1, 'coupon_rule_id' => 3.0]],
         ]);
+    }
+
+    /**
+     * CampaignDispatcher::runOneAction() calls execute() with no try/catch of its own - a save
+     * failure here must be swallowed, not propagate and abort the rest of this dispatch's own
+     * action chain.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteLogsAndSwallowsWhenSaveFails(): void
+    {
+        $popup = $this->createStub(PendingPopup::class);
+        $this->pendingPopupFactory->method('create')->willReturn($popup);
+        $this->pendingPopupResource->method('save')->willThrowException(new \RuntimeException('db down'));
+        $this->logger->expects(self::once())->method('error')->with(self::stringContains('db down'));
+
+        $context = ['customer_id' => 42];
+        $this->action->execute($context, ['headline' => 'Hello!']);
     }
 }

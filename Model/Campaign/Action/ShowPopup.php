@@ -47,6 +47,8 @@ use Throwable;
  */
 class ShowPopup implements ActionInterface
 {
+    private const string ACTION_LABEL = 'popup';
+
     public function __construct(
         private readonly PendingPopupFactory $pendingPopupFactory,
         private readonly PendingPopupResource $pendingPopupResource,
@@ -62,20 +64,13 @@ class ShowPopup implements ActionInterface
 
     public function execute(array &$context, array $params): void
     {
-        $target = $this->contextTargetResolver->resolveCustomerOrVisitor($context);
-        $headline = trim((string) ($params['headline'] ?? ''));
-
-        if ($target->isEmpty()) {
-            $this->logger->error(
-                'Ordo_Automation: popup action has no customer_id or visitor_id in context to target.'
-            );
+        $resolved = $this->contextTargetResolver
+            ->resolveTargetAndRequiredField($context, $params, 'headline', self::ACTION_LABEL);
+        if ($resolved === null) {
             return;
         }
-
-        if ($headline === '') {
-            $this->logger->error('Ordo_Automation: popup action is missing a headline.');
-            return;
-        }
+        $target = $resolved['target'];
+        $headline = $resolved['value'];
 
         $capHours = $this->config->getPopupFrequencyCapHours();
         if ($capHours > 0) {
@@ -98,7 +93,19 @@ class ShowPopup implements ActionInterface
 
         $this->applyRewardTier($popup, $params, $context);
 
-        $this->pendingPopupResource->save($popup);
+        try {
+            $this->pendingPopupResource->save($popup);
+        } catch (Throwable $e) {
+            // Same fail-closed convention every other action in this module follows - a save
+            // failure here must not propagate out of execute() and abort the rest of this
+            // dispatch's own action chain (CampaignDispatcher::runOneAction() calls execute()
+            // with no try/catch of its own).
+            $this->logger->error(sprintf(
+                'Ordo_Automation: campaign %s action failed to save: %s',
+                self::ACTION_LABEL,
+                $e->getMessage()
+            ));
+        }
     }
 
     /**
