@@ -27,10 +27,8 @@ class AddTag implements ActionInterface
             return;
         }
 
-        $tags = array_values(array_filter(array_map(
-            static fn (mixed $tag): string => trim((string) $tag),
-            $tags
-        ), static fn (string $tag): bool => $tag !== ''));
+        $tags = array_map(static fn (mixed $tag): string => trim((string) $tag), $tags);
+        $tags = array_values(array_filter($tags, static fn (string $tag): bool => $tag !== ''));
 
         if ($tags === []) {
             return;

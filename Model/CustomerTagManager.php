@@ -81,10 +81,11 @@ class CustomerTagManager implements CustomerTagManagementInterface
         }
 
         $now = date('Y-m-d H:i:s');
-        $connection->insertMultiple($table, array_map(
+        $rows = array_map(
             static fn (string $tag): array => ['customer_id' => $customerId, 'tag' => $tag, 'added_at' => $now],
             $newTags
-        ));
+        );
+        $connection->insertMultiple($table, $rows);
 
         foreach ($newTags as $tag) {
             $this->eventManager->dispatch('ordo_customer_tag_added', ['customer_id' => $customerId, 'tag' => $tag]);
