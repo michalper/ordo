@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Model\Campaign\Action;
 
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Campaign\Action\OutboundConversionApiSender;
 use Ordo\Automation\Model\Campaign\Action\SendRetrier;
 use Ordo\Automation\Model\Campaign\Action\SendWebhook;
 use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
@@ -23,6 +24,7 @@ class SendWebhookTest extends TestCase
     private OutboundRateLimiter $rateLimiter;
     private MessageSendRetryQueue $messageSendRetryQueue;
     private LoggerInterface $logger;
+    private OutboundConversionApiSender $sender;
 
     protected function setUp(): void
     {
@@ -47,17 +49,21 @@ class SendWebhookTest extends TestCase
             }
         );
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->sender = new OutboundConversionApiSender(
+            $this->jsonApiClient,
+            $this->rateLimiter,
+            new SendRetrier(1),
+            $this->messageSendRetryQueue,
+            $this->logger
+        );
     }
 
     private function makeAction(): SendWebhook
     {
         return new SendWebhook(
             $this->config,
-            $this->jsonApiClient,
             $this->signatureValidator,
-            $this->rateLimiter,
-            new SendRetrier(1),
-            $this->messageSendRetryQueue,
+            $this->sender,
             $this->logger
         );
     }

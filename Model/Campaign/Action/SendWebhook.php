@@ -5,12 +5,8 @@ namespace Ordo\Automation\Model\Campaign\Action;
 
 use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Helper\Config;
-use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
-use Ordo\Automation\Model\Http\JsonApiClient;
-use Ordo\Automation\Model\RateLimit\OutboundRateLimiter;
 use Ordo\Automation\Model\Webhook\WebhookSignatureValidator;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Params: {"event": "optional-override-name"} - "event" is a free-text label included in the
@@ -22,7 +18,10 @@ use Throwable;
  * POSTs the full campaign/trigger context as JSON to the configured outbound URL, signed with
  * HMAC-SHA256 over the raw body (Model\Webhook\WebhookSignatureValidator::sign()), sent as the
  * "X-Ordo-Signature" header - so the receiving ERP/CRM/PIM can verify the call really came from
- * this store, the same scheme Controller\Webhook\Receive expects of an inbound caller.
+ * this store, the same scheme Controller\Webhook\Receive expects of an inbound caller. The actual
+ * throttle/retry/log-and-enqueue-for-retry tail is OutboundConversionApiSender's, same as
+ * SendGa4Event/SendMetaConversionEvent - this action's own custom signature header is what used
+ * to block it from reusing that class, until that class grew an optional $headers parameter.
  *
  * Deliberately does NOT check ConsentManager/QuietHoursGate/FrequencyCapGate - unlike
  * send_email/send_sms/send_whatsapp/send_push this isn't a message to a customer's own inbox/
@@ -32,14 +31,12 @@ use Throwable;
 class SendWebhook implements ActionInterface
 {
     private const string ACTION_TYPE = 'send_webhook';
+    private const string RATE_LIMIT_CHANNEL = 'webhook';
 
     public function __construct(
         private readonly Config $config,
-        private readonly JsonApiClient $jsonApiClient,
         private readonly WebhookSignatureValidator $signatureValidator,
-        private readonly OutboundRateLimiter $rateLimiter,
-        private readonly SendRetrier $sendRetrier,
-        private readonly MessageSendRetryQueue $messageSendRetryQueue,
+        private readonly OutboundConversionApiSender $sender,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -78,19 +75,19 @@ class SendWebhook implements ActionInterface
             'context' => $context,
         ];
 
-        try {
-            $this->sendRetrier->attempt(fn () => $this->post($url, $secret, $payload));
-        } catch (Throwable $e) {
-            $this->logger->error(sprintf(
-                'Ordo_Automation: campaign send_webhook action failed to reach "%s": %s',
-                $url,
-                $e->getMessage()
-            ));
+        $signature = $this->signatureValidator->sign($secret, (string) json_encode($payload));
 
-            // Rethrows on a retry attempt instead of enqueuing again - see
-            // MessageSendRetryQueue::enqueueOrRethrow()/RETRY_CONTEXT_FLAG.
-            $this->messageSendRetryQueue->enqueueOrRethrow(self::ACTION_TYPE, $context, $params, $e);
-        }
+        $this->sender->send(
+            self::ACTION_TYPE,
+            self::RATE_LIMIT_CHANNEL,
+            (float) $this->config->getWebhookMaxRequestsPerSecond(),
+            $url,
+            $payload,
+            'Ordo webhook',
+            $context,
+            $params,
+            headers: [WebhookSignatureValidator::SIGNATURE_HEADER => $signature]
+        );
     }
 
     public function getParamFields(): array
@@ -104,23 +101,5 @@ class SendWebhook implements ActionInterface
                 ),
             ],
         ];
-    }
-
-    /**
-     * @param array<string, mixed> $payload
-     */
-    private function post(string $url, string $secret, array $payload): void
-    {
-        $this->rateLimiter->throttle('webhook', (float) $this->config->getWebhookMaxRequestsPerSecond());
-
-        $rawBody = (string) json_encode($payload);
-        $signature = $this->signatureValidator->sign($secret, $rawBody);
-
-        $this->jsonApiClient->postJson(
-            $url,
-            $payload,
-            [WebhookSignatureValidator::SIGNATURE_HEADER => $signature],
-            'Ordo webhook'
-        );
     }
 }
