@@ -4,9 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Model\Campaign\Action;
 
 use Magento\Customer\Api\CustomerRepositoryInterface;
-use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Helper\Config;
-use Ordo\Automation\Model\Campaign\ConsentTopicOptions;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
 use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
 use Ordo\Automation\Model\Campaign\OptionSourceFlattener;
@@ -14,7 +12,6 @@ use Ordo\Automation\Model\Campaign\QuietHoursGate;
 use Ordo\Automation\Model\Config\Source\WhatsAppTemplateOptions;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
-use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\CustomerStoreResolver;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate as WhatsAppTemplateResource;
 use Ordo\Automation\Model\Sms\MessageLogWriter;
@@ -38,65 +35,85 @@ use Throwable;
  * body placeholders — deliberately not JSON-nested, so the campaign flow editor's own plain-text
  * field (Block/Adminhtml/Campaign/Edit/Flow.php::getFieldsConfig()) can drive it directly.
  *
- * Checks ConsentManager::hasTopicConsent() before sending, same as send_email/send_sms - an
- * optional "topic" param (see ConsentTopic, defaults to "promotional") on top of "template_id"/
- * "params" above. Also checks FrequencyCapGate::allows() right after (opt-in, cross-channel).
+ * Extends AbstractPhoneMessageAction (see ADR 0066) for the customer/phone/consent/quiet-hours/
+ * frequency-cap/E.164 skeleton every phone-addressed channel shares - validateContent() is
+ * overridden entirely for this channel's template-based content model instead of the base's
+ * free-text "message" field, so template validation now runs where that field's own validation
+ * used to (after consent/quiet-hours/frequency-cap/E.164, not before phone resolution as this
+ * class used to check it) - a deliberate reordering to fit the shared shape, not a behavior
+ * change in outcome: either way a bad template config logs an error and sends nothing.
  */
-class SendWhatsApp implements ActionInterface
+class SendWhatsApp extends AbstractPhoneMessageAction
 {
     private const string CHANNEL = 'whatsapp';
     private const string ACTION_TYPE = 'send_whatsapp';
 
     public function __construct(
-        private readonly CustomerRepositoryInterface $customerRepository,
+        CustomerRepositoryInterface $customerRepository,
         private readonly WhatsAppSender $whatsAppSender,
-        private readonly Config $config,
+        Config $config,
         private readonly WhatsAppTemplateFactory $whatsAppTemplateFactory,
         private readonly WhatsAppTemplateResource $whatsAppTemplateResource,
-        private readonly MessageLogWriter $messageLogWriter,
-        private readonly ConsentManager $consentManager,
-        private readonly QuietHoursGate $quietHoursGate,
-        private readonly FrequencyCapGate $frequencyCapGate,
+        MessageLogWriter $messageLogWriter,
+        ConsentManager $consentManager,
+        QuietHoursGate $quietHoursGate,
+        FrequencyCapGate $frequencyCapGate,
         private readonly SendRetrier $sendRetrier,
         private readonly MessageSendRetryQueue $messageSendRetryQueue,
-        private readonly LoggerInterface $logger,
-        private readonly PhoneNumberResolver $phoneNumberResolver,
+        LoggerInterface $logger,
+        PhoneNumberResolver $phoneNumberResolver,
         private readonly WhatsAppTemplateOptions $whatsAppTemplateOptions,
-        private readonly CustomerStoreResolver $customerStoreResolver
+        CustomerStoreResolver $customerStoreResolver
     ) {
+        parent::__construct(
+            $customerRepository,
+            $config,
+            $messageLogWriter,
+            $consentManager,
+            $quietHoursGate,
+            $frequencyCapGate,
+            $logger,
+            $customerStoreResolver,
+            $phoneNumberResolver
+        );
     }
 
-    public function execute(array &$context, array $params): void
+    protected function channel(): string
     {
-        $customerId = (int) ($context['customer_id'] ?? 0);
-        $campaignId = isset($context['campaign_id']) ? (int) $context['campaign_id'] : null;
-        $variant = isset($context['ordo_split_variant']) ? (string) $context['ordo_split_variant'] : null;
-        $triggerOrderId = isset($context['order_id']) ? (int) $context['order_id'] : null;
-        if ($customerId <= 0) {
-            $this->logger->error('Ordo_Automation: send_whatsapp action is missing customer_id in context.');
-            return;
-        }
+        return self::CHANNEL;
+    }
 
-        try {
-            $customer = $this->customerRepository->getById($customerId);
-        } catch (Throwable $e) {
-            return;
-        }
+    protected function actionType(): string
+    {
+        return self::ACTION_TYPE;
+    }
 
-        // The customer's own store, not Magento's ambient "current store" - fetched before the
-        // config check specifically so this check is store-scoped, same as every other phone-
-        // addressed channel (see AbstractPhoneMessageAction::execute()'s identical ordering).
-        if (!$this->config->isWhatsAppEnabled($this->customerStoreResolver->resolveStoreId($customer))) {
-            $this->logger->debug(
-                'Ordo_Automation: send_whatsapp action skipped, WhatsApp sending is disabled in config.'
-            );
-            return;
-        }
+    protected function consentChannel(): ConsentChannel
+    {
+        return ConsentChannel::WhatsApp;
+    }
 
+    protected function isChannelEnabled(?int $storeId): bool
+    {
+        return $this->config->isWhatsAppEnabled($storeId);
+    }
+
+    /**
+     * Never actually read - this class's own getParamFields() override never calls it, since
+     * "message" isn't this channel's content field. Required only because it's abstract on the
+     * base class every sibling (SendSms/SendRcs) genuinely needs it for.
+     */
+    protected function messageFieldLabel(): string
+    {
+        return (string) __('WhatsApp template');
+    }
+
+    protected function validateContent(array $params): bool
+    {
         $templateId = (int) ($params['template_id'] ?? 0);
         if ($templateId <= 0) {
             $this->logger->error('Ordo_Automation: send_whatsapp action is missing "template_id" in params.');
-            return;
+            return false;
         }
 
         $template = $this->whatsAppTemplateFactory->create();
@@ -107,56 +124,31 @@ class SendWhatsApp implements ActionInterface
                 . ' WhatsApp template.',
                 $templateId
             ));
-            return;
+            return false;
         }
 
-        $phone = $this->phoneNumberResolver->resolve($customer);
-        if ($phone === null) {
-            $this->logger->error(sprintf(
-                'Ordo_Automation: send_whatsapp action has no ordo_sms_phone set for customer #%d.',
-                $customerId
-            ));
-            return;
-        }
+        return true;
+    }
 
-        $topic = ConsentTopic::tryFrom((string) ($params['topic'] ?? '')) ?? ConsentTopic::Promotional;
-        if (!$this->consentManager->hasTopicConsent($customerId, ConsentChannel::WhatsApp, $topic)) {
-            $this->logger->info(sprintf(
-                'Ordo_Automation: send_whatsapp action skipped for customer #%d, WhatsApp consent withdrawn.',
-                $customerId
-            ));
-            $this->messageLogWriter->recordOptedOut(self::CHANNEL, $customerId, $phone, $campaignId, $variant);
-            return;
-        }
+    /**
+     * @param array<string, mixed> $context
+     * @param array<string, mixed> $params
+     */
+    protected function sendMessage(string $phone, array &$context, array $params): void
+    {
+        // Reloaded rather than threaded through from validateContent() - keeps the base class's
+        // validateContent() contract a plain bool gate, with no generic "content" type to invent
+        // just for this one template-based channel. A second primary-key lookup of the same row
+        // is cheap; a per-batch template cache (one load across every customer in a dispatch,
+        // not just once per customer) is the real win here and is tracked separately.
+        $templateId = (int) $params['template_id'];
+        $template = $this->whatsAppTemplateFactory->create();
+        $this->whatsAppTemplateResource->load($template, $templateId);
 
-        $actionId = (int) ($context['ordo_action_id'] ?? 0);
-        if (!$this->quietHoursGate->allows($customerId, $campaignId ?? 0, $actionId, $context)) {
-            return;
-        }
-
-        if (!$this->frequencyCapGate->allows(
-            $customerId,
-            self::CHANNEL,
-            $phone,
-            'send_whatsapp',
-            $campaignId,
-            $variant
-        )) {
-            return;
-        }
-
-        if (!$this->phoneNumberResolver->isValidE164($phone)) {
-            // Never log the raw phone number here - this module otherwise deliberately hashes/
-            // avoids logging PII (see Model/AdAudience/PiiHasher.php), and the customer id alone
-            // is enough to look the record up if needed.
-            $this->logger->error(sprintf(
-                'Ordo_Automation: send_whatsapp action skipped for customer #%d, ordo_sms_phone is not a'
-                . ' valid E.164 number.',
-                $customerId
-            ));
-            $this->messageLogWriter->recordFailed(self::CHANNEL, $customerId, $phone, $campaignId, $variant);
-            return;
-        }
+        $customerId = (int) ($context['customer_id'] ?? 0);
+        $campaignId = isset($context['campaign_id']) ? (int) $context['campaign_id'] : null;
+        $variant = isset($context['ordo_split_variant']) ? (string) $context['ordo_split_variant'] : null;
+        $triggerOrderId = isset($context['order_id']) ? (int) $context['order_id'] : null;
 
         $paramsList = $this->parseParams((string) ($params['params'] ?? ''));
 
@@ -223,15 +215,7 @@ class SendWhatsApp implements ActionInterface
                     . ' template body of "Hi {{1}}, your order {{2}} shipped": John,ORD-1234'
                 ),
             ],
-            [
-                'name' => 'topic',
-                'label' => (string) __('Consent topic'),
-                'options' => ConsentTopicOptions::toMap(),
-                'notice' => (string) __(
-                    'Which opt-out preference this send is checked against, beyond the'
-                    . ' customer\'s own per-channel consent. Defaults to Promotional if left blank.'
-                ),
-            ],
+            $this->consentTopicField(),
         ];
     }
 }

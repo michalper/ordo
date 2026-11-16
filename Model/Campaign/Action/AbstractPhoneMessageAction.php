@@ -20,15 +20,19 @@ use Throwable;
 
 /**
  * Shared skeleton for every phone-number-addressed campaign action (Model\Campaign\Action\SendSms,
- * SendRcs) - resolve the customer, check the channel's own enabled flag (store-scoped), resolve
- * the phone (the shared ordo_sms_phone customer attribute), check consent, quiet hours, the
- * frequency cap, validate E.164, substitute the one "{{recommended_products_text}}" token - all
- * of it is genuinely identical across channels, parameterized only by the small set of abstract
- * methods below. Extracted after Model\Campaign\Action\SendRcs/SendSms crossed Sonar's new-code
- * duplication gate (see ADR 0049) - the one piece that's deliberately NOT shared is the actual
- * send+record-outcome step (sendMessage()), since that's where SMS's Twilio-STOP-keyword opt-out
- * detection and retry-queue participation genuinely diverge from RCS's simpler "send once, no
- * retry" shape.
+ * SendRcs, SendWhatsApp) - resolve the customer, check the channel's own enabled flag (store-
+ * scoped), resolve the phone (the shared ordo_sms_phone customer attribute), check consent, quiet
+ * hours, the frequency cap, validate E.164 - all of it is genuinely identical across channels,
+ * parameterized only by the small set of abstract methods below. Extracted after
+ * Model\Campaign\Action\SendRcs/SendSms crossed Sonar's new-code duplication gate (see ADR 0049);
+ * SendWhatsApp joined later (see ADR 0066) once its content model (an approved template, not free
+ * text) was threaded through validateContent() instead of a hardcoded "message" field.
+ *
+ * Deliberately NOT shared: validateContent()'s free-text default (overridden entirely by
+ * SendWhatsApp for its template-based model) and the actual send+record-outcome step
+ * (sendMessage()), since that's where SMS's Twilio-STOP-keyword opt-out detection and retry-queue
+ * participation genuinely diverge from RCS's simpler "send once, no retry" shape, and WhatsApp's
+ * template-parameter substitution differs from both.
  */
 abstract class AbstractPhoneMessageAction implements ActionInterface
 {
@@ -67,14 +71,41 @@ abstract class AbstractPhoneMessageAction implements ActionInterface
     abstract protected function messageFieldLabel(): string;
 
     /**
-     * Sends the already-validated, already-token-substituted message and records its outcome
-     * (sent/failed, and whatever channel-specific semantics apply - e.g. SMS's opted-out/retry-
-     * queue handling) - the one step that genuinely differs between channels.
+     * Sends whatever this channel's own sendMessage() derives from $params (the already-validated
+     * "message" text for SMS/RCS, the already-validated template for WhatsApp - re-deriving it
+     * here rather than threading a resolved value through from validateContent() keeps this
+     * class's own contract simple: a bool-returning validation gate, no generic "content" type to
+     * invent for a template-based channel) and records its outcome (sent/failed, and whatever
+     * channel-specific semantics apply - e.g. SMS's opted-out/retry-queue handling) - the one step
+     * that genuinely differs between channels.
      *
      * @param array<string, mixed> $context
      * @param array<string, mixed> $params
      */
-    abstract protected function sendMessage(string $phone, string $message, array &$context, array $params): void;
+    abstract protected function sendMessage(string $phone, array &$context, array $params): void;
+
+    /**
+     * Validates $params' own content is actually sendable, logging its own channel-specific error
+     * and returning false when it isn't, so execute() bails before any phone/consent/quiet-hours/
+     * frequency-cap work runs for a dispatch that could never have sent anyway. Default: a
+     * non-blank "message" param, which SMS/RCS both use unchanged. SendWhatsApp overrides this
+     * entirely to validate its template_id param against an approved WhatsAppTemplate instead.
+     *
+     * @param array<string, mixed> $params
+     */
+    protected function validateContent(array $params): bool
+    {
+        $message = trim((string) ($params['message'] ?? ''));
+        if ($message === '') {
+            $this->logger->error(sprintf(
+                'Ordo_Automation: %s action is missing "message" in params.',
+                $this->actionType()
+            ));
+            return false;
+        }
+
+        return true;
+    }
 
     public function execute(array &$context, array $params): void
     {
@@ -156,24 +187,28 @@ abstract class AbstractPhoneMessageAction implements ActionInterface
             return;
         }
 
-        $message = trim((string) ($params['message'] ?? ''));
-        if ($message === '') {
-            $this->logger->error(sprintf(
-                'Ordo_Automation: %s action is missing "message" in params.',
-                $this->actionType()
-            ));
+        if (!$this->validateContent($params)) {
             return;
         }
 
-        // Only this one token, deliberately - not a general templating engine. See
-        // AddProductRecommendations's own docblock for why this context key exists.
-        $message = str_replace(
+        $this->sendMessage($phone, $context, $params);
+    }
+
+    /**
+     * Only this one token, deliberately - not a general templating engine. See
+     * AddProductRecommendations's own docblock for why this context key exists. Shared by every
+     * free-text channel (SMS/RCS) - not used by a template-based channel like WhatsApp, which has
+     * no free-text "message" to substitute into.
+     *
+     * @param array<string, mixed> $context
+     */
+    protected function substituteRecommendedProductsToken(string $message, array $context): string
+    {
+        return str_replace(
             '{{recommended_products_text}}',
             (string) ($context['recommended_products_text'] ?? ''),
             $message
         );
-
-        $this->sendMessage($phone, $message, $context, $params);
     }
 
     /**

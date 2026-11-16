@@ -88,8 +88,9 @@ class SendRcs extends AbstractPhoneMessageAction
      * @param array<string, mixed> $context
      * @param array<string, mixed> $params
      */
-    protected function sendMessage(string $phone, string $message, array &$context, array $params): void
+    protected function sendMessage(string $phone, array &$context, array $params): void
     {
+        $message = $this->substituteRecommendedProductsToken(trim((string) ($params['message'] ?? '')), $context);
         $customerId = (int) ($context['customer_id'] ?? 0);
         $campaignId = isset($context['campaign_id']) ? (int) $context['campaign_id'] : null;
         $variant = isset($context['ordo_split_variant']) ? (string) $context['ordo_split_variant'] : null;
