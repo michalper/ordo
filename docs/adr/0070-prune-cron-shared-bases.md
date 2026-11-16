@@ -34,18 +34,24 @@ Two separate bases:
   it in `retentionDays()` - the base class constructor only takes what's common
   (`ResourceConnection`, `CronRunLogger`).
 - `AbstractGracePeriodPruneCron` (`tableName()` plus a protected `deleteWherePastGrace(string
-  $column, int $graceHours)` helper) for the second group. Only the "acted-upon, past grace"
-  bucket - the one piece that's identical in all three (and appears twice in
-  `PruneSurveyPrompts`, for `responded_at` and `delivered_at`) - is pulled into the helper; each
-  subclass's own "never acted upon and expired" bucket(s) stay inline in its own `execute()`,
-  since those differ enough (`PendingPopups`/`Notifications` have one, `SurveyPrompts` has two,
-  with different `IS NULL` guards) that forcing them into the same hook would just move the real
-  logic behind a parameter list instead of removing duplication.
+  $column, int $graceHours)` helper) for the second group. Only the plain "acted-upon, past
+  grace" bucket - identical in `PendingPopups`' `delivered_at` delete, `Notifications`' `read_at`
+  delete, and `SurveyPrompts`' `responded_at` delete - is pulled into the helper.
+  `SurveyPrompts`' own second grace-based delete (delivered-but-never-answered) needs one extra
+  guard (`responded_at IS NULL`, so a row displayed long ago but answered recently isn't deleted)
+  the plain bucket doesn't have, so it stays inline - same as each subclass's own "never acted
+  upon and expired" bucket(s), which differ enough between the three (different `IS NULL` guards)
+  that forcing them into the same hook would just move the real logic behind a parameter list
+  instead of removing duplication.
 
 Plain abstract base classes, not traits: none of these six crons extend anything else today, so
 there's no parent-hierarchy conflict to compose around (contrast
 `RendersGridPageTrait`/`RendersEditPageTrait`, which exist as traits specifically because their
 8-32 using controllers each already extend a different per-feature `Abstract*Action`).
+
+Landed as two PRs: this one introduces `AbstractSingleColumnRetentionPruneCron` and migrates its
+three subclasses; a companion PR introduces `AbstractGracePeriodPruneCron` and migrates the other
+three, independently reviewable and revertable.
 
 ## Consequences
 
@@ -53,6 +59,6 @@ there's no parent-hierarchy conflict to compose around (contrast
   one-line hook methods each; the cutoff-compute-delete-log shape now exists in exactly one place.
 - `PrunePendingPopups`/`PruneNotifications`/`PruneSurveyPrompts` keep their own `execute()` (the
   real per-class logic), minus the four now-shared grace-cutoff-and-delete calls.
-- All six existing `Test/Unit/Cron/Prune*Test.php` files pass unmodified - no constructor
-  signature changed, only which class owns the method bodies that used to be inline in
-  `execute()`.
+- All six existing `Test/Unit/Cron/Prune*Test.php` files pass unmodified, across both PRs - no
+  constructor signature changed, only which class owns the method bodies that used to be inline
+  in `execute()`.
