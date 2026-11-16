@@ -4376,12 +4376,6 @@ parameters:
 			path: Controller/Adminhtml/EmailTemplateDraft/Edit.php
 
 		-
-			message: '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page\:\:setActiveMenu\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Controller/Adminhtml/EmailTemplateDraft/Edit.php
-
-		-
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
