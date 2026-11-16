@@ -58,9 +58,10 @@ incompatible as the base class was written.
   single-row `SELECT`. The real fix for repeated template loads is a per-batch cache (loading a
   given `template_id` once across every customer in a dispatch, not once-or-twice per customer) —
   tracked as a separate, already-identified efficiency finding, not solved here.
-- `SendWhatsApp` must still implement the now-unused-by-it `messageFieldLabel()` (abstract on the
-  base, genuinely needed by `SendSms`/`SendRcs`) because it fully overrides `getParamFields()` and
-  never calls it — a small, explicitly-documented wart, not a silent footgun.
+- `SendWhatsApp` still implements `messageFieldLabel()` (abstract on the base, genuinely needed by
+  `SendSms`/`SendRcs`) even though it fully overrides `getParamFields()` — but reuses it as the
+  `template_id` field's own label rather than hardcoding that string a second time, so the hook
+  stays genuinely used instead of becoming dead code only this subclass carries.
 - `SendWhatsApp` gets `consentTopicField()` for free instead of hand-copying the same "Consent
   topic" field array literal `SendEmail`/`SendPush` still duplicate — those two remain untouched
   by this change; they don't extend `AbstractPhoneMessageAction` (not phone-addressed) and are a

@@ -99,9 +99,9 @@ class SendWhatsApp extends AbstractPhoneMessageAction
     }
 
     /**
-     * Never actually read - this class's own getParamFields() override never calls it, since
-     * "message" isn't this channel's content field. Required only because it's abstract on the
-     * base class every sibling (SendSms/SendRcs) genuinely needs it for.
+     * This channel's content field isn't called "message" (see getParamFields()'s own
+     * "template_id" field below), but the label text itself is still shared through this hook -
+     * same reasoning as every other abstract method here, just reused for a different field name.
      */
     protected function messageFieldLabel(): string
     {
@@ -200,7 +200,7 @@ class SendWhatsApp extends AbstractPhoneMessageAction
         return [
             [
                 'name' => 'template_id',
-                'label' => (string) __('WhatsApp template'),
+                'label' => $this->messageFieldLabel(),
                 'options' => OptionSourceFlattener::toMap($this->whatsAppTemplateOptions),
                 'notice' => (string) __(
                     'Only APPROVED templates appear here — the WhatsApp Business Platform never'
