@@ -49,6 +49,11 @@ trait RendersGridPageTrait
      */
     protected function beforeRender(): void
     {
+        // A bare `return;` is the only body that satisfies Magento2.CodeAnalysis.EmptyBlock
+        // (which rejects a comment-only body as empty); the two sniffs disagree on what an
+        // intentional no-op method should look like, so this is a deliberate, narrow
+        // suppression of the other one.
+        // phpcs:ignore Squiz.PHP.NonExecutableCode.ReturnNotRequired
         return;
     }
 
