@@ -35,6 +35,8 @@ use Psr\Log\LoggerInterface;
  */
 class AssignLeadRoutingRule implements ObserverInterface
 {
+    use ResolvesEventCustomerIdTrait;
+
     public function __construct(
         private readonly Config $config,
         private readonly LeadRoutingRuleEvaluator $leadRoutingRuleEvaluator,
@@ -75,14 +77,7 @@ class AssignLeadRoutingRule implements ObserverInterface
             return (int) $rawCustomerId;
         }
 
-        $eventCustomer = $event->getData('customer');
-        $rawId = match (true) {
-            $eventCustomer instanceof \Magento\Framework\DataObject => $eventCustomer->getId(),
-            $eventCustomer instanceof CustomerInterface => $eventCustomer->getId(),
-            default => null,
-        };
-
-        return is_scalar($rawId) ? (int) $rawId : 0;
+        return $this->resolveEventCustomerId($event->getData('customer'));
     }
 
     private function evaluate(int $customerId, CustomerInterface $customer): void
