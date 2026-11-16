@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Controller\Adminhtml\EmailTemplateDraft;
 
 use Magento\Backend\App\Action\Context;
+use Magento\Backend\Model\View\Result\Page;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\Registry;
 use Magento\Framework\View\Result\PageFactory;
@@ -41,6 +42,7 @@ class Edit extends AbstractEmailTemplateDraftAction implements HttpGetActionInte
 
         $this->registry->register('ordo_email_template_draft', $draft);
 
+        /** @var Page $resultPage */
         $resultPage = $this->resultPageFactory->create();
         $resultPage->setActiveMenu('Ordo_Automation::email_template_drafts');
         $resultPage->getConfig()->getTitle()->prepend(
