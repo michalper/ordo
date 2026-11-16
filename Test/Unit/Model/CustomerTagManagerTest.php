@@ -8,8 +8,8 @@ use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\DB\Select;
 use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
 use Ordo\Automation\Model\CustomerTagManager;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\TestCase;
 
 class CustomerTagManagerTest extends TestCase
 {
@@ -62,6 +62,76 @@ class CustomerTagManagerTest extends TestCase
 
         $manager = new CustomerTagManager($resourceConnection, $eventManager);
         $manager->addTag(42, 'vip');
+    }
+
+    public function testAddTagsInsertsOnlyTheTagsNotAlreadyPresentAndDispatchesOncePerNewTag(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        // 'vip' already exists for this customer; 'loyal' and 'churn_risk' don't.
+        $connection->method('fetchCol')->willReturn(['vip']);
+        $connection->expects(self::once())->method('insertMultiple')
+            ->with(
+                'ordo_customer_tag',
+                self::callback(static function (array $rows): bool {
+                    $tags = array_column($rows, 'tag');
+                    sort($tags);
+                    return $tags === ['churn_risk', 'loyal']
+                        && $rows[0]['customer_id'] === 42
+                        && $rows[1]['customer_id'] === 42;
+                })
+            );
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $eventManager = $this->createMock(EventManagerInterface::class);
+        $dispatched = [];
+        $eventManager->expects(self::exactly(2))->method('dispatch')
+            ->willReturnCallback(function (string $name, array $data) use (&$dispatched): void {
+                $dispatched[] = $data['tag'];
+            });
+
+        $manager = new CustomerTagManager($resourceConnection, $eventManager);
+        $manager->addTags(42, ['vip', 'loyal', 'churn_risk']);
+
+        sort($dispatched);
+        self::assertSame(['churn_risk', 'loyal'], $dispatched);
+    }
+
+    public function testAddTagsSkipsEntirelyWhenEveryTagIsAlreadyPresent(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchCol')->willReturn(['vip', 'loyal']);
+        $connection->expects(self::never())->method('insertMultiple');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $eventManager = $this->createMock(EventManagerInterface::class);
+        $eventManager->expects(self::never())->method('dispatch');
+
+        $manager = new CustomerTagManager($resourceConnection, $eventManager);
+        $manager->addTags(42, ['vip', 'loyal']);
+    }
+
+    public function testAddTagsReturnsEarlyForEmptyTagsWithoutQuerying(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::never())->method('select');
+        $connection->expects(self::never())->method('insertMultiple');
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+
+        $eventManager = $this->createMock(EventManagerInterface::class);
+        $eventManager->expects(self::never())->method('dispatch');
+
+        $manager = new CustomerTagManager($resourceConnection, $eventManager);
+        $manager->addTags(42, []);
     }
 
     public function testRemoveTagDeletes(): void

@@ -44,6 +44,53 @@ class CustomerTagManager implements CustomerTagManagementInterface
         $this->eventManager->dispatch('ordo_customer_tag_added', ['customer_id' => $customerId, 'tag' => $tag]);
     }
 
+    /**
+     * Batch variant of addTag() - one SELECT to find which of $tags this customer already has,
+     * then a single multi-row INSERT for the rest, instead of a hasTag() SELECT plus a possible
+     * INSERT per tag (Model\Campaign\Action\AddTag's own loop over a campaign's "tags" param
+     * otherwise pays up to two round trips per tag). Still fires "ordo_customer_tag_added" once
+     * per genuinely new tag, same as addTag() itself - a listener expecting one event per tag
+     * must see the same events it would from N individual addTag() calls, not a single batched
+     * one.
+     *
+     * @param string[] $tags
+     */
+    public function addTags(int $customerId, array $tags): void
+    {
+        $tags = array_values(array_unique($tags));
+        if ($tags === []) {
+            return;
+        }
+
+        $connection = $this->connection();
+        $table = $this->table();
+
+        $existing = array_map(
+            static fn (mixed $tag): string => (string) $tag,
+            $connection->fetchCol(
+                $connection->select()
+                    ->from($table, 'tag')
+                    ->where('customer_id = ?', $customerId)
+                    ->where('tag IN (?)', $tags)
+            )
+        );
+
+        $newTags = array_values(array_diff($tags, $existing));
+        if ($newTags === []) {
+            return;
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $connection->insertMultiple($table, array_map(
+            static fn (string $tag): array => ['customer_id' => $customerId, 'tag' => $tag, 'added_at' => $now],
+            $newTags
+        ));
+
+        foreach ($newTags as $tag) {
+            $this->eventManager->dispatch('ordo_customer_tag_added', ['customer_id' => $customerId, 'tag' => $tag]);
+        }
+    }
+
     public function removeTag(int $customerId, string $tag): void
     {
         $connection = $this->connection();
