@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Controller\Track;
 
-use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
@@ -13,13 +12,21 @@ use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Track\VisitorIdentityResolver;
 use Ordo\Automation\Model\VisitorEventLogger;
 
 /**
  * Public, unauthenticated endpoint the frontend JS tracker (view/frontend/web/js/tracker.js)
- * posts to. No CSRF token — this is meant to be callable by anonymous visitors who have no
- * session/form key yet, which is exactly the same trust model as any third-party "pixel"
- * tracking endpoint.
+ * posts to.
+ *
+ * CSRF is only skipped for anonymous requests (no session/form key exists yet, same trust model
+ * as any third-party "pixel" tracking endpoint) - delegated to VisitorIdentityResolver, same as
+ * every other Controller\Track\* endpoint. A LOGGED-IN request is checked against Origin/Referer:
+ * this write binds an attacker-chosen event_type/event_key to the real, authenticated
+ * customer_id, and VisitorAggregator (triggered once the threshold is crossed) tags that
+ * customer's account from it - a first-class input to this module's own campaign/segment
+ * targeting and ad-audience sync. Without the check, a forged cross-site POST could silently
+ * steer which automated campaign a real customer lands in.
  */
 class Event extends Action implements HttpPostActionInterface, CsrfAwareActionInterface
 {
@@ -37,7 +44,7 @@ class Event extends Action implements HttpPostActionInterface, CsrfAwareActionIn
         Context $context,
         private readonly JsonFactory $resultJsonFactory,
         private readonly VisitorEventLogger $visitorEventLogger,
-        private readonly CustomerSession $customerSession,
+        private readonly VisitorIdentityResolver $visitorIdentityResolver,
         private readonly Config $config,
         private readonly EventManagerInterface $eventManager
     ) {
@@ -52,8 +59,7 @@ class Event extends Action implements HttpPostActionInterface, CsrfAwareActionIn
             return $result->setData(['ok' => false, 'reason' => 'tracking_disabled']);
         }
 
-        $visitorId = $this->getRequest()->getParam('visitor_id');
-        $visitorId = is_string($visitorId) ? $visitorId : '';
+        $visitorId = $this->visitorIdentityResolver->resolveVisitorIdFromParam($this->getRequest());
         $eventType = $this->getRequest()->getParam('event_type');
         $eventType = is_string($eventType) ? $eventType : '';
         $eventKey = $this->getRequest()->getParam('event_key');
@@ -64,7 +70,7 @@ class Event extends Action implements HttpPostActionInterface, CsrfAwareActionIn
         }
 
         $eventKey = $eventKey !== null ? substr($eventKey, 0, self::MAX_KEY_LENGTH) : null;
-        $customerId = $this->customerSession->isLoggedIn() ? (int) $this->customerSession->getCustomerId() : null;
+        $customerId = $this->visitorIdentityResolver->resolveCustomerId();
 
         $this->visitorEventLogger->log($visitorId, $eventType, $eventKey, $customerId);
 
@@ -87,6 +93,6 @@ class Event extends Action implements HttpPostActionInterface, CsrfAwareActionIn
 
     public function validateForCsrf(RequestInterface $request): ?bool
     {
-        return true;
+        return $this->visitorIdentityResolver->validateForCsrf($request);
     }
 }

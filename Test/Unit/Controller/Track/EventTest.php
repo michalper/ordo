@@ -7,8 +7,10 @@ use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\Controller\Result\Json;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
+use Magento\Framework\Stdlib\CookieManagerInterface;
 use Ordo\Automation\Controller\Track\Event;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Track\VisitorIdentityResolver;
 use Ordo\Automation\Model\VisitorEventLogger;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -18,6 +20,7 @@ class EventTest extends AbstractFrontendActionTestCase
     private JsonFactory $resultJsonFactory;
     private VisitorEventLogger $visitorEventLogger;
     private CustomerSession $customerSession;
+    private CookieManagerInterface $cookieManager;
     private Config $config;
     private Json $jsonResult;
     private EventManagerInterface $eventManager;
@@ -27,6 +30,7 @@ class EventTest extends AbstractFrontendActionTestCase
         $this->resultJsonFactory = $this->createStub(JsonFactory::class);
         $this->visitorEventLogger = $this->createMock(VisitorEventLogger::class);
         $this->customerSession = $this->createStub(CustomerSession::class);
+        $this->cookieManager = $this->createStub(CookieManagerInterface::class);
         $this->config = $this->createStub(Config::class);
         $this->eventManager = $this->createMock(EventManagerInterface::class);
 
@@ -41,7 +45,7 @@ class EventTest extends AbstractFrontendActionTestCase
             $this->makeContext(),
             $this->resultJsonFactory,
             $this->visitorEventLogger,
-            $this->customerSession,
+            new VisitorIdentityResolver($this->customerSession, $this->cookieManager),
             $this->config,
             $this->eventManager
         );
@@ -205,9 +209,44 @@ class EventTest extends AbstractFrontendActionTestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
-    public function testValidateForCsrfReturnsTrue(): void
+    public function testValidateForCsrfReturnsTrueForAnonymousVisitor(): void
     {
+        $this->customerSession->method('isLoggedIn')->willReturn(false);
         $controller = $this->makeController();
+
+        self::assertTrue($controller->validateForCsrf($this->request));
+    }
+
+    /**
+     * Regression: validateForCsrf() used to unconditionally return true, even for a logged-in
+     * request - a forged cross-site POST could bind an attacker-chosen event_type/event_key to
+     * a real customer_id and, once VisitorAggregator's threshold is crossed, tag that customer's
+     * account. Now checked against Origin/Referer the same way every other Controller\Track\*
+     * endpoint already is.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testValidateForCsrfRejectsMismatchedOriginForLoggedInCustomer(): void
+    {
+        $this->customerSession->method('isLoggedIn')->willReturn(true);
+        $controller = $this->makeController();
+        $this->request->method('getHeader')->willReturnMap([
+            ['Origin', 'https://attacker.example.com'],
+        ]);
+        $this->request->method('getHttpHost')->willReturn('shop.example.com');
+
+        self::assertFalse($controller->validateForCsrf($this->request));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testValidateForCsrfAcceptsMatchingOriginForLoggedInCustomer(): void
+    {
+        $this->customerSession->method('isLoggedIn')->willReturn(true);
+        $controller = $this->makeController();
+        $this->request->method('getHeader')->willReturnMap([
+            ['Origin', 'https://shop.example.com'],
+        ]);
+        $this->request->method('getHttpHost')->willReturn('shop.example.com');
+
         self::assertTrue($controller->validateForCsrf($this->request));
     }
 }
