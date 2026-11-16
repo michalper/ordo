@@ -7,7 +7,6 @@ use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Model\NotificationFactory;
 use Ordo\Automation\Model\ResourceModel\Notification as NotificationResource;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Params: {"headline": "...", "body": "...", "cta_label": "...", "cta_url": "..."} - same shape
@@ -25,6 +24,9 @@ use Throwable;
  */
 class Notify implements ActionInterface
 {
+    use LogsSaveFailureTrait;
+    use HeadlineBodyCtaParamFieldsTrait;
+
     private const string ACTION_LABEL = 'notify';
 
     public function __construct(
@@ -53,28 +55,16 @@ class Notify implements ActionInterface
         $notification->setCtaLabel($this->contextTargetResolver->nullableString($params['cta_label'] ?? null));
         $notification->setCtaUrl($this->contextTargetResolver->nullableString($params['cta_url'] ?? null));
 
-        try {
-            $this->notificationResource->save($notification);
-        } catch (Throwable $e) {
-            // Same fail-closed convention every other action in this module follows - a save
-            // failure here must not propagate out of execute() and abort the rest of this
-            // dispatch's own action chain (CampaignDispatcher::runOneAction() calls execute()
-            // with no try/catch of its own).
-            $this->logger->error(sprintf(
-                'Ordo_Automation: campaign %s action failed to save: %s',
-                self::ACTION_LABEL,
-                $e->getMessage()
-            ));
-        }
+        $this->saveOrLogFailure(fn () => $this->notificationResource->save($notification));
+    }
+
+    protected function actionLabel(): string
+    {
+        return self::ACTION_LABEL;
     }
 
     public function getParamFields(): array
     {
-        return [
-            ['name' => 'headline', 'label' => (string) __('Popup headline')],
-            ['name' => 'body', 'label' => (string) __('Popup body')],
-            ['name' => 'cta_label', 'label' => (string) __('CTA button label')],
-            ['name' => 'cta_url', 'label' => (string) __('CTA button URL')],
-        ];
+        return $this->headlineBodyCtaParamFields();
     }
 }
