@@ -6,7 +6,9 @@ namespace Ordo\Automation\Controller\Adminhtml\ReorderCycle;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\RendersGridPageTrait;
 
 /**
  * Read-only diagnostic view of what CalculateReorderCycle has computed — no edit/delete,
@@ -14,6 +16,8 @@ use Magento\Framework\View\Result\PageFactory;
  */
 class Index extends Action implements HttpGetActionInterface
 {
+    use RendersGridPageTrait;
+
     // Gates on its own dedicated acl.xml resource (reorder_cycle) rather than the broader
     // campaigns resource, so access to this diagnostic view can be granted independently of
     // full campaign management permissions.
@@ -26,12 +30,13 @@ class Index extends Action implements HttpGetActionInterface
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function activeMenu(): string
     {
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::reorder_cycles');
-        $resultPage->getConfig()->getTitle()->prepend(__('Reorder Cycles'));
+        return 'Ordo_Automation::reorder_cycles';
+    }
 
-        return $resultPage;
+    protected function pageTitle(): Phrase
+    {
+        return __('Reorder Cycles');
     }
 }

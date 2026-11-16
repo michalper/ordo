@@ -3,49 +3,52 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Controller\Adminhtml\Customer360;
 
+use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
-use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\App\Action\HttpGetActionInterface;
-use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Framework\Registry;
+use Magento\Framework\Phrase;
 use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\CustomerLookupByEmailRegistrar;
+use Ordo\Automation\Controller\Adminhtml\RendersGridPageTrait;
 
 /**
  * Search-by-email admin page aggregating everything this module already knows about one
- * customer - segments, tags, RFM/CLV, lead score, NPS, loyalty tier, order history - onto one
- * screen instead of the five separate ones a merchant previously had to cross-reference by hand.
- * Same search-then-display shape as Controller\Adminhtml\Gdpr\Index, deliberately: this is a
- * look-up tool used one customer at a time, not a bulk-management grid.
+ * customer onto one screen - see docs/adr/0050.
  */
-class Index extends AbstractCustomer360Action implements HttpGetActionInterface
+class Index extends Action implements HttpGetActionInterface
 {
+    use RendersGridPageTrait;
+
+    public const ADMIN_RESOURCE = 'Ordo_Automation::customer_360';
+
     public function __construct(
         Context $context,
         private readonly PageFactory $resultPageFactory,
-        private readonly CustomerRepositoryInterface $customerRepository,
-        private readonly Registry $registry
+        private readonly CustomerLookupByEmailRegistrar $customerLookup
     ) {
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function activeMenu(): string
+    {
+        return 'Ordo_Automation::top_level';
+    }
+
+    protected function pageTitle(): Phrase
+    {
+        return __('Customer 360');
+    }
+
+    protected function beforeRender(): void
     {
         $email = trim((string) $this->getRequest()->getParam('email'));
-
-        if ($email !== '') {
-            try {
-                $customer = $this->customerRepository->get($email);
-                $this->registry->register('ordo_customer_360_customer_id', (int) $customer->getId());
-                $this->registry->register('ordo_customer_360_customer_email', $customer->getEmail());
-            } catch (NoSuchEntityException) {
-                $this->messageManager->addErrorMessage(__('No customer found for that email.'));
-            }
+        if ($email === '') {
+            return;
         }
 
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::top_level');
-        $resultPage->getConfig()->getTitle()->prepend(__('Customer 360'));
-
-        return $resultPage;
+        if (!$this->customerLookup->resolveAndRegister($email, 'ordo_customer_360') instanceof CustomerInterface) {
+            $this->messageManager->addErrorMessage(__('No customer found for that email.'));
+        }
     }
 }

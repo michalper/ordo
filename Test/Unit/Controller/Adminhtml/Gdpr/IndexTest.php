@@ -4,13 +4,11 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Controller\Adminhtml\Gdpr;
 
 use Magento\Backend\Model\View\Result\Page;
-use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Api\Data\CustomerInterface;
-use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Framework\Registry;
 use Magento\Framework\View\Page\Config as PageConfig;
 use Magento\Framework\View\Page\Title;
 use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\CustomerLookupByEmailRegistrar;
 use Ordo\Automation\Controller\Adminhtml\Gdpr\Index;
 use Ordo\Automation\Test\Unit\Controller\AbstractAdminActionTestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -38,12 +36,10 @@ class IndexTest extends AbstractAdminActionTestCase
         $resultPageFactory = $this->createStub(PageFactory::class);
         $resultPageFactory->method('create')->willReturn($this->makeResultPage());
 
-        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
-        $customerRepository->expects(self::never())->method('get');
-        $registry = $this->createMock(Registry::class);
-        $registry->expects(self::never())->method('register');
+        $customerLookup = $this->createMock(CustomerLookupByEmailRegistrar::class);
+        $customerLookup->expects(self::never())->method('resolveAndRegister');
 
-        $controller = new Index($context, $resultPageFactory, $customerRepository, $registry);
+        $controller = new Index($context, $resultPageFactory, $customerLookup);
         self::assertInstanceOf(Page::class, $controller->execute());
     }
 
@@ -57,15 +53,13 @@ class IndexTest extends AbstractAdminActionTestCase
         $resultPageFactory->method('create')->willReturn($this->makeResultPage());
 
         $customer = $this->createStub(CustomerInterface::class);
-        $customer->method('getId')->willReturn(42);
-        $customer->method('getEmail')->willReturn('jan@example.com');
-        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
-        $customerRepository->expects(self::once())->method('get')->with('jan@example.com')->willReturn($customer);
+        $customerLookup = $this->createMock(CustomerLookupByEmailRegistrar::class);
+        $customerLookup->expects(self::once())
+            ->method('resolveAndRegister')
+            ->with('jan@example.com', 'ordo_gdpr')
+            ->willReturn($customer);
 
-        $registry = $this->createMock(Registry::class);
-        $registry->expects(self::exactly(2))->method('register');
-
-        $controller = new Index($context, $resultPageFactory, $customerRepository, $registry);
+        $controller = new Index($context, $resultPageFactory, $customerLookup);
         self::assertInstanceOf(Page::class, $controller->execute());
     }
 
@@ -78,13 +72,11 @@ class IndexTest extends AbstractAdminActionTestCase
         $resultPageFactory = $this->createStub(PageFactory::class);
         $resultPageFactory->method('create')->willReturn($this->makeResultPage());
 
-        $customerRepository = $this->createMock(CustomerRepositoryInterface::class);
-        $customerRepository->method('get')->willThrowException(new NoSuchEntityException(__('no such customer')));
-        $registry = $this->createMock(Registry::class);
-        $registry->expects(self::never())->method('register');
+        $customerLookup = $this->createMock(CustomerLookupByEmailRegistrar::class);
+        $customerLookup->method('resolveAndRegister')->willReturn(null);
         $this->messageManager->expects(self::once())->method('addErrorMessage');
 
-        $controller = new Index($context, $resultPageFactory, $customerRepository, $registry);
+        $controller = new Index($context, $resultPageFactory, $customerLookup);
         self::assertInstanceOf(Page::class, $controller->execute());
     }
 }

@@ -6,7 +6,9 @@ namespace Ordo\Automation\Controller\Adminhtml\Setup;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\RendersGridPageTrait;
 
 /**
  * A guided first-run checklist (configure a channel -> build a segment -> build a campaign),
@@ -15,6 +17,8 @@ use Magento\Framework\View\Result\PageFactory;
  */
 class Index extends Action implements HttpGetActionInterface
 {
+    use RendersGridPageTrait;
+
     public const ADMIN_RESOURCE = 'Ordo_Automation::campaigns';
 
     public function __construct(
@@ -24,12 +28,13 @@ class Index extends Action implements HttpGetActionInterface
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function activeMenu(): string
     {
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::top_level');
-        $resultPage->getConfig()->getTitle()->prepend(__('Setup Guide'));
+        return 'Ordo_Automation::top_level';
+    }
 
-        return $resultPage;
+    protected function pageTitle(): Phrase
+    {
+        return __('Setup Guide');
     }
 }

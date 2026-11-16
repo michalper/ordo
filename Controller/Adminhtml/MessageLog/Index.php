@@ -6,7 +6,9 @@ namespace Ordo\Automation\Controller\Adminhtml\MessageLog;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\RendersGridPageTrait;
 
 /**
  * Read-only view of ordo_message_log — the only way to see whether a send_sms campaign action
@@ -18,6 +20,8 @@ use Magento\Framework\View\Result\PageFactory;
  */
 class Index extends Action implements HttpGetActionInterface
 {
+    use RendersGridPageTrait;
+
     public const ADMIN_RESOURCE = 'Ordo_Automation::message_log';
 
     public function __construct(
@@ -27,12 +31,13 @@ class Index extends Action implements HttpGetActionInterface
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function activeMenu(): string
     {
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::message_log');
-        $resultPage->getConfig()->getTitle()->prepend(__('Message Log'));
+        return 'Ordo_Automation::message_log';
+    }
 
-        return $resultPage;
+    protected function pageTitle(): Phrase
+    {
+        return __('Message Log');
     }
 }

@@ -5,10 +5,14 @@ namespace Ordo\Automation\Controller\Adminhtml\EmailTemplateDraft;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\Phrase;
 use Magento\Framework\View\Result\PageFactory;
+use Ordo\Automation\Controller\Adminhtml\RendersGridPageTrait;
 
 class Index extends AbstractEmailTemplateDraftAction implements HttpGetActionInterface
 {
+    use RendersGridPageTrait;
+
     public function __construct(
         Context $context,
         private readonly PageFactory $resultPageFactory
@@ -16,12 +20,13 @@ class Index extends AbstractEmailTemplateDraftAction implements HttpGetActionInt
         parent::__construct($context);
     }
 
-    public function execute()
+    protected function activeMenu(): string
     {
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::email_template_drafts');
-        $resultPage->getConfig()->getTitle()->prepend(__('Email Template Drafts'));
+        return 'Ordo_Automation::email_template_drafts';
+    }
 
-        return $resultPage;
+    protected function pageTitle(): Phrase
+    {
+        return __('Email Template Drafts');
     }
 }
