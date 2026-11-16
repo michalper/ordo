@@ -34,7 +34,11 @@ use Psr\Log\LoggerInterface;
  * All conditions on a campaign are AND'd together; unknown condition/action types (e.g. a
  * campaign referencing a type this install's di.xml doesn't register) are treated as failing
  * closed — skip the condition (never satisfied) / skip the action (log and continue) rather
- * than crashing the whole dispatch for every other campaign.
+ * than crashing the whole dispatch for every other campaign. A known action type that itself
+ * throws fails closed the same way, but one level narrower: the rest of THIS campaign's own
+ * action chain stops (logged, not re-thrown), not the whole dispatch — other matched campaigns,
+ * and other customers' dispatches, are unaffected either way. See
+ * docs/adr/0068-campaign-dispatcher-fails-closed-on-action-exception.md.
  *
  * Actions run in sort_order, synchronously, until one has a delay_minutes > 0 — dispatch()
  * itself runs inline (inside an observer/cron, nothing here can literally sleep), so a delayed
@@ -510,7 +514,9 @@ class CampaignDispatcher
         // re-scheduled again for another delay_minutes just because that column is still > 0 on
         // the row. Only actions AFTER it go through the normal delay check.
         $context['campaign_id'] = $campaignId;
-        $this->runOneActionOrSplit($campaignId, $plan['actions'][$plan['start']], $context);
+        if (!$this->runOneActionOrSplitStoppingChainOnFailure($campaignId, $plan['actions'][$plan['start']], $context)) {
+            return;
+        }
         $this->runActionsFrom($campaignId, $plan['actions'], $plan['start'] + 1, $context);
     }
 
@@ -629,7 +635,40 @@ class CampaignDispatcher
                 return;
             }
 
+            if (!$this->runOneActionOrSplitStoppingChainOnFailure($campaignId, $actionRow, $context)) {
+                return;
+            }
+        }
+    }
+
+    /**
+     * Runs one action (or split branch); on failure, logs and reports it so the caller stops
+     * running anything after it in this chain — fail-closed, consistent with how an unknown
+     * action type is already handled above (skip the action, don't crash the dispatch), extended
+     * here to a KNOWN type's own thrown exception. A later action in the same chain may depend on
+     * context an earlier, now-failed action never wrote (a coupon code, AI-generated content), so
+     * continuing past a failure risks sending something that references data that was never
+     * generated. See docs/adr/0068-campaign-dispatcher-fails-closed-on-action-exception.md.
+     *
+     * @param array<string, mixed> $context
+     * @return bool true if the action ran without throwing, false if the caller must stop
+     */
+    private function runOneActionOrSplitStoppingChainOnFailure(
+        int $campaignId,
+        CampaignAction $actionRow,
+        array &$context
+    ): bool {
+        try {
             $this->runOneActionOrSplit($campaignId, $actionRow, $context);
+            return true;
+        } catch (\Throwable $e) {
+            $this->logger->error(sprintf(
+                'Ordo_Automation: campaign #%d action #%d failed, stopping the remaining chain: %s',
+                $campaignId,
+                (int) $actionRow->getEntityId(),
+                $e->getMessage()
+            ));
+            return false;
         }
     }
 

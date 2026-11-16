@@ -924,6 +924,40 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->resumeScheduledAction(1, 11, ['customer_id' => 1]);
     }
 
+    /**
+     * Regression (ADR 0068): resumeScheduledAction() used to have no exception handling at all
+     * around the resumed action - a throw escaped uncaught straight to the cron, which retried
+     * from the same resume point and could re-run already-succeeded actions. Now it's caught,
+     * logged, and the chain stops - the action after the resumed one must never run.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResumeScheduledActionStopsChainAndLogsWhenResumedActionThrows(): void
+    {
+        $resumeAction = $this->createMock(CampaignAction::class);
+        $resumeAction->method('getEntityId')->willReturn(11);
+        $resumeAction->method('getSortOrder')->willReturn(20);
+        $resumeAction->method('getDelayMinutes')->willReturn(0);
+        $resumeAction->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $resumeAction->method('getParams')->willReturn([]);
+
+        $nextAction = $this->createMock(CampaignAction::class);
+        $nextAction->method('getEntityId')->willReturn(12);
+        $nextAction->method('getSortOrder')->willReturn(30);
+        $nextAction->method('getDelayMinutes')->willReturn(0);
+        $nextAction->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $nextAction->method('getParams')->willReturn([]);
+
+        $this->makeResumeActionCollections($resumeAction, [$resumeAction, $nextAction]);
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute')->willThrowException(new \RuntimeException('mailer down'));
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->logger->expects(self::once())->method('error');
+
+        $this->makeDispatcher()->resumeScheduledAction(1, 11, ['customer_id' => 1]);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testResumeScheduledActionFiltersMainQueryBySortOrderOfResumeRow(): void
     {
@@ -1355,6 +1389,44 @@ class CampaignDispatcherTest extends TestCase
 
         // Campaign 1's action throws and is logged; campaign 2 still runs — one campaign
         // failing must not abort the whole dispatch for every other matched campaign.
+        $this->logger->expects(self::once())->method('error');
+
+        $this->makeDispatcher()->dispatch('order_placed', []);
+    }
+
+    /**
+     * Regression (ADR 0068): a mid-chain action's exception must stop the rest of THIS
+     * campaign's own remaining actions - the second action must never run.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchStopsRemainingActionsInTheSameChainWhenOneThrows(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $firstAction = $this->createMock(CampaignAction::class);
+        $firstAction->method('getCampaignId')->willReturn(1);
+        $firstAction->method('getEntityId')->willReturn(10);
+        $firstAction->method('getDelayMinutes')->willReturn(0);
+        $firstAction->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $firstAction->method('getParams')->willReturn([]);
+
+        $secondAction = $this->createMock(CampaignAction::class);
+        $secondAction->method('getCampaignId')->willReturn(1);
+        $secondAction->method('getEntityId')->willReturn(11);
+        $secondAction->method('getDelayMinutes')->willReturn(0);
+        $secondAction->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $secondAction->method('getParams')->willReturn([]);
+
+        $this->actionCollectionFactory->method('create')->willReturn(
+            $this->makeActionCollection([$firstAction, $secondAction])
+        );
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute')->willThrowException(new \RuntimeException('mailer down'));
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
         $this->logger->expects(self::once())->method('error');
 
         $this->makeDispatcher()->dispatch('order_placed', []);

@@ -42,9 +42,8 @@ class OllamaClient
             return null;
         }
 
-        $this->rateLimiter->throttle('ollama', (float) $this->config->getAiMaxRequestsPerSecond());
-
         try {
+            $this->rateLimiter->throttle('ollama', (float) $this->config->getAiMaxRequestsPerSecond());
             $response = $this->jsonApiClient->postJson(
                 $baseUrl . '/api/generate',
                 [

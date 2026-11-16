@@ -90,4 +90,20 @@ class OllamaClientTest extends TestCase
 
         self::assertNull($this->client->generate('a prompt'));
     }
+
+    /**
+     * Regression: throttle() used to run before the try block, so a throttle-store failure (e.g.
+     * a DB error inside OutboundRateLimiter) escaped uncaught instead of being treated the same
+     * fail-soft way as every other failure this class documents ("never throws").
+     */
+    public function testThrottleFailureIsCaughtAndLoggedReturnsNull(): void
+    {
+        $this->rateLimiter->expects(self::once())
+            ->method('throttle')
+            ->willThrowException(new RuntimeException('rate limit store unavailable'));
+        $this->jsonApiClient->expects(self::never())->method('postJson');
+        $this->logger->expects(self::once())->method('error');
+
+        self::assertNull($this->client->generate('a prompt'));
+    }
 }
