@@ -1387,12 +1387,6 @@ parameters:
 			path: Cron/SendAbandonedCartReminders.php
 
 		-
-			message: '#^Use service contracts to persist entities in favour of Magento\\Quote\\Model\\Quote\:\:load\(\) method$#'
-			identifier: bitExpertMagento.abstractModelUseServiceContract
-			count: 1
-			path: Cron/SendAbandonedCartReminders.php
-
-		-
 			message: '#^Parameter \#1 \$sql of method Magento\\Framework\\DB\\Adapter\\AdapterInterface\:\:fetchAll\(\) expects Magento\\Framework\\DB\\Select\|string, Zend_Db_Select given\.$#'
 			identifier: argument.type
 			count: 1

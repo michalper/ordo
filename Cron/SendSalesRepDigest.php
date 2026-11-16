@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Cron;
 
+use Magento\Customer\Api\Data\CustomerInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Cron\CronRunLogger;
 use Ordo\Automation\Model\Cron\ReminderEmailSender;
@@ -38,9 +39,27 @@ class SendSalesRepDigest
             return;
         }
 
-        $inactiveByRep = $this->groupCustomersByRep(TagInactiveCustomers::TAG_INACTIVE);
-        $atRiskByRep = $this->groupCustomersByRep(TagReorderCycleAtRiskCustomers::TAG_REORDER_AT_RISK);
-        $churnRiskByRep = $this->groupCustomersByRep(TagChurnRiskCustomers::TAG_CHURN_RISK);
+        $inactiveCustomerIds = $this->customerTagManager->getCustomerIdsWithTag(TagInactiveCustomers::TAG_INACTIVE);
+        $atRiskCustomerIds = $this->customerTagManager->getCustomerIdsWithTag(
+            TagReorderCycleAtRiskCustomers::TAG_REORDER_AT_RISK
+        );
+        $churnRiskCustomerIds = $this->customerTagManager->getCustomerIdsWithTag(
+            TagChurnRiskCustomers::TAG_CHURN_RISK
+        );
+
+        // One customerRepository->getList() round trip for every customer across all three
+        // signals instead of one per signal - found via a performance audit, same reasoning as
+        // every other batch-load in this module: a customer carrying more than one of these tags
+        // would otherwise be loaded two or three times over.
+        $customerMap = $this->customerMapBuilder->build(array_values(array_unique(array_merge(
+            $inactiveCustomerIds,
+            $atRiskCustomerIds,
+            $churnRiskCustomerIds
+        ))));
+
+        $inactiveByRep = $this->groupCustomersByRep($inactiveCustomerIds, $customerMap);
+        $atRiskByRep = $this->groupCustomersByRep($atRiskCustomerIds, $customerMap);
+        $churnRiskByRep = $this->groupCustomersByRep($churnRiskCustomerIds, $customerMap);
 
         $repEmails = array_unique(array_merge(
             array_keys($inactiveByRep),
@@ -79,14 +98,13 @@ class SendSalesRepDigest
      * in what the *real* template engine does with the shape of the data, not in this class's
      * own logic.
      *
+     * @param int[] $customerIds
+     * @param array<int, CustomerInterface> $customerMap
      * @return array<string, array{name: string}[]> rep email => list of {name: "Customer Name (customer_id)"}
      */
-    private function groupCustomersByRep(string $tag): array
+    private function groupCustomersByRep(array $customerIds, array $customerMap): array
     {
         $grouped = [];
-
-        $customerIds = $this->customerTagManager->getCustomerIdsWithTag($tag);
-        $customerMap = $this->customerMapBuilder->build($customerIds);
 
         foreach ($customerIds as $customerId) {
             if (!isset($customerMap[$customerId])) {

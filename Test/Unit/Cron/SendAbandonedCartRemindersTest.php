@@ -9,8 +9,6 @@ use Magento\Framework\DB\Select;
 use Magento\Framework\Mail\Template\TransportBuilder;
 use Magento\Framework\Mail\TransportInterface;
 use Magento\Framework\Translate\Inline\StateInterface;
-use Magento\Quote\Model\Quote;
-use Magento\Quote\Model\QuoteFactory;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Cron\SendAbandonedCartReminders;
@@ -68,6 +66,32 @@ class SendAbandonedCartRemindersTest extends TestCase
         return $consentManager;
     }
 
+    /**
+     * fetchVisibleItemsByQuoteId() must not run its own query at all when there are no quotes to
+     * batch-load items for - an empty IN (...) clause would be nonsensical.
+     */
+    public function testExecuteSkipsTheItemBatchLookupWhenNoQuotesAreDue(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isAbandonedCartEnabled')->willReturn(true);
+        $config->method('getAbandonedCartDelayMinutes')->willReturn(120);
+        $config->method('getAbandonedCartMinSubtotal')->willReturn(0.0);
+        $config->method('getAbandonedCartMaxReminders')->willReturn(1);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->expects(self::once())->method('fetchAll')->willReturn([]);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('info')->with(self::stringContains('0 abandoned cart reminders'));
+
+        $this->makeCron($config, $resourceConnection, null, $logger)->execute();
+    }
+
     public function testExecuteSkipsWhenDisabled(): void
     {
         $config = $this->createStub(Config::class);
@@ -90,15 +114,19 @@ class SendAbandonedCartRemindersTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchAll')->willReturn([
+        $connection->method('fetchAll')->willReturnOnConsecutiveCalls(
             [
-                'entity_id' => 10,
-                'customer_id' => 5,
-                'customer_email' => 'jan@example.com',
-                'customer_firstname' => 'Jan',
-                'subtotal' => 150.0,
+                [
+                    'entity_id' => 10,
+                    'customer_id' => 5,
+                    'customer_email' => 'jan@example.com',
+                    'customer_firstname' => 'Jan',
+                    'subtotal' => 150.0,
+                    'store_id' => 1,
+                ],
             ],
-        ]);
+            []
+        );
         $this->stubFetchOne($connection, 0);
         $connection->expects(self::once())->method('insert');
 
@@ -119,6 +147,82 @@ class SendAbandonedCartRemindersTest extends TestCase
     }
 
     /**
+     * The batch item-lookup (fetchVisibleItemsByQuoteId()) replaced a per-row Quote::load() -
+     * this proves the batch result actually reaches the email template, keyed by the right
+     * quote_id, not just that the method runs without error.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteIncludesTheBatchLoadedCartItemsInTheReminderEmail(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isAbandonedCartEnabled')->willReturn(true);
+        $config->method('getAbandonedCartDelayMinutes')->willReturn(120);
+        $config->method('getAbandonedCartMinSubtotal')->willReturn(0.0);
+        $config->method('getAbandonedCartMaxReminders')->willReturn(1);
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturnOnConsecutiveCalls(
+            [
+                [
+                    'entity_id' => 10,
+                    'customer_id' => 5,
+                    'customer_email' => 'jan@example.com',
+                    'customer_firstname' => 'Jan',
+                    'subtotal' => 150.0,
+                    'store_id' => 1,
+                ],
+            ],
+            [
+                ['quote_id' => 10, 'name' => 'Widget', 'qty' => 2.0],
+                ['quote_id' => 10, 'name' => 'Gadget', 'qty' => 1.0],
+            ]
+        );
+        $this->stubFetchOne($connection, 0);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $transportBuilder = $this->createMock(TransportBuilder::class);
+        $transportBuilder->method('setTemplateIdentifier')->willReturnSelf();
+        $transportBuilder->method('setTemplateOptions')->willReturnSelf();
+        $transportBuilder->expects(self::once())->method('setTemplateVars')
+            ->with(self::callback(function (array $vars): bool {
+                self::assertSame(
+                    [
+                        ['name' => 'Widget', 'qty' => 2.0],
+                        ['name' => 'Gadget', 'qty' => 1.0],
+                    ],
+                    $vars['cart_items']
+                );
+
+                return true;
+            }))
+            ->willReturnSelf();
+        $transportBuilder->method('setFromByScope')->willReturnSelf();
+        $transportBuilder->method('addTo')->willReturnSelf();
+        $transportBuilder->method('getTransport')->willReturn($this->createStub(TransportInterface::class));
+
+        (new SendAbandonedCartReminders(
+            $config,
+            $resourceConnection,
+            new ReminderEmailSender(
+                $transportBuilder,
+                $this->makeStoreManagerStub(),
+                $this->createStub(StateInterface::class),
+                new PendingMessageIdHolder()
+            ),
+            $this->createStub(CampaignDispatcher::class),
+            $this->makeConsentManager(),
+            $this->makeCronRunLogger($this->createStub(LoggerInterface::class)),
+            $this->createStub(MessageIdGenerator::class),
+            $this->createStub(MessageLogWriter::class),
+            new ReminderLogStore($resourceConnection)
+        ))->execute();
+    }
+
+    /**
      * Closes ROADMAP.md's "Cross-channel fallback for cart abandonment" own wiring: a registered
      * customer's fixed reminder is logged to ordo_message_log with a real Message-ID (the same
      * open-tracking correlation Model\Campaign\Action\SendEmail already uses), and the resulting
@@ -136,27 +240,23 @@ class SendAbandonedCartRemindersTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchAll')->willReturn([
+        $connection->method('fetchAll')->willReturnOnConsecutiveCalls(
             [
-                'entity_id' => 10,
-                'customer_id' => 5,
-                'customer_email' => 'jan@example.com',
-                'customer_firstname' => 'Jan',
-                'subtotal' => 150.0,
+                [
+                    'entity_id' => 10,
+                    'customer_id' => 5,
+                    'customer_email' => 'jan@example.com',
+                    'customer_firstname' => 'Jan',
+                    'subtotal' => 150.0,
+                    'store_id' => 1,
+                ],
             ],
-        ]);
-        // The first non-GET_LOCK fetchOne() is claimUnderLimit()'s own count check (0 = fewer
-        // than the configured max reminders already logged, claim proceeds); the second is the
-        // real ordo_message_log row this test's own MessageLogWriter stub "wrote", looked up by
-        // provider_message_id right after, exactly as the real code does.
-        $countCalls = 0;
-        $connection->method('fetchOne')->willReturnCallback(function ($query) use (&$countCalls) {
-            if (is_string($query) && str_contains($query, 'GET_LOCK')) {
-                return 1;
-            }
-            $countCalls++;
-            return $countCalls === 1 ? 0 : '77';
-        });
+            []
+        );
+        // claimUnderLimit()'s own count check (0 = fewer than the configured max reminders
+        // already logged, claim proceeds) - MessageLogWriter::recordSent() hands the saved row's
+        // own id straight back now, so there's no second fetchOne() lookup left to stub.
+        $this->stubFetchOne($connection, 0);
         $connection->expects(self::once())->method('update')->with(
             'ordo_abandoned_cart_reminder_log',
             ['message_log_id' => 77],
@@ -176,12 +276,11 @@ class SendAbandonedCartRemindersTest extends TestCase
             5,
             'jan@example.com',
             '<abc123@example.test>'
-        );
+        )->willReturn(77);
 
         (new SendAbandonedCartReminders(
             $config,
             $resourceConnection,
-            $this->makeQuoteFactoryStub(),
             new ReminderEmailSender(
                 $this->makeTransportBuilderStub(),
                 $this->makeStoreManagerStub(),
@@ -219,15 +318,19 @@ class SendAbandonedCartRemindersTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchAll')->willReturn([
+        $connection->method('fetchAll')->willReturnOnConsecutiveCalls(
             [
-                'entity_id' => 10,
-                'customer_id' => 5,
-                'customer_email' => 'jan@example.com',
-                'customer_firstname' => 'Jan',
-                'subtotal' => 150.0,
+                [
+                    'entity_id' => 10,
+                    'customer_id' => 5,
+                    'customer_email' => 'jan@example.com',
+                    'customer_firstname' => 'Jan',
+                    'subtotal' => 150.0,
+                    'store_id' => 1,
+                ],
             ],
-        ]);
+            []
+        );
         // The claim still happens - the campaign trigger below still needs the same
         // claim-before-dispatch dedup/cap every other reminder cron relies on.
         $this->stubFetchOne($connection, 0);
@@ -246,16 +349,15 @@ class SendAbandonedCartRemindersTest extends TestCase
         $consentManager = $this->createMock(ConsentManager::class);
         $consentManager->expects(self::once())->method('hasTopicConsentForCustomers')->with([5], ConsentChannel::Email, ConsentTopic::Promotional)->willReturn([5 => false]);
 
-        // The fixed email path starts with quoteFactory->create()->load(...) - asserting it's
-        // never called proves sendReminder() itself was skipped, without needing to mock every
+        // The fixed email path starts with MessageIdGenerator::generate() - asserting it's never
+        // called proves sendReminder() itself was skipped, without needing to mock every
         // TransportBuilder call to prove no email assembly happened.
-        $quoteFactory = $this->createMock(QuoteFactory::class);
-        $quoteFactory->expects(self::never())->method('create');
+        $messageIdGenerator = $this->createMock(MessageIdGenerator::class);
+        $messageIdGenerator->expects(self::never())->method('generate');
 
         (new SendAbandonedCartReminders(
             $config,
             $resourceConnection,
-            $quoteFactory,
             new ReminderEmailSender(
                 $this->createStub(TransportBuilder::class),
                 $this->makeStoreManagerStub(),
@@ -265,7 +367,7 @@ class SendAbandonedCartRemindersTest extends TestCase
             $dispatcher,
             $consentManager,
             $this->makeCronRunLogger($this->createStub(LoggerInterface::class)),
-            $this->createStub(MessageIdGenerator::class),
+            $messageIdGenerator,
             $this->createStub(MessageLogWriter::class),
             new ReminderLogStore($resourceConnection)
         ))->execute();
@@ -282,15 +384,19 @@ class SendAbandonedCartRemindersTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchAll')->willReturn([
+        $connection->method('fetchAll')->willReturnOnConsecutiveCalls(
             [
-                'entity_id' => 11,
-                'customer_id' => null,
-                'customer_email' => 'guest@example.com',
-                'customer_firstname' => null,
-                'subtotal' => 60.0,
+                [
+                    'entity_id' => 11,
+                    'customer_id' => null,
+                    'customer_email' => 'guest@example.com',
+                    'customer_firstname' => null,
+                    'subtotal' => 60.0,
+                    'store_id' => 1,
+                ],
             ],
-        ]);
+            []
+        );
         // Without this, claimUnderLimit()'s own GET_LOCK() fetchOne() call returns the mock's
         // unconfigured default (null), so the row is never claimed at all and sendReminder()/
         // dispatchCampaigns() are never reached - this test would then "pass" for the wrong
@@ -320,15 +426,19 @@ class SendAbandonedCartRemindersTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchAll')->willReturn([
+        $connection->method('fetchAll')->willReturnOnConsecutiveCalls(
             [
-                'entity_id' => 10,
-                'customer_id' => 5,
-                'customer_email' => 'jan@example.com',
-                'customer_firstname' => 'Jan',
-                'subtotal' => 150.0,
+                [
+                    'entity_id' => 10,
+                    'customer_id' => 5,
+                    'customer_email' => 'jan@example.com',
+                    'customer_firstname' => 'Jan',
+                    'subtotal' => 150.0,
+                    'store_id' => 1,
+                ],
             ],
-        ]);
+            []
+        );
 
         $this->stubFetchOne($connection, 0);
 
@@ -336,8 +446,11 @@ class SendAbandonedCartRemindersTest extends TestCase
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
-        $quoteFactory = $this->createStub(QuoteFactory::class);
-        $quoteFactory->method('create')->willThrowException(new \RuntimeException('quote load failed'));
+        // ReminderEmailSender::getStore() is the first thing sendReminder() does after building
+        // the message id - throwing here exercises the same claim-rollback/logFailure path a real
+        // send failure would, without needing a TransportBuilder mock at all.
+        $storeManager = $this->createStub(StoreManagerInterface::class);
+        $storeManager->method('getStore')->willThrowException(new \RuntimeException('no store'));
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
         $dispatcher->expects(self::never())->method('dispatch');
@@ -348,10 +461,9 @@ class SendAbandonedCartRemindersTest extends TestCase
         (new SendAbandonedCartReminders(
             $config,
             $resourceConnection,
-            $quoteFactory,
             new ReminderEmailSender(
                 $this->createStub(TransportBuilder::class),
-                $this->makeStoreManagerStub(),
+                $storeManager,
                 $this->createStub(StateInterface::class),
                 new PendingMessageIdHolder()
             ),
@@ -381,15 +493,19 @@ class SendAbandonedCartRemindersTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
-        $connection->method('fetchAll')->willReturn([
+        $connection->method('fetchAll')->willReturnOnConsecutiveCalls(
             [
-                'entity_id' => 10,
-                'customer_id' => 5,
-                'customer_email' => 'jan@example.com',
-                'customer_firstname' => 'Jan',
-                'subtotal' => 150.0,
+                [
+                    'entity_id' => 10,
+                    'customer_id' => 5,
+                    'customer_email' => 'jan@example.com',
+                    'customer_firstname' => 'Jan',
+                    'subtotal' => 150.0,
+                    'store_id' => 1,
+                ],
             ],
-        ]);
+            []
+        );
         // 1 already-logged reminder >= the configured max of 1 - claimUnderLimit() must refuse.
         $this->stubFetchOne($connection, 1);
         $connection->expects(self::never())->method('insert');
@@ -402,22 +518,6 @@ class SendAbandonedCartRemindersTest extends TestCase
         $dispatcher->expects(self::never())->method('dispatch');
 
         $this->makeCron($config, $resourceConnection, $dispatcher)->execute();
-    }
-
-    private function makeQuoteFactoryStub(): QuoteFactory
-    {
-        $quoteItem = $this->createStub(\Magento\Quote\Model\Quote\Item::class);
-        $quoteItem->method('getName')->willReturn('Widget');
-        $quoteItem->method('getQty')->willReturn(2.0);
-
-        $quote = $this->createStub(Quote::class);
-        $quote->method('load')->willReturnSelf();
-        $quote->method('getAllVisibleItems')->willReturn([$quoteItem]);
-
-        $quoteFactory = $this->createStub(QuoteFactory::class);
-        $quoteFactory->method('create')->willReturn($quote);
-
-        return $quoteFactory;
     }
 
     private function makeStoreManagerStub(): StoreManagerInterface
@@ -452,7 +552,6 @@ class SendAbandonedCartRemindersTest extends TestCase
         return new SendAbandonedCartReminders(
             $config,
             $resourceConnection,
-            $this->makeQuoteFactoryStub(),
             new ReminderEmailSender(
                 $this->makeTransportBuilderStub(),
                 $this->makeStoreManagerStub(),

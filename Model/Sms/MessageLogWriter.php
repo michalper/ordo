@@ -30,6 +30,13 @@ class MessageLogWriter
      * straight through to CampaignOutcomeLogger::logSent() so it can immediately check whether
      * the customer already has a later order by the time this (possibly delayed) send actually
      * lands - see that method's own docblock for why.
+     *
+     * @return int|null the saved row's own entity_id (Magento's AbstractDb::save() always sets
+     *     this on a new object after a successful insert), or null if save() swallowed a failure
+     *     - a caller that needs this id back (Cron\SendAbandonedCartReminders' own
+     *     message_log_id column) used to re-query ordo_message_log by provider_message_id right
+     *     after this call to recover it; returning it directly here removes that redundant round
+     *     trip for data this method already has in hand.
      */
     public function recordSent(
         string $channel,
@@ -39,7 +46,7 @@ class MessageLogWriter
         ?int $campaignId = null,
         ?string $variant = null,
         ?int $triggerOrderId = null
-    ): void {
+    ): ?int {
         $log = $this->messageLogFactory->create();
         $log->setChannel($channel)
             ->setCustomerId($customerId)
@@ -49,7 +56,9 @@ class MessageLogWriter
             ->setVariant($variant)
             ->setStatus(MessageLog::STATUS_SENT);
 
-        $this->save($log);
+        if (!$this->save($log)) {
+            return null;
+        }
 
         // A genuine send is what a campaign's funnel counts as "sent" - only logged here (not in
         // CampaignDispatcher itself), so an action type that doesn't actually send anything (e.g.
@@ -63,6 +72,10 @@ class MessageLogWriter
                 );
             }
         }
+
+        $id = $log->getId();
+
+        return is_numeric($id) ? (int) $id : null;
     }
 
     public function recordOptedOut(
@@ -130,15 +143,21 @@ class MessageLogWriter
      * successfully-sent SMS into a logged campaign-action error (or vice versa mask a real send
      * failure behind a logging exception). Same "never let bookkeeping break the actual feature"
      * discipline the rest of this module's fire-and-forget campaign actions already follow.
+     *
+     * @return bool whether the row was actually saved
      */
-    private function save(MessageLog $log): void
+    private function save(MessageLog $log): bool
     {
         try {
             $this->messageLogResource->save($log);
+
+            return true;
         } catch (\Throwable $e) {
             $this->logger->error(
                 sprintf('Ordo_Automation: failed to write ordo_message_log row: %s', $e->getMessage())
             );
+
+            return false;
         }
     }
 }

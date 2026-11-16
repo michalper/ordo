@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Ordo\Automation\Cron;
 
 use Magento\Framework\App\ResourceConnection;
-use Magento\Quote\Model\QuoteFactory;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\ConsentChannel;
@@ -33,8 +32,10 @@ use Ordo\Automation\Model\Sms\MessageLogWriter;
  *     customer_email: string,
  *     customer_firstname: string|null,
  *     subtotal: float|string,
+ *     store_id: int|string,
  *     reminders_sent: int|string
  * }
+ * @phpstan-type AbandonedCartItem array{name: string, qty: float|string}
  */
 class SendAbandonedCartReminders
 {
@@ -44,7 +45,6 @@ class SendAbandonedCartReminders
     public function __construct(
         private readonly Config $config,
         private readonly ResourceConnection $resourceConnection,
-        private readonly QuoteFactory $quoteFactory,
         private readonly ReminderEmailSender $reminderEmailSender,
         private readonly CampaignDispatcher $campaignDispatcher,
         private readonly ConsentManager $consentManager,
@@ -73,7 +73,7 @@ class SendAbandonedCartReminders
         $select = $connection->select()
             ->from(
                 ['q' => $quoteTable],
-                ['entity_id', 'customer_id', 'customer_email', 'customer_firstname', 'subtotal']
+                ['entity_id', 'customer_id', 'customer_email', 'customer_firstname', 'subtotal', 'store_id']
             )
             ->joinLeft(
                 ['l' => $logTable],
@@ -90,6 +90,16 @@ class SendAbandonedCartReminders
 
         /** @var array<int, AbandonedCartRow> $rows */
         $rows = $connection->fetchAll($select);
+
+        // One query for the whole batch instead of one Quote::load() per row inside sendReminder()
+        // below - found via a performance audit, same reasoning as every other batch-load in this
+        // method. Only the visible line items (name/qty) are actually needed for the email
+        // template, so this reads quote_item directly rather than hydrating a full Quote entity
+        // (items/addresses/payment/...) per row just to call getAllVisibleItems() on it.
+        $itemsByQuoteId = $this->fetchVisibleItemsByQuoteId(array_map(
+            static fn (array $row): int => (int) $row['entity_id'],
+            $rows
+        ));
 
         // One query for the whole batch instead of one hasConsent() call per row below - found
         // via a performance audit, same reasoning as ConsentManager::hasConsentForCustomers().
@@ -134,9 +144,10 @@ class SendAbandonedCartReminders
                     ['quote_id = ?' => (int) $row['entity_id']],
                     $maxReminders,
                     $reminderLogRow,
-                    function () use ($row, $hasEmailConsent, $reminderLogRow): void {
+                    function () use ($row, $hasEmailConsent, $reminderLogRow, $itemsByQuoteId): void {
                         if ($hasEmailConsent) {
-                            $messageLogId = $this->sendReminder($row);
+                            $items = $itemsByQuoteId[(int) $row['entity_id']] ?? [];
+                            $messageLogId = $this->sendReminder($row, $items);
                             if ($messageLogId !== null) {
                                 // Fills in the message_log_id a successful sendReminder() only
                                 // learns after the claim row already exists (see this class's own
@@ -170,23 +181,14 @@ class SendAbandonedCartReminders
 
     /**
      * @param AbandonedCartRow $row
+     * @param AbandonedCartItem[] $items
      * @return int|null the real ordo_message_log row's own entity_id this send was logged as -
      *     only for a registered customer (Cron\SendAbandonedCartFallbackReminders' own cross-
      *     channel fallback needs a real customer_id to send SMS/WhatsApp to regardless, so a
      *     guest quote's send isn't worth logging for that purpose)
      */
-    private function sendReminder(array $row): ?int
+    private function sendReminder(array $row, array $items): ?int
     {
-        $quote = $this->quoteFactory->create()->load((int) $row['entity_id']);
-
-        $items = [];
-        foreach ($quote->getAllVisibleItems() as $item) {
-            $items[] = [
-                'name' => $item->getName(),
-                'qty' => $item->getQty(),
-            ];
-        }
-
         // Same Message-ID wiring Model\Campaign\Action\SendEmail uses - lets Controller\Email\
         // StatusCallback's SendGrid Event Webhook correlate a later "open" event back to this
         // exact send, which Cron\SendAbandonedCartFallbackReminders reads to decide whether to
@@ -202,7 +204,7 @@ class SendAbandonedCartReminders
             ],
             $row['customer_email'],
             $row['customer_firstname'] ?: $row['customer_email'],
-            store: $this->reminderEmailSender->getStore((int) $quote->getStoreId()),
+            store: $this->reminderEmailSender->getStore((int) $row['store_id']),
             messageId: $messageId
         );
 
@@ -210,26 +212,45 @@ class SendAbandonedCartReminders
             return null;
         }
 
-        $this->messageLogWriter->recordSent(
+        return $this->messageLogWriter->recordSent(
             'email',
             (int) $row['customer_id'],
             $row['customer_email'],
             '<' . $messageId . '>'
         );
-
-        return $this->findMessageLogIdByProviderMessageId('<' . $messageId . '>');
     }
 
-    private function findMessageLogIdByProviderMessageId(string $providerMessageId): ?int
+    /**
+     * @param int[] $quoteIds
+     * @return array<int, AbandonedCartItem[]>
+     */
+    private function fetchVisibleItemsByQuoteId(array $quoteIds): array
     {
+        if ($quoteIds === []) {
+            return [];
+        }
+
         $connection = $this->resourceConnection->getConnection();
-        $id = $connection->fetchOne(
+
+        /** @var array<int, array{quote_id: int|string, name: string, qty: float|string}> $itemRows */
+        $itemRows = $connection->fetchAll(
             $connection->select()
-                ->from($this->resourceConnection->getTableName('ordo_message_log'), ['entity_id'])
-                ->where('provider_message_id = ?', $providerMessageId)
+                ->from($this->resourceConnection->getTableName('quote_item'), ['quote_id', 'name', 'qty'])
+                ->where('quote_id IN (?)', $quoteIds)
+                // Top-level items only, same as Quote::getAllVisibleItems() - a child item of a
+                // configurable/bundle product is already represented by its parent row.
+                ->where('parent_item_id IS NULL')
         );
 
-        return $id ? (int) $id : null;
+        $itemsByQuoteId = [];
+        foreach ($itemRows as $itemRow) {
+            $itemsByQuoteId[(int) $itemRow['quote_id']][] = [
+                'name' => $itemRow['name'],
+                'qty' => $itemRow['qty'],
+            ];
+        }
+
+        return $itemsByQuoteId;
     }
 
     /**

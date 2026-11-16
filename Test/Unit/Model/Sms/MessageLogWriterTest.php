@@ -195,4 +195,34 @@ class MessageLogWriterTest extends TestCase
 
         $this->writer->recordSent('sms', 42, '+15551234567', 'SM123');
     }
+
+    /**
+     * A caller (e.g. Cron\SendAbandonedCartReminders) needs this id back to write it onto its own
+     * claim row - it must come from the exact row this call just saved, not a later lookup.
+     */
+    public function testRecordSentReturnsTheSavedLogsOwnId(): void
+    {
+        $log = $this->makeLog();
+        $this->messageLogFactory->expects(self::once())->method('create')->willReturn($log);
+        $this->messageLogResource->expects(self::once())->method('save')
+            ->willReturnCallback(function (MessageLog $log): MessageLogResource {
+                $log->setId(77);
+
+                return $this->messageLogResource;
+            });
+        $this->logger->expects(self::never())->method('error');
+
+        self::assertSame(77, $this->writer->recordSent('sms', 42, '+15551234567', 'SM123'));
+    }
+
+    public function testRecordSentReturnsNullWhenSaveFails(): void
+    {
+        $log = $this->makeLog();
+        $this->messageLogFactory->expects(self::once())->method('create')->willReturn($log);
+        $this->messageLogResource->expects(self::once())->method('save')
+            ->willThrowException(new \RuntimeException('DB is down'));
+        $this->logger->expects(self::once())->method('error');
+
+        self::assertNull($this->writer->recordSent('sms', 42, '+15551234567', 'SM123'));
+    }
 }
