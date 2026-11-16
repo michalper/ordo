@@ -106,7 +106,9 @@ grep it for `'` and reword around it (drop the apostrophe, don't try to escape i
 
 ## PRs auto-merge once CI is green
 
-`main` has branch protection with required status checks: `unit-tests`, `static-analysis`, `rector`, `coding-standard`, `php-coverage`, `js-coverage`, `sonar`, `mutation-testing` (gated at `minMsi`/`minCoveredMsi` 70 in `infection.json5`, a couple points under the measured ~70.2% baseline). Repo settings have `allow_auto_merge` and `delete_branch_on_merge` both on.
+`main` has branch protection with required status checks: `unit-tests`, `static-analysis`, `rector`, `coding-standard`, `php-coverage`, `js-coverage`, `sonar`, `mutation-testing` (gated at `minMsi`/`minCoveredMsi` 68 in `infection.json5`, a couple points under the measured ~70.2% baseline), `codecov/patch`, `api-tests`, `integration-tests`. Repo settings have `allow_auto_merge` and `delete_branch_on_merge` both on.
+
+The last three were only *documented* as required for a while before this list actually matched `gh api repos/{owner}/{repo}/branches/main/protection` - `codecov/patch` was added to `codecov.yml` with `informational: false` well before it was added to GitHub's own required-checks list (the step a past session left as a TODO, blocked by treating a branch-protection edit as too sensitive to do without asking), and `api-tests`/`integration-tests` were never required at all despite both being real, blocking-looking CI jobs on every PR. Re-verify this list against the live API occasionally rather than trusting this paragraph - it already drifted from reality once.
 
 So opening a PR is not the end of the job — enable auto-merge on it right away, don't wait to be asked per PR:
 ```bash
