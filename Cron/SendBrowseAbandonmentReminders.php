@@ -29,31 +29,55 @@ use Ordo\Automation\Model\Cron\ReminderLogStore;
  * out to keep this cron's semantics exactly mirrored to cart_abandoned's "one entity, one dedup
  * key" shape.
  *
+ * The shared scan/claim/dispatch mechanics (crash-safe claim-before-dispatch, the concurrent-run
+ * freshness guard, logging) live in AbstractCappedTriggerDispatchCron — this class only supplies
+ * the SELECT and the trigger code.
+ *
  * @phpstan-type BrowseAbandonedRow array{
  *     customer_id: int|string,
  *     event_key: string,
  *     reminders_sent: int|string
  * }
  */
-class SendBrowseAbandonmentReminders
+class SendBrowseAbandonmentReminders extends AbstractCappedTriggerDispatchCron
 {
     private const string LOG_TABLE = 'ordo_browse_abandoned_reminder_log';
 
     public function __construct(
         private readonly Config $config,
-        private readonly ResourceConnection $resourceConnection,
-        private readonly CampaignDispatcher $campaignDispatcher,
-        private readonly CronRunLogger $cronRunLogger,
-        private readonly ReminderLogStore $reminderLogStore
+        ResourceConnection $resourceConnection,
+        CampaignDispatcher $campaignDispatcher,
+        CronRunLogger $cronRunLogger,
+        ReminderLogStore $reminderLogStore
     ) {
+        parent::__construct($resourceConnection, $campaignDispatcher, $cronRunLogger, $reminderLogStore);
     }
 
-    public function execute(): void
+    protected function isEnabled(): bool
     {
-        if (!$this->config->isBrowseAbandonmentEnabled()) {
-            return;
-        }
+        return $this->config->isBrowseAbandonmentEnabled();
+    }
 
+    protected function logTable(): string
+    {
+        return self::LOG_TABLE;
+    }
+
+    protected function triggerCode(): string
+    {
+        return 'browse_abandoned';
+    }
+
+    protected function triggerLabel(): string
+    {
+        return 'browse abandonment';
+    }
+
+    /**
+     * @return array<int, BrowseAbandonedRow>
+     */
+    protected function fetchDueRows(): array
+    {
         $delayMinutes = $this->config->getBrowseAbandonmentDelayMinutes();
         $maxReminders = $this->config->getBrowseAbandonmentMaxReminders();
         $cutoff = date('Y-m-d H:i:s', (int) strtotime("-{$delayMinutes} minutes"));
@@ -61,7 +85,7 @@ class SendBrowseAbandonmentReminders
         $connection = $this->resourceConnection->getConnection();
         $eventTable = $this->resourceConnection->getTableName('ordo_visitor_event');
         $orderTable = $this->resourceConnection->getTableName('sales_order');
-        $logTable = $this->resourceConnection->getTableName('ordo_browse_abandoned_reminder_log');
+        $logTable = $this->resourceConnection->getTableName(self::LOG_TABLE);
 
         $notExistsOrderSince = sprintf(
             'NOT EXISTS (SELECT 1 FROM %s AS o WHERE o.customer_id = e.customer_id'
@@ -84,64 +108,9 @@ class SendBrowseAbandonmentReminders
             ->group(['e.customer_id', 'e.event_key'])
             ->having('reminders_sent < ?', $maxReminders);
 
-        // Captured before the rows are fetched: any log row for the same customer/product with
-        // sent_at at/after this moment can only have been written by a concurrently overlapping
-        // run (this run's own select already counted everything older into reminders_sent).
-        $runStartedAt = date('Y-m-d H:i:s');
-
         /** @var array<int, BrowseAbandonedRow> $rows */
         $rows = $connection->fetchAll($select);
 
-        $dispatched = 0;
-        foreach ($rows as $row) {
-            $customerId = (int) $row['customer_id'];
-            $eventKey = (string) $row['event_key'];
-
-            try {
-                // Claim (log) BEFORE dispatching, not after - a crash between a successful
-                // dispatch and the log write must never cause a duplicate trigger on the next
-                // tick. If the dispatch itself then fails, the claim is rolled back so this row
-                // is retried next run. claim() (not a plain insert()) atomically re-checks that no
-                // overlapping run already claimed this customer/product since this run started -
-                // the select's HAVING cap alone is only a pre-filter: two overlapping runs can
-                // both count the same reminders_sent before either inserts, and both would
-                // dispatch.
-                $claimed = $this->reminderLogStore->claimAndRun(
-                    self::LOG_TABLE,
-                    [
-                        'customer_id = ?' => $customerId,
-                        'event_key = ?' => $eventKey,
-                        'sent_at >= ?' => $runStartedAt,
-                    ],
-                    [
-                        'customer_id' => $customerId,
-                        'event_key' => $eventKey,
-                        'sent_at' => date('Y-m-d H:i:s'),
-                    ],
-                    function () use ($customerId, $eventKey): void {
-                        $this->campaignDispatcher->dispatch('browse_abandoned', [
-                            'customer_id' => $customerId,
-                            'product_sku' => $eventKey,
-                        ]);
-                    }
-                );
-            } catch (\Throwable $e) {
-                $this->cronRunLogger->logFailure(
-                    sprintf(
-                        'dispatch browse_abandoned trigger for customer #%d / %s',
-                        $customerId,
-                        $eventKey
-                    ),
-                    $e
-                );
-                continue;
-            }
-
-            if ($claimed) {
-                $dispatched++;
-            }
-        }
-
-        $this->cronRunLogger->logSummary(sprintf('dispatched %d browse abandonment triggers', $dispatched));
+        return $rows;
     }
 }
