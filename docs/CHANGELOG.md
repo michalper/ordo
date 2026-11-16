@@ -29,6 +29,17 @@ it doesn't update itself from this file.
   when many rows in the same batch watched the same product; now batch-loaded once per distinct
   product via `ProductRepositoryInterface::getList()`, mirroring this module's existing
   `CustomerMapBuilder` batch-load shape.
+- **Forged customer tags via CSRF on `Controller\Track\Event`** — unlike every other
+  `Controller\Track\*` endpoint, `Event::validateForCsrf()` unconditionally returned `true` even
+  for a logged-in request. A forged cross-site POST could bind an attacker-chosen
+  `event_type`/`event_key` to a real, authenticated `customer_id`; once `VisitorAggregator`'s
+  threshold was crossed, it permanently tagged that customer's account from it - a first-class
+  input to this module's own campaign/segment targeting and ad-audience sync. Same shape as the
+  push-subscription hijack fixed above (and previously), now closed the same way: delegated to
+  `Model\Track\VisitorIdentityResolver::validateForCsrf()` (skips the check for anonymous
+  requests, checks Origin/Referer for a logged-in one). `DismissNotification`/
+  `SubmitSurveyResponse` had the same gap but with no cross-account impact (ownership is already
+  checked before acting) - tightened for consistency.
 
 ## [1.11.0] - 2026-11-15
 

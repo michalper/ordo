@@ -31,6 +31,9 @@ use Ordo\Automation\Model\Track\VisitorIdentityResolver;
  * not change existing NPS campaign behavior), while a text/choice row (set only by the
  * generic_survey action) instead validates and records "response_text" - a non-empty string
  * that, for a "choice" question, must be one of the prompt's own offered choices.
+ *
+ * CSRF is delegated to VisitorIdentityResolver, same as every other Controller\Track\* endpoint -
+ * skipped for anonymous requests, checked against Origin/Referer for a logged-in one.
  */
 class SubmitSurveyResponse extends Action implements HttpPostActionInterface, CsrfAwareActionInterface
 {
@@ -109,6 +112,6 @@ class SubmitSurveyResponse extends Action implements HttpPostActionInterface, Cs
 
     public function validateForCsrf(RequestInterface $request): ?bool
     {
-        return true;
+        return $this->visitorIdentityResolver->validateForCsrf($request);
     }
 }

@@ -318,9 +318,29 @@ class SubmitSurveyResponseTest extends AbstractFrontendActionTestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
-    public function testValidateForCsrfReturnsTrue(): void
+    public function testValidateForCsrfReturnsTrueForAnonymousVisitor(): void
     {
+        $this->customerSession->method('isLoggedIn')->willReturn(false);
         $controller = $this->makeController();
         self::assertTrue($controller->validateForCsrf($this->request));
+    }
+
+    /**
+     * Regression: validateForCsrf() used to unconditionally return true, even for a logged-in
+     * request - now checked against Origin/Referer, same as every other Controller\Track\*
+     * endpoint (ownership via belongsTo() already bounded the impact, but this closes the gap
+     * for consistency).
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testValidateForCsrfRejectsMismatchedOriginForLoggedInCustomer(): void
+    {
+        $this->customerSession->method('isLoggedIn')->willReturn(true);
+        $controller = $this->makeController();
+        $this->request->method('getHeader')->willReturnMap([
+            ['Origin', 'https://attacker.example.com'],
+        ]);
+        $this->request->method('getHttpHost')->willReturn('shop.example.com');
+
+        self::assertFalse($controller->validateForCsrf($this->request));
     }
 }

@@ -23,6 +23,9 @@ use Ordo\Automation\Model\Track\VisitorIdentityResolver;
  * Ownership is checked before dismissing (VisitorIdentityFieldsTrait::belongsTo()) - a request
  * can only dismiss a notification that actually belongs to the requester's own
  * customer_id/visitor_id, so a visitor can't guess an id and dismiss someone else's notification.
+ *
+ * CSRF is delegated to VisitorIdentityResolver, same as every other Controller\Track\* endpoint -
+ * skipped for anonymous requests, checked against Origin/Referer for a logged-in one.
  */
 class DismissNotification extends Action implements HttpPostActionInterface, CsrfAwareActionInterface
 {
@@ -68,6 +71,6 @@ class DismissNotification extends Action implements HttpPostActionInterface, Csr
 
     public function validateForCsrf(RequestInterface $request): ?bool
     {
-        return true;
+        return $this->visitorIdentityResolver->validateForCsrf($request);
     }
 }
