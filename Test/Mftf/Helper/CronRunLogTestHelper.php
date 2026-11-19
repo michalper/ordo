@@ -17,19 +17,12 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class CronRunLogTestHelper extends Helper
 {
+    use DbConnectionTrait;
+
     public function insertRow(
-        string $message,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $message
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             "INSERT INTO ordo_cron_run_log (level, message) VALUES ('summary', :message)"
@@ -38,18 +31,9 @@ class CronRunLogTestHelper extends Helper
     }
 
     public function insertBackdatedRow(
-        string $message,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $message
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             "INSERT INTO ordo_cron_run_log (level, message, created_at) "
@@ -62,18 +46,9 @@ class CronRunLogTestHelper extends Helper
      * @throws \RuntimeException if a matching row still exists
      */
     public function assertNoRowWithMessage(
-        string $message,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $message
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare('SELECT COUNT(*) FROM ordo_cron_run_log WHERE message = :message');
         $statement->execute(['message' => $message]);

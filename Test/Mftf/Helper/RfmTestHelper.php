@@ -19,20 +19,13 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class RfmTestHelper extends Helper
 {
+    use DbConnectionTrait;
+
     private const int POISON_CUSTOMER_ID = 999999999;
 
-    public function insertPoisonRfmScoreRow(
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
-    ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+    public function insertPoisonRfmScoreRow(): void
+    {
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'REPLACE INTO ordo_customer_rfm_score '
@@ -53,18 +46,9 @@ class RfmTestHelper extends Helper
      * @throws \RuntimeException if a matching row still exists
      */
     public function assertNoRfmScoreForCustomer(
-        int $customerId,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        int $customerId
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'SELECT COUNT(*) FROM ordo_customer_rfm_score WHERE customer_id = :customer_id'

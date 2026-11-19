@@ -15,22 +15,15 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class MessageLogTestHelper extends Helper
 {
+    use DbConnectionTrait;
+
     public function insertMessageLog(
         string $channel,
         string $toAddress,
         string $status,
-        int $customerId = 0,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        int $customerId = 0
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'INSERT INTO ordo_message_log (channel, customer_id, to_address, status) '
@@ -51,18 +44,9 @@ class MessageLogTestHelper extends Helper
      * db_schema.xml comment), so this reads it directly.
      */
     public function getVariantForRecipient(
-        string $toAddress,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $toAddress
     ): string {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'SELECT variant FROM ordo_message_log WHERE to_address = :to_address ORDER BY entity_id DESC LIMIT 1'

@@ -15,19 +15,12 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class PendingPopupTestHelper extends Helper
 {
+    use DbConnectionTrait;
+
     public function backdateDeliveredPopupForCustomer(
-        int $customerId,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        int $customerId
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'UPDATE ordo_pending_popup SET delivered_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 25 HOUR) '
@@ -54,18 +47,9 @@ class PendingPopupTestHelper extends Helper
     public function assertPendingPopupForVisitor(
         string $visitorId,
         int $maxAttempts = 10,
-        int $sleepSeconds = 1,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        int $sleepSeconds = 1
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare('SELECT COUNT(*) FROM ordo_pending_popup WHERE visitor_id = :visitor_id');
 
@@ -91,18 +75,9 @@ class PendingPopupTestHelper extends Helper
      * @throws \RuntimeException if a matching row still exists
      */
     public function assertNoPendingPopupForCustomer(
-        int $customerId,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        int $customerId
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare('SELECT COUNT(*) FROM ordo_pending_popup WHERE customer_id = :customer_id');
         $statement->execute(['customer_id' => $customerId]);

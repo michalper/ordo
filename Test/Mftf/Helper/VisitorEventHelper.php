@@ -11,12 +11,13 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  * Controller/Track/Event.php and got persisted into ordo_visitor_event — the one part of the
  * tracking snippet no unit test can cover (a real fetch() call, from a real browser, hitting a
  * real controller). MFTF has no built-in "check a database row" action, so this connects
- * directly with the same connection details mftf.yml's own `mysql` service container uses
- * (root, no password, database "magento", 127.0.0.1) — the same hardcoded-default pattern
- * MailHogHelper.php already uses for its own out-of-band verification.
+ * directly via DbConnectionTrait, the same out-of-band verification MailHogHelper.php uses for
+ * MailHog.
  */
 class VisitorEventHelper extends Helper
 {
+    use DbConnectionTrait;
+
     /**
      * Polls rather than checking once - the fetch() tracker.js's own window.ordoTrack() call
      * makes is fire-and-forget (keepalive:true, never awaited by the caller), so a fixed <wait>
@@ -31,18 +32,9 @@ class VisitorEventHelper extends Helper
         string $visitorId,
         string $eventType,
         string $eventKey = '',
-        int $timeoutSeconds = 10,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        int $timeoutSeconds = 10
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $sql = 'SELECT COUNT(*) FROM ordo_visitor_event WHERE visitor_id = :visitor_id AND event_type = :event_type';
         $params = ['visitor_id' => $visitorId, 'event_type' => $eventType];
@@ -85,18 +77,9 @@ class VisitorEventHelper extends Helper
     public function assertVisitorTagAdded(
         string $visitorId,
         string $tag,
-        int $timeoutSeconds = 10,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        int $timeoutSeconds = 10
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'SELECT COUNT(*) FROM ordo_visitor_tag WHERE visitor_id = :visitor_id AND tag = :tag'
@@ -132,18 +115,9 @@ class VisitorEventHelper extends Helper
      */
     public function assertCustomerTagAddedByEmail(
         string $email,
-        string $tag,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $tag
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'SELECT COUNT(*) FROM ordo_customer_tag oct '
@@ -172,18 +146,9 @@ class VisitorEventHelper extends Helper
      */
     public function assertCustomerTagNotAddedByEmail(
         string $email,
-        string $tag,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $tag
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'SELECT COUNT(*) FROM ordo_customer_tag oct '
@@ -214,18 +179,9 @@ class VisitorEventHelper extends Helper
      */
     public function assertCustomerScoreAtLeastByEmail(
         string $email,
-        string $minScore,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $minScore
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'SELECT ocs.score FROM ordo_customer_score ocs '
@@ -263,18 +219,9 @@ class VisitorEventHelper extends Helper
      *  ordo_customer_score row for them does
      */
     public function assertCustomerHasNoScoreByEmail(
-        string $email,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $email
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare('SELECT entity_id FROM customer_entity WHERE email = :email');
         $statement->execute(['email' => $email]);
@@ -306,18 +253,9 @@ class VisitorEventHelper extends Helper
     public function assertVisitorEventNotLogged(
         string $visitorId,
         string $eventType,
-        string $eventKey = '',
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $eventKey = ''
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $sql = 'SELECT COUNT(*) FROM ordo_visitor_event WHERE visitor_id = :visitor_id AND event_type = :event_type';
         $params = ['visitor_id' => $visitorId, 'event_type' => $eventType];
@@ -356,18 +294,9 @@ class VisitorEventHelper extends Helper
     public function waitForSurveyResponseRecordedByEmail(
         string $email,
         int $expectedScore,
-        int $timeoutSeconds = 20,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        int $timeoutSeconds = 20
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'SELECT osp.score, osp.responded_at FROM ordo_survey_prompt osp '

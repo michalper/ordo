@@ -25,19 +25,12 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class CronScheduleHelper extends Helper
 {
+    use DbConnectionTrait;
+
     public function scheduleJobNow(
-        string $jobCode,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $jobCode
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'INSERT INTO cron_schedule (job_code, status, created_at, scheduled_at) '
@@ -65,18 +58,9 @@ class CronScheduleHelper extends Helper
      * "ORDER BY entity_id DESC LIMIT 1" would then backdate and resume THAT campaign instead.
      */
     public function backdateMostRecentScheduledAction(
-        string $campaignId,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $campaignId
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'UPDATE ordo_campaign_scheduled_action SET run_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 MINUTE) '
@@ -94,18 +78,9 @@ class CronScheduleHelper extends Helper
      * without also backdating this row's own data.
      */
     public function backdateMostRecentActionRetry(
-        string $campaignId,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $campaignId
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'UPDATE ordo_campaign_action_retry SET next_retry_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 MINUTE) '
@@ -121,18 +96,9 @@ class CronScheduleHelper extends Helper
      * this targets the most recent row for the given action_type instead.
      */
     public function backdateMostRecentMessageSendRetry(
-        string $actionType,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $actionType
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'UPDATE ordo_message_send_retry SET next_retry_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 MINUTE) '
@@ -150,18 +116,9 @@ class CronScheduleHelper extends Helper
      * filtering as backdateMostRecentScheduledAction() above, for the identical reason.
      */
     public function getMostRecentScheduledActionRunAtHour(
-        string $campaignId,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $campaignId
     ): string {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             "SELECT DATE_FORMAT(run_at, '%H') FROM ordo_campaign_scheduled_action "

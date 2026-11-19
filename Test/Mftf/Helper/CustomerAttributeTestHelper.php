@@ -17,21 +17,14 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class CustomerAttributeTestHelper extends Helper
 {
+    use DbConnectionTrait;
+
     public function setVarcharAttribute(
         int $customerId,
         string $attributeCode,
-        string $value,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $value
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $attributeIdStatement = $pdo->prepare(
             "SELECT ea.attribute_id FROM eav_attribute ea "

@@ -20,6 +20,8 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class CampaignOutcomeTestHelper extends Helper
 {
+    use DbConnectionTrait;
+
     /**
      * @throws \RuntimeException if no matching row appears within the given attempts
      */
@@ -27,18 +29,9 @@ class CampaignOutcomeTestHelper extends Helper
         string $campaignId,
         string $customerId,
         int $maxAttempts = 10,
-        int $sleepSeconds = 1,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        int $sleepSeconds = 1
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'SELECT COUNT(*) FROM ordo_campaign_outcome_log WHERE campaign_id = :campaign_id AND customer_id = :customer_id'

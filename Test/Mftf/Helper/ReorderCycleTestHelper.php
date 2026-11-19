@@ -16,19 +16,12 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class ReorderCycleTestHelper extends Helper
 {
+    use DbConnectionTrait;
+
     public function getEntityIdByCustomerId(
-        int $customerId,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        int $customerId
     ): string {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'SELECT entity_id FROM ordo_reorder_cycle WHERE customer_id = :customer_id LIMIT 1'

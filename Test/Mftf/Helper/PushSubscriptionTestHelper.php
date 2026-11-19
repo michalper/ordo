@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Mftf\Helper;
 
 use Magento\FunctionalTestingFramework\Helper\Helper;
-use PDO;
 
 /**
  * Direct-DB read access to ordo_push_subscription (keyed by endpoint_hash = sha256(endpoint),
@@ -17,19 +16,12 @@ use PDO;
  */
 class PushSubscriptionTestHelper extends Helper
 {
+    use DbConnectionTrait;
+
     public function countSubscriptionsForEndpoint(
-        string $endpoint,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $endpoint
     ): int {
-        $pdo = new PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'SELECT COUNT(*) FROM ordo_push_subscription WHERE endpoint_hash = :endpoint_hash'
@@ -40,18 +32,9 @@ class PushSubscriptionTestHelper extends Helper
     }
 
     public function getCustomerIdForEndpoint(
-        string $endpoint,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $endpoint
     ): string {
-        $pdo = new PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'SELECT customer_id FROM ordo_push_subscription WHERE endpoint_hash = :endpoint_hash'
