@@ -1433,6 +1433,49 @@ class CampaignDispatcherTest extends TestCase
     }
 
     /**
+     * Regression: unlike an action throwing (caught inside runOneActionOrSplitStoppingChainOnFailure,
+     * covered above), this exercises dispatch()'s own outer per-campaign catch - the one that
+     * guards runCampaign() itself, e.g. a dependency runCampaign() calls directly (here,
+     * HoldoutSelector::isHeldOut()) throwing before any action ever runs. One campaign's own
+     * failure here must not stop the loop from reaching the next matched campaign.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchLogsAndContinuesToNextCampaignWhenRunCampaignItselfThrows(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1, 2]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([
+            $this->makeCampaign(1, holdoutPercent: 50),
+            $this->makeCampaign(2, holdoutPercent: 0),
+        ]));
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $actionOfCampaign2 = $this->createMock(CampaignAction::class);
+        $actionOfCampaign2->method('getCampaignId')->willReturn(2);
+        $actionOfCampaign2->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $actionOfCampaign2->method('getParams')->willReturn([]);
+        $this->actionCollectionFactory->method('create')->willReturn($this->makeActionCollection([$actionOfCampaign2]));
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute');
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->holdoutSelector->method('isHeldOut')->willReturnCallback(
+            function (int $campaignId) {
+                if ($campaignId === 1) {
+                    throw new \RuntimeException('holdout lookup down');
+                }
+                return false;
+            }
+        );
+
+        // Campaign 1's own runCampaign() call throws (from isHeldOut(), before any action would
+        // ever run) and is logged; campaign 2 still runs its action.
+        $this->logger->expects(self::once())->method('error');
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 7]);
+    }
+
+    /**
      * @param \Ordo\Automation\Model\Campaign $campaign
      */
     private function makeSingleCampaignCollection($campaign): CampaignCollection
