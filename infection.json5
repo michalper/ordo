@@ -24,9 +24,18 @@
     // to be too thin in practice — a code audit found it, and this same run landed at exactly
     // 69-70% twice in one session from ordinary mutant-selection-order noise, with no real
     // regression either time (see docs/CHANGELOG.md). Widened to 68, still a couple points under
-    // the current measured number, now with actual room for that noise — raise as real
-    // test-quality work pushes the actual number up, don't lower it further to make a red PR pass.
-    "minMsi": 68,
-    "minCoveredMsi": 68,
+    // the current measured number, now with actual room for that noise.
+    //
+    // Re-measured 2026-11-19 across 5 more consecutive main-branch CI runs: a much tighter
+    // 70.06-70.17% every time (14334 mutants, ~10036 killed), no dip anywhere near 68-69 this
+    // round. Raised to 69, still leaving ~1 point of margin for ordinary noise — not pushed any
+    // higher: a meaningful chunk of the remaining ~4278 "escaped" mutants per run are expected to
+    // be equivalent mutants (semantically identical to the original, unkillable by any test;
+    // Infection's own output says as much - "some mutants will inevitably be harmless"), so 100%
+    // isn't a realistic target the way 100% line coverage is. Raise further only as real
+    // test-quality work pushes the measured number up again - don't lower it to make a red PR
+    // pass.
+    "minMsi": 69,
+    "minCoveredMsi": 69,
     "testFramework": "phpunit"
 }
