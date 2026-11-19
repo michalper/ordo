@@ -6,11 +6,18 @@ coverage:
   round: down
   range: "70...100"
   status:
+    # Blocking, not informational — the module reached 100% project-wide coverage (closed the
+    # last gap, Model/CampaignDispatcher.php's own per-campaign catch around runCampaign(), on
+    # 2026-11-19) and this is what keeps it there: any PR that drops below 100% fails the
+    # "codecov/project" check. threshold: 0%, not the 1% noise margin the old informational-only
+    # setting used — at 100% there's no regression small enough to tolerate, since any newly
+    # uncovered line IS the regression. "codecov/project" is a required status check in main's
+    # branch protection (added alongside this change, same as codecov/patch already was).
     project:
       default:
-        target: auto
-        threshold: 1%
-        informational: true
+        target: 100%
+        threshold: 0%
+        informational: false
     # Blocking, not informational — every new/changed line in a PR must be covered by a unit
     # test. This is deliberately scoped to the *patch* (diff), not the whole project: it holds
     # new work to 100% without retroactively failing every PR over pre-existing gaps in old
