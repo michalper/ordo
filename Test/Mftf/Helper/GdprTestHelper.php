@@ -14,6 +14,8 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class GdprTestHelper extends Helper
 {
+    use DbConnectionTrait;
+
     /**
      * Per ADR 0027, the Promotional consent topic now defaults to NOT consented for a customer
      * with no explicit ordo_customer_consent_topic row - every MFTF scenario whose campaign
@@ -24,18 +26,9 @@ class GdprTestHelper extends Helper
      */
     public function grantPromotionalConsent(
         int $customerId,
-        string $channel = 'email',
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $channel = 'email'
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'INSERT INTO ordo_customer_consent_topic (customer_id, channel, topic, consented, source) '
@@ -51,18 +44,9 @@ class GdprTestHelper extends Helper
     }
 
     public function assertNoConsentRowForCustomer(
-        int $customerId,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        int $customerId
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare('SELECT COUNT(*) FROM ordo_customer_consent WHERE customer_id = :customer_id');
         $statement->execute(['customer_id' => $customerId]);

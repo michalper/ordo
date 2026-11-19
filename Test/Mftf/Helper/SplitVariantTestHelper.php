@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Mftf\Helper;
 
 use Magento\FunctionalTestingFramework\Helper\Helper;
-use PDO;
 
 /**
  * A split action's variant assignment (Model\Campaign\SplitVariantSelector::pickByWeight()) is
@@ -26,6 +25,8 @@ use PDO;
  */
 class SplitVariantTestHelper extends Helper
 {
+    use DbConnectionTrait;
+
     private const int WEIGHT_SCALE = 100;
 
     /** @var array<int, array{key: string, weight: float}> */
@@ -48,20 +49,11 @@ class SplitVariantTestHelper extends Helper
      */
     public function pickEmailForVariant(
         string $variantKey,
-        string $campaignIdAndCandidates,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $campaignIdAndCandidates
     ): string {
         [$campaignIdString, $candidates] = explode(';', $campaignIdAndCandidates, 2);
         $campaignId = (int) $campaignIdString;
-        $pdo = new PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             "SELECT entity_id FROM ordo_campaign_action WHERE campaign_id = :campaign_id AND type = 'split' LIMIT 1"

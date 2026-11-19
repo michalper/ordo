@@ -15,19 +15,12 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class NotificationTestHelper extends Helper
 {
+    use DbConnectionTrait;
+
     public function backdateReadNotificationForCustomer(
-        int $customerId,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        int $customerId
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'UPDATE ordo_notification SET read_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 25 HOUR) '
@@ -40,18 +33,9 @@ class NotificationTestHelper extends Helper
      * @throws \RuntimeException if a matching row still exists
      */
     public function assertNoNotificationForCustomer(
-        int $customerId,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        int $customerId
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare('SELECT COUNT(*) FROM ordo_notification WHERE customer_id = :customer_id');
         $statement->execute(['customer_id' => $customerId]);

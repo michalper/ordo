@@ -17,19 +17,7 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class PriceWatchTestHelper extends Helper
 {
-    private function connect(
-        string $dbHost,
-        string $dbName,
-        string $dbUser,
-        string $dbPassword
-    ): \PDO {
-        return new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
-    }
+    use DbConnectionTrait;
 
     /**
      * Sets last_known_price to an obviously-wrong sentinel and notified_at to "already
@@ -40,13 +28,9 @@ class PriceWatchTestHelper extends Helper
     public function corruptGuestSubscription(
         int $productId,
         string $watchType,
-        string $priceSentinel,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $priceSentinel
     ): void {
-        $pdo = $this->connect($dbHost, $dbName, $dbUser, $dbPassword);
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'UPDATE ordo_price_watch_subscription '
@@ -58,13 +42,9 @@ class PriceWatchTestHelper extends Helper
 
     public function countGuestSubscriptions(
         int $productId,
-        string $watchType,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $watchType
     ): int {
-        $pdo = $this->connect($dbHost, $dbName, $dbUser, $dbPassword);
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'SELECT COUNT(*) FROM ordo_price_watch_subscription '
@@ -77,13 +57,9 @@ class PriceWatchTestHelper extends Helper
 
     public function isNotifiedAtNullForGuestSubscription(
         int $productId,
-        string $watchType,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $watchType
     ): bool {
-        $pdo = $this->connect($dbHost, $dbName, $dbUser, $dbPassword);
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'SELECT notified_at FROM ordo_price_watch_subscription '
@@ -96,13 +72,9 @@ class PriceWatchTestHelper extends Helper
 
     public function getLastKnownPriceForGuestSubscription(
         int $productId,
-        string $watchType,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $watchType
     ): string {
-        $pdo = $this->connect($dbHost, $dbName, $dbUser, $dbPassword);
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'SELECT last_known_price FROM ordo_price_watch_subscription '
@@ -115,13 +87,9 @@ class PriceWatchTestHelper extends Helper
 
     public function getGuestEmailForGuestSubscription(
         int $productId,
-        string $watchType,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $watchType
     ): string {
-        $pdo = $this->connect($dbHost, $dbName, $dbUser, $dbPassword);
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'SELECT guest_email FROM ordo_price_watch_subscription '

@@ -16,22 +16,15 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class SendTimeOptimizerTestHelper extends Helper
 {
+    use DbConnectionTrait;
+
     public function seedEmailOpenHistory(
         int $customerId,
         string $toAddress,
         string $eventTimestampUtc,
-        int $eventCount = 3,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        int $eventCount = 3
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $messageLogStatement = $pdo->prepare(
             "INSERT INTO ordo_message_log (channel, customer_id, to_address, status) "

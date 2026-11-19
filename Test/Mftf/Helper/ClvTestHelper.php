@@ -19,21 +19,14 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class ClvTestHelper extends Helper
 {
+    use DbConnectionTrait;
+
     private const float POISON_CLV_SCORE = 99999999.0;
 
     public function insertPoisonClvScoreRow(
-        int $customerId,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        int $customerId
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'REPLACE INTO ordo_customer_clv_score (customer_id, clv_score) VALUES (:customer_id, :clv_score)'

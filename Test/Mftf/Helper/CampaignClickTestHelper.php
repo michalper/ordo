@@ -19,20 +19,13 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class CampaignClickTestHelper extends Helper
 {
+    use DbConnectionTrait;
+
     public function recordClickForCampaign(
         string $toAddress,
-        string $campaignId,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $campaignId
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $messageLogId = $pdo->prepare(
             'SELECT entity_id FROM ordo_message_log '

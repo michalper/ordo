@@ -18,6 +18,8 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class CampaignActionCorruptorHelper extends Helper
 {
+    use DbConnectionTrait;
+
     /**
      * ORDER BY entity_id ASC — the FIRST action added to the campaign, not the most recent one:
      * a real CI run caught this the hard way. Actions are persisted in sort_order (first added
@@ -29,18 +31,9 @@ class CampaignActionCorruptorHelper extends Helper
      */
     public function corruptFirstActionType(
         string $campaignId,
-        string $bogusType = 'no_such_action_type',
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $bogusType = 'no_such_action_type'
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'UPDATE ordo_campaign_action SET type = :type '
@@ -61,18 +54,9 @@ class CampaignActionCorruptorHelper extends Helper
      */
     public function setFirstActionParams(
         string $campaignId,
-        string $paramsJson,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $paramsJson
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'UPDATE ordo_campaign_action SET params = :params '
@@ -91,18 +75,9 @@ class CampaignActionCorruptorHelper extends Helper
      */
     public function setMostRecentMessageSendRetryParams(
         string $actionType,
-        string $paramsJson,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $paramsJson
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'UPDATE ordo_message_send_retry SET params = :params '
@@ -124,18 +99,9 @@ class CampaignActionCorruptorHelper extends Helper
      * @throws \RuntimeException if a row still exists
      */
     public function assertNoMessageSendRetryForActionType(
-        string $actionType,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $actionType
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare('SELECT COUNT(*) FROM ordo_message_send_retry WHERE action_type = :action_type');
         $statement->execute(['action_type' => $actionType]);

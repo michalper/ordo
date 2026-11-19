@@ -17,11 +17,14 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class MailHogHelper extends Helper
 {
+    use DbConnectionTrait;
+
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function fetchMessages(string $toAddress, int $limit, string $mailhogUrl): array
+    private function fetchMessages(string $toAddress, int $limit): array
     {
+        $mailhogUrl = $this->resolveMailHogBaseUrl();
         $endpoint = $toAddress === ''
             ? $mailhogUrl . '/api/v2/messages?limit=' . $limit
             : $mailhogUrl . '/api/v2/search?kind=to&query=' . rawurlencode($toAddress) . '&limit=' . $limit;
@@ -66,10 +69,9 @@ class MailHogHelper extends Helper
      */
     public function grabLinkFromLatestEmail(
         string $linkText,
-        string $toAddress = '',
-        string $mailhogUrl = 'http://127.0.0.1:8025'
+        string $toAddress = ''
     ): string {
-        $item = $this->fetchMessages($toAddress, 1, $mailhogUrl)[0] ?? null;
+        $item = $this->fetchMessages($toAddress, 1)[0] ?? null;
         if ($item === null) {
             throw new \RuntimeException('MailHog has no messages.');
         }
@@ -101,7 +103,6 @@ class MailHogHelper extends Helper
     public function seeTextInLatestEmail(
         string $expectedText,
         string $toAddress,
-        string $mailhogUrl = 'http://127.0.0.1:8025',
         int $timeoutSeconds = 20
     ): void {
         $deadline = microtime(true) + $timeoutSeconds;
@@ -109,7 +110,7 @@ class MailHogHelper extends Helper
         $sawAnyMessage = false;
 
         do {
-            $item = $this->fetchMessages($toAddress, 1, $mailhogUrl)[0] ?? null;
+            $item = $this->fetchMessages($toAddress, 1)[0] ?? null;
             if ($item !== null) {
                 $sawAnyMessage = true;
                 $lastBody = $this->decodeBody($item);
@@ -141,10 +142,9 @@ class MailHogHelper extends Helper
     public function seeTextInAnyRecentEmail(
         string $expectedText,
         string $toAddress,
-        int $limit = 5,
-        string $mailhogUrl = 'http://127.0.0.1:8025'
+        int $limit = 5
     ): void {
-        $items = $this->fetchMessages($toAddress, $limit, $mailhogUrl);
+        $items = $this->fetchMessages($toAddress, $limit);
         if ($items === []) {
             throw new \RuntimeException("MailHog has no messages sent to \"{$toAddress}\".");
         }
@@ -170,10 +170,9 @@ class MailHogHelper extends Helper
     public function assertTextNotInAnyRecentEmail(
         string $expectedText,
         string $toAddress,
-        int $limit = 5,
-        string $mailhogUrl = 'http://127.0.0.1:8025'
+        int $limit = 5
     ): void {
-        $items = $this->fetchMessages($toAddress, $limit, $mailhogUrl);
+        $items = $this->fetchMessages($toAddress, $limit);
 
         foreach ($items as $item) {
             if (str_contains($this->decodeBody($item), $expectedText)) {

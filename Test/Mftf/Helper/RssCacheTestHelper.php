@@ -17,23 +17,16 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class RssCacheTestHelper extends Helper
 {
+    use DbConnectionTrait;
+
     /**
      * @throws \RuntimeException if no cache row exists, or it doesn't contain $expectedText
      */
     public function assertRssCacheContains(
         string $contentBlockId,
-        string $expectedText,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $expectedText
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'SELECT rendered_html FROM ordo_content_block_rss_cache WHERE content_block_id = :id'
@@ -58,18 +51,9 @@ class RssCacheTestHelper extends Helper
     }
 
     public function deleteRssCache(
-        string $contentBlockId,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $contentBlockId
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare('DELETE FROM ordo_content_block_rss_cache WHERE content_block_id = :id');
         $statement->execute(['id' => $contentBlockId]);

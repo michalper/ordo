@@ -10,31 +10,22 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  * Inserts a real ordo_offer row directly via SQL — Offer is a REST-only entity (`/V1/ordo/offers`,
  * see Api/OfferRepositoryInterface), no admin CRUD UI exists for it at all (confirmed via
  * SCENARIOS.md's own scope check), so there is no MFTF-reachable UI action to create one through.
- * Same out-of-band PDO pattern as OrderBackdateHelper/CronScheduleHelper for their own tables —
- * this module deliberately keeps that connection logic duplicated per helper rather than sharing
- * a base class, so each helper's docblock stays self-contained about exactly what it needs the DB
- * for.
+ * Same out-of-band PDO pattern as OrderBackdateHelper/CronScheduleHelper for their own tables, via
+ * DbConnectionTrait.
  */
 class OfferTestHelper extends Helper
 {
+    use DbConnectionTrait;
+
     public function insertOffer(
         int $customerId,
         string $reference,
         string $status,
         string $expiresAt,
         int $extensionCount = 0,
-        string $total = '100.0000',
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $total = '100.0000'
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'INSERT INTO ordo_offer '
@@ -64,18 +55,9 @@ class OfferTestHelper extends Helper
         string $status,
         int $daysFromToday,
         int $extensionCount = 0,
-        string $total = '100.0000',
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $total = '100.0000'
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare(
             'INSERT INTO ordo_offer '
@@ -98,18 +80,9 @@ class OfferTestHelper extends Helper
      */
     public function assertOfferStatus(
         string $reference,
-        string $expectedStatus,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        string $expectedStatus
     ): void {
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         $statement = $pdo->prepare('SELECT status FROM ordo_offer WHERE reference = :reference');
         $statement->execute(['reference' => $reference]);

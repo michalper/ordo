@@ -17,6 +17,8 @@ use Magento\FunctionalTestingFramework\Helper\Helper;
  */
 class OrderBackdateHelper extends Helper
 {
+    use DbConnectionTrait;
+
     /**
      * @param string $daysAgoCsv Comma-separated days-ago offsets, oldest order first (e.g.
      *   "30,20,10" backdates the 3 most recent orders for $customerId to 30/20/10 days ago,
@@ -24,21 +26,12 @@ class OrderBackdateHelper extends Helper
      */
     public function backdateRecentOrders(
         string $daysAgoCsv,
-        int $customerId,
-        string $dbHost = '127.0.0.1',
-        string $dbName = 'magento',
-        string $dbUser = 'root',
-        string $dbPassword = ''
+        int $customerId
     ): void {
         $daysAgoList = array_map('intval', explode(',', $daysAgoCsv));
         $limit = count($daysAgoList);
 
-        $pdo = new \PDO(
-            "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
-            $dbUser,
-            $dbPassword,
-            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = $this->resolveDbConnection();
 
         // The $limit most recent orders for this customer, oldest-first among that batch -
         // matches the oldest-first order of $daysAgoCsv.
