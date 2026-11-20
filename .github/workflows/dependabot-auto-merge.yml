@@ -1,0 +1,54 @@
+name: Dependabot auto-merge
+
+# Enables (not performs) GitHub's native auto-merge on a Dependabot PR for patch/minor bumps —
+# `gh pr merge --auto` just flags the PR to merge itself once every required status check (see
+# branch protection: unit-tests, static-analysis, rector, coding-standard, php-coverage,
+# js-coverage, sonar, mutation-testing, codecov/patch, codecov/project, api-tests,
+# integration-tests) actually turns green, same as a human clicking "Enable auto-merge" in the
+# UI. Needs those checks to be reachable at all for a Dependabot PR, which they now are — see
+# ADR 0074 for how CODECOV_TOKEN/SONAR_TOKEN reach a Dependabot-triggered run.
+#
+# Major bumps are left alone (no auto-merge, no extra action) — a major version can carry breaking
+# changes this workflow has no way to assess, so those PRs stay for manual review same as before.
+#
+# Plain pull_request, not pull_request_target — nothing here checks out the PR's head ref, it
+# only reads PR metadata via the GitHub API (dependabot/fetch-metadata) and calls the REST API to
+# flag auto-merge, so there's nothing for SonarCloud's githubactions:S7631 to flag (that rule is
+# about checking out untrusted code under an event that carries secrets/write access, which this
+# workflow never does).
+#
+# `contents: write`/`pull-requests: write` below are this workflow's own explicit grant — the
+# repo's default (Settings -> Actions -> General -> Workflow permissions) is read-only; declaring
+# the broader scope here is what lets `gh pr merge --auto` succeed for this one workflow without
+# loosening the default for every other workflow in the repo.
+
+on:
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@21025c705c08248db411dc16f3619e6b5f9ea21a # v2.5.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge for patch/minor bumps
+        if: >-
+          ${{
+            steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+            steps.metadata.outputs.update-type == 'version-update:semver-minor'
+          }}
+        # --squash: the only merge method this repo allows (squash-merge-only, see repo settings).
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -8,13 +8,13 @@ version: 2
 # take effect: `gh secret set MAGENTO_COMPOSER_USERNAME --app dependabot --body "<value>"` (and
 # the same for MAGENTO_COMPOSER_PASSWORD).
 #
-# This does NOT make the resulting PR's own CI checks pass — GitHub withholds Actions secrets
-# from every Dependabot-triggered workflow run regardless of ecosystem, a separate, unrelated
-# restriction with no per-repo opt-out. A composer-ecosystem PR will still show a red CI check
-# even once this registry is configured; the real value is that Dependabot itself now proposes
-# the *correct* version instead of one it can't verify at all, so applying it manually (as
-# already done for actions/checkout in this repo's history) is just copying a verified-correct
-# version bump instead of guessing one.
+# This registries: block is Dependabot's own dependency-resolution step, separate from CI. But the
+# same secrets, once added here, are ALSO what a Dependabot-triggered pull_request workflow run
+# resolves secrets.MAGENTO_COMPOSER_USERNAME/PASSWORD from (GitHub sources secrets.* for such a run
+# from this Dependabot store, not the Actions one — confirmed via actual run logs, see ADR 0074;
+# an earlier version of this comment claimed secrets are withheld outright for every
+# Dependabot-triggered run regardless of ecosystem, which was wrong). CODECOV_TOKEN/SONAR_TOKEN
+# were added here too for the same reason — see ci.yml/coverage.yml's own comments.
 registries:
   magento-repo:
     type: composer-repository

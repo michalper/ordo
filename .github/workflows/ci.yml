@@ -18,15 +18,20 @@ name: CI
 # secret. Without them, the "Install dependencies" step below fails with a 401 from
 # repo.magento.com — that's expected until the secrets are set, not a bug in this workflow.
 #
-# Single PR trigger path: pull_request, the normal, safe path for anyone's PR — GitHub withholds
-# Actions secrets from these runs by design (this is what makes it safe to run untrusted PR code
-# at all). We previously tried pull_request_target (runs with secrets, gated to Dependabot PRs
-# only) so Dependabot's composer-ecosystem PRs could actually verify against repo.magento.com,
-# but SonarCloud's githubactions:S7631 flags checking out a PR's head ref under
+# Single PR trigger path: pull_request, the normal, safe path for anyone's PR — a plain
+# pull_request run from an ordinary contributor gets no secrets at all, which is what makes it
+# safe to run untrusted PR code. We previously tried pull_request_target (runs with secrets, gated
+# to Dependabot PRs only) so Dependabot's composer-ecosystem PRs could actually verify against
+# repo.magento.com, but SonarCloud's githubactions:S7631 flags checking out a PR's head ref under
 # pull_request_target categorically — the rule fires on the pattern itself, not on how well the
-# actor is verified, so no guard strengthening clears it. Reverted: Dependabot PRs get a red CI
-# check (no secrets, expected — see dependabot.yml's registries: block for how we still get
-# correct version proposals despite that), in exchange for a clean Security Rating on main.
+# actor is verified, so no guard strengthening clears it. Reverted to plain pull_request.
+#
+# A Dependabot-triggered pull_request run is a separate case: GitHub resolves secrets.* for it
+# from the repo's Dependabot secret store (Settings -> Secrets and variables -> Dependabot), not
+# the Actions one — not withheld outright, as a now-corrected earlier version of this comment and
+# dependabot.yml's claimed. MAGENTO_COMPOSER_USERNAME/PASSWORD are in both stores (see
+# dependabot.yml's registries: block), so Install dependencies already succeeds for every
+# Dependabot PR regardless of ecosystem. See ADR 0074.
 
 on:
   push:
