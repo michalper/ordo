@@ -14,8 +14,13 @@ name: PHP Coverage Report
 # Single PR trigger path — see the matching comment in ci.yml for the full reasoning: we tried
 # pull_request_target to give Dependabot's own PRs secret access, but SonarCloud's
 # githubactions:S7631 flags checking out a PR's head ref under pull_request_target categorically,
-# regardless of how the actor is verified. Reverted to plain pull_request; Dependabot PRs get a
-# red check here (no secrets, expected), in exchange for a clean Security Rating on main.
+# regardless of how the actor is verified. Reverted to plain pull_request.
+#
+# CODECOV_TOKEN/SONAR_TOKEN below resolve from the repo's Dependabot secret store (Settings ->
+# Secrets and variables -> Dependabot), not the Actions one, for a Dependabot-triggered pull_request
+# run — same mechanism already relied on for MAGENTO_COMPOSER_USERNAME/PASSWORD below and in
+# ci.yml. See ADR 0074 for how this was confirmed (not "no secrets for Dependabot" — that claim was
+# wrong) and why pull_request_target was never needed for this.
 
 on:
   push:
