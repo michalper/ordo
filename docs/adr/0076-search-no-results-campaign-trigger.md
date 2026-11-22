@@ -59,9 +59,23 @@ reliable, customer-attributable signal a server-side observer could hook instead
   have: nothing fires automatically without the theme calling `window.ordoTrack('search_no_results',
   queryText)` on its search-results template. Documented in `tracker.js`'s own top-of-file
   docblock, same place those three are documented.
-- No MFTF scenario needed - same reasoning `SCENARIOS.md` already gives for `exit_intent`/
-  `visitor_tag_added`: nothing new is browser-observable beyond what the existing admin campaign
-  scenario tests already cover (building a trigger/condition/action chain in the Flow canvas), and
-  `Test\Integration\DispatchSearchNoResultsCampaignsQueueWiringTest` proves the real event → publish
-  → queue → consumer → dispatcher chain end to end, including the customer_id-carrying case
-  `exit_intent`'s own equivalent test doesn't need to cover.
+- **Does need, and got, a real MFTF scenario** (`AdminCampaignSearchNoResultsTriggerTest`) -
+  an earlier draft of this ADR wrongly claimed "no MFTF needed, same reasoning as `exit_intent`/
+  `visitor_tag_added`," checked against `SCENARIOS.md` only at the row-label level, not the actual
+  test bodies. Reading them in full found that claim backwards for `visitor_tag_added`:
+  `AdminCampaignVisitorTagConditionTest` already drives its whole click → aggregate → tag → live
+  dispatch → condition → action → popup chain through a real browser, the deepest coverage any
+  tracker-sourced trigger in this module has. `exit_intent` genuinely has no MFTF of its own, but
+  the likely reason is specific to that trigger, not a transferable precedent: realistically
+  simulating its own detection heuristic (a `mouseout` with `relatedTarget === null` and
+  `clientY <= 0`) through WebDriver is a materially harder, flakier thing to script than this
+  trigger's own `window.ordoTrack('search_no_results', queryText)` call, which - like
+  `product_view`/`category_view` - is a plain scripted stand-in
+  (`StorefrontTrackerPostsEventsTest`/`StorefrontTrackerCategoryViewEventTest`'s own established
+  pattern) needing no gesture simulation at all. Neither `Test\Unit` (mocked queue publisher) nor
+  `Test\Integration\DispatchSearchNoResultsCampaignsQueueWiringTest` (fires the Magento event
+  directly via `EventManagerInterface`, never through a real browser) can prove tracker.js's own
+  theme-integration contract actually works from a real page - the new MFTF test closes exactly
+  that gap, going further than the product_view/category_view precedent to also prove the live
+  dispatch into a real, visible popup, matching `AdminCampaignPopupActionTest`/
+  `AdminCampaignVisitorTagConditionTest`'s own depth for their triggers.

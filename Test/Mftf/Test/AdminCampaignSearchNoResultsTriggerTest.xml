@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCampaignSearchNoResultsTriggerTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="On-site behavior tracking"/>
+            <title value="A real campaign's search_no_results trigger fires from a real browser and renders a real popup"/>
+            <description value="docs/adr/0076 - search_no_results is wired exactly like exit_intent (Controller/Track/Event.php fires a Magento event, observed by Observer/DispatchSearchNoResultsCampaigns, which publishes directly onto ordo.automation.campaign.dispatch - a single queue hop, unlike visitor_tag_added's two-hop click-&gt;aggregate-&gt;tag-&gt;dispatch chain AdminCampaignVisitorTagConditionTest already proves). Neither Test/Unit (mocked queue publisher) nor Test/Integration/DispatchSearchNoResultsCampaignsQueueWiringTest.php (fires the Magento event directly via EventManagerInterface, never through a real browser) can prove tracker.js's own window.ordoTrack('search_no_results', queryText) call - the real theme-integration-point contract this feature's whole README/ADR promise rests on - actually reaches Controller/Track/Event.php from a real page. Mirrors StorefrontTrackerPostsEventsTest's own scripted-stand-in approach (there is no real search-results theme integration in this environment to click through, same as product_view/category_view), but goes further to also prove the live dispatch end-to-end into a real, visible popup, the same depth AdminCampaignPopupActionTest/AdminCampaignVisitorTagConditionTest already establish for their own triggers - staying on the same storefront page after firing the event (not navigating away) is deliberate, the same lesson AdminCampaignPopupActionTest's own comments document: this page's tracker.js poll loop has been running since load, so it is the one poller actually positioned to claim the popup once it exists, and the single queue hop here (no visitor-aggregation step in between) means there is no long async window for a stale poller race the way the two-hop visitor_tag_added scenario has."/>
+            <severity value="CRITICAL"/>
+            <group value="ordo_automation"/>
+            <group value="tracking"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: Campaign - trigger=search_no_results, no condition (proving the trigger
+             itself dispatches, unconditionally), action=popup targeting context[visitor_id] -
+             Model/Campaign/Action/ShowPopup.php's own docblock documents visitor_id targeting for
+             any visitor-only trigger context, not just visitor_tag_added specifically. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <!-- See AdminCreateCampaignTest.xml's comment on this same wait - a cold, freshly
+             deployed developer-mode instance's first admin page load can lag behind
+             waitForPageLoad's document.readyState check. -->
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Search No Results Popup Campaign" stepKey="fillName"/>
+
+        <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
+        <executeJS function="window.ordoFlowTestHook.buildChain([
+            {kind: 'trigger', type: 'search_no_results'},
+            {kind: 'action', type: 'popup', fields: {headline: 'Search No Results Popup Headline', body: 'Search no results popup body text', cta_label: 'Browse bestsellers', cta_url: 'https://example.test/search-no-results-popup', delay_minutes: '0'}}
+        ]);" stepKey="buildFlowGraph"/>
+
+        <!-- Same sticky-toolbar overlap workaround as AdminCreateCampaignWithConditionsAndActionsTest. -->
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
+
+        <!-- Step 2: a real anonymous visitor, a real page, a real window.ordoTrack() call -
+             exactly the call a real search-results theme integration would make, per this
+             trigger's own docblock and tracker.js's own documented theme-integration-point
+             contract. -->
+        <amOnPage url="/" stepKey="goToStorefrontHome"/>
+        <waitForPageLoad stepKey="waitForHomePage"/>
+        <wait time="1" stepKey="waitForCookieToBeSet"/>
+        <grabCookie userInput="ordo_visitor_id" stepKey="grabVisitorId"/>
+
+        <executeJS function="window.ordoTrack('search_no_results', 'zzz-nonexistent-query-e2e')" stepKey="callOrdoTrackForSearchNoResults"/>
+        <wait time="2" stepKey="waitForSearchNoResultsEventToLand"/>
+
+        <!-- Proves the data path this trigger's own segmentation-condition promise rests on too
+             (docs/adr/0076, Model/Config/Source/EventType) - not just the live dispatch below. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\VisitorEventHelper" method="assertEventLogged" stepKey="assertSearchNoResultsEventLogged">
+            <argument name="visitorId">{$grabVisitorId}</argument>
+            <argument name="eventType">search_no_results</argument>
+            <argument name="eventKey">zzz-nonexistent-query-e2e</argument>
+        </helper>
+
+        <!-- Step 3: this install has no RabbitMQ (DB queue driver only - see AGENTS.md), so
+             nothing consumes the message DispatchSearchNoResultsCampaigns just published until a
+             consumer actually runs. max-messages=5 (not 1), same over-asking reasoning
+             AdminCampaignPopupActionTest/AdminScoreThresholdCampaignTest already document: other
+             tests in this same CI job can leave their own unrelated campaign-dispatch messages
+             sitting unconsumed ahead of ours. Safe - mftf.yml sets
+             consumers-wait-for-messages=0. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
+
+        <!-- Step 4: deliberately staying on the SAME storefront page from Step 2, not navigating
+             anywhere - same lesson AdminCampaignPopupActionTest's own comments document in full:
+             this page's own tracker.js poll loop has been running since it loaded, so it is the
+             poller actually positioned to claim the popup the moment it exists. Unlike
+             AdminCampaignVisitorTagConditionTest's two-hop (click -&gt; aggregate -&gt; tag -&gt;
+             dispatch) scenario, search_no_results dispatches directly from Controller/Track/
+             Event.php with no intervening async step, so there is no long race window a stale
+             poller from an earlier page could win first. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\PendingPopupTestHelper" method="assertPendingPopupForVisitor" stepKey="assertPopupQueuedForVisitor">
+            <argument name="visitorId">{$grabVisitorId}</argument>
+        </helper>
+
+        <!-- Step 5: the one assertion proving search_no_results actually dispatched a real,
+             merchant-visible side effect in this real anonymous browser, not just a database row. -->
+        <waitForElementVisible selector="#ordo-popup-banner" time="90" stepKey="waitForPopupBanner"/>
+        <see selector="#ordo-popup-banner" userInput="Search No Results Popup Headline" stepKey="seePopupHeadline"/>
+        <see selector="#ordo-popup-banner" userInput="Search no results popup body text" stepKey="seePopupBody"/>
+        <seeElement selector="#ordo-popup-banner a[href='https://example.test/search-no-results-popup']" stepKey="seePopupCtaLink"/>
+        <see selector="#ordo-popup-banner a[href='https://example.test/search-no-results-popup']" userInput="Browse bestsellers" stepKey="seePopupCtaLabel"/>
+
+        <!-- Cleanup: left alive, this campaign's search_no_results trigger keeps firing for every
+             other test in this same "tracking" group's CI job that also calls
+             window.ordoTrack('search_no_results', ...) or triggers it indirectly, queuing extra,
+             unrelated popups for the rest of the run - same reasoning AdminCampaignPopupActionTest.xml/
+             AdminCampaignVisitorTagConditionTest.xml's own closing steps already document. -->
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
+    </test>
+</tests>
