@@ -1,0 +1,31 @@
+name: Typos
+
+# Free spell-check across source comments/docblocks/docs - catches typos in the English prose this
+# module is unusually dense with (every ADR, every class's own "why" docblock). Deliberately
+# non-blocking (continue-on-error) on its first pass: this codebase's own vocabulary (Magento/PHP
+# identifiers, abbreviations, brand names) will very likely need a _typos.toml exclusion list this
+# workflow hasn't been tuned against yet - better to see real findings first than guess at
+# exclusions nobody's confirmed are needed. Skips i18n/ CSVs entirely - those are machine-translated
+# non-English text, not prose this check is meant for.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  typos:
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check for typos
+        uses: crate-ci/typos@276087d9a4f06398b3e04825487805e2d7375888 # v1.52.2
+        with:
+          config: ./.typos.toml

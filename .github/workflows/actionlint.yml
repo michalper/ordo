@@ -1,0 +1,51 @@
+name: actionlint
+
+# Lints every .github/workflows/*.yml file on every change - this exact tool was run by hand,
+# manually, throughout this repo's own CI work (catching real shellcheck findings and YAML
+# mistakes before they ever reached a real run) with nothing ever wiring it into CI itself.
+# reporter: local needs no extra token permissions beyond the default contents: read - no PR
+# annotations, just a normal job failure (red X) the same way any other lint step here works.
+#
+# filter_mode: nofilter - reviewdog's "local" reporter still tries to filter findings down to
+# diff-new lines by default, which needs a git diff command this plain actions/checkout (fetch-
+# depth: 1, no base ref) doesn't give it ("reviewdog: diff command is empty", a real first-run
+# failure this workflow hit). nofilter reports every finding regardless, which is what a lint gate
+# on the whole file actually wants anyway - not just lines changed in this particular diff.
+#
+# -ignore SC2129: a real second first-run failure. Shellcheck's own severity for this rule is
+# "style" (a preference, not a bug - "consider grouping these redirects"), but reviewdog's
+# severity-parsing doesn't recognize that word and defaults an unrecognized severity to "error",
+# so fail_level: error blocked on it. One real occurrence (mftf.yml's own queue-tables debug dump)
+# was fixed outright since it was a harmless, easy cleanup; a second, structurally more tangled
+# diagnostic block (interleaved writes to several different files, only exercised on a real MFTF
+# failure) was deliberately left alone rather than risk changing its behavior for a style nit -
+# ignoring the rule class-wide is the honest fix for what's actually a tooling severity-mapping
+# quirk, not a real bug in this repo's scripts.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Run actionlint
+        uses: reviewdog/action-actionlint@ae857e78c1b42b3d0a49637181b09d3d56d402b4 # v1.84.1
+        with:
+          reporter: local
+          fail_level: error
+          filter_mode: nofilter
+          actionlint_flags: -ignore "SC2129"

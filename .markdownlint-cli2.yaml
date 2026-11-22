@@ -1,0 +1,11 @@
+# Config for the markdownlint.yml workflow (DavidAnson/markdownlint-cli2-action). Disables rules
+# that fight this repo's own established prose style rather than catching real formatting mistakes.
+config:
+  # MD013 (line-length): every ADR/README here is hand-wrapped prose, not a fixed 80-col format -
+  # enforcing a line-length limit would flag nearly every paragraph in the repo.
+  MD013: false
+  # MD033 (no-inline-html): README.md's own hero image and a few ADRs use plain <br>/<img> tags.
+  MD033: false
+  # MD041 (first-line-heading): some ADRs/docs open with a short context line before the H1 is
+  # irrelevant here since every file in this repo already opens with its own "# ADR NNNN: ..." or
+  # "# Title" heading - left default (true) deliberately, this is a real, cheap-to-fix check.

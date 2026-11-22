@@ -527,10 +527,12 @@ jobs:
           # the full Magento app the DB queue driver ships in) — SHOW TABLES first so a wrong
           # guess at exact names doesn't waste the run, then dump whatever queue-related tables
           # actually exist without assuming a join key.
-          mysql -h127.0.0.1 -uroot magento -e "SHOW TABLES LIKE 'queue%';" > /tmp/server-logs/queue_tables.txt 2>&1 || true
-          mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM queue;" >> /tmp/server-logs/queue_tables.txt 2>&1 || true
-          mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM queue_message ORDER BY id DESC LIMIT 20;" >> /tmp/server-logs/queue_tables.txt 2>&1 || true
-          mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM queue_message_status ORDER BY updated_at DESC LIMIT 20;" >> /tmp/server-logs/queue_tables.txt 2>&1 || true
+          {
+            mysql -h127.0.0.1 -uroot magento -e "SHOW TABLES LIKE 'queue%';" || true
+            mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM queue;" || true
+            mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM queue_message ORDER BY id DESC LIMIT 20;" || true
+            mysql -h127.0.0.1 -uroot magento -e "SELECT * FROM queue_message_status ORDER BY updated_at DESC LIMIT 20;" || true
+          } > /tmp/server-logs/queue_tables.txt 2>&1
           cp var/log/exception.log /tmp/server-logs/magento-exception.log 2>/dev/null || true
           cp var/log/system.log /tmp/server-logs/magento-system.log 2>/dev/null || true
           cp var/log/debug.log /tmp/server-logs/magento-debug.log 2>/dev/null || true

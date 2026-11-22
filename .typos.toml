@@ -1,0 +1,51 @@
+# Config for the typos.yml workflow (crate-ci/typos). i18n/ CSVs and README.pl.md are non-English
+# text, not prose this (English) spell-checker is meant for; vendor/node_modules/coverage are never
+# our own writing. view/adminhtml/web/lib/drawflow/ is a vendored third-party JS library (including
+# its own LICENSE file's author name) - not our prose to fix either, same reasoning as vendor/.
+# etc/db_schema_whitelist.json is wall-to-wall generated hash-derived identifiers with zero prose
+# value - excluded wholesale rather than word-matching whatever random hex substrings happen to
+# look like English.
+[files]
+extend-exclude = [
+    "i18n/*.csv",
+    "README.pl.md",
+    "vendor/",
+    "node_modules/",
+    "coverage-js/",
+    "package-lock.json",
+    ".php-cs-fixer.cache",
+    "view/adminhtml/web/lib/drawflow/",
+    "etc/db_schema_whitelist.json",
+]
+
+# Real first-run findings, all false positives on this codebase's own identifiers/jargon, not
+# actual typos:
+[default.extend-words]
+# Model/ResourceModel/CohortRetention/Grid/Collection.php's own SQL alias for the "first orders"
+# subselect.
+fo = "fo"
+# Model/ResourceModel/MessageLog/Collection.php's own Zend_Db_Select "NOT IN" alias key.
+nin = "nin"
+# typos's tokenizer splits an all-caps SQL keyword used as a verb ("JOINed", "ANDed") into the
+# keyword plus a trailing "Ned"/"Ded" rather than treating it as one word.
+Ned = "Ned"
+Ded = "Ded"
+# Same tokenizer pattern again for "INSERTs"/"INSERTed" and "UPDATEs"/"UPDATEd".
+INSER = "INSER"
+UPDAT = "UPDAT"
+# "Ands" - Test/Integration/SegmentAndRfmScenarioTest.php's own test method name, using "AND" (SQL)
+# as a verb ("...Ands Real Rfm Conditions...").
+Ands = "Ands"
+# This module's own offer-reference format, e.g. "OFR-0001" (etc/db_schema.xml, Model/Offer and its
+# tests) - a real, deliberate abbreviation, not a typo for "FOR".
+OFR = "OFR"
+# "mis-" is a real English prefix (mis-grouping, mis-render, mis-splits, mis-maps) that typos'
+# tokenizer treats as its own standalone "word" when hyphenated.
+mis = "mis"
+# This module's own deliberate spelling, used consistently (Test method names, assertion messages) -
+# not the dictionary's own "Unparsable".
+unparseable = "unparseable"
+Unparseable = "Unparseable"
+# view/adminhtml/web/css/dashboard.css's own comment quotes a stakeholder's literal Polish words
+# ("czy my mozemy miec jeden styl") - a deliberate verbatim quote, not a typo for "style".
+styl = "styl"
