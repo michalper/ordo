@@ -119,6 +119,17 @@ Once the required checks go green, GitHub merges the PR (squash) and deletes the
 
 If a PR genuinely needs manual review/hold before merging, say so explicitly instead of enabling auto-merge on it.
 
+A PR that only touches Markdown files (`**/*.md` — README/ROADMAP/docs/**/*.md) skips the expensive
+PHP jobs entirely (`unit-tests-php`, `static-analysis`/`rector`/`coding-standard`'s own real `-run`
+jobs, `mutation-testing-run`, `api-tests-magento`, `integration-tests-magento` all gate on a
+`changes` job in each of `ci.yml`/`coverage.yml`/`api-tests.yml`/`integration-tests.yml`, via
+`dorny/paths-filter`) - the required-check names themselves still report (via the same trivial-
+aggregator trick the matrix jobs already use), just green-and-skipped instead of actually running,
+so a docs-only PR auto-merges in well under a minute instead of waiting 20-30 minutes for
+`mutation-testing`. `php-coverage`/`js-coverage`/`sonar` (and by extension `codecov/patch`/
+`codecov/project`, posted by the Codecov App itself) deliberately always run regardless - skipping
+their upload risks leaving those two checks stuck pending forever.
+
 ## New code needs its own tests — 100% unit coverage + a real system-level test
 
 Every new feature (a new condition/action/trigger type, cron, controller, API endpoint, admin
