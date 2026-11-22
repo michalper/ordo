@@ -9,3 +9,16 @@ config:
   # MD041 (first-line-heading): some ADRs/docs open with a short context line before the H1 is
   # irrelevant here since every file in this repo already opens with its own "# ADR NNNN: ..." or
   # "# Title" heading - left default (true) deliberately, this is a real, cheap-to-fix check.
+  # MD024 (no-duplicate-heading): docs/CHANGELOG.md is Keep-a-Changelog-shaped - every release
+  # section legitimately repeats "### Added"/"### Changed"/"### Fixed" as its own subheadings.
+  # siblings_only only compares headings that share the same parent, so two "### Fixed" under two
+  # different "## [x.y.z]" releases are correctly left alone, while a genuine same-section dupe
+  # would still be caught.
+  MD024:
+    siblings_only: true
+  # MD060 (table-column-style): several tables here (Test/Mftf/SCENARIOS.md's action/cron
+  # catalogs, API.md, docs/marketplace/USER-GUIDE.md) are hand-maintained with very long,
+  # information-dense cells - enforcing pixel-perfect pipe alignment would mean realigning every
+  # row's pipes on every edit to any cell in the table, for a purely cosmetic property with no
+  # effect on how the table renders.
+  MD060: false
