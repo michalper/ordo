@@ -154,6 +154,27 @@ interface CampaignTriggerInterface
     public const TRIGGER_WISHLIST_ABANDONED = 'wishlist_abandoned';
 
     /**
+     * Fires from Cron\DispatchSegmentBlastCampaigns for every customer currently resolved by this
+     * trigger's own `segment_id` param (Model\Segment\SegmentMemberResolver) - the one-time/
+     * scheduled "send this campaign to a segment" primitive ROADMAP.md flagged as missing: every
+     * other trigger either reacts to a real event or, like TRIGGER_SCHEDULED_AT/
+     * TRIGGER_RECURRING_SCHEDULE, fires campaign-wide with no customer_id in context at all.
+     * Optional `scheduled_at` param (same format as TRIGGER_SCHEDULED_AT) delays the first scan
+     * until that moment; omitted or blank fires as soon as the next scan (every 5 minutes) sees
+     * the trigger. Dispatched at most once ever per (customer_id, campaign_id) pair via
+     * ordo_segment_blast_trigger_claim, the same one-dispatch-per-pair-forever shape
+     * ordo_review_request_log uses (not customer_inactive's re-firable cooldown window - a blast
+     * has no notion of "leaving and re-entering" to re-fire from).
+     *
+     * Known v1 shape, not an oversight: this re-resolves the segment's CURRENT membership on every
+     * scan, so a customer who joins the segment after the blast starts still gets it on a later
+     * scan (claimed-per-customer, so never twice) - it is not a frozen point-in-time snapshot of
+     * who was in the segment the moment the trigger became due. Disable or delete the trigger once
+     * the intended audience has been covered if an ongoing stream to new joiners isn't wanted.
+     */
+    public const TRIGGER_SEGMENT_BLAST = 'segment_blast';
+
+    /**
      * @return int|null
      */
     public function getEntityId(): ?int;

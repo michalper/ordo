@@ -82,6 +82,8 @@ class Config
 
     private const string XML_PATH_CUSTOMER_ANNIVERSARY_TRIGGER_ENABLED =
         'ordo_automation/customer_anniversary_trigger/enabled';
+    private const string XML_PATH_SEGMENT_BLAST_TRIGGER_ENABLED =
+        'ordo_automation/segment_blast_trigger/enabled';
 
     private const string XML_PATH_CLV_PROJECTION_YEARS = 'ordo_scoring/clv/projection_years';
     private const string XML_PATH_CLV_MIN_TENURE_MONTHS = 'ordo_scoring/clv/min_tenure_months';
@@ -700,6 +702,15 @@ class Config
     {
         return $this->scopeConfig->isSetFlag(
             self::XML_PATH_CUSTOMER_ANNIVERSARY_TRIGGER_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function isSegmentBlastTriggerEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_SEGMENT_BLAST_TRIGGER_ENABLED,
             ScopeInterface::SCOPE_STORE,
             $storeId
         );

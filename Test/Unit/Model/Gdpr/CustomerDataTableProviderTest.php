@@ -15,11 +15,11 @@ class CustomerDataTableProviderTest extends TestCase
         $this->provider = new CustomerDataTableProvider();
     }
 
-    public function testGetTablesReturnsAllTwentyNineCustomerKeyedTables(): void
+    public function testGetTablesReturnsAllThirtyCustomerKeyedTables(): void
     {
         $tables = $this->provider->getTables();
 
-        self::assertCount(29, $tables);
+        self::assertCount(30, $tables);
         self::assertContains('ordo_customer_consent', $tables);
         self::assertContains('ordo_customer_consent_topic', $tables);
         self::assertContains('ordo_customer_consent_log', $tables);
@@ -56,6 +56,7 @@ class CustomerDataTableProviderTest extends TestCase
         // trigger feature, had a non-nullable customer_id and was never added here either.
         self::assertContains('ordo_customer_inactive_trigger_claim', $tables);
         self::assertContains('ordo_customer_anniversary_trigger_claim', $tables);
+        self::assertContains('ordo_segment_blast_trigger_claim', $tables);
     }
 
     public function testGetExportKeysByTableMapsEveryTableToItsExportKey(): void
@@ -92,6 +93,7 @@ class CustomerDataTableProviderTest extends TestCase
             'ordo_referral_code' => 'referral_code',
             'ordo_customer_inactive_trigger_claim' => 'customer_inactive_trigger_claim',
             'ordo_customer_anniversary_trigger_claim' => 'customer_anniversary_trigger_claim',
+            'ordo_segment_blast_trigger_claim' => 'segment_blast_trigger_claim',
         ], $map);
     }
 

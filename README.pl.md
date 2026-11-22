@@ -98,6 +98,10 @@ strukturalnie nie widzą.
   odłożonym krokiem, pomijający resztę po jego spełnieniu (np. klient już skonwertował), a kampania może
   wyłączyć z każdej akcji konfigurowalny procent dopasowanych klientów (grupa kontrolna) do prawdziwego pomiaru
   przyrostowego efektu względem grupy, która dostała wysyłkę.
+- Blast do segmentu — jednorazowy/zaplanowany trigger "wyślij tę kampanię do segmentu": dociera raz
+  do każdego klienta aktualnie pasującego do wybranego segmentu, opcjonalnie z opóźnieniem do
+  wskazanej daty/godziny, wysyłany co najwyżej raz na zawsze dla każdego klienta niezależnie od
+  liczby skanów potrzebnych do pokrycia dużego segmentu.
 - Dwustronne konwersacje — administrator może odpowiedzieć wprost na przychodzącą wiadomość SMS/WhatsApp z
   gridu Konwersacji, nie tylko odebrać i otagować.
 - Przewidywana najlepsza pora wysyłki — opcja do włączenia per akcja `send_email`, wysyła w

@@ -68,7 +68,8 @@
             "sent_at": true
         },
         "index": {
-            "ORDO_WISHLIST_ABANDONED_LOG_CUSTOMER_ID_EVENT_KEY": true
+            "ORDO_WISHLIST_ABANDONED_LOG_CUSTOMER_ID_EVENT_KEY": true,
+            "ORDO_WISHLIST_ABANDONED_REMINDER_LOG_CUSTOMER_ID_EVENT_KEY": true
         },
         "constraint": {
             "PRIMARY": true
@@ -1231,6 +1232,20 @@
         "constraint": {
             "PRIMARY": true,
             "FK_D7B0D71C27DD282382B8646888FD25F6": true
+        }
+    },
+    "ordo_segment_blast_trigger_claim": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "campaign_id": true,
+            "fired_at": true
+        },
+        "index": {
+            "ORDO_SEGMENT_BLAST_TRIGGER_CLAIM_CUSTOMER_ID_CAMPAIGN_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true
         }
     }
 }
