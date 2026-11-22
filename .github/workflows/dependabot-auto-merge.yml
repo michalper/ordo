@@ -20,20 +20,24 @@ name: Dependabot auto-merge
 # `contents: write`/`pull-requests: write` below are this workflow's own explicit grant — the
 # repo's default (Settings -> Actions -> General -> Workflow permissions) is read-only; declaring
 # the broader scope here is what lets `gh pr merge --auto` succeed for this one workflow without
-# loosening the default for every other workflow in the repo.
+# loosening the default for every other workflow in the repo. Scoped at job level, not top level
+# (OpenSSF Scorecard's Token-Permissions check prefers this — a write grant declared at the
+# workflow level would apply to any future job added here too, even one that never needs it).
 
 on:
   pull_request:
     branches: [main, master]
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   auto-merge:
     if: ${{ github.actor == 'dependabot[bot]' }}
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Dependabot metadata
         id: metadata

@@ -23,6 +23,11 @@ on:
     - cron: "0 5 * * 1"
   workflow_dispatch:
 
+# Least-privilege default (OpenSSF Scorecard's Token-Permissions check) - nothing in this
+# workflow needs more than reading the checked-out code.
+permissions:
+  contents: read
+
 jobs:
   unit-tests-php86-preview:
     runs-on: ubuntu-24.04
