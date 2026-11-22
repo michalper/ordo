@@ -40,13 +40,14 @@ jobs:
           persist-credentials: false
 
       - name: Run analysis
-        uses: ossf/scorecard-action@56eaeac26fc540dfface1f07f79b9426f1956b4d # v2.6.0
+        uses: ossf/scorecard-action@23f22cd43608bae7a1f1fa2603d7314dee9538a5 # v2.6.0
         with:
           results_file: results.sarif
           results_format: sarif
           publish_results: true
+          fail_on_publish_error: true
 
       - name: Upload SARIF results to the Security tab
-        uses: github/codeql-action/upload-sarif@c7d06fb566a6d85f48fca6e69af3d68c79af81cf # v3.39.4
+        uses: github/codeql-action/upload-sarif@d2aacf54c2fbc910db8d7ec338fdb54ea48c692d # v3.39.4
         with:
           sarif_file: results.sarif
