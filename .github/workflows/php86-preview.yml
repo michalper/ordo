@@ -1,0 +1,59 @@
+name: PHP 8.6 preview compatibility check
+
+# Purely informational, non-blocking signal for PHP 8.6 - composer.json caps support at "<8.6"
+# (Magento 2.4.9 itself isn't yet formally confirmed on 8.6 by Adobe either, see the PHP/Magento
+# version matrix added to api-tests.yml/integration-tests.yml), so this is NOT a required status
+# check and NOT part of ci.yml's own matrix - it exists to continuously confirm (or catch a
+# regression in) this module's own PHP 8.6 readiness ahead of actually raising that ceiling.
+#
+# --ignore-platform-reqs on the install step is required precisely because composer.json's own
+# platform check would otherwise refuse to install on a PHP version outside ">=8.3 <8.6" - this
+# is the one place in the repo that deliberately works around that constraint instead of changing
+# it. continue-on-error on the job itself means a failure here never blocks anything; it only
+# shows as a (non-blocking) warning in the Actions UI and this workflow's own run history is the
+# record to check periodically.
+#
+# Confirmed locally before adding this (2026-11-22): PHP 8.6.0 vs 8.4.28 against the same vendor/
+# gave byte-identical PHPUnit/PHPStan/Rector/PHPCS results - zero PHP-8.6-specific issues found in
+# this module's own code. This workflow is what keeps that true going forward instead of relying
+# on one manual check.
+
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+jobs:
+  unit-tests-php86-preview:
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: "8.6"
+          coverage: none
+
+      - name: Configure Composer for repo.magento.com
+        env:
+          MAGENTO_COMPOSER_USERNAME: ${{ secrets.MAGENTO_COMPOSER_USERNAME }}
+          MAGENTO_COMPOSER_PASSWORD: ${{ secrets.MAGENTO_COMPOSER_PASSWORD }}
+        run: |
+          composer config repositories.magento composer https://repo.magento.com
+          composer config http-basic.repo.magento.com "$MAGENTO_COMPOSER_USERNAME" "$MAGENTO_COMPOSER_PASSWORD"
+          composer config allow-plugins.magento/composer-dependency-version-audit-plugin true
+          composer config allow-plugins.magento/magento-composer-installer true
+          composer config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer config allow-plugins.infection/extension-installer true
+
+      - name: Install dependencies (ignoring composer.json's own "<8.6" platform cap)
+        run: composer install --no-interaction --no-progress --prefer-dist --ignore-platform-reqs
+
+      - name: Run unit tests
+        run: >-
+          vendor/bin/phpunit
+          --display-phpunit-notices --display-notices --display-warnings --display-deprecations
+          --fail-on-phpunit-notice --fail-on-notice --fail-on-warning --fail-on-deprecation
