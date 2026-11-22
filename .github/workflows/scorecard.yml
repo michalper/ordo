@@ -1,0 +1,52 @@
+name: OpenSSF Scorecard supply-chain analysis
+
+# Free, read-only supply-chain security scoring (branch protection, maintained-ness, pinned
+# dependencies, token permissions, dangerous workflow patterns, etc.) - publishes results to this
+# repo's own Security tab via SARIF upload AND to the public Scorecard API
+# (deps.dev/_/s/github.com/michalper/ordo), the latter only possible because this repo is public.
+# No required status check, no branch-protection entry, no blast radius on any PR - purely
+# informational, same spirit as this repo already has for ZAP's DAST scan.
+#
+# Scheduled weekly (not on every push/PR) because a score barely moves day to day and GitHub's own
+# template recommends a schedule over per-push runs for exactly that reason; branch_protection_rule
+# re-runs it whenever that setting changes, since Scorecard's own "Branch-Protection" check reads it
+# directly.
+
+on:
+  branch_protection_rule:
+  schedule:
+    - cron: "30 6 * * 1"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-24.04
+    permissions:
+      security-events: write
+      id-token: write
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run analysis
+        uses: ossf/scorecard-action@56eaeac26fc540dfface1f07f79b9426f1956b4d # v2.6.0
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+
+      - name: Upload SARIF results to the Security tab
+        uses: github/codeql-action/upload-sarif@c7d06fb566a6d85f48fca6e69af3d68c79af81cf # v3.39.4
+        with:
+          sarif_file: results.sarif
