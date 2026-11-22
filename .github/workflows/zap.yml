@@ -86,6 +86,14 @@ jobs:
       - name: Checkout Magento 2.4.9
         run: git clone --branch 2.4.9 --depth 1 https://github.com/magento/magento2.git magento
 
+      - name: Cache Composer packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.json') }}
+          restore-keys: |
+            composer-${{ runner.os }}-
+
       - name: Configure Composer for repo.magento.com and the local module
         working-directory: magento
         env:
