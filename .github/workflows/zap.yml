@@ -20,6 +20,11 @@ on:
     - cron: "0 4 * * *"
   workflow_dispatch:
 
+# Least-privilege default (OpenSSF Scorecard's Token-Permissions check) - nothing in this
+# workflow needs more than reading the checked-out code.
+permissions:
+  contents: read
+
 jobs:
   zap-full-scan:
     runs-on: ubuntu-24.04

@@ -43,6 +43,11 @@ on:
         required: false
         type: string
 
+# Least-privilege default (OpenSSF Scorecard's Token-Permissions check) - nothing in this
+# workflow needs more than reading the checked-out code.
+permissions:
+  contents: read
+
 jobs:
   mftf:
     runs-on: ubuntu-24.04
