@@ -5,6 +5,12 @@ name: actionlint
 # mistakes before they ever reached a real run) with nothing ever wiring it into CI itself.
 # reporter: local needs no extra token permissions beyond the default contents: read - no PR
 # annotations, just a normal job failure (red X) the same way any other lint step here works.
+#
+# filter_mode: nofilter - reviewdog's "local" reporter still tries to filter findings down to
+# diff-new lines by default, which needs a git diff command this plain actions/checkout (fetch-
+# depth: 1, no base ref) doesn't give it ("reviewdog: diff command is empty", a real first-run
+# failure this workflow hit). nofilter reports every finding regardless, which is what a lint gate
+# on the whole file actually wants anyway - not just lines changed in this particular diff.
 
 on:
   push:
@@ -31,3 +37,4 @@ jobs:
         with:
           reporter: local
           fail_level: error
+          filter_mode: nofilter
