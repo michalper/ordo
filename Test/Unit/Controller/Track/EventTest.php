@@ -138,6 +138,53 @@ class EventTest extends AbstractFrontendActionTestCase
         $controller->execute();
     }
 
+    /**
+     * search_no_results (docs/adr/0076) is also a live trigger, same reasoning as exit_intent -
+     * but unlike that one, customer_id rides along when the request is anonymous-free.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteDispatchesSearchNoResultsEventForAnonymousVisitor(): void
+    {
+        $controller = $this->makeController();
+        $this->config->method('isTrackingEnabled')->willReturn(true);
+        $this->request->method('getParam')->willReturnMap([
+            ['visitor_id', null, 'v1'],
+            ['event_type', null, 'search_no_results'],
+            ['event_key', null, 'running shoes'],
+        ]);
+
+        $this->customerSession->method('isLoggedIn')->willReturn(false);
+
+        $this->visitorEventLogger->expects(self::once())->method('log')
+            ->with('v1', 'search_no_results', 'running shoes', null);
+        $this->eventManager->expects(self::once())->method('dispatch')
+            ->with('ordo_visitor_search_no_results', ['visitor_id' => 'v1', 'customer_id' => null]);
+        $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
+
+        $controller->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteDispatchesSearchNoResultsEventWithCustomerIdForLoggedInCustomer(): void
+    {
+        $controller = $this->makeController();
+        $this->config->method('isTrackingEnabled')->willReturn(true);
+        $this->request->method('getParam')->willReturnMap([
+            ['visitor_id', null, 'v1'],
+            ['event_type', null, 'search_no_results'],
+            ['event_key', null, 'running shoes'],
+        ]);
+
+        $this->customerSession->method('isLoggedIn')->willReturn(true);
+        $this->customerSession->method('getCustomerId')->willReturn(42);
+
+        $this->eventManager->expects(self::once())->method('dispatch')
+            ->with('ordo_visitor_search_no_results', ['visitor_id' => 'v1', 'customer_id' => 42]);
+        $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
+
+        $controller->execute();
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsElementClickedEvent(): void
     {

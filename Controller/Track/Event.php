@@ -37,6 +37,7 @@ class Event extends Action implements HttpPostActionInterface, CsrfAwareActionIn
         'element_clicked',
         'checkout_start',
         'exit_intent',
+        'search_no_results',
     ];
     private const int MAX_KEY_LENGTH = 255;
 
@@ -81,6 +82,16 @@ class Event extends Action implements HttpPostActionInterface, CsrfAwareActionIn
         // event for "the tracking endpoint was called" to observe instead.
         if ($eventType === 'exit_intent') {
             $this->eventManager->dispatch('ordo_visitor_exit_intent', ['visitor_id' => $visitorId]);
+        }
+
+        // search_no_results (docs/adr/0076) is also a live trigger, same reasoning as exit_intent
+        // above - but unlike that one, a search is meaningful for a logged-in customer too, so
+        // customer_id rides along whenever this request is authenticated.
+        if ($eventType === 'search_no_results') {
+            $this->eventManager->dispatch('ordo_visitor_search_no_results', [
+                'visitor_id' => $visitorId,
+                'customer_id' => $customerId,
+            ]);
         }
 
         return $result->setData(['ok' => true]);

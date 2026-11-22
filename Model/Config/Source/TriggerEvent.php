@@ -74,6 +74,10 @@ class TriggerEvent implements OptionSourceInterface
                 'value' => CampaignTriggerInterface::TRIGGER_SEGMENT_BLAST,
                 'label' => __('Segment Blast (one-time/scheduled send to a segment)'),
             ],
+            [
+                'value' => CampaignTriggerInterface::TRIGGER_SEARCH_NO_RESULTS,
+                'label' => __('On-Site Search, No Results'),
+            ],
         ];
     }
 }
