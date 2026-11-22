@@ -1,0 +1,103 @@
+name: Auto-release
+
+# Automates "Cutting a release" (CONTRIBUTING.md): tags the commit and publishes a matching
+# GitHub Release off docs/CHANGELOG.md's own newest dated section, together, in one step, the
+# same thing scripts/release.sh already does by hand - so nobody has to remember to run it after
+# a CHANGELOG-update PR merges to main. Forgetting that manual step is exactly what once left
+# 1.6.0 tagged with no visible entry on the Releases page (see scripts/release.sh's own comment).
+#
+# Triggered by every CI workflow that runs on main finishing (not by the push itself) - a release
+# must never be cut off a commit before its own CI has actually gone green, the same gate
+# scripts/release.sh already enforces for a manual release. Each of the 4 workflows finishing
+# fires this once, so it can run up to 4 times for the same commit; harmless, since the
+# already-tagged check below makes every run after the first a no-op, and the all-green check
+# makes an early firing (before the other 3 workflows finish) a no-op too, retried by whichever
+# of the remaining 3 finishes last.
+#
+# Does nothing when docs/CHANGELOG.md's newest dated section (right after "## [Unreleased]") is
+# already tagged - i.e. on every ordinary push that isn't itself a "cut a release" PR.
+
+on:
+  workflow_run:
+    workflows: ["CI", "PHP Coverage Report", "API Tests", "Integration Tests"]
+    types: [completed]
+
+# Least-privilege default (OpenSSF Scorecard's Token-Permissions check); the one job that
+# actually needs to push a tag and create a release raises it at job level instead.
+permissions:
+  contents: read
+
+jobs:
+  release:
+    if: github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main at the commit CI just finished for
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Determine the newest dated CHANGELOG version
+        id: version
+        run: |
+          version="$(awk '/^## \[Unreleased\]/ { found=1; next } found && /^## \[/ { print; exit }' docs/CHANGELOG.md | sed -E 's/^## \[([^]]+)\].*/\1/')"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ -z "$version" ]]; then
+            echo "No dated release section right after [Unreleased] - nothing to release."
+          else
+            echo "Newest dated CHANGELOG section: $version"
+          fi
+
+      - name: Skip if that version is already tagged
+        id: check
+        if: steps.version.outputs.version != ''
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if git ls-remote --tags origin "refs/tags/$VERSION" | grep -q .; then
+            echo "already_tagged=true" >> "$GITHUB_OUTPUT"
+            echo "$VERSION is already tagged - nothing to do."
+          else
+            echo "already_tagged=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify every check for this commit is green
+        id: gate
+        if: steps.version.outputs.version != '' && steps.check.outputs.already_tagged == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          check_runs="$(gh api "repos/${{ github.repository }}/commits/$SHA/check-runs" --paginate --jq '.check_runs')"
+          total="$(jq -s 'add | length' <<<"$check_runs")"
+          not_green="$(jq -s 'add | [.[] | select(.status != "completed" or (.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral"))] | length' <<<"$check_runs")"
+          if [[ "$total" -eq 0 || "$not_green" -gt 0 ]]; then
+            echo "Not every check is green yet for $SHA ($not_green/$total not successful) - whichever of the other triggering workflows finishes last will retry this."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Tag and publish the GitHub Release
+        if: steps.version.outputs.version != '' && steps.check.outputs.already_tagged == 'false' && steps.gate.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          notes_file="$(mktemp)"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { flag=1; next }
+            flag && /^## \[/ { exit }
+            flag { print }
+          ' docs/CHANGELOG.md > "$notes_file"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "$VERSION"
+          git push origin "$VERSION"
+          gh release create "$VERSION" --title "$VERSION" --notes-file "$notes_file"
+
+          echo "Tagged and published $VERSION: https://github.com/${{ github.repository }}/releases/tag/$VERSION"
