@@ -186,7 +186,7 @@ jobs:
         working-directory: magento
         run: |
           bin/magento setup:install \
-            --base-url=http://${SELENIUM_REACHABLE_HOST}:8080/ \
+            --base-url="http://${SELENIUM_REACHABLE_HOST}:8080/" \
             --db-host=127.0.0.1 --db-name=magento --db-user=root \
             --admin-firstname=Admin --admin-lastname=User \
             --admin-email=admin@example.com --admin-user=admin --admin-password='Admin123!' \
@@ -288,7 +288,7 @@ jobs:
         # mirror hiccup, so the retry wraps all three calls together, not just the PPA add.
         run: |
           # sodium isn't a separate apt package — it's bundled into PHP core since 7.2.
-          for i in $(seq 1 5); do
+          for _ in $(seq 1 5); do
             sudo add-apt-repository -y ppa:ondrej/php && \
             sudo apt-get update -qq && \
             sudo apt-get install -y -qq nginx php8.4-fpm php8.4-bcmath php8.4-curl php8.4-gd \
@@ -361,7 +361,7 @@ jobs:
           # instantly under `bash -e`, with no later step ever re-attempting it) - same class of
           # flakiness already handled elsewhere in this job (composer's own retries, the nginx/
           # PHP-FPM health-check loop below), just missing here.
-          for i in $(seq 1 5); do
+          for _ in $(seq 1 5); do
             sudo curl -sfL -o /usr/local/bin/mhsendmail \
               https://github.com/mailhog/mhsendmail/releases/download/v0.2.0/mhsendmail_linux_amd64 && break
             sleep 3
@@ -395,7 +395,7 @@ jobs:
           sudo nginx -t
           sudo systemctl restart php8.4-fpm
           sudo systemctl restart nginx
-          for i in $(seq 1 15); do
+          for _ in $(seq 1 15); do
             curl -sf http://127.0.0.1:8080/ -o /dev/null && break
             sleep 2
           done
@@ -477,7 +477,7 @@ jobs:
           TEST_FILTER: ${{ inputs.test_filter }}
         run: |
           if [ -n "$TEST_FILTER" ]; then
-            vendor/bin/mftf run:test $TEST_FILTER
+            vendor/bin/mftf run:test "$TEST_FILTER"
           else
             vendor/bin/mftf run:group ${{ matrix.group }}
           fi
