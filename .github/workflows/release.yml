@@ -33,6 +33,9 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+    outputs:
+      released: ${{ steps.publish.outputs.released }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout main at the commit CI just finished for
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -82,6 +85,7 @@ jobs:
           fi
 
       - name: Tag and publish the GitHub Release
+        id: publish
         if: steps.version.outputs.version != '' && steps.check.outputs.already_tagged == 'false' && steps.gate.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -100,4 +104,158 @@ jobs:
           git push origin "$VERSION"
           gh release create "$VERSION" --title "$VERSION" --notes-file "$notes_file"
 
+          echo "released=true" >> "$GITHUB_OUTPUT"
           echo "Tagged and published $VERSION: https://github.com/${{ github.repository }}/releases/tag/$VERSION"
+
+  update-site:
+    # Mirrors the just-cut release onto ordo-site/changelog.html (ordo.marketing) - the one step
+    # of "Cutting a release" (CONTRIBUTING.md) the release job above can't do by reusing the
+    # CHANGELOG verbatim, since that file's own entries are deliberately technical (class/method
+    # names, ADR references) and changelog.html's are deliberately NOT (see its own existing
+    # entries) - so this asks Claude to rewrite this release's CHANGELOG section into 1-4 short,
+    # plain-language bullets in that established voice, then opens a PR on ordo-site with the
+    # result and merges it immediately (no human review step, by explicit instruction - this
+    # repo's maintainer would otherwise have to review every single release by hand, defeating
+    # the point of automating this at all).
+    #
+    # Needs two repository secrets neither committed anywhere in this repo:
+    # - ANTHROPIC_API_KEY: an API key from console.anthropic.com, used only for this rewrite.
+    # - ORDO_SITE_TOKEN: a fine-grained PAT (Settings -> Developer settings -> Personal access
+    #   tokens -> Fine-grained) scoped to ONLY the michalper/ordo-site repo, with Contents:
+    #   Read & write and Pull requests: Read & write - the default GITHUB_TOKEN can't touch a
+    #   different repository.
+    needs: release
+    if: needs.release.outputs.released == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout ordo (for its own CHANGELOG section)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: ordo
+
+      - name: Checkout ordo-site
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: michalper/ordo-site
+          token: ${{ secrets.ORDO_SITE_TOKEN }}
+          path: ordo-site
+
+      - name: Extract this release's CHANGELOG section
+        id: notes
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+        run: |
+          section_file="$(mktemp)"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { flag=1; next }
+            flag && /^## \[/ { exit }
+            flag { print }
+          ' ordo/docs/CHANGELOG.md > "$section_file"
+          {
+            echo "section<<SECTION_EOF"
+            cat "$section_file"
+            echo "SECTION_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Ask Claude to rewrite it in changelog.html's own plain-language voice
+        id: rewrite
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CHANGELOG_SECTION: ${{ steps.notes.outputs.section }}
+        run: |
+          system_prompt="$(cat <<'PROMPT_EOF'
+          You rewrite one technical CHANGELOG.md section (Keep-a-Changelog style, full of
+          class/method names and ADR references) into 1-4 short, plain-language bullets for a
+          public marketing changelog page, matching the voice of these real past entries exactly
+          - matter-of-fact, no hype, describes user-visible impact, never a class/file name,
+          never an ADR number:
+
+          - Closed a CSRF gap that could let a malicious page tag a logged-in customer's account with attacker-chosen data.
+          - More resilient campaign scheduling - a failing step in a delayed/quiet-hours campaign no longer risks re-running earlier steps on retry.
+          - Zero-party-data surveys now render on the storefront for a custom text/choice question too, not just the NPS score - matching what the campaign builder already let you configure.
+
+          Output ONLY the new bullets as raw HTML <li>...</li> lines, one per line, nothing else -
+          no markdown, no code fences, no preamble, no explanation. Skip anything with zero
+          user-visible effect (internal refactors, test-only changes, CI changes) - if truly
+          nothing in the section is user-visible, output nothing at all.
+          PROMPT_EOF
+          )"
+
+          response="$(jq -n --arg sys "$system_prompt" --arg user "$CHANGELOG_SECTION" \
+            '{model: "claude-sonnet-5", max_tokens: 1024, system: $sys, messages: [{role: "user", content: $user}]}' | \
+            curl -sS https://api.anthropic.com/v1/messages \
+              -H "x-api-key: $ANTHROPIC_API_KEY" \
+              -H "anthropic-version: 2023-06-01" \
+              -H "content-type: application/json" \
+              -d @-)"
+
+          bullets="$(jq -r '.content[0].text // empty' <<<"$response")"
+
+          if [[ -z "$bullets" ]]; then
+            echo "Claude returned no bullets (or the API call failed) - nothing user-visible to add, or something went wrong. Not touching ordo-site." >&2
+            {
+              echo "error<<ERR_EOF"
+              jq -r '.error.message // "empty response"' <<<"$response"
+              echo "ERR_EOF"
+              echo "has_bullets=false"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Sanity-check the model's own output before it ever touches a live public page - every
+          # non-blank line must be exactly one <li>...</li>, nothing else, or this is skipped
+          # rather than risking broken HTML on ordo.marketing.
+          if grep -qvE '^\s*(<li>.*</li>)?\s*$' <<<"$bullets"; then
+            echo "Claude's output didn't look like plain <li> lines - not touching ordo-site:" >&2
+            echo "$bullets" >&2
+            echo "has_bullets=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          {
+            echo "bullets<<BULLETS_EOF"
+            echo "$bullets"
+            echo "BULLETS_EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "has_bullets=true" >> "$GITHUB_OUTPUT"
+
+      - name: Insert the new release block and open a PR
+        if: steps.rewrite.outputs.has_bullets == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.ORDO_SITE_TOKEN }}
+          VERSION: ${{ needs.release.outputs.version }}
+          BULLETS: ${{ steps.rewrite.outputs.bullets }}
+        run: |
+          cd ordo-site
+          date="$(date +%Y-%m-%d)"
+          block_file="$(mktemp)"
+          {
+            echo "    <div class=\"release\">"
+            echo "      <div class=\"release-head\"><span class=\"version\">${VERSION}</span><span class=\"date\">${date}</span></div>"
+            echo "      <ul>"
+            while IFS= read -r line; do printf '        %s\n' "$line"; done <<<"$BULLETS"
+            echo "      </ul>"
+            echo "    </div>"
+            echo
+          } > "$block_file"
+
+          anchor='<section class="block" style="border-top:none; padding-top:0;">'
+          awk -v anchor="$anchor" -v blockfile="$block_file" '
+            { print }
+            index($0, anchor) { while ((getline line < blockfile) > 0) print line }
+          ' changelog.html > changelog.html.new
+          mv changelog.html.new changelog.html
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          branch="release-notes/$VERSION"
+          git checkout -b "$branch"
+          git add changelog.html
+          git commit -m "Add $VERSION to the changelog (auto-drafted by ordo's release.yml, no human review by design)"
+          git push origin "$branch"
+          gh pr create --repo michalper/ordo-site --title "changelog: add $VERSION" \
+            --body "Auto-drafted from [ordo's CHANGELOG](https://github.com/michalper/ordo/releases/tag/$VERSION) by ordo's own release.yml - see that workflow for how." \
+            --head "$branch" --base master
+          gh pr merge --repo michalper/ordo-site "$branch" --squash --delete-branch
