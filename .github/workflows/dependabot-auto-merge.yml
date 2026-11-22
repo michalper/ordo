@@ -31,6 +31,13 @@ on:
 permissions:
   contents: read
 
+# A superseded run (an older commit on the same PR/branch) is cancelled outright rather than
+# left to finish - its result would never matter once a newer commit's run exists for the same
+# ref, so letting it keep consuming a runner is pure waste.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   auto-merge:
     if: ${{ github.actor == 'dependabot[bot]' }}
