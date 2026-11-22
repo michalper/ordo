@@ -70,6 +70,10 @@ class TriggerEvent implements OptionSourceInterface
                 'value' => CampaignTriggerInterface::TRIGGER_WISHLIST_ABANDONED,
                 'label' => __('Wishlist Abandoned (added to wishlist, no order since)'),
             ],
+            [
+                'value' => CampaignTriggerInterface::TRIGGER_SEGMENT_BLAST,
+                'label' => __('Segment Blast (one-time/scheduled send to a segment)'),
+            ],
         ];
     }
 }

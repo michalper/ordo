@@ -99,6 +99,10 @@ access to that data.
   exit condition re-checked before every delayed step, skipping the rest once satisfied (e.g. the customer
   already converted), and a campaign can hold out a configurable percent of matching customers from every
   action for true incremental-lift measurement against the sent group.
+- Segment blast — a one-time/scheduled "send this campaign to a segment" trigger: dispatches once
+  per customer currently matching a chosen segment, optionally delayed to a future date/time,
+  dispatched at most once ever per customer regardless of how many scans it takes to cover a large
+  segment.
 - Two-way conversations — an admin can reply directly to an inbound SMS/WhatsApp message from the
   Conversations grid, not just receive and tag it.
 - Predictive send-time optimization — opt-in per `send_email` action, defers to each customer's own

@@ -47,6 +47,7 @@ class CampaignSaveProcessor
         'recurring_schedule' => ['cron_expression'],
         'customer_inactive' => ['days'],
         'customer_anniversary' => ['date_source'],
+        'segment_blast' => ['segment_id', 'scheduled_at'],
     ];
 
     public function __construct(

@@ -17,6 +17,7 @@ use Ordo\Automation\Model\Campaign\TypeLabels;
 use Ordo\Automation\Model\CampaignAction;
 use Ordo\Automation\Model\CampaignCondition;
 use Ordo\Automation\Model\CampaignTrigger;
+use Ordo\Automation\Model\Config\Source\SegmentOptions;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\Collection as ActionCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
@@ -44,6 +45,7 @@ class FlowTest extends TestCase
     private TriggerEvent $triggerEventSource;
     private ConditionPool $conditionPool;
     private ActionPool $actionPool;
+    private SegmentOptions $segmentOptions;
 
     protected function setUp(): void
     {
@@ -59,6 +61,10 @@ class FlowTest extends TestCase
         $this->conditionPool->method('getAvailableTypes')->willReturn(['order_total_gte', 'tag']);
         $this->actionPool = $this->createStub(ActionPool::class);
         $this->actionPool->method('getAvailableTypes')->willReturn(['add_tag', 'send_email']);
+        $this->segmentOptions = $this->createStub(SegmentOptions::class);
+        $this->segmentOptions->method('toOptionArray')->willReturn([
+            ['value' => 3, 'label' => 'VIP customers'],
+        ]);
     }
 
     private function makeBlock(): Flow
@@ -80,6 +86,7 @@ class FlowTest extends TestCase
             $this->conditionPool,
             $this->actionPool,
             new TypeLabels(),
+            $this->segmentOptions,
             [],
             $this->createStub(JsonHelper::class),
             $this->createStub(DirectoryHelper::class)
@@ -378,6 +385,9 @@ class FlowTest extends TestCase
             ['dob', 'registration'],
             array_keys($config['trigger']['customer_anniversary'][0]['options'])
         );
+        self::assertSame('segment_id', $config['trigger']['segment_blast'][0]['name']);
+        self::assertSame([3 => 'VIP customers'], $config['trigger']['segment_blast'][0]['options']);
+        self::assertSame('scheduled_at', $config['trigger']['segment_blast'][1]['name']);
     }
 
     #[AllowMockObjectsWithoutExpectations]

@@ -849,15 +849,18 @@ feature sets, with every candidate grepped against the actual codebase (`Api/Dat
 `Controller/Track/*`, `view/frontend`, `Model/ConsentManager.php`) before being listed, not trusted from
 README/ROADMAP prose alone.**
 
-- **One-time/scheduled "blast" campaign to a segment.** Every registered trigger constant is either
-  event-driven or the recurring/scheduled pair, and the campaign-template-library ADR already documents
-  that `recurring_schedule`/`scheduled_at` triggers fire once per campaign with no `customer_id` in
-  context at all (`Model\Campaign\ScheduledTriggerScanner::fire()`). There is no primitive for "send this
-  campaign now (or at a scheduled time) to every current member of segment X" - the single most basic
-  feature almost every ESP ships, and one of the most-requested shapes in competitor feature research.
-  Shape: a new trigger type whose scanner (mirroring `ScheduledTriggerScanner`) resolves a segment's live
-  membership via the existing `SegmentMemberResolver` and dispatches once per customer through the
-  unchanged `CampaignDispatcher` - no new action/condition type needed.
+- ~~**One-time/scheduled "blast" campaign to a segment.**~~ — shipped, see
+  `docs/adr/0075-segment-blast-campaign-trigger.md`. New `segment_blast` trigger
+  (`Cron\DispatchSegmentBlastCampaigns`, every 5 minutes) resolves a trigger's own `segment_id` via
+  the existing `SegmentMemberResolver` and dispatches per customer through the unchanged
+  `CampaignDispatcher::dispatchScheduledTrigger()` - no new action/condition type needed. An
+  optional `scheduled_at` param delays the first dispatch to a future date/time; a new
+  `ordo_segment_blast_trigger_claim` table (same one-dispatch-per-pair-forever shape
+  `ordo_review_request_log` already uses) guarantees at most one dispatch ever per
+  (customer, campaign) pair. Deliberately not a frozen point-in-time snapshot - the segment is
+  re-resolved live on every scan, so a customer joining the segment after the blast started still
+  receives it on a later scan; see the ADR's Consequences for why a two-phase snapshot design was
+  considered and rejected as unjustified v1 complexity.
 - **On-site search tracking (including "no results").** No search-related controller, event, or trigger
   exists anywhere under `Controller/Track/*`/`TRIGGER_*`. Floated once before (2026-11-12 third-pass
   round) and dropped from that list only because it needed new plumbing end to end, not rejected on

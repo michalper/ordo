@@ -12,10 +12,12 @@ use Ordo\Automation\Api\Data\CampaignTriggerInterface;
 use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\Campaign\ActionPool;
 use Ordo\Automation\Model\Campaign\ConditionPool;
+use Ordo\Automation\Model\Campaign\OptionSourceFlattener;
 use Ordo\Automation\Model\Campaign\TypeLabels;
 use Ordo\Automation\Model\CampaignAction;
 use Ordo\Automation\Model\CampaignCondition;
 use Ordo\Automation\Model\CampaignTrigger;
+use Ordo\Automation\Model\Config\Source\SegmentOptions;
 use Ordo\Automation\Model\Config\Source\TriggerEvent;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as ActionCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition\CollectionFactory as ConditionCollectionFactory;
@@ -49,6 +51,7 @@ class Flow extends Template
         private readonly ConditionPool $conditionPool,
         private readonly ActionPool $actionPool,
         private readonly TypeLabels $typeLabels,
+        private readonly SegmentOptions $segmentOptions,
         array $data = [],
         ?JsonHelper $jsonHelper = null,
         ?DirectoryHelper $directoryHelper = null
@@ -216,6 +219,24 @@ class Flow extends Template
                             'dob' => (string) __('Birth Date'),
                             'registration' => (string) __('Registration Anniversary'),
                         ],
+                    ],
+                ],
+                CampaignTriggerInterface::TRIGGER_SEGMENT_BLAST => [
+                    [
+                        'name' => 'segment_id',
+                        'label' => (string) __('Segment'),
+                        'options' => OptionSourceFlattener::toMap($this->segmentOptions),
+                    ],
+                    [
+                        'name' => 'scheduled_at',
+                        'label' => (string) __('Start at (store timezone, optional)'),
+                        'notice' => (string) __(
+                            'Leave blank to start as soon as the next scan (every 5 minutes) sees this'
+                            . ' trigger. Format: YYYY-MM-DD HH:MM:SS, e.g. 2026-11-28 09:00:00. Dispatches'
+                            . ' once per segment member, re-resolved on every scan until none are left'
+                            . ' unclaimed - see this trigger\'s own docblock for what that means for a'
+                            . ' customer who joins the segment later.'
+                        ),
                     ],
                 ],
             ],

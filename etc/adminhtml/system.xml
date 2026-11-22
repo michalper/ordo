@@ -284,6 +284,14 @@
                     <comment>Each campaign's own "Customer Birthday / Registration Anniversary" trigger picks its own date source (Date of Birth or registration date) - this only controls whether that scan runs at all. No cooldown to configure - a birthday/anniversary can only genuinely recur once a calendar year.</comment>
                 </field>
             </group>
+            <group id="segment_blast_trigger" translate="label" type="text" sortOrder="97" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Segment Blast Trigger (Campaign Builder)</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Each campaign's own "Segment Blast" trigger picks its own segment and optional start date/time - this only controls whether that scan runs at all. Dispatches at most once per segment member, ever.</comment>
+                </field>
+            </group>
             <group id="anomaly_alerts" translate="label" type="text" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Anomaly / Insight Alerts</label>
                 <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">

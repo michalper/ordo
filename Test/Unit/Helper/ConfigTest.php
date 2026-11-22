@@ -73,6 +73,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isLowStockWidgetEnabled());
         self::assertTrue($this->config->isEmailCaptureEnabled());
         self::assertTrue($this->config->isCustomerAnniversaryTriggerEnabled());
+        self::assertTrue($this->config->isSegmentBlastTriggerEnabled());
         self::assertTrue($this->config->isGa4Enabled());
         self::assertTrue($this->config->isMetaCapiEnabled());
         self::assertTrue($this->config->isCustomerInactiveTriggerEnabled());
