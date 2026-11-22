@@ -1,0 +1,36 @@
+name: Link check
+
+# Free, read-only check for dead links across every Markdown file this module ships - README.md/
+# README.pl.md, ROADMAP.md, and 75+ docs/adr/*.md files cross-reference each other and link out to
+# GitHub issues/SonarCloud/Codecov/third-party docs, any of which can rot over time with nothing
+# else in this repo ever re-checking them. Purely informational, continue-on-error, same spirit as
+# scorecard.yml/php86-preview.yml - no required status check, no branch-protection entry.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**/*.md"
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  link-check:
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Lychee link check
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: >-
+            --verbose --no-progress
+            --exclude-path node_modules --exclude-path vendor
+            './**/*.md'
+          fail: false

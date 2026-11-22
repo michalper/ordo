@@ -1,0 +1,11 @@
+# Config for the typos.yml workflow (crate-ci/typos). i18n/ CSVs are machine-translated non-English
+# text, not prose this check is meant for; vendor/node_modules/coverage are never our own writing.
+[files]
+extend-exclude = [
+    "i18n/*.csv",
+    "vendor/",
+    "node_modules/",
+    "coverage-js/",
+    "package-lock.json",
+    ".php-cs-fixer.cache",
+]
