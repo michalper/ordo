@@ -42,7 +42,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    # Same path-filter gate ci.yml's own "changes" job uses - see that file's comment for the
+    # full reasoning. This workflow's full Magento install + matrix is one of the most expensive
+    # in the whole repo, so a docs-only PR skipping it entirely is a real, meaningful saving.
+    runs-on: ubuntu-24.04
+    outputs:
+      code: ${{ steps.filter.outputs.code || steps.default.outputs.code }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Detect whether anything besides Markdown docs changed
+        id: filter
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
+            code:
+              - '!**/*.md'
+
+      - name: Default to "code changed" for non-pull_request events
+        id: default
+        if: github.event_name != 'pull_request'
+        run: echo "code=true" >> "$GITHUB_OUTPUT"
+
   integration-tests-magento:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     # Paired, not a full cross-product: README/composer.json claim support for both Magento
     # 2.4.8 and 2.4.9, but every PHP version each one actually supports differs (2.4.8: 8.3/8.4;
     # 2.4.9: 8.4/8.5 per Adobe's own system requirements, though composer will still resolve it
@@ -195,5 +222,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Fail if any leg of the Magento version matrix failed
-        if: ${{ needs.integration-tests-magento.result != 'success' }}
+        # 'skipped' is fine here too - the changes job's own gate decided nothing PHP-relevant
+        # changed, so integration-tests-magento never ran at all rather than ran and failed.
+        if: ${{ needs.integration-tests-magento.result != 'success' && needs.integration-tests-magento.result != 'skipped' }}
         run: exit 1

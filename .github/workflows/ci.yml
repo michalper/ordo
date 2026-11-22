@@ -52,12 +52,43 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    # Detects whether this push/PR touches anything besides Markdown docs (README/ROADMAP/
+    # docs/**/*.md) - a docs-only PR has no way to affect any of this workflow's own test/lint
+    # results, so every real job below skips entirely rather than re-running the exact same
+    # PHP suite against unchanged code. Only trusted on pull_request (dorny/paths-filter's own
+    # GitHub-API-based diff, no git history needed) - a push straight to main (almost always a
+    # squash-merge of an already-reviewed PR) always runs the full suite regardless, so a
+    # misdetected diff on that rarer, more consequential path is never a risk.
+    runs-on: ubuntu-24.04
+    outputs:
+      code: ${{ steps.filter.outputs.code || steps.default.outputs.code }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Detect whether anything besides Markdown docs changed
+        id: filter
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
+            code:
+              - '!**/*.md'
+
+      - name: Default to "code changed" for non-pull_request events
+        id: default
+        if: github.event_name != 'pull_request'
+        run: echo "code=true" >> "$GITHUB_OUTPUT"
+
   unit-tests-php:
     # Matrix across composer.json's whole declared range (">=8.3 <8.6"), not just the 8.4 the
     # rest of this workflow's jobs run on — phpstan/rector/phpcs check *syntax*/types, which
     # don't vary by which PHP actually executes them, but PHPUnit here really runs the code, so
     # this is the one job where a PHP-8.3-only or 8.5-only regression could otherwise slip
     # through untested until a real install on that version hit it.
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -127,10 +158,14 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Fail if any PHP version in the matrix failed
-        if: ${{ needs.unit-tests-php.result != 'success' }}
+        # 'skipped' is fine here too - the changes job's own gate decided nothing PHP-relevant
+        # changed, so unit-tests-php never ran at all rather than ran and failed.
+        if: ${{ needs.unit-tests-php.result != 'success' && needs.unit-tests-php.result != 'skipped' }}
         run: exit 1
 
-  static-analysis:
+  static-analysis-run:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
@@ -168,7 +203,20 @@ jobs:
       - name: Run PHPStan
         run: vendor/bin/phpstan analyse --no-progress
 
-  rector:
+  static-analysis:
+    # Same trivial-aggregator trick as unit-tests above - keeps the required-status-check
+    # context exactly "static-analysis" regardless of whether static-analysis-run actually ran.
+    needs: static-analysis-run
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fail if the real job failed
+        if: ${{ needs.static-analysis-run.result != 'success' && needs.static-analysis-run.result != 'skipped' }}
+        run: exit 1
+
+  rector-run:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
@@ -206,7 +254,18 @@ jobs:
       - name: Run Rector (check only — see rector.php for why no auto-fix here)
         run: composer rector-check
 
-  coding-standard:
+  rector:
+    needs: rector-run
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fail if the real job failed
+        if: ${{ needs.rector-run.result != 'success' && needs.rector-run.result != 'skipped' }}
+        run: exit 1
+
+  coding-standard-run:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
@@ -259,3 +318,12 @@ jobs:
         # findings block a Marketplace submission, so that's the only thing this step fails CI on.
         # --ignore-annotations because EQP's scan ignores `phpcs:ignore` the same way.
         run: composer phpcs-marketplace-check
+
+  coding-standard:
+    needs: coding-standard-run
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fail if the real job failed
+        if: ${{ needs.coding-standard-run.result != 'success' && needs.coding-standard-run.result != 'skipped' }}
+        run: exit 1

@@ -41,6 +41,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    # Same path-filter gate ci.yml's own "changes" job uses - see that file's comment for the
+    # full reasoning. Deliberately only gates mutation-testing below, not php-coverage/js-coverage/
+    # sonar: those three feed the Codecov App's own codecov/patch and codecov/project required
+    # checks, which Codecov itself posts asynchronously once it receives an upload - skipping the
+    # upload for a docs-only PR risks leaving those two checks stuck "pending" forever (no new
+    # report ever arrives for that commit), which would block merge instead of unblocking it. Not
+    # worth that risk for three comparatively fast jobs; mutation-testing has no such external
+    # dependency and is consistently the slowest job in this entire repo's CI.
+    runs-on: ubuntu-24.04
+    outputs:
+      code: ${{ steps.filter.outputs.code || steps.default.outputs.code }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Detect whether anything besides Markdown docs changed
+        id: filter
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
+            code:
+              - '!**/*.md'
+
+      - name: Default to "code changed" for non-pull_request events
+        id: default
+        if: github.event_name != 'pull_request'
+        run: echo "code=true" >> "$GITHUB_OUTPUT"
+
   php-coverage:
     runs-on: ubuntu-24.04
     steps:
@@ -185,7 +215,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-  mutation-testing:
+  mutation-testing-run:
     # Separate job, not a step in `coverage` above — Infection re-runs the whole unit suite once
     # per surviving mutant, which is a materially different (much longer) cost profile than a
     # single coverage pass. Ran non-blocking (continue-on-error) for a while to get a first honest
@@ -194,6 +224,8 @@ jobs:
     # minCoveredMsi were 0 during that period — see git history for that file). Now blocking,
     # gated at 70 (a couple points under the measured baseline, so normal run-to-run mutant
     # selection order doesn't flip a PR red for no real regression).
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
@@ -240,3 +272,15 @@ jobs:
             infection.log
             infection-summary.log
           retention-days: 30
+
+  mutation-testing:
+    # Same trivial-aggregator trick as ci.yml's own unit-tests/static-analysis/rector/
+    # coding-standard - keeps the required-status-check context exactly "mutation-testing"
+    # regardless of whether mutation-testing-run actually ran.
+    needs: mutation-testing-run
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fail if the real job failed
+        if: ${{ needs.mutation-testing-run.result != 'success' && needs.mutation-testing-run.result != 'skipped' }}
+        run: exit 1
