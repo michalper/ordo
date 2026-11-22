@@ -11,6 +11,16 @@ name: actionlint
 # depth: 1, no base ref) doesn't give it ("reviewdog: diff command is empty", a real first-run
 # failure this workflow hit). nofilter reports every finding regardless, which is what a lint gate
 # on the whole file actually wants anyway - not just lines changed in this particular diff.
+#
+# -ignore SC2129: a real second first-run failure. Shellcheck's own severity for this rule is
+# "style" (a preference, not a bug - "consider grouping these redirects"), but reviewdog's
+# severity-parsing doesn't recognize that word and defaults an unrecognized severity to "error",
+# so fail_level: error blocked on it. One real occurrence (mftf.yml's own queue-tables debug dump)
+# was fixed outright since it was a harmless, easy cleanup; a second, structurally more tangled
+# diagnostic block (interleaved writes to several different files, only exercised on a real MFTF
+# failure) was deliberately left alone rather than risk changing its behavior for a style nit -
+# ignoring the rule class-wide is the honest fix for what's actually a tooling severity-mapping
+# quirk, not a real bug in this repo's scripts.
 
 on:
   push:
@@ -38,3 +48,4 @@ jobs:
           reporter: local
           fail_level: error
           filter_mode: nofilter
+          actionlint_flags: -ignore "SC2129"
