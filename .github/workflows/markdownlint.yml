@@ -6,6 +6,11 @@ name: Markdown lint
 # ruleset isn't tuned for - .markdownlint-cli2.yaml below disables the noisiest/least-relevant
 # default rules (line length, "bare" heading punctuation) rather than fighting the existing prose
 # style, but this is a first pass - expect to tune further once real findings come in.
+#
+# .claude/skills/**/*.md excluded entirely (not just rule-tuned): those are Claude Code skill
+# definitions, not docs for a human reader - they open with YAML frontmatter (name/description)
+# by that tool's own convention, never a markdown H1, so MD041 would always fire there for a
+# structural reason that has nothing to do with this repo's actual prose quality.
 
 on:
   push:
@@ -35,3 +40,4 @@ jobs:
             **/*.md
             !vendor/**
             !node_modules/**
+            !.claude/skills/**
