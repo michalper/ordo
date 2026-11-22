@@ -843,3 +843,41 @@ than silently assuming it away.
   (`GET /V1/ordo/loyalty-wallet-pass/google`). Real on-device verification against a real Google Wallet
   Issuer account remains a permanent, accepted gap - see this file's own "Test coverage" section below.
   Apple Wallet itself stays open as a future candidate if the Apple Developer Program gap ever closes.
+
+**A fresh 2026-11-22 brainstorm round, checked against current marketing-automation/CDP platform
+feature sets, with every candidate grepped against the actual codebase (`Api/Data/CampaignTriggerInterface.php`,
+`Controller/Track/*`, `view/frontend`, `Model/ConsentManager.php`) before being listed, not trusted from
+README/ROADMAP prose alone.**
+
+- **One-time/scheduled "blast" campaign to a segment.** Every registered trigger constant is either
+  event-driven or the recurring/scheduled pair, and the campaign-template-library ADR already documents
+  that `recurring_schedule`/`scheduled_at` triggers fire once per campaign with no `customer_id` in
+  context at all (`Model\Campaign\ScheduledTriggerScanner::fire()`). There is no primitive for "send this
+  campaign now (or at a scheduled time) to every current member of segment X" - the single most basic
+  feature almost every ESP ships, and one of the most-requested shapes in competitor feature research.
+  Shape: a new trigger type whose scanner (mirroring `ScheduledTriggerScanner`) resolves a segment's live
+  membership via the existing `SegmentMemberResolver` and dispatches once per customer through the
+  unchanged `CampaignDispatcher` - no new action/condition type needed.
+- **On-site search tracking (including "no results").** No search-related controller, event, or trigger
+  exists anywhere under `Controller/Track/*`/`TRIGGER_*`. Floated once before (2026-11-12 third-pass
+  round) and dropped from that list only because it needed new plumbing end to end, not rejected on
+  merits. Shape: new `Controller/Track/Search` event (`window.ordoTrack('search', {query})`, same pattern
+  as `product_view`), optional `search_no_results` campaign trigger, usable immediately as a segmentation
+  condition via the existing `event_occurred` condition.
+- **Real-time post-purchase/thank-you-page cross-sell widget.** `AddProductRecommendations` only fires
+  inside `send_email` - grepped `view/frontend` for any thank-you/order-success integration point and
+  found none; no `window.ordo*` function targets that page the way `ordoRenderSocialProof`/
+  `ordoRenderLowStock` target the PDP. Shape: same theme-integration-point pattern as those two
+  (`window.ordoRenderCrossSell(orderId, containerSelector)`), reusing `Model\Recommendation\ProductRecommender`
+  server-side - zero new recommendation logic.
+- **Explicit SMS/WhatsApp marketing-consent capture at checkout.** `Model\ConsentManager`'s channel-level
+  default is "no row = consented" (an opt-out model) - legally thin for SMS specifically (TCPA-style
+  regimes expect affirmative prior consent, not silent opt-out), and there's no checkout touchpoint
+  capturing it either way (grepped for `checkout`/`sms_opt_in`/`marketing_consent`, zero hits). Shape: a
+  checkout-page checkbox writing a real `ConsentManager::setConsent()` row for the `Sms`/`Whatsapp`
+  channel at order placement - a UI/plugin addition, no new consent primitive.
+
+Considered and dropped in the same pass: a cross-channel/global frequency fatigue cap (already shipped,
+`Model/Campaign/FrequencyCapManager.php`, channel-agnostic by design); subscription/auto-replenishment and
+gift-card-based rewards (hit the standing no-auto-charge constraint and the Gift Card
+Commerce-only-primitive ceiling respectively, not re-litigated here).
