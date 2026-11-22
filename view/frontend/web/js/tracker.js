@@ -12,6 +12,13 @@
  * since that varies by theme. "checkout_start" is what Model\ResourceModel\FunnelReport\Grid\
  * Collection's own funnel report reads for its own middle stage — see docs/adr/0031.
  *
+ * Same theme-integration-point shape again for on-site search: the search-results template calls
+ * window.ordoTrack('search_no_results', queryText) only when it rendered zero results — this
+ * module has no automatic hook into Magento's own search-results page (that page's own "number of
+ * results" is computed as a side effect of the theme's template rendering, not reliably knowable
+ * any other way - see docs/adr/0076), so this one is theme-integration-only like the others above,
+ * not automatic like "page_view".
+ *
  * Also runs this module's first-ever poll loop (see startPolling below) when the
  * "tracking > popup_enabled" config is on: a campaign's "Show Popup" action has no way to push
  * anything onto an already-open page, so the only way for "the moment a threshold is crossed, a

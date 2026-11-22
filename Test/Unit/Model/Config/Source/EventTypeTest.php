@@ -8,10 +8,10 @@ use PHPUnit\Framework\TestCase;
 
 class EventTypeTest extends TestCase
 {
-    public function testToOptionArrayReturnsCartAddAndWishlistAdd(): void
+    public function testToOptionArrayReturnsEveryRegisteredEventType(): void
     {
         $values = array_column((new EventType())->toOptionArray(), 'value');
 
-        self::assertSame(['cart_add', 'wishlist_add'], $values);
+        self::assertSame(['cart_add', 'wishlist_add', 'search_no_results'], $values);
     }
 }

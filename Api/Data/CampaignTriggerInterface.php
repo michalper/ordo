@@ -175,6 +175,22 @@ interface CampaignTriggerInterface
     public const TRIGGER_SEGMENT_BLAST = 'segment_blast';
 
     /**
+     * Fires live, from Controller\Track\Event (via the "ordo_visitor_search_no_results" Magento
+     * event and Observer\DispatchSearchNoResultsCampaigns - same decoupling shape
+     * TRIGGER_EXIT_INTENT already established: there's no Magento-core event for "the tracking
+     * endpoint was called", so the controller fires one itself), the moment a theme reports a
+     * search that returned zero results via `window.ordoTrack('search_no_results', queryText)`.
+     * Unlike TRIGGER_EXIT_INTENT's deliberately anonymous-only context, a search is meaningful for
+     * a logged-in customer too, so context carries "customer_id" whenever the request is
+     * authenticated (same resolution VisitorIdentityResolver::resolveCustomerId() already does in
+     * that same controller for every other event type), alongside "visitor_id" always. The same
+     * event_type string is also written to ordo_visitor_event (event_key = the search query text),
+     * so it's immediately usable as a segmentation condition via the existing `event_occurred`
+     * condition with zero new condition code - see Model\Config\Source\EventType.
+     */
+    public const TRIGGER_SEARCH_NO_RESULTS = 'search_no_results';
+
+    /**
      * @return int|null
      */
     public function getEntityId(): ?int;

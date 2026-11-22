@@ -861,12 +861,17 @@ README/ROADMAP prose alone.**
   re-resolved live on every scan, so a customer joining the segment after the blast started still
   receives it on a later scan; see the ADR's Consequences for why a two-phase snapshot design was
   considered and rejected as unjustified v1 complexity.
-- **On-site search tracking (including "no results").** No search-related controller, event, or trigger
-  exists anywhere under `Controller/Track/*`/`TRIGGER_*`. Floated once before (2026-11-12 third-pass
-  round) and dropped from that list only because it needed new plumbing end to end, not rejected on
-  merits. Shape: new `Controller/Track/Search` event (`window.ordoTrack('search', {query})`, same pattern
-  as `product_view`), optional `search_no_results` campaign trigger, usable immediately as a segmentation
-  condition via the existing `event_occurred` condition.
+- ~~**On-site search tracking (including "no results").**~~ — shipped, see
+  `docs/adr/0076-search-no-results-campaign-trigger.md`. New `search_no_results` trigger, wired
+  exactly like `exit_intent` (`Controller\Track\Event` fires a Magento event, observed by a new
+  `Observer\DispatchSearchNoResultsCampaigns`) - but unlike that anonymous-only trigger,
+  `customer_id` rides along whenever the request is authenticated. `window.ordoTrack('search_no_results',
+  queryText)` is a theme-integration point (no automatic hook into Magento's own search-results
+  page - its `num_results` is only reliably known as a side effect of template rendering, not a
+  server-side signal this module could observe instead). No schema change needed - the search
+  query text fits the existing generic `event_key` slot on `ordo_visitor_event`, immediately
+  usable as a segmentation condition via the existing `event_occurred` condition with zero new
+  condition code.
 - **Real-time post-purchase/thank-you-page cross-sell widget.** `AddProductRecommendations` only fires
   inside `send_email` - grepped `view/frontend` for any thank-you/order-success integration point and
   found none; no `window.ordo*` function targets that page the way `ordoRenderSocialProof`/
