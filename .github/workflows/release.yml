@@ -29,7 +29,12 @@ permissions:
 
 jobs:
   release:
-    if: github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion == 'success'
+    # head_repository check closes a real gap a branch-name check alone leaves open: a fork can
+    # name its own branch "main" too, and workflow_run still fires for fork-originated pull_request
+    # runs of the 4 upstream workflows - without this, such a run's checked-out SHA (attacker-
+    # controlled content) would be processed by this job while it still holds this repo's own
+    # write-scoped secrets (GITHUB_TOKEN, ORDO_SITE_TOKEN). Caught by SonarCloud's githubactions:S7631.
+    if: github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository && github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -118,8 +123,15 @@ jobs:
     # repo's maintainer would otherwise have to review every single release by hand, defeating
     # the point of automating this at all).
     #
-    # Needs two repository secrets neither committed anywhere in this repo:
-    # - ANTHROPIC_API_KEY: an API key from console.anthropic.com, used only for this rewrite.
+    # Authenticates to the Claude API via Workload Identity Federation (console.anthropic.com ->
+    # Settings -> Workload identity -> federation rule "ordo-release-workflow", service account
+    # "ordo-release-notes-rewriter") - a short-lived token minted per run from this job's own
+    # GitHub OIDC identity, not a long-lived ANTHROPIC_API_KEY secret. The federation rule is
+    # pinned to this exact repo (michalper/ordo, by both name and immutable owner id) and to
+    # refs/heads/main, so only this workflow's own runs on main can ever mint a token - never a
+    # fork's pull_request run (whose own ref claim is refs/pull/N/merge, which never matches).
+    #
+    # Needs one repository secret not committed anywhere in this repo:
     # - ORDO_SITE_TOKEN: a fine-grained PAT (Settings -> Developer settings -> Personal access
     #   tokens -> Fine-grained) scoped to ONLY the michalper/ordo-site repo, with Contents:
     #   Read & write and Pull requests: Read & write - the default GITHUB_TOKEN can't touch a
@@ -129,6 +141,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+      id-token: write
     steps:
       - name: Checkout ordo (for its own CHANGELOG section)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -159,10 +172,47 @@ jobs:
             echo "SECTION_EOF"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Fetch GitHub OIDC token for Anthropic's WIF issuer
+        env:
+          ANTHROPIC_IDENTITY_TOKEN_FILE: /tmp/gha-anthropic-jwt
+        run: |
+          curl -sS -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.anthropic.com" \
+            | jq -r .value > "$ANTHROPIC_IDENTITY_TOKEN_FILE"
+
+      - name: Exchange it for a short-lived Anthropic access token
+        id: anthropic_token
+        env:
+          # IDs that route a federation request to the right rule/service-account/workspace -
+          # not secrets (see this job's own comment: the federation rule itself is what actually
+          # gates who can mint a token, by repo/ref/owner-id, regardless of who knows these IDs).
+          ANTHROPIC_FEDERATION_RULE_ID: fdrl_01RjwUQdqfoNHK3Dfz4Y3q7Z
+          ANTHROPIC_ORGANIZATION_ID: 33e309c0-8281-4c45-b19f-5ee1a45e7a0a
+          ANTHROPIC_SERVICE_ACCOUNT_ID: svac_0122Q3QvzxctAnWVsYMR7j4o
+          ANTHROPIC_WORKSPACE_ID: wrkspc_01SaHM5rCoxs81NixmshgpYp
+        run: |
+          jwt="$(cat /tmp/gha-anthropic-jwt)"
+          access_token="$(jq -n --arg assertion "$jwt" \
+            --arg rule "$ANTHROPIC_FEDERATION_RULE_ID" \
+            --arg org "$ANTHROPIC_ORGANIZATION_ID" \
+            --arg svc "$ANTHROPIC_SERVICE_ACCOUNT_ID" \
+            --arg ws "$ANTHROPIC_WORKSPACE_ID" \
+            '{grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: $assertion,
+              federation_rule_id: $rule, organization_id: $org, service_account_id: $svc,
+              workspace_id: $ws}' | \
+            curl -sS https://api.anthropic.com/v1/oauth/token \
+              -H "content-type: application/json" -d @- | jq -r '.access_token // empty')"
+          if [[ -z "$access_token" ]]; then
+            echo "Anthropic token exchange failed - see the authentication log at https://platform.claude.com/settings/workload-identity-federation?tab=history" >&2
+            exit 1
+          fi
+          echo "::add-mask::$access_token"
+          echo "access_token=$access_token" >> "$GITHUB_OUTPUT"
+
       - name: Ask Claude to rewrite it in changelog.html's own plain-language voice
         id: rewrite
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_ACCESS_TOKEN: ${{ steps.anthropic_token.outputs.access_token }}
           CHANGELOG_SECTION: ${{ steps.notes.outputs.section }}
         run: |
           system_prompt="$(cat <<'PROMPT_EOF'
@@ -186,8 +236,8 @@ jobs:
           response="$(jq -n --arg sys "$system_prompt" --arg user "$CHANGELOG_SECTION" \
             '{model: "claude-sonnet-5", max_tokens: 1024, system: $sys, messages: [{role: "user", content: $user}]}' | \
             curl -sS https://api.anthropic.com/v1/messages \
-              -H "x-api-key: $ANTHROPIC_API_KEY" \
-              -H "anthropic-version: 2023-06-01" \
+              -H "authorization: Bearer $ANTHROPIC_ACCESS_TOKEN" \
+              -H "anthropic-version: 2026-10-21" \
               -H "content-type: application/json" \
               -d @-)"
 
