@@ -30,7 +30,22 @@ on:
   workflow_dispatch:
 
 jobs:
-  integration-tests:
+  integration-tests-magento:
+    # Paired, not a full cross-product: README/composer.json claim support for both Magento
+    # 2.4.8 and 2.4.9, but every PHP version each one actually supports differs (2.4.8: 8.3/8.4;
+    # 2.4.9: 8.4/8.5 per Adobe's own system requirements, though composer will still resolve it
+    # on 8.3/8.4 too) - 2.4.9+PHP 8.4 is exactly the combination already proven working by every
+    # past run of this workflow, and 2.4.8+PHP 8.3 matches composer.json's own declared floor for
+    # each axis. Deliberately not adding a 2.4.8+8.4 or 2.4.9+8.5 leg - neither is proven to work
+    # here yet and this isn't the place to find out for the first time on a required check.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - magento-version: "2.4.8"
+            php-version: "8.3"
+          - magento-version: "2.4.9"
+            php-version: "8.4"
     runs-on: ubuntu-24.04
     timeout-minutes: 40
 
@@ -68,15 +83,15 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
-          php-version: "8.4"
+          php-version: ${{ matrix.php-version }}
           extensions: bcmath, ctype, curl, dom, ftp, gd, intl, mbstring, mysqli, pdo_mysql, simplexml, soap, sodium, xsl, zip, opcache, sockets
           coverage: none
 
       - name: Remove shivammathur/setup-php's ambient GitHub auth
         run: composer config --global --unset github-oauth.github.com || true
 
-      - name: Checkout Magento 2.4.9
-        run: git clone --branch 2.4.9 --depth 1 https://github.com/magento/magento2.git magento
+      - name: Checkout Magento ${{ matrix.magento-version }}
+        run: git clone --branch ${{ matrix.magento-version }} --depth 1 https://github.com/magento/magento2.git magento
 
       - name: Configure Composer for repo.magento.com and the local module
         working-directory: magento
@@ -147,3 +162,18 @@ jobs:
       - name: Run Test/Integration
         working-directory: magento
         run: vendor/bin/phpunit --bootstrap app/bootstrap.php vendor/michalper/ordo/Test/Integration
+
+  integration-tests:
+    # Trivial aggregator, not the real test run (that's integration-tests-magento above) - exists
+    # only so the required-status-check context stays exactly "integration-tests", the literal
+    # string `main`'s branch protection already requires. Same trick ci.yml's unit-tests/
+    # unit-tests-php split already uses, for the same reason: a matrixed job's own context would
+    # otherwise stop satisfying that check, and renaming the branch-protection entry itself needs
+    # an admin edit AGENTS.md already flags as too sensitive to make without asking.
+    needs: integration-tests-magento
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fail if any leg of the Magento version matrix failed
+        if: ${{ needs.integration-tests-magento.result != 'success' }}
+        run: exit 1

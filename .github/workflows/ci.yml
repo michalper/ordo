@@ -40,7 +40,16 @@ on:
     branches: [main, master]
 
 jobs:
-  unit-tests:
+  unit-tests-php:
+    # Matrix across composer.json's whole declared range (">=8.3 <8.6"), not just the 8.4 the
+    # rest of this workflow's jobs run on — phpstan/rector/phpcs check *syntax*/types, which
+    # don't vary by which PHP actually executes them, but PHPUnit here really runs the code, so
+    # this is the one job where a PHP-8.3-only or 8.5-only regression could otherwise slip
+    # through untested until a real install on that version hit it.
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ["8.3", "8.4", "8.5"]
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
@@ -49,7 +58,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
-          php-version: "8.4"
+          php-version: ${{ matrix.php-version }}
           coverage: none
 
       - name: Configure Composer for repo.magento.com
@@ -84,6 +93,22 @@ jobs:
           vendor/bin/phpunit
           --display-phpunit-notices --display-notices --display-warnings --display-deprecations
           --fail-on-phpunit-notice --fail-on-notice --fail-on-warning --fail-on-deprecation
+
+  unit-tests:
+    # A deliberately trivial aggregator, not the real test run (that's unit-tests-php above) —
+    # exists only so the required-status-check context stays exactly "unit-tests", the literal
+    # string `main`'s branch protection already requires (see AGENTS.md's "PRs auto-merge once CI
+    # is green"). A matrixed job reports as "unit-tests-php (8.3)" etc., which would silently stop
+    # satisfying that check — renaming the branch-protection entry itself instead was considered
+    # and rejected: AGENTS.md already flags branch-protection edits as the kind of change a past
+    # session treated as too sensitive to make without asking, and this way needs none at all.
+    needs: unit-tests-php
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fail if any PHP version in the matrix failed
+        if: ${{ needs.unit-tests-php.result != 'success' }}
+        run: exit 1
 
   static-analysis:
     runs-on: ubuntu-24.04

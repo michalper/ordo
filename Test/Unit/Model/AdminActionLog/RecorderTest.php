@@ -18,8 +18,8 @@ class RecorderTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testRecordPersistsEntryWithCurrentAdminUser(): void
     {
-        $user = new UserTestDouble()->setTestUserId(5)->setTestUserName('jdoe');
-        $authSession = new BackendAuthSessionTestDouble()->setTestUser($user);
+        $user = (new UserTestDouble())->setTestUserId(5)->setTestUserName('jdoe');
+        $authSession = (new BackendAuthSessionTestDouble())->setTestUser($user);
 
         $entry = $this->createMock(AdminActionLog::class);
         $entry->expects(self::once())->method('setEntityType')->with('campaign');
@@ -78,8 +78,8 @@ class RecorderTest extends TestCase
 
     public function testHasLoggedInAdminIsTrueWhenAUserIsLoggedIn(): void
     {
-        $user = new UserTestDouble()->setTestUserId(5)->setTestUserName('jdoe');
-        $authSession = new BackendAuthSessionTestDouble()->setTestUser($user);
+        $user = (new UserTestDouble())->setTestUserId(5)->setTestUserName('jdoe');
+        $authSession = (new BackendAuthSessionTestDouble())->setTestUser($user);
 
         $recorder = new Recorder(
             $authSession,

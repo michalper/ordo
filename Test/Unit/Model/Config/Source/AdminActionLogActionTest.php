@@ -11,7 +11,7 @@ class AdminActionLogActionTest extends TestCase
 {
     public function testToOptionArrayMatchesModelConstants(): void
     {
-        $values = array_column(new AdminActionLogAction()->toOptionArray(), 'value');
+        $values = array_column((new AdminActionLogAction())->toOptionArray(), 'value');
 
         self::assertSame([AdminActionLog::ACTION_CREATE, AdminActionLog::ACTION_UPDATE], $values);
     }
