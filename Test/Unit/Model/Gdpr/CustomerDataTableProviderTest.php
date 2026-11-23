@@ -15,11 +15,11 @@ class CustomerDataTableProviderTest extends TestCase
         $this->provider = new CustomerDataTableProvider();
     }
 
-    public function testGetTablesReturnsAllThirtyCustomerKeyedTables(): void
+    public function testGetTablesReturnsAllThirtyThreeCustomerKeyedTables(): void
     {
         $tables = $this->provider->getTables();
 
-        self::assertCount(30, $tables);
+        self::assertCount(33, $tables);
         self::assertContains('ordo_customer_consent', $tables);
         self::assertContains('ordo_customer_consent_topic', $tables);
         self::assertContains('ordo_customer_consent_log', $tables);
@@ -57,6 +57,11 @@ class CustomerDataTableProviderTest extends TestCase
         self::assertContains('ordo_customer_inactive_trigger_claim', $tables);
         self::assertContains('ordo_customer_anniversary_trigger_claim', $tables);
         self::assertContains('ordo_segment_blast_trigger_claim', $tables);
+        // Found 2026-11-23 (full-repo audit): all three have a non-nullable customer_id in
+        // db_schema.xml and had never been added here either.
+        self::assertContains('ordo_wishlist_abandoned_reminder_log', $tables);
+        self::assertContains('ordo_stalled_payment_reminder_log', $tables);
+        self::assertContains('ordo_loyalty_points_ledger', $tables);
     }
 
     public function testGetExportKeysByTableMapsEveryTableToItsExportKey(): void
@@ -94,6 +99,9 @@ class CustomerDataTableProviderTest extends TestCase
             'ordo_customer_inactive_trigger_claim' => 'customer_inactive_trigger_claim',
             'ordo_customer_anniversary_trigger_claim' => 'customer_anniversary_trigger_claim',
             'ordo_segment_blast_trigger_claim' => 'segment_blast_trigger_claim',
+            'ordo_wishlist_abandoned_reminder_log' => 'wishlist_abandoned_reminder_log',
+            'ordo_stalled_payment_reminder_log' => 'stalled_payment_reminder_log',
+            'ordo_loyalty_points_ledger' => 'loyalty_points_ledger',
         ], $map);
     }
 
