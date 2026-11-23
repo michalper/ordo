@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Queue;
 
+use Magento\Framework\DataObject\IdentityGeneratorInterface;
 use Magento\Framework\MessageQueue\PublisherInterface;
 use Magento\Framework\Serialize\SerializerInterface;
 
@@ -20,6 +21,12 @@ use Magento\Framework\Serialize\SerializerInterface;
  * everything after the last completed iteration is lost with nothing left to retry it. Chunked,
  * each message is its own short-lived unit of work; losing one loses at most CHUNK_SIZE
  * customers' worth of progress, not the whole batch.
+ *
+ * Each message also carries a fresh batch_id (not derived from segment_id/action_type, which can
+ * legitimately repeat across unrelated bulk actions) - SegmentBulkActionConsumer claims
+ * (batch_id, customer_id) pairs via SegmentBulkActionClaimStore before acting, so a redelivery of
+ * this exact message (the queue can redeliver after a consumer crash) can never re-apply the
+ * action to a customer already processed on an earlier attempt.
  */
 class SegmentBulkActionPublisher
 {
@@ -28,7 +35,8 @@ class SegmentBulkActionPublisher
 
     public function __construct(
         private readonly PublisherInterface $publisher,
-        private readonly SerializerInterface $serializer
+        private readonly SerializerInterface $serializer,
+        private readonly IdentityGeneratorInterface $identityGenerator
     ) {
     }
 
@@ -44,6 +52,13 @@ class SegmentBulkActionPublisher
                 'action_type' => $actionType,
                 'params' => $params,
                 'customer_ids' => $chunk,
+                // Identifies this one message, not the segment/action - the same segment+action
+                // can legitimately be re-run later as a fresh bulk action, with a fresh batch_id.
+                // The consumer claims (batch_id, customer_id) pairs before acting, so a redelivery
+                // of this exact message (consumer crash before ack) never re-applies the action to
+                // a customer already processed on an earlier attempt. See
+                // Model\Queue\SegmentBulkActionClaimStore.
+                'batch_id' => $this->identityGenerator->generateId(),
             ]);
 
             $this->publisher->publish(self::TOPIC, $payload);

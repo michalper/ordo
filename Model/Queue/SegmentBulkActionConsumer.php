@@ -13,6 +13,13 @@ use Psr\Log\LoggerInterface;
  * registry CampaignDispatcher runs actions from, so the bulk path shares the registered
  * action's own input validation instead of re-implementing add_tag/add_points inline. One
  * customer's failure is logged and skipped, never aborts the rest of the batch.
+ *
+ * Each customer is claimed (SegmentBulkActionClaimStore, keyed by the message's own batch_id)
+ * before the action runs - closes a real redelivery gap: Magento's queue can redeliver a message
+ * after a consumer crash (worker killed mid-batch, deploy, OOM), and this loop has no other
+ * checkpoint, so a redelivered chunk would otherwise re-apply the action (e.g. add_points, purely
+ * additive) to every customer already processed on the crashed attempt, not just the ones never
+ * reached.
  */
 class SegmentBulkActionConsumer
 {
@@ -22,7 +29,8 @@ class SegmentBulkActionConsumer
     public function __construct(
         private readonly ActionPool $actionPool,
         private readonly SerializerInterface $serializer,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly SegmentBulkActionClaimStore $claimStore
     ) {
     }
 
@@ -32,10 +40,12 @@ class SegmentBulkActionConsumer
         $actionType = (string) ($decoded['action_type'] ?? '');
         $params = (array) ($decoded['params'] ?? []);
         $customerIds = (array) ($decoded['customer_ids'] ?? []);
+        $batchId = (string) ($decoded['batch_id'] ?? '');
 
-        if ($actionType === '' || $customerIds === []) {
+        if ($actionType === '' || $customerIds === [] || $batchId === '') {
             $this->logger->error(
-                'Ordo_Automation: dropped a segment bulk action message with no action_type or customer_ids.'
+                'Ordo_Automation: dropped a segment bulk action message with no action_type, '
+                . 'customer_ids, or batch_id.'
             );
             return;
         }
@@ -52,15 +62,23 @@ class SegmentBulkActionConsumer
         $applied = 0;
 
         foreach ($customerIds as $customerId) {
+            $customerId = (int) $customerId;
+
+            if (!$this->claimStore->claim($batchId, $customerId)) {
+                // Already applied on an earlier (now-redelivered) attempt at this exact message -
+                // must not run the action again.
+                continue;
+            }
+
             try {
-                $context = ['customer_id' => (int) $customerId];
+                $context = ['customer_id' => $customerId];
                 $action->execute($context, $params);
                 $applied++;
             } catch (\Throwable $e) {
                 $this->logger->error(sprintf(
                     'Ordo_Automation: failed to apply bulk action "%s" to customer #%d: %s',
                     $actionType,
-                    (int) $customerId,
+                    $customerId,
                     $e->getMessage()
                 ));
             }
