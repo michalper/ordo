@@ -4,8 +4,6 @@ declare(strict_types=1);
 namespace Ordo\Automation\Observer;
 
 use Magento\Framework\Event\Observer as EventObserver;
-use Magento\Framework\Event\ObserverInterface;
-use Ordo\Automation\Model\Queue\CampaignDispatchPublisher;
 
 /**
  * Listens for the "ordo_visitor_search_no_results" event Controller\Track\Event fires (same
@@ -14,20 +12,19 @@ use Ordo\Automation\Model\Queue\CampaignDispatchPublisher;
  * anonymous-only context, a search is meaningful for a logged-in customer too, so customer_id
  * rides along in the published context whenever the originating request was authenticated.
  */
-class DispatchSearchNoResultsCampaigns implements ObserverInterface
+class DispatchSearchNoResultsCampaigns extends AbstractDispatchCampaignsOnEvent
 {
-    public function __construct(
-        private readonly CampaignDispatchPublisher $campaignDispatchPublisher
-    ) {
+    protected function triggerEventCode(): string
+    {
+        return 'search_no_results';
     }
 
-    public function execute(EventObserver $observer): void
+    protected function resolveContext(EventObserver $observer): ?array
     {
         $visitorId = $observer->getEvent()->getData('visitor_id');
         $visitorId = is_string($visitorId) ? $visitorId : '';
-
         if ($visitorId === '') {
-            return;
+            return null;
         }
 
         $context = ['visitor_id' => $visitorId];
@@ -37,6 +34,6 @@ class DispatchSearchNoResultsCampaigns implements ObserverInterface
             $context['customer_id'] = (int) $rawCustomerId;
         }
 
-        $this->campaignDispatchPublisher->publish('search_no_results', $context);
+        return $context;
     }
 }
