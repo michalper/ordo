@@ -311,19 +311,39 @@ class ReferralManagerTest extends TestCase
 
     public function testMarkConvertedAndGetReferrerConvertsAndReturnsReferrer(): void
     {
-        $pending = $this->createMock(Referral::class);
+        $pending = $this->createStub(Referral::class);
         $pending->method('getId')->willReturn(9);
         $pending->method('getReferrerCustomerId')->willReturn(1);
-        $pending->expects(self::once())->method('setStatus')->with(Referral::STATUS_CONVERTED);
-        $pending->expects(self::once())->method('setData')
-            ->with(Referral::CONVERTED_AT, self::callback(static fn ($value): bool => is_string($value)));
 
         $this->referralCollectionFactory->method('create')
             ->willReturn($this->makeReferralCollection($pending));
 
         $this->referralResource = $this->createMock(ReferralResource::class);
-        $this->referralResource->expects(self::once())->method('save')->with($pending);
+        $this->referralResource->expects(self::once())->method('claimConverted')->with($pending)
+            ->willReturn(true);
 
         self::assertSame(1, $this->makeManager()->markConvertedAndGetReferrer(2));
+    }
+
+    /**
+     * Regression: a concurrent call for the same referred customer (a retried order-placement
+     * event, or an admin edit racing a webhook resave) could already have claimed this same
+     * pending referral by the time this call's conditional UPDATE runs -
+     * ResourceModel\Referral::claimConverted() returns false in that case, and this must not
+     * return the referrer id (the other call already will, exactly once).
+     */
+    public function testMarkConvertedAndGetReferrerReturnsNullWhenItLosesTheClaimRace(): void
+    {
+        $pending = $this->createStub(Referral::class);
+        $pending->method('getId')->willReturn(9);
+
+        $this->referralCollectionFactory->method('create')
+            ->willReturn($this->makeReferralCollection($pending));
+
+        $this->referralResource = $this->createMock(ReferralResource::class);
+        $this->referralResource->expects(self::once())->method('claimConverted')->with($pending)
+            ->willReturn(false);
+
+        self::assertNull($this->makeManager()->markConvertedAndGetReferrer(2));
     }
 }
