@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Api;
 
+use Magento\Framework\Exception\InputException;
 use Ordo\Automation\Api\Data\AiAgentQuoteResultInterface;
 
 /**
@@ -22,11 +23,15 @@ interface AiAgentQuoteManagementInterface
      * @param \Ordo\Automation\Api\Data\AiAgentQuoteItemInterface[] $items sku+qty pairs - at
      *   least one must match a real, salable product or an InputException is thrown; unmatched
      *   SKUs among otherwise-valid ones are skipped and reported back in
-     *   AiAgentQuoteResultInterface::getUnmatchedSkus(), not treated as a request failure.
+     *   AiAgentQuoteResultInterface::getUnmatchedSkus(), not treated as a request failure. Capped
+     *   at AiAgentQuoteManagement::MAX_ITEMS - an InputException is thrown above that, since each
+     *   item carries real per-item processing cost that the per-minute InboundRateLimiter alone
+     *   doesn't bound.
      * @param string $countryId ISO-2 shipping destination country, e.g. "US", "PL".
      * @param string $postcode Shipping destination postcode.
      * @param string|null $region Shipping destination region/state, where applicable.
      * @return \Ordo\Automation\Api\Data\AiAgentQuoteResultInterface
+     * @throws InputException
      */
     public function getQuote(
         array $items,
