@@ -6,6 +6,11 @@ See `AGENTS.md` for the full test-environment setup (the `magento-ordo-test/` Do
 consumers, MFTF pitfalls, CI/auto-merge policy) — this file doesn't repeat that, only adds what's missing
 from it.
 
+## Communication
+
+Reply to the user in this repo in Polish (code, commit messages, PR descriptions, and comments in English
+as usual — this is about chat replies to the user, not what gets committed).
+
 ## What this is
 
 `michalper/ordo` — a Magento 2 module (`Ordo_Automation`) providing marketing automation for Magento Open
