@@ -165,6 +165,6 @@ bin/magento cache:flush
 
 Open Software License v. 3.0 (OSL-3.0) — see [LICENSE](LICENSE). Distributed via the Adobe
 Commerce Marketplace, which requires OSL-3.0 and credit to Adobe, Inc. for extensions built on
-Magento Open Source code.
+Magento Open Source code — see [NOTICE](NOTICE).
 
 Copyright (c) 2026 Michał Per.
