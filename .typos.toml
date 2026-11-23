@@ -49,3 +49,7 @@ Unparseable = "Unparseable"
 # view/adminhtml/web/css/dashboard.css's own comment quotes a stakeholder's literal Polish words
 # ("czy my mozemy miec jeden styl") - a deliberate verbatim quote, not a typo for "style".
 styl = "styl"
+# "in-toto" (the real provenance attestation framework/spec SLSA builds on, see
+# docs/adr/0081-keyless-release-signing.md) and the literal ".intoto.jsonl" filename suffix
+# OpenSSF Scorecard's Signed-Releases check looks for - not a typo for "into".
+intoto = "intoto"
