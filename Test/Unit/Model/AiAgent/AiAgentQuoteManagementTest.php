@@ -115,6 +115,28 @@ class AiAgentQuoteManagementTest extends TestCase
         );
     }
 
+    /**
+     * Regression: InboundRateLimiter only throttles requests-per-minute per API key, not the
+     * cost of a single request - without this cap, a caller within its per-minute budget could
+     * still submit one call with an enormous items array and multiply per-request cost (each
+     * item does a real ProductRepositoryInterface::get() + Quote::addProduct()) far beyond what
+     * the rate limiter is sized for. Must reject before any per-item processing, not partially
+     * process then fail.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetQuoteThrowsWhenItemCountExceedsCap(): void
+    {
+        $items = [];
+        for ($i = 0; $i < 101; $i++) {
+            $items[] = (new AiAgentQuoteItem())->setSku('SKU-' . $i)->setQty(1.0);
+        }
+
+        $this->productRepository->expects(self::never())->method('get');
+        $this->expectException(InputException::class);
+
+        $this->management->getQuote($items, 'US', '10001');
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testGetQuoteSkipsUnmatchedSkusAndReportsThem(): void
     {

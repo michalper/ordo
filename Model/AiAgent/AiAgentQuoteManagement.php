@@ -26,6 +26,14 @@ use Ordo\Automation\Helper\Config;
  */
 class AiAgentQuoteManagement implements AiAgentQuoteManagementInterface
 {
+    /**
+     * InboundRateLimiter only throttles requests-per-minute per API key, not the cost of a
+     * single request - each item here is a real ProductRepositoryInterface::get() plus a full
+     * Quote::addProduct(), with collectTotals() and live shipping-rate collection running over
+     * the whole set. This caps per-request cost independently of the per-minute budget.
+     */
+    private const int MAX_ITEMS = 100;
+
     public function __construct(
         private readonly QuoteFactory $quoteFactory,
         private readonly StoreManagerInterface $storeManager,
@@ -46,6 +54,10 @@ class AiAgentQuoteManagement implements AiAgentQuoteManagementInterface
          *  StoreInterface, only the concrete Store model - same real-world usage as
          *  GoogleMerchantFeedGenerator/AiAgentFeedGenerator. */
         $store = $this->storeManager->getStore();
+
+        if (count($items) > self::MAX_ITEMS) {
+            throw new InputException(__('A maximum of %1 items may be quoted per request.', self::MAX_ITEMS));
+        }
 
         /** @var Quote $quote */
         $quote = $this->quoteFactory->create();
