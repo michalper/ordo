@@ -21,3 +21,26 @@ Instead, email **<michal.per@outlook.com>** with:
 
 You should receive a response within a few business days. Once a fix is confirmed, a new
 release will be published and the issue disclosed responsibly.
+
+## Verifying a release
+
+Every GitHub Release from `X.Y.Z` onward includes a source archive
+(`ordo-X.Y.Z.tar.gz`) and a Sigstore bundle (`ordo-X.Y.Z.tar.gz.sigstore.json`) signed keylessly
+with [cosign](https://docs.sigstore.dev/cosign/installation/) - there is no long-lived private
+signing key anywhere; the certificate is short-lived and tied to the identity that signed it
+(normally this repo's own `release.yml` workflow run, via GitHub Actions' own OIDC token). See
+[docs/ASSURANCE_CASE.md](docs/ASSURANCE_CASE.md) for why.
+
+To verify a downloaded archive:
+
+```sh
+cosign verify-blob \
+  --bundle ordo-X.Y.Z.tar.gz.sigstore.json \
+  --certificate-identity-regexp 'https://github\.com/michalper/ordo/' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  ordo-X.Y.Z.tar.gz
+```
+
+`cosign` reports the exact signing identity from the certificate if you'd rather confirm it by eye
+than match a regexp - open `ordo-X.Y.Z.tar.gz.sigstore.json` and inspect the embedded certificate,
+or run the command above with `-d`/`--verbose`.

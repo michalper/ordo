@@ -58,5 +58,11 @@ fi
 
 scripts/tag-and-release.sh "$version" "$notes_file"
 
+if command -v cosign &> /dev/null; then
+  scripts/sign-release.sh "$version"
+else
+  echo "cosign not found - skipping release signing (https://docs.sigstore.dev/cosign/installation/)." >&2
+fi
+
 echo "Tagged and published $version:"
 echo "https://github.com/michalper/ordo/releases/tag/$version"
