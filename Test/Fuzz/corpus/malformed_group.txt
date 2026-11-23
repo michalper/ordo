@@ -1,0 +1,1 @@
+[{"type":"group","params":{"logic":"all","conditions":[{"no_type":true}]}}]
