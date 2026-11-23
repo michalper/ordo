@@ -53,6 +53,14 @@ jobs:
           results_format: sarif
           publish_results: true
           fail_on_publish_error: true
+          # Classic branch protection rules aren't readable via the default GITHUB_TOKEN, even
+          # with every grantable `permissions:` scope above maxed out - Scorecard's own
+          # Branch-Protection check needs read access to an API the built-in token just can't
+          # reach, and silently scores -1 (error) without it instead of crediting this repo's own
+          # real protections (required status checks, no force-push, no deletions). A
+          # fine-grained PAT, scoped to ONLY this repo with Administration: Read-only, closes that
+          # gap. See https://github.com/ossf/scorecard-action/blob/main/docs/authentication/fine-grained-auth-token.md
+          repo_token: ${{ secrets.SCORECARD_READ_TOKEN }}
 
       - name: Upload SARIF results to the Security tab
         uses: github/codeql-action/upload-sarif@d2aacf54c2fbc910db8d7ec338fdb54ea48c692d # v3.39.4
