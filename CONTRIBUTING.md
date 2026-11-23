@@ -30,9 +30,11 @@ change, force a reinstall: `rm -rf vendor/michalper/ordo && composer update mich
   `composer phpcs-check`; auto-fix what's fixable with `composer cs-fix`.
 - **Static analysis**: PHPStan at `level: max` (`phpstan.neon`), via `bitexpert/phpstan-magento` so it understands
   Magento's virtual types (`*Factory`, `*Proxy`, interceptors). Run from your Magento root:
+
   ```bash
   php -d memory_limit=2G vendor/bin/phpstan analyse --no-progress
   ```
+
   If a change shifts the number of suppressed baseline errors, regenerate `phpstan-baseline.neon` — don't hand-edit it.
 
 Both run in CI (`.github/workflows/ci.yml`) on every push/PR; a change that doesn't pass either won't merge.
@@ -55,14 +57,18 @@ fallout shows up and gets fixed, not some unrelated PR that happened to run afte
 Four layers, each with a different scope and a different way to run it:
 
 - **`Test/Unit/`** — no live Magento needed beyond the framework classes on Composer. Run:
+
   ```bash
   vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist vendor/michalper/ordo/Test/Unit
   ```
+
 - **`Test/Integration/`** — real object manager, real dev database, no mocked `ScopeConfigInterface`. Requires a
   working `app/etc/env.php`. Run with `--bootstrap app/bootstrap.php` from the Magento root:
+
   ```bash
   vendor/bin/phpunit --bootstrap app/bootstrap.php vendor/michalper/ordo/Test/Integration
   ```
+
 - **`Test/Api/`** — `webapi_rest` calls against the module's REST surface, same real-instance requirement as
   `Test/Integration/`.
 - **`Test/Mftf/`** — full browser acceptance tests (Selenium + a real webserver). See `Test/Mftf/SCENARIOS.md` for

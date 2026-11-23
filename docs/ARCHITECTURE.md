@@ -55,7 +55,7 @@ Directory/class map for anyone working on the code. Not shipped documentation fo
 - `Block/Adminhtml/Campaign/Edit/Flow.php` — builds the Drawflow trigger/condition/action graph for the campaign
   edit page
 - `Block/Adminhtml/Campaign/Calendar/` — read-only trigger/action-timing overview across all campaigns
-- `view/adminhtml/web/lib/drawflow/` — vendored Drawflow (MIT) — https://github.com/jerosoler/Drawflow
+- `view/adminhtml/web/lib/drawflow/` — vendored Drawflow (MIT) — <https://github.com/jerosoler/Drawflow>
 - `Controller/Adminhtml/Campaign/`, `ReorderCycle/`, `FreeGiftOffer/` — admin grid/form controllers
 - `Block/Adminhtml/Campaign/Edit/`, `FreeGiftOffer/Edit/` — toolbar button blocks (Back/Delete/Save & Continue)
 - `Ui/Component/Listing/Column/` — `CampaignActions`, `FreeGiftOfferActions` (Edit/Delete row links)

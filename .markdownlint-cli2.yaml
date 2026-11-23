@@ -16,6 +16,11 @@ config:
   # would still be caught.
   MD024:
     siblings_only: true
+  # MD036 (no-emphasis-as-heading): README.md/README.pl.md use **B2B**/**B2C**/etc. as lightweight
+  # section dividers within one flat bullet list under a single "## Features" heading - a
+  # deliberate design choice (keeps them out of the page's heading hierarchy/TOC), not a heading
+  # someone forgot to mark up properly.
+  MD036: false
   # MD060 (table-column-style): several tables here (Test/Mftf/SCENARIOS.md's action/cron
   # catalogs, API.md, docs/marketplace/USER-GUIDE.md) are hand-maintained with very long,
   # information-dense cells - enforcing pixel-perfect pipe alignment would mean realigning every

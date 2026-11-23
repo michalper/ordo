@@ -12,6 +12,7 @@ customers by first-purchase month/campaign and tracks how their repeat-purchase 
 time, on top of the existing per-campaign funnel view and `RfmCalculator`/`ClvCalculator`."
 
 These are two genuinely different shapes of data, not one report with two sections:
+
 - Ranking campaigns against each other is a flat, one-row-per-campaign comparison.
 - Cohort retention is inherently a matrix (cohort month × months-since-first-purchase), with no
   natural "campaign" dimension at all once a customer is grouped into a cohort by first-order

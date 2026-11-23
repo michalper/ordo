@@ -172,9 +172,7 @@ cases separately from the type-by-type ones.
 | Score rule deleted                                                                                                                 | ✅ `AdminDeleteScoreRuleStopsContributingTest`       |
 | Loyalty tier (`Model/LoyaltyTierCalculator.php`) derived from the same running score, gates a campaign via `loyalty_tier_at_least` | ✅ `AdminLoyaltyTierAtLeastConditionTest`            |
 
-## 5. Free gift offers (`Model/FreeGiftOffer.php`, `Model/FreeGiftManagement.php`,
-
-`Controller/Adminhtml/FreeGiftOffer/`, `Controller/Offer/`)
+## 5. Free gift offers (`Model/FreeGiftOffer.php`, `Model/FreeGiftManagement.php`, `Controller/Adminhtml/FreeGiftOffer/`, `Controller/Offer/`)
 
 `FreeGiftManagementInterface` (get eligibility / select gifts) has no storefront UI in this repo at all — it's a pure
 REST surface, presumably meant for a headless/PWA storefront to call — so the first four rows below are a
@@ -249,9 +247,7 @@ through. `Controller/Offer/*` (self-extend,
 | Single "Ordo Automation" menu entry lands on the dashboard, stat cards render                   | ✅ `AdminViewDashboardTest`             |
 | Stat cards reflect real data (e.g. campaign count, trigger performance) after creating fixtures | ✅ `AdminDashboardReflectsRealDataTest` |
 
-## 10. Content blocks (`Model/ContentBlock/`, `Controller/Adminhtml/ContentBlock/`) and Message Log (
-
-`Controller/Adminhtml/MessageLog/`)
+## 10. Content blocks (`Model/ContentBlock/`, `Controller/Adminhtml/ContentBlock/`) and Message Log (`Controller/Adminhtml/MessageLog/`)
 
 Both missing from this document's original scope check (see the note at the top of this file) — added here rather
 than retrofitted into an existing section, since neither fits §1-§9's shape.
@@ -325,9 +321,7 @@ module's.
 | A real sync against a live Google Ads/Meta account                                                                                                | See ROADMAP.md's own note — out of MFTF's scope, same reasoning as `send_sms`'s equivalent gap     |
 | A real sync against a live, authenticated TikTok account                                                                                          | See §32 — pending TikTok for Developers app review, not a permanent gap like Google Ads/Meta above |
 
-## 15. WhatsApp templates (`Model/WhatsAppTemplate`, `Controller/Adminhtml/WhatsAppTemplate/`,
-
-`Controller/WhatsApp/Webhook.php`)
+## 15. WhatsApp templates (`Model/WhatsAppTemplate`, `Controller/Adminhtml/WhatsAppTemplate/`, `Controller/WhatsApp/Webhook.php`)
 
 | Scenario                                                                                                                                                                                              | Status                                                                                                    |
 |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
@@ -353,9 +347,7 @@ module's.
 | `CronRunLogger::logFailure()`/`logSummary()` persist the same formatted text into `ordo_cron_run_log` | ✅ `AdminCronRunLogGridTest` (the Cron Run Log admin grid, the only browser-observable effect this table has)                                                                                                                                     |
 | A DB failure persisting a log row is swallowed instead of crashing the calling cron                   | ✅ `CronRunLoggerTest::testLogSummarySwallowsAPersistFailureInsteadOfThrowing` — correctly out of MFTF's own scope, no browser-observable effect a browser-driven test can assert on (an internal error-swallowing decision, not a rendered page) |
 
-## 18. Product feed (`Model/ProductFeed/GoogleMerchantFeedGenerator.php`, `Controller/Adminhtml/ProductFeed/`,
-
-`Controller/ProductFeed/Index.php`)
+## 18. Product feed (`Model/ProductFeed/GoogleMerchantFeedGenerator.php`, `Controller/Adminhtml/ProductFeed/`, `Controller/ProductFeed/Index.php`)
 
 | Scenario                                                                                                                                                                                                                                                                                                                    | Status                                                                                                                                                                                                    |
 |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -365,9 +357,7 @@ module's.
 | Product Feed Health admin grid (`ordo/productfeed/index`) renders run-log rows                                                                                                                                                                                                                                              | ✅ `AdminProductFeedHealthGridTest`                                                                                                                                                                       |
 | Meta/Facebook Catalog CSV feed (`Model/ProductFeed/MetaCatalogFeedGenerator.php`, `Controller/ProductFeed/MetaCatalog.php`) — a second, complete feed format alongside Google Merchant, sharing the same `AbstractFeedAction`/refresh/health-grid plumbing this section's other rows already cover for the Google generator | ✅ `AdminMetaCatalogFeedServesRealProductTest`                                                                                                                                                              |
 
-## 19. Admin action audit log (`Model/AdminActionLog/Recorder.php`,
-
-`Plugin/Campaign/CampaignSaveProcessorAuditPlugin.php`, `Plugin/Segment/SegmentSaveProcessorAuditPlugin.php`)
+## 19. Admin action audit log (`Model/AdminActionLog/Recorder.php`, `Plugin/Campaign/CampaignSaveProcessorAuditPlugin.php`, `Plugin/Segment/SegmentSaveProcessorAuditPlugin.php`)
 
 | Scenario                                                                                             | Status                                      |
 |------------------------------------------------------------------------------------------------------|---------------------------------------------|
@@ -382,9 +372,7 @@ module's.
 | Each step's "done" state reflects real data (channel credentials, at least one segment/campaign) not just a click | ✅ `AdminSetupGuideReflectsRealDataTest` |
 | Dashboard banner links to the Setup Guide and disappears once every step is done                                  | ✅ `AdminSetupGuideReflectsRealDataTest` |
 
-## 21. Scheduled Campaign Calendar (`Block/Adminhtml/Campaign/ScheduleCalendar/CampaignScheduleCalendarViewModel.php`,
-
-`Controller/Adminhtml/Campaign/ScheduleCalendar.php`)
+## 21. Scheduled Campaign Calendar (`Block/Adminhtml/Campaign/ScheduleCalendar/CampaignScheduleCalendarViewModel.php`, `Controller/Adminhtml/Campaign/ScheduleCalendar.php`)
 
 | Scenario                                                                                        | Status                                  |
 |-------------------------------------------------------------------------------------------------|-----------------------------------------|
@@ -392,9 +380,7 @@ module's.
 | A `recurring_schedule` trigger is expanded across every matching day in the visible month       | ✅ `AdminScheduledCampaignCalendarTest` |
 | Month navigation (prev/next) reads/writes the `month` GET param and steps by exactly one month  | ✅ `AdminScheduledCampaignCalendarTest` |
 
-## 22. Webhook action/trigger (`Model/Campaign/Action/SendWebhook.php`, `Controller/Webhook/Receive.php`,
-
-`Model/Webhook/WebhookSignatureValidator.php`)
+## 22. Webhook action/trigger (`Model/Campaign/Action/SendWebhook.php`, `Controller/Webhook/Receive.php`, `Model/Webhook/WebhookSignatureValidator.php`)
 
 | Scenario                                                                                                         | Status                                                                                                                                                                                                                                                         |
 |------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -405,9 +391,7 @@ module's.
 | `/ordo/webhook/receive` rejects a missing/invalid signature with 401 without dispatching                         | 🔶 unit-tested (`Controller\Webhook\ReceiveTest`) + manually live-verified 2026-09-17 (real 401 response to a forged signature), no automated MFTF yet                                                                                                         |
 | `WebhookSignatureValidator` HMAC-SHA256 sign/verify round-trip, tampered body and forged signature rejected      | ✅ `WebhookSignatureValidatorTest` — a zero-dependency pure function (just `hash_hmac`/`hash_equals`), so its own real unit test already exercises the actual behavior with nothing mocked; no MFTF or integration layer could add anything more real          |
 
-## 23. Two-way SMS/WhatsApp conversations (`Model/Conversation/InboundMessageProcessor.php`, `Controller/Sms/Reply.php`,
-
-`Controller/WhatsApp/Webhook.php`, `Controller/Adminhtml/ConversationMessage/Index.php`)
+## 23. Two-way SMS/WhatsApp conversations (`Model/Conversation/InboundMessageProcessor.php`, `Controller/Sms/Reply.php`, `Controller/WhatsApp/Webhook.php`, `Controller/Adminhtml/ConversationMessage/Index.php`)
 
 | Scenario                                                                                                                                                                                                    | Status                                                                                                                                                                                                                                                                                                                  |
 |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -419,9 +403,7 @@ module's.
 | "Conversations" admin grid (`ordo/conversationmessage/index`) renders `ordo_conversation_message` rows filterable by Customer                                                                               | ✅ `AdminWhatsAppInboundMessageConversationGridTest`                                                                                                                                                                                                                                                                    |
 | `Model\Conversation\OutboundReplySender` — an admin reply re-checks consent, dispatches to `SmsSenderInterface`/`WhatsAppSender::sendFreeform()` by the original message's own channel, and writes a new `direction=outbound` row; refuses a missing/non-inbound/unresolvable-customer/consent-withdrawn case | 🔶 unit-tested (`OutboundReplySenderTest`, every branch) + `Test\Integration\OutboundReplySenderTest` (real DI/database, only the two provider calls faked at the transport tail — see ADR 0060 for why this, not a new MFTF test, is the chosen system-level proof: the grid's own admin-UI-observability is already covered by `AdminWhatsAppInboundMessageConversationGridTest` above, and what this adds is a wiring question an Integration test answers more directly than reading a page's success/error message would) |
 
-## 24. Price-drop & back-in-stock alerts (`Model/PriceWatch/`, `Controller/Track/RegisterPriceWatch.php`,
-
-`Cron/ScanPriceDropAlerts.php`, `Cron/ScanBackInStockAlerts.php`)
+## 24. Price-drop & back-in-stock alerts (`Model/PriceWatch/`, `Controller/Track/RegisterPriceWatch.php`, `Cron/ScanPriceDropAlerts.php`, `Cron/ScanBackInStockAlerts.php`)
 
 | Scenario                                                                                                                                                                                                                                                                                                                                       | Status                                                                                                                                                                                                                                                                                                                                                                                             |
 |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -429,9 +411,7 @@ module's.
 | `PriceWatchSubscriptionManager::register()` is idempotent by identity + product + watch_type, refreshes the captured price/stock and clears `notified_at` on re-registration, captures/refreshes `guest_email` without ever erasing one already on file                                                                                        | ✅ `AdminPriceWatchSubscriptionIdempotencyTest`                                                                                                                                                                                                                                                                                                                                                    |
 | `ScanPriceDropAlerts`/`ScanBackInStockAlerts` dispatch their trigger only on a real price decrease / false→true stock transition for a known customer, notify a guest with a captured `guest_email` directly instead (`GuestPriceWatchNotifier`), otherwise just refresh the row, and roll back the claim on a failed dispatch/send either way | 🔶 unit-tested (`ScanPriceDropAlertsTest`, `ScanBackInStockAlertsTest`) + manually live-verified 2026-09-17 (real price drop on a live instance detected by the real cron, claimed via `notified_at`, dispatched a real campaign whose `send_email` action actually delivered mail — confirmed in MailHog), guest-email path not yet manually re-verified since being added, no automated MFTF yet |
 
-## 25. Predictive send-time optimization (`Model/Campaign/SendTimeOptimizer.php`,
-
-`Model/Campaign/SendTimeOptimizationGate.php`, `Model/Campaign/Action/SendEmail.php`)
+## 25. Predictive send-time optimization (`Model/Campaign/SendTimeOptimizer.php`, `Model/Campaign/SendTimeOptimizationGate.php`, `Model/Campaign/Action/SendEmail.php`)
 
 | Scenario                                                                                                                                                                                                                                                        | Status                                                                                                                                                                                                                                                                                                                                               |
 |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -439,9 +419,7 @@ module's.
 | `SendTimeOptimizationGate` defers `send_email` via `CampaignDispatcher::deferActionUntil()` to the computed optimal hour when the feature is opted in via the action's `params` JSON and the hour differs meaningfully from now, otherwise proceeds immediately | 🔶 unit-tested (`SendTimeOptimizationGateTest`) + manually live-verified 2026-09-17 (real dispatch against a live instance: deferred to the correct future UTC timestamp when the predicted hour hadn't arrived yet, and sent an actual, real email — confirmed in MailHog — once the predicted hour matched the current one), no automated MFTF yet |
 | A deferred send still passes back through `QuietHoursGate` on resume, so an optimal-hour prediction landing inside the customer's quiet hours self-corrects rather than sending anyway                                                                          | 🔶 unit-tested (via `SendEmailTest`'s gate-ordering coverage) + manually live-verified 2026-09-17 (resuming a deferred action before its target hour correctly re-deferred rather than sending early, confirming the resume-time re-check), no automated MFTF yet                                                                                    |
 
-## 26. Campaign/Segment JSON import (`Model/Campaign/CampaignImporter.php`, `Model/Segment/SegmentImporter.php`,
-
-`Controller/Adminhtml/{Campaign,Segment}/{Import,ImportForm}.php`)
+## 26. Campaign/Segment JSON import (`Model/Campaign/CampaignImporter.php`, `Model/Segment/SegmentImporter.php`, `Controller/Adminhtml/{Campaign,Segment}/{Import,ImportForm}.php`)
 
 Discovered via a 2026-09-20 re-audit (`etc/di.xml`/`Controller/Adminhtml/*` cross-check) — the counterpart to §1d's/§2's
 own Export rows, added when this section itself didn't exist yet. Always creates a brand-new campaign/segment (never
@@ -455,10 +433,7 @@ shape `AdminCampaignAndSegmentExportTest`'s own downloaded JSON already produces
 | An `export_type` mismatch (a segment file posted to Campaign Import, or vice versa) or a malformed/unparsable JSON file is rejected with an admin error message, no entity created                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | ✅ `AdminImportValidatesUploadedFileTest` |
 | **Corrected** (was previously assumed to fail closed like `CampaignDispatcher`'s own runtime posture — actual code checked, not guessed): an unknown/unregistered condition or action type inside an otherwise-valid imported JSON is dropped fail-*soft*, not rejected — `CampaignImporter::saveActions()`/`SegmentImporter::saveConditions()` silently skip that one row and still create the entity successfully, the same posture `CampaignSaveProcessor` already documents for a tampered admin form POST. This is a deliberately different posture from dispatch-time (reject one bad row at save/import time vs. refuse to run anything at all at dispatch time), not a bug. | ✅ `AdminImportValidatesUploadedFileTest` |
 
-## 27. Web push subscription lifecycle (
-
-`Controller/Track/{RegisterPushSubscription,UnregisterPushSubscription,PushServiceWorker}.php`,
-`Model/Push/PushSubscriptionManager.php`, `Model/Push/PushEndpointValidator.php`)
+## 27. Web push subscription lifecycle (`Controller/Track/{RegisterPushSubscription,UnregisterPushSubscription,PushServiceWorker}.php`, `Model/Push/PushSubscriptionManager.php`, `Model/Push/PushEndpointValidator.php`)
 
 Discovered via the same re-audit — only the server-side `send_push` action itself is documented (§1c); the entire
 client-facing opt-in/opt-out lifecycle that has to happen before any `send_push` campaign can ever reach a real
@@ -476,9 +451,7 @@ layer.
 | `/ordo/track/unregisterpushsubscription` removes a subscription by `endpoint`                                                                                                                                                                                     | ✅ `AdminPushSubscriptionLifecycleTest`           |
 | `/ordo/track/pushserviceworker` serves `push-sw.js` with a real `Service-Worker-Allowed: /` response header (widens the service worker's own default same-directory scope to the whole origin)                                                                    | ✅ `AdminPushSubscriptionLifecycleTest`           |
 
-## 28. Campaign split action / A-B testing (`Model/CampaignDispatcher.php::runSplit()`,
-
-`Model/Campaign/SplitVariantSelector.php`)
+## 28. Campaign split action / A-B testing (`Model/CampaignDispatcher.php::runSplit()`, `Model/Campaign/SplitVariantSelector.php`)
 
 Discovered via the same re-audit — `split` is deliberately not an `ActionPool` entry (no send/tag/whatever effect of
 its own, only a branching one — see `runSplit()`'s own docblock), so it's easy to miss enumerating it the way §1c's
@@ -496,12 +469,7 @@ by variant).
 | Known phase-1 limitation: a variant action's own `delay_minutes` is ignored (forced to 0) since a synthetic action row has no real `ordo_campaign_action.entity_id` for `scheduleResume()`'s FK to point at                                                                                                  | 🔶 unit-tested (`CampaignDispatcherTest`), documented limitation, no MFTF needed - nothing to prove beyond the unit test until this limitation is actually lifted |
 | `Cron\AutoPickCampaignSplitWinner` (off by default) compares real variant CTR from `ordo_message_log`/`ordo_message_log_event` once every variant reaches the configured minimum sample size, and permanently shifts weights to the winner (`Model\Campaign\SplitWinnerCalculator`)                          | ✅ `Test/Integration/AutoPickCampaignSplitWinnerTest` — real campaign + `split` action + real `ordo_message_log`/`ordo_message_log_event` rows; proves no decision below the sample-size threshold, a correct decision once crossed (winner's weight → 100, loser's → 0), and that a decision is permanent (a later pass never re-decides even if the loser catches up) |
 
-## 29. Campaign performance analytics — funnel, outcome tracking, multi-touch attribution (
-
-`Model/{CampaignOutcomeLogger,TriggerOutcomeLogger,CampaignFunnelStats}.php`,
-`Model/Campaign/AttributionCalculator.php`, `Observer/{RecordCampaignOutcome,RecordTriggerOutcome}.php`,
-`Cron/ComputeCampaignAttribution.php`, `Ui/Component/Listing/Column/CampaignAttributedRevenue.php`,
-`Block/Adminhtml/Campaign/FunnelViewModel.php`, `Block/Adminhtml/Dashboard/DashboardViewModel.php`)
+## 29. Campaign performance analytics — funnel, outcome tracking, multi-touch attribution (`Model/{CampaignOutcomeLogger,TriggerOutcomeLogger,CampaignFunnelStats}.php`, `Model/Campaign/AttributionCalculator.php`, `Observer/{RecordCampaignOutcome,RecordTriggerOutcome}.php`, `Cron/ComputeCampaignAttribution.php`, `Ui/Component/Listing/Column/CampaignAttributedRevenue.php`, `Block/Adminhtml/Campaign/FunnelViewModel.php`, `Block/Adminhtml/Dashboard/DashboardViewModel.php`)
 
 The single biggest gap the 2026-09-20 re-audit found — a complete, real analytics subsystem with zero SCENARIOS.md
 footprint before this section existed. Three distinct, deliberately-separate mechanisms, each answering a different
@@ -530,8 +498,7 @@ docblock):
 | `Cron\ComputeCampaignAttribution` computes a real equal-weight revenue split across every campaign a customer clicked through (real `ordo_message_log_event` TYPE_CLICKED rows) before a real order, and the Campaign grid's "Attributed revenue" column reflects it — re-running is idempotent (existing rows for the same order are deleted and reinserted, not doubled) | ✅ `AdminCampaignAttributionSplitIsIdempotentTest` — a real click is recorded via the new `CampaignClickTestHelper` (real webhook signature verification is out of MFTF's reach here, same reasoning `MessageLogTestHelper` already documents for `ordo_message_log` itself), tied to the exact `ordo_message_log` row a real order-triggered `send_email` just wrote |
 | The outcome-log "converted"/"responded" number and the attribution-table "attributed revenue" number are expected to disagree for the same campaign/order (single-touch vs. multi-touch) — not itself a scenario needing its own test, but worth asserting the two aren't accidentally reconciled to match if either implementation ever changes                           | 🔶 documented in code (`CampaignAttributedRevenue`'s own docblock), no dedicated regression test - low priority                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
-## 30. Real-time lead routing rules (`Model/LeadRoutingRule.php`, `Model/LeadRouting/{LeadRoutingRuleEvaluator,
-LeadAssigner}.php`, `Observer/AssignLeadRoutingRule.php`, `Controller/Adminhtml/LeadRoutingRule/*`)
+## 30. Real-time lead routing rules (`Model/LeadRoutingRule.php`, `Model/LeadRouting/{LeadRoutingRuleEvaluator,LeadAssigner}.php`, `Observer/AssignLeadRoutingRule.php`, `Controller/Adminhtml/LeadRoutingRule/*`)
 
 Automatic, rule-based assignment of a qualifying lead to a sales rep, round-robin, at the moment they qualify
 (registration, or crossing the lead-score threshold) — distinct from the existing `ordo_sales_rep_email`
@@ -544,8 +511,7 @@ downstream consumer changes.
 | A real routing rule (blank `attribute_code` — matches every customer) with a two-rep pool, created via the real admin form, assigns two genuinely distinct real storefront registrations to the two reps in round-robin order, read back via REST | ✅ `AdminAssignsLeadViaRoutingRuleTest` — found and fixed a real bug while writing this: the "reps" `dynamicRows` field (name == its own `dataScope`, "reps") posts as the nested `$data['reps']['reps']`, the same `dataScope`-then-component-name nesting `Model\Campaign\CampaignSaveProcessor` already handles for its own "triggers"/"actions" fields — `Controller\Adminhtml\LeadRoutingRule\Save` originally read the un-nested `$data['reps']`, so every real submission silently saved an empty rep pool (`reps: "[]"`) despite the form itself showing filled-in values. |
 | An already-assigned customer (automatic or manual) is never silently reassigned by a later qualifying event    | ✅ `Test/Unit/Model/LeadRouting/LeadAssignerTest.php` (`hasAssignedRep()`), exercised inside `Observer\AssignLeadRoutingRule` |
 
-## 31. GA4/Meta server-side conversion reporting (`Model/Campaign/Action/{SendGa4Event,SendMetaConversionEvent,
-OrderContextResolver,OutboundConversionApiSender}.php`)
+## 31. GA4/Meta server-side conversion reporting (`Model/Campaign/Action/{SendGa4Event,SendMetaConversionEvent,OrderContextResolver,OutboundConversionApiSender}.php`)
 
 | Scenario                                                                                                   | Status                                                                                                                                                                                                                      |
 |---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -605,8 +571,7 @@ tracker.js toggle already has).
 | `Controller\Track\EmailCapture` returns `disabled`/`invalid_payload` for a bad email or missing visitor id; subscribes through Magento's own real `Subscriber` and tags the visitor (`newsletter_signup`) on success; fails closed (logs, returns `subscribe_failed`) if the subscribe call itself throws | ✅ `Test/Unit/Controller/Track/EmailCaptureTest.php` - no MFTF, same reasoning §34/§22 give: a public JSON endpoint with no admin-visible side effect, already exercised end-to-end by the unit + JS tests above |
 | A tagged visitor's `newsletter_signup` tag correctly fires a `visitor_tag_added` campaign (e.g. a welcome email) | Already covered generically by `VisitorTagManager`'s own existing tests and `Observer\DispatchVisitorTagAddedCampaigns`'s own coverage - this feature is the Nth caller of an already-proven mechanism, not a new one |
 
-## 37. Loyalty points program (`Model/LoyaltyPointsManager.php`, `Api/LoyaltyPointsManagementInterface.php`,
-`Model/GraphQl/Resolver/{LoyaltyPointsBalance,RedeemLoyaltyPoints}.php`)
+## 37. Loyalty points program (`Model/LoyaltyPointsManager.php`, `Api/LoyaltyPointsManagementInterface.php`, `Model/GraphQl/Resolver/{LoyaltyPointsBalance,RedeemLoyaltyPoints}.php`)
 
 No admin screen to test (five plain config fields, same shape as §36). See ADR 0044.
 
@@ -619,9 +584,7 @@ No admin screen to test (five plain config fields, same shape as §36). See ADR 
 | The real REST routes (`/V1/ordo/loyalty-points/mine` GET, `/V1/ordo/loyalty-points/redeem` POST) against a live instance - balance read, redeem's real failure reasons, auth requirement, and a full real earn-then-redeem cycle | ✅ `Test/Api/LoyaltyPointsApiTest.php` (auth/business-rule paths) + manually live-verified 2026-11-09 against the sandbox's real `php -S`/Varnish stack with a real customer token: anonymous → 401; authenticated, feature disabled → `{"message":"Loyalty points are not enabled."}`; a real order (`entity_id` 233, $77.50) credited via `LoyaltyPointsManager::earnForOrder()` → balance 77 → `POST .../redeem` → real coupon `LOYALTY-TT2KMWCMK2` minted against a real cart price rule (confirmed in `salesrule_coupon`, `usage_limit` 1, unused) → balance correctly dropped to 27 |
 | The GraphQL schema additions (`ordoLoyaltyPointsBalance`, `redeemOrdoLoyaltyPoints`) parse and resolve for real | ✅ Live-verified 2026-11-09 via real introspection (`__type`/`__schema` queries confirm both the new type's fields and both new root fields are registered) and real execution with/without a customer token - **caught a real bug this way**: `LoyaltyPointsManagement`'s guest check only tested `=== null`, but `UserContextInterface::getUserId()` returns `0` for an anonymous GraphQL request (the exact trap `Resolver\CreditLimit`'s own docblock already documents for its own service) - an anonymous `ordoLoyaltyPointsBalance` query silently returned `0` instead of a GraphQL authorization error until fixed to check for `0` too, re-verified live after the fix |
 
-## 38. Digital loyalty wallet pass - Google Wallet (`Model/Wallet/{GoogleWalletLoyaltyObjectBuilder,
-GoogleWalletJwtBuilder,GoogleWalletPassLinkBuilder}.php`, `Api/LoyaltyWalletPassManagementInterface.php`,
-`Controller/LoyaltyWalletPass/Google.php`)
+## 38. Digital loyalty wallet pass - Google Wallet (`Model/Wallet/{GoogleWalletLoyaltyObjectBuilder,GoogleWalletJwtBuilder,GoogleWalletPassLinkBuilder}.php`, `Api/LoyaltyWalletPassManagementInterface.php`, `Controller/LoyaltyWalletPass/Google.php`)
 
 No admin screen to test (five plain config fields, same shape as §36/§37). See ADR 0062. The storefront
 "My Offers" page does get a new, real button ("Add to Google Wallet") - genuinely browser-observable, the
@@ -658,8 +621,7 @@ already covered by every other cron trigger's own MFTF.
 | A registered customer who added a product to their wishlist more than `delay_days` ago, with no non-canceled order line for that exact SKU placed since, fires `wishlist_abandoned` once, claimed via `ordo_wishlist_abandoned_reminder_log` so a second run doesn't re-fire it | ✅ `Test/Integration/SendWishlistAbandonmentRemindersTest.php` (real DB `wishlist`/`wishlist_item` rows, real dispatch, real claim-table dedup across two runs) |
 | Config gate (disabled), the per-SKU "already bought it" exclusion, and the batched scan/claim/dispatch logic in isolation | ✅ `Test/Unit/Cron/SendWishlistAbandonmentRemindersTest.php` |
 
-## 40. Fourth-round brainstorm features (2026-11-13) - referral fraud signal, campaign chain exit
-condition, campaign holdout group, email one-click unsubscribe
+## 40. Fourth-round brainstorm features (2026-11-13) - referral fraud signal, campaign chain exit condition, campaign holdout group, email one-click unsubscribe
 
 Four features (PRs #354-357) shipped with 100% unit coverage but, per `AGENTS.md`'s "New code needs its own
 tests" section, no real system-level proof at all - closed here via a 2026-11-14 audit against the real code
@@ -679,8 +641,7 @@ the shared `magento-ordo-test` sandbox - see this document's own git history / t
 whether they were observed passing for real or only written and left for CI, the same honesty bar
 ADR 0057's own "Consequences" section already modeled for its own pre-existing gap.
 
-## 41. Anomaly / insight alerts (`Cron/DetectAnomalies.php`, `Model/Anomaly/AnomalyAlert.php`,
-`Controller/Adminhtml/AnomalyAlert/Index.php`, `docs/adr/0025-automated-anomaly-insight-alerts.md`)
+## 41. Anomaly / insight alerts (`Cron/DetectAnomalies.php`, `Model/Anomaly/AnomalyAlert.php`, `Controller/Adminhtml/AnomalyAlert/Index.php`, `docs/adr/0025-automated-anomaly-insight-alerts.md`)
 
 Closes the gap §40 left open (found during that same 2026-11-14 audit but not traced as part of it):
 `Controller\Adminhtml\AnomalyAlert\Index` (`ordo/anomalyalert/index`) had zero SCENARIOS.md row and zero

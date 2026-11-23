@@ -31,7 +31,7 @@ browser-observable for Selenium to assert on.
 Plain PHPUnit classes, configured via the same environment variables `Test/Api/` already uses
 (see `.env.example` at the module root — no new variables needed):
 
-```
+```bash
 ORDO_API_BASE_URL=http://php:8080          # no trailing slash
 ORDO_API_CUSTOMER_EMAIL=...
 ORDO_API_CUSTOMER_PASSWORD=...

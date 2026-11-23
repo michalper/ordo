@@ -25,6 +25,7 @@ overall technical-review result).
 
 The 127.0.0.1 default was never actually correct by some universal assumption; it happened to
 work in the two environments this module had been exercised in before:
+
 - the local `magento-ordo-test/` sandbox, where the `db` container's `network_mode: "service:php"`
   shares `php`'s network namespace, so `127.0.0.1` from inside `php` does reach `db` - confirmed via
   a direct check: `app/etc/env.php`'s actual configured host there is `db` (not `127.0.0.1`), user

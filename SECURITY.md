@@ -14,7 +14,7 @@ baseline scan (DAST, against a live install) run in CI. None of this replaces a 
 
 Please **do not** open a public GitHub issue for a security vulnerability.
 
-Instead, email **michal.per@outlook.com** with:
+Instead, email **<michal.per@outlook.com>** with:
 
 - A description of the vulnerability and its potential impact.
 - Steps to reproduce (Magento version, PHP version, relevant configuration).

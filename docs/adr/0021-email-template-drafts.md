@@ -31,6 +31,7 @@ possible without forking core behavior.
 (`ORDO_EMAIL_TEMPLATE_DRAFT_TEMPLATE_ID`), not just app-level validation.
 `Controller\Adminhtml\EmailTemplateDraft\NewAction` looks up an existing draft via
 `Model\ResourceModel\EmailTemplateDraft::load($draft, $templateId, EmailTemplateDraft::TEMPLATE_ID)`
+
 - `AbstractDb::load()`'s own by-arbitrary-field form, the same mechanism `Edit`/`Save` already use
 by `entity_id` - rather than a `Collection` lookup (`getFirstItem()`/`getColumnValues()` both force
 a real `load()`/DB round trip a single-row existence check has no reason to pay for).
@@ -96,6 +97,7 @@ by design (CSRF hardening). This means the edit-form "Delete" button has never a
 *any* entity in this module when clicked from the edit page itself (only the grid's own row-action
 Delete, which already used a correct AJAX POST, ever worked). Fixed at the shared class, not just
 for this feature's own `PublishButton`: both now call `deleteConfirm('message', 'url', {data: {}})`
+
 - the 3-argument form (`mage/dataPost.js`) that builds and submits a real POST form with the
 page's own `form_key` auto-attached, the same pattern Magento core's own
 `Magento\Backend\Block\Widget\Form\Container` uses for its generic Delete button. A closely

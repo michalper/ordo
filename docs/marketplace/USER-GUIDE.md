@@ -34,7 +34,7 @@ reorder reminders — because they never had access to that data.
 
 ## Installation
 
-```
+```bash
 composer require michalper/ordo
 bin/magento module:enable Ordo_Automation
 bin/magento setup:upgrade
