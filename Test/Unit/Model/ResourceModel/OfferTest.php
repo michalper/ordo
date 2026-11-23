@@ -71,4 +71,38 @@ class OfferTest extends AbstractDbTestCase
 
         self::assertFalse($resource->claimSelfExtension($model, '2026-12-01 00:00:00', 1));
     }
+
+    /**
+     * Cron\ExpireOverdueOffers used to load()/save() each overdue offer individually - this is
+     * the single batch UPDATE that replaced it, so the real affected-row count (not a separately
+     * counted loop) drives the cron's own run summary.
+     */
+    public function testExpireOverdueUpdatesEverySentOfferPastItsExpiryInOneStatement(): void
+    {
+        [$context, $connection] = $this->makeDbContextWithConnection();
+        $connection->expects(self::once())->method('update')
+            ->with(
+                'ordo_offer',
+                ['status' => OfferInterface::STATUS_EXPIRED],
+                [
+                    'status = ?' => OfferInterface::STATUS_SENT,
+                    'expires_at < ?' => '2026-11-23',
+                ]
+            )
+            ->willReturn(3);
+
+        $resource = new Offer($context);
+
+        self::assertSame(3, $resource->expireOverdue('2026-11-23'));
+    }
+
+    public function testExpireOverdueReturnsZeroWhenNothingIsOverdue(): void
+    {
+        [$context, $connection] = $this->makeDbContextWithConnection();
+        $connection->expects(self::once())->method('update')->willReturn(0);
+
+        $resource = new Offer($context);
+
+        self::assertSame(0, $resource->expireOverdue('2026-11-23'));
+    }
 }
