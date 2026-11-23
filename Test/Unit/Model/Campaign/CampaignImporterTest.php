@@ -247,6 +247,23 @@ class CampaignImporterTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testImportDropsAMalformedActionRow(): void
+    {
+        $this->importer->import([
+            'export_type' => 'ordo_campaign',
+            'name' => 'Welcome Series',
+            'actions' => [
+                'not-an-array',
+                ['params' => []],
+                ['type' => ''],
+                ['type' => 'tag_customer', 'params' => ['tag' => 'vip']],
+            ],
+        ]);
+
+        self::assertCount(1, $this->savedActions);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testImportSavesASplitActionWithItsVariantsIntact(): void
     {
         // 'split' is deliberately never registered in ActionPool (see ActionPool::
