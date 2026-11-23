@@ -1,0 +1,4 @@
+# Makes the repo's existing "require review from code owners" branch-protection setting
+# actually mean something - without this file, that setting has nothing to match and is a
+# no-op (flagged by OpenSSF Scorecard's Branch-Protection check).
+* @michalper
