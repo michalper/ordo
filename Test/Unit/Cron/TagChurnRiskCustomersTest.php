@@ -43,11 +43,14 @@ class TagChurnRiskCustomersTest extends TestCase
         $config->method('getChurnRiskAtRiskRatio')->willReturn(0.75);
 
         $churnRiskCalculator = $this->createStub(ChurnRiskCalculator::class);
-        $churnRiskCalculator->method('getChurnRiskRatiosForAllCustomers')->willReturn([5 => 0.9, 6 => 0.5]);
+        // Customer 7 is also at risk but already tagged - the pre-check below must skip it
+        // (addTagIfAbsent() must never be called for it), the same way it always has, now via
+        // an explicit continue rather than the single if this loop used to be.
+        $churnRiskCalculator->method('getChurnRiskRatiosForAllCustomers')->willReturn([5 => 0.9, 6 => 0.5, 7 => 0.8]);
 
         $tagManager = $this->createMock(CustomerTagManager::class);
         $tagManager->method('getCustomerIdsWithTagFromSet')->willReturnMap([
-            [[5], TagChurnRiskCustomers::TAG_CHURN_RISK, []],
+            [[5, 7], TagChurnRiskCustomers::TAG_CHURN_RISK, [7]],
         ]);
         $tagManager->expects(self::once())->method('addTagIfAbsent')
             ->with(5, TagChurnRiskCustomers::TAG_CHURN_RISK)->willReturn(true);

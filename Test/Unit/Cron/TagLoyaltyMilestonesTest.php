@@ -107,13 +107,19 @@ class TagLoyaltyMilestonesTest extends TestCase
         ]);
 
         $scoreManager = $this->createStub(CustomerScoreManager::class);
+        // Customer 8 also qualifies for Silver but is already tagged - the pre-check below must
+        // skip it (addTagIfAbsent() must never be called for it), the same way it always has,
+        // now via an explicit continue rather than the single if this loop used to be.
         $scoreManager->method('getCustomerIdsWithScoreAtLeast')->willReturnMap([
-            [50, [7]],
+            [50, [7, 8]],
             [200, [7]],
         ]);
 
         $tagManager = $this->createMock(CustomerTagManager::class);
-        $tagManager->method('getCustomerIdsWithTag')->willReturn([]);
+        $tagManager->method('getCustomerIdsWithTag')->willReturnMap([
+            ['milestone_tier_silver', [8]],
+            ['milestone_tier_gold', []],
+        ]);
 
         $addedTags = [];
         $tagManager->method('addTagIfAbsent')->willReturnCallback(
@@ -134,6 +140,7 @@ class TagLoyaltyMilestonesTest extends TestCase
 
         self::assertContains([7, 'milestone_tier_silver'], $addedTags);
         self::assertContains([7, 'milestone_tier_gold'], $addedTags);
+        self::assertNotContains([8, 'milestone_tier_silver'], $addedTags);
         self::assertCount(2, $addedTags);
     }
 

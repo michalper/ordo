@@ -43,11 +43,14 @@ class TagReorderCycleAtRiskCustomersTest extends TestCase
         $config->method('getReorderAtRiskDriftRatio')->willReturn(0.75);
 
         $driftCalculator = $this->createStub(ReorderCycleDriftCalculator::class);
-        $driftCalculator->method('getDriftRatiosForAllCustomers')->willReturn([5 => 0.9, 6 => 0.5]);
+        // Customer 7 is also at risk but already tagged - the pre-check below must skip it
+        // (addTagIfAbsent() must never be called for it), the same way it always has, now via
+        // an explicit continue rather than the single if this loop used to be.
+        $driftCalculator->method('getDriftRatiosForAllCustomers')->willReturn([5 => 0.9, 6 => 0.5, 7 => 0.8]);
 
         $tagManager = $this->createMock(CustomerTagManager::class);
         $tagManager->method('getCustomerIdsWithTagFromSet')->willReturnMap([
-            [[5], TagReorderCycleAtRiskCustomers::TAG_REORDER_AT_RISK, []],
+            [[5, 7], TagReorderCycleAtRiskCustomers::TAG_REORDER_AT_RISK, [7]],
         ]);
         $tagManager->expects(self::once())->method('addTagIfAbsent')
             ->with(5, TagReorderCycleAtRiskCustomers::TAG_REORDER_AT_RISK)->willReturn(true);
