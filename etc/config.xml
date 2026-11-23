@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <ordo_channels>
+            <email>
+                <!--
+                    Unlike every other channel toggle this module has (sms/push/webhook/rcs/
+                    whatsapp), send_email has no external provider to configure and has always
+                    worked out of the box since this module's very first release - defaulting
+                    this one to disabled, the same way a genuinely new opt-in channel does, would
+                    silently stop every existing installation's campaign emails on upgrade. This
+                    toggle exists so a merchant can choose to pause email sends, not so email
+                    starts out paused.
+                -->
+                <enabled>1</enabled>
+            </email>
+        </ordo_channels>
+    </default>
+</config>
