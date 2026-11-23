@@ -50,9 +50,15 @@ abstract class GenericButton
      */
     protected function confirmedPostOnClick(Phrase $confirmMessage, string $route): string
     {
+        // Escape backslashes and single quotes so a translated message containing either (e.g.
+        // "template's", or a French "n'est pas") can't break out of the single-quoted JS string
+        // literal below - found via a real admin button whose confirm text silently stopped
+        // working once its copy happened to contain an apostrophe.
+        $escapedMessage = str_replace(['\\', "'"], ['\\\\', "\\'"], (string) $confirmMessage);
+
         return sprintf(
             "deleteConfirm('%s', '%s', {data: {}})",
-            $confirmMessage,
+            $escapedMessage,
             $this->getUrl($route, ['entity_id' => $this->getEntityId()])
         );
     }
