@@ -153,4 +153,43 @@ class ScheduledTriggerStateTest extends TestCase
         (new ScheduledTriggerState($resourceConnection))
             ->markFired(5, 'scheduled_at', 'abc123', '2026-01-01 00:00:00');
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAcquireLockReturnsTrueWhenTheLockIsGranted(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::once())->method('fetchOne')
+            ->with('SELECT GET_LOCK(?, 5)', ['ordo_scheduled_trigger_5_scheduled_at'])
+            ->willReturn('1');
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+
+        self::assertTrue((new ScheduledTriggerState($resourceConnection))->acquireLock(5, 'scheduled_at'));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAcquireLockReturnsFalseWhenTheLockIsAlreadyHeld(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('fetchOne')->willReturn('0');
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+
+        self::assertFalse((new ScheduledTriggerState($resourceConnection))->acquireLock(5, 'scheduled_at'));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testReleaseLockReleasesTheSameNamedLockAcquireLockUsed(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::once())->method('query')
+            ->with('SELECT RELEASE_LOCK(?)', ['ordo_scheduled_trigger_5_scheduled_at']);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+
+        (new ScheduledTriggerState($resourceConnection))->releaseLock(5, 'scheduled_at');
+    }
 }
