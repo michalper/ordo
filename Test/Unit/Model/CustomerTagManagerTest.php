@@ -51,9 +51,7 @@ class CustomerTagManagerTest extends TestCase
     {
         $connection = $this->createMock(AdapterInterface::class);
         $connection->expects(self::once())->method('insert')
-            ->with('ordo_customer_tag', self::callback(static function (array $row): bool {
-                return $row['customer_id'] === 42 && $row['tag'] === 'vip';
-            }));
+            ->with('ordo_customer_tag', self::callback(static fn (array $row): bool => $row['customer_id'] === 42 && $row['tag'] === 'vip'));
 
         $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
