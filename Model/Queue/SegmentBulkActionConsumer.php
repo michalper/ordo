@@ -36,7 +36,20 @@ class SegmentBulkActionConsumer
 
     public function execute(string $message): void
     {
-        $decoded = $this->serializer->unserialize($message);
+        try {
+            $decoded = $this->serializer->unserialize($message);
+        } catch (\Throwable $e) {
+            // Same fail-closed shape CampaignDispatchConsumer/VisitorAggregationConsumer already
+            // have for an undecodable message - logged and dropped, not requeued or left to
+            // crash the consumer uncaught. Every per-customer failure below this point already
+            // has its own try/catch; only the decode step itself was missing one.
+            $this->logger->error(sprintf(
+                'Ordo_Automation: dropped an undecodable segment bulk action message: %s',
+                $e->getMessage()
+            ));
+            return;
+        }
+
         $actionType = (string) ($decoded['action_type'] ?? '');
         $params = (array) ($decoded['params'] ?? []);
         $customerIds = (array) ($decoded['customer_ids'] ?? []);
