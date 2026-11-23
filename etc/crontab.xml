@@ -100,6 +100,9 @@
         <job name="ordo_automation_prune_cron_run_log" instance="Ordo\Automation\Cron\PruneCronRunLog" method="execute">
             <schedule>45 4 * * *</schedule>
         </job>
+        <job name="ordo_automation_prune_segment_bulk_action_claims" instance="Ordo\Automation\Cron\PruneSegmentBulkActionClaims" method="execute">
+            <schedule>50 4 * * *</schedule>
+        </job>
         <job name="ordo_automation_compute_campaign_attribution" instance="Ordo\Automation\Cron\ComputeCampaignAttribution" method="execute">
             <schedule>0 * * * *</schedule>
         </job>

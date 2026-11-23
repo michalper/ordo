@@ -329,6 +329,23 @@
         </index>
     </table>
 
+    <table name="ordo_segment_bulk_action_claim" resource="default" engine="innodb" comment="Per-customer claim for one Model\Queue\SegmentBulkActionPublisher chunk (batch_id) - closes a real redelivery gap: Magento's queue can redeliver a message after a consumer crash, and Model\Queue\SegmentBulkActionConsumer's own per-customer loop has no other checkpoint, so a redelivered chunk would otherwise re-apply the action (e.g. add_points) to every customer already processed before the crash, not just the ones never reached. No FK to ordo_customer_tag/customer_entity - same small-table, no-cascade-needed reasoning as ordo_customer_tag itself. Pruned by Cron\PruneSegmentBulkActionClaims - a claim only needs to outlive the broker's own redelivery window, not accumulate forever.">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="batch_id" length="36" nullable="false" comment="UUID generated once per published chunk (Model\Queue\SegmentBulkActionPublisher::publish()) - identifies exactly one message, not the segment/action it came from, since the same segment+action can legitimately be re-run later as a fresh bulk action with a new batch_id"/>
+        <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
+        <column xsi:type="timestamp" name="claimed_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Claimed At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="ORDO_SEGMENT_BULK_ACTION_CLAIM_BATCH_ID_CUSTOMER_ID">
+            <column name="batch_id"/>
+            <column name="customer_id"/>
+        </constraint>
+        <index referenceId="ORDO_SEGMENT_BULK_ACTION_CLAIM_CLAIMED_AT" indexType="btree">
+            <column name="claimed_at"/>
+        </index>
+    </table>
+
     <table name="ordo_segment_audience_size_history" resource="default" engine="innodb" comment="Append-only snapshot history for ordo_segment.estimated_audience_size - one row per Model\Segment\SegmentAudienceSizeRecalculator pass, per segment. Closes the how-has-this-segment-grown-or-shrunk-over-the-last-3-months gap, where ordo_segment itself only ever holds the latest snapshot.">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="segment_id" padding="10" unsigned="true" nullable="false" comment="ordo_segment.entity_id"/>
