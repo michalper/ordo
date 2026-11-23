@@ -10,8 +10,10 @@ use Magento\Framework\App\CsrfAwareActionInterface;
 use Magento\Framework\App\Request\InvalidRequestException;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Controller\Result\JsonFactory;
+use Magento\Framework\HTTP\PhpEnvironment\RemoteAddress;
 use Magento\Newsletter\Model\SubscriberFactory;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Track\EmailCaptureRateLimiter;
 use Ordo\Automation\Model\VisitorTagManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -21,6 +23,12 @@ use Throwable;
  * (view/frontend/web/js/tracker.js's startEmailCaptureTimer()/renderEmailCapture()) once a
  * visitor submits an email. Same trust model as Controller\Track\Event's own doc comment: no
  * CSRF token, callable by anonymous visitors with no session/form key yet.
+ *
+ * Rate-limited per IP (Model\Track\EmailCaptureRateLimiter, same CacheWindowCounter shape as
+ * Model\Approval\ApprovalRateLimiter) - without it, a script could repeatedly POST any victim's
+ * email address to flood their inbox with real newsletter-confirmation emails ("newsletter
+ * bombing"), since subscribe() below is a real Magento\Newsletter\Model\Subscriber call, not a
+ * no-op.
  *
  * Subscribes through Magento's own real Magento\Newsletter\Model\Subscriber - not a new
  * subscription mechanism, so this respects a store's existing newsletter config (confirmation
@@ -43,6 +51,8 @@ class EmailCapture extends Action implements HttpPostActionInterface, CsrfAwareA
         private readonly Config $config,
         private readonly SubscriberFactory $subscriberFactory,
         private readonly VisitorTagManager $visitorTagManager,
+        private readonly EmailCaptureRateLimiter $rateLimiter,
+        private readonly RemoteAddress $remoteAddress,
         private readonly LoggerInterface $logger
     ) {
         parent::__construct($context);
@@ -54,6 +64,10 @@ class EmailCapture extends Action implements HttpPostActionInterface, CsrfAwareA
 
         if (!$this->config->isEmailCaptureEnabled()) {
             return $result->setData(['ok' => false, 'reason' => 'disabled']);
+        }
+
+        if (!$this->rateLimiter->isAllowed((string) $this->remoteAddress->getRemoteAddress())) {
+            return $result->setData(['ok' => false, 'reason' => 'rate_limited']);
         }
 
         $visitorId = $this->getRequest()->getParam('visitor_id');

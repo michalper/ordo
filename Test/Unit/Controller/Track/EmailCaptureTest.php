@@ -5,10 +5,12 @@ namespace Ordo\Automation\Test\Unit\Controller\Track;
 
 use Magento\Framework\Controller\Result\Json;
 use Magento\Framework\Controller\Result\JsonFactory;
+use Magento\Framework\HTTP\PhpEnvironment\RemoteAddress;
 use Magento\Newsletter\Model\Subscriber;
 use Magento\Newsletter\Model\SubscriberFactory;
 use Ordo\Automation\Controller\Track\EmailCapture;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Track\EmailCaptureRateLimiter;
 use Ordo\Automation\Model\VisitorTagManager;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -22,6 +24,8 @@ class EmailCaptureTest extends AbstractFrontendActionTestCase
     private SubscriberFactory $subscriberFactory;
     private Subscriber $subscriber;
     private VisitorTagManager $visitorTagManager;
+    private EmailCaptureRateLimiter $rateLimiter;
+    private RemoteAddress $remoteAddress;
     private LoggerInterface $logger;
     private Json $jsonResult;
 
@@ -33,6 +37,9 @@ class EmailCaptureTest extends AbstractFrontendActionTestCase
         $this->subscriberFactory = $this->createStub(SubscriberFactory::class);
         $this->subscriberFactory->method('create')->willReturn($this->subscriber);
         $this->visitorTagManager = $this->createMock(VisitorTagManager::class);
+        $this->rateLimiter = $this->createStub(EmailCaptureRateLimiter::class);
+        $this->rateLimiter->method('isAllowed')->willReturn(true);
+        $this->remoteAddress = $this->createStub(RemoteAddress::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->jsonResult = $this->createMock(Json::class);
@@ -48,6 +55,8 @@ class EmailCaptureTest extends AbstractFrontendActionTestCase
             $this->config,
             $this->subscriberFactory,
             $this->visitorTagManager,
+            $this->rateLimiter,
+            $this->remoteAddress,
             $this->logger
         );
     }
@@ -60,6 +69,26 @@ class EmailCaptureTest extends AbstractFrontendActionTestCase
 
         $this->jsonResult->expects(self::once())->method('setData')
             ->with(['ok' => false, 'reason' => 'disabled']);
+        $this->subscriber->expects(self::never())->method('subscribe');
+
+        $controller->execute();
+    }
+
+    /**
+     * Regression: without this check, a script could repeatedly POST any victim's email address
+     * to flood their inbox with real newsletter-confirmation emails - this must be rejected
+     * before subscribe() (or even payload validation) ever runs.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteReturnsRateLimitedReasonWhenTheIpHasExceededTheLimit(): void
+    {
+        $this->config->method('isEmailCaptureEnabled')->willReturn(true);
+        $this->rateLimiter = $this->createMock(EmailCaptureRateLimiter::class);
+        $this->rateLimiter->expects(self::once())->method('isAllowed')->willReturn(false);
+        $controller = $this->makeController();
+
+        $this->jsonResult->expects(self::once())->method('setData')
+            ->with(['ok' => false, 'reason' => 'rate_limited']);
         $this->subscriber->expects(self::never())->method('subscribe');
 
         $controller->execute();
