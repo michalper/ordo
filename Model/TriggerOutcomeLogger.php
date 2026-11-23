@@ -77,7 +77,10 @@ class TriggerOutcomeLogger
      * one per trigger, so the dashboard doesn't reintroduce the N+1 pattern the campaign trigger
      * stats were already fixed for.
      *
-     * "Recovered revenue" is the sum of grand_total for orders matched via markActed() — same
+     * "Recovered revenue" is the sum of base_grand_total (not grand_total) for orders matched via
+     * markActed() — same reasoning as CampaignOutcomeLogger::getStats()'s own revenue column: a
+     * multi-store install can have orders placed under more than one currency, and summing the
+     * order-currency grand_total would mix them into one meaningless number. Same
      * first-plausible-match semantics as response rate: directional, not billing-grade
      * attribution (an order matched to a trigger isn't proof the trigger caused it).
      *
@@ -103,7 +106,7 @@ class TriggerOutcomeLogger
                     'trigger_type',
                     'sent' => 'COUNT(*)',
                     'responded' => 'SUM(CASE WHEN o.acted_at IS NOT NULL THEN 1 ELSE 0 END)',
-                    'recovered_revenue' => 'SUM(so.grand_total)',
+                    'recovered_revenue' => 'SUM(so.base_grand_total)',
                 ])
                 ->joinLeft(['so' => $orderTable], 'so.entity_id = o.order_id', [])
                 ->group('trigger_type')
