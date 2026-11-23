@@ -134,11 +134,16 @@ class SendEmailTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsWhenConsentWithdrawn(): void
     {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getEmail')->willReturn('jan@example.com');
+        $this->customerRepository->method('getById')->willReturn($customer);
+
         $this->consentManager = $this->createMock(ConsentManager::class);
         $this->consentManager->expects(self::once())->method('hasTopicConsent')
             ->with(42, ConsentChannel::Email, ConsentTopic::Promotional)->willReturn(false);
-        $this->customerRepository->expects(self::never())->method('getById');
         $this->logger->expects(self::once())->method('info');
+        $this->messageLogWriter->expects(self::once())->method('recordOptedOut')
+            ->with('email', 42, 'jan@example.com', null, null);
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
@@ -147,6 +152,10 @@ class SendEmailTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testExecutePassesTheConfiguredTopicToConsentCheck(): void
     {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getEmail')->willReturn('jan@example.com');
+        $this->customerRepository->method('getById')->willReturn($customer);
+
         $this->consentManager = $this->createMock(ConsentManager::class);
         $this->consentManager->expects(self::once())->method('hasTopicConsent')
             ->with(42, ConsentChannel::Email, ConsentTopic::AccountUpdates)->willReturn(false);
@@ -162,11 +171,14 @@ class SendEmailTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsWhenQuietHoursGateDefers(): void
     {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getEmail')->willReturn('jan@example.com');
+        $this->customerRepository->method('getById')->willReturn($customer);
+
         $this->quietHoursGate = $this->createMock(QuietHoursGate::class);
         $this->quietHoursGate->expects(self::once())->method('allows')->willReturn(false);
         $this->frequencyCapGate = $this->createMock(FrequencyCapGate::class);
         $this->frequencyCapGate->expects(self::never())->method('allows');
-        $this->customerRepository->expects(self::never())->method('getById');
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
@@ -175,13 +187,16 @@ class SendEmailTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsWhenSendTimeOptimizationGateDefers(): void
     {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getEmail')->willReturn('jan@example.com');
+        $this->customerRepository->method('getById')->willReturn($customer);
+
         $this->sendTimeOptimizationGate = $this->createMock(SendTimeOptimizationGate::class);
         $this->sendTimeOptimizationGate->expects(self::once())->method('allows')->willReturn(false);
         $this->quietHoursGate = $this->createMock(QuietHoursGate::class);
         $this->quietHoursGate->expects(self::never())->method('allows');
         $this->frequencyCapGate = $this->createMock(FrequencyCapGate::class);
         $this->frequencyCapGate->expects(self::never())->method('allows');
-        $this->customerRepository->expects(self::never())->method('getById');
 
         $context = ['customer_id' => 42];
         $this->makeAction()->execute(
@@ -193,10 +208,13 @@ class SendEmailTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsAndRecordsSuppressedWhenFrequencyCapReached(): void
     {
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getEmail')->willReturn('jan@example.com');
+        $this->customerRepository->method('getById')->willReturn($customer);
+
         $this->frequencyCapGate = $this->createMock(FrequencyCapGate::class);
         $this->frequencyCapGate->expects(self::once())->method('allows')
             ->with(42, 'email', '', 'send_email')->willReturn(false);
-        $this->customerRepository->expects(self::never())->method('getById');
         $this->logger->expects(self::never())->method('info');
         $this->messageLogWriter->expects(self::never())->method('recordSuppressed');
 
