@@ -47,7 +47,24 @@ class LeadAssignerTest extends TestCase
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($select);
         $connection->method('quoteIdentifier')->willReturnArgument(0);
-        $this->stubFetchOne($connection, false);
+        // Seeded by nextRep()'s own INSERT IGNORE before the locking SELECT (see that method's
+        // own docblock) at repCount - 1 = 1, so the FOR UPDATE read below sees that seed value
+        // (a real DB would too, whether this call's own seed won or a concurrent one's did) and
+        // (1 + 1) % 2 lands on position 0, the first rep - same outcome the old
+        // $lastPosition === false branch produced, now reached without ever needing that branch.
+        $this->stubFetchOne($connection, '1');
+        // Regression: this seed is what makes the FOR UPDATE select below actually have
+        // something to lock on this rule's very first-ever assignment - without it, two
+        // customers' first-ever qualifying events for the same rule could both read "no row"
+        // and both land on position 0 (see nextRep()'s own docblock). assign()'s own
+        // RELEASE_LOCK also goes through query(), so this only asserts the seed call among them.
+        $seedInsertCalls = [];
+        $connection->method('query')->willReturnCallback(function (string $sql, array $bind = []) use (&$seedInsertCalls) {
+            if (str_contains($sql, 'INSERT IGNORE INTO')) {
+                $seedInsertCalls[] = $bind;
+            }
+            return null;
+        });
         $connection->expects(self::once())->method('commit');
 
         $resourceConnection = $this->createStub(ResourceConnection::class);
@@ -80,6 +97,7 @@ class LeadAssignerTest extends TestCase
             AddSalesRepAttributes::ATTRIBUTE_REP_EMAIL => 'first@example.com',
             AddSalesRepAttributes::ATTRIBUTE_REP_PHONE => '111',
         ], $setAttributes);
+        self::assertSame([[1, 1]], $seedInsertCalls);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -232,7 +250,9 @@ class LeadAssignerTest extends TestCase
     public function testAssignDoesNothingWhenTheRepAtTheComputedPositionIsNull(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
-        $this->stubFetchOne($connection, false);
+        // Seeded at repCount - 1 = 1 for these 2 reps, same reasoning as the "no state row yet"
+        // test above - (1 + 1) % 2 lands on position 0, which is null in this rule's reps.
+        $this->stubFetchOne($connection, '1');
         $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
@@ -266,22 +286,19 @@ class LeadAssignerTest extends TestCase
     public function testAssignRollsBackAndRethrowsWhenAdvancingTheRoundRobinPointerFails(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
-        $this->stubFetchOne($connection, false);
+        // Seeded at repCount - 1 = 0 for this single-rep rule - (0 + 1) % 1 = 0.
+        $this->stubFetchOne($connection, '0');
         $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
         $select->method('forUpdate')->willReturnSelf();
         $connection->method('select')->willReturn($select);
         $connection->method('quoteIdentifier')->willReturnArgument(0);
-        // Only the round-robin pointer's own INSERT should fail - RELEASE_LOCK in assign()'s own
+        // Only the round-robin pointer's own UPDATE should fail - RELEASE_LOCK in assign()'s own
         // finally block must still be allowed to run without also throwing, same as a real
-        // connection would behave.
-        $connection->method('query')->willReturnCallback(function (string $sql) {
-            if (str_starts_with($sql, 'INSERT INTO')) {
-                throw new \RuntimeException('deadlock');
-            }
-            return null;
-        });
+        // connection would behave. The seed INSERT IGNORE (a plain query() call) must not throw
+        // either, or this test would never even reach the transaction.
+        $connection->method('update')->willThrowException(new \RuntimeException('deadlock'));
         $connection->expects(self::once())->method('rollBack');
         $connection->expects(self::never())->method('commit');
 

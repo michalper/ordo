@@ -20,7 +20,10 @@ use Ordo\Automation\Setup\Patch\Data\AddSalesRepAttributes;
  * with the same transaction + SELECT ... FOR UPDATE shape as
  * CustomerScoreManager::applyDemographicScore() - two overlapping qualifying events for two
  * different customers matching the same rule must never both read the same stale position and
- * assign the same rep twice in a row.
+ * assign the same rep twice in a row. nextRep() seeds the row first (INSERT IGNORE) before that
+ * locking SELECT, since FOR UPDATE has nothing to lock on a rule's very first-ever assignment -
+ * without the seed, two different customers' first-ever qualifying events for the same rule
+ * could both read "no row" and both land on position 0.
  *
  * assign() itself re-checks hasAssignedRep() again, under a per-customer named lock, right
  * before actually assigning - the caller's own hasAssignedRep() check (Observer\
@@ -101,23 +104,33 @@ class LeadAssigner
         $table = $this->resourceConnection->getTableName('ordo_lead_routing_rule_state');
         $repCount = count($reps);
 
+        // SELECT ... FOR UPDATE below only locks a row that already exists - on this rule's
+        // very first assignment ever, there's no row yet for it to lock, so two customers
+        // qualifying for the same rule at the same moment could both read "no row" (nothing was
+        // locked), both compute position 0, and both get the same first rep. Seeding the row
+        // first (a no-op via INSERT IGNORE if one already exists, from a past run or a
+        // concurrent call that won this exact race) guarantees a row is always there for the
+        // FOR UPDATE select just below to actually lock, closing the gap. repCount - 1 is the
+        // unsigned-safe equivalent of "one before position 0" - (repCount - 1 + 1) % repCount
+        // is 0, the same first position the old $lastPosition === false branch produced.
+        $connection->query(
+            // phpcs:ignore Magento2.SQL.RawQuery.FoundRawSql
+            'INSERT IGNORE INTO ' . $connection->quoteIdentifier($table) . ' (rule_id, last_assigned_position) VALUES (?, ?)',
+            [$ruleId, $repCount - 1]
+        );
+
         $connection->beginTransaction();
         try {
-            $lastPosition = $connection->fetchOne(
+            $lastPosition = (int) $connection->fetchOne(
                 $connection->select()
                     ->from($table, 'last_assigned_position')
                     ->where('rule_id = ?', $ruleId)
                     ->forUpdate(true)
             );
 
-            $nextPosition = $lastPosition === false ? 0 : ((int) $lastPosition + 1) % $repCount;
+            $nextPosition = ($lastPosition + 1) % $repCount;
 
-            $connection->query(
-                // phpcs:ignore Magento2.SQL.RawQuery.FoundRawSql
-                'INSERT INTO ' . $connection->quoteIdentifier($table) . ' (rule_id, last_assigned_position) '
-                . 'VALUES (?, ?) ON DUPLICATE KEY UPDATE last_assigned_position = VALUES(last_assigned_position)',
-                [$ruleId, $nextPosition]
-            );
+            $connection->update($table, ['last_assigned_position' => $nextPosition], ['rule_id = ?' => $ruleId]);
 
             $connection->commit();
         } catch (\Throwable $e) {
