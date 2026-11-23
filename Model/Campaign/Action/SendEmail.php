@@ -9,6 +9,7 @@ use Magento\Framework\Mail\Template\TransportBuilder;
 use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Api\Campaign\ActionInterface;
+use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign\ConsentTopicOptions;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
 use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
@@ -87,7 +88,8 @@ class SendEmail implements ActionInterface
         private readonly CustomerStoreResolver $customerStoreResolver,
         private readonly EmailTemplateOptions $emailTemplateOptions,
         private readonly UnsubscribeContext $unsubscribeContext,
-        private readonly PendingUnsubscribeHeaderHolder $pendingUnsubscribeHeaderHolder
+        private readonly PendingUnsubscribeHeaderHolder $pendingUnsubscribeHeaderHolder,
+        private readonly Config $config
     ) {
     }
 
@@ -103,6 +105,11 @@ class SendEmail implements ActionInterface
             $this->logger->error(
                 'Ordo_Automation: send_email action is missing customer_id in context or "template" in params.'
             );
+            return;
+        }
+
+        if (!$this->config->isEmailEnabled()) {
+            $this->logger->debug('Ordo_Automation: send_email action skipped, email sending is disabled in config.');
             return;
         }
 
