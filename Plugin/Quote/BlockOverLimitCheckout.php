@@ -39,13 +39,17 @@ class BlockOverLimitCheckout
     }
 
     /**
-     * CartManagementInterface::placeOrder() itself returns int (the new order id), not the
-     * array{cartId, payment} shape a BEFORE-plugin would return to modify the arguments - an
-     * around-plugin's return value must match the intercepted method's own return type exactly,
-     * since $proceed's own return value (passed straight through below) already IS that order
-     * id.
+     * No native return type declared, deliberately - CartManagementInterface::placeOrder()
+     * itself declares none either (its own docblock says "@return int", but the real
+     * QuoteManagement::placeOrder() implementation can return the new order id as either int or
+     * a numeric string depending on how the id was loaded, confirmed via a real CI run throwing
+     * "Return value must be of type int, string returned" once this method declared ": int").
+     * An around-plugin's return value must never be more strictly typed than the method it
+     * wraps - $proceed()'s own return value is passed straight through below, whatever type it
+     * actually is.
      *
-     * @param callable(int, ?PaymentInterface): int $proceed
+     * @param callable(int, ?PaymentInterface): mixed $proceed
+     * @return int|string
      * @throws LocalizedException
      */
     public function aroundPlaceOrder(
@@ -53,7 +57,7 @@ class BlockOverLimitCheckout
         callable $proceed,
         int $cartId,
         ?PaymentInterface $payment = null
-    ): int {
+    ) {
         if (!$this->config->isCreditLimitCheckoutBlockEnabled()) {
             return $proceed($cartId, $payment);
         }
