@@ -72,12 +72,14 @@ class SendCreditLimitAlerts
         // customer_id: a customer can be alerted again once they cross into a different
         // utilization band within the same cooldown window, so this fetches every (customer,
         // band) pair already alerted within the cooldown up front, not just per-customer.
+        $cooldownDays = $this->config->getCreditLimitAlertCooldownDays();
+        $cooldownCutoff = date('Y-m-d H:i:s', (int) strtotime("-{$cooldownDays} days"));
         $alertedRecently = $this->reminderLogStore->fetchExistingIdGroupPairs(
             self::REMINDER_LOG_TABLE,
             'customer_id',
             $customerIds,
             'threshold_percent',
-            ['sent_at >= ?' => date('Y-m-d H:i:s', (int) strtotime('-' . $this->config->getCreditLimitAlertCooldownDays() . ' days'))]
+            ['sent_at >= ?' => $cooldownCutoff]
         );
 
         foreach ($customerIds as $customerId) {
