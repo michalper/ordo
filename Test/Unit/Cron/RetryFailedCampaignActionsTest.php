@@ -60,11 +60,56 @@ class RetryFailedCampaignActionsTest extends TestCase
         $this->collectionFactory->method('create')->willReturn($collection);
 
         $this->resource->expects(self::once())->method('claim')->willReturn(true);
-        $this->dispatcher->expects(self::once())->method('resumeScheduledAction')->with(3, 9, ['customer_id' => 1]);
+        $this->dispatcher->expects(self::once())->method('resumeScheduledAction')
+            ->with(3, 9, ['customer_id' => 1], []);
         $this->resource->expects(self::once())->method('delete')->with($retry);
         $this->resource->expects(self::never())->method('save');
 
         $this->makeCron()->execute();
+    }
+
+    /**
+     * Regression: a backlog of retries can span many rows for the same handful of campaigns -
+     * the lookup memo CampaignDispatcher::resumeScheduledAction() accepts must be the SAME array
+     * (by reference) across every row this one execute() run processes, not a fresh [] per row,
+     * or every row repeats the same campaign-enabled/resume-row/action-list lookups this memo
+     * exists to avoid.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSharesTheSameLookupMemoAcrossEveryRowInOneRun(): void
+    {
+        $firstRetry = $this->createStub(CampaignActionRetry::class);
+        $firstRetry->method('getAttempts')->willReturn(0);
+        $firstRetry->method('getCampaignId')->willReturn(3);
+        $firstRetry->method('getResumeActionId')->willReturn(9);
+        $firstRetry->method('getContext')->willReturn([]);
+
+        $secondRetry = $this->createStub(CampaignActionRetry::class);
+        $secondRetry->method('getAttempts')->willReturn(0);
+        $secondRetry->method('getCampaignId')->willReturn(3);
+        $secondRetry->method('getResumeActionId')->willReturn(10);
+        $secondRetry->method('getContext')->willReturn([]);
+
+        $collection = $this->createStub(CampaignActionRetryCollection::class);
+        $collection->method('addDueFilter');
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$firstRetry, $secondRetry]));
+        $this->collectionFactory->method('create')->willReturn($collection);
+
+        $this->resource->method('claim')->willReturn(true);
+
+        $memos = [];
+        $this->dispatcher->method('resumeScheduledAction')->willReturnCallback(
+            function (int $campaignId, int $resumeActionId, array $context, array &$lookupMemo) use (&$memos): void {
+                $lookupMemo['campaign'][$campaignId] = 'seen';
+                $memos[] = $lookupMemo;
+            }
+        );
+
+        $this->makeCron()->execute();
+
+        self::assertCount(2, $memos);
+        // The second row's own call already saw the first row's write to the shared memo.
+        self::assertSame(['campaign' => [3 => 'seen']], $memos[1]);
     }
 
     #[AllowMockObjectsWithoutExpectations]
