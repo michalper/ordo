@@ -9,6 +9,7 @@ use Ordo\Automation\Model\CreditLimitCalculator;
 use Ordo\Automation\Model\CreditLimitManagement;
 use Ordo\Automation\Model\CreditLimitStatus;
 use Ordo\Automation\Model\CreditLimitStatusFactory;
+use Ordo\Automation\Model\UserContextCustomerIdResolver;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
@@ -25,7 +26,12 @@ class CreditLimitManagementTest extends TestCase
         $statusFactory->method('create')->willReturnCallback(fn () => new CreditLimitStatus());
         $this->userContext = $this->createStub(UserContextInterface::class);
 
-        $this->management = new CreditLimitManagement($this->calculator, $statusFactory, $this->userContext);
+        $this->management = new CreditLimitManagement(
+            $this->calculator,
+            $statusFactory,
+            $this->userContext,
+            new UserContextCustomerIdResolver()
+        );
     }
 
     #[AllowMockObjectsWithoutExpectations]

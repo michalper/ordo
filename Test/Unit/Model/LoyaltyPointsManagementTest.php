@@ -7,6 +7,7 @@ use Magento\Authorization\Model\UserContextInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Model\LoyaltyPointsManagement;
 use Ordo\Automation\Model\LoyaltyPointsManager;
+use Ordo\Automation\Model\UserContextCustomerIdResolver;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
@@ -23,7 +24,11 @@ class LoyaltyPointsManagementTest extends TestCase
 
     private function makeManagement(): LoyaltyPointsManagement
     {
-        return new LoyaltyPointsManagement($this->loyaltyPointsManager, $this->userContext);
+        return new LoyaltyPointsManagement(
+            $this->loyaltyPointsManager,
+            $this->userContext,
+            new UserContextCustomerIdResolver()
+        );
     }
 
     public function testGetMyBalanceResolvesTheCurrentCustomerFromUserContext(): void
