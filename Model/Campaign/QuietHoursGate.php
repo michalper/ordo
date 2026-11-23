@@ -32,11 +32,17 @@ class QuietHoursGate
     }
 
     /**
+     * $context is by reference (not by value) so a deferral can mark it - see
+     * CampaignDispatcher::deferActionUntil()'s own DEFERRED_CONTEXT_FLAG docblock for why: without
+     * it, the dispatcher's own action-chain loop has no way to tell a defer apart from this action
+     * having actually run, and would wrongly continue to the next action in the chain instead of
+     * pausing it the same way a delay_minutes action does.
+     *
      * @param array<string, mixed> $context
      * @return bool true if the send may proceed, false if it was deferred (already scheduled to
      *     resume later - the caller just needs to stop, not log/schedule anything itself)
      */
-    public function allows(int $customerId, int $campaignId, int $actionId, array $context, ?int $storeId = null): bool
+    public function allows(int $customerId, int $campaignId, int $actionId, array &$context, ?int $storeId = null): bool
     {
         if (!$this->config->isQuietHoursEnabled($storeId)) {
             return true;

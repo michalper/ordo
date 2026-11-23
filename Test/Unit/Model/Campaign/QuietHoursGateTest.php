@@ -50,7 +50,8 @@ class QuietHoursGateTest extends TestCase
         $this->customerTimezoneResolver->expects(self::never())->method('resolve');
         $this->campaignDispatcher->expects(self::never())->method('deferActionUntil');
 
-        self::assertTrue($this->gate->allows(42, 7, 20, ['customer_id' => 42]));
+        $context = ['customer_id' => 42];
+        self::assertTrue($this->gate->allows(42, 7, 20, $context));
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -65,7 +66,8 @@ class QuietHoursGateTest extends TestCase
 
         $this->campaignDispatcher->expects(self::never())->method('deferActionUntil');
 
-        self::assertTrue($this->gate->allows(42, 7, 20, ['customer_id' => 42]));
+        $context = ['customer_id' => 42];
+        self::assertTrue($this->gate->allows(42, 7, 20, $context));
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -76,7 +78,8 @@ class QuietHoursGateTest extends TestCase
         $this->customerTimezoneResolver->expects(self::never())->method('resolve');
         $this->campaignDispatcher->expects(self::never())->method('deferActionUntil');
 
-        self::assertTrue($this->gate->allows(42, 7, 0, ['customer_id' => 42]));
+        $context = ['customer_id' => 42];
+        self::assertTrue($this->gate->allows(42, 7, 0, $context));
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -94,6 +97,7 @@ class QuietHoursGateTest extends TestCase
         $this->campaignDispatcher->expects(self::once())->method('deferActionUntil')
             ->with(7, 20, '2026-01-16 08:00:00', ['customer_id' => 42]);
 
-        self::assertFalse($this->gate->allows(42, 7, 20, ['customer_id' => 42]));
+        $context = ['customer_id' => 42];
+        self::assertFalse($this->gate->allows(42, 7, 20, $context));
     }
 }
