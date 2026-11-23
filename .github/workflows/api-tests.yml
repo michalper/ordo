@@ -398,3 +398,13 @@ jobs:
         # changed, so api-tests-magento never ran at all rather than ran and failed.
         if: ${{ needs.api-tests-magento.result != 'success' && needs.api-tests-magento.result != 'skipped' }}
         run: exit 1
+
+  trigger-release:
+    # See ci.yml's own "trigger-release" job for the full reasoning (one of 4 identical calls).
+    needs: api-tests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      id-token: write
+    uses: ./.github/workflows/release.yml
+    secrets: inherit
