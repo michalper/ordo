@@ -84,8 +84,8 @@ class ScheduledTriggerScanner
         foreach ($triggers as $trigger) {
             /** @var CampaignTrigger $trigger */
             try {
-                if ($this->isDue($trigger, $now, $states)) {
-                    $this->fire($trigger, $now);
+                $state = $states[$trigger->getCampaignId() . ':' . $trigger->getTriggerEvent()] ?? null;
+                if ($this->isDue($trigger, $now, $state) && $this->fire($trigger, $now)) {
                     $fired++;
                 }
             } catch (\Throwable $e) {
@@ -102,14 +102,15 @@ class ScheduledTriggerScanner
     }
 
     /**
-     * @param array<string, array{config_hash: string, last_fired_at: string|null}> $states
-     *  preloaded via ScheduledTriggerState::getStatesForCampaigns(), keyed
-     *  "{campaign_id}:{trigger_event}"
+     * @param array{config_hash: string, last_fired_at: string|null}|null $state this exact
+     *  (campaign_id, trigger_event)'s current state - either the batch-preloaded snapshot
+     *  (ScheduledTriggerState::getStatesForCampaigns()) for the cheap upfront filter, or a fresh
+     *  single read (ScheduledTriggerState::getState()) for fire()'s own re-check once it holds
+     *  this trigger's lock, since the batch snapshot could be stale by then.
      */
-    private function isDue(CampaignTrigger $trigger, \DateTimeImmutable $now, array $states): bool
+    private function isDue(CampaignTrigger $trigger, \DateTimeImmutable $now, ?array $state): bool
     {
         $configHash = hash('sha256', $trigger->getParamsJson());
-        $state = $states[$trigger->getCampaignId() . ':' . $trigger->getTriggerEvent()] ?? null;
         $alreadyFiredUnderThisConfig = $state !== null
             && $state['config_hash'] === $configHash
             && $state['last_fired_at'] !== null;
@@ -137,23 +138,67 @@ class ScheduledTriggerScanner
         return $cronExpression !== '' && $this->matchesCronExpression($cronExpression, $now);
     }
 
-    private function fire(CampaignTrigger $trigger, \DateTimeImmutable $now): void
+    /**
+     * Serializes against a genuinely overlapping scan via a per-(campaign_id, trigger_event)
+     * MySQL named lock (ScheduledTriggerState::acquireLock()) - scan()'s own upfront isDue()
+     * check runs against a batch-preloaded, already-possibly-stale snapshot, so once this lock is
+     * held the due-ness is re-checked against a fresh single read before dispatching anything.
+     * Without this, two overlapping runs (a manual "Run Now" racing the scheduled instance, or
+     * one tick's scan still running when the next starts) could both pass the stale upfront check
+     * before either claims, and both dispatch - firing a scheduled_at trigger more than once or a
+     * recurring_schedule trigger twice in the same matching minute.
+     *
+     * Still claims (markFired()) AFTER a successful dispatch, not before: dispatchScheduledTrigger()
+     * can genuinely throw for reasons scan()'s own catch block already treats as retry-next-tick
+     * (e.g. a campaign deleted between the scan starting and this trigger being reached - see
+     * CampaignDispatcherTest's own coverage) - claiming first would need every such failure to
+     * explicitly roll the claim back to keep that same retry behavior, trading a simpler ordering
+     * for new failure-path complexity to guard against a narrower risk (a hard process crash mid-
+     * dispatch) that the lock above doesn't touch either way. The lock alone is what closes the
+     * actual concurrency bug a full-repo review found; this ordering is deliberately unchanged.
+     *
+     * @return bool Whether this call actually fired the trigger (false if it lost the lock-and-
+     *  recheck race, or the lock itself couldn't be acquired within the timeout).
+     */
+    private function fire(CampaignTrigger $trigger, \DateTimeImmutable $now): bool
     {
         $campaignId = $trigger->getCampaignId();
         $triggerEvent = $trigger->getTriggerEvent();
-        $nowFormatted = $now->format('Y-m-d H:i:s');
 
-        $this->campaignDispatcher->dispatchScheduledTrigger($campaignId, [
-            'trigger_event' => $triggerEvent,
-            'now' => $nowFormatted,
-        ]);
+        if (!$this->scheduledTriggerState->acquireLock($campaignId, $triggerEvent)) {
+            $this->logger->error(sprintf(
+                'Ordo_Automation: could not acquire the scheduled-trigger lock for campaign #%d (%s) '
+                . '- skipping this tick, will retry next scan.',
+                $campaignId,
+                $triggerEvent
+            ));
+            return false;
+        }
 
-        $this->scheduledTriggerState->markFired(
-            $campaignId,
-            $triggerEvent,
-            hash('sha256', $trigger->getParamsJson()),
-            $nowFormatted
-        );
+        try {
+            $freshState = $this->scheduledTriggerState->getState($campaignId, $triggerEvent);
+            if (!$this->isDue($trigger, $now, $freshState)) {
+                return false;
+            }
+
+            $nowFormatted = $now->format('Y-m-d H:i:s');
+
+            $this->campaignDispatcher->dispatchScheduledTrigger($campaignId, [
+                'trigger_event' => $triggerEvent,
+                'now' => $nowFormatted,
+            ]);
+
+            $this->scheduledTriggerState->markFired(
+                $campaignId,
+                $triggerEvent,
+                hash('sha256', $trigger->getParamsJson()),
+                $nowFormatted
+            );
+
+            return true;
+        } finally {
+            $this->scheduledTriggerState->releaseLock($campaignId, $triggerEvent);
+        }
     }
 
     private function matchesCronExpression(string $cronExpression, \DateTimeImmutable $now): bool
