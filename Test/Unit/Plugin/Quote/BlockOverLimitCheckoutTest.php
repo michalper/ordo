@@ -47,9 +47,9 @@ class BlockOverLimitCheckoutTest extends TestCase
         );
     }
 
-    private function proceedReturning(int $cartId, ?object $payment = null): callable
+    private function proceedReturning(int $orderId): callable
     {
-        return static fn (int $id, $pay = null): array => [$id, $pay];
+        return static fn (int $id, $pay = null): int => $orderId;
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -60,7 +60,7 @@ class BlockOverLimitCheckoutTest extends TestCase
 
         $result = $this->plugin->aroundPlaceOrder($this->subject, $this->proceedReturning(42), 42);
 
-        self::assertSame([42, null], $result);
+        self::assertSame(42, $result);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -75,7 +75,7 @@ class BlockOverLimitCheckoutTest extends TestCase
 
         $result = $this->plugin->aroundPlaceOrder($this->subject, $this->proceedReturning(42), 42);
 
-        self::assertSame([42, null], $result);
+        self::assertSame(42, $result);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -90,7 +90,7 @@ class BlockOverLimitCheckoutTest extends TestCase
 
         $result = $this->plugin->aroundPlaceOrder($this->subject, $this->proceedReturning(42), 42);
 
-        self::assertSame([42, null], $result);
+        self::assertSame(42, $result);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -104,9 +104,9 @@ class BlockOverLimitCheckoutTest extends TestCase
         $this->creditLimitCalculator->method('getProjectedUtilizationPercent')->willReturnMap([[7, 50000.0, 150.0]]);
 
         $proceedCalled = false;
-        $proceed = function () use (&$proceedCalled): array {
+        $proceed = function () use (&$proceedCalled): int {
             $proceedCalled = true;
-            return [42, null];
+            return 42;
         };
 
         $this->expectException(LocalizedException::class);
