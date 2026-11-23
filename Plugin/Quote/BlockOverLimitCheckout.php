@@ -48,7 +48,7 @@ class BlockOverLimitCheckout
      * wraps - $proceed()'s own return value is passed straight through below, whatever type it
      * actually is.
      *
-     * @param callable(int, ?PaymentInterface): mixed $proceed
+     * @param callable(int, ?PaymentInterface): (int|string) $proceed
      * @return int|string
      * @throws LocalizedException
      */
