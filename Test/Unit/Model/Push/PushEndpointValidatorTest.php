@@ -81,4 +81,44 @@ class PushEndpointValidatorTest extends TestCase
     {
         self::assertNull($this->validator->resolvePinnedIp('https://169.254.169.254/latest/meta-data/'));
     }
+
+    /**
+     * Regression: RssFetcher reuses this class with $allowedSchemes = ['http', 'https'] (a
+     * legitimately configured RSS feed can be plain http, unlike push/webhook) - the default
+     * stays https-only for every other caller.
+     */
+    public function testAllowedSchemesDefaultsToHttpsOnly(): void
+    {
+        self::assertNull($this->validator->resolvePinnedIp('http://fcm.googleapis.com/fcm/send/abc'));
+    }
+
+    public function testAllowedSchemesCanBeWidenedToIncludeHttp(): void
+    {
+        self::assertSame(
+            '93.184.216.34',
+            $this->validator->resolvePinnedIp('http://93.184.216.34/feed.xml', ['http', 'https'])
+        );
+    }
+
+    public function testStillRejectsASchemeNotInTheGivenAllowList(): void
+    {
+        self::assertNull(
+            $this->validator->resolvePinnedIp('ftp://93.184.216.34/feed.xml', ['http', 'https'])
+        );
+    }
+
+    /**
+     * Regression: a literal "localhost"/"*.local" name must never fall through to DNS resolution
+     * to be rejected - NSS can serve it from /etc/hosts, mDNS, or a resolver override before
+     * dns_get_record() is ever reached, none of which this check can observe.
+     */
+    public function testRejectsLiteralLocalhostHostname(): void
+    {
+        self::assertNull($this->validator->resolvePinnedIp('https://localhost/push'));
+    }
+
+    public function testRejectsDotLocalHostname(): void
+    {
+        self::assertNull($this->validator->resolvePinnedIp('https://printer.local/push'));
+    }
 }

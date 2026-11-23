@@ -7,6 +7,7 @@ use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\HTTP\Client\Curl;
 use Ordo\Automation\Model\ContentBlock;
 use Ordo\Automation\Model\ContentBlock\Renderer\RssItemRenderer;
+use Ordo\Automation\Model\Push\PushEndpointValidator;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -20,6 +21,13 @@ use Psr\Log\LoggerInterface;
  * degrades to stale-but-still-useful content rather than blanking out an already-working email
  * block. Upsert semantics: the first successful/failed fetch for a block inserts the row,
  * every fetch after that updates it.
+ *
+ * feed_url is admin-configured, but this still performs a server-side request driven by that
+ * input, so it's an SSRF surface - fetchBody() validates and pins the real connection via
+ * PushEndpointValidator (see that class's own docblock), the same guard
+ * Model\Campaign\Action\SendWebhook uses for its own admin-configured URL. Redirects are
+ * disabled for the same reason — a validated URL could otherwise 302 to an internal address at
+ * fetch time.
  */
 class RssFetcher
 {
@@ -38,7 +46,7 @@ class RssFetcher
         private readonly ResourceConnection $resourceConnection,
         private readonly RssItemRenderer $rssItemRenderer,
         private readonly LoggerInterface $logger,
-        private readonly HostResolverInterface $hostResolver
+        private readonly PushEndpointValidator $endpointValidator
     ) {
     }
 
@@ -88,14 +96,23 @@ class RssFetcher
         $scheme = strtolower((string) ($parts['scheme'] ?? ''));
         $host = strtolower((string) ($parts['host'] ?? ''));
         $port = (int) ($parts['port'] ?? ($scheme === 'https' ? 443 : 80));
-        $connectIp = $this->resolveSafeConnectIp($scheme, $host);
+
+        $connectIp = $this->endpointValidator->resolvePinnedIp($feedUrl, ['http', 'https']);
+        if ($connectIp === null) {
+            // See this class's own docblock on $feedUrl being an SSRF surface - PushEndpointValidator
+            // already covers every reason a URL could fail this (bad scheme, empty/local host,
+            // unresolvable, resolves to a private/reserved address); one message here is enough,
+            // the real detail belongs in why the request should never have been made at all, not
+            // in distinguishing those cases from each other.
+            throw new \RuntimeException('Feed URL failed validation (must be http(s) and resolve only to a public address).');
+        }
 
         $this->curl->setTimeout(self::TIMEOUT_SECONDS);
         $this->curl->setOption(CURLOPT_MAXFILESIZE, self::MAX_RESPONSE_BYTES);
         $this->curl->setOption(CURLOPT_FOLLOWLOCATION, false);
-        // Pins the actual TCP connection to the exact address validated by
-        // resolveSafeConnectIp() above, regardless of what a second, independent DNS lookup at
-        // connect time might return - see that method's own docblock for why that gap matters.
+        // Pins the actual TCP connection to the exact address PushEndpointValidator validated
+        // above, regardless of what a second, independent DNS lookup at connect time might
+        // return - see that class's own docblock for why that gap matters.
         $this->curl->setOption(CURLOPT_RESOLVE, ["{$host}:{$port}:{$connectIp}"]);
         $this->curl->get($feedUrl);
 
@@ -110,60 +127,6 @@ class RssFetcher
         }
 
         return $body;
-    }
-
-    /**
-     * feed_url is admin-configured, but this still performs a server-side request driven by
-     * that input, so it's an SSRF surface: block anything that isn't a plain http(s) URL, and
-     * block hostnames that are themselves a literal loopback/private/link-local/reserved
-     * address or a well-known local name, so an admin can't be used (deliberately or via a
-     * compromised account) to make the app server probe its own cloud metadata endpoint,
-     * localhost, or internal-network services by IP. Redirects are disabled in fetchBody() for
-     * the same reason — a validated URL could otherwise 302 to an internal address at fetch time.
-     *
-     * A hostname (as opposed to a literal IP) is resolved exactly once, here, via
-     * HostResolverInterface — every candidate address it returns is validated, and the first one
-     * is returned for fetchBody() to pin the real connection to via CURLOPT_RESOLVE. That pin is
-     * what actually closes the DNS-rebinding gap: without it, a hostname that resolves safely
-     * right here but is reconfigured (by its own, attacker-controlled DNS) to answer privately a
-     * moment later would still have curl's own, independent connect-time lookup reach an
-     * internal address — validating the hostname alone, with no control over what address the
-     * real request ends up using, would not have been a real fix.
-     *
-     * @return string the IP fetchBody() should pin the real connection to
-     */
-    private function resolveSafeConnectIp(string $scheme, string $host): string
-    {
-        if (!in_array($scheme, ['http', 'https'], true) || $host === '') {
-            throw new \RuntimeException('Feed URL must be a plain http(s) URL.');
-        }
-
-        if ($host === 'localhost' || str_ends_with($host, '.local')) {
-            throw new \RuntimeException('Feed URL must not point at a local host.');
-        }
-
-        if (filter_var($host, FILTER_VALIDATE_IP)) {
-            $this->assertSafeIp($host);
-            return $host;
-        }
-
-        $resolved = $this->hostResolver->resolve($host);
-        if ($resolved === []) {
-            throw new \RuntimeException('Feed URL host could not be resolved.');
-        }
-
-        foreach ($resolved as $ip) {
-            $this->assertSafeIp($ip);
-        }
-
-        return $resolved[0];
-    }
-
-    private function assertSafeIp(string $ip): void
-    {
-        if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-            throw new \RuntimeException('Feed URL must not point at a private/reserved address.');
-        }
     }
 
     /**

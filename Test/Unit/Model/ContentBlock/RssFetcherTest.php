@@ -10,9 +10,9 @@ use Magento\Framework\Model\Context;
 use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
 use Magento\Framework\Registry;
 use Ordo\Automation\Model\ContentBlock;
-use Ordo\Automation\Model\ContentBlock\HostResolverInterface;
 use Ordo\Automation\Model\ContentBlock\Renderer\RssItemRenderer;
 use Ordo\Automation\Model\ContentBlock\RssFetcher;
+use Ordo\Automation\Model\Push\PushEndpointValidator;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -24,9 +24,7 @@ class RssFetcherTest extends TestCase
     private AdapterInterface&\PHPUnit\Framework\MockObject\MockObject $connection;
     private RssItemRenderer&\PHPUnit\Framework\MockObject\MockObject $rssItemRenderer;
     private LoggerInterface&\PHPUnit\Framework\MockObject\MockObject $logger;
-    private HostResolverInterface&\PHPUnit\Framework\MockObject\MockObject $hostResolver;
-    /** @var array<string, string[]> */
-    private array $resolverAnswers = [];
+    private PushEndpointValidator&\PHPUnit\Framework\MockObject\MockObject $endpointValidator;
     private RssFetcher $fetcher;
 
     protected function setUp(): void
@@ -39,22 +37,30 @@ class RssFetcherTest extends TestCase
             ->willReturnMap([['ordo_content_block_rss_cache', 'ordo_content_block_rss_cache']]);
         $this->rssItemRenderer = $this->createMock(RssItemRenderer::class);
         $this->logger = $this->createMock(LoggerInterface::class);
-        $this->hostResolver = $this->createMock(HostResolverInterface::class);
-        // Registered exactly once - PHPUnit's mock matcher uses the FIRST method() stub
-        // registered on a given method for every invocation (there's no "last one wins" once a
-        // method()-only, unscoped stub exists), so setResolverAnswers() below mutates this
-        // shared array by reference instead of registering a second callback.
-        $this->hostResolver->method('resolve')->willReturnCallback(
-            fn (string $host): array => $this->resolverAnswers[$host] ?? []
+        $this->endpointValidator = $this->createMock(PushEndpointValidator::class);
+        // Every test below uses either https://example.com/... (pins to 93.184.216.34, the
+        // documented TEST-NET-adjacent example.com address) or a literal IP host - see
+        // individual tests for their own resolvePinnedIp() overrides.
+        $this->endpointValidator->method('resolvePinnedIp')->willReturnCallback(
+            function (string $url, array $allowedSchemes) {
+                // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+                $host = parse_url($url, PHP_URL_HOST);
+                if ($host === 'example.com') {
+                    return '93.184.216.34';
+                }
+                if (is_string($host) && filter_var($host, FILTER_VALIDATE_IP) !== false) {
+                    return $host;
+                }
+                return null;
+            }
         );
-        $this->setResolverAnswers(['example.com' => ['93.184.216.34']]);
 
         $this->fetcher = new RssFetcher(
             $this->curl,
             $this->resourceConnection,
             $this->rssItemRenderer,
             $this->logger,
-            $this->hostResolver
+            $this->endpointValidator
         );
     }
 
@@ -70,19 +76,7 @@ class RssFetcherTest extends TestCase
         return $block;
     }
 
-    /**
-     * Adds/overrides resolve() answers for specific hosts, on top of setUp()'s single stub
-     * registration - see that registration's own comment for why this merges into the shared
-     * array rather than registering a new mock behavior.
-     *
-     * @param array<string, string[]> $answers
-     */
-    private function setResolverAnswers(array $answers): void
-    {
-        $this->resolverAnswers = $answers + $this->resolverAnswers;
-    }
-
-    private const VALID_RSS = <<<'XML'
+    private const string VALID_RSS = <<<'XML'
 <?xml version="1.0"?>
 <rss version="2.0">
   <channel>
@@ -273,13 +267,32 @@ XML;
         $this->fetcher->fetch($this->makeBlock(['feed_url' => 'https://example.com/feed.xml', 'item_count' => 10]));
     }
 
+    /**
+     * fetchBody() delegates all SSRF validation to PushEndpointValidator (see that class's own
+     * docblock and tests for every distinct rejection reason it covers - bad scheme, a literal
+     * private/reserved IP, a hostname resolving to one, an unresolvable host, localhost/.local) -
+     * this only needs to confirm a rejected URL is never passed to curl and produces one clear
+     * fetch_error message, not re-verify PushEndpointValidator's own internal logic.
+     */
     #[AllowMockObjectsWithoutExpectations]
-    public function testRejectsFeedUrlPointingAtPrivateAddressWithoutCallingCurl(): void
+    public function testRejectsFeedUrlThatFailsEndpointValidationWithoutCallingCurl(): void
     {
+        $this->endpointValidator = $this->createMock(PushEndpointValidator::class);
+        $this->endpointValidator->expects(self::once())->method('resolvePinnedIp')
+            ->with('http://169.254.169.254/latest/meta-data', ['http', 'https'])
+            ->willReturn(null);
+        $this->fetcher = new RssFetcher(
+            $this->curl,
+            $this->resourceConnection,
+            $this->rssItemRenderer,
+            $this->logger,
+            $this->endpointValidator
+        );
+
         $this->curl->expects(self::never())->method('get');
         $this->connection->expects(self::once())->method('query')->with(
             self::anything(),
-            [3, 'Feed URL must not point at a private/reserved address.']
+            [3, 'Feed URL failed validation (must be http(s) and resolve only to a public address).']
         );
         $this->rssItemRenderer->expects(self::never())->method('render');
         $this->logger->expects(self::once())->method('error');
@@ -288,51 +301,9 @@ XML;
     }
 
     /**
-     * The actual DNS-rebinding close: a hostname that resolves to a private address must be
-     * rejected the same way a literal private IP already is - resolveSafeConnectIp() validates
-     * every address HostResolverInterface::resolve() returns, not just the literal host string.
-     */
-    #[AllowMockObjectsWithoutExpectations]
-    public function testRejectsFeedUrlWhoseHostnameResolvesToAPrivateAddressWithoutCallingCurl(): void
-    {
-        $this->setResolverAnswers(['attacker.example' => ['10.0.0.5']]);
-
-        $this->curl->expects(self::never())->method('get');
-        $this->connection->expects(self::once())->method('query')->with(
-            self::anything(),
-            [3, 'Feed URL must not point at a private/reserved address.']
-        );
-        $this->rssItemRenderer->expects(self::never())->method('render');
-        $this->logger->expects(self::once())->method('error');
-
-        $this->fetcher->fetch($this->makeBlock(['feed_url' => 'http://attacker.example/feed.xml']));
-    }
-
-    /**
-     * An unresolvable hostname fails closed rather than silently falling through to curl's own
-     * (unpinned) resolution.
-     */
-    #[AllowMockObjectsWithoutExpectations]
-    public function testRejectsFeedUrlWithAnUnresolvableHostnameWithoutCallingCurl(): void
-    {
-        $this->setResolverAnswers(['nowhere.example' => []]);
-
-        $this->curl->expects(self::never())->method('get');
-        $this->connection->expects(self::once())->method('query')->with(
-            self::anything(),
-            [3, 'Feed URL host could not be resolved.']
-        );
-        $this->rssItemRenderer->expects(self::never())->method('render');
-        $this->logger->expects(self::once())->method('error');
-
-        $this->fetcher->fetch($this->makeBlock(['feed_url' => 'http://nowhere.example/feed.xml']));
-    }
-
-    /**
-     * fetchBody() must pin the real curl connection to the exact address resolveSafeConnectIp()
-     * validated - not just trust curl's own, separate resolution of the same hostname at
-     * connect time (that would reopen the DNS-rebinding gap resolving/validating exists to
-     * close).
+     * fetchBody() must pin the real curl connection to the exact address PushEndpointValidator
+     * validated - not just trust curl's own, separate resolution of the same hostname at connect
+     * time (that would reopen the DNS-rebinding gap resolving/validating exists to close).
      */
     #[AllowMockObjectsWithoutExpectations]
     public function testPinsTheCurlConnectionToTheValidatedResolvedAddress(): void
@@ -351,12 +322,12 @@ XML;
     }
 
     /**
-     * A feed URL whose host is already a literal, safe IP skips HostResolverInterface entirely -
-     * resolveSafeConnectIp() returns it directly once assertSafeIp() has cleared it, the same
-     * address fetchBody() then pins the curl connection to.
+     * A feed URL whose host is already a literal, safe IP still goes through
+     * PushEndpointValidator (which short-circuits DNS resolution for a literal IP itself) - the
+     * same address it returns is what fetchBody() pins the curl connection to.
      */
     #[AllowMockObjectsWithoutExpectations]
-    public function testAcceptsFeedUrlWithALiteralPublicIpHostWithoutCallingTheResolver(): void
+    public function testAcceptsFeedUrlWithALiteralPublicIpHost(): void
     {
         $setOptionCalls = [];
         $this->curl->method('setOption')->willReturnCallback(function ($option, $value) use (&$setOptionCalls) {
@@ -365,39 +336,35 @@ XML;
         });
         $this->curl->method('getStatus')->willReturn(200);
         $this->curl->method('getBody')->willReturn(self::VALID_RSS);
-        $this->hostResolver->expects(self::never())->method('resolve');
 
         $this->fetcher->fetch($this->makeBlock(['feed_url' => 'http://93.184.216.34/feed.xml']));
 
         self::assertSame(['93.184.216.34:80:93.184.216.34'], $setOptionCalls[CURLOPT_RESOLVE] ?? null);
     }
 
+    /**
+     * fetchBody() must pass both schemes to PushEndpointValidator - unlike push/webhook, a
+     * legitimately configured RSS feed can be plain http, not just https.
+     */
     #[AllowMockObjectsWithoutExpectations]
-    public function testRejectsLocalhostFeedUrlWithoutCallingCurl(): void
+    public function testPassesBothHttpAndHttpsAsAllowedSchemesToTheEndpointValidator(): void
     {
-        $this->curl->expects(self::never())->method('get');
-        $this->connection->expects(self::once())->method('query')->with(
-            self::anything(),
-            [3, 'Feed URL must not point at a local host.']
+        $this->endpointValidator = $this->createMock(PushEndpointValidator::class);
+        $this->endpointValidator->expects(self::once())->method('resolvePinnedIp')
+            ->with('https://example.com/feed.xml', ['http', 'https'])
+            ->willReturn('93.184.216.34');
+        $this->fetcher = new RssFetcher(
+            $this->curl,
+            $this->resourceConnection,
+            $this->rssItemRenderer,
+            $this->logger,
+            $this->endpointValidator
         );
-        $this->rssItemRenderer->expects(self::never())->method('render');
-        $this->logger->expects(self::once())->method('error');
 
-        $this->fetcher->fetch($this->makeBlock(['feed_url' => 'http://localhost/feed.xml']));
-    }
+        $this->curl->method('getStatus')->willReturn(200);
+        $this->curl->method('getBody')->willReturn(self::VALID_RSS);
 
-    #[AllowMockObjectsWithoutExpectations]
-    public function testRejectsNonHttpFeedUrlSchemeWithoutCallingCurl(): void
-    {
-        $this->curl->expects(self::never())->method('get');
-        $this->connection->expects(self::once())->method('query')->with(
-            self::anything(),
-            [3, 'Feed URL must be a plain http(s) URL.']
-        );
-        $this->rssItemRenderer->expects(self::never())->method('render');
-        $this->logger->expects(self::once())->method('error');
-
-        $this->fetcher->fetch($this->makeBlock(['feed_url' => 'file:///etc/passwd']));
+        $this->fetcher->fetch($this->makeBlock(['feed_url' => 'https://example.com/feed.xml']));
     }
 
     #[AllowMockObjectsWithoutExpectations]

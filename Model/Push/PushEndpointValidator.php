@@ -13,6 +13,16 @@ namespace Ordo\Automation\Model\Push;
  * targeted that customer — a textbook server-side request forgery. Enforced both at registration
  * time (reject bad input early) and again immediately before every send (defends against DNS
  * rebinding between the two).
+ *
+ * Reused as-is (despite the Push-specific name/namespace - it was written first, the same
+ * reasoning Model\Sms\MessageLogWriter is reused as-is by every other channel action) by
+ * Model\Campaign\Action\SendWebhook for its own admin-configured Outbound URL, and by
+ * Model\ContentBlock\RssFetcher for its own admin-configured feed_url - $allowedSchemes exists
+ * for that second caller, which (unlike push/webhook) has a real reason to allow plain http as
+ * well as https. RssFetcher used to carry its own, separate copy of this same SSRF check (plus a
+ * HostResolverInterface/HostResolver seam just to unit test it, both now deleted) - its DNS
+ * coverage was actually a regression next to this one (gethostbynamel() only resolved IPv4,
+ * where dns_get_record() below already covers both A and AAAA records).
  */
 class PushEndpointValidator
 {
@@ -29,17 +39,31 @@ class PushEndpointValidator
      * (DNS rebinding, TTL=0) can validate a public address here while the client's own, separate
      * resolution connects to a private one moments later - defeating this check entirely despite
      * it running "immediately before every send".
+     *
+     * @param string[] $allowedSchemes Defaults to https-only (every caller but RssFetcher needs
+     *   exactly that); RssFetcher passes ['http', 'https'] since a legitimately configured RSS
+     *   feed can be plain http.
      */
-    public function resolvePinnedIp(string $url): ?string
+    public function resolvePinnedIp(string $url, array $allowedSchemes = ['https']): ?string
     {
         // No Magento core alternative parses a URL into its component parts.
         // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         $parts = parse_url($url);
-        if (!isset($parts['scheme'], $parts['host']) || strtolower($parts['scheme']) !== 'https') {
+        if (!isset($parts['scheme'], $parts['host'])
+            || !in_array(strtolower($parts['scheme']), $allowedSchemes, true)
+        ) {
             return null;
         }
 
-        $host = $parts['host'];
+        $host = strtolower($parts['host']);
+        // Defense in depth: a literal "localhost"/"*.local" name has no guarantee of actually
+        // being resolved via DNS at all (NSS can serve it from /etc/hosts, mDNS, or a resolver
+        // override before dns_get_record() below is ever reached), so it must never rely on
+        // falling through to the DNS-based check to be rejected.
+        if ($host === 'localhost' || str_ends_with($host, '.local')) {
+            return null;
+        }
+
         if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
             return $this->isPublicIp($host) ? $host : null;
         }
