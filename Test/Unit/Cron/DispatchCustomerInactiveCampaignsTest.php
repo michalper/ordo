@@ -14,9 +14,9 @@ use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\Cron\ReminderLogStore;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as TriggerCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
-use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class DispatchCustomerInactiveCampaignsTest extends TestCase
 {
@@ -222,7 +222,13 @@ class DispatchCustomerInactiveCampaignsTest extends TestCase
 
         $connection = $this->makeConnection([42]);
         $connection->expects(self::once())->method('insert');
-        $connection->expects(self::once())->method('delete');
+        // Regression: the rollback must match ONLY the one claim row this call just inserted
+        // (via its own fired_at), not the customer+campaign pair's whole history - this table is
+        // a plain append-only log (a customer can leave and re-enter inactivity more than once),
+        // so an omitted fired_at in the delete's WHERE would silently wipe every past fire for
+        // this pair on a single transient dispatch failure.
+        $connection->expects(self::once())->method('delete')
+            ->with(self::anything(), self::stringContains('`fired_at` ='));
 
         $dispatcher = $this->createMock(CampaignDispatcher::class);
         $dispatcher->method('dispatchScheduledTrigger')->willThrowException(new \RuntimeException('boom'));

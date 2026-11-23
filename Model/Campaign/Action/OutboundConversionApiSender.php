@@ -37,6 +37,9 @@ class OutboundConversionApiSender
      * @param array<string, string> $headers Forwarded to JsonApiClient::postJson() - e.g.
      *   SendWebhook's own HMAC X-Ordo-Signature header, which this API's auth scheme (a query
      *   param secret, same as $redactQueryParams above) never needs.
+     * @param string|null $pinnedIp Forwarded to JsonApiClient::postJson() - see its own docblock.
+     *   Only SendWebhook's $url is admin-configurable (GA4/Meta's are this module's own fixed API
+     *   hosts), so only that caller needs to pass this.
      */
     public function send(
         string $actionType,
@@ -48,12 +51,20 @@ class OutboundConversionApiSender
         array &$context,
         array $params,
         array $redactQueryParams = [],
-        array $headers = []
+        array $headers = [],
+        ?string $pinnedIp = null
     ): void {
         try {
             $this->rateLimiter->throttle($rateLimitChannel, $maxRequestsPerSecond);
             $this->sendRetrier->attempt(
-                fn () => $this->jsonApiClient->postJson($url, $payload, $headers, $serviceName, $redactQueryParams)
+                fn () => $this->jsonApiClient->postJson(
+                    $url,
+                    $payload,
+                    $headers,
+                    $serviceName,
+                    $redactQueryParams,
+                    $pinnedIp
+                )
             );
         } catch (Throwable $e) {
             $this->logger->error(sprintf(

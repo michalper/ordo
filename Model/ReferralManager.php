@@ -141,7 +141,10 @@ class ReferralManager
     /**
      * Marks the referred customer's pending referral converted and returns who referred them, or
      * null if there is no pending referral for this customer (never referred, already converted,
-     * or this is a repeat customer with no referral at all).
+     * or this is a repeat customer with no referral at all) - including when a concurrent call for
+     * the same customer (a retried order-placement event, or an admin edit racing a webhook resave)
+     * already claimed it first; see ResourceModel\Referral::claimConverted() for how that race is
+     * closed.
      */
     public function markConvertedAndGetReferrer(int $referredCustomerId): ?int
     {
@@ -153,13 +156,9 @@ class ReferralManager
 
         /** @var Referral $referral */
         $referral = $collection->getFirstItem();
-        if (!$referral->getId()) {
+        if (!$referral->getId() || !$this->referralResource->claimConverted($referral)) {
             return null;
         }
-
-        $referral->setStatus(Referral::STATUS_CONVERTED);
-        $referral->setData(Referral::CONVERTED_AT, date('Y-m-d H:i:s'));
-        $this->referralResource->save($referral);
 
         return $referral->getReferrerCustomerId();
     }

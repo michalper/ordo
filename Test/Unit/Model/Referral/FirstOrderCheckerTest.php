@@ -42,4 +42,35 @@ class FirstOrderCheckerTest extends TestCase
     {
         self::assertFalse($this->makeChecker(0)->isFirstOrder(5));
     }
+
+    /**
+     * Regression: canceled orders must not count toward "has a prior order" - a customer whose
+     * only real order was canceled and who then places a genuine first order would otherwise be
+     * counted as having 2 orders, silently missing the referral-conversion reward this class
+     * exists to trigger. Same state != 'canceled' filter every other order-count aggregate in
+     * this module already applies (RfmCalculator/ClvCalculator/ChurnRiskCalculator).
+     */
+    public function testIsFirstOrderExcludesCanceledOrdersFromTheCount(): void
+    {
+        $select = $this->createMock(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->expects(self::exactly(2))->method('where')
+            ->willReturnCallback(function (string $condition, $value) use ($select) {
+                self::assertContains($condition, ['customer_id = ?', 'state != ?']);
+                if ($condition === 'state != ?') {
+                    self::assertSame('canceled', $value);
+                }
+                return $select;
+            });
+
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchOne')->willReturn(1);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        self::assertTrue((new FirstOrderChecker($resourceConnection))->isFirstOrder(5));
+    }
 }

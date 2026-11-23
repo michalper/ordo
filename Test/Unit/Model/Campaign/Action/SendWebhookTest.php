@@ -9,6 +9,7 @@ use Ordo\Automation\Model\Campaign\Action\SendRetrier;
 use Ordo\Automation\Model\Campaign\Action\SendWebhook;
 use Ordo\Automation\Model\Campaign\MessageSendRetryQueue;
 use Ordo\Automation\Model\Http\JsonApiClient;
+use Ordo\Automation\Model\Push\PushEndpointValidator;
 use Ordo\Automation\Model\RateLimit\OutboundRateLimiter;
 use Ordo\Automation\Model\Webhook\WebhookSignatureValidator;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -25,6 +26,7 @@ class SendWebhookTest extends TestCase
     private MessageSendRetryQueue $messageSendRetryQueue;
     private LoggerInterface $logger;
     private OutboundConversionApiSender $sender;
+    private PushEndpointValidator $endpointValidator;
 
     protected function setUp(): void
     {
@@ -34,6 +36,8 @@ class SendWebhookTest extends TestCase
         $this->config->method('getWebhookOutboundSecret')->willReturn('a-real-secret');
         $this->config->method('getWebhookMaxRequestsPerSecond')->willReturn(0);
         $this->jsonApiClient = $this->createMock(JsonApiClient::class);
+        $this->endpointValidator = $this->createMock(PushEndpointValidator::class);
+        $this->endpointValidator->method('resolvePinnedIp')->willReturn('93.184.216.34');
         $this->signatureValidator = new WebhookSignatureValidator();
         $this->rateLimiter = $this->createStub(OutboundRateLimiter::class);
         $this->messageSendRetryQueue = $this->createMock(MessageSendRetryQueue::class);
@@ -64,6 +68,7 @@ class SendWebhookTest extends TestCase
             $this->config,
             $this->signatureValidator,
             $this->sender,
+            $this->endpointValidator,
             $this->logger
         );
     }
@@ -82,7 +87,9 @@ class SendWebhookTest extends TestCase
                     return isset($headers[WebhookSignatureValidator::SIGNATURE_HEADER])
                         && str_starts_with($headers[WebhookSignatureValidator::SIGNATURE_HEADER], 'sha256=');
                 }),
-                'Ordo webhook'
+                'Ordo webhook',
+                [],
+                '93.184.216.34'
             )
             ->willReturn([]);
 
@@ -98,6 +105,8 @@ class SendWebhookTest extends TestCase
             ->with(
                 self::anything(),
                 self::callback(static fn (array $payload): bool => $payload['event'] === 'custom_event'),
+                self::anything(),
+                self::anything(),
                 self::anything(),
                 self::anything()
             )
@@ -138,6 +147,41 @@ class SendWebhookTest extends TestCase
         $this->config->method('getWebhookOutboundUrl')->willReturn('https://erp.example.com/inbound');
         $this->config->method('getWebhookOutboundSecret')->willReturn('');
         $this->jsonApiClient->expects(self::never())->method('postJson');
+
+        $context = ['trigger_event' => 'order_placed'];
+        $this->makeAction()->execute($context, []);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSkippedWhenOutboundUrlFailsSsrfValidation(): void
+    {
+        $this->endpointValidator = $this->createMock(PushEndpointValidator::class);
+        $this->endpointValidator->method('resolvePinnedIp')->willReturn(null);
+        $this->jsonApiClient->expects(self::never())->method('postJson');
+
+        $context = ['trigger_event' => 'order_placed'];
+        $this->makeAction()->execute($context, []);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPinsTheValidatedIpOnTheRealRequest(): void
+    {
+        $this->endpointValidator = $this->createMock(PushEndpointValidator::class);
+        $this->endpointValidator->expects(self::once())
+            ->method('resolvePinnedIp')
+            ->with('https://erp.example.com/inbound')
+            ->willReturn('203.0.113.7');
+        $this->jsonApiClient->expects(self::once())
+            ->method('postJson')
+            ->with(
+                self::anything(),
+                self::anything(),
+                self::anything(),
+                self::anything(),
+                self::anything(),
+                '203.0.113.7'
+            )
+            ->willReturn([]);
 
         $context = ['trigger_event' => 'order_placed'];
         $this->makeAction()->execute($context, []);

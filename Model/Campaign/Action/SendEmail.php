@@ -113,12 +113,24 @@ class SendEmail implements ActionInterface
             return;
         }
 
+        // Loaded here, before the consent check below, so a withdrawn-consent skip can still
+        // record the real email address on its recordOptedOut() row (same reasoning
+        // AbstractPhoneMessageAction::execute() already has for resolving $phone eagerly) -
+        // without this, every opted-out send_email row would carry no address at all, making the
+        // admin message-log grid useless for seeing who was actually skipped.
+        try {
+            $customer = $this->customerRepository->getById($customerId);
+        } catch (\Throwable $e) {
+            return;
+        }
+
         $topic = ConsentTopic::fromParams($params);
         if (!$this->consentManager->hasTopicConsent($customerId, ConsentChannel::Email, $topic)) {
             $this->logger->info(sprintf(
                 'Ordo_Automation: send_email action skipped for customer #%d, email consent withdrawn.',
                 $customerId
             ));
+            $this->messageLogWriter->recordOptedOut(self::CHANNEL, $customerId, $customer->getEmail(), $campaignId, $variant);
             return;
         }
 
@@ -139,12 +151,6 @@ class SendEmail implements ActionInterface
         }
 
         if (!$this->frequencyCapGate->allows($customerId, self::CHANNEL, '', 'send_email', $campaignId, $variant)) {
-            return;
-        }
-
-        try {
-            $customer = $this->customerRepository->getById($customerId);
-        } catch (\Throwable $e) {
             return;
         }
 

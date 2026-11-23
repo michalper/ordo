@@ -2692,7 +2692,7 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$name of method Magento\\Framework\\HTTP\\Client\\Curl\:\:setOption\(\) expects string, int given\.$#'
 			identifier: argument.type
-			count: 2
+			count: 3
 			path: Model/Http/JsonApiClient.php
 
 		-
@@ -2704,12 +2704,6 @@ parameters:
 		-
 			message: '#^Parameter \#2 \$reps of method Ordo\\Automation\\Model\\LeadRouting\\LeadAssigner\:\:nextRep\(\) expects array\<int, array\<string, mixed\>\>, list\<mixed\> given\.$#'
 			identifier: argument.type
-			count: 1
-			path: Model/LeadRouting/LeadAssigner.php
-
-		-
-			message: '#^Strict comparison using \=\=\= between string and false will always evaluate to false\.$#'
-			identifier: identical.alwaysFalse
 			count: 1
 			path: Model/LeadRouting/LeadAssigner.php
 
@@ -3340,7 +3334,7 @@ parameters:
 		-
 			message: '#^Cannot call method update\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
 			identifier: method.nonObject
-			count: 1
+			count: 2
 			path: Model/ResourceModel/Offer.php
 
 		-
@@ -3364,7 +3358,7 @@ parameters:
 		-
 			message: '#^Cannot call method quoteInto\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
 			identifier: method.nonObject
-			count: 1
+			count: 4
 			path: Model/ResourceModel/OrderApproval.php
 
 		-
@@ -3376,7 +3370,7 @@ parameters:
 		-
 			message: '#^Cannot call method update\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
 			identifier: method.nonObject
-			count: 1
+			count: 2
 			path: Model/ResourceModel/OrderApproval.php
 
 		-
@@ -3396,6 +3390,36 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Model/ResourceModel/PushSendRetry.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Model/ResourceModel/Referral.php
+
+		-
+			message: '#^Cannot call method quote\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/ResourceModel/Referral.php
+
+		-
+			message: '#^Cannot call method quoteInto\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/ResourceModel/Referral.php
+
+		-
+			message: '#^Cannot call method update\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/ResourceModel/Referral.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/ResourceModel/Referral.php
 
 		-
 			message: '#^Parameter \#2 \$condition of method Magento\\Framework\\Data\\Collection\\AbstractDb\:\:addFieldToFilter\(\) expects array\|string\|null, int given\.$#'
@@ -3898,7 +3922,7 @@ parameters:
 		-
 			message: '#^Cannot call method getId\(\) on mixed\.$#'
 			identifier: method.nonObject
-			count: 3
+			count: 4
 			path: Observer/SendWelcomeEmail.php
 
 		-
@@ -3910,7 +3934,7 @@ parameters:
 		-
 			message: '#^Parameter \#2 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
 			identifier: argument.type
-			count: 1
+			count: 2
 			path: Observer/SendWelcomeEmail.php
 
 		-

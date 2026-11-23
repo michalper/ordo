@@ -6,6 +6,7 @@ namespace Ordo\Automation\Test\Unit\Model;
 use Magento\Authorization\Model\UserContextInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Model\LoyaltyWalletPassManagement;
+use Ordo\Automation\Model\UserContextCustomerIdResolver;
 use Ordo\Automation\Model\Wallet\GoogleWalletPassLinkBuilder;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
@@ -23,7 +24,11 @@ class LoyaltyWalletPassManagementTest extends TestCase
 
     private function makeManagement(): LoyaltyWalletPassManagement
     {
-        return new LoyaltyWalletPassManagement($this->googleWalletPassLinkBuilder, $this->userContext);
+        return new LoyaltyWalletPassManagement(
+            $this->googleWalletPassLinkBuilder,
+            $this->userContext,
+            new UserContextCustomerIdResolver()
+        );
     }
 
     public function testGetMyGoogleWalletSaveUrlResolvesTheCurrentCustomerFromUserContext(): void
