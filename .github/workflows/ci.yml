@@ -327,3 +327,21 @@ jobs:
       - name: Fail if the real job failed
         if: ${{ needs.coding-standard-run.result != 'success' && needs.coding-standard-run.result != 'skipped' }}
         run: exit 1
+
+  trigger-release:
+    # One of 4 identical calls (see coverage.yml/api-tests.yml/integration-tests.yml) - release.yml
+    # itself de-dupes multiple firings for the same commit (see its own comment). needs: these 4
+    # specific jobs, not e.g. unit-tests-php/static-analysis-run/etc. directly, because those are
+    # the ones each already resolve to a definite success/failure and never "skipped" (they're the
+    # if: always() trivial aggregators a changes-gated path-filter skip could otherwise propagate
+    # through) - see their own comments. github.event_name == 'push' (not pull_request) is what
+    # actually makes this unreachable from a fork: a fork cannot push to this repo's main branch,
+    # so there is no externally-controlled commit for release.yml to ever act on. Replaces the old
+    # workflow_run trigger - see ADR 0077.
+    needs: [unit-tests, static-analysis, rector, coding-standard]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      id-token: write
+    uses: ./.github/workflows/release.yml
+    secrets: inherit

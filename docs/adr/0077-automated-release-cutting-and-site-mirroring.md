@@ -15,20 +15,39 @@ happen automatically, with no manual approval step in the loop.
 
 ## Decision
 
-- **`release.yml` triggers on `workflow_run` of the repo's 4 CI workflows finishing, not on `push`
-  to `main` directly.** A release must never be cut off a commit before its own CI has actually
-  gone green - the same gate `scripts/release.sh` already enforces manually. Trade-off accepted:
-  each of the 4 workflows finishing fires this workflow once, so it runs up to 4 times per commit.
-  This is harmless by construction (an "already tagged" check makes every run after the first a
-  no-op, and an "every check green" check makes an early firing a no-op too, retried by whichever
-  workflow finishes last) and was judged simpler than coordinating a single wait-for-all-4 trigger.
-- **The `release` job's `if:` checks both `workflow_run.head_branch == 'main'` AND
-  `workflow_run.head_repository.full_name == github.repository`.** The branch check alone is
-  insufficient - a fork can name its own branch `main` too, and `workflow_run` still fires for
-  fork-originated `pull_request` runs of the 4 upstream workflows. Without the repository check,
-  such a run's checked-out (attacker-controlled) SHA would be processed by this job while it still
-  holds this repo's own write-scoped secrets. Caught by SonarCloud's `githubactions:S7631` during
-  review.
+- **`release.yml` is called (`workflow_call`) as the last job of each of the 4 CI workflows
+  (`ci.yml`, `coverage.yml`, `api-tests.yml`, `integration-tests.yml`), gated on
+  `github.event_name == 'push' && github.ref == 'refs/heads/main'` and `needs:` on that workflow's
+  own non-skippable gate job(s) - not on `push` to `main` directly in `release.yml` itself, and
+  no longer on `workflow_run`.** A release must never be cut off a commit before its own CI has
+  actually gone green - the same gate `scripts/release.sh` already enforces manually. Trade-off
+  accepted: each of the 4 callers finishing fires this once, so it can run up to 4 times per
+  commit. This is harmless by construction (an "already tagged" check makes every run after the
+  first a no-op, and an "every check green" check - still needed, since the other 3 workflows run
+  in parallel and may not have finished yet - makes an early firing a no-op too, retried by
+  whichever finishes last).
+  The `needs:` list in each caller is specifically that workflow's `if: always()` trivial
+  aggregator job(s) (e.g. `unit-tests`/`static-analysis`/`rector`/`coding-standard` in `ci.yml`),
+  never the raw `changes`-path-filter-gated jobs directly - those aggregators always resolve to a
+  definite success/failure and never `skipped`, which is what lets `needs:` use its default
+  `if: success()` with no extra `always()` + `result` dance.
+- **Originally triggered on `workflow_run` of those same 4 workflows finishing,** which forced the
+  `release` job's `if:` to check both `workflow_run.head_branch == 'main'` AND
+  `workflow_run.head_repository.full_name == github.repository` - the branch check alone was
+  insufficient, since a fork can name its own branch `main` too, and `workflow_run` fires even for
+  fork-originated `pull_request` runs of the 4 upstream workflows; without the repository check,
+  such a run's checked-out (attacker-controlled) SHA would have been processed by this job while it
+  still held this repo's own write-scoped secrets (caught by SonarCloud's `githubactions:S7631`
+  during review). That `if:` guard made the actual risk null, but OpenSSF Scorecard's
+  `Dangerous-Workflow` check flags the underlying pattern (checking out a `workflow_run` event's
+  `head_sha` in a job with write permissions) regardless of any `if:` condition - it's a static
+  analysis that doesn't evaluate conditionals, so it scored this `0` even though the gap it's
+  warning about was already closed. Moved to `workflow_call` from a direct-push trigger instead:
+  a fork cannot push to this repo's `main` branch at all, so there is no externally-controlled SHA
+  for this workflow to ever act on in the first place - a structural fix, not just one that
+  satisfies the scanner. The `head_branch`/`head_repository` checks and the `workflow_run.head_sha`
+  checkout `ref:` override are gone; `release.yml`'s own jobs now just use `github.sha` directly,
+  which in a `workflow_call` run is the same commit the calling push event fired for.
 - **`update-site` authenticates to the Claude API via Workload Identity Federation, not a static
   `ANTHROPIC_API_KEY` secret.** A short-lived token is minted per run from the job's own GitHub
   OIDC identity; the federation rule is pinned to this exact repo (by name and immutable owner id)

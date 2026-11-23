@@ -284,3 +284,16 @@ jobs:
       - name: Fail if the real job failed
         if: ${{ needs.mutation-testing-run.result != 'success' && needs.mutation-testing-run.result != 'skipped' }}
         run: exit 1
+
+  trigger-release:
+    # See ci.yml's own "trigger-release" job for the full reasoning (one of 4 identical calls).
+    # php-coverage/js-coverage/sonar never go through the changes path-filter (see this file's own
+    # "changes" job comment on why) so they always resolve success/failure on their own; only
+    # mutation-testing-run does, hence depending on its if: always() aggregator here too.
+    needs: [php-coverage, js-coverage, sonar, mutation-testing]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      id-token: write
+    uses: ./.github/workflows/release.yml
+    secrets: inherit

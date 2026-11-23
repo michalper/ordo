@@ -5,15 +5,19 @@ name: Auto-release
 # same thing scripts/release.sh already does by hand - so nobody has to remember to run it after
 # a CHANGELOG-update PR merges to main. Forgetting that manual step is exactly what once left
 # 1.6.0 tagged with no visible entry on the Releases page (see scripts/release.sh's own comment).
-# See ADR 0077 for the trade-offs this design accepts.
+# See ADR 0077 for the trade-offs this design accepts (updated there: this used to trigger on
+# workflow_run; see that ADR for why it moved to workflow_call).
 #
-# Triggered by every CI workflow that runs on main finishing (not by the push itself) - a release
-# must never be cut off a commit before its own CI has actually gone green, the same gate
-# scripts/release.sh already enforces for a manual release. Each of the 4 workflows finishing
-# fires this once, so it can run up to 4 times for the same commit; harmless, since the
-# already-tagged check below makes every run after the first a no-op, and the all-green check
-# makes an early firing (before the other 3 workflows finish) a no-op too, retried by whichever
-# of the remaining 3 finishes last.
+# Called (workflow_call) as the last job of each of the 4 CI workflows (ci.yml, coverage.yml,
+# api-tests.yml, integration-tests.yml) once ALL of that workflow's own required checks have
+# passed on a direct push to main - never on pull_request, and never reachable from a fork, since
+# a fork cannot push to this repo's main branch at all. A release must never be cut off a commit
+# before its own CI has actually gone green, the same gate scripts/release.sh already enforces for
+# a manual release. Each of the 4 callers finishing fires this once, so it can run up to 4 times
+# for the same commit; harmless, since the already-tagged check below makes every run after the
+# first a no-op, and the all-green check (still needed - the OTHER 3 workflows run in parallel and
+# may not have finished yet) makes an early firing a no-op too, retried by whichever of the
+# remaining 3 finishes last.
 #
 # Does nothing when docs/CHANGELOG.md's newest dated section (right after "## [Unreleased]") is
 # already tagged - i.e. on every ordinary push that isn't itself a "cut a release" PR.
@@ -27,9 +31,7 @@ name: Auto-release
 # harmlessly on a duplicate branch name - safe to retry).
 
 on:
-  workflow_run:
-    workflows: ["CI", "PHP Coverage Report", "API Tests", "Integration Tests"]
-    types: [completed]
+  workflow_call:
 
 # Least-privilege default (OpenSSF Scorecard's Token-Permissions check); the one job that
 # actually needs to push a tag and create a release raises it at job level instead.
@@ -41,17 +43,17 @@ permissions:
 # check before either pushes the tag. cancel-in-progress stays false: cancelling one mid-tag-push
 # or mid-cross-repo-PR would be worse than letting it queue behind the one already running.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_sha }}
+  group: ${{ github.workflow }}-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:
   release:
-    # head_repository check closes a real gap a branch-name check alone leaves open: a fork can
-    # name its own branch "main" too, and workflow_run still fires for fork-originated pull_request
-    # runs of the 4 upstream workflows - without this, such a run's checked-out SHA (attacker-
-    # controlled content) would be processed by this job while it still holds this repo's own
-    # write-scoped secrets (GITHUB_TOKEN, ORDO_SITE_TOKEN). Caught by SonarCloud's githubactions:S7631.
-    if: github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository && github.event.workflow_run.conclusion == 'success'
+    # Defense in depth only - the caller's own trigger-release job already restricts this to a
+    # direct push to main (github.event_name == 'push'), which a fork cannot produce at all (forks
+    # can't push to this repo's main branch), so there is no externally-controlled SHA to guard
+    # against here the way the old workflow_run-triggered version had to (SonarCloud
+    # githubactions:S7631, OpenSSF Scorecard's Dangerous-Workflow check - see ADR 0077).
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -60,12 +62,12 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       notes: ${{ steps.publish.outputs.notes }}
     steps:
-      # fetch-depth left at the default (shallow, depth 1) - nothing below reads git history, only
-      # docs/CHANGELOG.md's working-tree content and the remote's own tags/check-runs via the API.
+      # No ref: override - checks out github.sha, which in a workflow_call job is the exact same
+      # commit the calling push event fired for. fetch-depth left at the default (shallow, depth
+      # 1) - nothing below reads git history, only docs/CHANGELOG.md's working-tree content and
+      # the remote's own tags/check-runs via the API.
       - name: Checkout main at the commit CI just finished for
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Determine the newest dated CHANGELOG version
         id: version
@@ -96,7 +98,7 @@ jobs:
         if: steps.version.outputs.version != '' && steps.check.outputs.already_tagged == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
-          SHA: ${{ github.event.workflow_run.head_sha }}
+          SHA: ${{ github.sha }}
         run: |
           if scripts/ci-green.sh "$SHA"; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
