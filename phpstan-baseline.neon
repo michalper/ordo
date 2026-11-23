@@ -2708,12 +2708,6 @@ parameters:
 			path: Model/LeadRouting/LeadAssigner.php
 
 		-
-			message: '#^Strict comparison using \=\=\= between string and false will always evaluate to false\.$#'
-			identifier: identical.alwaysFalse
-			count: 1
-			path: Model/LeadRouting/LeadAssigner.php
-
-		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
 			count: 1
