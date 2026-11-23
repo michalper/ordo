@@ -46,4 +46,26 @@ class Offer extends AbstractDb
 
         return $affectedRows > 0;
     }
+
+    /**
+     * Marks every "sent" offer whose expires_at has passed as "expired" - Cron\ExpireOverdueOffers
+     * used to load()/save() each one individually (one UPDATE per offer, every run); a single
+     * batch UPDATE does the same thing in one round trip regardless of how many offers are due,
+     * same shape as every other "mark these rows done" claim in this module.
+     *
+     * @return int how many offers were actually marked expired, for the cron's own run summary.
+     */
+    public function expireOverdue(string $today): int
+    {
+        $connection = $this->getConnection();
+
+        return (int) $connection->update(
+            $this->getMainTable(),
+            ['status' => OfferInterface::STATUS_EXPIRED],
+            [
+                'status = ?' => OfferInterface::STATUS_SENT,
+                'expires_at < ?' => $today,
+            ]
+        );
+    }
 }

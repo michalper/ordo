@@ -3334,7 +3334,7 @@ parameters:
 		-
 			message: '#^Cannot call method update\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
 			identifier: method.nonObject
-			count: 1
+			count: 2
 			path: Model/ResourceModel/Offer.php
 
 		-

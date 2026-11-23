@@ -3,16 +3,10 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Cron;
 
-use Ordo\Automation\Api\Data\OfferInterface;
 use Ordo\Automation\Cron\ExpireOverdueOffers;
-use Ordo\Automation\Model\Offer;
 use Ordo\Automation\Model\ResourceModel\Offer as OfferResource;
-use Ordo\Automation\Model\ResourceModel\Offer\Collection;
-use Ordo\Automation\Model\ResourceModel\Offer\CollectionFactory;
-use Ordo\Automation\Model\Cron\CronRunLogger;
-use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
-use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
+use Psr\Log\LoggerInterface;
 
 class ExpireOverdueOffersTest extends TestCase
 {
@@ -20,40 +14,24 @@ class ExpireOverdueOffersTest extends TestCase
 
     public function testExecuteMarksOffersExpired(): void
     {
-        $offer = $this->createMock(Offer::class);
-        $offer->expects(self::once())->method('setStatus')->with(OfferInterface::STATUS_EXPIRED);
-
-        $collection = $this->createStub(Collection::class);
-        $collection->method('addPastExpiryFilter');
-        $collection->method('getIterator')->willReturn(new \ArrayIterator([$offer]));
-
-        $collectionFactory = $this->createStub(CollectionFactory::class);
-        $collectionFactory->method('create')->willReturn($collection);
-
         $offerResource = $this->createMock(OfferResource::class);
-        $offerResource->expects(self::once())->method('save')->with($offer);
+        $offerResource->expects(self::once())->method('expireOverdue')->with(date('Y-m-d'))
+            ->willReturn(3);
 
         $logger = $this->createMock(LoggerInterface::class);
-        $logger->expects(self::once())->method('info');
+        $logger->expects(self::once())->method('info')->with(self::stringContains('marked 3 offers as expired'));
 
-        (new ExpireOverdueOffers($collectionFactory, $offerResource, $this->makeCronRunLogger($logger)))->execute();
+        (new ExpireOverdueOffers($offerResource, $this->makeCronRunLogger($logger)))->execute();
     }
 
-    public function testExecuteHandlesEmptyCollection(): void
+    public function testExecuteHandlesNoneOverdue(): void
     {
-        $collection = $this->createStub(Collection::class);
-        $collection->method('addPastExpiryFilter');
-        $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
-
-        $collectionFactory = $this->createStub(CollectionFactory::class);
-        $collectionFactory->method('create')->willReturn($collection);
-
-        $offerResource = $this->createMock(OfferResource::class);
-        $offerResource->expects(self::never())->method('save');
+        $offerResource = $this->createStub(OfferResource::class);
+        $offerResource->method('expireOverdue')->willReturn(0);
 
         $logger = $this->createMock(LoggerInterface::class);
-        $logger->expects(self::once())->method('info');
+        $logger->expects(self::once())->method('info')->with(self::stringContains('marked 0 offers as expired'));
 
-        (new ExpireOverdueOffers($collectionFactory, $offerResource, $this->makeCronRunLogger($logger)))->execute();
+        (new ExpireOverdueOffers($offerResource, $this->makeCronRunLogger($logger)))->execute();
     }
 }
