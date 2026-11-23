@@ -10,6 +10,11 @@
 # that identity. See "Verifying a release" in SECURITY.md for how a user checks this. Addresses
 # the OpenSSF Best Practices Badge's signed_releases criterion; see docs/ASSURANCE_CASE.md.
 #
+# Deliberately leaves $archive on disk afterward (only the bundle is cleaned up) - release.yml's
+# own next step (SLSA provenance via actions/attest) needs that same archive file as its subject.
+# A manual scripts/release.sh run can safely `rm` it afterward; it isn't needed again once
+# uploaded.
+#
 # Requires: cosign (https://docs.sigstore.dev/cosign/installation/), gh.
 #
 # Usage: scripts/sign-release.sh <version>   (e.g. scripts/sign-release.sh 1.13.0)
@@ -19,7 +24,7 @@ version="${1:?Usage: scripts/sign-release.sh <version>, e.g. scripts/sign-releas
 archive="ordo-$version.tar.gz"
 bundle="$archive.sigstore.json"
 
-trap 'rm -f "$archive" "$bundle"' EXIT
+trap 'rm -f "$bundle"' EXIT
 
 git archive --format=tar.gz --prefix="ordo-$version/" -o "$archive" "$version"
 cosign sign-blob --yes --bundle "$bundle" "$archive"
