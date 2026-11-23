@@ -6,6 +6,7 @@
 [![codecov](https://codecov.io/gh/michalper/ordo/graph/badge.svg?token=JYXG9P7692)](https://codecov.io/gh/michalper/ordo)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=michalper_ordo&metric=alert_status)](https://sonarcloud.io/project/overview?id=michalper_ordo)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/michalper/ordo/badge)](https://scorecard.dev/viewer/?uri=github.com/michalper/ordo)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/17032/badge)](https://www.bestpractices.dev/projects/17032)
 [![PHP](https://img.shields.io/badge/php-8.3%2B-777bb4)](composer.json)
 [![Magento](https://img.shields.io/badge/magento-2.4.8%20%7C%202.4.9-orange)](composer.json)
 [![License: OSL-3.0](https://img.shields.io/badge/license-OSL--3.0-blue)](LICENSE)
