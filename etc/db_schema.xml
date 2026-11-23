@@ -94,7 +94,7 @@
         </constraint>
     </table>
 
-    <table name="ordo_customer_inactive_trigger_claim" resource="default" engine="innodb" comment="Dispatch log for the customer_inactive campaign trigger (Cron DispatchCustomerInactiveCampaigns) - unlike ordo_review_request_log (unique on order_id, dispatches at most once ever), a customer can leave and re-enter inactivity more than once, so this is a plain append-only log with no uniqueness constraint: whether a given customer+campaign pair is still within its own refire cooldown is answered by querying the most recent matching row's fired_at, same cooldown-window shape ordo_credit_limit_alert_log already uses.">
+    <table name="ordo_customer_inactive_trigger_claim" resource="default" engine="innodb" comment="Dispatch log for the customer_inactive campaign trigger (Cron DispatchCustomerInactiveCampaigns) - unlike ordo_review_request_log (unique on order_id, dispatches at most once ever), a customer can leave and re-enter inactivity more than once, so this is a plain append-only log with no uniqueness constraint: whether a given customer+campaign pair is still within its own refire cooldown is answered by querying the most recent matching rows fired_at column, same cooldown-window shape ordo_credit_limit_alert_log already uses. NOTE: table-level comments are wrapped in single quotes by the Magento schema generator - never use an apostrophe here (see docs/adr/0079).">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
         <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id whose customer_inactive trigger fired - no FK, same reasoning as ordo_campaign_attribution.campaign_id"/>
@@ -109,7 +109,7 @@
         </index>
     </table>
 
-    <table name="ordo_customer_anniversary_trigger_claim" resource="default" engine="innodb" comment="Dispatch log for the customer_anniversary campaign trigger (Cron DispatchCustomerAnniversaryCampaigns) - a birthday/registration-anniversary is a fixed calendar date, not a rolling threshold like ordo_customer_inactive_trigger_claim's cooldown, so this is keyed by fired_year instead of a cooldown window: whether a given customer+campaign pair already fired this calendar year is answered by matching fired_year directly, not by a date-range comparison.">
+    <table name="ordo_customer_anniversary_trigger_claim" resource="default" engine="innodb" comment="Dispatch log for the customer_anniversary campaign trigger (Cron DispatchCustomerAnniversaryCampaigns) - a birthday/registration-anniversary is a fixed calendar date, not a rolling threshold like ordo_customer_inactive_trigger_claim cooldown, so this is keyed by fired_year instead of a cooldown window: whether a given customer+campaign pair already fired this calendar year is answered by matching fired_year directly, not by a date-range comparison. NOTE: table-level comments are wrapped in single quotes by the Magento schema generator - never use an apostrophe here (see docs/adr/0079).">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" comment="Customer ID"/>
         <column xsi:type="int" name="campaign_id" padding="10" unsigned="true" nullable="false" comment="ordo_campaign.entity_id whose customer_anniversary trigger fired - no FK, same reasoning as ordo_campaign_attribution.campaign_id"/>
@@ -139,7 +139,7 @@
         </index>
     </table>
 
-    <table name="ordo_email_template_version" resource="default" engine="innodb" comment="Snapshot of a Magento email_template row's content taken every time it's saved - Magento's own template editor has no version history of its own, so the send_email campaign action's referenced templates could be silently overwritten with no way back.">
+    <table name="ordo_email_template_version" resource="default" engine="innodb" comment="Snapshot of a Magento email_template row content taken every time it is saved - the Magento template editor has no version history of its own, so the send_email campaign action referenced templates could be silently overwritten with no way back. NOTE: table-level comments are wrapped in single quotes by the Magento schema generator - never use an apostrophe here (see docs/adr/0079).">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="template_id" padding="10" unsigned="true" nullable="false" comment="email_template.template_id this is a snapshot of"/>
         <column xsi:type="varchar" name="template_code" nullable="false" length="150" comment="Template Name at snapshot time"/>
@@ -155,7 +155,7 @@
         </index>
     </table>
 
-    <table name="ordo_email_template_draft" resource="default" engine="innodb" comment="One in-progress edit of a Magento email_template row's content, kept separate from the live row send_email reads until explicitly published - at most one open draft per template_id.">
+    <table name="ordo_email_template_draft" resource="default" engine="innodb" comment="One in-progress edit of a Magento email_template row content, kept separate from the live row send_email reads until explicitly published - at most one open draft per template_id. NOTE: table-level comments are wrapped in single quotes by the Magento schema generator - never use an apostrophe here (see docs/adr/0079).">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="template_id" padding="10" unsigned="true" nullable="false" comment="email_template.template_id this is a draft of"/>
         <column xsi:type="varchar" name="template_code" nullable="false" length="150" comment="Live template's Template Name, snapshotted for grid display"/>
@@ -187,7 +187,7 @@
         </constraint>
     </table>
 
-    <table name="ordo_referral" resource="default" engine="innodb" comment="One row per successful referral signup - a referred customer who registered via another customer's referral code">
+    <table name="ordo_referral" resource="default" engine="innodb" comment="One row per successful referral signup - a referred customer who registered via another customer referral code. NOTE: table-level comments are wrapped in single quotes by the Magento schema generator - never use an apostrophe here (see docs/adr/0079).">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="referrer_customer_id" padding="10" unsigned="true" nullable="false" comment="Customer whose referral code was used"/>
         <column xsi:type="int" name="referred_customer_id" padding="10" unsigned="true" nullable="false" comment="Customer who registered using the code - can only be referred once"/>
@@ -1318,7 +1318,7 @@
         </constraint>
     </table>
 
-    <table name="ordo_ai_agent_api_key" resource="default" engine="innodb" comment="Credentials for the AI-agent commerce endpoints (Model/AiAgent), issued/revoked via the ordo:ai-agent:api-key:* CLI commands - no admin grid, since these are machine credentials handed to an agent operator out of band, not something an admin browses day to day. Only the sha256 hash is stored, never the plaintext key - the same 'shown once at creation, never retrievable again' model as any API token screen.">
+    <table name="ordo_ai_agent_api_key" resource="default" engine="innodb" comment="Credentials for the AI-agent commerce endpoints (Model/AiAgent), issued/revoked via the ordo:ai-agent:api-key:* CLI commands - no admin grid, since these are machine credentials handed to an agent operator out of band, not something an admin browses day to day. Only the sha256 hash is stored, never the plaintext key - the same shown-once-at-creation, never-retrievable-again model as any API token screen. NOTE: table-level comments are wrapped in single quotes by the Magento schema generator - never use an apostrophe here (see docs/adr/0079).">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="label" nullable="false" length="255" comment="Admin-facing label for whichever agent/integration this key was issued to"/>
         <column xsi:type="varchar" name="token_hash" nullable="false" length="64" comment="sha256 hex digest of the plaintext key (Model\AiAgent\ApiKeyGenerator) - the plaintext itself is never persisted, only ever returned once at creation time"/>
