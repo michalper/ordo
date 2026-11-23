@@ -9,6 +9,64 @@ no manual step needed here anymore.
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-11-23
+
+A full-repo security/correctness audit, plus the OpenSSF Best Practices Badge (Silver achieved)
+and OpenSSF Scorecard work it led to.
+
+### Added
+
+- Coverage-guided fuzzing (`nikic/php-fuzzer`) of `Model/Condition/GroupWalker`, the shared
+  AND/OR/nested-group tree-walk behind every campaign/segment condition evaluation. See ADR 0080.
+- Keyless release signing (cosign/Sigstore) and SLSA build provenance for every tagged release
+  from this one onward — no persistent private signing key anywhere. See ADR 0081 and
+  `SECURITY.md`'s "Verifying a release".
+- `GOVERNANCE.md`, `CODE_OF_CONDUCT.md`, and a Developer Certificate of Origin (DCO) policy
+  (`git commit -s`, required going forward).
+- `docs/ASSURANCE_CASE.md` — what this project protects against, how, and what it explicitly
+  doesn't, stated plainly.
+- A documented backup-maintainer arrangement for repo-level continuity (issues, PRs, releases) if
+  the primary maintainer is unavailable.
+- OpenSSF Best Practices Badge: Silver achieved (Passing badge also added this release).
+
+### Fixed
+
+- **`BlockOverLimitCheckout` (B2B credit-limit checkout gate)**: a real TOCTOU race — converted
+  from a before- to an around-plugin holding a per-customer MySQL named lock across the real
+  `placeOrder()` call, so two near-simultaneous orders for the same customer can no longer both
+  pass the credit-limit check before either actually commits.
+- **Order-approval email links**: corporate email-security-gateway link prefetch (Microsoft
+  Defender Safe Links, Proofpoint, Mimecast) could silently burn the single-use approve/reject
+  token before the real recipient ever saw the email. GET now only renders a confirmation page;
+  the actual decision requires a POST. See ADR 0078.
+- **Segment bulk actions**: a queue-redelivery double-apply gap. See ADR 0079.
+- Claim races in several tag-gated crons (churn risk, inactive, reorder-cycle-at-risk, loyalty
+  milestones); a send failure in another cron no longer fails silently.
+- `AiAgentQuoteManagement::getQuote()` had no cap on the items array size.
+- Re-importing an exported campaign could drop split actions.
+- The unauthenticated email-capture endpoint had no rate limit.
+- `TriggerOutcomeLogger::getStats()` summed the wrong total column.
+- A deferred (quiet-hours/`delay_minutes`) campaign send no longer incorrectly continues the rest
+  of its own action chain.
+- **Loyalty points redemption**: a TOCTOU race, plus an unrelated N+1 query in expiry handling.
+- Admin button confirm messages didn't escape quotes/backslashes.
+- GDPR export/erase was missing 3 tables that carry `customer_id`.
+- A real dependency vulnerability (`glob`, GHSA-3g3m-2fjr-6pw4) in the JS coverage toolchain.
+- `LICENSE` had an embedded paragraph that broke GitHub's own license-file parsing.
+
+### Security
+
+- `release.yml` no longer triggers on `workflow_run` — moved to `workflow_call`, invoked directly
+  from each CI workflow's own last job. A fork cannot push to this repo's `main` branch at all, so
+  there is no longer an externally-reachable SHA for the release automation to ever act on
+  (structural fix, not just a guard condition). Closed OpenSSF Scorecard's Dangerous-Workflow
+  finding for real. See ADR 0077.
+- CI migrated off the permanently dead `ppa:ondrej/php` to `packages.sury.org`.
+- OpenSSF Scorecard's Branch-Protection check can now read this repo's real branch protection
+  settings (a scoped, read-only fine-grained PAT) instead of erroring out blind; branch protection
+  itself was also hardened (pull requests required before merging, branches must be up to date,
+  enforced for administrators too).
+
 ## [1.12.0] - 2026-11-23
 
 ### Added
