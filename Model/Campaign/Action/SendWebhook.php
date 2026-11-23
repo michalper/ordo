@@ -5,6 +5,7 @@ namespace Ordo\Automation\Model\Campaign\Action;
 
 use Ordo\Automation\Api\Campaign\ActionInterface;
 use Ordo\Automation\Helper\Config;
+use Ordo\Automation\Model\Push\PushEndpointValidator;
 use Ordo\Automation\Model\Webhook\WebhookSignatureValidator;
 use Psr\Log\LoggerInterface;
 
@@ -27,6 +28,19 @@ use Psr\Log\LoggerInterface;
  * send_email/send_sms/send_whatsapp/send_push this isn't a message to a customer's own inbox/
  * phone, it's a system-to-system integration call, so those customer-communication gates don't
  * apply here.
+ *
+ * The Outbound URL IS validated, though, the same way Model\Push\PushEndpointValidator already
+ * guards a customer-supplied push endpoint - re-validated here, not just when the config is
+ * saved, since DNS for an otherwise-legitimate host could be repointed at an internal address in
+ * the meantime (rebinding). Without this, an admin-configured (or, via a compromised admin
+ * account, attacker-configured) Outbound URL pointing at an internal-only host or a cloud
+ * metadata endpoint (169.254.169.254) would get a real server-initiated HTTP request every time
+ * this action fires - a textbook SSRF, found during a full-repo security review. The validator's
+ * own name/namespace predates this use (it was written for push subscriptions first) but its
+ * actual logic - resolve a hostname, require every resolved address to be public, pin the real
+ * connection to the validated IP - is entirely generic; reused as-is rather than duplicating it a
+ * third time (Model\ContentBlock\RssFetcher has its own, separate copy - a known, tracked cleanup
+ * item, not fixed here to keep this change scoped to the actual vulnerability).
  */
 class SendWebhook implements ActionInterface
 {
@@ -37,6 +51,7 @@ class SendWebhook implements ActionInterface
         private readonly Config $config,
         private readonly WebhookSignatureValidator $signatureValidator,
         private readonly OutboundConversionApiSender $sender,
+        private readonly PushEndpointValidator $endpointValidator,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -64,6 +79,15 @@ class SendWebhook implements ActionInterface
             return;
         }
 
+        $pinnedIp = $this->endpointValidator->resolvePinnedIp($url);
+        if ($pinnedIp === null) {
+            $this->logger->error(
+                'Ordo_Automation: send_webhook action skipped, the configured Outbound URL failed '
+                . 'validation (must be HTTPS and resolve only to a public address).'
+            );
+            return;
+        }
+
         $event = trim((string) ($params['event'] ?? ''));
         if ($event === '') {
             $event = (string) ($context['trigger_event'] ?? 'campaign_action');
@@ -86,7 +110,8 @@ class SendWebhook implements ActionInterface
             'Ordo webhook',
             $context,
             $params,
-            headers: [WebhookSignatureValidator::SIGNATURE_HEADER => $signature]
+            headers: [WebhookSignatureValidator::SIGNATURE_HEADER => $signature],
+            pinnedIp: $pinnedIp
         );
     }
 

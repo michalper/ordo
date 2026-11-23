@@ -30,6 +30,12 @@ class JsonApiClient
 {
     private const int TIMEOUT_SECONDS = 30;
 
+    // Same reasoning/value as Model\Push\PushSender's own cap: an arbitrary host's response text
+    // ending up verbatim in this module's own logs (OutboundConversionApiSender's logger->error())
+    // and the persisted ordo_message_send_retry.last_error column would be an information
+    // disclosure amplifier if that host happens to be an internal service reached via SSRF.
+    private const int MAX_LOGGED_RESPONSE_LENGTH = 200;
+
     public function __construct(
         private readonly CurlFactory $curlFactory
     ) {
@@ -52,6 +58,15 @@ class JsonApiClient
      *   (OutboundConversionApiSender's logger->error()) and the persisted
      *   ordo_message_send_retry.last_error column. Does not affect the real request, which still
      *   uses the full, unredacted $url.
+     * @param string|null $pinnedIp When the destination URL's host was resolved and validated by
+     *   the caller (e.g. SendWebhook, whose Outbound URL is admin-configurable and therefore a
+     *   real SSRF surface, unlike GA4/Meta's own fixed API hosts), the exact IP that validation
+     *   resolved to - pins the real curl connection to it via CURLOPT_RESOLVE so this client's own,
+     *   independent DNS resolution for $url can never land on a different (e.g. internal) address
+     *   than the one just validated (DNS rebinding). Only meaningful together with a caller that
+     *   actually validates $url's host first; this parameter does not perform any validation
+     *   itself. See Model\Push\PushEndpointValidator::resolvePinnedIp()'s own docblock for the
+     *   full reasoning - this is the same pattern Model\Push\PushSender already applies.
      * @return array<mixed> the decoded JSON response body, or [] if it wasn't a JSON object/array.
      */
     public function postJson(
@@ -59,11 +74,15 @@ class JsonApiClient
         array $payload,
         array $headers,
         string $serviceName,
-        array $redactQueryParams = []
+        array $redactQueryParams = [],
+        ?string $pinnedIp = null
     ): array {
         $curl = $this->curlFactory->create();
         $curl->setTimeout(self::TIMEOUT_SECONDS);
         $curl->setOption(CURLOPT_FOLLOWLOCATION, false);
+        if ($pinnedIp !== null) {
+            $this->pinConnection($curl, $url, $pinnedIp);
+        }
         $curl->addHeader('Content-Type', 'application/json');
         foreach ($headers as $name => $value) {
             $curl->addHeader($name, $value);
@@ -71,6 +90,21 @@ class JsonApiClient
         $curl->post($url, (string) json_encode($payload));
 
         return $this->interpretResponse($curl, $url, $serviceName, $redactQueryParams);
+    }
+
+    /**
+     * Pins $curl's connection for $url's host to $pinnedIp via CURLOPT_RESOLVE - see postJson()'s
+     * own $pinnedIp docblock for why. $curl here is always a fresh instance from CurlFactory
+     * (never shared/reused across calls, unlike PushSender's own Curl), so there is no equivalent
+     * need to remove the pinned entry afterward.
+     */
+    private function pinConnection(Curl $curl, string $url, string $pinnedIp): void
+    {
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        $host = (string) parse_url($url, PHP_URL_HOST);
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        $port = parse_url($url, PHP_URL_PORT) ?? 443;
+        $curl->setOption(CURLOPT_RESOLVE, [sprintf('%s:%d:%s', $host, $port, $pinnedIp)]);
     }
 
     /**
@@ -118,7 +152,7 @@ class JsonApiClient
                 $serviceName,
                 $this->redactUrl($url, $redactQueryParams),
                 $status,
-                $responseBody
+                substr($responseBody, 0, self::MAX_LOGGED_RESPONSE_LENGTH)
             ));
         }
 
