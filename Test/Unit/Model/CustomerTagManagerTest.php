@@ -75,7 +75,7 @@ class CustomerTagManagerTest extends TestCase
     public function testAddTagIfAbsentReturnsFalseAndDoesNotDispatchWhenTheInsertLosesTheUniqueConstraintRace(): void
     {
         $connection = $this->createMock(AdapterInterface::class);
-        $connection->method('insert')->willThrowException(new DuplicateException());
+        $connection->expects(self::once())->method('insert')->willThrowException(new DuplicateException());
 
         $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
