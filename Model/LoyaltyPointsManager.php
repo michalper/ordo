@@ -48,19 +48,49 @@ class LoyaltyPointsManager
      * listens to, see that class's own docblock for why not sales_order_place_after) can fire more
      * than once across an order's lifetime, so this checks for an existing earn row for the same
      * order_id before inserting a new one rather than relying on the caller to only call it once.
+     *
+     * That check-then-insert is itself only safe under a lock: two overlapping saves of the same
+     * order (a retried place-order call, or an admin edit racing a webhook resave) could both pass
+     * hasEarnedForOrder() before either finishes insertRow(), crediting the customer twice for one
+     * order. A MySQL named lock, scoped per order, serializes the whole check+insert sequence - the
+     * same pattern redeem() already uses for its own check-then-insert race, see that method's own
+     * comment.
      */
     public function earnForOrder(int $customerId, int $orderId, float $orderTotal): void
     {
-        if (!$this->config->isLoyaltyPointsEnabled() || $this->hasEarnedForOrder($orderId)) {
+        if (!$this->config->isLoyaltyPointsEnabled()) {
             return;
         }
 
-        $points = (int) floor($orderTotal * $this->config->getLoyaltyPointsPerDollar());
-        if ($points <= 0) {
+        $connection = $this->resourceConnection->getConnection();
+        $lockName = 'ordo_loyalty_earn_order_' . $orderId;
+
+        // Fail closed (never credit) rather than risk two concurrent saves of the same order both
+        // earning points - a missed earn can be noticed and corrected; a double-credit is real
+        // money handed out twice.
+        if (!(bool) $connection->fetchOne('SELECT GET_LOCK(?, 5)', [$lockName])) {
+            $this->logger->error(sprintf(
+                'Ordo_Automation: could not acquire the earn lock for order #%d - skipping points earn for this save.',
+                $orderId
+            ));
             return;
         }
 
-        $this->insertRow($customerId, self::TYPE_EARN, $points, $orderId);
+        try {
+            if ($this->hasEarnedForOrder($orderId)) {
+                return;
+            }
+
+            $points = (int) floor($orderTotal * $this->config->getLoyaltyPointsPerDollar());
+            if ($points <= 0) {
+                return;
+            }
+
+            $this->insertRow($customerId, self::TYPE_EARN, $points, $orderId);
+        } finally {
+            // phpcs:ignore Magento2.SQL.RawQuery.FoundRawSql
+            $connection->query('SELECT RELEASE_LOCK(?)', [$lockName]);
+        }
     }
 
     /**

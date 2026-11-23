@@ -80,7 +80,8 @@ class LoyaltyPointsManagerTest extends TestCase
     public function testEarnForOrderDoesNothingWhenAlreadyEarnedForThisOrder(): void
     {
         $this->config->method('isLoyaltyPointsEnabled')->willReturn(true);
-        $this->connection->method('fetchOne')->willReturn('1'); // hasEarnedForOrder() -> true
+        // GET_LOCK() -> 1 (acquired), hasEarnedForOrder()'s COUNT(*) -> 1 (already earned)
+        $this->connection->method('fetchOne')->willReturnOnConsecutiveCalls('1', '1');
 
         $this->connection->expects(self::never())->method('insert');
 
@@ -92,7 +93,8 @@ class LoyaltyPointsManagerTest extends TestCase
     {
         $this->config->method('isLoyaltyPointsEnabled')->willReturn(true);
         $this->config->method('getLoyaltyPointsPerDollar')->willReturn(1);
-        $this->connection->method('fetchOne')->willReturn('0'); // hasEarnedForOrder() -> false
+        // GET_LOCK() -> 1 (acquired), hasEarnedForOrder()'s COUNT(*) -> 0 (not yet earned)
+        $this->connection->method('fetchOne')->willReturnOnConsecutiveCalls('1', '0');
 
         $this->connection->expects(self::never())->method('insert');
 
@@ -104,7 +106,8 @@ class LoyaltyPointsManagerTest extends TestCase
     {
         $this->config->method('isLoyaltyPointsEnabled')->willReturn(true);
         $this->config->method('getLoyaltyPointsPerDollar')->willReturn(2);
-        $this->connection->method('fetchOne')->willReturn('0'); // hasEarnedForOrder() -> false
+        // GET_LOCK() -> 1 (acquired), hasEarnedForOrder()'s COUNT(*) -> 0 (not yet earned)
+        $this->connection->method('fetchOne')->willReturnOnConsecutiveCalls('1', '0');
 
         $this->connection->expects(self::once())->method('insert')
             ->with('ordo_loyalty_points_ledger', self::callback(static function (array $row): bool {
@@ -113,6 +116,25 @@ class LoyaltyPointsManagerTest extends TestCase
                     && $row['points_delta'] === 199
                     && $row['order_id'] === 100;
             }));
+
+        $this->makeManager()->earnForOrder(42, 100, 99.95);
+    }
+
+    /**
+     * Regression: two overlapping saves of the same order (a retried place-order call, or an
+     * admin edit racing a webhook resave) could both pass hasEarnedForOrder() before either
+     * finished insertRow(), crediting the customer twice for one order - a MySQL named lock,
+     * scoped per order, now serializes the whole check+insert sequence. Fails closed (never
+     * credit) when the lock itself can't be acquired, the same contract redeem() already has for
+     * its own lock.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testEarnForOrderDoesNothingWhenTheEarnLockCannotBeAcquired(): void
+    {
+        $this->config->method('isLoyaltyPointsEnabled')->willReturn(true);
+        $this->connection->method('fetchOne')->willReturn('0'); // GET_LOCK() -> 0 (not acquired)
+
+        $this->connection->expects(self::never())->method('insert');
 
         $this->makeManager()->earnForOrder(42, 100, 99.95);
     }
