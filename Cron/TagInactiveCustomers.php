@@ -57,44 +57,19 @@ class TagInactiveCustomers
 
         $stillInactiveIds = array_map(static fn (int|string $id): int => (int) $id, $customerIds);
 
-        // One query for the whole batch instead of one hasTag() call per candidate below - found
-        // via a performance audit, same reasoning as ConsentManager::hasConsentForCustomers().
-        $alreadyTagged = array_flip(
-            $this->customerTagManager->getCustomerIdsWithTagFromSet($stillInactiveIds, self::TAG_INACTIVE)
-        );
-
-        $tagged = 0;
-        foreach ($stillInactiveIds as $customerId) {
-            // addTagIfAbsent(), not addTag() - this loop's own $alreadyTagged pre-check is a
-            // plain SELECT with no lock, so two overlapping cron runs could both pass it before
-            // either inserts; the atomic claim avoids an uncaught unique-constraint exception
-            // aborting the rest of this run for whichever run loses that race.
-            if (isset($alreadyTagged[$customerId])) {
-                continue;
-            }
-
-            if ($this->customerTagManager->addTagIfAbsent($customerId, self::TAG_INACTIVE)) {
-                $tagged++;
-            }
-        }
-
         // Anyone previously tagged "inactive" who has since ordered again is no longer inactive —
-        // clear both tags so a future dry spell can trigger a fresh win-back cycle instead of
-        // staying permanently marked as "already won back".
-        // A flipped lookup set, not in_array() inside the loop below - found via a code audit:
-        // in_array() against a plain array is O(n) per check, so checking every previously-tagged
-        // customer against it was effectively O(n*m) (n = previously tagged, m = still inactive),
-        // which gets real after a large win-back wave untags most of the inactive population.
-        $stillInactiveLookup = array_flip($stillInactiveIds);
-        $untagged = 0;
-        foreach ($this->customerTagManager->getCustomerIdsWithTag(self::TAG_INACTIVE) as $customerId) {
-            if (!isset($stillInactiveLookup[$customerId])) {
-                $this->customerTagManager->removeTag($customerId, self::TAG_INACTIVE);
-                $this->customerTagManager->removeTag($customerId, SendWinBackEmails::TAG_WIN_BACK_SENT);
-                $untagged++;
-            }
+        // syncTagForSet() clears that tag; also clear the dependent win-back-sent tag for each
+        // one so a future dry spell can trigger a fresh win-back cycle instead of staying
+        // permanently marked as "already won back".
+        $result = $this->customerTagManager->syncTagForSet($stillInactiveIds, self::TAG_INACTIVE);
+        foreach ($result['untagged'] as $customerId) {
+            $this->customerTagManager->removeTag($customerId, SendWinBackEmails::TAG_WIN_BACK_SENT);
         }
 
-        $this->cronRunLogger->logSummary(sprintf('tagged %d customers as inactive, cleared %d', $tagged, $untagged));
+        $this->cronRunLogger->logSummary(sprintf(
+            'tagged %d customers as inactive, cleared %d',
+            $result['tagged'],
+            count($result['untagged'])
+        ));
     }
 }

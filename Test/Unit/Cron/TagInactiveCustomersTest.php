@@ -55,29 +55,22 @@ class TagInactiveCustomersTest extends TestCase
 
         $connection = $this->createStub(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
-        // Customer 7 is also inactive but already tagged - the pre-check below must skip it
-        // (addTagIfAbsent() must never be called for it), the same way it always has, now via
-        // an explicit continue rather than the single if this loop used to be.
         $connection->method('fetchCol')->willReturn(['5', '7']);
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
         $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
+        // The actual tag/untag logic is CustomerTagManager::syncTagForSet()'s own responsibility
+        // now (tested directly in CustomerTagManagerTest) - this test only verifies the cron
+        // passes it the right qualifying set and also clears the dependent win-back-sent tag for
+        // every customer syncTagForSet() just untagged.
         $tagManager = $this->createMock(CustomerTagManager::class);
-        $tagManager->method('hasTag')->willReturnMap([[5, TagInactiveCustomers::TAG_INACTIVE, false]]);
-        $tagManager->method('getCustomerIdsWithTagFromSet')->willReturnMap([
-            [[5, 7], TagInactiveCustomers::TAG_INACTIVE, [7]],
-        ]);
-        $tagManager->expects(self::once())->method('addTagIfAbsent')
-            ->with(5, TagInactiveCustomers::TAG_INACTIVE)->willReturn(true);
-        $tagManager->method('getCustomerIdsWithTag')->willReturnMap([[TagInactiveCustomers::TAG_INACTIVE, [9]]]);
-        $tagManager->expects(self::exactly(2))->method('removeTag')->willReturnCallback(
-            function (int $customerId, string $tag) {
-                self::assertSame(9, $customerId);
-                self::assertContains($tag, [TagInactiveCustomers::TAG_INACTIVE, SendWinBackEmails::TAG_WIN_BACK_SENT]);
-            }
-        );
+        $tagManager->expects(self::once())->method('syncTagForSet')
+            ->with([5, 7], TagInactiveCustomers::TAG_INACTIVE)
+            ->willReturn(['tagged' => 1, 'untagged' => [9]]);
+        $tagManager->expects(self::once())->method('removeTag')
+            ->with(9, SendWinBackEmails::TAG_WIN_BACK_SENT);
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('info')->with(self::stringContains('tagged 1 customers as inactive, cleared 1'));

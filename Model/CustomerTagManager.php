@@ -194,6 +194,52 @@ class CustomerTagManager implements CustomerTagManagementInterface
     }
 
     /**
+     * Shared by the nightly "classify the whole customer base against one tag" crons
+     * (TagChurnRiskCustomers, TagReorderCycleAtRiskCustomers, TagInactiveCustomers) - add the tag
+     * to every customer in $qualifyingIds who doesn't already have it (claim-before-count via
+     * addTagIfAbsent(), since the batch pre-check below is a plain SELECT with no lock and two
+     * overlapping cron runs could both pass it before either inserts), then remove it from
+     * anyone currently tagged who is no longer in $qualifyingIds (they've recovered/reordered
+     * since the last run).
+     *
+     * @param int[] $qualifyingIds every customer who should currently carry $tag
+     * @return array{tagged: int, untagged: int[]} untagged is the full list of customer ids the
+     *   tag was just removed from, not only a count - TagInactiveCustomers' own caller needs
+     *   those ids to also clear its second, dependent tag.
+     */
+    public function syncTagForSet(array $qualifyingIds, string $tag): array
+    {
+        // One query for the whole batch instead of one hasTag() call per candidate.
+        $alreadyTagged = array_flip($this->getCustomerIdsWithTagFromSet($qualifyingIds, $tag));
+
+        $tagged = 0;
+        foreach ($qualifyingIds as $customerId) {
+            if (isset($alreadyTagged[$customerId])) {
+                continue;
+            }
+
+            if ($this->addTagIfAbsent($customerId, $tag)) {
+                $tagged++;
+            }
+        }
+
+        // A flipped lookup set, not in_array() inside the loop below - in_array() against a
+        // plain array is O(n) per check, so checking every previously-tagged customer against it
+        // would be effectively O(n*m) (n = previously tagged, m = still qualifying), which gets
+        // real after a large batch moves most of the tagged population out of the set at once.
+        $stillQualifyingLookup = array_flip($qualifyingIds);
+        $untagged = [];
+        foreach ($this->getCustomerIdsWithTag($tag) as $customerId) {
+            if (!isset($stillQualifyingLookup[$customerId])) {
+                $this->removeTag($customerId, $tag);
+                $untagged[] = $customerId;
+            }
+        }
+
+        return ['tagged' => $tagged, 'untagged' => $untagged];
+    }
+
+    /**
      * Distinct existing tag values matching a search term - backs the admin autocomplete
      * (Controller\Adminhtml\TagSearch) for the Has Tag / Visitor Has Tag / add_tag fields, so a
      * merchant picks from real values instead of retyping one that already exists with a typo.

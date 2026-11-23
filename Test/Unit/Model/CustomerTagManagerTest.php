@@ -413,4 +413,51 @@ class CustomerTagManagerTest extends TestCase
         $manager = new CustomerTagManager($resourceConnection, $this->createStub(EventManagerInterface::class));
         self::assertSame([], $manager->searchTags(''));
     }
+
+    /**
+     * syncTagForSet()'s own real logic (the pre-check skip, the claim-before-count tag, the
+     * recovered-customer untag) is only ever exercised through its 4 constituent public methods
+     * - each already covered by its own dedicated test above - so this stubs those 4 instead of
+     * mocking raw SQL, and asserts only the orchestration syncTagForSet() itself adds: who gets
+     * addTagIfAbsent()'d, who gets removeTag()'d, and the {tagged, untagged} it reports back.
+     */
+    public function testSyncTagForSetTagsNewlyQualifyingAndUntagsNoLongerQualifying(): void
+    {
+        $manager = $this->getMockBuilder(CustomerTagManager::class)
+            ->onlyMethods(['getCustomerIdsWithTagFromSet', 'addTagIfAbsent', 'getCustomerIdsWithTag', 'removeTag'])
+            ->setConstructorArgs([
+                $this->createStub(ResourceConnection::class),
+                $this->createStub(EventManagerInterface::class),
+            ])
+            ->getMock();
+
+        // Customers 5 and 7 qualify; 7 is already tagged, so only 5 should be newly tagged.
+        $manager->expects(self::once())->method('getCustomerIdsWithTagFromSet')
+            ->with([5, 7], 'vip')->willReturn([7]);
+        $manager->expects(self::once())->method('addTagIfAbsent')->with(5, 'vip')->willReturn(true);
+        // Customer 9 is currently tagged but no longer qualifies - must be untagged.
+        $manager->expects(self::once())->method('getCustomerIdsWithTag')->with('vip')->willReturn([7, 9]);
+        $manager->expects(self::once())->method('removeTag')->with(9, 'vip');
+
+        self::assertSame(['tagged' => 1, 'untagged' => [9]], $manager->syncTagForSet([5, 7], 'vip'));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSyncTagForSetSkipsAddingWhenAlreadyTaggedAndSkipsRemovingWhenStillQualifying(): void
+    {
+        $manager = $this->getMockBuilder(CustomerTagManager::class)
+            ->onlyMethods(['getCustomerIdsWithTagFromSet', 'addTagIfAbsent', 'getCustomerIdsWithTag', 'removeTag'])
+            ->setConstructorArgs([
+                $this->createStub(ResourceConnection::class),
+                $this->createStub(EventManagerInterface::class),
+            ])
+            ->getMock();
+
+        $manager->method('getCustomerIdsWithTagFromSet')->willReturn([5]);
+        $manager->expects(self::never())->method('addTagIfAbsent');
+        $manager->method('getCustomerIdsWithTag')->willReturn([5]);
+        $manager->expects(self::never())->method('removeTag');
+
+        self::assertSame(['tagged' => 0, 'untagged' => []], $manager->syncTagForSet([5], 'vip'));
+    }
 }
