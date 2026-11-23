@@ -1,0 +1,311 @@
+name: Auto-release
+
+# Automates "Cutting a release" (CONTRIBUTING.md): tags the commit and publishes a matching
+# GitHub Release off docs/CHANGELOG.md's own newest dated section, together, in one step, the
+# same thing scripts/release.sh already does by hand - so nobody has to remember to run it after
+# a CHANGELOG-update PR merges to main. Forgetting that manual step is exactly what once left
+# 1.6.0 tagged with no visible entry on the Releases page (see scripts/release.sh's own comment).
+#
+# Triggered by every CI workflow that runs on main finishing (not by the push itself) - a release
+# must never be cut off a commit before its own CI has actually gone green, the same gate
+# scripts/release.sh already enforces for a manual release. Each of the 4 workflows finishing
+# fires this once, so it can run up to 4 times for the same commit; harmless, since the
+# already-tagged check below makes every run after the first a no-op, and the all-green check
+# makes an early firing (before the other 3 workflows finish) a no-op too, retried by whichever
+# of the remaining 3 finishes last.
+#
+# Does nothing when docs/CHANGELOG.md's newest dated section (right after "## [Unreleased]") is
+# already tagged - i.e. on every ordinary push that isn't itself a "cut a release" PR.
+
+on:
+  workflow_run:
+    workflows: ["CI", "PHP Coverage Report", "API Tests", "Integration Tests"]
+    types: [completed]
+
+# Least-privilege default (OpenSSF Scorecard's Token-Permissions check); the one job that
+# actually needs to push a tag and create a release raises it at job level instead.
+permissions:
+  contents: read
+
+jobs:
+  release:
+    # head_repository check closes a real gap a branch-name check alone leaves open: a fork can
+    # name its own branch "main" too, and workflow_run still fires for fork-originated pull_request
+    # runs of the 4 upstream workflows - without this, such a run's checked-out SHA (attacker-
+    # controlled content) would be processed by this job while it still holds this repo's own
+    # write-scoped secrets (GITHUB_TOKEN, ORDO_SITE_TOKEN). Caught by SonarCloud's githubactions:S7631.
+    if: github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    outputs:
+      released: ${{ steps.publish.outputs.released }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout main at the commit CI just finished for
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Determine the newest dated CHANGELOG version
+        id: version
+        run: |
+          version="$(awk '/^## \[Unreleased\]/ { found=1; next } found && /^## \[/ { print; exit }' docs/CHANGELOG.md | sed -E 's/^## \[([^]]+)\].*/\1/')"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ -z "$version" ]]; then
+            echo "No dated release section right after [Unreleased] - nothing to release."
+          else
+            echo "Newest dated CHANGELOG section: $version"
+          fi
+
+      - name: Skip if that version is already tagged
+        id: check
+        if: steps.version.outputs.version != ''
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if git ls-remote --tags origin "refs/tags/$VERSION" | grep -q .; then
+            echo "already_tagged=true" >> "$GITHUB_OUTPUT"
+            echo "$VERSION is already tagged - nothing to do."
+          else
+            echo "already_tagged=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify every check for this commit is green
+        id: gate
+        if: steps.version.outputs.version != '' && steps.check.outputs.already_tagged == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          check_runs="$(gh api "repos/${{ github.repository }}/commits/$SHA/check-runs" --paginate --jq '.check_runs')"
+          total="$(jq -s 'add | length' <<<"$check_runs")"
+          not_green="$(jq -s 'add | [.[] | select(.status != "completed" or (.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral"))] | length' <<<"$check_runs")"
+          if [[ "$total" -eq 0 || "$not_green" -gt 0 ]]; then
+            echo "Not every check is green yet for $SHA ($not_green/$total not successful) - whichever of the other triggering workflows finishes last will retry this."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Tag and publish the GitHub Release
+        id: publish
+        if: steps.version.outputs.version != '' && steps.check.outputs.already_tagged == 'false' && steps.gate.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          notes_file="$(mktemp)"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { flag=1; next }
+            flag && /^## \[/ { exit }
+            flag { print }
+          ' docs/CHANGELOG.md > "$notes_file"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "$VERSION"
+          git push origin "$VERSION"
+          gh release create "$VERSION" --title "$VERSION" --notes-file "$notes_file"
+
+          echo "released=true" >> "$GITHUB_OUTPUT"
+          echo "Tagged and published $VERSION: https://github.com/${{ github.repository }}/releases/tag/$VERSION"
+
+  update-site:
+    # Mirrors the just-cut release onto ordo-site/changelog.html (ordo.marketing) - the one step
+    # of "Cutting a release" (CONTRIBUTING.md) the release job above can't do by reusing the
+    # CHANGELOG verbatim, since that file's own entries are deliberately technical (class/method
+    # names, ADR references) and changelog.html's are deliberately NOT (see its own existing
+    # entries) - so this asks Claude to rewrite this release's CHANGELOG section into 1-4 short,
+    # plain-language bullets in that established voice, then opens a PR on ordo-site with the
+    # result and merges it immediately (no human review step, by explicit instruction - this
+    # repo's maintainer would otherwise have to review every single release by hand, defeating
+    # the point of automating this at all).
+    #
+    # Authenticates to the Claude API via Workload Identity Federation (console.anthropic.com ->
+    # Settings -> Workload identity -> federation rule "ordo-release-workflow", service account
+    # "ordo-release-notes-rewriter") - a short-lived token minted per run from this job's own
+    # GitHub OIDC identity, not a long-lived ANTHROPIC_API_KEY secret. The federation rule is
+    # pinned to this exact repo (michalper/ordo, by both name and immutable owner id) and to
+    # refs/heads/main, so only this workflow's own runs on main can ever mint a token - never a
+    # fork's pull_request run (whose own ref claim is refs/pull/N/merge, which never matches).
+    #
+    # Needs one repository secret not committed anywhere in this repo:
+    # - ORDO_SITE_TOKEN: a fine-grained PAT (Settings -> Developer settings -> Personal access
+    #   tokens -> Fine-grained) scoped to ONLY the michalper/ordo-site repo, with Contents:
+    #   Read & write and Pull requests: Read & write - the default GITHUB_TOKEN can't touch a
+    #   different repository.
+    needs: release
+    if: needs.release.outputs.released == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout ordo (for its own CHANGELOG section)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: ordo
+
+      - name: Checkout ordo-site
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: michalper/ordo-site
+          token: ${{ secrets.ORDO_SITE_TOKEN }}
+          path: ordo-site
+
+      - name: Extract this release's CHANGELOG section
+        id: notes
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+        run: |
+          section_file="$(mktemp)"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { flag=1; next }
+            flag && /^## \[/ { exit }
+            flag { print }
+          ' ordo/docs/CHANGELOG.md > "$section_file"
+          {
+            echo "section<<SECTION_EOF"
+            cat "$section_file"
+            echo "SECTION_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Fetch GitHub OIDC token for Anthropic's WIF issuer
+        env:
+          ANTHROPIC_IDENTITY_TOKEN_FILE: /tmp/gha-anthropic-jwt
+        run: |
+          curl -sS -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.anthropic.com" \
+            | jq -r .value > "$ANTHROPIC_IDENTITY_TOKEN_FILE"
+
+      - name: Exchange it for a short-lived Anthropic access token
+        id: anthropic_token
+        env:
+          # IDs that route a federation request to the right rule/service-account/workspace -
+          # not secrets (see this job's own comment: the federation rule itself is what actually
+          # gates who can mint a token, by repo/ref/owner-id, regardless of who knows these IDs).
+          ANTHROPIC_FEDERATION_RULE_ID: fdrl_01RjwUQdqfoNHK3Dfz4Y3q7Z
+          ANTHROPIC_ORGANIZATION_ID: 33e309c0-8281-4c45-b19f-5ee1a45e7a0a
+          ANTHROPIC_SERVICE_ACCOUNT_ID: svac_0122Q3QvzxctAnWVsYMR7j4o
+          ANTHROPIC_WORKSPACE_ID: wrkspc_01SaHM5rCoxs81NixmshgpYp
+        run: |
+          jwt="$(cat /tmp/gha-anthropic-jwt)"
+          access_token="$(jq -n --arg assertion "$jwt" \
+            --arg rule "$ANTHROPIC_FEDERATION_RULE_ID" \
+            --arg org "$ANTHROPIC_ORGANIZATION_ID" \
+            --arg svc "$ANTHROPIC_SERVICE_ACCOUNT_ID" \
+            --arg ws "$ANTHROPIC_WORKSPACE_ID" \
+            '{grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: $assertion,
+              federation_rule_id: $rule, organization_id: $org, service_account_id: $svc,
+              workspace_id: $ws}' | \
+            curl -sS https://api.anthropic.com/v1/oauth/token \
+              -H "content-type: application/json" -d @- | jq -r '.access_token // empty')"
+          if [[ -z "$access_token" ]]; then
+            echo "Anthropic token exchange failed - see the authentication log at https://platform.claude.com/settings/workload-identity-federation?tab=history" >&2
+            exit 1
+          fi
+          echo "::add-mask::$access_token"
+          echo "access_token=$access_token" >> "$GITHUB_OUTPUT"
+
+      - name: Ask Claude to rewrite it in changelog.html's own plain-language voice
+        id: rewrite
+        env:
+          ANTHROPIC_ACCESS_TOKEN: ${{ steps.anthropic_token.outputs.access_token }}
+          CHANGELOG_SECTION: ${{ steps.notes.outputs.section }}
+        run: |
+          system_prompt="$(cat <<'PROMPT_EOF'
+          You rewrite one technical CHANGELOG.md section (Keep-a-Changelog style, full of
+          class/method names and ADR references) into 1-4 short, plain-language bullets for a
+          public marketing changelog page, matching the voice of these real past entries exactly
+          - matter-of-fact, no hype, describes user-visible impact, never a class/file name,
+          never an ADR number:
+
+          - Closed a CSRF gap that could let a malicious page tag a logged-in customer's account with attacker-chosen data.
+          - More resilient campaign scheduling - a failing step in a delayed/quiet-hours campaign no longer risks re-running earlier steps on retry.
+          - Zero-party-data surveys now render on the storefront for a custom text/choice question too, not just the NPS score - matching what the campaign builder already let you configure.
+
+          Output ONLY the new bullets as raw HTML <li>...</li> lines, one per line, nothing else -
+          no markdown, no code fences, no preamble, no explanation. Skip anything with zero
+          user-visible effect (internal refactors, test-only changes, CI changes) - if truly
+          nothing in the section is user-visible, output nothing at all.
+          PROMPT_EOF
+          )"
+
+          response="$(jq -n --arg sys "$system_prompt" --arg user "$CHANGELOG_SECTION" \
+            '{model: "claude-sonnet-5", max_tokens: 1024, system: $sys, messages: [{role: "user", content: $user}]}' | \
+            curl -sS https://api.anthropic.com/v1/messages \
+              -H "authorization: Bearer $ANTHROPIC_ACCESS_TOKEN" \
+              -H "anthropic-version: 2026-10-21" \
+              -H "content-type: application/json" \
+              -d @-)"
+
+          bullets="$(jq -r '.content[0].text // empty' <<<"$response")"
+
+          if [[ -z "$bullets" ]]; then
+            echo "Claude returned no bullets (or the API call failed) - nothing user-visible to add, or something went wrong. Not touching ordo-site." >&2
+            {
+              echo "error<<ERR_EOF"
+              jq -r '.error.message // "empty response"' <<<"$response"
+              echo "ERR_EOF"
+              echo "has_bullets=false"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Sanity-check the model's own output before it ever touches a live public page - every
+          # non-blank line must be exactly one <li>...</li>, nothing else, or this is skipped
+          # rather than risking broken HTML on ordo.marketing.
+          if grep -qvE '^\s*(<li>.*</li>)?\s*$' <<<"$bullets"; then
+            echo "Claude's output didn't look like plain <li> lines - not touching ordo-site:" >&2
+            echo "$bullets" >&2
+            echo "has_bullets=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          {
+            echo "bullets<<BULLETS_EOF"
+            echo "$bullets"
+            echo "BULLETS_EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "has_bullets=true" >> "$GITHUB_OUTPUT"
+
+      - name: Insert the new release block and open a PR
+        if: steps.rewrite.outputs.has_bullets == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.ORDO_SITE_TOKEN }}
+          VERSION: ${{ needs.release.outputs.version }}
+          BULLETS: ${{ steps.rewrite.outputs.bullets }}
+        run: |
+          cd ordo-site
+          date="$(date +%Y-%m-%d)"
+          block_file="$(mktemp)"
+          {
+            echo "    <div class=\"release\">"
+            echo "      <div class=\"release-head\"><span class=\"version\">${VERSION}</span><span class=\"date\">${date}</span></div>"
+            echo "      <ul>"
+            while IFS= read -r line; do printf '        %s\n' "$line"; done <<<"$BULLETS"
+            echo "      </ul>"
+            echo "    </div>"
+            echo
+          } > "$block_file"
+
+          anchor='<section class="block" style="border-top:none; padding-top:0;">'
+          awk -v anchor="$anchor" -v blockfile="$block_file" '
+            { print }
+            index($0, anchor) { while ((getline line < blockfile) > 0) print line }
+          ' changelog.html > changelog.html.new
+          mv changelog.html.new changelog.html
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          branch="release-notes/$VERSION"
+          git checkout -b "$branch"
+          git add changelog.html
+          git commit -m "Add $VERSION to the changelog (auto-drafted by ordo's release.yml, no human review by design)"
+          git push origin "$branch"
+          gh pr create --repo michalper/ordo-site --title "changelog: add $VERSION" \
+            --body "Auto-drafted from [ordo's CHANGELOG](https://github.com/michalper/ordo/releases/tag/$VERSION) by ordo's own release.yml - see that workflow for how." \
+            --head "$branch" --base master
+          gh pr merge --repo michalper/ordo-site "$branch" --squash --delete-branch

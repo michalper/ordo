@@ -34,13 +34,17 @@ if [[ "$local_sha" != "$remote_sha" ]]; then
   exit 1
 fi
 
-check_runs="$(gh api "repos/{owner}/{repo}/commits/$local_sha/check-runs" --jq '.check_runs')"
-total_checks="$(jq 'length' <<<"$check_runs")"
+# --paginate: this repo has 39+ check-runs per commit, past the API's 30-per-page default - a
+# plain (unpaginated) call here silently missed up to 9 of them, which could let a release ship
+# despite one of the uncounted checks having actually failed (found while building release.yml's
+# own automated version of this same check).
+check_runs="$(gh api "repos/{owner}/{repo}/commits/$local_sha/check-runs" --paginate --jq '.check_runs')"
+total_checks="$(jq -s 'add | length' <<<"$check_runs")"
 if [[ "$total_checks" -eq 0 ]]; then
   echo "No CI check runs found for $local_sha yet - wait for CI to start." >&2
   exit 1
 fi
-not_green="$(jq '[.[] | select(.status != "completed" or (.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral"))] | length' <<<"$check_runs")"
+not_green="$(jq -s 'add | [.[] | select(.status != "completed" or (.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral"))] | length' <<<"$check_runs")"
 if [[ "$not_green" -gt 0 ]]; then
   echo "CI is not green for $local_sha ($not_green of $total_checks check(s) not successful) - see https://github.com/michalper/ordo/commit/$local_sha/checks" >&2
   exit 1
