@@ -11,6 +11,7 @@ use Magento\Framework\Mail\TransportInterface;
 use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\StoreManagerInterface;
+use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Campaign\Action\SendEmail;
 use Ordo\Automation\Model\Campaign\Action\SendRetrier;
 use Ordo\Automation\Model\Campaign\FrequencyCapGate;
@@ -51,9 +52,12 @@ class SendEmailTest extends TestCase
     private EmailTemplateOptions $emailTemplateOptions;
     private UnsubscribeContext $unsubscribeContext;
     private PendingUnsubscribeHeaderHolder&\PHPUnit\Framework\MockObject\MockObject $pendingUnsubscribeHeaderHolder;
+    private Config $config;
 
     protected function setUp(): void
     {
+        $this->config = $this->createStub(Config::class);
+        $this->config->method('isEmailEnabled')->willReturn(true);
         $this->emailTemplateOptions = $this->createStub(EmailTemplateOptions::class);
         $this->emailTemplateOptions->method('toOptionArray')->willReturn([]);
         $this->customerRepository = $this->createMock(CustomerRepositoryInterface::class);
@@ -118,7 +122,8 @@ class SendEmailTest extends TestCase
             $this->customerStoreResolver,
             $this->emailTemplateOptions,
             $this->unsubscribeContext,
-            $this->pendingUnsubscribeHeaderHolder
+            $this->pendingUnsubscribeHeaderHolder,
+            $this->config
         );
     }
 
@@ -335,6 +340,24 @@ class SendEmailTest extends TestCase
 
         self::assertIsArray($capturedVars);
         self::assertSame('<table>...</table>', $capturedVars['recommended_products_html']);
+    }
+
+    /**
+     * send_email was the one campaign channel action (SMS/push/webhook already have their own
+     * switch) with no config toggle of its own - a merchant couldn't pause email sends from a
+     * campaign chain alone without disabling the whole campaign.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSkipsWhenEmailDisabledInConfig(): void
+    {
+        $this->config = $this->createStub(Config::class);
+        $this->config->method('isEmailEnabled')->willReturn(false);
+        $this->customerRepository->expects(self::never())->method('getById');
+        $this->consentManager = $this->createMock(ConsentManager::class);
+        $this->consentManager->expects(self::never())->method('hasTopicConsent');
+
+        $context = ['customer_id' => 42];
+        $this->makeAction()->execute($context, ['template' => 'ordo_campaign_generic']);
     }
 
     #[AllowMockObjectsWithoutExpectations]
