@@ -9,6 +9,18 @@ no manual step needed here anymore.
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-11-23
+
+### Added
+
+- **Segment blast campaign trigger** (`segment_blast`) — a one-time/scheduled "send this campaign
+  to a segment" trigger: dispatches once per customer currently matching a chosen segment,
+  optionally delayed to a future date/time, dispatched at most once ever per customer regardless
+  of how many scans it takes to cover a large segment. See ADR 0075.
+- **On-site search "no results" campaign trigger** (`search_no_results`) — reacts to a storefront
+  search that returned zero results, the same two-hop tracking-endpoint-to-queue shape as the
+  existing exit-intent trigger. See ADR 0076.
+
 ## [1.11.1] - 2026-11-16
 
 ### Fixed
