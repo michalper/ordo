@@ -5,7 +5,6 @@ namespace Ordo\Automation\Cron;
 
 use Magento\Customer\Api\Data\CustomerInterface;
 use Ordo\Automation\Helper\Config;
-use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\Cron\CronRunLogger;
@@ -23,160 +22,127 @@ use Ordo\Automation\Model\TriggerOutcomeLogger;
  * predicted next-order date has arrived, sends a reminder email to the customer.
  * Each cycle is only reminded once per predicted date — see the reminder log table.
  */
-class SendReorderReminders
+class SendReorderReminders extends AbstractBatchClaimedReminderCron
 {
     private const string XML_PATH_EMAIL_TEMPLATE = 'ordo_reorder_reminder';
     private const string REMINDER_LOG_TABLE = 'ordo_reorder_reminder_log';
 
     public function __construct(
-        private readonly Config $config,
+        Config $config,
         private readonly ReorderCycleCollectionFactory $reorderCycleCollectionFactory,
-        private readonly CustomerMapBuilder $customerMapBuilder,
-        private readonly ReminderEmailSender $emailSender,
-        private readonly ReminderLogStore $reminderLogStore,
-        private readonly SalesRepEmailContext $salesRepEmailContext,
-        private readonly ConsentManager $consentManager,
-        private readonly TriggerOutcomeLogger $triggerOutcomeLogger,
-        private readonly CronRunLogger $cronRunLogger,
-        private readonly CustomerStoreResolver $customerStoreResolver
+        CustomerMapBuilder $customerMapBuilder,
+        ReminderEmailSender $emailSender,
+        ReminderLogStore $reminderLogStore,
+        SalesRepEmailContext $salesRepEmailContext,
+        ConsentManager $consentManager,
+        TriggerOutcomeLogger $triggerOutcomeLogger,
+        CronRunLogger $cronRunLogger,
+        CustomerStoreResolver $customerStoreResolver
     ) {
+        parent::__construct(
+            $config,
+            $customerMapBuilder,
+            $emailSender,
+            $reminderLogStore,
+            $salesRepEmailContext,
+            $consentManager,
+            $triggerOutcomeLogger,
+            $cronRunLogger,
+            $customerStoreResolver
+        );
     }
 
-    public function execute(): void
+    protected function isEnabled(): bool
     {
-        if (!$this->config->isReorderReminderEnabled()) {
-            return;
-        }
+        return $this->config->isReorderReminderEnabled();
+    }
 
+    protected function reminderLogTable(): string
+    {
+        return self::REMINDER_LOG_TABLE;
+    }
+
+    protected function emailTemplatePath(): string
+    {
+        return self::XML_PATH_EMAIL_TEMPLATE;
+    }
+
+    protected function consentTopic(): ConsentTopic
+    {
+        // AccountUpdates, not Promotional - a reorder reminder is about the customer's own
+        // purchase pattern, see ConsentTopic::AccountUpdates's own docblock.
+        return ConsentTopic::AccountUpdates;
+    }
+
+    protected function triggerOutcomeCode(): string
+    {
+        return TriggerOutcomeLogger::TRIGGER_REORDER_REMINDER;
+    }
+
+    protected function reminderLabel(): string
+    {
+        return 'reorder reminder';
+    }
+
+    protected function rowNoun(): string
+    {
+        return 'cycle';
+    }
+
+    protected function logIdColumn(): string
+    {
+        return 'reorder_cycle_id';
+    }
+
+    protected function logStaticConditions(): array
+    {
+        return ['DATE(sent_at) = ?' => date('Y-m-d')];
+    }
+
+    protected function fetchDueRows(): array
+    {
         $leadDays = $this->config->getReorderLeadDays();
         $targetDate = date('Y-m-d', (int) strtotime("+{$leadDays} days"));
 
         $collection = $this->reorderCycleCollectionFactory->create();
         $collection->addDueTodayFilter($targetDate);
 
-        $cycles = [];
-        $cycleIds = [];
-        $customerIds = [];
+        $rows = [];
         foreach ($collection as $cycle) {
             /** @var ReorderCycle $cycle */
-            $cycles[] = $cycle;
-            $cycleIds[] = (int) $cycle->getEntityId();
-            $customerIds[] = (int) $cycle->getCustomerId();
+            $rows[] = [
+                'id' => (int) $cycle->getEntityId(),
+                'customerId' => (int) $cycle->getCustomerId(),
+                'row' => $cycle,
+            ];
         }
 
-        $customerMap = $this->customerMapBuilder->build($customerIds);
-        // One query for the whole batch instead of one hasConsent() call per cycle inside the
-        // loop below - found via a performance audit, same reasoning as
-        // CreditLimitCalculator::getUsedCreditForCustomers().
-        // AccountUpdates, not Promotional - a reorder reminder is about the customer's own
-        // purchase pattern, see ConsentTopic::AccountUpdates's own docblock.
-        $consentByCustomer = $this->consentManager->hasTopicConsentForCustomers(
-            $customerIds,
-            ConsentChannel::Email,
-            ConsentTopic::AccountUpdates
-        );
-        // Same batching as the consent check above, for the "already sent today" pre-filter -
-        // found via a performance audit.
-        $alreadySentToday = $this->reminderLogStore->fetchExistingIds(
-            self::REMINDER_LOG_TABLE,
-            'reorder_cycle_id',
-            $cycleIds,
-            ['DATE(sent_at) = ?' => date('Y-m-d')]
-        );
-
-        $sent = 0;
-        foreach ($cycles as $cycle) {
-            /** @var ReorderCycle $cycle */
-            if (isset($alreadySentToday[(int) $cycle->getEntityId()])) {
-                continue;
-            }
-
-            $customerId = (int) $cycle->getCustomerId();
-            if (!isset($customerMap[$customerId])) {
-                continue;
-            }
-
-            // A customer who opted out of email must never receive this reminder, same consent
-            // gate every other channel's send action applies before sending anything.
-            if (!($consentByCustomer[$customerId] ?? true)) {
-                continue;
-            }
-
-            $customer = $customerMap[$customerId];
-
-            try {
-                // Claim (log) BEFORE sending, not after - see ReminderLogStore::deleteMatching()'s
-                // own docblock for why: a crash between a successful send and the log write must
-                // never cause a resend next tick, and a genuine send failure rolls the claim back
-                // so this cycle is retried. claim() (not a plain insert()) re-checks "already sent
-                // today" atomically - the batched $alreadySentToday check above is only a fast
-                // pre-filter (and, being fetched once up front, can itself already be stale by
-                // the time this exact row is reached), not the actual guard against a double-send.
-                $claimed = $this->reminderLogStore->claimAndRun(
-                    self::REMINDER_LOG_TABLE,
-                    $this->reminderLogMatchConditions((int) $cycle->getEntityId()),
-                    $this->buildReminderLogRow((int) $cycle->getEntityId()),
-                    function () use ($cycle, $customer, $customerId): void {
-                        $this->emailSender->send(
-                            self::XML_PATH_EMAIL_TEMPLATE,
-                            $this->buildTemplateVars($cycle, $customer),
-                            $customer->getEmail(),
-                            $customer->getFirstname(),
-                            $this->emailSender->getStore($this->customerStoreResolver->resolveStoreId($customer))
-                        );
-                        $this->triggerOutcomeLogger->logSent(
-                            TriggerOutcomeLogger::TRIGGER_REORDER_REMINDER,
-                            $customerId
-                        );
-                    }
-                );
-            } catch (\Throwable $e) {
-                $this->cronRunLogger->logFailure(
-                    sprintf('send reorder reminder for cycle #%d', (int) $cycle->getEntityId()),
-                    $e
-                );
-                continue;
-            }
-
-            if ($claimed) {
-                $sent++;
-            }
-        }
-
-        $this->cronRunLogger->logSummary(sprintf('sent %d reorder reminders', $sent));
+        return $rows;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function buildTemplateVars(ReorderCycle $cycle, CustomerInterface $customer): array
-    {
-        return array_merge([
-            'customer_name' => $customer->getFirstname(),
-            'sku' => $cycle->getSku(),
-            'avg_interval_days' => $cycle->getAvgIntervalDays(),
-        ], $this->salesRepEmailContext->getForLoadedCustomer($customer));
-    }
-
-    /**
-     * @return array<string, int|string>
-     */
-    private function reminderLogMatchConditions(int $reorderCycleId): array
+    protected function reminderLogMatchConditions(int $rowId): array
     {
         return [
-            'reorder_cycle_id = ?' => $reorderCycleId,
+            'reorder_cycle_id = ?' => $rowId,
             'DATE(sent_at) = ?' => date('Y-m-d'),
         ];
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function buildReminderLogRow(int $reorderCycleId): array
+    protected function buildReminderLogRow(int $rowId): array
     {
         return [
-            'reorder_cycle_id' => $reorderCycleId,
+            'reorder_cycle_id' => $rowId,
             'sent_at' => date('Y-m-d H:i:s'),
         ];
+    }
+
+    protected function buildTemplateVars(object $row, CustomerInterface $customer): array
+    {
+        /** @var ReorderCycle $row */
+        return array_merge([
+            'customer_name' => $customer->getFirstname(),
+            'sku' => $row->getSku(),
+            'avg_interval_days' => $row->getAvgIntervalDays(),
+        ], $this->salesRepEmailContext->getForLoadedCustomer($customer));
     }
 }
