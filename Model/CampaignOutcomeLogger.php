@@ -17,7 +17,7 @@ use Magento\Framework\App\ResourceConnection;
  * campaign convert," the same way ordo_trigger_outcome_log is additive to each cron trigger's
  * own narrow dedup log.
  */
-class CampaignOutcomeLogger
+class CampaignOutcomeLogger implements OutcomeLoggerInterface
 {
     private const int DEFAULT_LOOKBACK_DAYS = 30;
 

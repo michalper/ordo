@@ -34,105 +34,70 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as Ca
  * getCustomerInactiveRefireCooldownDays() has passed since this same (customer_id, campaign_id)
  * pair last fired, the same cooldown-window shape Cron\SendCreditLimitAlerts already uses.
  */
-class DispatchCustomerInactiveCampaigns
+class DispatchCustomerInactiveCampaigns extends AbstractTriggerRowClaimedDispatchCron
 {
     private const string CLAIM_TABLE = 'ordo_customer_inactive_trigger_claim';
 
     public function __construct(
         private readonly Config $config,
         private readonly ResourceConnection $resourceConnection,
-        private readonly CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory,
-        private readonly CampaignDispatcher $campaignDispatcher,
-        private readonly ReminderLogStore $reminderLogStore,
-        private readonly CronRunLogger $cronRunLogger
+        CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory,
+        CampaignDispatcher $campaignDispatcher,
+        ReminderLogStore $reminderLogStore,
+        CronRunLogger $cronRunLogger
     ) {
+        parent::__construct($campaignTriggerCollectionFactory, $campaignDispatcher, $reminderLogStore, $cronRunLogger);
     }
 
-    public function execute(): void
+    protected function isEnabled(): bool
     {
-        if (!$this->config->isCustomerInactiveTriggerEnabled()) {
-            return;
-        }
-
-        $triggers = $this->campaignTriggerCollectionFactory->create();
-        $triggers->addTriggerEventsFilter([CampaignTriggerInterface::TRIGGER_CUSTOMER_INACTIVE]);
-        $triggers->addEnabledCampaignFilter();
-
-        $dispatched = 0;
-        foreach ($triggers as $trigger) {
-            /** @var CampaignTrigger $trigger */
-            try {
-                $dispatched += $this->dispatchForTrigger($trigger);
-            } catch (\Throwable $e) {
-                $this->cronRunLogger->logFailure(
-                    sprintf('scan customer_inactive trigger #%d', (int) $trigger->getEntityId()),
-                    $e
-                );
-            }
-        }
-
-        $this->cronRunLogger->logSummary(sprintf('dispatched %d customer_inactive trigger(s)', $dispatched));
+        return $this->config->isCustomerInactiveTriggerEnabled();
     }
 
-    private function dispatchForTrigger(CampaignTrigger $trigger): int
+    protected function triggerEventCode(): string
+    {
+        return CampaignTriggerInterface::TRIGGER_CUSTOMER_INACTIVE;
+    }
+
+    protected function claimTable(): string
+    {
+        return self::CLAIM_TABLE;
+    }
+
+    protected function candidateCustomerIds(CampaignTrigger $trigger): ?array
     {
         $days = (int) ($trigger->getParams()['days'] ?? 0);
         if ($days <= 0) {
-            return 0;
+            return null;
         }
 
+        return $this->findInactiveCustomerIds($days);
+    }
+
+    protected function buildClaimRow(CampaignTrigger $trigger, int $customerId): array
+    {
         $campaignId = $trigger->getCampaignId();
         $cooldownDays = $this->config->getCustomerInactiveRefireCooldownDays();
         $cooldownCutoff = date('Y-m-d H:i:s', (int) strtotime("-{$cooldownDays} days"));
 
-        $dispatched = 0;
-        foreach ($this->findInactiveCustomerIds($days) as $customerId) {
-            $matchConditions = [
-                'customer_id = ?' => $customerId,
-                'campaign_id = ?' => $campaignId,
-                'fired_at >= ?' => $cooldownCutoff,
-            ];
+        $match = [
+            'customer_id = ?' => $customerId,
+            'campaign_id = ?' => $campaignId,
+            'fired_at >= ?' => $cooldownCutoff,
+        ];
 
-            // Claim BEFORE dispatching, not after - a crash between a successful dispatch and
-            // the claim write must never cause a duplicate dispatch on the next tick. claim()
-            // re-checks the cooldown window atomically under its own lock, the same reasoning
-            // SendCreditLimitAlerts' own cooldown claim has.
-            //
-            // fired_at is set explicitly here (rather than left to the column's own
-            // CURRENT_TIMESTAMP default) so it's part of $claimRow - this table is a plain
-            // append-only log, not a one-row-ever claim (a customer can leave and re-enter
-            // inactivity more than once, see this class's own docblock), so on a genuine dispatch
-            // failure below, rolling back via deleteMatching($claimRow) must match only the one
-            // row this claim() call just inserted, not every historical fired_at for this same
-            // (customer_id, campaign_id) pair - which an omitted fired_at would do, silently
-            // wiping this customer's whole cooldown history on a single transient failure. Same
-            // explicit-value pattern DispatchCustomerAnniversaryCampaigns already uses for its own
-            // fired_year.
-            $claimRow = ['customer_id' => $customerId, 'campaign_id' => $campaignId, 'fired_at' => date('Y-m-d H:i:s')];
-            if (!$this->reminderLogStore->claim(self::CLAIM_TABLE, $matchConditions, $claimRow)) {
-                continue;
-            }
+        // fired_at is set explicitly here (rather than left to the column's own
+        // CURRENT_TIMESTAMP default) so it's part of the claim row - this table is a plain
+        // append-only log, not a one-row-ever claim (a customer can leave and re-enter
+        // inactivity more than once, see this class's own docblock), so on a genuine dispatch
+        // failure, rolling back via deleteMatching() must match only the one row this claim()
+        // call just inserted, not every historical fired_at for this same (customer_id,
+        // campaign_id) pair - which an omitted fired_at would do, silently wiping this
+        // customer's whole cooldown history on a single transient failure. Same explicit-value
+        // pattern DispatchCustomerAnniversaryCampaigns already uses for its own fired_year.
+        $claim = ['customer_id' => $customerId, 'campaign_id' => $campaignId, 'fired_at' => date('Y-m-d H:i:s')];
 
-            try {
-                $this->campaignDispatcher->dispatchScheduledTrigger($campaignId, [
-                    'customer_id' => $customerId,
-                    'trigger_event' => CampaignTriggerInterface::TRIGGER_CUSTOMER_INACTIVE,
-                ]);
-                $dispatched++;
-            } catch (\Throwable $e) {
-                $this->reminderLogStore->deleteMatching(self::CLAIM_TABLE, $claimRow);
-                $this->cronRunLogger->logFailure(
-                    sprintf(
-                        'dispatch customer_inactive trigger for campaign #%d, customer #%d',
-                        $campaignId,
-                        $customerId
-                    ),
-                    $e
-                );
-            }
-        }
-
-        return $dispatched;
+        return ['match' => $match, 'claim' => $claim];
     }
 
     /**

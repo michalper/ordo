@@ -4,31 +4,26 @@ declare(strict_types=1);
 namespace Ordo\Automation\Observer;
 
 use Magento\Framework\Event\Observer as EventObserver;
-use Magento\Framework\Event\ObserverInterface;
-use Ordo\Automation\Model\Queue\CampaignDispatchPublisher;
 
 /**
  * Listens for the "ordo_customer_score_threshold_crossed" event EvaluateCustomerScoreRules
  * fires (see its class doc), and dispatches "score_threshold_crossed" campaigns. Mirrors
  * DispatchTagAddedCampaigns exactly, minus the tag param.
  */
-class DispatchScoreThresholdCampaigns implements ObserverInterface
+class DispatchScoreThresholdCampaigns extends AbstractDispatchCampaignsOnEvent
 {
-    public function __construct(
-        private readonly CampaignDispatchPublisher $campaignDispatchPublisher
-    ) {
+    protected function triggerEventCode(): string
+    {
+        return 'score_threshold_crossed';
     }
 
-    public function execute(EventObserver $observer): void
+    protected function resolveContext(EventObserver $observer): ?array
     {
         $customerId = (int) $observer->getEvent()->getData('customer_id');
-
         if ($customerId <= 0) {
-            return;
+            return null;
         }
 
-        $this->campaignDispatchPublisher->publish('score_threshold_crossed', [
-            'customer_id' => $customerId,
-        ]);
+        return ['customer_id' => $customerId];
     }
 }

@@ -5,7 +5,6 @@ namespace Ordo\Automation\Cron;
 
 use Magento\Customer\Api\Data\CustomerInterface;
 use Ordo\Automation\Helper\Config;
-use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\Cron\CronRunLogger;
@@ -24,164 +23,132 @@ use Ordo\Automation\Model\TriggerOutcomeLogger;
  * find offers expiring in N days and remind the customer, with a self-service "extend" option, before their
  * sales rep has to notice manually.
  */
-class SendOfferExpiryReminders
+class SendOfferExpiryReminders extends AbstractBatchClaimedReminderCron
 {
     private const string XML_PATH_EMAIL_TEMPLATE = 'ordo_offer_expiring_soon';
     private const string REMINDER_TYPE_EXPIRING_SOON = 'expiring_soon';
     private const string REMINDER_LOG_TABLE = 'ordo_offer_reminder_log';
 
     public function __construct(
-        private readonly Config $config,
+        Config $config,
         private readonly OfferCollectionFactory $offerCollectionFactory,
-        private readonly CustomerMapBuilder $customerMapBuilder,
-        private readonly ReminderEmailSender $emailSender,
-        private readonly ReminderLogStore $reminderLogStore,
-        private readonly SalesRepEmailContext $salesRepEmailContext,
-        private readonly ConsentManager $consentManager,
-        private readonly TriggerOutcomeLogger $triggerOutcomeLogger,
-        private readonly CronRunLogger $cronRunLogger,
-        private readonly CustomerStoreResolver $customerStoreResolver
+        CustomerMapBuilder $customerMapBuilder,
+        ReminderEmailSender $emailSender,
+        ReminderLogStore $reminderLogStore,
+        SalesRepEmailContext $salesRepEmailContext,
+        ConsentManager $consentManager,
+        TriggerOutcomeLogger $triggerOutcomeLogger,
+        CronRunLogger $cronRunLogger,
+        CustomerStoreResolver $customerStoreResolver
     ) {
+        parent::__construct(
+            $config,
+            $customerMapBuilder,
+            $emailSender,
+            $reminderLogStore,
+            $salesRepEmailContext,
+            $consentManager,
+            $triggerOutcomeLogger,
+            $cronRunLogger,
+            $customerStoreResolver
+        );
     }
 
-    public function execute(): void
+    protected function isEnabled(): bool
     {
-        if (!$this->config->isOfferReminderEnabled()) {
-            return;
-        }
+        return $this->config->isOfferReminderEnabled();
+    }
 
+    protected function reminderLogTable(): string
+    {
+        return self::REMINDER_LOG_TABLE;
+    }
+
+    protected function emailTemplatePath(): string
+    {
+        return self::XML_PATH_EMAIL_TEMPLATE;
+    }
+
+    protected function consentTopic(): ConsentTopic
+    {
+        // Promotional - an expiring-offer nudge is fundamentally about driving a purchase, same
+        // bucket as win-back/abandoned-cart, see ConsentTopic::Promotional's own docblock.
+        return ConsentTopic::Promotional;
+    }
+
+    protected function triggerOutcomeCode(): string
+    {
+        return TriggerOutcomeLogger::TRIGGER_OFFER_EXPIRY;
+    }
+
+    protected function reminderLabel(): string
+    {
+        return 'offer expiry reminder';
+    }
+
+    protected function rowNoun(): string
+    {
+        return 'offer';
+    }
+
+    protected function logIdColumn(): string
+    {
+        return 'offer_id';
+    }
+
+    protected function logStaticConditions(): array
+    {
+        return ['reminder_type = ?' => self::REMINDER_TYPE_EXPIRING_SOON];
+    }
+
+    protected function fetchDueRows(): array
+    {
         $leadDays = $this->config->getOfferLeadDays();
         $targetDate = date('Y-m-d', (int) strtotime("+{$leadDays} days"));
 
         $collection = $this->offerCollectionFactory->create();
         $collection->addExpiringOnFilter($targetDate);
 
-        $offers = [];
-        $offerIds = [];
-        $customerIds = [];
+        $rows = [];
         foreach ($collection as $offer) {
             /** @var Offer $offer */
-            $offers[] = $offer;
-            $offerIds[] = (int) $offer->getEntityId();
-            $customerIds[] = (int) $offer->getCustomerId();
+            $rows[] = [
+                'id' => (int) $offer->getEntityId(),
+                'customerId' => (int) $offer->getCustomerId(),
+                'row' => $offer,
+            ];
         }
 
-        $customerMap = $this->customerMapBuilder->build($customerIds);
-        // One query for the whole batch instead of one hasConsent() call per offer inside the
-        // loop below - found via a performance audit, same reasoning as
-        // CreditLimitCalculator::getUsedCreditForCustomers().
-        // Promotional - an expiring-offer nudge is fundamentally about driving a purchase, same
-        // bucket as win-back/abandoned-cart, see ConsentTopic::Promotional's own docblock.
-        $consentByCustomer = $this->consentManager->hasTopicConsentForCustomers(
-            $customerIds,
-            ConsentChannel::Email,
-            ConsentTopic::Promotional
-        );
-        // Same batching as the consent check above, for the "already sent" pre-filter - found via
-        // a performance audit.
-        $alreadySent = $this->reminderLogStore->fetchExistingIds(
-            self::REMINDER_LOG_TABLE,
-            'offer_id',
-            $offerIds,
-            ['reminder_type = ?' => self::REMINDER_TYPE_EXPIRING_SOON]
-        );
-
-        $sent = 0;
-        foreach ($offers as $offer) {
-            /** @var Offer $offer */
-            if (isset($alreadySent[(int) $offer->getEntityId()])) {
-                continue;
-            }
-
-            $customerId = (int) $offer->getCustomerId();
-            if (!isset($customerMap[$customerId])) {
-                continue;
-            }
-
-            // A customer who opted out of email must never receive this reminder, same consent
-            // gate every other channel's send action applies before sending anything.
-            if (!($consentByCustomer[$customerId] ?? true)) {
-                continue;
-            }
-
-            $customer = $customerMap[$customerId];
-
-            try {
-                // Claim (log) BEFORE sending, not after - a crash between a successful send and
-                // the log write must never cause a resend on the next tick. If the send itself
-                // then fails, the claim is rolled back so this offer is retried next run. claim()
-                // (not a plain insert()) re-checks "already sent" atomically - the batched
-                // $alreadySent check above is only a fast pre-filter, not the actual guard
-                // against a double-send.
-                $claimed = $this->reminderLogStore->claimAndRun(
-                    self::REMINDER_LOG_TABLE,
-                    $this->reminderLogMatchConditions(
-                        (int) $offer->getEntityId(),
-                        self::REMINDER_TYPE_EXPIRING_SOON
-                    ),
-                    $this->buildReminderLogRow((int) $offer->getEntityId(), self::REMINDER_TYPE_EXPIRING_SOON),
-                    function () use ($offer, $customer, $customerId): void {
-                        $this->emailSender->send(
-                            self::XML_PATH_EMAIL_TEMPLATE,
-                            $this->buildTemplateVars($offer, $customer),
-                            $customer->getEmail(),
-                            $customer->getFirstname(),
-                            $this->emailSender->getStore($this->customerStoreResolver->resolveStoreId($customer))
-                        );
-                        $this->triggerOutcomeLogger->logSent(TriggerOutcomeLogger::TRIGGER_OFFER_EXPIRY, $customerId);
-                    }
-                );
-            } catch (\Throwable $e) {
-                $this->cronRunLogger->logFailure(
-                    sprintf('send offer expiry reminder for offer #%d', $offer->getEntityId()),
-                    $e
-                );
-                continue;
-            }
-
-            if ($claimed) {
-                $sent++;
-            }
-        }
-
-        $this->cronRunLogger->logSummary(sprintf('sent %d offer expiry reminders', $sent));
+        return $rows;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function buildTemplateVars(Offer $offer, CustomerInterface $customer): array
-    {
-        return array_merge([
-            'customer_name' => $customer->getFirstname(),
-            'offer_reference' => $offer->getReference(),
-            'offer_total' => $offer->getTotal(),
-            'offer_currency' => $offer->getCurrencyCode(),
-            'offer_expires_at' => $offer->getExpiresAt(),
-            'can_self_extend' => $offer->canSelfExtend($this->config->getOfferMaxSelfExtensions()),
-        ], $this->salesRepEmailContext->getForLoadedCustomer($customer));
-    }
-
-    /**
-     * @return array<string, int|string>
-     */
-    private function reminderLogMatchConditions(int $offerId, string $type): array
+    protected function reminderLogMatchConditions(int $rowId): array
     {
         return [
-            'offer_id = ?' => $offerId,
-            'reminder_type = ?' => $type,
+            'offer_id = ?' => $rowId,
+            'reminder_type = ?' => self::REMINDER_TYPE_EXPIRING_SOON,
         ];
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function buildReminderLogRow(int $offerId, string $type): array
+    protected function buildReminderLogRow(int $rowId): array
     {
         return [
-            'offer_id' => $offerId,
-            'reminder_type' => $type,
+            'offer_id' => $rowId,
+            'reminder_type' => self::REMINDER_TYPE_EXPIRING_SOON,
             'sent_at' => date('Y-m-d H:i:s'),
         ];
+    }
+
+    protected function buildTemplateVars(object $row, CustomerInterface $customer): array
+    {
+        /** @var Offer $row */
+        return array_merge([
+            'customer_name' => $customer->getFirstname(),
+            'offer_reference' => $row->getReference(),
+            'offer_total' => $row->getTotal(),
+            'offer_currency' => $row->getCurrencyCode(),
+            'offer_expires_at' => $row->getExpiresAt(),
+            'can_self_extend' => $row->canSelfExtend($this->config->getOfferMaxSelfExtensions()),
+        ], $this->salesRepEmailContext->getForLoadedCustomer($customer));
     }
 }

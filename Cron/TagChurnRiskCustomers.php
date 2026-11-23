@@ -44,40 +44,13 @@ class TagChurnRiskCustomers
             }
         }
 
-        // One query for the whole batch instead of one hasTag() call per candidate - same
-        // reasoning/pattern as TagReorderCycleAtRiskCustomers.
-        $alreadyTagged = array_flip(
-            $this->customerTagManager->getCustomerIdsWithTagFromSet($atRiskIds, self::TAG_CHURN_RISK)
-        );
-
-        $tagged = 0;
-        foreach ($atRiskIds as $customerId) {
-            // addTagIfAbsent(), not addTag() - see TagInactiveCustomers' identical fix/comment:
-            // the pre-check above is a plain SELECT with no lock, so two overlapping cron runs
-            // could both pass it before either inserts.
-            if (isset($alreadyTagged[$customerId])) {
-                continue;
-            }
-
-            if ($this->customerTagManager->addTagIfAbsent($customerId, self::TAG_CHURN_RISK)) {
-                $tagged++;
-            }
-        }
-
         // Anyone previously tagged whose ratio has since dropped back below the threshold (they
-        // ordered again) is no longer at risk - clear the tag so a future drift can flag them
-        // fresh, same as TagReorderCycleAtRiskCustomers untagging a customer who has recovered.
-        $stillAtRiskLookup = array_flip($atRiskIds);
-        $untagged = 0;
-        foreach ($this->customerTagManager->getCustomerIdsWithTag(self::TAG_CHURN_RISK) as $customerId) {
-            if (!isset($stillAtRiskLookup[$customerId])) {
-                $this->customerTagManager->removeTag($customerId, self::TAG_CHURN_RISK);
-                $untagged++;
-            }
-        }
+        // ordered again) is no longer at risk - syncTagForSet() clears the tag so a future
+        // drift can flag them fresh.
+        $result = $this->customerTagManager->syncTagForSet($atRiskIds, self::TAG_CHURN_RISK);
 
         $this->cronRunLogger->logSummary(
-            sprintf('tagged %d customers as churn-risk, cleared %d', $tagged, $untagged)
+            sprintf('tagged %d customers as churn-risk, cleared %d', $result['tagged'], count($result['untagged']))
         );
     }
 }

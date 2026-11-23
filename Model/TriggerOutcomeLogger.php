@@ -16,7 +16,7 @@ use Magento\Framework\App\ResourceConnection;
  * Observer\RecordTriggerOutcome, which sets acted_at/order_id once that happens. First-plausible
  * match semantics: directional stats, not billing-grade attribution.
  */
-class TriggerOutcomeLogger
+class TriggerOutcomeLogger implements OutcomeLoggerInterface
 {
     public const TRIGGER_REORDER_REMINDER = 'reorder_reminder';
     public const TRIGGER_OFFER_EXPIRY = 'offer_expiry';

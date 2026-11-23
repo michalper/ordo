@@ -4,8 +4,6 @@ declare(strict_types=1);
 namespace Ordo\Automation\Observer;
 
 use Magento\Framework\Event\Observer as EventObserver;
-use Magento\Framework\Event\ObserverInterface;
-use Ordo\Automation\Model\Queue\CampaignDispatchPublisher;
 
 /**
  * Listens for the "ordo_visitor_exit_intent" event Controller\Track\Event fires (see docs/adr/0037
@@ -15,24 +13,21 @@ use Ordo\Automation\Model\Queue\CampaignDispatchPublisher;
  * DispatchVisitorTagAddedCampaigns exactly, including the anonymous-only context shape (no
  * customer_id, even for a logged-in visitor) - see that trigger constant's own docblock.
  */
-class DispatchExitIntentCampaigns implements ObserverInterface
+class DispatchExitIntentCampaigns extends AbstractDispatchCampaignsOnEvent
 {
-    public function __construct(
-        private readonly CampaignDispatchPublisher $campaignDispatchPublisher
-    ) {
+    protected function triggerEventCode(): string
+    {
+        return 'exit_intent';
     }
 
-    public function execute(EventObserver $observer): void
+    protected function resolveContext(EventObserver $observer): ?array
     {
         $visitorId = $observer->getEvent()->getData('visitor_id');
         $visitorId = is_string($visitorId) ? $visitorId : '';
-
         if ($visitorId === '') {
-            return;
+            return null;
         }
 
-        $this->campaignDispatchPublisher->publish('exit_intent', [
-            'visitor_id' => $visitorId,
-        ]);
+        return ['visitor_id' => $visitorId];
     }
 }
