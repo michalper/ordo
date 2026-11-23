@@ -6,7 +6,7 @@
             <features value="Ordo Automation"/>
             <stories value="Credit limit"/>
             <title value="A customer already over their credit limit is blocked from placing a second real order at checkout"/>
-            <description value="Closes a real gap SCENARIOS.md's own scope-check got wrong: it claims credit limit 'has no storefront UI at all', but Plugin/Quote/BlockOverLimitCheckout.php is a real, storefront-visible checkout failure - a before-plugin on CartManagementInterface::placeOrder() that hard-throws once CreditLimitCalculator::getUtilizationPercent() reaches 100%, independent of the REST API and of SendCreditLimitAlerts' own cron-driven email (already covered by AdminSendCreditLimitAlertTest). Only unit-tested before this (Test/Unit/Plugin/Quote/BlockOverLimitCheckoutTest.php) - never proven against a real checkout. A real low credit limit, a first real order that itself pushes utilization over 100% (its own unpaid total_due IS the 'used credit', no separate ledger), then a second real checkout attempt that must fail with the plugin's own error text instead of reaching the success page."/>
+            <description value="Closes a real gap SCENARIOS.md's own scope-check got wrong: it claims credit limit 'has no storefront UI at all', but Plugin/Quote/BlockOverLimitCheckout.php is a real, storefront-visible checkout failure - an around-plugin on CartManagementInterface::placeOrder() that hard-throws once CreditLimitCalculator::getUtilizationPercent() reaches 100%, independent of the REST API and of SendCreditLimitAlerts' own cron-driven email (already covered by AdminSendCreditLimitAlertTest). Only unit-tested before this (Test/Unit/Plugin/Quote/BlockOverLimitCheckoutTest.php) - never proven against a real checkout. A real low credit limit, a first real order that itself pushes utilization over 100% (its own unpaid total_due IS the 'used credit', no separate ledger), then a second real checkout attempt that must fail with the plugin's own error text instead of reaching the success page."/>
             <severity value="CRITICAL"/>
             <group value="ordo_automation"/>
             <group value="lifecycle"/>
@@ -78,7 +78,7 @@
         <click selector="{{CheckoutPaymentSection.placeOrder}}" stepKey="clickPlaceOrder"/>
 
         <!-- Step 4: the actual proof - the plugin's OWN error text, which only a real
-             beforePlaceOrder() throw could have surfaced here, and the checkout page NOT
+             aroundPlaceOrder() throw could have surfaced here, and the checkout page NOT
              advancing to the success page. -->
         <!-- Not a <dontSeeElement> on CheckoutSuccessMainSection.successTitle here - that
              selector is the generic ".page-title", present on this same checkout/payment page

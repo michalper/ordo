@@ -19,8 +19,14 @@ class CreditLimitManagement implements CreditLimitManagementInterface
 
     public function getMyStatus(): CreditLimitStatusInterface
     {
+        // UserContextInterface::getUserId() returns 0, not null, for a GraphQL guest - the same
+        // trap Model\LoyaltyPointsManagement/LoyaltyWalletPassManagement already guard against at
+        // this exact layer. GraphQL's own resolver for this service already checks for 0 before
+        // ever calling getMyStatus(), so there's no live exploit today, but this service should
+        // fail closed on its own rather than rely on every current and future caller remembering
+        // to check 0 upstream.
         $customerId = $this->userContext->getUserId();
-        if ($customerId === null) {
+        if ($customerId === null || (int) $customerId === 0) {
             throw new NoSuchEntityException(__('No authenticated customer for this request.'));
         }
 

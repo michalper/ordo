@@ -54,6 +54,17 @@ class CreditLimitManagementTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testGetMyStatusThrowsForGuestCustomerIdZero(): void
+    {
+        // UserContextInterface::getUserId() returns 0, not null, for a GraphQL guest.
+        $this->userContext->method('getUserId')->willReturn(0);
+
+        $this->calculator->expects(self::never())->method('getCreditLimit');
+        $this->expectException(NoSuchEntityException::class);
+        $this->management->getMyStatus();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetStatusForCustomerAvailableCreditCanBeNegative(): void
     {
         $this->calculator->method('getCreditLimit')->willReturnMap([[9, 500.0]]);
