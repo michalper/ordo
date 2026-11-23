@@ -8,7 +8,12 @@ implies and what mitigates it.
 
 - **Maintainer** (currently [@michalper](https://github.com/michalper)): reviews and merges pull
   requests, triages issues, cuts releases, and has the final say on project direction (scope,
-  roadmap, breaking changes). There is currently no second maintainer.
+  roadmap, breaking changes).
+- **Backup maintainer** ([@moston](https://github.com/moston)): holds standing Write access to
+  this repository specifically so the project can keep operating - creating/closing issues,
+  merging pull requests, and cutting releases - if the maintainer is unavailable. Not an active
+  co-maintainer day to day; this is a continuity arrangement, not a second decision-maker (see
+  "Bus factor" below).
 - **Contributor**: anyone who opens an issue or pull request. See
   [CONTRIBUTING.md](CONTRIBUTING.md) for how to get a change in.
 
@@ -29,17 +34,20 @@ interested.
 
 ## Bus factor
 
-This project currently has a bus factor of 1 - everything (releases, security response, merge
-access) depends on one person. That's a real risk for anyone depending on Ordo in production, not
-something to understate. Two things mitigate it today:
+This project is effectively maintained by one person day to day - a real risk for anyone
+depending on Ordo in production, not something to understate. Three things mitigate it:
 
+- [@moston](https://github.com/moston) holds standing Write access to this repository as a backup
+  maintainer (see "Roles" above) - able to merge a pull request, close out issues, or cut a
+  release without waiting on the primary maintainer.
 - The project is FLOSS (OSL-3.0) and hosted on GitHub - anyone can fork it and continue
   independently if the original project goes unmaintained.
 - See [SECURITY.md](SECURITY.md) for how to report a vulnerability even if general maintenance has
   slowed.
 
-There's no additional continuity arrangement (e.g. a documented key/credential handoff plan)
-beyond that today.
+This doesn't yet extend to every form of continuity (e.g. there's no documented handoff plan for
+the ordo.marketing domain registrar or Adobe Commerce Marketplace publisher account) - repo-level
+continuity (issues, pull requests, releases) is what's covered today.
 
 ## Code of conduct
 
