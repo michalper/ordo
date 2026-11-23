@@ -73,8 +73,20 @@ class SendAbandonedCartFallbackReminders
                 continue;
             }
 
-            $this->sendFallback($channel, $row);
-            $attempted++;
+            try {
+                $this->sendFallback($channel, $row);
+                $attempted++;
+            } catch (\Throwable $e) {
+                // Unclaim on failure - a transient error anywhere upstream of the actual
+                // provider-send call (consent lookup, quiet-hours/frequency-cap gates, phone
+                // number resolution) would otherwise leave this row permanently marked as
+                // "fallback sent" despite nothing having been sent, with no future retry.
+                $this->unclaimFallback((int) $row['log_entity_id']);
+                $this->cronRunLogger->logFailure(
+                    sprintf('send abandoned-cart fallback to customer #%d', (int) $row['customer_id']),
+                    $e
+                );
+            }
         }
 
         $this->cronRunLogger->logSummary(sprintf(
@@ -142,6 +154,14 @@ class SendAbandonedCartFallbackReminders
         );
 
         return $affectedRows === 1;
+    }
+
+    private function unclaimFallback(int $logEntityId): void
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('ordo_abandoned_cart_reminder_log');
+
+        $connection->update($table, ['fallback_sent_at' => null], ['entity_id = ?' => $logEntityId]);
     }
 
     /**

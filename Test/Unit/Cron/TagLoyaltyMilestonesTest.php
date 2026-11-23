@@ -62,9 +62,10 @@ class TagLoyaltyMilestonesTest extends TestCase
         ]);
 
         $addedTags = [];
-        $tagManager->method('addTag')->willReturnCallback(
-            function (int $customerId, string $tag) use (&$addedTags): void {
+        $tagManager->method('addTagIfAbsent')->willReturnCallback(
+            function (int $customerId, string $tag) use (&$addedTags): bool {
                 $addedTags[] = [$customerId, $tag];
+                return true;
             }
         );
 
@@ -115,9 +116,10 @@ class TagLoyaltyMilestonesTest extends TestCase
         $tagManager->method('getCustomerIdsWithTag')->willReturn([]);
 
         $addedTags = [];
-        $tagManager->method('addTag')->willReturnCallback(
-            function (int $customerId, string $tag) use (&$addedTags): void {
+        $tagManager->method('addTagIfAbsent')->willReturnCallback(
+            function (int $customerId, string $tag) use (&$addedTags): bool {
                 $addedTags[] = [$customerId, $tag];
+                return true;
             }
         );
 
@@ -166,9 +168,10 @@ class TagLoyaltyMilestonesTest extends TestCase
         $tagManager->method('getCustomerIdsWithTag')->willReturn([]);
 
         $addedTags = [];
-        $tagManager->method('addTag')->willReturnCallback(
-            function (int $customerId, string $tag) use (&$addedTags): void {
+        $tagManager->method('addTagIfAbsent')->willReturnCallback(
+            function (int $customerId, string $tag) use (&$addedTags): bool {
                 $addedTags[] = [$customerId, $tag];
+                return true;
             }
         );
 
@@ -197,7 +200,7 @@ class TagLoyaltyMilestonesTest extends TestCase
 
         $tagManager = $this->createMock(CustomerTagManager::class);
         $tagManager->method('getCustomerIdsWithTagFromSet')->willReturn([3]);
-        $tagManager->expects(self::never())->method('addTag');
+        $tagManager->expects(self::never())->method('addTagIfAbsent');
 
         $scoreManager = $this->createStub(CustomerScoreManager::class);
         $scoreManager->method('getCustomerIdsWithScoreAtLeast')->willReturn([]);

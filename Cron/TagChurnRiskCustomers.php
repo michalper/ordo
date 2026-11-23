@@ -52,8 +52,14 @@ class TagChurnRiskCustomers
 
         $tagged = 0;
         foreach ($atRiskIds as $customerId) {
-            if (!isset($alreadyTagged[$customerId])) {
-                $this->customerTagManager->addTag($customerId, self::TAG_CHURN_RISK);
+            // addTagIfAbsent(), not addTag() - see TagInactiveCustomers' identical fix/comment:
+            // the pre-check above is a plain SELECT with no lock, so two overlapping cron runs
+            // could both pass it before either inserts.
+            if (isset($alreadyTagged[$customerId])) {
+                continue;
+            }
+
+            if ($this->customerTagManager->addTagIfAbsent($customerId, self::TAG_CHURN_RISK)) {
                 $tagged++;
             }
         }

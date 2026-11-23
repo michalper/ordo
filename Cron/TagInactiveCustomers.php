@@ -65,8 +65,15 @@ class TagInactiveCustomers
 
         $tagged = 0;
         foreach ($stillInactiveIds as $customerId) {
-            if (!isset($alreadyTagged[$customerId])) {
-                $this->customerTagManager->addTag($customerId, self::TAG_INACTIVE);
+            // addTagIfAbsent(), not addTag() - this loop's own $alreadyTagged pre-check is a
+            // plain SELECT with no lock, so two overlapping cron runs could both pass it before
+            // either inserts; the atomic claim avoids an uncaught unique-constraint exception
+            // aborting the rest of this run for whichever run loses that race.
+            if (isset($alreadyTagged[$customerId])) {
+                continue;
+            }
+
+            if ($this->customerTagManager->addTagIfAbsent($customerId, self::TAG_INACTIVE)) {
                 $tagged++;
             }
         }

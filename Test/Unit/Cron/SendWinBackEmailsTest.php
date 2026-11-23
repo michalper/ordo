@@ -139,7 +139,7 @@ class SendWinBackEmailsTest extends TestCase
         $tagManager = $this->createMock(CustomerTagManager::class);
         $tagManager->method('getCustomerIdsWithTag')->willReturnMap([[TagInactiveCustomers::TAG_INACTIVE, [5]]]);
         $tagManager->method('getCustomerIdsWithTagFromSet')->willReturn([5]);
-        $tagManager->expects(self::never())->method('addTag');
+        $tagManager->expects(self::never())->method('addTagIfAbsent');
 
         $this->makeCron($config, $tagManager)->execute();
     }
@@ -152,7 +152,8 @@ class SendWinBackEmailsTest extends TestCase
         $tagManager = $this->createMock(CustomerTagManager::class);
         $tagManager->method('getCustomerIdsWithTag')->willReturn([5]);
         $tagManager->method('getCustomerIdsWithTagFromSet')->willReturn([]);
-        $tagManager->expects(self::once())->method('addTag')->with(5, SendWinBackEmails::TAG_WIN_BACK_SENT);
+        $tagManager->expects(self::once())->method('addTagIfAbsent')
+            ->with(5, SendWinBackEmails::TAG_WIN_BACK_SENT)->willReturn(true);
 
         $this->makeCron($config, $tagManager)->execute();
     }
@@ -170,7 +171,7 @@ class SendWinBackEmailsTest extends TestCase
         $tagManager = $this->createMock(CustomerTagManager::class);
         $tagManager->method('getCustomerIdsWithTag')->willReturn([5]);
         $tagManager->method('getCustomerIdsWithTagFromSet')->willReturn([]);
-        $tagManager->expects(self::never())->method('addTag');
+        $tagManager->expects(self::never())->method('addTagIfAbsent');
 
         $customer = $this->createStub(CustomerInterface::class);
         $customer->method('getId')->willReturn(5);
@@ -206,7 +207,8 @@ class SendWinBackEmailsTest extends TestCase
         $tagManager->method('getCustomerIdsWithTagFromSet')->willReturn([]);
         // Claimed (tagged) BEFORE the send attempt, then rolled back since the send fails - see
         // SendWinBackEmails' own "claim before sending" comment.
-        $tagManager->expects(self::once())->method('addTag')->with(5, SendWinBackEmails::TAG_WIN_BACK_SENT);
+        $tagManager->expects(self::once())->method('addTagIfAbsent')
+            ->with(5, SendWinBackEmails::TAG_WIN_BACK_SENT)->willReturn(true);
         $tagManager->expects(self::once())->method('removeTag')->with(5, SendWinBackEmails::TAG_WIN_BACK_SENT);
 
         $customer = $this->createStub(CustomerInterface::class);
@@ -240,7 +242,7 @@ class SendWinBackEmailsTest extends TestCase
         $tagManager = $this->createMock(CustomerTagManager::class);
         $tagManager->method('getCustomerIdsWithTag')->willReturn([5]);
         $tagManager->method('getCustomerIdsWithTagFromSet')->willReturn([]);
-        $tagManager->expects(self::never())->method('addTag');
+        $tagManager->expects(self::never())->method('addTagIfAbsent');
 
         $customerMapBuilder = $this->makeCustomerMapBuilder([]);
 
@@ -252,6 +254,45 @@ class SendWinBackEmailsTest extends TestCase
             $tagManager,
             $customerMapBuilder,
             $this->makeEmailSender($this->createStub(TransportBuilder::class)),
+            $this->makeConsentManager(),
+            $this->createStub(TriggerOutcomeLogger::class),
+            $this->makeCronRunLogger($logger),
+            $this->makeCustomerStoreResolver()
+        ))->execute();
+    }
+
+    /**
+     * Regression: addTagIfAbsent() returning false means another process (or an overlapping run
+     * of this same cron) already claimed this customer concurrently - this cron must not then
+     * send anyway, which would double-send the email.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSkipsCustomerWhoLostTheClaimRace(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isLifecycleEmailsEnabled')->willReturn(true);
+
+        $tagManager = $this->createMock(CustomerTagManager::class);
+        $tagManager->method('getCustomerIdsWithTag')->willReturn([5]);
+        $tagManager->method('getCustomerIdsWithTagFromSet')->willReturn([]);
+        $tagManager->expects(self::once())->method('addTagIfAbsent')
+            ->with(5, SendWinBackEmails::TAG_WIN_BACK_SENT)->willReturn(false);
+        $tagManager->expects(self::never())->method('removeTag');
+
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getId')->willReturn(5);
+
+        $transportBuilder = $this->createMock(TransportBuilder::class);
+        $transportBuilder->expects(self::never())->method('setTemplateIdentifier');
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::never())->method('error');
+
+        (new SendWinBackEmails(
+            $config,
+            $tagManager,
+            $this->makeCustomerMapBuilder([$customer]),
+            $this->makeEmailSender($transportBuilder),
             $this->makeConsentManager(),
             $this->createStub(TriggerOutcomeLogger::class),
             $this->makeCronRunLogger($logger),

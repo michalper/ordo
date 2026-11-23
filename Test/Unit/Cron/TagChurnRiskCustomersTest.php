@@ -49,8 +49,8 @@ class TagChurnRiskCustomersTest extends TestCase
         $tagManager->method('getCustomerIdsWithTagFromSet')->willReturnMap([
             [[5], TagChurnRiskCustomers::TAG_CHURN_RISK, []],
         ]);
-        $tagManager->expects(self::once())->method('addTag')
-            ->with(5, TagChurnRiskCustomers::TAG_CHURN_RISK);
+        $tagManager->expects(self::once())->method('addTagIfAbsent')
+            ->with(5, TagChurnRiskCustomers::TAG_CHURN_RISK)->willReturn(true);
         $tagManager->method('getCustomerIdsWithTag')->willReturnMap([
             [TagChurnRiskCustomers::TAG_CHURN_RISK, [9]],
         ]);

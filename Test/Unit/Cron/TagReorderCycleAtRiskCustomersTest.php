@@ -49,8 +49,8 @@ class TagReorderCycleAtRiskCustomersTest extends TestCase
         $tagManager->method('getCustomerIdsWithTagFromSet')->willReturnMap([
             [[5], TagReorderCycleAtRiskCustomers::TAG_REORDER_AT_RISK, []],
         ]);
-        $tagManager->expects(self::once())->method('addTag')
-            ->with(5, TagReorderCycleAtRiskCustomers::TAG_REORDER_AT_RISK);
+        $tagManager->expects(self::once())->method('addTagIfAbsent')
+            ->with(5, TagReorderCycleAtRiskCustomers::TAG_REORDER_AT_RISK)->willReturn(true);
         $tagManager->method('getCustomerIdsWithTag')->willReturnMap([
             [TagReorderCycleAtRiskCustomers::TAG_REORDER_AT_RISK, [9]],
         ]);

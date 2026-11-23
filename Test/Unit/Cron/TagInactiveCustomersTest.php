@@ -63,7 +63,8 @@ class TagInactiveCustomersTest extends TestCase
 
         $tagManager = $this->createMock(CustomerTagManager::class);
         $tagManager->method('hasTag')->willReturnMap([[5, TagInactiveCustomers::TAG_INACTIVE, false]]);
-        $tagManager->expects(self::once())->method('addTag')->with(5, TagInactiveCustomers::TAG_INACTIVE);
+        $tagManager->expects(self::once())->method('addTagIfAbsent')
+            ->with(5, TagInactiveCustomers::TAG_INACTIVE)->willReturn(true);
         $tagManager->method('getCustomerIdsWithTag')->willReturnMap([[TagInactiveCustomers::TAG_INACTIVE, [9]]]);
         $tagManager->expects(self::exactly(2))->method('removeTag')->willReturnCallback(
             function (int $customerId, string $tag) {
