@@ -21,6 +21,10 @@ class Approve extends AbstractApprovalAction
 
     public function execute()
     {
+        if (!$this->isPostRequest()) {
+            return $this->renderConfirmPage();
+        }
+
         $token = $this->getRequest()->getParam('token');
         $token = is_string($token) ? $token : '';
 

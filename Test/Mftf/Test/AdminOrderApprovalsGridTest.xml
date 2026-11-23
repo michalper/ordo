@@ -63,8 +63,12 @@
 
         <!-- Step 4: follow the GRID's own link - the real, merchant-visible proof only a
              genuinely correct getDecisionLinksById() call, rendered into a real working href by
-             this grid's own column, could have produced. -->
+             this grid's own column, could have produced. The link itself only renders a
+             confirmation page (GET) - the actual decision needs a real POST, the same button
+             click AdminApproveOrderViaEmailTest performs for the emailed link. -->
         <amOnUrl url="{$grabGridApproveUrl}" stepKey="followGridApproveLink"/>
+        <waitForPageLoad stepKey="waitForConfirmPage"/>
+        <click selector=".block-ordo-order-approval button" stepKey="clickConfirmApproval"/>
         <waitForPageLoad stepKey="waitForRedirect"/>
         <see selector=".message-success" userInput="has been approved" stepKey="seeApprovalSuccessMessage"/>
 

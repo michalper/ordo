@@ -1,0 +1,46 @@
+<?php
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \Magento\Framework\Escaper $escaper */
+
+// Which decision this page confirms - set per layout handle (ordo_approval_approve.xml /
+// ordo_approval_reject.xml), not read from the request, so this page's own content can never be
+// influenced by anything in the URL. The token itself is never read or validated here - see
+// Controller\Approval\AbstractApprovalAction's own docblock for why: this page only has to be
+// safe to prefetch, which it is as long as it does nothing but render a form.
+$isApprove = $block->getData('decision') === 'approve';
+$token = (string) $block->getRequest()->getParam('token', '');
+?>
+<!--
+    Same Luma-classes-plus-inert-Tailwind-utility-classes dual styling as consent/index.phtml -
+    see that template's own comment for why no separate Hyvä compatibility module is needed here.
+-->
+<div class="block block-ordo-order-approval lg:mb-4">
+    <div class="block-title lg:mb-4 lg:text-lg lg:font-semibold">
+        <strong>
+            <?= $isApprove
+                ? $escaper->escapeHtml(__('Approve this order?'))
+                : $escaper->escapeHtml(__('Reject this order?')) ?>
+        </strong>
+    </div>
+    <div class="block-content">
+        <p class="lg:mb-4">
+            <?= $isApprove
+                ? $escaper->escapeHtml(__(
+                    'Click the button below to approve this order and release it for fulfillment.'
+                ))
+                : $escaper->escapeHtml(__(
+                    'Click the button below to reject this order - it will be canceled. This cannot be undone.'
+                )) ?>
+        </p>
+        <form method="post" action="<?= $escaper->escapeUrl(
+            $block->getUrl($isApprove ? 'ordo/approval/approve' : 'ordo/approval/reject')
+        ) ?>">
+            <input type="hidden" name="token" value="<?= $escaper->escapeHtmlAttr($token) ?>"/>
+            <button type="submit" class="action lg:rounded lg:bg-gray-800 lg:px-3 lg:py-1 lg:text-white">
+                <?= $isApprove
+                    ? $escaper->escapeHtml(__('Confirm approval'))
+                    : $escaper->escapeHtml(__('Confirm rejection')) ?>
+            </button>
+        </form>
+    </div>
+</div>

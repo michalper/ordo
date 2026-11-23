@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!--
+    Deliberately NOT extending the "customer_account" handle (same reasoning as
+    ordo_email_unsubscribe.xml) - this page must render for a logged-out email recipient with no
+    account context at all.
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd" layout="1column" cacheable="false">
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="ordo.approval.confirm" template="Ordo_Automation::approval/confirm.phtml">
+                <arguments>
+                    <argument name="decision" xsi:type="string">reject</argument>
+                </arguments>
+            </block>
+        </referenceContainer>
+    </body>
+</page>
