@@ -247,6 +247,42 @@ class CampaignImporterTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testImportSavesASplitActionWithItsVariantsIntact(): void
+    {
+        // 'split' is deliberately never registered in ActionPool (see ActionPool::
+        // splitActionFields()'s docblock) - a re-imported split action must still be kept,
+        // including its nested variant action chains, which live entirely inside params.
+        $variants = [
+            [
+                'key' => 'a',
+                'weight' => 50,
+                'actions' => [
+                    ['type' => 'tag_customer', 'params' => ['tag' => 'variant-a']],
+                ],
+            ],
+            [
+                'key' => 'b',
+                'weight' => 50,
+                'actions' => [
+                    ['type' => 'tag_customer', 'params' => ['tag' => 'variant-b']],
+                ],
+            ],
+        ];
+
+        $this->importer->import([
+            'export_type' => 'ordo_campaign',
+            'name' => 'Welcome Series',
+            'actions' => [
+                ['type' => 'split', 'params' => ['variants' => $variants]],
+            ],
+        ]);
+
+        self::assertCount(1, $this->savedActions);
+        self::assertSame('split', $this->savedActions[0]->getType());
+        self::assertSame($variants, $this->savedActions[0]->getParams()['variants']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testImportDropsAnUnknownActionType(): void
     {
         $this->importer->import([
