@@ -31,52 +31,42 @@ use Ordo\Automation\Model\Segment\SegmentMemberResolver;
  * TRIGGER_SEGMENT_BLAST's own docblock for what that means for a customer who joins the segment
  * after the blast started (they still get it, on a later scan, exactly once).
  */
-class DispatchSegmentBlastCampaigns
+class DispatchSegmentBlastCampaigns extends AbstractTriggerRowClaimedDispatchCron
 {
     private const string CLAIM_TABLE = 'ordo_segment_blast_trigger_claim';
 
     public function __construct(
         private readonly Config $config,
-        private readonly CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory,
+        CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory,
         private readonly SegmentMemberResolver $segmentMemberResolver,
-        private readonly CampaignDispatcher $campaignDispatcher,
-        private readonly ReminderLogStore $reminderLogStore,
-        private readonly CronRunLogger $cronRunLogger
+        CampaignDispatcher $campaignDispatcher,
+        ReminderLogStore $reminderLogStore,
+        CronRunLogger $cronRunLogger
     ) {
+        parent::__construct($campaignTriggerCollectionFactory, $campaignDispatcher, $reminderLogStore, $cronRunLogger);
     }
 
-    public function execute(): void
+    protected function isEnabled(): bool
     {
-        if (!$this->config->isSegmentBlastTriggerEnabled()) {
-            return;
-        }
-
-        $triggers = $this->campaignTriggerCollectionFactory->create();
-        $triggers->addTriggerEventsFilter([CampaignTriggerInterface::TRIGGER_SEGMENT_BLAST]);
-        $triggers->addEnabledCampaignFilter();
-
-        $dispatched = 0;
-        foreach ($triggers as $trigger) {
-            /** @var CampaignTrigger $trigger */
-            try {
-                $dispatched += $this->dispatchForTrigger($trigger);
-            } catch (\Throwable $e) {
-                $this->cronRunLogger->logFailure(
-                    sprintf('scan segment_blast trigger #%d', (int) $trigger->getEntityId()),
-                    $e
-                );
-            }
-        }
-
-        $this->cronRunLogger->logSummary(sprintf('dispatched %d segment_blast trigger(s)', $dispatched));
+        return $this->config->isSegmentBlastTriggerEnabled();
     }
 
-    private function dispatchForTrigger(CampaignTrigger $trigger): int
+    protected function triggerEventCode(): string
+    {
+        return CampaignTriggerInterface::TRIGGER_SEGMENT_BLAST;
+    }
+
+    protected function claimTable(): string
+    {
+        return self::CLAIM_TABLE;
+    }
+
+    protected function candidateCustomerIds(CampaignTrigger $trigger): ?array
     {
         $params = $trigger->getParams();
         $segmentId = $params['segment_id'] ?? null;
         if ($segmentId === null || !is_numeric($segmentId)) {
-            return 0;
+            return null;
         }
 
         $rawScheduledAt = $params['scheduled_at'] ?? '';
@@ -84,42 +74,18 @@ class DispatchSegmentBlastCampaigns
         if ($scheduledAt !== '' && strtotime($scheduledAt) > time()) {
             // Not due yet - the admin scheduled a future start, same gate TRIGGER_SCHEDULED_AT's
             // own ScheduledTriggerScanner applies.
-            return 0;
+            return null;
         }
 
-        $campaignId = $trigger->getCampaignId();
+        return $this->segmentMemberResolver->getMatchingCustomerIds((int) $segmentId);
+    }
 
-        $dispatched = 0;
-        foreach ($this->segmentMemberResolver->getMatchingCustomerIds((int) $segmentId) as $customerId) {
-            $claimRow = ['customer_id' => $customerId, 'campaign_id' => $campaignId];
+    protected function buildClaimRow(CampaignTrigger $trigger, int $customerId): array
+    {
+        // No date window here, unlike customer_inactive's cooldown claim - once claimed, this
+        // (customer, campaign) pair never fires again.
+        $row = ['customer_id' => $customerId, 'campaign_id' => $trigger->getCampaignId()];
 
-            // Claim BEFORE dispatching, not after - a crash between a successful dispatch and
-            // the claim write must never cause a duplicate dispatch on the next scan. No date
-            // window here, unlike customer_inactive's cooldown claim - once claimed, this
-            // (customer, campaign) pair never fires again.
-            if (!$this->reminderLogStore->claim(self::CLAIM_TABLE, $claimRow, $claimRow)) {
-                continue;
-            }
-
-            try {
-                $this->campaignDispatcher->dispatchScheduledTrigger($campaignId, [
-                    'customer_id' => $customerId,
-                    'trigger_event' => CampaignTriggerInterface::TRIGGER_SEGMENT_BLAST,
-                ]);
-                $dispatched++;
-            } catch (\Throwable $e) {
-                $this->reminderLogStore->deleteMatching(self::CLAIM_TABLE, $claimRow);
-                $this->cronRunLogger->logFailure(
-                    sprintf(
-                        'dispatch segment_blast trigger for campaign #%d, customer #%d',
-                        $campaignId,
-                        $customerId
-                    ),
-                    $e
-                );
-            }
-        }
-
-        return $dispatched;
+        return ['match' => $row, 'claim' => $row];
     }
 }

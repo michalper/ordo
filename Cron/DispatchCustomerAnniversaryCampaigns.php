@@ -25,7 +25,7 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as Ca
  * atomic check-then-insert lock - no cooldown config to tune, "already fired this calendar year"
  * is the whole rule.
  */
-class DispatchCustomerAnniversaryCampaigns
+class DispatchCustomerAnniversaryCampaigns extends AbstractTriggerRowClaimedDispatchCron
 {
     private const string CLAIM_TABLE = 'ordo_customer_anniversary_trigger_claim';
     private const string DATE_SOURCE_DOB = 'dob';
@@ -34,87 +34,49 @@ class DispatchCustomerAnniversaryCampaigns
     public function __construct(
         private readonly Config $config,
         private readonly ResourceConnection $resourceConnection,
-        private readonly CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory,
-        private readonly CampaignDispatcher $campaignDispatcher,
-        private readonly ReminderLogStore $reminderLogStore,
-        private readonly CronRunLogger $cronRunLogger
+        CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory,
+        CampaignDispatcher $campaignDispatcher,
+        ReminderLogStore $reminderLogStore,
+        CronRunLogger $cronRunLogger
     ) {
+        parent::__construct($campaignTriggerCollectionFactory, $campaignDispatcher, $reminderLogStore, $cronRunLogger);
     }
 
-    public function execute(): void
+    protected function isEnabled(): bool
     {
-        if (!$this->config->isCustomerAnniversaryTriggerEnabled()) {
-            return;
-        }
-
-        $triggers = $this->campaignTriggerCollectionFactory->create();
-        $triggers->addTriggerEventsFilter([CampaignTriggerInterface::TRIGGER_CUSTOMER_ANNIVERSARY]);
-        $triggers->addEnabledCampaignFilter();
-
-        $dispatched = 0;
-        foreach ($triggers as $trigger) {
-            /** @var CampaignTrigger $trigger */
-            try {
-                $dispatched += $this->dispatchForTrigger($trigger);
-            } catch (\Throwable $e) {
-                $this->cronRunLogger->logFailure(
-                    sprintf('scan customer_anniversary trigger #%d', (int) $trigger->getEntityId()),
-                    $e
-                );
-            }
-        }
-
-        $this->cronRunLogger->logSummary(sprintf('dispatched %d customer_anniversary trigger(s)', $dispatched));
+        return $this->config->isCustomerAnniversaryTriggerEnabled();
     }
 
-    private function dispatchForTrigger(CampaignTrigger $trigger): int
+    protected function triggerEventCode(): string
+    {
+        return CampaignTriggerInterface::TRIGGER_CUSTOMER_ANNIVERSARY;
+    }
+
+    protected function claimTable(): string
+    {
+        return self::CLAIM_TABLE;
+    }
+
+    protected function candidateCustomerIds(CampaignTrigger $trigger): ?array
     {
         $rawDateSource = $trigger->getParams()['date_source'] ?? '';
         $dateSource = is_string($rawDateSource) ? $rawDateSource : '';
         if ($dateSource !== self::DATE_SOURCE_DOB && $dateSource !== self::DATE_SOURCE_REGISTRATION) {
-            return 0;
+            return null;
         }
 
-        $campaignId = $trigger->getCampaignId();
-        $firedYear = (int) date('Y');
+        return $this->findCustomersWithAnniversaryToday($dateSource);
+    }
 
-        $dispatched = 0;
-        foreach ($this->findCustomersWithAnniversaryToday($dateSource) as $customerId) {
-            $matchConditions = [
-                'customer_id = ?' => $customerId,
-                'campaign_id = ?' => $campaignId,
-                'fired_year = ?' => $firedYear,
-            ];
+    protected function buildClaimRow(CampaignTrigger $trigger, int $customerId): array
+    {
+        $row = [
+            'customer_id' => $customerId,
+            'campaign_id' => $trigger->getCampaignId(),
+            'fired_year' => (int) date('Y'),
+        ];
 
-            // Claim BEFORE dispatching, not after - a crash between a successful dispatch and
-            // the claim write must never cause a duplicate dispatch on the next tick. claim()
-            // re-checks "already fired this year" atomically under its own lock, same reasoning
-            // Cron\DispatchCustomerInactiveCampaigns' own cooldown claim has.
-            $claimRow = ['customer_id' => $customerId, 'campaign_id' => $campaignId, 'fired_year' => $firedYear];
-            if (!$this->reminderLogStore->claim(self::CLAIM_TABLE, $matchConditions, $claimRow)) {
-                continue;
-            }
-
-            try {
-                $this->campaignDispatcher->dispatchScheduledTrigger($campaignId, [
-                    'customer_id' => $customerId,
-                    'trigger_event' => CampaignTriggerInterface::TRIGGER_CUSTOMER_ANNIVERSARY,
-                ]);
-                $dispatched++;
-            } catch (\Throwable $e) {
-                $this->reminderLogStore->deleteMatching(self::CLAIM_TABLE, $claimRow);
-                $this->cronRunLogger->logFailure(
-                    sprintf(
-                        'dispatch customer_anniversary trigger for campaign #%d, customer #%d',
-                        $campaignId,
-                        $customerId
-                    ),
-                    $e
-                );
-            }
-        }
-
-        return $dispatched;
+        return ['match' => $row, 'claim' => $row];
     }
 
     /**
