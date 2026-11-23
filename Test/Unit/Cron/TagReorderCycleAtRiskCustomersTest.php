@@ -7,10 +7,9 @@ use Ordo\Automation\Cron\TagReorderCycleAtRiskCustomers;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\CustomerTagManager;
 use Ordo\Automation\Model\ReorderCycle\ReorderCycleDriftCalculator;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class TagReorderCycleAtRiskCustomersTest extends TestCase
 {

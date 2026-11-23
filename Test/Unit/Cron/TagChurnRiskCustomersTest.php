@@ -7,10 +7,9 @@ use Ordo\Automation\Cron\TagChurnRiskCustomers;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ChurnRisk\ChurnRiskCalculator;
 use Ordo\Automation\Model\CustomerTagManager;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
-use Ordo\Automation\Test\Unit\Cron\MakesCronRunLoggerTrait;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class TagChurnRiskCustomersTest extends TestCase
 {
