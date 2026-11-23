@@ -143,6 +143,76 @@ class JsonApiClientTest extends TestCase
     }
 
     /**
+     * Regression: an arbitrary host's response text ending up verbatim in this module's own logs
+     * (OutboundConversionApiSender's logger->error()) and the persisted
+     * ordo_message_send_retry.last_error column would be an information disclosure amplifier if
+     * that host happens to be an internal service reached via SSRF - same reasoning/cap
+     * Model\Push\PushSender already applies to its own logged response text.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPostJsonTruncatesResponseBodyInFailureMessage(): void
+    {
+        $this->curl->method('getStatus')->willReturn(500);
+        $this->curl->method('getBody')->willReturn(str_repeat('a', 500));
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage(
+            'Example API request to https://api.example.com/endpoint failed (HTTP 500): ' . str_repeat('a', 200)
+        );
+
+        $this->client->postJson('https://api.example.com/endpoint', [], [], 'Example API');
+    }
+
+    /**
+     * Regression: SendWebhook's Outbound URL is admin-configurable and therefore a real SSRF
+     * surface (unlike every other caller's fixed API host), so it validates the host and passes
+     * the resolved, validated IP here to pin the real connection - defeating DNS rebinding between
+     * that validation and this request. Every other existing caller passes no $pinnedIp at all,
+     * confirming the new 6th parameter is fully optional and changes nothing for them (see
+     * testPostJsonSendsPayloadAndExtraHeaders above, which omits it).
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPostJsonPinsConnectionWhenGivenAValidatedIp(): void
+    {
+        $capturedOptions = [];
+        $this->curl->method('setOption')->willReturnCallback(
+            function (int $option, mixed $value) use (&$capturedOptions): void {
+                $capturedOptions[$option] = $value;
+            }
+        );
+        $this->curl->method('getStatus')->willReturn(200);
+        $this->curl->method('getBody')->willReturn('{}');
+
+        $this->client->postJson(
+            'https://erp.example.com:8443/inbound',
+            [],
+            [],
+            'Ordo webhook',
+            [],
+            '203.0.113.7'
+        );
+
+        self::assertSame(['erp.example.com:8443:203.0.113.7'], $capturedOptions[CURLOPT_RESOLVE]);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPostJsonDoesNotPinConnectionWhenNoIpGiven(): void
+    {
+        $capturedOptions = [];
+        $this->curl->method('setOption')->willReturnCallback(
+            function (int $option, mixed $value) use (&$capturedOptions): void {
+                $capturedOptions[$option] = $value;
+            }
+        );
+        $this->curl->method('getStatus')->willReturn(200);
+        $this->curl->method('getBody')->willReturn('{}');
+
+        $this->client->postJson('https://erp.example.com/inbound', [], [], 'Ordo webhook');
+
+        self::assertArrayNotHasKey(CURLOPT_RESOLVE, $capturedOptions);
+    }
+
+    /**
      * Regression: a shared Curl instance never clears headers it was told to add, so one
      * caller's Authorization/developer-token headers would otherwise leak into the next,
      * unrelated caller's request within the same process (Cron\SyncAdAudiences calls both
