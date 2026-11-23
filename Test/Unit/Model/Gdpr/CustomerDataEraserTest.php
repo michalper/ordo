@@ -17,7 +17,7 @@ class CustomerDataEraserTest extends TestCase
         $connection->expects(self::once())->method('beginTransaction');
         $connection->expects(self::once())->method('commit');
         $connection->expects(self::never())->method('rollBack');
-        $connection->expects(self::exactly(30))->method('delete')
+        $connection->expects(self::exactly(33))->method('delete')
             ->with(self::callback('is_string'), ['customer_id = ?' => 42])
             ->willReturn(1);
 
@@ -45,6 +45,9 @@ class CustomerDataEraserTest extends TestCase
         self::assertArrayHasKey('ordo_credit_limit_alert_log', $result);
         self::assertArrayHasKey('ordo_review_request_log', $result);
         self::assertArrayHasKey('ordo_referral_code', $result);
+        self::assertArrayHasKey('ordo_wishlist_abandoned_reminder_log', $result);
+        self::assertArrayHasKey('ordo_stalled_payment_reminder_log', $result);
+        self::assertArrayHasKey('ordo_loyalty_points_ledger', $result);
         self::assertSame(1, $result['ordo_customer_tag']);
     }
 
