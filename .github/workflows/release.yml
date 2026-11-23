@@ -5,6 +5,7 @@ name: Auto-release
 # same thing scripts/release.sh already does by hand - so nobody has to remember to run it after
 # a CHANGELOG-update PR merges to main. Forgetting that manual step is exactly what once left
 # 1.6.0 tagged with no visible entry on the Releases page (see scripts/release.sh's own comment).
+# See ADR 0077 for the trade-offs this design accepts.
 #
 # Triggered by every CI workflow that runs on main finishing (not by the push itself) - a release
 # must never be cut off a commit before its own CI has actually gone green, the same gate
@@ -16,6 +17,14 @@ name: Auto-release
 #
 # Does nothing when docs/CHANGELOG.md's newest dated section (right after "## [Unreleased]") is
 # already tagged - i.e. on every ordinary push that isn't itself a "cut a release" PR.
+#
+# Known limitation (see ADR 0077): if update-site fails after release already tagged/published
+# (e.g. a transient Anthropic/WIF outage), there's no automatic retry - that version is
+# permanently past the "already tagged" gate, so a later run can never re-fire update-site for it.
+# Recover manually: re-run just the update-site job from this workflow's own Actions UI (Actions
+# -> this run -> "Re-run jobs" -> "Re-run failed jobs"), which works because update-site's own
+# steps are themselves idempotent (re-running a successful ordo-site PR+merge would just fail
+# harmlessly on a duplicate branch name - safe to retry).
 
 on:
   workflow_run:
@@ -26,6 +35,14 @@ on:
 # actually needs to push a tag and create a release raises it at job level instead.
 permissions:
   contents: read
+
+# Keyed on the commit, not the ref - up to 4 of this workflow's own runs can fire for the same
+# commit (see the comment above), and two running at once could race past the "already tagged"
+# check before either pushes the tag. cancel-in-progress stays false: cancelling one mid-tag-push
+# or mid-cross-repo-PR would be worse than letting it queue behind the one already running.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -41,12 +58,14 @@ jobs:
     outputs:
       released: ${{ steps.publish.outputs.released }}
       version: ${{ steps.version.outputs.version }}
+      notes: ${{ steps.publish.outputs.notes }}
     steps:
+      # fetch-depth left at the default (shallow, depth 1) - nothing below reads git history, only
+      # docs/CHANGELOG.md's working-tree content and the remote's own tags/check-runs via the API.
       - name: Checkout main at the commit CI just finished for
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
-          fetch-depth: 0
 
       - name: Determine the newest dated CHANGELOG version
         id: version
@@ -65,7 +84,7 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          if git ls-remote --tags origin "refs/tags/$VERSION" | grep -q .; then
+          if scripts/is-tagged.sh "$VERSION"; then
             echo "already_tagged=true" >> "$GITHUB_OUTPUT"
             echo "$VERSION is already tagged - nothing to do."
           else
@@ -79,14 +98,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          check_runs="$(gh api "repos/${{ github.repository }}/commits/$SHA/check-runs" --paginate --jq '.check_runs')"
-          total="$(jq -s 'add | length' <<<"$check_runs")"
-          not_green="$(jq -s 'add | [.[] | select(.status != "completed" or (.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral"))] | length' <<<"$check_runs")"
-          if [[ "$total" -eq 0 || "$not_green" -gt 0 ]]; then
-            echo "Not every check is green yet for $SHA ($not_green/$total not successful) - whichever of the other triggering workflows finishes last will retry this."
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-          else
+          if scripts/ci-green.sh "$SHA"; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Whichever of the other triggering workflows finishes last will retry this."
           fi
 
       - name: Tag and publish the GitHub Release
@@ -97,18 +113,22 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           notes_file="$(mktemp)"
-          awk -v ver="$VERSION" '
-            $0 ~ "^## \\[" ver "\\]" { flag=1; next }
-            flag && /^## \[/ { exit }
-            flag { print }
-          ' docs/CHANGELOG.md > "$notes_file"
+          scripts/changelog-section.sh "$VERSION" > "$notes_file"
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "$VERSION" -m "$VERSION"
-          git push origin "$VERSION"
-          gh release create "$VERSION" --title "$VERSION" --notes-file "$notes_file"
+          scripts/tag-and-release.sh "$VERSION" "$notes_file"
 
+          # Randomized delimiter: this content comes from docs/CHANGELOG.md, so a line that
+          # happened to equal a static delimiter would terminate the block early and let
+          # whatever follows it be parsed as extra, attacker- or accident-influenced step
+          # outputs - a known GitHub Actions output-injection footgun.
+          delim="EOF_$(openssl rand -hex 8)"
+          {
+            echo "notes<<$delim"
+            cat "$notes_file"
+            echo "$delim"
+          } >> "$GITHUB_OUTPUT"
           echo "released=true" >> "$GITHUB_OUTPUT"
           echo "Tagged and published $VERSION: https://github.com/${{ github.repository }}/releases/tag/$VERSION"
 
@@ -121,7 +141,12 @@ jobs:
     # plain-language bullets in that established voice, then opens a PR on ordo-site with the
     # result and merges it immediately (no human review step, by explicit instruction - this
     # repo's maintainer would otherwise have to review every single release by hand, defeating
-    # the point of automating this at all).
+    # the point of automating this at all). See ADR 0077.
+    #
+    # Claude's own output is never trusted as markup, regardless of what it returns: the
+    # "Insert the new release block" step below HTML-escapes every line itself and wraps it in
+    # <li> there, so there is no way for the model (or anything upstream of it, like a crafted
+    # CHANGELOG entry) to inject a tag/attribute into a live public page.
     #
     # Authenticates to the Claude API via Workload Identity Federation (console.anthropic.com ->
     # Settings -> Workload identity -> federation rule "ordo-release-workflow", service account
@@ -143,34 +168,12 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - name: Checkout ordo (for its own CHANGELOG section)
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          path: ordo
-
       - name: Checkout ordo-site
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: michalper/ordo-site
           token: ${{ secrets.ORDO_SITE_TOKEN }}
           path: ordo-site
-
-      - name: Extract this release's CHANGELOG section
-        id: notes
-        env:
-          VERSION: ${{ needs.release.outputs.version }}
-        run: |
-          section_file="$(mktemp)"
-          awk -v ver="$VERSION" '
-            $0 ~ "^## \\[" ver "\\]" { flag=1; next }
-            flag && /^## \[/ { exit }
-            flag { print }
-          ' ordo/docs/CHANGELOG.md > "$section_file"
-          {
-            echo "section<<SECTION_EOF"
-            cat "$section_file"
-            echo "SECTION_EOF"
-          } >> "$GITHUB_OUTPUT"
 
       - name: Fetch GitHub OIDC token for Anthropic's WIF issuer
         env:
@@ -192,7 +195,7 @@ jobs:
           ANTHROPIC_WORKSPACE_ID: wrkspc_01SaHM5rCoxs81NixmshgpYp
         run: |
           jwt="$(cat /tmp/gha-anthropic-jwt)"
-          access_token="$(jq -n --arg assertion "$jwt" \
+          http_code="$(jq -n --arg assertion "$jwt" \
             --arg rule "$ANTHROPIC_FEDERATION_RULE_ID" \
             --arg org "$ANTHROPIC_ORGANIZATION_ID" \
             --arg svc "$ANTHROPIC_SERVICE_ACCOUNT_ID" \
@@ -200,10 +203,17 @@ jobs:
             '{grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: $assertion,
               federation_rule_id: $rule, organization_id: $org, service_account_id: $svc,
               workspace_id: $ws}' | \
-            curl -sS https://api.anthropic.com/v1/oauth/token \
-              -H "content-type: application/json" -d @- | jq -r '.access_token // empty')"
+            curl -sS -o /tmp/anthropic-token-response.json -w '%{http_code}' \
+              https://api.anthropic.com/v1/oauth/token \
+              -H "content-type: application/json" -d @-)"
+          if [[ "$http_code" != "200" ]]; then
+            echo "Anthropic token exchange failed with HTTP $http_code - see the authentication log at https://platform.claude.com/settings/workload-identity-federation?tab=history" >&2
+            cat /tmp/anthropic-token-response.json >&2
+            exit 1
+          fi
+          access_token="$(jq -r '.access_token // empty' /tmp/anthropic-token-response.json)"
           if [[ -z "$access_token" ]]; then
-            echo "Anthropic token exchange failed - see the authentication log at https://platform.claude.com/settings/workload-identity-federation?tab=history" >&2
+            echo "Anthropic token exchange returned HTTP 200 but no access_token" >&2
             exit 1
           fi
           echo "::add-mask::$access_token"
@@ -213,7 +223,7 @@ jobs:
         id: rewrite
         env:
           ANTHROPIC_ACCESS_TOKEN: ${{ steps.anthropic_token.outputs.access_token }}
-          CHANGELOG_SECTION: ${{ steps.notes.outputs.section }}
+          CHANGELOG_SECTION: ${{ needs.release.outputs.notes }}
         run: |
           system_prompt="$(cat <<'PROMPT_EOF'
           You rewrite one technical CHANGELOG.md section (Keep-a-Changelog style, full of
@@ -226,48 +236,45 @@ jobs:
           - More resilient campaign scheduling - a failing step in a delayed/quiet-hours campaign no longer risks re-running earlier steps on retry.
           - Zero-party-data surveys now render on the storefront for a custom text/choice question too, not just the NPS score - matching what the campaign builder already let you configure.
 
-          Output ONLY the new bullets as raw HTML <li>...</li> lines, one per line, nothing else -
-          no markdown, no code fences, no preamble, no explanation. Skip anything with zero
-          user-visible effect (internal refactors, test-only changes, CI changes) - if truly
-          nothing in the section is user-visible, output nothing at all.
+          Output ONLY the new bullets as plain text, one per line, nothing else - no HTML tags, no
+          markdown, no code fences, no leading dash or bullet marker, no preamble, no explanation
+          (the caller adds its own <li> wrapper and escapes the text, so raw markup you emit would
+          just render as literal text, not as a tag). Skip anything with zero user-visible effect
+          (internal refactors, test-only changes, CI changes) - if truly nothing in the section is
+          user-visible, output nothing at all.
           PROMPT_EOF
           )"
 
-          response="$(jq -n --arg sys "$system_prompt" --arg user "$CHANGELOG_SECTION" \
+          http_code="$(jq -n --arg sys "$system_prompt" --arg user "$CHANGELOG_SECTION" \
             '{model: "claude-sonnet-5", max_tokens: 1024, system: $sys, messages: [{role: "user", content: $user}]}' | \
-            curl -sS https://api.anthropic.com/v1/messages \
+            curl -sS -o /tmp/claude-response.json -w '%{http_code}' \
+              https://api.anthropic.com/v1/messages \
               -H "authorization: Bearer $ANTHROPIC_ACCESS_TOKEN" \
               -H "anthropic-version: 2026-10-21" \
               -H "content-type: application/json" \
               -d @-)"
 
-          bullets="$(jq -r '.content[0].text // empty' <<<"$response")"
-
-          if [[ -z "$bullets" ]]; then
-            echo "Claude returned no bullets (or the API call failed) - nothing user-visible to add, or something went wrong. Not touching ordo-site." >&2
-            {
-              echo "error<<ERR_EOF"
-              jq -r '.error.message // "empty response"' <<<"$response"
-              echo "ERR_EOF"
-              echo "has_bullets=false"
-            } >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Sanity-check the model's own output before it ever touches a live public page - every
-          # non-blank line must be exactly one <li>...</li>, nothing else, or this is skipped
-          # rather than risking broken HTML on ordo.marketing.
-          if grep -qvE '^\s*(<li>.*</li>)?\s*$' <<<"$bullets"; then
-            echo "Claude's output didn't look like plain <li> lines - not touching ordo-site:" >&2
-            echo "$bullets" >&2
+          if [[ "$http_code" != "200" ]]; then
+            echo "Claude API call failed with HTTP $http_code - not touching ordo-site." >&2
+            cat /tmp/claude-response.json >&2
             echo "has_bullets=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
+          bullets="$(jq -r '.content[0].text // empty' /tmp/claude-response.json)"
+
+          if [[ -z "$bullets" ]]; then
+            echo "Claude returned no bullets - nothing user-visible to add. Not touching ordo-site." >&2
+            echo "has_bullets=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Randomized delimiter - see the "release" job's own comment on this same pattern.
+          delim="EOF_$(openssl rand -hex 8)"
           {
-            echo "bullets<<BULLETS_EOF"
+            echo "bullets<<$delim"
             echo "$bullets"
-            echo "BULLETS_EOF"
+            echo "$delim"
           } >> "$GITHUB_OUTPUT"
           echo "has_bullets=true" >> "$GITHUB_OUTPUT"
 
@@ -280,18 +287,34 @@ jobs:
         run: |
           cd ordo-site
           date="$(date +%Y-%m-%d)"
+
+          anchor='<section class="block" style="border-top:none; padding-top:0;">'
+          if ! grep -qF "$anchor" changelog.html; then
+            echo "Anchor not found in ordo-site/changelog.html - its markup may have changed; update this workflow's own anchor string. Not touching the file." >&2
+            exit 1
+          fi
+
           block_file="$(mktemp)"
           {
             echo "    <div class=\"release\">"
             echo "      <div class=\"release-head\"><span class=\"version\">${VERSION}</span><span class=\"date\">${date}</span></div>"
             echo "      <ul>"
-            while IFS= read -r line; do printf '        %s\n' "$line"; done <<<"$BULLETS"
+            # Claude's reply is plain text, never trusted as markup - every line is HTML-escaped
+            # and wrapped in <li> here, so nothing it returns can ever inject a tag/attribute into
+            # the page (a prior version of this step instead only checked the reply looked like
+            # "<li>...</li>", which a crafted ".*" payload could satisfy while still containing a
+            # live <script> - a real stored-XSS gap on a public page, closed by never trusting the
+            # model with markup at all).
+            while IFS= read -r line; do
+              [[ -z "$line" ]] && continue
+              escaped="$(sed -e 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' <<<"$line")"
+              printf '        <li>%s</li>\n' "$escaped"
+            done <<<"$BULLETS"
             echo "      </ul>"
             echo "    </div>"
             echo
           } > "$block_file"
 
-          anchor='<section class="block" style="border-top:none; padding-top:0;">'
           awk -v anchor="$anchor" -v blockfile="$block_file" '
             { print }
             index($0, anchor) { while ((getline line < blockfile) > 0) print line }
