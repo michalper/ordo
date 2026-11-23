@@ -3,8 +3,13 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Controller\Approval;
 
+use Magento\Framework\App\Action\Context;
+use Magento\Framework\Controller\ResultFactory;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\View\Page\Config as PageConfig;
+use Magento\Framework\View\Page\Title;
+use Magento\Framework\View\Result\Page;
 use Magento\Framework\Webapi\Exception as WebapiException;
 use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
@@ -18,6 +23,7 @@ class ApproveTest extends AbstractFrontendActionTestCase
 {
     private OrderApprovalManagement $orderApprovalManagement;
     private OrderRepositoryInterface $orderRepository;
+    private Page $resultPage;
 
     protected function setUp(): void
     {
@@ -34,10 +40,58 @@ class ApproveTest extends AbstractFrontendActionTestCase
         );
     }
 
+    /**
+     * Same Page-result wiring as Consent\IndexTest's own makeController() - a GET here renders
+     * the confirm page instead of using the shared base class's redirect-only context.
+     */
+    private function makeControllerForGetRequest(): Approve
+    {
+        $this->makeContext();
+
+        $title = $this->createMock(Title::class);
+        $title->expects(self::once())->method('set')->with('Order Approval');
+        $pageConfig = $this->createStub(PageConfig::class);
+        $pageConfig->method('getTitle')->willReturn($title);
+
+        $this->resultPage = $this->createStub(Page::class);
+        $this->resultPage->method('getConfig')->willReturn($pageConfig);
+
+        $this->resultFactory = $this->createMock(ResultFactory::class);
+        $this->resultFactory->expects(self::once())->method('create')
+            ->with(ResultFactory::TYPE_PAGE)
+            ->willReturn($this->resultPage);
+
+        $context = $this->createStub(Context::class);
+        $context->method('getRequest')->willReturn($this->request);
+        $context->method('getMessageManager')->willReturn($this->messageManager);
+        $context->method('getResultFactory')->willReturn($this->resultFactory);
+
+        return new Approve($context, $this->orderApprovalManagement, $this->orderRepository);
+    }
+
+    /**
+     * Regression for a real security gap: a plain GET used to perform the approval directly, so
+     * an automated link-prefetch (corporate email-security gateways, some mail clients) would
+     * silently burn the single-use token before a human ever saw the email. GET must now only
+     * render the confirmation page - never call approveByToken() at all.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteRendersTheConfirmPageWithoutActingOnAGetRequest(): void
+    {
+        $controller = $this->makeControllerForGetRequest();
+        $this->request->method('isPost')->willReturn(false);
+
+        $this->orderApprovalManagement->expects(self::never())->method('approveByToken');
+        $this->orderRepository->expects(self::never())->method('get');
+
+        self::assertSame($this->resultPage, $controller->execute());
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteRedirectsWithErrorWhenTokenInvalid(): void
     {
         $controller = $this->makeController();
+        $this->request->method('isPost')->willReturn(true);
         $this->request->method('getParam')->willReturnMap([['token', '']]);
         $this->orderApprovalManagement->method('approveByToken')
             ->willThrowException(new NoSuchEntityException(__('invalid')));
@@ -52,6 +106,7 @@ class ApproveTest extends AbstractFrontendActionTestCase
     public function testExecuteRedirectsWithErrorWhenOrderCannotBeFound(): void
     {
         $controller = $this->makeController();
+        $this->request->method('isPost')->willReturn(true);
         $this->request->method('getParam')->willReturnMap([['token', 'tok']]);
         $this->orderApprovalManagement->method('approveByToken')
             ->willThrowException(new LocalizedException(__('The order for this approval could not be found.')));
@@ -65,6 +120,7 @@ class ApproveTest extends AbstractFrontendActionTestCase
     public function testExecuteApprovesOrderAndRedirectsWithSuccess(): void
     {
         $controller = $this->makeController();
+        $this->request->method('isPost')->willReturn(true);
         $this->request->method('getParam')->willReturnMap([['token', 'tok']]);
 
         $approval = $this->createStub(OrderApproval::class);
@@ -90,6 +146,7 @@ class ApproveTest extends AbstractFrontendActionTestCase
     public function testExecuteRedirectsWithErrorWhenRateLimited(): void
     {
         $controller = $this->makeController();
+        $this->request->method('isPost')->willReturn(true);
         $this->request->method('getParam')->willReturnMap([['token', 'tok']]);
         $this->orderApprovalManagement->method('approveByToken')->willThrowException(
             new WebapiException(

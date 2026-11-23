@@ -6,7 +6,7 @@
             <features value="Ordo Automation"/>
             <stories value="Order approval"/>
             <title value="A real order over a customer's spend limit is held, and the emailed reject link cancels it"/>
-            <description value="The order-rejection round trip end to end, mirroring AdminApproveOrderViaEmailTest: a real customer with a real spend limit places a real order that exceeds it through storefront checkout, Observer/HoldOrderForApproval.php sends a real email (via MailHog, wired into mftf.yml as a service container + mhsendmail), MailHogHelper.php reads the Reject link's real href straight out of that email exactly as an admin's mail client would show it, and the browser follows it with no login (by design — see AbstractApprovalAction) to confirm the order is genuinely canceled (Model/OrderApprovalManagement::rejectByToken calls $order->cancel()), not just that a token was generated."/>
+            <description value="The order-rejection round trip end to end, mirroring AdminApproveOrderViaEmailTest: a real customer with a real spend limit places a real order that exceeds it through storefront checkout, Observer/HoldOrderForApproval.php sends a real email (via MailHog, wired into mftf.yml as a service container + mhsendmail), MailHogHelper.php reads the Reject link's real href straight out of that email exactly as an admin's mail client would show it, and the browser follows it with no login (by design — see AbstractApprovalAction) and clicks the confirmation page's own button (GET only renders that page - the actual decision requires a real POST, closing a real email-link-prefetch gap) to confirm the order is genuinely canceled (Model/OrderApprovalManagement::rejectByToken calls $order->cancel()), not just that a token was generated."/>
             <severity value="CRITICAL"/>
             <group value="ordo_automation"/>
             <group value="campaign2"/>
@@ -52,8 +52,14 @@
         </helper>
 
         <!-- No login: the reject link is a bearer-token URL by design (AbstractApprovalAction /
-             OrderApprovalManagement) — a busy admin can act from their phone with no session. -->
+             OrderApprovalManagement) — a busy admin can act from their phone with no session.
+             The link itself only renders a confirmation page (GET) - an automated inbox/link
+             scanner prefetching it must not be able to cancel the order on its own, so the real
+             decision only happens once the page's own button is actually clicked (POST). -->
         <amOnUrl url="{$grabRejectUrl}" stepKey="followRejectLink"/>
+        <waitForPageLoad stepKey="waitForConfirmPage"/>
+        <see selector=".block-ordo-order-approval" userInput="Reject this order?" stepKey="seeConfirmPage"/>
+        <click selector=".block-ordo-order-approval button" stepKey="clickConfirmRejection"/>
         <waitForPageLoad stepKey="waitForRedirect"/>
         <see selector=".message-success" userInput="has been rejected and canceled" stepKey="seeRejectionSuccessMessage"/>
 
@@ -68,8 +74,13 @@
 
         <!-- The token is single-use (OrderApprovalManagement::loadPendingApprovalByToken only
              matches a still-pending row) — following the exact same link again must fail, not
-             silently re-reject/re-cancel. -->
+             silently re-reject/re-cancel. The GET itself still renders the same confirm page
+             regardless (it never reads/validates the token at all - see
+             AbstractApprovalAction), so the "already used" outcome only shows up once the
+             button is clicked again. -->
         <amOnUrl url="{$grabRejectUrl}" stepKey="followRejectLinkAgain"/>
+        <waitForPageLoad stepKey="waitForConfirmPageAgain"/>
+        <click selector=".block-ordo-order-approval button" stepKey="clickConfirmRejectionAgain"/>
         <waitForPageLoad stepKey="waitForSecondRedirect"/>
         <see selector=".message-error" userInput="already been used or is invalid" stepKey="seeAlreadyUsedMessage"/>
 

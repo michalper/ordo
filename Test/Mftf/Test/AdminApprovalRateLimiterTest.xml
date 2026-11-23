@@ -39,9 +39,18 @@
             <argument name="toAddress">approver@example.com</argument>
         </helper>
 
+        <!-- Every attempt below is now a GET (renders the confirm page only - never reads or
+             validates the token, see AbstractApprovalAction) followed by clicking that page's
+             own button (the real POST) - enforceRateLimit() only runs once OrderApprovalManagement
+             ::approveByToken() is actually called from the POST branch, so the GET alone no
+             longer counts toward the limit (closing the same email-link-prefetch gap this
+             whole feature exists for - see AdminApproveOrderViaEmailTest). -->
+
         <!-- Step 2: attempt #1 - the token is real and still pending, so this genuinely
              approves the order (and counts as the first rate-limit attempt). -->
         <amOnUrl url="{$grabApproveUrl}" stepKey="followApproveLinkAttempt1"/>
+        <waitForPageLoad stepKey="waitForAttempt1ConfirmPage"/>
+        <click selector=".block-ordo-order-approval button" stepKey="clickConfirmAttempt1"/>
         <waitForPageLoad stepKey="waitForAttempt1Redirect"/>
         <see selector=".message-success" userInput="has been approved" stepKey="seeApprovalSuccessMessage"/>
 
@@ -50,31 +59,53 @@
              is this same attempt #2) - but the rate limiter still counts every one of them,
              regardless of that outcome, since enforceRateLimit() runs before the token lookup. -->
         <amOnUrl url="{$grabApproveUrl}" stepKey="followApproveLinkAttempt2"/>
+        <waitForPageLoad stepKey="waitForAttempt2ConfirmPage"/>
+        <click selector=".block-ordo-order-approval button" stepKey="clickConfirmAttempt2"/>
         <waitForPageLoad stepKey="waitForAttempt2Redirect"/>
         <see selector=".message-error" userInput="already been used or is invalid" stepKey="seeAlreadyUsedAttempt2"/>
         <amOnUrl url="{$grabApproveUrl}" stepKey="followApproveLinkAttempt3"/>
+        <waitForPageLoad stepKey="waitForAttempt3ConfirmPage"/>
+        <click selector=".block-ordo-order-approval button" stepKey="clickConfirmAttempt3"/>
         <waitForPageLoad stepKey="waitForAttempt3Redirect"/>
         <amOnUrl url="{$grabApproveUrl}" stepKey="followApproveLinkAttempt4"/>
+        <waitForPageLoad stepKey="waitForAttempt4ConfirmPage"/>
+        <click selector=".block-ordo-order-approval button" stepKey="clickConfirmAttempt4"/>
         <waitForPageLoad stepKey="waitForAttempt4Redirect"/>
         <amOnUrl url="{$grabApproveUrl}" stepKey="followApproveLinkAttempt5"/>
+        <waitForPageLoad stepKey="waitForAttempt5ConfirmPage"/>
+        <click selector=".block-ordo-order-approval button" stepKey="clickConfirmAttempt5"/>
         <waitForPageLoad stepKey="waitForAttempt5Redirect"/>
         <amOnUrl url="{$grabApproveUrl}" stepKey="followApproveLinkAttempt6"/>
+        <waitForPageLoad stepKey="waitForAttempt6ConfirmPage"/>
+        <click selector=".block-ordo-order-approval button" stepKey="clickConfirmAttempt6"/>
         <waitForPageLoad stepKey="waitForAttempt6Redirect"/>
         <amOnUrl url="{$grabApproveUrl}" stepKey="followApproveLinkAttempt7"/>
+        <waitForPageLoad stepKey="waitForAttempt7ConfirmPage"/>
+        <click selector=".block-ordo-order-approval button" stepKey="clickConfirmAttempt7"/>
         <waitForPageLoad stepKey="waitForAttempt7Redirect"/>
         <amOnUrl url="{$grabApproveUrl}" stepKey="followApproveLinkAttempt8"/>
+        <waitForPageLoad stepKey="waitForAttempt8ConfirmPage"/>
+        <click selector=".block-ordo-order-approval button" stepKey="clickConfirmAttempt8"/>
         <waitForPageLoad stepKey="waitForAttempt8Redirect"/>
         <amOnUrl url="{$grabApproveUrl}" stepKey="followApproveLinkAttempt9"/>
+        <waitForPageLoad stepKey="waitForAttempt9ConfirmPage"/>
+        <click selector=".block-ordo-order-approval button" stepKey="clickConfirmAttempt9"/>
         <waitForPageLoad stepKey="waitForAttempt9Redirect"/>
         <amOnUrl url="{$grabApproveUrl}" stepKey="followApproveLinkAttempt10"/>
+        <waitForPageLoad stepKey="waitForAttempt10ConfirmPage"/>
+        <click selector=".block-ordo-order-approval button" stepKey="clickConfirmAttempt10"/>
         <waitForPageLoad stepKey="waitForAttempt10Redirect"/>
         <see selector=".message-error" userInput="already been used or is invalid" stepKey="seeAlreadyUsedAttempt10"/>
 
         <!-- Step 4: attempt #11 - the count is now genuinely at MAX_ATTEMPTS (10), so this one
              is blocked by the rate limiter itself, before the (still-irrelevant) token lookup
              ever runs - the real, merchant-visible proof only a genuine rate-limit hit could
-             have produced. -->
+             have produced. The GET confirm page itself always renders regardless of rate limit
+             state (it performs no lookup at all), so the limiter can only ever be observed via
+             the POST the button click triggers - same as every attempt above. -->
         <amOnUrl url="{$grabApproveUrl}" stepKey="followApproveLinkAttempt11"/>
+        <waitForPageLoad stepKey="waitForAttempt11ConfirmPage"/>
+        <click selector=".block-ordo-order-approval button" stepKey="clickConfirmAttempt11"/>
         <waitForPageLoad stepKey="waitForAttempt11Redirect"/>
         <see selector=".message-error" userInput="Too many attempts" stepKey="seeRateLimitedMessage"/>
 
