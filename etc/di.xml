@@ -89,6 +89,21 @@
         </arguments>
     </type>
 
+    <!-- Same "pin the abstract's shared constructor arg per concrete subclass" pattern as the
+         ProductFeed controllers above - Observer\AbstractRecordOutcomeOnOrderSave's $outcomeLogger
+         is pinned here instead of each subclass redeclaring its own constructor just to narrow
+         the type, which phpcs's UselessOverridingMethod sniff would otherwise flag. -->
+    <type name="Ordo\Automation\Observer\RecordCampaignOutcome">
+        <arguments>
+            <argument name="outcomeLogger" xsi:type="object">Ordo\Automation\Model\CampaignOutcomeLogger</argument>
+        </arguments>
+    </type>
+    <type name="Ordo\Automation\Observer\RecordTriggerOutcome">
+        <arguments>
+            <argument name="outcomeLogger" xsi:type="object">Ordo\Automation\Model\TriggerOutcomeLogger</argument>
+        </arguments>
+    </type>
+
     <!-- Dedicated SearchResults types so the WebAPI output processor knows what's inside each
          list endpoint's "items" array (the generic SearchResultsInterface can't express this —
          see Api/Data/CampaignSearchResultsInterface.php for why). Bound to a trivial concrete

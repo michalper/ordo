@@ -3,11 +3,6 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Observer;
 
-use Magento\Framework\Event\Observer as EventObserver;
-use Magento\Framework\Event\ObserverInterface;
-use Magento\Sales\Model\Order;
-use Ordo\Automation\Model\CampaignOutcomeLogger;
-
 /**
  * On sales_order_save_after, NOT sales_order_place_after like HoldOrderForApproval (this one is
  * otherwise unrelated to it) - deliberately fires later. \Magento\Sales\Model\Order::place()
@@ -26,22 +21,11 @@ use Ordo\Automation\Model\CampaignOutcomeLogger;
  * Closes the loop on Model\CampaignOutcomeLogger's own sent rows: if this customer was recently
  * sent a campaign message and hasn't converted yet, this order counts as their conversion.
  * First-plausible-match, not exact attribution — see CampaignOutcomeLogger::markActed().
+ *
+ * The parent's own $outcomeLogger argument is pinned to Model\CampaignOutcomeLogger for this
+ * class in etc/di.xml, the same "shared abstract constructor arg pinned per concrete subclass"
+ * pattern Controller\ProductFeed\Index already uses for its own $feedGenerator.
  */
-class RecordCampaignOutcome implements ObserverInterface
+class RecordCampaignOutcome extends AbstractRecordOutcomeOnOrderSave
 {
-    public function __construct(
-        private readonly CampaignOutcomeLogger $campaignOutcomeLogger
-    ) {
-    }
-
-    public function execute(EventObserver $observer): void
-    {
-        /** @var Order|null $order */
-        $order = $observer->getEvent()->getOrder();
-        if (!$order || !$order->getCustomerId() || !$order->getEntityId()) {
-            return;
-        }
-
-        $this->campaignOutcomeLogger->markActed((int) $order->getCustomerId(), (int) $order->getEntityId());
-    }
 }
