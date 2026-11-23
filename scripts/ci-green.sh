@@ -8,12 +8,18 @@
 # Usage: scripts/ci-green.sh <sha>
 # Exits 0 silently if every check-run for <sha> is completed and success/skipped/neutral.
 # Exits 1 and prints a diagnostic to stderr otherwise, including when no check-runs exist yet.
+#
+# Excludes check-runs named "release"/"update-site" (this repo's own Auto-release workflow,
+# release.yml) - a self-referential trap found empirically cutting 1.12.0: the "gate" step that
+# calls this script is itself a step inside the "release" job, so that job's own check-run is
+# still status=in_progress (not "completed") at the exact moment this runs, on every single
+# invocation, making "every check green" permanently unreachable without this exclusion.
 set -euo pipefail
 
 sha="${1:?Usage: scripts/ci-green.sh <sha>}"
 
 check_runs="$(gh api "repos/{owner}/{repo}/commits/$sha/check-runs" --paginate --jq '.check_runs')"
-counts="$(jq -s 'add | {total: length, not_green: ([.[] | select(.status != "completed" or (.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral"))] | length)}' <<<"$check_runs")"
+counts="$(jq -s 'add | map(select(.name != "release" and .name != "update-site")) | {total: length, not_green: ([.[] | select(.status != "completed" or (.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral"))] | length)}' <<<"$check_runs")"
 total="$(jq -r '.total' <<<"$counts")"
 not_green="$(jq -r '.not_green' <<<"$counts")"
 
