@@ -55,10 +55,12 @@ class SendReorderReminders
         $collection->addDueTodayFilter($targetDate);
 
         $cycles = [];
+        $cycleIds = [];
         $customerIds = [];
         foreach ($collection as $cycle) {
             /** @var ReorderCycle $cycle */
             $cycles[] = $cycle;
+            $cycleIds[] = (int) $cycle->getEntityId();
             $customerIds[] = (int) $cycle->getCustomerId();
         }
 
@@ -73,11 +75,19 @@ class SendReorderReminders
             ConsentChannel::Email,
             ConsentTopic::AccountUpdates
         );
+        // Same batching as the consent check above, for the "already sent today" pre-filter -
+        // found via a performance audit.
+        $alreadySentToday = $this->reminderLogStore->fetchExistingIds(
+            self::REMINDER_LOG_TABLE,
+            'reorder_cycle_id',
+            $cycleIds,
+            ['DATE(sent_at) = ?' => date('Y-m-d')]
+        );
 
         $sent = 0;
         foreach ($cycles as $cycle) {
             /** @var ReorderCycle $cycle */
-            if ($this->reminderAlreadySentToday((int) $cycle->getEntityId())) {
+            if (isset($alreadySentToday[(int) $cycle->getEntityId()])) {
                 continue;
             }
 
@@ -99,8 +109,9 @@ class SendReorderReminders
                 // own docblock for why: a crash between a successful send and the log write must
                 // never cause a resend next tick, and a genuine send failure rolls the claim back
                 // so this cycle is retried. claim() (not a plain insert()) re-checks "already sent
-                // today" atomically - the cheap reminderAlreadySentToday() check above is only a
-                // fast pre-filter, not the actual guard against a double-send.
+                // today" atomically - the batched $alreadySentToday check above is only a fast
+                // pre-filter (and, being fetched once up front, can itself already be stale by
+                // the time this exact row is reached), not the actual guard against a double-send.
                 $claimed = $this->reminderLogStore->claimAndRun(
                     self::REMINDER_LOG_TABLE,
                     $this->reminderLogMatchConditions((int) $cycle->getEntityId()),
@@ -145,14 +156,6 @@ class SendReorderReminders
             'sku' => $cycle->getSku(),
             'avg_interval_days' => $cycle->getAvgIntervalDays(),
         ], $this->salesRepEmailContext->getForLoadedCustomer($customer));
-    }
-
-    private function reminderAlreadySentToday(int $reorderCycleId): bool
-    {
-        return $this->reminderLogStore->countMatching(
-            self::REMINDER_LOG_TABLE,
-            $this->reminderLogMatchConditions($reorderCycleId)
-        ) > 0;
     }
 
     /**

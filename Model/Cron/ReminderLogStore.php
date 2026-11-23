@@ -38,6 +38,84 @@ class ReminderLogStore
     }
 
     /**
+     * Batched counterpart of countMatching() for a cron's own "already logged" pre-filter
+     * (SendReorderReminders/SendOfferExpiryReminders) - one query for the whole batch of $ids
+     * instead of one countMatching() call per row inside the caller's own loop, same reasoning
+     * CustomerMapBuilder::build()/ConsentManager::hasTopicConsentForCustomers() already apply to
+     * their own per-row lookups. $staticConditions is for whatever doesn't vary per row in one
+     * cron run (a fixed reminder "type", or a date-only cutoff) - still the real guard is each
+     * caller's own claim()/claimAndRun(), re-checked atomically under lock; this is only ever a
+     * pre-filter, same caveat countMatching() itself already carries for these callers.
+     *
+     * @param int[] $ids
+     * @param array<string, int|string> $staticConditions same shape as countMatching()'s own
+     *   $conditions, ANDed with "$idColumn IN ($ids)" - must not itself filter on $idColumn.
+     * @return array<int, true> every id in $ids that already has a matching row, as a Set (keyed
+     *   by the id, checked with isset() for O(1) lookups in the caller's own loop).
+     */
+    public function fetchExistingIds(string $table, string $idColumn, array $ids, array $staticConditions = []): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        $connection = $this->resourceConnection->getConnection();
+        $select = $connection->select()
+            ->from($this->resourceConnection->getTableName($table), $idColumn)
+            ->where($connection->quoteIdentifier($idColumn) . ' IN (?)', $ids);
+
+        foreach ($staticConditions as $condition => $value) {
+            $select->where($condition, $value);
+        }
+
+        $found = array_map('intval', $connection->fetchCol($select));
+
+        return array_fill_keys($found, true);
+    }
+
+    /**
+     * Same batching as fetchExistingIds(), for a caller whose "already logged" key is a
+     * (row id, per-row group value) pair rather than the row id alone
+     * (SendCreditLimitAlerts: a customer can be alerted again once they cross into a different
+     * utilization band within the same cooldown window, so "already alerted" means "this exact
+     * customer at this exact band", not just "this customer, any band").
+     *
+     * @param int[] $ids
+     * @param array<string, int|string> $staticConditions same shape as countMatching()'s own
+     *   $conditions, ANDed with "$idColumn IN ($ids)" - must not itself filter on $idColumn or
+     *   $groupColumn.
+     * @return array<string, true> every "{id}:{groupValue}" pair that already has a matching row,
+     *   as a Set (checked with isset() for O(1) lookups in the caller's own loop).
+     */
+    public function fetchExistingIdGroupPairs(
+        string $table,
+        string $idColumn,
+        array $ids,
+        string $groupColumn,
+        array $staticConditions = []
+    ): array {
+        if ($ids === []) {
+            return [];
+        }
+
+        $connection = $this->resourceConnection->getConnection();
+        $select = $connection->select()
+            ->from($this->resourceConnection->getTableName($table), [$idColumn, $groupColumn])
+            ->where($connection->quoteIdentifier($idColumn) . ' IN (?)', $ids);
+
+        foreach ($staticConditions as $condition => $value) {
+            $select->where($condition, $value);
+        }
+
+        $pairs = [];
+        foreach ($connection->fetchAll($select) as $row) {
+            $pairs[$row[$idColumn] . ':' . $row[$groupColumn]] = true;
+        }
+
+        return $pairs;
+    }
+
+    /**
      * @param array<string, mixed> $data
      */
     public function insert(string $table, array $data): void

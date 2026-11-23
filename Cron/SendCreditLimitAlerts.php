@@ -67,6 +67,20 @@ class SendCreditLimitAlerts
             ConsentChannel::Email,
             ConsentTopic::AccountUpdates
         );
+        // Same batching as the two lookups above, for the "already alerted" pre-filter - found
+        // via a performance audit. Keyed on (customer_id, threshold_percent) rather than just
+        // customer_id: a customer can be alerted again once they cross into a different
+        // utilization band within the same cooldown window, so this fetches every (customer,
+        // band) pair already alerted within the cooldown up front, not just per-customer.
+        $cooldownDays = $this->config->getCreditLimitAlertCooldownDays();
+        $cooldownCutoff = date('Y-m-d H:i:s', (int) strtotime("-{$cooldownDays} days"));
+        $alertedRecently = $this->reminderLogStore->fetchExistingIdGroupPairs(
+            self::REMINDER_LOG_TABLE,
+            'customer_id',
+            $customerIds,
+            'threshold_percent',
+            ['sent_at >= ?' => $cooldownCutoff]
+        );
 
         foreach ($customerIds as $customerId) {
             if (!isset($customerMap[$customerId])) {
@@ -86,7 +100,7 @@ class SendCreditLimitAlerts
                 continue;
             }
 
-            if ($this->alertedRecently($customerId, $band)) {
+            if (isset($alertedRecently[$customerId . ':' . $band])) {
                 continue;
             }
 
@@ -101,8 +115,8 @@ class SendCreditLimitAlerts
                 // own docblock: a crash between a successful send and the log write must never
                 // cause a duplicate alert next tick, and a genuine send failure rolls the claim
                 // back so this customer/band is retried. claim() (not a plain insert()) re-checks
-                // the cooldown window atomically - the cheap alertedRecently() check above is only
-                // a fast pre-filter, not the actual guard against a double-send.
+                // the cooldown window atomically - the batched $alertedRecently check above is
+                // only a fast pre-filter, not the actual guard against a double-send.
                 $claimed = $this->reminderLogStore->claimAndRun(
                     self::REMINDER_LOG_TABLE,
                     $this->alertLogMatchConditions($customerId, $band),
@@ -142,14 +156,6 @@ class SendCreditLimitAlerts
         }
 
         return null;
-    }
-
-    private function alertedRecently(int $customerId, int $band): bool
-    {
-        return $this->reminderLogStore->countMatching(
-            self::REMINDER_LOG_TABLE,
-            $this->alertLogMatchConditions($customerId, $band)
-        ) > 0;
     }
 
     /**

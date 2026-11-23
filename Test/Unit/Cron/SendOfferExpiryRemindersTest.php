@@ -63,23 +63,32 @@ class SendOfferExpiryRemindersTest extends TestCase
         $connection->method('fetchOne')->willReturnCallback(
             fn ($query) => is_string($query) && str_contains($query, 'GET_LOCK') ? 1 : $countResult
         );
+        // Default: nothing pre-filtered by the batch "already sent" check (fetchExistingIds()) -
+        // a test whose whole point is exercising that check overrides this via stubFetchCol()
+        // below instead of calling this helper.
+        $connection->method('fetchCol')->willReturn([]);
     }
 
     /**
-     * The cheap reminderAlreadySent() pre-check passes (0), but claim()'s own re-check under the
-     * lock returns 1 - another process claimed this offer/reminder-type in between. Only the
-     * count query's second call (the one inside claim()) should see 1.
+     * Another process claimed this exact offer/reminder-type in the window between the batch
+     * pre-filter (fetchExistingIds()) running and claim() itself being reached - claim()'s own
+     * re-check under the lock is the real guard, independent of that pre-filter.
      */
     private function stubFetchOneRaceLostInsideClaim(AdapterInterface $connection): void
     {
-        $countCalls = 0;
-        $connection->method('fetchOne')->willReturnCallback(function ($query) use (&$countCalls) {
-            if (is_string($query) && str_contains($query, 'GET_LOCK')) {
-                return 1;
-            }
-            $countCalls++;
-            return $countCalls > 1 ? 1 : 0;
-        });
+        // GET_LOCK() succeeds, and the real count query (inside claim()) finds the row already
+        // claimed - both branches return a truthy 1, so a single flat stub covers both.
+        $connection->method('fetchOne')->willReturn(1);
+        $connection->method('fetchCol')->willReturn([]);
+    }
+
+    /**
+     * For a test whose own point is the batch "already sent" pre-filter (fetchExistingIds())
+     * itself, not claim()'s own re-check.
+     */
+    private function stubFetchCol(AdapterInterface $connection, array $alreadySentIds): void
+    {
+        $connection->method('fetchCol')->willReturn($alreadySentIds);
     }
 
     /**
@@ -285,6 +294,10 @@ class SendOfferExpiryRemindersTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    /**
+     * Regression: the batch "already sent" pre-filter (fetchExistingIds()) must skip an offer it
+     * already found, before claim()/insert are ever reached.
+     */
     public function testExecuteSkipsAlreadyRemindedOffer(): void
     {
         $config = $this->createStub(Config::class);
@@ -303,7 +316,8 @@ class SendOfferExpiryRemindersTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
-        $this->stubFetchOne($connection, 1);
+        $this->stubFetchCol($connection, [4]);
+        $connection->expects(self::never())->method('fetchOne');
         $connection->expects(self::never())->method('insert');
 
         $resourceConnection = $this->createStub(ResourceConnection::class);

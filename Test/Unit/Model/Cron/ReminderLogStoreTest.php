@@ -47,6 +47,104 @@ class ReminderLogStoreTest extends TestCase
         ]));
     }
 
+    public function testFetchExistingIdsReturnsZeroQueryResultForAnEmptyIdList(): void
+    {
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->expects(self::never())->method('getConnection');
+
+        $store = new ReminderLogStore($resourceConnection);
+
+        self::assertSame([], $store->fetchExistingIds('ordo_offer_reminder_log', 'offer_id', []));
+    }
+
+    public function testFetchExistingIdsAppliesTheIdFilterAndEveryStaticConditionAndReturnsASet(): void
+    {
+        $select = $this->createMock(Select::class);
+        $select->expects(self::once())->method('from')
+            ->with('ordo_offer_reminder_log', 'offer_id')->willReturnSelf();
+        $select->expects(self::exactly(2))->method('where')
+            ->willReturnCallback(function (string $condition, $value) use ($select) {
+                static $call = 0;
+                $call++;
+                if ($call === 1) {
+                    self::assertSame('`offer_id` IN (?)', $condition);
+                    self::assertSame([9, 10], $value);
+                } else {
+                    self::assertSame('reminder_type = ?', $condition);
+                    self::assertSame('expiring_soon', $value);
+                }
+
+                return $select;
+            });
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('quoteIdentifier')->willReturnCallback(fn (string $s) => "`{$s}`");
+        $connection->method('select')->willReturn($select);
+        $connection->expects(self::once())->method('fetchCol')->with($select)->willReturn(['9']);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnArgument(0);
+
+        $store = new ReminderLogStore($resourceConnection);
+
+        self::assertSame(
+            [9 => true],
+            $store->fetchExistingIds(
+                'ordo_offer_reminder_log',
+                'offer_id',
+                [9, 10],
+                ['reminder_type = ?' => 'expiring_soon']
+            )
+        );
+    }
+
+    public function testFetchExistingIdGroupPairsReturnsZeroQueryResultForAnEmptyIdList(): void
+    {
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->expects(self::never())->method('getConnection');
+
+        $store = new ReminderLogStore($resourceConnection);
+
+        self::assertSame(
+            [],
+            $store->fetchExistingIdGroupPairs('ordo_credit_limit_alert_log', 'customer_id', [], 'threshold_percent')
+        );
+    }
+
+    public function testFetchExistingIdGroupPairsReturnsEveryRowKeyedByIdAndGroupValue(): void
+    {
+        $select = $this->createMock(Select::class);
+        $select->expects(self::once())->method('from')
+            ->with('ordo_credit_limit_alert_log', ['customer_id', 'threshold_percent'])->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('quoteIdentifier')->willReturnCallback(fn (string $s) => "`{$s}`");
+        $connection->method('select')->willReturn($select);
+        $connection->expects(self::once())->method('fetchAll')->with($select)->willReturn([
+            ['customer_id' => 5, 'threshold_percent' => 80],
+            ['customer_id' => 7, 'threshold_percent' => 100],
+        ]);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnArgument(0);
+
+        $store = new ReminderLogStore($resourceConnection);
+
+        self::assertSame(
+            ['5:80' => true, '7:100' => true],
+            $store->fetchExistingIdGroupPairs(
+                'ordo_credit_limit_alert_log',
+                'customer_id',
+                [5, 7],
+                'threshold_percent',
+                ['sent_at >= ?' => '2026-01-01 00:00:00']
+            )
+        );
+    }
+
     public function testInsertWritesRowToResolvedTableName(): void
     {
         $connection = $this->createMock(AdapterInterface::class);

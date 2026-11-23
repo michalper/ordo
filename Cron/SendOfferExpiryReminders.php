@@ -57,10 +57,12 @@ class SendOfferExpiryReminders
         $collection->addExpiringOnFilter($targetDate);
 
         $offers = [];
+        $offerIds = [];
         $customerIds = [];
         foreach ($collection as $offer) {
             /** @var Offer $offer */
             $offers[] = $offer;
+            $offerIds[] = (int) $offer->getEntityId();
             $customerIds[] = (int) $offer->getCustomerId();
         }
 
@@ -75,11 +77,19 @@ class SendOfferExpiryReminders
             ConsentChannel::Email,
             ConsentTopic::Promotional
         );
+        // Same batching as the consent check above, for the "already sent" pre-filter - found via
+        // a performance audit.
+        $alreadySent = $this->reminderLogStore->fetchExistingIds(
+            self::REMINDER_LOG_TABLE,
+            'offer_id',
+            $offerIds,
+            ['reminder_type = ?' => self::REMINDER_TYPE_EXPIRING_SOON]
+        );
 
         $sent = 0;
         foreach ($offers as $offer) {
             /** @var Offer $offer */
-            if ($this->reminderAlreadySent((int) $offer->getEntityId(), self::REMINDER_TYPE_EXPIRING_SOON)) {
+            if (isset($alreadySent[(int) $offer->getEntityId()])) {
                 continue;
             }
 
@@ -100,9 +110,9 @@ class SendOfferExpiryReminders
                 // Claim (log) BEFORE sending, not after - a crash between a successful send and
                 // the log write must never cause a resend on the next tick. If the send itself
                 // then fails, the claim is rolled back so this offer is retried next run. claim()
-                // (not a plain insert()) re-checks "already sent" atomically - the cheap
-                // reminderAlreadySent() check above is only a fast pre-filter, not the actual
-                // guard against a double-send.
+                // (not a plain insert()) re-checks "already sent" atomically - the batched
+                // $alreadySent check above is only a fast pre-filter, not the actual guard
+                // against a double-send.
                 $claimed = $this->reminderLogStore->claimAndRun(
                     self::REMINDER_LOG_TABLE,
                     $this->reminderLogMatchConditions(
@@ -150,14 +160,6 @@ class SendOfferExpiryReminders
             'offer_expires_at' => $offer->getExpiresAt(),
             'can_self_extend' => $offer->canSelfExtend($this->config->getOfferMaxSelfExtensions()),
         ], $this->salesRepEmailContext->getForLoadedCustomer($customer));
-    }
-
-    private function reminderAlreadySent(int $offerId, string $type): bool
-    {
-        return $this->reminderLogStore->countMatching(
-            self::REMINDER_LOG_TABLE,
-            $this->reminderLogMatchConditions($offerId, $type)
-        ) > 0;
     }
 
     /**
