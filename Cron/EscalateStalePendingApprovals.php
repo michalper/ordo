@@ -159,9 +159,16 @@ class EscalateStalePendingApprovals
      * current tier, or - once that tier's cap is reached - advances escalation_tier by one and
      * resets reminders_sent to 0 for the new tier's first reminder.
      *
+     * The claim itself is a conditional UPDATE re-checking the exact reminders_sent/
+     * escalation_tier this call just read (OrderApproval::claimEscalation()) - two genuinely
+     * overlapping cron runs (a manual "Run Now" racing the scheduled instance) racing on the same
+     * approval must not both send; the loser's claim affects 0 rows and this returns a null
+     * recipient, same as a chain that's run out of tiers.
+     *
      * @param string[] $chainEmails
      * @return array{0: string|null, 1: bool} [recipient (null if nothing further to do - reminder
-     *   cap reached at the deepest available tier), whether this claim advanced escalation_tier].
+     *   cap reached at the deepest available tier, or this call lost a claim race), whether this
+     *   claim advanced escalation_tier].
      */
     private function claimRecipientEmail(OrderApproval $approval, int $maxRemindersPerTier, array $chainEmails): array
     {
@@ -176,8 +183,16 @@ class EscalateStalePendingApprovals
                 return [null, false];
             }
 
-            $approval->setData('reminders_sent', $remindersSent + 1);
-            $this->orderApprovalResource->save($approval);
+            if (!$this->orderApprovalResource->claimEscalation(
+                $approval,
+                $remindersSent,
+                $tier,
+                $remindersSent + 1,
+                $tier,
+                false
+            )) {
+                return [null, false];
+            }
             return [$recipient, false];
         }
 
@@ -187,9 +202,9 @@ class EscalateStalePendingApprovals
             return [null, false];
         }
 
-        $approval->setData('escalation_tier', $nextTier);
-        $approval->setData('reminders_sent', 1);
-        $this->orderApprovalResource->save($approval);
+        if (!$this->orderApprovalResource->claimEscalation($approval, $remindersSent, $tier, 1, $nextTier, true)) {
+            return [null, false];
+        }
         return [$nextRecipient, true];
     }
 

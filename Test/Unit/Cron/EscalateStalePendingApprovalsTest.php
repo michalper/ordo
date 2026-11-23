@@ -50,6 +50,32 @@ class EscalateStalePendingApprovalsTest extends TestCase
         $this->logger = $this->createMock(LoggerInterface::class);
     }
 
+    /**
+     * Mirrors ResourceModel\OrderApproval::claimEscalation()'s own on-success behavior (which
+     * fields it reflects into the model, and in what order) so these cron-level tests - which
+     * mock the whole OrderApprovalResource - still observe the same setData shape the real
+     * resource model produces.
+     */
+    private function mockClaimEscalationSucceeds(): void
+    {
+        $this->orderApprovalResource->method('claimEscalation')->willReturnCallback(
+            function (
+                OrderApproval $model,
+                int $expectedRemindersSent,
+                int $expectedEscalationTier,
+                int $newRemindersSent,
+                int $newEscalationTier,
+                bool $tierAdvanced
+            ): bool {
+                $model->setData('reminders_sent', $newRemindersSent);
+                if ($tierAdvanced) {
+                    $model->setData('escalation_tier', $newEscalationTier);
+                }
+                return true;
+            }
+        );
+    }
+
     private function makeCron(): EscalateStalePendingApprovals
     {
         return new EscalateStalePendingApprovals(
@@ -149,12 +175,15 @@ class EscalateStalePendingApprovalsTest extends TestCase
             }
         );
 
-        $this->orderApprovalResource->expects(self::once())->method('save')->with($approval);
+        $this->mockClaimEscalationSucceeds();
+        $this->orderApprovalResource->expects(self::once())->method('claimEscalation')
+            ->with($approval, 3, 0, 1, 1, true);
+        $this->orderApprovalResource->expects(self::never())->method('save');
 
         $this->makeCron()->execute();
 
         self::assertSame('tier1@example.com', $sentTo);
-        self::assertSame([['escalation_tier', 1], ['reminders_sent', 1]], $setDataCalls);
+        self::assertSame([['reminders_sent', 1], ['escalation_tier', 1]], $setDataCalls);
     }
 
     /**
@@ -196,13 +225,14 @@ class EscalateStalePendingApprovalsTest extends TestCase
         $orderCollection->method('getIterator')->willReturn(new \ArrayIterator([$order]));
         $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
 
-        $this->orderApprovalResource->expects(self::exactly(2))->method('save')->with($approval);
+        $this->mockClaimEscalationSucceeds();
+        $this->orderApprovalResource->expects(self::once())->method('save')->with($approval);
         $this->logger->expects(self::once())->method('error');
 
         $this->makeCron()->execute();
 
         self::assertSame(
-            [['escalation_tier', 1], ['reminders_sent', 1], ['reminders_sent', 3], ['escalation_tier', 0]],
+            [['reminders_sent', 1], ['escalation_tier', 1], ['reminders_sent', 3], ['escalation_tier', 0]],
             $setDataCalls
         );
     }
@@ -302,6 +332,40 @@ class EscalateStalePendingApprovalsTest extends TestCase
     }
 
     /**
+     * Regression: a genuinely overlapping cron run (a manual "Run Now" racing the scheduled
+     * instance) claims this same approval first - claimEscalation()'s conditional UPDATE sees the
+     * reminders_sent/escalation_tier it expected no longer match and returns false. This run must
+     * not send, must not count the escalation, and must not treat it as a failure to log/retry.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteSkipsWithoutSendingWhenItLosesAGenuineClaimRace(): void
+    {
+        $approval = $this->createMock(OrderApproval::class);
+        $approval->method('getRemindersSent')->willReturn(0);
+        $approval->method('getOrderId')->willReturn(7);
+
+        $collection = $this->createStub(ApprovalCollection::class);
+        $collection->method('addStalePendingFilter');
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$approval]));
+        $this->approvalCollectionFactory->method('create')->willReturn($collection);
+
+        $order = $this->createStub(Order::class);
+        $order->method('getEntityId')->willReturn(7);
+
+        $orderCollection = $this->createStub(OrderCollection::class);
+        $orderCollection->method('addFieldToFilter')->willReturnSelf();
+        $orderCollection->method('getIterator')->willReturn(new \ArrayIterator([$order]));
+        $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
+
+        $this->orderApprovalResource->method('claimEscalation')->willReturn(false);
+        $this->orderApprovalResource->expects(self::never())->method('save');
+        $this->logger->expects(self::never())->method('error');
+        $this->logger->expects(self::once())->method('info')->with(self::stringContains('0 order approval escalations'));
+
+        $this->makeCron()->execute();
+    }
+
+    /**
      * At the cap, with no further chain email configured past the current tier, the approval is
      * skipped entirely - same terminal "sits pending forever" outcome the original single-level
      * behavior had, now reached once the whole configured chain (however long) is exhausted.
@@ -388,7 +452,10 @@ class EscalateStalePendingApprovalsTest extends TestCase
         );
         $this->reminderEmailSender = $sender;
 
-        $this->orderApprovalResource->expects(self::once())->method('save')->with($approval);
+        $this->mockClaimEscalationSucceeds();
+        $this->orderApprovalResource->expects(self::once())->method('claimEscalation')
+            ->with($approval, 0, 0, 1, 0, false);
+        $this->orderApprovalResource->expects(self::never())->method('save');
         $this->logger->expects(self::once())->method('info')->with(self::stringContains('1 order approval escalations'));
 
         $triggerOutcomeLogger = $this->createMock(TriggerOutcomeLogger::class);
@@ -454,7 +521,8 @@ class EscalateStalePendingApprovalsTest extends TestCase
         $orderCollection->method('getIterator')->willReturn(new \ArrayIterator([$order]));
         $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
 
-        $this->orderApprovalResource->expects(self::exactly(2))->method('save')->with($approval);
+        $this->mockClaimEscalationSucceeds();
+        $this->orderApprovalResource->expects(self::once())->method('save')->with($approval);
         $this->logger->expects(self::once())->method('error');
 
         $this->makeCron()->execute();
