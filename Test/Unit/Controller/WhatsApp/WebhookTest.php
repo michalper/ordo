@@ -20,6 +20,7 @@ use Ordo\Automation\Model\ResourceModel\MessageLog\CollectionFactory as MessageL
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate as WhatsAppTemplateResource;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate\Collection as WhatsAppTemplateCollection;
 use Ordo\Automation\Model\ResourceModel\WhatsAppTemplate\CollectionFactory as WhatsAppTemplateCollectionFactory;
+use Ordo\Automation\Model\Webhook\WebhookSignatureValidator;
 use Ordo\Automation\Model\WhatsApp\WhatsAppSignatureValidator;
 use Ordo\Automation\Model\WhatsAppTemplate;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
@@ -82,7 +83,7 @@ class WebhookTest extends AbstractFrontendActionTestCase
             $this->resultRawFactory,
             $this->resultJsonFactory,
             $this->config,
-            new WhatsAppSignatureValidator(),
+            new WhatsAppSignatureValidator(new WebhookSignatureValidator()),
             $this->messageLogCollectionFactory,
             $this->messageLogResource,
             $this->whatsAppTemplateCollectionFactory,
