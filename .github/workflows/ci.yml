@@ -328,6 +328,64 @@ jobs:
         if: ${{ needs.coding-standard-run.result != 'success' && needs.coding-standard-run.result != 'skipped' }}
         run: exit 1
 
+  fuzz-group-walker:
+    # Coverage-guided fuzzing (nikic/php-fuzzer) of GroupWalker::walk() - the shared AND/OR/
+    # nested-group tree-walk behind every campaign/segment condition evaluation, fed the same
+    # JSON-condition-list shape an inbound webhook's or an imported campaign's payload becomes
+    # once decoded (see Test/Fuzz/group_walker_target.php's own docblock for why this target and
+    # not a public, unauthenticated endpoint - those don't do enough custom parsing to be worth
+    # fuzzing). Not in the unit-tests/static-analysis/rector/coding-standard required-check set
+    # and deliberately non-blocking (continue-on-error) for now, same as mutation-testing started
+    # non-blocking to get an honest first baseline before gating on it - a brand-new tool, not
+    # yet proven not to flag its own false positives on this target.
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: "8.4"
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.json') }}
+          restore-keys: |
+            composer-${{ runner.os }}-
+
+      - name: Configure Composer for repo.magento.com
+        env:
+          MAGENTO_COMPOSER_USERNAME: ${{ secrets.MAGENTO_COMPOSER_USERNAME }}
+          MAGENTO_COMPOSER_PASSWORD: ${{ secrets.MAGENTO_COMPOSER_PASSWORD }}
+        run: |
+          composer config repositories.magento composer https://repo.magento.com
+          composer config http-basic.repo.magento.com "$MAGENTO_COMPOSER_USERNAME" "$MAGENTO_COMPOSER_PASSWORD"
+          composer config allow-plugins.magento/composer-dependency-version-audit-plugin true
+          composer config allow-plugins.magento/magento-composer-installer true
+          composer config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer config allow-plugins.infection/extension-installer true
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run php-fuzzer against GroupWalker (bounded, 20000 runs)
+        run: composer fuzz-check
+
+      - name: Upload crash files, if any
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: php-fuzzer-crashes
+          path: crash-*.txt
+          retention-days: 30
+
   trigger-release:
     # One of 4 identical calls (see coverage.yml/api-tests.yml/integration-tests.yml) - release.yml
     # itself de-dupes multiple firings for the same commit (see its own comment). needs: these 4

@@ -34,6 +34,7 @@
         "infection/infection": "0.35.9",
         "magento/magento-coding-standard": "^41",
         "magento/magento2-functional-testing-framework": "^5.0 || ^6.0 || ^7.0",
+        "nikic/php-fuzzer": "^0.0.11",
         "phpstan/phpstan": "2.3.4",
         "phpunit/phpunit": "^12.0 || ^13.0",
         "rector/rector": "2.8.3"
@@ -46,7 +47,11 @@
         "cs-check": "php-cs-fixer fix --dry-run --diff",
         "phpcs-check": "phpcs",
         "phpcs-marketplace-check": "phpcs --standard=Magento2 --extensions=php,phtml --error-severity=10 --warning-severity=0 --ignore-annotations --parallel=4 --ignore=vendor/*,node_modules/*,.magento_cache/* .",
-        "rector-check": "rector process --dry-run"
+        "rector-check": "rector process --dry-run",
+        "fuzz-check": [
+            "php-fuzzer fuzz Test/Fuzz/group_walker_target.php Test/Fuzz/corpus --max-runs=20000",
+            "! ls crash-*.txt > /dev/null 2>&1"
+        ]
     },
     "autoload": {
         "files": ["registration.php"],
