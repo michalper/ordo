@@ -204,6 +204,8 @@ class Config
     private const string XML_PATH_AI_AGENT_ESTIMATED_DELIVERY_DAYS
         = 'ordo_integrations/ai_agent/estimated_delivery_days';
 
+    private const string XML_PATH_EMAIL_ENABLED = 'ordo_channels/email/enabled';
+
     private const string XML_PATH_EMAIL_TEMPLATE_VERSIONING_ENABLED
         = 'ordo_channels/email_template_versioning/enabled';
 
@@ -1360,6 +1362,15 @@ class Config
     public function getAiAgentEstimatedDeliveryDays(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_AI_AGENT_ESTIMATED_DELIVERY_DAYS, 5, $storeId);
+    }
+
+    public function isEmailEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_EMAIL_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
     }
 
     public function isEmailTemplateVersioningEnabled(?int $storeId = null): bool

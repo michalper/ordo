@@ -484,7 +484,12 @@
             <tab>ordo</tab>
             <resource>Ordo_Automation::config</resource>
             <group id="email" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                <label>Email Delivery Tracking (SendGrid)</label>
+                <label>Email</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Master switch for the "Send Email" campaign action - the one channel action this module sends (SMS/push/webhook all already have their own switch above/below) that had none of its own, so a campaign chain couldn't be paused for email alone without disabling the whole campaign or the lifecycle emails setting.</comment>
+                </field>
                 <field id="sendgrid_webhook_verification_key" translate="label comment" type="obscure" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>SendGrid Event Webhook Verification Key</label>
                     <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>

@@ -47,6 +47,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isNpsSurveyEnabled());
         self::assertTrue($this->config->isShoppingFeedEnabled());
         self::assertTrue($this->config->isWebhookEnabled());
+        self::assertTrue($this->config->isEmailEnabled());
         self::assertTrue($this->config->isFreeGiftEnabled());
         self::assertTrue($this->config->isCreditLimitCheckoutBlockEnabled());
         self::assertTrue($this->config->isLeadScoringEnabled());

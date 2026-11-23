@@ -27,6 +27,7 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  merge_group:
 
 # Least-privilege default (OpenSSF Scorecard's Token-Permissions check) - nothing in this
 # workflow needs more than reading the checked-out code.
@@ -212,6 +213,21 @@ jobs:
 
       - name: SonarQube Cloud Scan
         uses: SonarSource/sonarqube-scan-action@59202af334b4ba7b5db01b701b8e79f8b3bef0f4 # v8.5.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      # The scan step above only submits the analysis - it always succeeds regardless of what
+      # it finds, so a new Sonar issue (a code smell, a dropped coverage/duplication threshold
+      # on new code, ...) was never actually failing this job on its own; only SonarCloud's own
+      # dashboard showed it, after the fact. This polls the just-submitted analysis for its real
+      # Quality Gate result (New Code conditions: 0 new bugs/vulnerabilities, maintainability
+      # rating, etc. - see the project's own Quality Gate settings on sonarcloud.io) and fails the
+      # job if it's not PASSED, so a new-code issue actually blocks the PR instead of only
+      # showing up for someone to notice later.
+      - name: SonarQube Cloud Quality Gate check
+        uses: SonarSource/sonarqube-quality-gate-action@7a5fffe8e523c40e0c740b6bc2712ab503e52efa # v1.2.1
+        with:
+          pollingTimeoutSec: 600
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
