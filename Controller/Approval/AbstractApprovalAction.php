@@ -7,6 +7,7 @@ use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\CsrfAwareActionInterface;
+use Magento\Framework\App\Request\Http;
 use Magento\Framework\App\Request\InvalidRequestException;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Controller\Result\Redirect;
@@ -40,6 +41,19 @@ abstract class AbstractApprovalAction extends Action implements
     HttpPostActionInterface,
     CsrfAwareActionInterface
 {
+    /**
+     * getRequest() is typed RequestInterface, which has no isPost() - only the concrete
+     * Http class does. Always Http in a real web request (CsrfAwareActionInterface's own
+     * methods take RequestInterface too, for the same reason), but an instanceof guard keeps
+     * this statically safe instead of asserting the narrower type away.
+     */
+    protected function isPostRequest(): bool
+    {
+        $request = $this->getRequest();
+
+        return $request instanceof Http && $request->isPost();
+    }
+
     protected function redirectHome(string $message, bool $isSuccess = true): Redirect
     {
         if ($isSuccess) {

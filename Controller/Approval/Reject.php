@@ -21,7 +21,7 @@ class Reject extends AbstractApprovalAction
 
     public function execute()
     {
-        if (!$this->getRequest()->isPost()) {
+        if (!$this->isPostRequest()) {
             return $this->renderConfirmPage();
         }
 
