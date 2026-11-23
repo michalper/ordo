@@ -83,6 +83,33 @@ class ScheduledTriggerState
     }
 
     /**
+     * Serializes a single (campaign_id, trigger_event)'s whole due-check + claim + dispatch
+     * sequence against a genuinely overlapping scan (a manual "Run Now" racing the scheduled
+     * instance, or one tick's scan still running when the next tick starts) - without this,
+     * both runs could read this pair's state before either calls markFired(), both decide it's
+     * due, and both dispatch, firing a scheduled_at trigger more than once or a recurring_schedule
+     * trigger twice in the same matching minute. Same GET_LOCK pattern
+     * Model\LoyaltyPointsManager::earnForOrder()/redeem() already use for their own equivalent
+     * races. 5s is generous for a fast read+upsert pair for a single trigger.
+     */
+    public function acquireLock(int $campaignId, string $triggerEvent): bool
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $lockName = 'ordo_scheduled_trigger_' . $campaignId . '_' . $triggerEvent;
+
+        return (bool) $connection->fetchOne('SELECT GET_LOCK(?, 5)', [$lockName]);
+    }
+
+    public function releaseLock(int $campaignId, string $triggerEvent): void
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $lockName = 'ordo_scheduled_trigger_' . $campaignId . '_' . $triggerEvent;
+
+        // phpcs:ignore Magento2.SQL.RawQuery.FoundRawSql
+        $connection->query('SELECT RELEASE_LOCK(?)', [$lockName]);
+    }
+
+    /**
      * Upserts the fired-tracking row - INSERT ... ON DUPLICATE KEY UPDATE rather than a
      * load()-then-save() round trip, since the composite primary key already guarantees
      * uniqueness and this is only ever called right after a scan just confirmed the trigger is
