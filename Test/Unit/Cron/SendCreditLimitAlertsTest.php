@@ -59,23 +59,34 @@ class SendCreditLimitAlertsTest extends TestCase
         $connection->method('fetchOne')->willReturnCallback(
             fn ($query) => is_string($query) && str_contains($query, 'GET_LOCK') ? 1 : $countResult
         );
+        // Default: nothing pre-filtered by the batch "already alerted" check
+        // (fetchExistingIdGroupPairs()) - a test whose whole point is exercising that check
+        // overrides this via stubFetchAll() below instead of calling this helper.
+        $connection->method('fetchAll')->willReturn([]);
     }
 
     /**
-     * The cheap alertedRecently() pre-check passes (0), but claim()'s own re-check under the
-     * lock returns 1 - another process claimed this customer/band in between. Only the count
-     * query's second call (the one inside claim()) should see 1.
+     * Another process claimed this exact customer/band in the window between the batch
+     * pre-filter (fetchExistingIdGroupPairs()) running and claim() itself being reached -
+     * claim()'s own re-check under the lock is the real guard, independent of that pre-filter.
      */
     private function stubFetchOneRaceLostInsideClaim(AdapterInterface $connection): void
     {
-        $countCalls = 0;
-        $connection->method('fetchOne')->willReturnCallback(function ($query) use (&$countCalls) {
-            if (is_string($query) && str_contains($query, 'GET_LOCK')) {
-                return 1;
-            }
-            $countCalls++;
-            return $countCalls > 1 ? 1 : 0;
-        });
+        // GET_LOCK() succeeds, and the real count query (inside claim()) finds the row already
+        // claimed - both branches return a truthy 1, so a single flat stub covers both.
+        $connection->method('fetchOne')->willReturn(1);
+        $connection->method('fetchAll')->willReturn([]);
+    }
+
+    /**
+     * For a test whose own point is the batch "already alerted" pre-filter
+     * (fetchExistingIdGroupPairs()) itself, not claim()'s own re-check.
+     *
+     * @param array<int, array{customer_id: int, threshold_percent: int}> $alertedPairs
+     */
+    private function stubFetchAll(AdapterInterface $connection, array $alertedPairs): void
+    {
+        $connection->method('fetchAll')->willReturn($alertedPairs);
     }
 
     /**
@@ -152,14 +163,26 @@ class SendCreditLimitAlertsTest extends TestCase
         $config = $this->createStub(Config::class);
         $config->method('isCreditLimitAlertEnabled')->willReturn(true);
         $config->method('getCreditLimitWarningThreshold')->willReturn(80);
+        $config->method('getCreditLimitAlertCooldownDays')->willReturn(7);
 
         $calculator = $this->createMock(CreditLimitCalculator::class);
         $calculator->method('getCustomerIdsWithCreditLimit')->willReturn([5]);
         $calculator->method('getUsedCreditForCustomers')->willReturn([5 => 500.0]);
         $calculator->method('getCreditLimitFromCustomer')->willReturn(1000.0);
 
+        // The batch "already alerted" pre-filter (fetchExistingIdGroupPairs()) still runs for
+        // every customer with a credit limit regardless of their own band, same as the
+        // consent/used-credit batches above it - this customer is simply below threshold
+        // (band === null), so claim()/insert must never be reached either way.
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $this->stubFetchAll($connection, []);
+        $connection->expects(self::never())->method('fetchOne');
+        $connection->expects(self::never())->method('insert');
+
         $resourceConnection = $this->createMock(ResourceConnection::class);
-        $resourceConnection->expects(self::never())->method('getConnection');
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
 
         $this->makeCron($config, $calculator, $resourceConnection)->execute();
     }
@@ -243,6 +266,10 @@ class SendCreditLimitAlertsTest extends TestCase
         ))->execute();
     }
 
+    /**
+     * Regression: the batch "already alerted" pre-filter (fetchExistingIdGroupPairs()) must skip
+     * a customer/band pair it already found, before claim()/insert are ever reached.
+     */
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsWhenAlertedRecently(): void
     {
@@ -258,7 +285,9 @@ class SendCreditLimitAlertsTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($this->makeSelect());
-        $this->stubFetchOne($connection, 1);
+        // utilization 120% >= OVER_LIMIT_BAND (100), so this customer's own band is 100.
+        $this->stubFetchAll($connection, [['customer_id' => 5, 'threshold_percent' => 100]]);
+        $connection->expects(self::never())->method('fetchOne');
         $connection->expects(self::never())->method('insert');
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
