@@ -183,15 +183,6 @@ jobs:
             "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.anthropic.com" \
             | jq -r .value > "$ANTHROPIC_IDENTITY_TOKEN_FILE"
 
-      # TEMPORARY debug step - prints the JWT's own claims (not secret: identity info only,
-      # same fields GitHub's own docs show as examples) to find out why the WIF federation
-      # rule's match keeps failing for this workflow_run-triggered job. Remove once diagnosed.
-      - name: DEBUG - print JWT claims
-        run: |
-          payload="$(cut -d. -f2 /tmp/gha-anthropic-jwt)"
-          pad=$(( (4 - ${#payload} % 4) % 4 ))
-          printf '%s' "$payload$(printf '=%.0s' $(seq 1 $pad))" | base64 -d | jq .
-
       - name: Exchange it for a short-lived Anthropic access token
         id: anthropic_token
         env:
