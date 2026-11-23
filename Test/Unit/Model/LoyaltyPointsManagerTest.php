@@ -154,6 +154,21 @@ class LoyaltyPointsManagerTest extends TestCase
     }
 
     #[AllowMockObjectsWithoutExpectations]
+    public function testRedeemThrowsWhenTheRedemptionLockCannotBeAcquired(): void
+    {
+        $this->config->method('isLoyaltyPointsEnabled')->willReturn(true);
+        $this->config->method('getLoyaltyPointsRedemptionCost')->willReturn(500);
+        $this->config->method('getLoyaltyPointsRedemptionRuleId')->willReturn(7);
+        $this->connection->method('fetchOne')->willReturn('0'); // GET_LOCK() -> 0 (not acquired)
+
+        $this->couponGenerator->expects(self::never())->method('generate');
+        $this->connection->expects(self::never())->method('insert');
+        $this->expectException(LocalizedException::class);
+
+        $this->makeManager()->redeem(42);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
     public function testRedeemGeneratesACouponAndInsertsARedeemRow(): void
     {
         $this->config->method('isLoyaltyPointsEnabled')->willReturn(true);
@@ -211,5 +226,27 @@ class LoyaltyPointsManagerTest extends TestCase
             ->with('ordo_loyalty_points_ledger', self::isArray(), ['entity_id = ?' => 1]);
 
         $this->makeManager()->expireOldEarnedPoints(365);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExpireOldEarnedPointsTracksTheRunningBalanceAcrossMultipleRowsForTheSameCustomerWithoutRequeryingIt(): void
+    {
+        $this->connection->method('fetchAll')->willReturn([
+            ['entity_id' => 1, 'customer_id' => 42, 'points_delta' => 100, 'created_at' => '2026-01-01 00:00:00'],
+            ['entity_id' => 2, 'customer_id' => 42, 'points_delta' => 100, 'created_at' => '2026-01-02 00:00:00'],
+        ]);
+        // getBalance() is queried exactly once per unique customer up front (150), not once per
+        // row - the running balance across both rows for customer 42 is tracked in memory below.
+        $this->connection->expects(self::once())->method('fetchOne')->willReturn('150');
+
+        $insertedDeltas = [];
+        $this->connection->expects(self::exactly(2))->method('insert')
+            ->willReturnCallback(function (string $table, array $row) use (&$insertedDeltas) {
+                $insertedDeltas[] = $row['points_delta'];
+            });
+
+        $this->makeManager()->expireOldEarnedPoints(365);
+
+        self::assertSame([-100, -50], $insertedDeltas);
     }
 }

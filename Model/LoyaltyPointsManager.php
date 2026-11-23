@@ -81,14 +81,34 @@ class LoyaltyPointsManager
             throw new LocalizedException(__('Loyalty points redemption is not configured.'));
         }
 
-        if ($this->getBalance($customerId) < $cost) {
-            throw new LocalizedException(__('Not enough points to redeem.'));
+        $connection = $this->resourceConnection->getConnection();
+        $lockName = 'ordo_loyalty_redeem_customer_' . $customerId;
+
+        // The ledger is append-only with no single per-customer row a transaction could lock, so
+        // a plain balance-check-then-insert has a real race: two near-simultaneous selfRedeem()
+        // calls (double-click, or a client retry on a flaky request) could both read the same
+        // balance, both pass the "enough points" check below, and both insert a redeem row,
+        // letting the balance go negative for one redemption's worth of cost. A MySQL named lock
+        // serializes the whole check+insert sequence per customer instead - the same pattern
+        // Model\LeadRouting\LeadAssigner uses for its own read-then-write race. 5s is generous for
+        // a fast read+insert pair for a single customer.
+        if (!(bool) $connection->fetchOne('SELECT GET_LOCK(?, 5)', [$lockName])) {
+            throw new LocalizedException(__('Could not process this redemption right now - please try again.'));
         }
 
-        $couponCode = $this->couponGenerator->generate($ruleId, 'LOYALTY');
-        $this->insertRow($customerId, self::TYPE_REDEEM, -$cost, null, $couponCode);
+        try {
+            if ($this->getBalance($customerId) < $cost) {
+                throw new LocalizedException(__('Not enough points to redeem.'));
+            }
 
-        return $couponCode;
+            $couponCode = $this->couponGenerator->generate($ruleId, 'LOYALTY');
+            $this->insertRow($customerId, self::TYPE_REDEEM, -$cost, null, $couponCode);
+
+            return $couponCode;
+        } finally {
+            // phpcs:ignore Magento2.SQL.RawQuery.FoundRawSql
+            $connection->query('SELECT RELEASE_LOCK(?)', [$lockName]);
+        }
     }
 
     /**
@@ -113,9 +133,20 @@ class LoyaltyPointsManager
                 ->order('created_at ASC')
         );
 
+        // One balance query per unique customer up front, instead of one per row - rows are
+        // processed oldest-first per customer and each expiry only reduces that same customer's
+        // running balance, so tracking it in memory as rows are processed is equivalent to
+        // re-querying SUM(points_delta) after every single row, without the N+1 cost on a cron
+        // that can process many old rows per customer in one run.
+        $customerIds = array_unique(array_map(static fn (array $row): int => (int) $row['customer_id'], $rows));
+        $balances = [];
+        foreach ($customerIds as $customerId) {
+            $balances[$customerId] = $this->getBalance($customerId);
+        }
+
         foreach ($rows as $row) {
             $customerId = (int) $row['customer_id'];
-            $balance = $this->getBalance($customerId);
+            $balance = $balances[$customerId];
 
             if ($balance > 0) {
                 $toExpire = min((int) $row['points_delta'], $balance);
@@ -123,6 +154,7 @@ class LoyaltyPointsManager
                     'Points earned on %s expired.',
                     $row['created_at']
                 ));
+                $balances[$customerId] -= $toExpire;
             }
 
             $connection->update($table, ['expired_at' => date('Y-m-d H:i:s')], ['entity_id = ?' => $row['entity_id']]);
