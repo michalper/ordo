@@ -97,7 +97,18 @@ class DispatchCustomerInactiveCampaigns
             // the claim write must never cause a duplicate dispatch on the next tick. claim()
             // re-checks the cooldown window atomically under its own lock, the same reasoning
             // SendCreditLimitAlerts' own cooldown claim has.
-            $claimRow = ['customer_id' => $customerId, 'campaign_id' => $campaignId];
+            //
+            // fired_at is set explicitly here (rather than left to the column's own
+            // CURRENT_TIMESTAMP default) so it's part of $claimRow - this table is a plain
+            // append-only log, not a one-row-ever claim (a customer can leave and re-enter
+            // inactivity more than once, see this class's own docblock), so on a genuine dispatch
+            // failure below, rolling back via deleteMatching($claimRow) must match only the one
+            // row this claim() call just inserted, not every historical fired_at for this same
+            // (customer_id, campaign_id) pair - which an omitted fired_at would do, silently
+            // wiping this customer's whole cooldown history on a single transient failure. Same
+            // explicit-value pattern DispatchCustomerAnniversaryCampaigns already uses for its own
+            // fired_year.
+            $claimRow = ['customer_id' => $customerId, 'campaign_id' => $campaignId, 'fired_at' => date('Y-m-d H:i:s')];
             if (!$this->reminderLogStore->claim(self::CLAIM_TABLE, $matchConditions, $claimRow)) {
                 continue;
             }
