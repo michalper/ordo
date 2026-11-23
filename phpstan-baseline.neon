@@ -3358,7 +3358,7 @@ parameters:
 		-
 			message: '#^Cannot call method quoteInto\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
 			identifier: method.nonObject
-			count: 1
+			count: 4
 			path: Model/ResourceModel/OrderApproval.php
 
 		-
@@ -3370,7 +3370,7 @@ parameters:
 		-
 			message: '#^Cannot call method update\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
 			identifier: method.nonObject
-			count: 1
+			count: 2
 			path: Model/ResourceModel/OrderApproval.php
 
 		-

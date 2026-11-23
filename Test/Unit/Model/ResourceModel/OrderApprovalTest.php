@@ -119,4 +119,108 @@ class OrderApprovalTest extends AbstractDbTestCase
 
         self::assertFalse($resource->claimPending($model, OrderApprovalModel::STATUS_REJECTED));
     }
+
+    /**
+     * Regression test for a real race-condition bug a code audit found:
+     * Cron\EscalateStalePendingApprovals::claimRecipientEmail() used to load-then-save without a
+     * lock, so two genuinely overlapping cron runs could both claim and send the same escalation.
+     * A tier advance ($tierAdvanced = true) must reflect both reminders_sent and escalation_tier
+     * into the model.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testClaimEscalationUpdatesBothFieldsAndReturnsTrueOnATierAdvance(): void
+    {
+        $connection = $this->createMock(\Magento\Framework\DB\Adapter\AdapterInterface::class);
+        $connection->method('quoteInto')->willReturnCallback(
+            fn (string $sql, $value) => str_replace('?', (string) $value, $sql)
+        );
+        $connection->expects(self::once())->method('update')
+            ->with(
+                'ordo_order_approval',
+                ['reminders_sent' => 1, 'escalation_tier' => 1],
+                'entity_id = 7 AND reminders_sent = 3 AND escalation_tier = 0'
+            )
+            ->willReturn(1);
+
+        $resource = $this->getMockBuilder(OrderApproval::class)
+            ->setConstructorArgs([$this->makeDbContext()])
+            ->onlyMethods(['getConnection'])
+            ->getMock();
+        $resource->method('getConnection')->willReturn($connection);
+
+        $model = $this->createMock(OrderApprovalModel::class);
+        $model->method('getEntityId')->willReturn(7);
+        $setDataCalls = [];
+        $model->method('setData')->willReturnCallback(function ($key, $value) use (&$setDataCalls) {
+            $setDataCalls[] = [$key, $value];
+        });
+
+        self::assertTrue($resource->claimEscalation($model, 3, 0, 1, 1, true));
+        self::assertSame([['reminders_sent', 1], ['escalation_tier', 1]], $setDataCalls);
+    }
+
+    /**
+     * A same-tier reminder ($tierAdvanced = false) must only reflect reminders_sent into the
+     * model - escalation_tier is untouched, matching the pre-atomic-claim code's own distinction
+     * (Cron\EscalateStalePendingApprovals::execute()'s rollback only restores escalation_tier
+     * when a claim actually advanced it).
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testClaimEscalationOnlyUpdatesRemindersSentOnASameTierReminder(): void
+    {
+        $connection = $this->createMock(\Magento\Framework\DB\Adapter\AdapterInterface::class);
+        $connection->method('quoteInto')->willReturnCallback(
+            fn (string $sql, $value) => str_replace('?', (string) $value, $sql)
+        );
+        $connection->expects(self::once())->method('update')
+            ->with(
+                'ordo_order_approval',
+                ['reminders_sent' => 1, 'escalation_tier' => 0],
+                'entity_id = 7 AND reminders_sent = 0 AND escalation_tier = 0'
+            )
+            ->willReturn(1);
+
+        $resource = $this->getMockBuilder(OrderApproval::class)
+            ->setConstructorArgs([$this->makeDbContext()])
+            ->onlyMethods(['getConnection'])
+            ->getMock();
+        $resource->method('getConnection')->willReturn($connection);
+
+        $model = $this->createMock(OrderApprovalModel::class);
+        $model->method('getEntityId')->willReturn(7);
+        $setDataCalls = [];
+        $model->method('setData')->willReturnCallback(function ($key, $value) use (&$setDataCalls) {
+            $setDataCalls[] = [$key, $value];
+        });
+
+        self::assertTrue($resource->claimEscalation($model, 0, 0, 1, 0, false));
+        self::assertSame([['reminders_sent', 1]], $setDataCalls);
+    }
+
+    /**
+     * A genuinely overlapping cron run already claimed this approval first - the conditional
+     * UPDATE's WHERE no longer matches (0 affected rows), and this call must not touch the model
+     * at all.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testClaimEscalationReturnsFalseAndDoesNotTouchTheModelWhenAlreadyClaimedByAnotherRun(): void
+    {
+        $connection = $this->createMock(\Magento\Framework\DB\Adapter\AdapterInterface::class);
+        $connection->method('quoteInto')->willReturnCallback(
+            fn (string $sql, $value) => str_replace('?', (string) $value, $sql)
+        );
+        $connection->method('update')->willReturn(0);
+
+        $resource = $this->getMockBuilder(OrderApproval::class)
+            ->setConstructorArgs([$this->makeDbContext()])
+            ->onlyMethods(['getConnection'])
+            ->getMock();
+        $resource->method('getConnection')->willReturn($connection);
+
+        $model = $this->createMock(OrderApprovalModel::class);
+        $model->method('getEntityId')->willReturn(7);
+        $model->expects(self::never())->method('setData');
+
+        self::assertFalse($resource->claimEscalation($model, 0, 0, 1, 0, false));
+    }
 }
