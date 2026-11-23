@@ -25,6 +25,23 @@ class RetryFailedCampaignActions extends AbstractRetryFailedCron
 {
     public const int MAX_ATTEMPTS = 5;
 
+    /**
+     * Shared across every row this cron run's execute() processes - see
+     * CampaignDispatcher::resumeScheduledAction()'s own docblock on why passing one matters: a
+     * backlog of retries can easily span many rows for the same handful of campaigns (a flaky
+     * action type failing repeatedly across many customers' chains), and without this each row
+     * repeats the same campaign-enabled/resume-row/action-list lookups attempt() -> dueRetries()
+     * -> Cron\RunScheduledCampaignActions already avoids via its own memo. Reset at the start of
+     * each execute() run (not a longer-lived property) so nothing accumulates across runs of a
+     * long-lived process.
+     *
+     * @var array{
+     *     campaign?: array<int, \Ordo\Automation\Model\Campaign|false>,
+     *     plan?: array<string, array{actions: array<int, \Ordo\Automation\Model\CampaignAction>, start: int}|null>
+     * }
+     */
+    private array $lookupMemo = [];
+
     public function __construct(
         private readonly CampaignActionRetryCollectionFactory $campaignActionRetryCollectionFactory,
         CampaignActionRetryResource $campaignActionRetryResource,
@@ -33,6 +50,12 @@ class RetryFailedCampaignActions extends AbstractRetryFailedCron
         CronRunLogger $cronRunLogger
     ) {
         parent::__construct($campaignActionRetryResource, $cronRunLogger);
+    }
+
+    public function execute(): void
+    {
+        $this->lookupMemo = [];
+        parent::execute();
     }
 
     protected function dueRetries(string $now): iterable
@@ -57,7 +80,8 @@ class RetryFailedCampaignActions extends AbstractRetryFailedCron
         $this->campaignDispatcher->resumeScheduledAction(
             $retry->getCampaignId(),
             $retry->getResumeActionId(),
-            $retry->getContext()
+            $retry->getContext(),
+            $this->lookupMemo
         );
 
         return RetryAttemptOutcome::Sent;
