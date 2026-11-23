@@ -153,9 +153,18 @@ class CampaignImporter
     {
         $sortOrder = 0;
         foreach ($actionRows as $row) {
-            if (!is_array($row) || !isset($row['type']) || !is_string($row['type'])
-                || !$this->actionPool->get($row['type']) instanceof ActionInterface
-            ) {
+            if (!is_array($row) || !isset($row['type']) || !is_string($row['type']) || $row['type'] === '') {
+                continue;
+            }
+
+            $type = $row['type'];
+            // 'split' has no ActionPool entry - see ActionPool::splitActionFields()'s own
+            // docblock - so it needs the same exemption from the pool-membership check as
+            // 'group' gets in saveConditions() above. Its variants (and their own nested action
+            // chains) live entirely inside params as an opaque JSON blob, not as separate rows,
+            // so re-saving params as-is (below) already preserves them without any extra
+            // recursion here.
+            if ($type !== 'split' && !$this->actionPool->get($type) instanceof ActionInterface) {
                 continue;
             }
 
@@ -167,7 +176,7 @@ class CampaignImporter
 
             $action = $this->campaignActionFactory->create();
             $action->setCampaignId($campaignId);
-            $action->setType($row['type']);
+            $action->setType($type);
             $action->setParamsJson(is_array($params) ? (json_encode($params) ?: '{}') : '{}');
             $action->setSortOrder($sortOrder++);
             $action->setDelayMinutes(max(0, $delayMinutes));
