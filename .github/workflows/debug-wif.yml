@@ -1,0 +1,50 @@
+name: DEBUG WIF (temporary)
+
+# Temporary, throwaway workflow to diagnose why release.yml's Anthropic WIF token exchange keeps
+# failing with match_subject_prefix - manually dispatchable so it can be iterated on instantly,
+# without waiting for a full release.yml CI cycle each time. Delete once diagnosed.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  debug:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fetch GitHub OIDC token for Anthropic's WIF issuer
+        run: |
+          curl -sS -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.anthropic.com" \
+            | jq -r .value > /tmp/jwt
+
+      - name: Print JWT claims (not secret - identity info only)
+        run: |
+          payload="$(cut -d. -f2 /tmp/jwt)"
+          pad=$(( (4 - ${#payload} % 4) % 4 ))
+          printf '%s' "$payload$(printf '=%.0s' $(seq 1 $pad))" | base64 -d | jq .
+
+      - name: Try the actual token exchange
+        env:
+          ANTHROPIC_FEDERATION_RULE_ID: fdrl_01RjwUQdqfoNHK3Dfz4Y3q7Z
+          ANTHROPIC_ORGANIZATION_ID: 33e309c0-8281-4c45-b19f-5ee1a45e7a0a
+          ANTHROPIC_SERVICE_ACCOUNT_ID: svac_0122Q3QvzxctAnWVsYMR7j4o
+          ANTHROPIC_WORKSPACE_ID: wrkspc_01SaHM5rCoxs81NixmshgpYp
+        run: |
+          jwt="$(cat /tmp/jwt)"
+          http_code="$(jq -n --arg assertion "$jwt" \
+            --arg rule "$ANTHROPIC_FEDERATION_RULE_ID" \
+            --arg org "$ANTHROPIC_ORGANIZATION_ID" \
+            --arg svc "$ANTHROPIC_SERVICE_ACCOUNT_ID" \
+            --arg ws "$ANTHROPIC_WORKSPACE_ID" \
+            '{grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: $assertion,
+              federation_rule_id: $rule, organization_id: $org, service_account_id: $svc,
+              workspace_id: $ws}' | \
+            curl -sS -o /tmp/resp.json -w '%{http_code}' \
+              https://api.anthropic.com/v1/oauth/token \
+              -H "content-type: application/json" -d @-)"
+          echo "HTTP $http_code"
+          cat /tmp/resp.json
