@@ -52,7 +52,7 @@ class OutboundConversionApiSenderTest extends TestCase
     {
         $this->jsonApiClient->expects(self::once())
             ->method('postJson')
-            ->with('https://example.com/events', ['a' => 1], [], 'Example API', [])
+            ->with('https://example.com/events', ['a' => 1], [], 'Example API', [], null)
             ->willReturn([]);
 
         $context = [];
@@ -72,7 +72,7 @@ class OutboundConversionApiSenderTest extends TestCase
     {
         $this->jsonApiClient->expects(self::once())
             ->method('postJson')
-            ->with(self::anything(), self::anything(), self::anything(), self::anything(), ['api_secret'])
+            ->with(self::anything(), self::anything(), self::anything(), self::anything(), ['api_secret'], self::anything())
             ->willReturn([]);
 
         $context = [];
@@ -87,6 +87,35 @@ class OutboundConversionApiSenderTest extends TestCase
             $context,
             $params,
             ['api_secret']
+        );
+    }
+
+    /**
+     * Regression: SendWebhook's Outbound URL is admin-configurable (unlike GA4/Meta's own fixed
+     * API hosts) and is validated/resolved by SendWebhook itself before calling send() - the
+     * resolved IP must reach JsonApiClient::postJson() so it can pin the real connection to it,
+     * defeating DNS rebinding between that validation and the request this class actually makes.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSendForwardsPinnedIpToJsonApiClient(): void
+    {
+        $this->jsonApiClient->expects(self::once())
+            ->method('postJson')
+            ->with(self::anything(), self::anything(), self::anything(), self::anything(), self::anything(), '203.0.113.7')
+            ->willReturn([]);
+
+        $context = [];
+        $params = [];
+        $this->makeSender()->send(
+            'send_webhook',
+            'webhook',
+            5.0,
+            'https://erp.example.com/inbound',
+            [],
+            'Ordo webhook',
+            $context,
+            $params,
+            pinnedIp: '203.0.113.7'
         );
     }
 
