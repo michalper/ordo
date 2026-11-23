@@ -3,9 +3,9 @@
 All notable changes to this module are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/).
 
-When cutting a new version here, also add a short, plain-language entry to
-`ordo-site/changelog.html` (separate repo, deployed to ordo.marketing) —
-it doesn't update itself from this file.
+`ordo-site/changelog.html` (separate repo, deployed to ordo.marketing) gets a short,
+plain-language entry for every tagged version automatically (see `.github/workflows/release.yml`) —
+no manual step needed here anymore.
 
 ## [Unreleased]
 
