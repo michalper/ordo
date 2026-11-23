@@ -440,7 +440,8 @@
         Hard-blocks checkout at the actual submit path (CartManagementInterface::placeOrder,
         the interface QuoteManagement implements) rather than reacting after the order is
         already persisted — see Plugin\Quote\BlockOverLimitCheckout for why this needed to be
-        a before-plugin on the interface instead of an observer like HoldOrderForApproval.
+        an around-plugin (holding a per-customer lock across the real placement call, not just
+        a before-check) on the interface instead of an observer like HoldOrderForApproval.
     -->
     <type name="Magento\Quote\Api\CartManagementInterface">
         <plugin name="ordo_automation_block_over_limit_checkout" type="Ordo\Automation\Plugin\Quote\BlockOverLimitCheckout" sortOrder="10"/>
