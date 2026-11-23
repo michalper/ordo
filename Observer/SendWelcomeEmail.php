@@ -38,7 +38,23 @@ class SendWelcomeEmail implements ObserverInterface
             return;
         }
 
-        $this->customerTagManager->addTag((int) $customer->getId(), self::TAG_NEW_CUSTOMER);
+        // addTag() is check-then-insert with no lock (unlike addTagIfAbsent(), which this
+        // doesn't need - nothing here is a side effect the tag needs to guard against running
+        // twice) - a genuinely overlapping registration-success dispatch for the same customer
+        // could hit the unique (customer_id, tag) constraint and throw. Caught on its own, not
+        // folded into the email send's try/catch below, so each failure is logged distinctly and
+        // a tagging failure never blocks the welcome email that follows (or vice versa) - same
+        // "never let a secondary step crash the native registration request" reasoning the email
+        // send's own catch already has.
+        try {
+            $this->customerTagManager->addTag((int) $customer->getId(), self::TAG_NEW_CUSTOMER);
+        } catch (\Throwable $e) {
+            $this->logger->error(sprintf(
+                'Ordo_Automation: failed to tag new customer #%d: %s',
+                $customer->getId(),
+                $e->getMessage()
+            ));
+        }
 
         try {
             $this->reminderEmailSender->send(
