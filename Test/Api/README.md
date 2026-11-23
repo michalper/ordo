@@ -28,7 +28,7 @@ HTTP calls against a running instance, no mocks) via a portable, self-contained 
 
 Plain PHPUnit classes, configured via environment variables (see `.env.example` at the module root):
 
-```
+```bash
 ORDO_API_BASE_URL=http://php:8080          # no trailing slash
 ORDO_API_ADMIN_USERNAME=admin
 ORDO_API_ADMIN_PASSWORD=...

@@ -32,7 +32,7 @@ Full CRUD. ACL resource: `Ordo_Automation::campaigns` (admin token).
 | PUT    | `/V1/ordo/campaigns/:entityId`           | `CampaignRepositoryInterface::save`       |
 | DELETE | `/V1/ordo/campaigns/:entityId`           | `CampaignRepositoryInterface::deleteById` |
 
-```
+```http
 POST /rest/V1/ordo/campaigns
 {"campaign": {"name": "API Test Campaign", "enabled": true}}
 
@@ -48,7 +48,7 @@ Every `getList`/read endpoint in this module supports Magento's standard `fields
 (`Magento\Framework\Webapi\Rest\Response\FieldsFilter`) to trim the response down to only the
 fields you need — same bracket/comma dot-notation Magento's own core APIs use:
 
-```
+```http
 GET /rest/V1/ordo/campaigns?fields=items[entity_id,name]
 → 200 {"items":[{"entity_id":10,"name":"Win-back"},{"entity_id":11,"name":"VIP welcome"}]}
 ```
@@ -73,7 +73,7 @@ own flat resource, same shape and convention as conditions/actions below. ACL re
 | PUT    | `/V1/ordo/campaign-triggers/:entityId`           | `CampaignTriggerRepositoryInterface::save`       |
 | DELETE | `/V1/ordo/campaign-triggers/:entityId`           | `CampaignTriggerRepositoryInterface::deleteById` |
 
-```
+```http
 POST /rest/V1/ordo/campaign-triggers
 {"trigger": {"campaign_id": 10, "trigger_event": "order_placed"}}
 
@@ -101,7 +101,7 @@ items). ACL resource: `Ordo_Automation::campaigns` (admin token).
 | DELETE                    | `/V1/ordo/campaign-conditions/:entityId`           | `CampaignConditionRepositoryInterface::deleteById` |
 | GET / POST / PUT / DELETE | `/V1/ordo/campaign-actions[/...]`                  | `CampaignActionRepositoryInterface` (same shape)   |
 
-```
+```http
 POST /rest/V1/ordo/campaign-conditions
 {"condition": {"campaign_id": 12, "type": "order_total_gte", "params_json": "{\"amount\":\"500\"}", "sort_order": 0}}
 
@@ -134,7 +134,7 @@ of the specific offer is checked inside the service, not by the route).
 | DELETE | `/V1/ordo/offers/:entityId`            | `OfferRepositoryInterface::deleteById` | admin    |
 | POST   | `/V1/ordo/offers/:offerId/self-extend` | `OfferManagementInterface::selfExtend` | customer |
 
-```
+```http
 POST /rest/V1/ordo/offers/2/self-extend      (customer token)
 → 200 {"entity_id":2,"customer_id":1,"reference":"API-OFR-1","status":"sent","total":100,
        "currency_code":"PLN","expires_at":"2027-01-07 00:00:00","extension_count":1, ...}
@@ -165,7 +165,7 @@ through the API. ACL resource: `Ordo_Automation::config` (admin token).
 | GET    | `/V1/ordo/reorder-cycles?searchCriteria[...]` | `ReorderCycleRepositoryInterface::getList` |
 | GET    | `/V1/ordo/reorder-cycles/:entityId`           | `ReorderCycleRepositoryInterface::getById` |
 
-```
+```http
 GET /rest/V1/ordo/reorder-cycles/1
 → 200 {"entity_id":1,"customer_id":1,"sku":"ordo-test-sku","avg_interval_days":30,
        "last_order_date":"2026-08-25","next_expected_date":"2026-08-28",
@@ -189,7 +189,7 @@ customer self-service.
 | GET    | `/V1/ordo/customers/:customerId/tags/:tag` | `CustomerTagManagementInterface::hasTag`                |
 | GET    | `/V1/ordo/tags/:tag/customers`             | `CustomerTagManagementInterface::getCustomerIdsWithTag` |
 
-```
+```http
 PUT  /rest/V1/ordo/customers/1/tags/vip           → 200 []
 GET  /rest/V1/ordo/customers/1/tags               → 200 ["vip", "engine_e2e_test", ...]
 GET  /rest/V1/ordo/customers/1/tags/vip            → 200 true
@@ -221,7 +221,7 @@ try again."}`. Shared with the equivalent email-link controllers
 (`Controller\Approval\{Approve,Reject}`, reached via the URLs `decision-links` returns) — one
 counter per token+IP regardless of which channel is used to attempt it.
 
-```
+```http
 GET /rest/V1/ordo/order-approvals?searchCriteria[pageSize]=3   (admin token)
 → 200 {"items":[{"entity_id":4,"order_id":8,"admin_email":"admin-approver@example.com",
        "status":"approved","reminders_sent":0,"created_at":"...","decided_at":"...",
@@ -269,7 +269,7 @@ eligibility and picks gifts for their own cart.
 Tiers and gift-pool SKUs are flat resources filterable by `offer_id` via `searchCriteria`, same
 pattern as campaign conditions/actions — not nested under `/free-gift-offers/:id/...`.
 
-```
+```http
 POST /rest/V1/ordo/free-gift-offers          (admin token)
 {"offer": {"name": "Spend more, get more", "enabled": true}}
 → 200 {"entity_id":1,"name":"Spend more, get more","enabled":true, ...}
@@ -304,7 +304,7 @@ parameter with a body that is a single top-level key mapping to a scalar array (
 actually calling the endpoint against a live instance — see `Test/Api/README.md`). A real data
 object sidesteps it.
 
-```
+```http
 
 PUT /rest/V1/ordo/carts/999/free-gifts       (cart belongs to a different customer)
 → 404 {"message":"Cart with id \"999\" does not exist."}
@@ -327,7 +327,7 @@ the customer straight from the token — no id needed, and nothing to enumerate.
 | GET    | `/V1/ordo/credit-limit/mine`                  | `CreditLimitManagementInterface::getMyStatus`          | customer |
 | GET    | `/V1/ordo/customers/:customerId/credit-limit` | `CreditLimitManagementInterface::getStatusForCustomer` | admin    |
 
-```
+```http
 GET /rest/V1/ordo/credit-limit/mine   (customer token)
 → 200 {"credit_limit":1000,"used_credit":300,"available_credit":700,"utilization_percent":30}
 
@@ -363,7 +363,7 @@ on purpose, since an AI agent has no Magento customer/admin session. The real cr
 API key, checked (and rate-limited) by `Plugin\AiAgent\AuthenticateQuoteRequestPlugin` before the
 service method ever runs:
 
-```
+```http
 POST /rest/V1/ordo/ai-agent/quote
 Authorization: Bearer oaa_<the plaintext key from "bin/magento ordo:ai-agent:api-key:generate">
 Content-Type: application/json

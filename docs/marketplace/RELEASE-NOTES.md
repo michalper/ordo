@@ -13,6 +13,7 @@ This release catches the Marketplace listing up from 1.2.0 to the current 1.9.0,
 added since the initial release:
 
 New capabilities:
+
 - Loyalty points — customers earn and redeem an ongoing points balance for coupons, separate from the
   existing tier-based loyalty program
 - Newsletter signup popup for anonymous visitors, tied into real Magento newsletter subscriptions
@@ -48,6 +49,7 @@ already has, plus a small first-party tracking model, covering both B2C lifecycl
 triggers most external marketing-automation tools can't see at all.
 
 B2B features:
+
 - Reorder reminders based on a customer's own purchase history
 - Offer/quote expiry reminders
 - Credit limit alerts, with an optional hard checkout block at 100% utilization
@@ -55,6 +57,7 @@ B2B features:
 - Free gifts above a cart threshold, with cascading tiers
 
 B2C features:
+
 - Abandoned cart recovery
 - Welcome email on registration
 - Win-back / re-engagement emails
@@ -64,6 +67,7 @@ B2C features:
 - Price-drop and back-in-stock alerts
 
 Shared foundation:
+
 - Visual drag-and-drop campaign builder (trigger, conditions, actions)
 - Customer segments, RFM and lead scoring
 - Customer 360 view
@@ -74,5 +78,5 @@ Shared foundation:
 Every feature has its own configuration toggle under Stores > Configuration > Ordo Automation and runs
 on its own schedule, so merchants only turn on what they need.
 
-Full documentation: https://github.com/michalper/ordo/wiki
-Support: https://github.com/michalper/ordo/issues
+Full documentation: <https://github.com/michalper/ordo/wiki>
+Support: <https://github.com/michalper/ordo/issues>

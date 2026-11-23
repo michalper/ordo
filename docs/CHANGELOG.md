@@ -658,6 +658,10 @@ Verified before tagging: full unit suite green (2796 tests), `phpstan analyse` (
 
 ## [1.2.0] - 2026-10-22
 
+<!-- markdownlint-disable MD024 -->
+<!-- This entry bundles several internal iterations into one release, so it legitimately repeats
+     "### Fixed"/"### Changed" within itself (see .markdownlint-cli2.yaml's own MD024 comment). -->
+
 Tagged without this entry at the time (a gap in the usual "cut the CHANGELOG entry before
 tagging" step); backfilled here from the commits actually included (`1.1.0..1.2.0`) once noticed
 while preparing 1.2.1.
@@ -847,7 +851,13 @@ while preparing 1.2.1.
   rebuilds. The MFTF test also now waits for the rebuilt rows before counting them, instead of counting the
   instant the panel element shows.
 
+<!-- markdownlint-enable MD024 -->
+
 ## [1.1.0] - 2026-09-26
+
+<!-- markdownlint-disable MD024 -->
+<!-- This entry bundles several internal iterations into one release, so it legitimately repeats
+     "### Added"/"### Fixed" within itself (see .markdownlint-cli2.yaml's own MD024 comment). -->
 
 Verified before tagging: full unit suite green (2780 tests), `phpstan analyse` clean, `cs-check`/
 `rector-check` clean, and CI's Integration Tests + API Tests green on `main`.
@@ -1161,7 +1171,14 @@ Verified before tagging: full unit suite green (2780 tests), `phpstan analyse` c
   present, inherited from `add_dynamic_content`), so every `generate_ai_content` action saved
   through the admin UI silently dropped its prompt and fallback text.
 
+<!-- markdownlint-enable MD024 -->
+
 ## [1.0.0]
+
+<!-- markdownlint-disable MD024 -->
+<!-- This single entry bundles a long run of pre-1.0 internal iterations into one release, so it
+     legitimately repeats "### Added"/"### Changed"/"### Fixed" many times within itself, unlike
+     every later version's own one-shot section (see .markdownlint-cli2.yaml's own MD024 comment). -->
 
 First git-tagged release — every version before this one was a documentation-only checkpoint in
 this file, never a real `git tag`. Verified before tagging: the full MFTF matrix green on `main`
@@ -1885,7 +1902,7 @@ pipeline, `.github/workflows/api-tests.yml`).
   `general/locale/timezone` when unset — nothing auto-detects a real timezone (no geo-IP/browser
   reporting), that's an explicit, named boundary. `Model\Campaign\QuietHoursCalculator` is pure
   hour-of-day window logic (handles overnight-wraparound windows like 21-8). New
-  `Model\Campaign\QuietHoursGate`, called from every Send* action right alongside the existing
+  `Model\Campaign\QuietHoursGate`, called from every Send\* action right alongside the existing
   `FrequencyCapGate` — a send due during the customer's local quiet hours is deferred until they
   end instead of sending immediately, by reusing the exact `ordo_campaign_scheduled_action`
   mechanism `delay_minutes` actions already use (`CampaignDispatcher::deferActionUntil()`, a new
@@ -1893,7 +1910,7 @@ pipeline, `.github/workflows/api-tests.yml`).
   write path). Because it's the same mechanism, `CampaignEntryGuard`'s pending-entry dedup and
   `Cron\RunScheduledCampaignActions`'s resume both apply to a deferred send automatically, with no
   extra code either side. `CampaignDispatcher::runOneAction()` now stamps the action's own
-  `entity_id` into `$context['ordo_action_id']` — the one piece of plumbing a Send* action needed
+  `entity_id` into `$context['ordo_action_id']` — the one piece of plumbing a Send\* action needed
   to identify itself to the gate. Known limitation (same shape as `delay_minutes` inside split
   variants): a synthetic split-variant action has no real `ordo_campaign_action` row to defer
   against, so quiet hours don't apply to those — the gate proceeds with the send rather than
@@ -2557,7 +2574,7 @@ the original bug.
 
 - `send_sms` (`TwilioSmsSender`) now authenticates outbound Twilio API calls with a Restricted API Key
   (new `Twilio API Key SID`/`Twilio API Key Secret` config fields) instead of the Account Auth Token, per
-  Twilio's own recommendation (https://www.twilio.com/docs/iam/api-keys) — limits the blast radius of a
+  Twilio's own recommendation (<https://www.twilio.com/docs/iam/api-keys>) — limits the blast radius of a
   leaked credential to Programmable Messaging instead of full account access. The Auth Token itself stays in
   config: `Controller\Sms\StatusCallback`'s webhook signature check always requires it (Twilio signs
   `X-Twilio-Signature` with the Auth Token regardless of how outbound calls are authenticated), so it
@@ -2612,6 +2629,8 @@ the original bug.
   (`AdminCampaignNpsSurveyActionTest`), and a fixed 2-second wait after a survey answer's fire-and-forget POST
   that wasn't reliably enough time under CI load — replaced with a real poll
   (`VisitorEventHelper::waitForSurveyResponseRecordedByEmail()`).
+
+<!-- markdownlint-enable MD024 -->
 
 ## [0.9.5]
 

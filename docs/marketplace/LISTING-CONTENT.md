@@ -14,7 +14,7 @@ icon content should reflect the listing via words/images, no slogan, no Adobe/Ma
 
 ## Title
 
-```
+```text
 Ordo Marketing Automation
 ```
 
@@ -25,7 +25,7 @@ offers at the time, categories can change independently of this doc).
 
 ## Website / Support URL
 
-```
+```text
 https://ordo.marketing
 ```
 
@@ -34,7 +34,7 @@ site (see `docs.html` there) links back out to the GitHub README/wiki for the fu
 
 ## Short description
 
-```
+```text
 Campaign automation for Magento Open Source: abandoned cart, reorder reminders, credit limit alerts, and
 order approval — no Adobe Commerce B2B license or per-contact subscription required.
 ```
