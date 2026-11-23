@@ -225,4 +225,22 @@ class SegmentBulkActionConsumerTest extends TestCase
 
         self::assertSame([], $this->executedWith);
     }
+
+    /**
+     * Regression: an undecodable message used to throw uncaught straight out of execute(),
+     * before even reaching the per-customer loop (which already has its own try/catch) - must be
+     * logged and dropped instead, the same fail-closed shape CampaignDispatchConsumer/
+     * VisitorAggregationConsumer already have.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteLogsAndSkipsWhenMessageIsUndecodable(): void
+    {
+        $this->serializer->method('unserialize')->willThrowException(new \RuntimeException('malformed JSON'));
+
+        $this->logger->expects(self::once())->method('error')->with(self::stringContains('malformed JSON'));
+
+        $this->makeConsumer(['add_tag' => $this->makeRecordingAction()])->execute('raw-message');
+
+        self::assertSame([], $this->executedWith);
+    }
 }
