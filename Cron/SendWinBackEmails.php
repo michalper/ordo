@@ -76,8 +76,13 @@ class SendWinBackEmails
 
             // Claim (tag) BEFORE sending, not after - a crash between a successful send and the
             // tag write must never cause a resend on the next tick. If the send itself then
-            // fails, the tag is removed so this customer is retried next run.
-            $this->customerTagManager->addTag($customerId, self::TAG_WIN_BACK_SENT);
+            // fails, the tag is removed so this customer is retried next run. addTagIfAbsent()
+            // (not addTag()) because this claim must be atomic: two overlapping runs of this
+            // cron could otherwise both pass the earlier $alreadySent check before either claims,
+            // sending the same win-back email twice.
+            if (!$this->customerTagManager->addTagIfAbsent($customerId, self::TAG_WIN_BACK_SENT)) {
+                continue;
+            }
 
             try {
                 $customer = $customerMap[$customerId];

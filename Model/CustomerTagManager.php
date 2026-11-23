@@ -5,6 +5,7 @@ namespace Ordo\Automation\Model;
 
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
+use Magento\Framework\DB\Adapter\DuplicateException;
 use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
 use Ordo\Automation\Api\CustomerTagManagementInterface;
 
@@ -42,6 +43,40 @@ class CustomerTagManager implements CustomerTagManagementInterface
         ]);
 
         $this->eventManager->dispatch('ordo_customer_tag_added', ['customer_id' => $customerId, 'tag' => $tag]);
+    }
+
+    /**
+     * Atomic claim-before-act for callers whose tag write guards a side effect (a send, a count)
+     * that must never run twice for the same (customer, tag) pair even under two overlapping
+     * cron runs. addTag() itself is check-then-insert with no lock - two overlapping runs could
+     * both pass hasTag() before either inserts, and the second insert would then throw instead
+     * of silently duplicating, because ordo_customer_tag has a real unique (customer_id, tag)
+     * constraint (etc/db_schema.xml). This always attempts the insert and relies on that
+     * constraint to fail atomically for whichever caller loses the race, catching exactly that
+     * failure rather than any other write error.
+     *
+     * @return bool true if this call is the one that just added the tag (safe to proceed with
+     *   whatever the tag guards), false if it was already present - either from a genuine earlier
+     *   call, or from another process that claimed it first, concurrently. Either way, the caller
+     *   must not run its side effect again.
+     */
+    public function addTagIfAbsent(int $customerId, string $tag): bool
+    {
+        $connection = $this->connection();
+
+        try {
+            $connection->insert($this->table(), [
+                'customer_id' => $customerId,
+                'tag' => $tag,
+                'added_at' => date('Y-m-d H:i:s'),
+            ]);
+        } catch (DuplicateException) {
+            return false;
+        }
+
+        $this->eventManager->dispatch('ordo_customer_tag_added', ['customer_id' => $customerId, 'tag' => $tag]);
+
+        return true;
     }
 
     /**

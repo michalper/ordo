@@ -232,6 +232,59 @@ class SendAbandonedCartFallbackRemindersTest extends TestCase
         $cron->execute();
     }
 
+    /**
+     * Regression: previously nothing caught an exception from sendFallback() at all - a
+     * transient error (consent lookup, quiet-hours/frequency-cap gate, phone number resolution)
+     * would leave the row permanently claimed ("fallback sent") despite nothing having been sent,
+     * with no future retry and no record in the cron run log.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteUnclaimsAndLogsFailureWhenSendingThrows(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchAll')->willReturn([
+            [
+                'log_entity_id' => 42,
+                'customer_id' => 5,
+                'customer_email' => 'jan@example.com',
+                'customer_firstname' => 'Jan',
+                'subtotal' => 150.0,
+            ],
+        ]);
+
+        $updateCalls = [];
+        $connection->method('update')->willReturnCallback(
+            function (string $table, array $data, $where) use (&$updateCalls): int {
+                $updateCalls[] = $data;
+                return 1;
+            }
+        );
+
+        $sendSms = $this->createMock(SendSms::class);
+        $sendSms->method('execute')->willThrowException(new \RuntimeException('provider down'));
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('error')->with(self::stringContains('provider down'));
+        $logger->expects(self::once())->method('info')->with(
+            self::stringContains('attempted 0 cross-channel abandoned-cart fallback(s)')
+        );
+
+        $cron = new SendAbandonedCartFallbackReminders(
+            $this->makeConfig(enabled: true),
+            $this->makeResourceConnection($connection),
+            $sendSms,
+            $this->createStub(SendWhatsApp::class),
+            $this->makeCronRunLogger($logger)
+        );
+
+        $cron->execute();
+
+        self::assertCount(2, $updateCalls, 'expected one update for the claim and one for the unclaim');
+        self::assertNotNull($updateCalls[0]['fallback_sent_at']);
+        self::assertNull($updateCalls[1]['fallback_sent_at']);
+    }
+
     public function testExecuteLogsZeroAttemptsWhenNothingIsDue(): void
     {
         $connection = $this->createMock(AdapterInterface::class);

@@ -5,6 +5,7 @@ namespace Ordo\Automation\Test\Unit\Model;
 
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
+use Magento\Framework\DB\Adapter\DuplicateException;
 use Magento\Framework\DB\Select;
 use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
 use Ordo\Automation\Model\CustomerTagManager;
@@ -44,6 +45,47 @@ class CustomerTagManagerTest extends TestCase
 
         $manager = new CustomerTagManager($resourceConnection, $eventManager);
         $manager->addTag(42, 'vip');
+    }
+
+    public function testAddTagIfAbsentInsertsAndDispatchesWhenNotAlreadyTagged(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::once())->method('insert')
+            ->with('ordo_customer_tag', self::callback(static function (array $row): bool {
+                return $row['customer_id'] === 42 && $row['tag'] === 'vip';
+            }));
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $eventManager = $this->createMock(EventManagerInterface::class);
+        $eventManager->expects(self::once())->method('dispatch')
+            ->with('ordo_customer_tag_added', ['customer_id' => 42, 'tag' => 'vip']);
+
+        $manager = new CustomerTagManager($resourceConnection, $eventManager);
+        self::assertTrue($manager->addTagIfAbsent(42, 'vip'));
+    }
+
+    /**
+     * The actual race this method exists to close: the unique (customer_id, tag) constraint
+     * rejects the losing concurrent insert, and that failure must be reported as "already
+     * present" (false), not let the exception propagate and abort the caller's whole batch.
+     */
+    public function testAddTagIfAbsentReturnsFalseAndDoesNotDispatchWhenTheInsertLosesTheUniqueConstraintRace(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::once())->method('insert')->willThrowException(new DuplicateException());
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $eventManager = $this->createMock(EventManagerInterface::class);
+        $eventManager->expects(self::never())->method('dispatch');
+
+        $manager = new CustomerTagManager($resourceConnection, $eventManager);
+        self::assertFalse($manager->addTagIfAbsent(42, 'vip'));
     }
 
     public function testAddTagSkipsWhenAlreadyTagged(): void
