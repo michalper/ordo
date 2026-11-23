@@ -796,6 +796,56 @@ class CampaignDispatcherTest extends TestCase
         $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
     }
 
+    /**
+     * Regression for a real double-run bug: QuietHoursGate/SendTimeOptimizationGate defer a send
+     * by writing a scheduled-action row and returning from allows() without throwing -
+     * ActionInterface::execute() returns void either way, so without an explicit signal the
+     * dispatcher had no way to tell "this action deferred itself" apart from "this action ran to
+     * completion," and immediately ran the NEXT action in the chain instead of pausing it the way
+     * a delay_minutes action does - then double-ran that next action again once the cron resumed
+     * the deferred one. The first action's mock simulates exactly what deferActionUntil() does:
+     * sets the dispatcher's own DEFERRED_CONTEXT_FLAG on $context.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchStopsTheChainWhenAnActionDefersItselfInsteadOfRunningTheNextActionImmediately(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $deferringAction = $this->createMock(CampaignAction::class);
+        $deferringAction->method('getCampaignId')->willReturn(1);
+        $deferringAction->method('getEntityId')->willReturn(10);
+        $deferringAction->method('getDelayMinutes')->willReturn(0);
+        $deferringAction->method('getData')->willReturnMap([['type', 'send_sms']]);
+        $deferringAction->method('getParams')->willReturn([]);
+
+        $nextAction = $this->createMock(CampaignAction::class);
+        $nextAction->method('getCampaignId')->willReturn(1);
+        $nextAction->method('getEntityId')->willReturn(11);
+        $nextAction->method('getDelayMinutes')->willReturn(0);
+        $nextAction->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $nextAction->method('getParams')->willReturn([]);
+
+        $this->actionCollectionFactory->method('create')->willReturn(
+            $this->makeActionCollection([$deferringAction, $nextAction])
+        );
+
+        $sendSms = $this->createMock(ActionInterface::class);
+        $sendSms->expects(self::once())->method('execute')->willReturnCallback(
+            function (array &$context, array $params): void {
+                $context['ordo_action_deferred'] = true;
+            }
+        );
+
+        $tagCustomer = $this->createMock(ActionInterface::class);
+        $tagCustomer->expects(self::never())->method('execute');
+
+        $this->actionPool = new ActionPool(['send_sms' => $sendSms, 'tag_customer' => $tagCustomer]);
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testDispatchBatchesConditionsAndActionsAcrossMultipleCampaignsInOneQueryEach(): void
     {
@@ -888,6 +938,48 @@ class CampaignDispatcherTest extends TestCase
         $action = $this->createMock(ActionInterface::class);
         $action->expects(self::once())->method('execute')->with(self::anything(), ['tag' => 'reactivated']);
         $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $this->makeDispatcher()->resumeScheduledAction(1, 11, ['customer_id' => 1]);
+    }
+
+    /**
+     * Regression, resume side of the same double-run bug covered by
+     * testDispatchStopsTheChainWhenAnActionDefersItselfInsteadOfRunningTheNextActionImmediately():
+     * the just-resumed action runs unconditionally (it's the one whose wait just elapsed), but if
+     * it defers AGAIN (e.g. the resumed send still lands inside quiet hours - QuietHoursGate's own
+     * docblock documents this as expected under clock skew/config changes), the action after it
+     * must not run either, the same as a fresh dispatch().
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testResumeScheduledActionStopsTheChainWhenTheResumedActionDefersAgain(): void
+    {
+        $resumeAction = $this->createMock(CampaignAction::class);
+        $resumeAction->method('getEntityId')->willReturn(11);
+        $resumeAction->method('getSortOrder')->willReturn(20);
+        $resumeAction->method('getDelayMinutes')->willReturn(0);
+        $resumeAction->method('getData')->willReturnMap([['type', 'send_sms']]);
+        $resumeAction->method('getParams')->willReturn([]);
+
+        $nextAction = $this->createMock(CampaignAction::class);
+        $nextAction->method('getEntityId')->willReturn(12);
+        $nextAction->method('getSortOrder')->willReturn(30);
+        $nextAction->method('getDelayMinutes')->willReturn(0);
+        $nextAction->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $nextAction->method('getParams')->willReturn([]);
+
+        $this->makeResumeActionCollections($resumeAction, [$resumeAction, $nextAction]);
+
+        $sendSms = $this->createMock(ActionInterface::class);
+        $sendSms->expects(self::once())->method('execute')->willReturnCallback(
+            function (array &$context, array $params): void {
+                $context['ordo_action_deferred'] = true;
+            }
+        );
+
+        $tagCustomer = $this->createMock(ActionInterface::class);
+        $tagCustomer->expects(self::never())->method('execute');
+
+        $this->actionPool = new ActionPool(['send_sms' => $sendSms, 'tag_customer' => $tagCustomer]);
 
         $this->makeDispatcher()->resumeScheduledAction(1, 11, ['customer_id' => 1]);
     }
@@ -1833,7 +1925,10 @@ class CampaignDispatcherTest extends TestCase
         $this->campaignScheduledActionFactory->method('create')->willReturn($scheduled);
         $this->campaignScheduledActionResource->expects(self::once())->method('save')->with($scheduled);
 
-        $this->makeDispatcher()->deferActionUntil(3, 15, '2026-01-16 08:00:00', ['customer_id' => 9]);
+        $context = ['customer_id' => 9];
+        $this->makeDispatcher()->deferActionUntil(3, 15, '2026-01-16 08:00:00', $context);
+
+        self::assertTrue($context['ordo_action_deferred'] ?? false);
     }
 
     /**

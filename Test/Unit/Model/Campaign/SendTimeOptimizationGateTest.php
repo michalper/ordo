@@ -44,7 +44,8 @@ class SendTimeOptimizationGateTest extends TestCase
         $this->sendTimeOptimizer->expects(self::never())->method('getBestHour');
         $this->campaignDispatcher->expects(self::never())->method('deferActionUntil');
 
-        self::assertTrue($this->gate->allows(42, 7, 20, ['customer_id' => 42], false));
+        $context = ['customer_id' => 42];
+        self::assertTrue($this->gate->allows(42, 7, 20, $context, false));
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -53,7 +54,8 @@ class SendTimeOptimizationGateTest extends TestCase
         $this->sendTimeOptimizer->expects(self::never())->method('getBestHour');
         $this->campaignDispatcher->expects(self::never())->method('deferActionUntil');
 
-        self::assertTrue($this->gate->allows(42, 7, 0, ['customer_id' => 42], true));
+        $context = ['customer_id' => 42];
+        self::assertTrue($this->gate->allows(42, 7, 0, $context, true));
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -63,7 +65,8 @@ class SendTimeOptimizationGateTest extends TestCase
 
         $this->campaignDispatcher->expects(self::never())->method('deferActionUntil');
 
-        self::assertTrue($this->gate->allows(42, 7, 20, ['customer_id' => 42], true));
+        $context = ['customer_id' => 42];
+        self::assertTrue($this->gate->allows(42, 7, 20, $context, true));
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -78,7 +81,8 @@ class SendTimeOptimizationGateTest extends TestCase
 
         $this->campaignDispatcher->expects(self::never())->method('deferActionUntil');
 
-        self::assertTrue($this->gate->allows(42, 7, 20, ['customer_id' => 42], true));
+        $context = ['customer_id' => 42];
+        self::assertTrue($this->gate->allows(42, 7, 20, $context, true));
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -94,7 +98,8 @@ class SendTimeOptimizationGateTest extends TestCase
         $this->campaignDispatcher->expects(self::once())->method('deferActionUntil')
             ->with(7, 20, '2026-01-15 18:00:00', ['customer_id' => 42]);
 
-        self::assertFalse($this->gate->allows(42, 7, 20, ['customer_id' => 42], true));
+        $context = ['customer_id' => 42];
+        self::assertFalse($this->gate->allows(42, 7, 20, $context, true));
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -110,7 +115,8 @@ class SendTimeOptimizationGateTest extends TestCase
         $this->campaignDispatcher->expects(self::once())->method('deferActionUntil')
             ->with(7, 20, '2026-01-16 08:00:00', ['customer_id' => 42]);
 
-        self::assertFalse($this->gate->allows(42, 7, 20, ['customer_id' => 42], true));
+        $context = ['customer_id' => 42];
+        self::assertFalse($this->gate->allows(42, 7, 20, $context, true));
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -128,6 +134,7 @@ class SendTimeOptimizationGateTest extends TestCase
         $this->campaignDispatcher->expects(self::once())->method('deferActionUntil')
             ->with(7, 20, '2026-01-16 07:00:00', ['customer_id' => 42]);
 
-        self::assertFalse($this->gate->allows(42, 7, 20, ['customer_id' => 42], true));
+        $context = ['customer_id' => 42];
+        self::assertFalse($this->gate->allows(42, 7, 20, $context, true));
     }
 }

@@ -83,6 +83,20 @@ class CampaignDispatcher
      */
     public const string CACHE_KEY_PREFIX = 'ordo_campaign_trigger_';
 
+    /**
+     * Set on $context by deferActionUntil() itself (not by the gate that calls it) and read right
+     * after an action runs, in runOneActionOrSplitStoppingChainOnFailure() - the only way the
+     * dispatcher can tell "this action deferred itself" (QuietHoursGate/SendTimeOptimizationGate)
+     * apart from "this action ran to completion" or "this action threw," since ActionInterface::
+     * execute() returns void either way. Without this, runActionsFrom()'s loop had no signal that
+     * a defer had happened and immediately ran the NEXT action in the chain instead of pausing -
+     * then, once the cron resumed the deferred action, resumeScheduledAction() ran that same next
+     * action a second time. See docs/adr/0068's "fails closed" reasoning for why this reuses the
+     * same single check point as a thrown exception, rather than a parallel code path. Cleared
+     * immediately after being read so it never leaks into a later, unrelated action/resume.
+     */
+    private const string DEFERRED_CONTEXT_FLAG = 'ordo_action_deferred';
+
     public function __construct(
         private readonly CampaignCollectionFactory $campaignCollectionFactory,
         private readonly CampaignTriggerCollectionFactory $campaignTriggerCollectionFactory,
@@ -660,6 +674,16 @@ class CampaignDispatcher
     ): bool {
         try {
             $this->runOneActionOrSplit($campaignId, $actionRow, $context);
+
+            if ($context[self::DEFERRED_CONTEXT_FLAG] ?? false) {
+                // The action deferred itself rather than actually running - deferActionUntil()
+                // already scheduled a resume at this exact action, so the chain must pause here
+                // exactly like a delay_minutes action does (see runActionsFrom()'s own delay
+                // check), not continue on to the next action as if this one had really run.
+                unset($context[self::DEFERRED_CONTEXT_FLAG]);
+                return false;
+            }
+
             return true;
         } catch (\Throwable $e) {
             $this->logger->error(sprintf(
@@ -859,9 +883,10 @@ class CampaignDispatcher
      *
      * @param array<string, mixed> $context
      */
-    public function deferActionUntil(int $campaignId, int $actionId, string $runAtUtc, array $context): void
+    public function deferActionUntil(int $campaignId, int $actionId, string $runAtUtc, array &$context): void
     {
         $this->writeScheduledAction($campaignId, $actionId, $context, $runAtUtc);
+        $context[self::DEFERRED_CONTEXT_FLAG] = true;
     }
 
     /**
