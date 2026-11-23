@@ -30,9 +30,11 @@ namespace Ordo\Automation\Model\Gdpr;
  * and ordo_referral_code both carry a non-nullable customer_id and had neither ever been added
  * here. Fourth (2026-11-07, full-module review): ordo_customer_inactive_trigger_claim (added by
  * the customer_inactive campaign trigger feature) carries a non-nullable customer_id and had
- * never been added either. There is no automated check that this list stays complete -
- * re-verify against db_schema.xml for every table with a customer_id column whenever a new one
- * is added, don't trust this list is still exhaustive just because it was once.
+ * never been added either. Fifth (2026-11-23, full-repo audit): ordo_wishlist_abandoned_reminder_log,
+ * ordo_stalled_payment_reminder_log and ordo_loyalty_points_ledger each carry a non-nullable
+ * customer_id and had never been added either. There is no automated check that this list stays
+ * complete - re-verify against db_schema.xml for every table with a customer_id column whenever a
+ * new one is added, don't trust this list is still exhaustive just because it was once.
  */
 class CustomerDataTableProvider
 {
@@ -73,6 +75,9 @@ class CustomerDataTableProvider
         'ordo_customer_inactive_trigger_claim' => 'customer_inactive_trigger_claim',
         'ordo_customer_anniversary_trigger_claim' => 'customer_anniversary_trigger_claim',
         'ordo_segment_blast_trigger_claim' => 'segment_blast_trigger_claim',
+        'ordo_wishlist_abandoned_reminder_log' => 'wishlist_abandoned_reminder_log',
+        'ordo_stalled_payment_reminder_log' => 'stalled_payment_reminder_log',
+        'ordo_loyalty_points_ledger' => 'loyalty_points_ledger',
     ];
 
     /**
