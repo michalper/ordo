@@ -98,6 +98,14 @@ directly once your PR is up.
 - Update `Test/Mftf/SCENARIOS.md` if you add or close a scenario gap it tracks, and `ROADMAP.md` if you complete
   or add a roadmap item.
 
+## Developer Certificate of Origin (DCO)
+
+Every commit must be signed off, certifying you wrote it (or otherwise have the right to submit it
+under this project's license) per the [Developer Certificate of Origin](https://developercertificate.org/).
+Add `-s` to your commit: `git commit -s -m "..."` adds a `Signed-off-by: Your Name <you@example.com>`
+trailer automatically (configure `user.name`/`user.email` first if you haven't). This applies going
+forward, not retroactively to history before it was adopted.
+
 ## Cutting a release
 
 Versioning is via git tags only (see `AGENTS.md`) - there's no `"version"` in `composer.json`.
