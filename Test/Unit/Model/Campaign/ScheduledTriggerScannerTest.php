@@ -12,9 +12,9 @@ use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\ResourceModel\Campaign\ScheduledTriggerState;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\Collection as TriggerCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as TriggerCollectionFactory;
-use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class ScheduledTriggerScannerTest extends TestCase
 {
@@ -28,9 +28,28 @@ class ScheduledTriggerScannerTest extends TestCase
     {
         $this->triggerCollectionFactory = $this->createMock(TriggerCollectionFactory::class);
         $this->scheduledTriggerState = $this->createMock(ScheduledTriggerState::class);
+        $this->scheduledTriggerState->method('acquireLock')->willReturn(true);
         $this->campaignDispatcher = $this->createMock(CampaignDispatcher::class);
         $this->cronScheduleFactory = $this->createMock(CronScheduleFactory::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+    }
+
+    /**
+     * Wires both the batch-preloaded state map (getStatesForCampaigns(), used for scan()'s own
+     * cheap upfront filter) and the single fresh read fire() re-checks once it holds a trigger's
+     * lock (getState()) from the same underlying map, so a test only states its states once and
+     * both reads agree - exactly like the real resource model's two methods read the same table.
+     *
+     * @param array<string, array{config_hash: string, last_fired_at: string|null}> $states keyed
+     *  "{campaign_id}:{trigger_event}", same shape ScheduledTriggerState::getStatesForCampaigns()
+     *  returns.
+     */
+    private function configureStates(array $states): void
+    {
+        $this->scheduledTriggerState->method('getStatesForCampaigns')->willReturn($states);
+        $this->scheduledTriggerState->method('getState')->willReturnCallback(
+            fn (int $campaignId, string $triggerEvent): ?array => $states["$campaignId:$triggerEvent"] ?? null
+        );
     }
 
     private function makeScanner(): ScheduledTriggerScanner
@@ -83,7 +102,7 @@ class ScheduledTriggerScannerTest extends TestCase
             '{"scheduled_at": "2026-01-01 00:00:00"}'
         );
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([$trigger]));
-        $this->scheduledTriggerState->method('getStatesForCampaigns')->willReturn([]);
+        $this->configureStates([]);
 
         $this->campaignDispatcher->expects(self::once())->method('dispatchScheduledTrigger')
             ->with(5, self::callback(fn (array $context) => $context['trigger_event'] === 'scheduled_at'));
@@ -98,6 +117,57 @@ class ScheduledTriggerScannerTest extends TestCase
         self::assertSame(1, $this->makeScanner()->scan());
     }
 
+    /**
+     * Regression: a genuinely overlapping scan (a manual "Run Now" racing the scheduled instance)
+     * already holds this trigger's lock - acquireLock() times out, and this run must not fire it.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testScheduledAtDoesNotFireWhenTheTriggerLockCannotBeAcquired(): void
+    {
+        $trigger = $this->makeTrigger(
+            1,
+            5,
+            CampaignTriggerInterface::TRIGGER_SCHEDULED_AT,
+            '{"scheduled_at": "2026-01-01 00:00:00"}'
+        );
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([$trigger]));
+        $this->scheduledTriggerState = $this->createMock(ScheduledTriggerState::class);
+        $this->scheduledTriggerState->method('acquireLock')->willReturn(false);
+        $this->scheduledTriggerState->method('getStatesForCampaigns')->willReturn([]);
+
+        $this->campaignDispatcher->expects(self::never())->method('dispatchScheduledTrigger');
+        $this->scheduledTriggerState->expects(self::never())->method('markFired');
+        $this->logger->expects(self::once())->method('error');
+
+        self::assertSame(0, $this->makeScanner()->scan());
+    }
+
+    /**
+     * Regression: the upfront isDue() filter runs against the batch-preloaded, possibly-stale
+     * $states snapshot - a concurrent run could have already claimed and fired this exact trigger
+     * by the time this run acquires the lock. The fresh single-read re-check inside fire() must
+     * catch this and skip, not trust the stale snapshot that got it past the upfront filter.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testScheduledAtDoesNotFireWhenAFreshRecheckShowsItWasAlreadyClaimedByAnotherRun(): void
+    {
+        $paramsJson = '{"scheduled_at": "2026-01-01 00:00:00"}';
+        $trigger = $this->makeTrigger(1, 5, CampaignTriggerInterface::TRIGGER_SCHEDULED_AT, $paramsJson);
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([$trigger]));
+        // Upfront batch snapshot: never fired (passes the cheap pre-filter).
+        $this->scheduledTriggerState->method('getStatesForCampaigns')->willReturn([]);
+        // Fresh read once the lock is held: another run already claimed and fired it.
+        $this->scheduledTriggerState->method('getState')->willReturn([
+            'config_hash' => hash('sha256', $paramsJson),
+            'last_fired_at' => '2026-01-01 00:05:00',
+        ]);
+
+        $this->campaignDispatcher->expects(self::never())->method('dispatchScheduledTrigger');
+        $this->scheduledTriggerState->expects(self::never())->method('markFired');
+
+        self::assertSame(0, $this->makeScanner()->scan());
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testScheduledAtDoesNotFireWhenScheduledAtIsMissing(): void
     {
@@ -108,7 +178,7 @@ class ScheduledTriggerScannerTest extends TestCase
             '{}'
         );
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([$trigger]));
-        $this->scheduledTriggerState->method('getStatesForCampaigns')->willReturn([]);
+        $this->configureStates([]);
 
         $this->campaignDispatcher->expects(self::never())->method('dispatchScheduledTrigger');
 
@@ -121,7 +191,7 @@ class ScheduledTriggerScannerTest extends TestCase
         $paramsJson = '{"scheduled_at": "2026-01-01 00:00:00"}';
         $trigger = $this->makeTrigger(1, 5, CampaignTriggerInterface::TRIGGER_SCHEDULED_AT, $paramsJson);
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([$trigger]));
-        $this->scheduledTriggerState->method('getStatesForCampaigns')->willReturn([
+        $this->configureStates([
             '5:' . CampaignTriggerInterface::TRIGGER_SCHEDULED_AT => [
                 'config_hash' => hash('sha256', $paramsJson),
                 'last_fired_at' => '2026-01-01 00:05:00',
@@ -142,7 +212,7 @@ class ScheduledTriggerScannerTest extends TestCase
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([$trigger]));
         // A stale hash (as if the date had been different before) proves a config change is
         // treated as not-yet-fired, not the literal string equality of the date itself.
-        $this->scheduledTriggerState->method('getStatesForCampaigns')->willReturn([
+        $this->configureStates([
             '5:' . CampaignTriggerInterface::TRIGGER_SCHEDULED_AT => [
                 'config_hash' => hash('sha256', '{"scheduled_at": "2025-01-01 00:00:00"}'),
                 'last_fired_at' => '2025-06-01 00:00:00',
@@ -165,7 +235,7 @@ class ScheduledTriggerScannerTest extends TestCase
             '{"scheduled_at": "2099-01-01 00:00:00"}'
         );
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([$trigger]));
-        $this->scheduledTriggerState->method('getStatesForCampaigns')->willReturn([]);
+        $this->configureStates([]);
 
         $this->campaignDispatcher->expects(self::never())->method('dispatchScheduledTrigger');
 
@@ -182,7 +252,7 @@ class ScheduledTriggerScannerTest extends TestCase
             '{"cron_expression": "* * * * *"}'
         );
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([$trigger]));
-        $this->scheduledTriggerState->method('getStatesForCampaigns')->willReturn([]);
+        $this->configureStates([]);
 
         $cronSchedule = $this->createStub(CronSchedule::class);
         $cronSchedule->method('matchCronExpression')->willReturn(true);
@@ -203,7 +273,7 @@ class ScheduledTriggerScannerTest extends TestCase
             '{"cron_expression": "0 8 * * 1"}'
         );
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([$trigger]));
-        $this->scheduledTriggerState->method('getStatesForCampaigns')->willReturn([]);
+        $this->configureStates([]);
 
         $cronSchedule = $this->createStub(CronSchedule::class);
         $cronSchedule->method('matchCronExpression')->willReturn(false);
@@ -222,7 +292,7 @@ class ScheduledTriggerScannerTest extends TestCase
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([$trigger]));
 
         $now = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d H:i:00');
-        $this->scheduledTriggerState->method('getStatesForCampaigns')->willReturn([
+        $this->configureStates([
             '5:' . CampaignTriggerInterface::TRIGGER_RECURRING_SCHEDULE => [
                 'config_hash' => hash('sha256', $paramsJson),
                 'last_fired_at' => $now,
@@ -244,7 +314,7 @@ class ScheduledTriggerScannerTest extends TestCase
             '{"cron_expression": "not a cron expression"}'
         );
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([$trigger]));
-        $this->scheduledTriggerState->method('getStatesForCampaigns')->willReturn([]);
+        $this->configureStates([]);
 
         $this->campaignDispatcher->expects(self::never())->method('dispatchScheduledTrigger');
 
@@ -276,7 +346,7 @@ class ScheduledTriggerScannerTest extends TestCase
             $this->makeTrigger(2, 6, CampaignTriggerInterface::TRIGGER_RECURRING_SCHEDULE, '{"cron_expression": "* * * * *"}'),
         ];
         $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection($triggers));
-        $this->scheduledTriggerState->method('getStatesForCampaigns')->willReturn([]);
+        $this->configureStates([]);
 
         $cronSchedule = $this->createStub(CronSchedule::class);
         $cronSchedule->method('matchCronExpression')->willReturn(true);
@@ -303,7 +373,7 @@ class ScheduledTriggerScannerTest extends TestCase
         $this->triggerCollectionFactory->method('create')->willReturn(
             $this->makeTriggerCollection([$badTrigger, $goodTrigger])
         );
-        $this->scheduledTriggerState->method('getStatesForCampaigns')->willReturn([]);
+        $this->configureStates([]);
 
         // Simulates campaign #6's own dispatch blowing up (e.g. a deleted campaign/DB error) -
         // isDue()'s own state lookup is now a single batched query up front (see
