@@ -31,7 +31,7 @@ This directory is a standalone module repo — there's no `vendor/` here, so tes
 
 - Test environment: `/Users/michalper/Projects/magento-ordo-test/`
   - `docker-compose.yml` — services `db` (MySQL 8), `opensearch`, `php` (container `ordo_test_php` by default), `selenium`.
-  - `magento/` — a full Magento Open Source 2.4.7 install.
+  - `magento/` — a full Magento Open Source 2.4.9 install.
   - This directory (`mma`) is mounted into the php container as `/var/www/mma`, from a host path
     set by `ORDO_SOURCE_PATH` in that directory's own `.env` (defaults to this repo's own checkout).
 
