@@ -21,7 +21,7 @@ abstract class AbstractEntityActionsColumn extends Column
     public function __construct(
         ContextInterface $context,
         UiComponentFactory $uiComponentFactory,
-        private readonly UrlInterface $urlBuilder,
+        protected readonly UrlInterface $urlBuilder,
         array $components = [],
         array $data = []
     ) {
@@ -45,6 +45,28 @@ abstract class AbstractEntityActionsColumn extends Column
     protected function getExportUrlPath(): ?string
     {
         return null;
+    }
+
+    /**
+     * Which posted field the delete confirm text names the row by - "name" for every entity
+     * except EmailTemplateDraft, which has no "name" field (its display field is
+     * template_code).
+     */
+    protected function getEntityNameField(): string
+    {
+        return 'name';
+    }
+
+    /**
+     * Extra row actions beyond edit/(export)/delete, inserted between them in this order -
+     * EmailTemplateDraftActions' own Publish action is the only current override.
+     *
+     * @param array<string, mixed> $item
+     * @return array<string, array<string, mixed>>
+     */
+    protected function getExtraActions(array $item): array
+    {
+        return [];
     }
 
     public function prepareDataSource(array $dataSource): array
@@ -71,6 +93,8 @@ abstract class AbstractEntityActionsColumn extends Column
                 ];
             }
 
+            $actions += $this->getExtraActions($item);
+
             $actions['delete'] = [
                 'href' => $this->urlBuilder->getUrl($this->getDeleteUrlPath(), ['entity_id' => $entityId]),
                 'label' => __('Delete'),
@@ -82,7 +106,7 @@ abstract class AbstractEntityActionsColumn extends Column
                 // admin (no CSRF form-key check applies to a plain GET dispatch).
                 'post' => true,
                 'confirm' => [
-                    'title' => __('Delete %1 "%2"', $this->getEntityLabel(), $item['name']),
+                    'title' => __('Delete %1 "%2"', $this->getEntityLabel(), $item[$this->getEntityNameField()]),
                     'message' => __('Are you sure you want to delete this %1?', $this->getEntityLabel()),
                 ],
             ];
