@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\AiAgent;
 
+use Ordo\Automation\Model\RandomTokenGenerator;
+
 /**
  * Generates a plaintext AI-agent API key and its sha256 hex digest - the same "generate,
  * persist only the hash, show the plaintext exactly once" model as any API token screen.
@@ -13,12 +15,16 @@ class ApiKeyGenerator
 {
     private const string PREFIX = 'oaa_';
 
+    public function __construct(private readonly RandomTokenGenerator $randomTokenGenerator)
+    {
+    }
+
     /**
      * @return array{plaintext: string, hash: string}
      */
     public function generate(): array
     {
-        $plaintext = self::PREFIX . bin2hex(random_bytes(32));
+        $plaintext = self::PREFIX . $this->randomTokenGenerator->generate();
 
         return ['plaintext' => $plaintext, 'hash' => $this->hash($plaintext)];
     }
