@@ -401,6 +401,15 @@ class Flow extends Template
         $nextId = 1;
         $x = 60;
 
+        // Hoisted out of their own loops below - found during a full-repo /simplify sweep. Each
+        // of these three rebuilds its whole type=>label map from scratch (a full trigger-source/
+        // pool iteration) on every call, but the trigger/condition/action pool itself can't
+        // change mid-request, so recomputing it once per row instead of once per campaign was
+        // pure waste on any campaign with more than a handful of rows.
+        $triggerEventLabels = $this->getTriggerEventLabels();
+        $conditionTypeLabels = $this->getConditionTypeLabels();
+        $actionTypeLabels = $this->getActionTypeLabels();
+
         $triggers = $this->triggerCollectionFactory->create();
         $triggers->addCampaignFilter($campaignId);
         $triggerIds = [];
@@ -415,7 +424,7 @@ class Flow extends Template
                     $this->typeOptionsHtml(
                         $this->getTriggerEventTypes(),
                         $triggerEvent,
-                        $this->getTriggerEventLabels()
+                        $triggerEventLabels
                     ),
                     $trigger->getParamsJson()
                 ),
@@ -440,7 +449,7 @@ class Flow extends Template
                     'condition',
                     (string) __('Condition'),
                     $condition->getParamsJson(),
-                    $this->typeOptionsHtml($this->getConditionTypes(), $type, $this->getConditionTypeLabels())
+                    $this->typeOptionsHtml($this->getConditionTypes(), $type, $conditionTypeLabels)
                 ),
                 $x,
                 150
@@ -469,7 +478,7 @@ class Flow extends Template
                     'action',
                     (string) __('Action'),
                     $action->getParamsJson(),
-                    $this->typeOptionsHtml($this->getActionTypes(), $type, $this->getActionTypeLabels()),
+                    $this->typeOptionsHtml($this->getActionTypes(), $type, $actionTypeLabels),
                     $action->getDelayMinutes()
                 ),
                 $x,

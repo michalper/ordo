@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Block\Adminhtml\Rfm\Grid\Column;
 
+use Magento\Framework\App\CacheInterface;
+use Magento\Framework\Serialize\Serializer\Json as JsonSerializer;
 use Magento\Framework\View\Element\UiComponent\ContextInterface;
 use Magento\Framework\View\Element\UiComponentFactory;
 use Ordo\Automation\Block\Adminhtml\Rfm\Grid\Column\MatchingSegments;
@@ -18,6 +20,7 @@ class MatchingSegmentsTest extends TestCase
     private SegmentCollectionFactory $segmentCollectionFactory;
     private SegmentMemberResolver $segmentMemberResolver;
     private SegmentCollection $segmentCollection;
+    private CacheInterface $cache;
 
     protected function setUp(): void
     {
@@ -28,6 +31,12 @@ class MatchingSegmentsTest extends TestCase
         $this->segmentCollectionFactory->method('create')->willReturn($this->segmentCollection);
 
         $this->segmentMemberResolver = $this->createStub(SegmentMemberResolver::class);
+
+        // A permanent cache miss by default, so every existing test below still exercises the
+        // real resolver path unchanged - the dedicated cache tests further down configure their
+        // own hit/save behavior instead.
+        $this->cache = $this->createStub(CacheInterface::class);
+        $this->cache->method('load')->willReturn(false);
     }
 
     private function makeColumn(array $data = []): MatchingSegments
@@ -37,6 +46,8 @@ class MatchingSegmentsTest extends TestCase
             $this->createStub(UiComponentFactory::class),
             $this->segmentCollectionFactory,
             $this->segmentMemberResolver,
+            $this->cache,
+            new JsonSerializer(),
             [],
             $data
         );
@@ -166,6 +177,54 @@ class MatchingSegmentsTest extends TestCase
 
         // One RFM snapshot per page load — every per-segment resolve between begin and end.
         self::assertSame(['beginBatch', 'resolve:1', 'resolve:2', 'endBatch'], $sequence);
+    }
+
+    /**
+     * Regression for a full-repo /simplify finding: buildSegmentNamesByCustomerId() used to
+     * re-resolve every enabled segment against the entire customer base on every grid
+     * page/sort/filter action. A cache hit must skip the resolver entirely.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPrepareDataSourceUsesTheCachedResultWithoutResolvingAgain(): void
+    {
+        $this->cache = $this->createMock(CacheInterface::class);
+        $this->cache->expects(self::once())->method('load')->with('ordo_rfm_matching_segments')
+            ->willReturn(json_encode(['10' => ['Cached Segment']]));
+        $this->cache->expects(self::never())->method('save');
+
+        $resolver = $this->createMock(SegmentMemberResolver::class);
+        $resolver->expects(self::never())->method('beginBatch');
+        $resolver->expects(self::never())->method('getMatchingCustomerIds');
+        $this->segmentMemberResolver = $resolver;
+
+        $segmentCollectionFactory = $this->createMock(SegmentCollectionFactory::class);
+        $segmentCollectionFactory->expects(self::never())->method('create');
+        $this->segmentCollectionFactory = $segmentCollectionFactory;
+
+        $column = $this->makeColumn();
+
+        $result = $column->prepareDataSource([
+            'data' => ['items' => [['entity_id' => 10]]],
+        ]);
+
+        self::assertSame('Cached Segment', $result['data']['items'][0]['matching_segments']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPrepareDataSourceSavesTheResolvedResultToTheCacheOnAMiss(): void
+    {
+        $this->segmentCollection->method('getIterator')->willReturn(
+            new \ArrayIterator([$this->stubSegment(1, 'VIP Customers')])
+        );
+        $this->segmentMemberResolver->method('getMatchingCustomerIds')->willReturn([10]);
+
+        $this->cache = $this->createMock(CacheInterface::class);
+        $this->cache->method('load')->willReturn(false);
+        $this->cache->expects(self::once())->method('save')
+            ->with(json_encode([10 => ['VIP Customers']]), 'ordo_rfm_matching_segments', [], 60);
+
+        $column = $this->makeColumn();
+        $column->prepareDataSource(['data' => ['items' => [['entity_id' => 10]]]]);
     }
 
     public function testPrepareDataSourceSkipsNonArrayItemsWithoutError(): void

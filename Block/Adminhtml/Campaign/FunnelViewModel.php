@@ -16,6 +16,12 @@ use Ordo\Automation\Model\CampaignFunnelStats;
  */
 class FunnelViewModel implements ArgumentInterface
 {
+    /**
+     * @var array<int, array{variant: string|null, sent: int, delivered: int, opened: int,
+     *     clicked: int, converted: int, conversion_rate: float, revenue: float}>|null
+     */
+    private ?array $funnelRows = null;
+
     public function __construct(
         private readonly Registry $registry,
         private readonly CampaignFunnelStats $campaignFunnelStats
@@ -48,12 +54,20 @@ class FunnelViewModel implements ArgumentInterface
      */
     public function getFunnelRows(): array
     {
-        $campaign = $this->getCampaign();
-        if (!$campaign instanceof Campaign || !$campaign->getEntityId()) {
-            return [];
+        // Memoized - found during a full-repo /simplify sweep: the template calls both this and
+        // hasVariants() below (which itself calls this), so without caching the two aggregate
+        // queries CampaignFunnelStats::getForCampaign() runs ran twice per campaign-edit page
+        // load for no reason - the campaign being edited can't change mid-request.
+        if ($this->funnelRows !== null) {
+            return $this->funnelRows;
         }
 
-        return $this->campaignFunnelStats->getForCampaign((int) $campaign->getEntityId());
+        $campaign = $this->getCampaign();
+        if (!$campaign instanceof Campaign || !$campaign->getEntityId()) {
+            return $this->funnelRows = [];
+        }
+
+        return $this->funnelRows = $this->campaignFunnelStats->getForCampaign((int) $campaign->getEntityId());
     }
 
     /**

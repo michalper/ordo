@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Block\Adminhtml\Rfm\Grid\Column;
 
+use Magento\Framework\App\CacheInterface;
+use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Framework\View\Element\UiComponent\ContextInterface;
 use Magento\Framework\View\Element\UiComponentFactory;
 use Magento\Ui\Component\Listing\Columns\Column;
@@ -24,6 +26,19 @@ use Ordo\Automation\Model\Segment\SegmentMemberResolver;
  */
 class MatchingSegments extends Column
 {
+    private const string CACHE_KEY = 'ordo_rfm_matching_segments';
+
+    /**
+     * Found during a full-repo /simplify sweep: buildSegmentNamesByCustomerId() re-resolved
+     * every enabled segment against the entire customer base on every grid page/sort/filter
+     * action, each one a fresh set of resolver queries, to produce the same ~20-50-row page's
+     * worth of names every time. Same short-TTL cache DashboardViewModel::cachedCount() already
+     * uses for its own page-load counts - there's no cache-invalidation hook tied to
+     * segment/order changes here, so a short TTL (not an indefinite one) is what keeps a stale
+     * result bounded without needing one.
+     */
+    private const int CACHE_LIFETIME = 60;
+
     /**
      * @param array<int, mixed> $components
      * @param array<string, mixed> $data
@@ -33,6 +48,8 @@ class MatchingSegments extends Column
         UiComponentFactory $uiComponentFactory,
         private readonly SegmentCollectionFactory $segmentCollectionFactory,
         private readonly SegmentMemberResolver $segmentMemberResolver,
+        private readonly CacheInterface $cache,
+        private readonly SerializerInterface $serializer,
         array $components = [],
         array $data = []
     ) {
@@ -81,6 +98,24 @@ class MatchingSegments extends Column
      * @return array<int, string[]>
      */
     private function buildSegmentNamesByCustomerId(): array
+    {
+        $cached = $this->cache->load(self::CACHE_KEY);
+        if ($cached !== false) {
+            $decoded = $this->serializer->unserialize($cached);
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        $result = $this->resolveSegmentNamesByCustomerId();
+
+        $this->cache->save($this->serializer->serialize($result), self::CACHE_KEY, [], self::CACHE_LIFETIME);
+
+        return $result;
+    }
+
+    /**
+     * @return array<int, string[]>
+     */
+    private function resolveSegmentNamesByCustomerId(): array
     {
         $segments = $this->segmentCollectionFactory->create();
         $segments->addFieldToFilter('enabled', '1');

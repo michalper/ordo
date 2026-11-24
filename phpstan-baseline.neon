@@ -79,6 +79,36 @@ parameters:
 			path: Block/Adminhtml/Gdpr/Index.php
 
 		-
+			message: '#^Constant Ordo\\Automation\\Block\\Adminhtml\\Rfm\\Grid\\Column\\MatchingSegments\:\:CACHE_LIFETIME is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: Block/Adminhtml/Rfm/Grid/Column/MatchingSegments.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and false will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: Block/Adminhtml/Rfm/Grid/Column/MatchingSegments.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\Rfm\\Grid\\Column\\MatchingSegments\:\:buildSegmentNamesByCustomerId\(\) should return array\<int, array\<string\>\> but returns array\.$#'
+			identifier: return.type
+			count: 1
+			path: Block/Adminhtml/Rfm/Grid/Column/MatchingSegments.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: Block/Adminhtml/Rfm/Grid/Column/MatchingSegments.php
+
+		-
+			message: '#^Method Ordo\\Automation\\Block\\Adminhtml\\Rfm\\Grid\\Column\\MatchingSegments\:\:resolveSegmentNamesByCustomerId\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: Block/Adminhtml/Rfm/Grid/Column/MatchingSegments.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1

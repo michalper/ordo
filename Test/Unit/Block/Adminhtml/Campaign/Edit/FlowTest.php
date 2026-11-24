@@ -67,7 +67,7 @@ class FlowTest extends TestCase
         ]);
     }
 
-    private function makeBlock(): Flow
+    private function makeBlock(?TypeLabels $typeLabels = null): Flow
     {
         $escaper = $this->createStub(\Magento\Framework\Escaper::class);
         $escaper->method('escapeHtml')->willReturnArgument(0);
@@ -85,7 +85,7 @@ class FlowTest extends TestCase
             $this->triggerEventSource,
             $this->conditionPool,
             $this->actionPool,
-            new TypeLabels(),
+            $typeLabels ?? new TypeLabels(),
             $this->segmentOptions,
             [],
             $this->createStub(JsonHelper::class),
@@ -331,6 +331,61 @@ class FlowTest extends TestCase
         // both triggers connect to the single condition node (id 3)
         self::assertSame('3', $data[1]['outputs']['output_1']['connections'][0]['node']);
         self::assertSame('3', $data[2]['outputs']['output_1']['connections'][0]['node']);
+    }
+
+    /**
+     * Regression for a full-repo /simplify finding: getConditionTypeLabels()/
+     * getActionTypeLabels() used to be called once per condition/action row inside
+     * getFlowDataJson()'s own loop, each rebuilding its whole type=>label map (one
+     * conditionLabel()/actionLabel() call per pool type) from scratch every time. With 2
+     * condition rows and 2 action rows but a 2-type condition pool and a 2-type action pool
+     * (getActionTypes() always appends its own 'split' pseudo-type too, so 3 action types
+     * total), each TypeLabels method must now be called exactly once per type total (one
+     * hoisted map build) - not once per type per row.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetFlowDataJsonBuildsEachTypeLabelMapOnceNotOncePerRow(): void
+    {
+        $campaign = $this->createStub(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(6);
+        $this->registry->method('registry')->willReturnMap([['ordo_campaign', $campaign]]);
+
+        $emptyTriggerCollection = $this->createStub(TriggerCollection::class);
+        $emptyTriggerCollection->method('addCampaignFilter');
+        $emptyTriggerCollection->method('getIterator')->willReturn(new \ArrayIterator([]));
+        $this->triggerCollectionFactory->method('create')->willReturn($emptyTriggerCollection);
+
+        $firstCondition = $this->createStub(CampaignCondition::class);
+        $firstCondition->method('getType')->willReturn('order_total_gte');
+        $firstCondition->method('getParamsJson')->willReturn('{}');
+        $secondCondition = $this->createStub(CampaignCondition::class);
+        $secondCondition->method('getType')->willReturn('tag');
+        $secondCondition->method('getParamsJson')->willReturn('{}');
+        $conditionCollection = $this->createStub(ConditionCollection::class);
+        $conditionCollection->method('addCampaignFilter');
+        $conditionCollection->method('getIterator')
+            ->willReturn(new \ArrayIterator([$firstCondition, $secondCondition]));
+        $this->conditionCollectionFactory->method('create')->willReturn($conditionCollection);
+
+        $firstAction = $this->createStub(CampaignAction::class);
+        $firstAction->method('getType')->willReturn('add_tag');
+        $firstAction->method('getParamsJson')->willReturn('{}');
+        $firstAction->method('getDelayMinutes')->willReturn(0);
+        $secondAction = $this->createStub(CampaignAction::class);
+        $secondAction->method('getType')->willReturn('send_email');
+        $secondAction->method('getParamsJson')->willReturn('{}');
+        $secondAction->method('getDelayMinutes')->willReturn(0);
+        $actionCollection = $this->createStub(ActionCollection::class);
+        $actionCollection->method('addCampaignFilter');
+        $actionCollection->method('setOrder');
+        $actionCollection->method('getIterator')->willReturn(new \ArrayIterator([$firstAction, $secondAction]));
+        $this->actionCollectionFactory->method('create')->willReturn($actionCollection);
+
+        $typeLabels = $this->createMock(TypeLabels::class);
+        $typeLabels->expects(self::exactly(2))->method('conditionLabel')->willReturn('Condition Label');
+        $typeLabels->expects(self::exactly(3))->method('actionLabel')->willReturn('Action Label');
+
+        $this->makeBlock($typeLabels)->getFlowDataJson();
     }
 
     #[AllowMockObjectsWithoutExpectations]
