@@ -29,7 +29,7 @@ class DataProviderTest extends TestCase
     private function emptyWebsiteCollection(): ScoreRuleWebsiteCollection
     {
         $collection = $this->createStub(ScoreRuleWebsiteCollection::class);
-        $collection->method('addScoreRuleFilter')->willReturnSelf();
+        $collection->method('addScoreRuleIdsFilter')->willReturnSelf();
         $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
         return $collection;
     }
@@ -82,8 +82,9 @@ class DataProviderTest extends TestCase
 
         $websiteRow = $this->createStub(ScoreRuleWebsite::class);
         $websiteRow->method('getWebsiteId')->willReturn(2);
+        $websiteRow->method('getScoreRuleId')->willReturn(3);
         $websiteCollection = $this->createStub(ScoreRuleWebsiteCollection::class);
-        $websiteCollection->method('addScoreRuleFilter')->willReturnSelf();
+        $websiteCollection->method('addScoreRuleIdsFilter')->willReturnSelf();
         $websiteCollection->method('getIterator')->willReturn(new \ArrayIterator([$websiteRow]));
         // A fresh stub, not setUp()'s shared $this->scoreRuleWebsiteCollectionFactory - PHPUnit's
         // mock matcher uses the FIRST method('create') stub registered for every call, so a
@@ -98,6 +99,49 @@ class DataProviderTest extends TestCase
         $data = $provider->getData();
 
         self::assertSame([2], $data[3]['website_ids']);
+    }
+
+    /**
+     * Regression for a full-repo /simplify finding: website rows used to be loaded with one
+     * query per rule - create() on the factory must now happen exactly once no matter how many
+     * rules are on the page, and addScoreRuleIdsFilter() must receive every rule's id in one
+     * call, same batching ScoreRuleEvaluator::loadWebsiteIdsByRule() already does.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetDataLoadsWebsiteIdsForEveryRuleInOneBatchedQuery(): void
+    {
+        $rule1 = $this->createStub(ScoreRule::class);
+        $rule1->method('getEntityId')->willReturn(3);
+        $rule1->method('getData')->willReturn(['entity_id' => 3]);
+
+        $rule2 = $this->createStub(ScoreRule::class);
+        $rule2->method('getEntityId')->willReturn(7);
+        $rule2->method('getData')->willReturn(['entity_id' => 7]);
+
+        $collection = $this->createStub(ScoreRuleCollection::class);
+        $collection->method('getItems')->willReturn([$rule1, $rule2]);
+
+        $websiteRow3 = $this->createStub(ScoreRuleWebsite::class);
+        $websiteRow3->method('getScoreRuleId')->willReturn(3);
+        $websiteRow3->method('getWebsiteId')->willReturn(1);
+        $websiteRow7 = $this->createStub(ScoreRuleWebsite::class);
+        $websiteRow7->method('getScoreRuleId')->willReturn(7);
+        $websiteRow7->method('getWebsiteId')->willReturn(2);
+
+        $websiteCollection = $this->createMock(ScoreRuleWebsiteCollection::class);
+        $websiteCollection->expects(self::once())->method('addScoreRuleIdsFilter')->with([3, 7])->willReturnSelf();
+        $websiteCollection->method('getIterator')->willReturn(new \ArrayIterator([$websiteRow3, $websiteRow7]));
+
+        $this->scoreRuleWebsiteCollectionFactory = $this->createMock(ScoreRuleWebsiteCollectionFactory::class);
+        $this->scoreRuleWebsiteCollectionFactory->expects(self::once())->method('create')
+            ->willReturn($websiteCollection);
+
+        $this->dataPersistor->method('get')->willReturn(null);
+
+        $data = $this->makeProvider($collection)->getData();
+
+        self::assertSame([1], $data[3]['website_ids']);
+        self::assertSame([2], $data[7]['website_ids']);
     }
 
     public function testGetDataAppliesPersistedDataAndClearsIt(): void
