@@ -47,17 +47,29 @@ class CollectionTest extends TestCase
             }
         );
 
+        $wrapperSelect = $this->createMock(Select::class);
+        $wrapperArgs = null;
+        $wrapperSelect->expects(self::once())->method('from')->willReturnCallback(
+            function ($name, $cols) use (&$wrapperArgs, $wrapperSelect) {
+                $wrapperArgs = [$name, $cols];
+                return $wrapperSelect;
+            }
+        );
+
         // setConnection() builds a fresh main select each time it's called, and the construction
         // path calls it twice (once from Data\Collection\AbstractDb, once from
-        // Model\ResourceModel\Db\Collection\AbstractCollection) before _initSelect() runs — so
-        // the first two select() calls are the main select, and everything after is the
-        // sales_order aggregate subselect _initSelect() assembles.
+        // Model\ResourceModel\Db\Collection\AbstractCollection) before _initSelect() runs. Then
+        // _initSelect() itself calls select() twice more: once for the sales_order aggregate
+        // subselect, once for the outer wrapper select rfm_score is computed in.
         $selectCalls = 0;
         $connection = $this->createStub(AdapterInterface::class);
         $connection->method('select')->willReturnCallback(
-            static function () use (&$selectCalls, $mainSelect, $aggregateSelect) {
+            static function () use (&$selectCalls, $mainSelect, $aggregateSelect, $wrapperSelect) {
                 $selectCalls++;
-                return $selectCalls <= 2 ? $mainSelect : $aggregateSelect;
+                if ($selectCalls <= 2) {
+                    return $mainSelect;
+                }
+                return $selectCalls === 3 ? $aggregateSelect : $wrapperSelect;
             }
         );
 
@@ -97,7 +109,6 @@ class CollectionTest extends TestCase
                 'monetary_quintile',
                 'frequency_quintile',
                 'recency_quintile',
-                'rfm_score',
             ],
             array_keys($columns)
         );
@@ -107,10 +118,22 @@ class CollectionTest extends TestCase
         self::assertStringContainsString('NTILE(5) OVER (ORDER BY COALESCE(rfm_agg.frequency, 0) ASC)', $columns['frequency_quintile']);
         self::assertStringContainsString('DESC)', $columns['recency_quintile']);
         self::assertStringContainsString('999999', $columns['recency_quintile']);
-        // rfm_score repeats the same three NTILE specs inline (recency DESC, frequency/monetary
-        // ASC) inside a CONCAT, in R-F-M order, since it can't reference the aliases above.
-        self::assertStringStartsWith('CONCAT(', $columns['rfm_score']);
-        self::assertStringContainsString('NTILE(5) OVER (ORDER BY COALESCE(rfm_agg.monetary, 0) ASC)', $columns['rfm_score']);
-        self::assertStringContainsString('NTILE(5) OVER (ORDER BY COALESCE(rfm_agg.frequency, 0) ASC)', $columns['rfm_score']);
+
+        // rfm_score is computed in an outer wrapper select instead of repeating the three NTILE
+        // specs inline - found during a full-repo /simplify sweep, so it can cheaply reference
+        // the already-computed *_quintile columns from the inner select, now wrapped as a
+        // derived table ("rfm_base"), instead of re-evaluating all three window functions again.
+        self::assertNotNull($wrapperArgs);
+        self::assertSame(['rfm_base'], array_keys($wrapperArgs[0]));
+        self::assertSame($mainSelect, $wrapperArgs[0]['rfm_base']);
+
+        $wrapperColumns = $wrapperArgs[1];
+        self::assertSame('*', $wrapperColumns[0]);
+        self::assertSame(
+            'CONCAT(recency_quintile, frequency_quintile, monetary_quintile)',
+            (string) $wrapperColumns['rfm_score']
+        );
+
+        self::assertSame($wrapperSelect, $collection->getSelect());
     }
 }

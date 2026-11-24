@@ -119,20 +119,30 @@ class Collection extends SearchResult
                 'recency_quintile' => new \Zend_Db_Expr(
                     sprintf('NTILE(5) OVER (ORDER BY %s DESC)', $recencyForRanking)
                 ),
-                // The standard "555" RFM-notation score (best on all three down to "111"). Can't
-                // reference the recency_quintile/frequency_quintile/monetary_quintile aliases
-                // above — MySQL doesn't allow one select-list expression to reference another
-                // window-function alias in the same SELECT — so this repeats the same three
-                // NTILE() window specs inline instead; same result, same query plan MySQL already
-                // built for the aliased columns, just evaluated a second time.
-                'rfm_score' => new \Zend_Db_Expr(sprintf(
-                    'CONCAT(NTILE(5) OVER (ORDER BY %s DESC), NTILE(5) OVER (ORDER BY %s ASC), '
-                    . 'NTILE(5) OVER (ORDER BY %s ASC))',
-                    $recencyForRanking,
-                    $frequency,
-                    $monetary
-                )),
             ]
         );
+
+        // The standard "555" RFM-notation score (best on all three down to "111") can't
+        // reference the recency_quintile/frequency_quintile/monetary_quintile aliases above
+        // directly — MySQL doesn't allow one select-list expression to reference another
+        // window-function alias in the same SELECT. Found during a full-repo /simplify sweep:
+        // the previous fix for that restriction re-evaluated the same three NTILE() window specs
+        // a second time inline instead, doubling the sort/partition cost of the whole join for
+        // every row. Wrapping the above as a derived table and computing rfm_score in this outer
+        // query instead avoids that - a derived table's own exposed columns ARE directly
+        // referenceable in its enclosing query's SELECT list, since that restriction is specific
+        // to aliases within one single SELECT, not across a subquery boundary.
+        $wrapper = $connection->select();
+        $wrapper->from(
+            ['rfm_base' => $this->getSelect()],
+            [
+                '*',
+                'rfm_score' => new \Zend_Db_Expr(
+                    'CONCAT(recency_quintile, frequency_quintile, monetary_quintile)'
+                ),
+            ]
+        );
+
+        $this->_select = $wrapper;
     }
 }
