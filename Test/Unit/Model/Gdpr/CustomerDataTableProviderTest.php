@@ -15,11 +15,11 @@ class CustomerDataTableProviderTest extends TestCase
         $this->provider = new CustomerDataTableProvider();
     }
 
-    public function testGetTablesReturnsAllThirtyThreeCustomerKeyedTables(): void
+    public function testGetTablesReturnsAllThirtyFourCustomerKeyedTables(): void
     {
         $tables = $this->provider->getTables();
 
-        self::assertCount(33, $tables);
+        self::assertCount(34, $tables);
         self::assertContains('ordo_customer_consent', $tables);
         self::assertContains('ordo_customer_consent_topic', $tables);
         self::assertContains('ordo_customer_consent_log', $tables);
@@ -62,6 +62,9 @@ class CustomerDataTableProviderTest extends TestCase
         self::assertContains('ordo_wishlist_abandoned_reminder_log', $tables);
         self::assertContains('ordo_stalled_payment_reminder_log', $tables);
         self::assertContains('ordo_loyalty_points_ledger', $tables);
+        // Found 2026-11-24 (security review): has a non-nullable customer_id in db_schema.xml
+        // and had never been added here either, despite its sibling claim tables all being here.
+        self::assertContains('ordo_segment_bulk_action_claim', $tables);
     }
 
     public function testGetExportKeysByTableMapsEveryTableToItsExportKey(): void
@@ -99,6 +102,7 @@ class CustomerDataTableProviderTest extends TestCase
             'ordo_customer_inactive_trigger_claim' => 'customer_inactive_trigger_claim',
             'ordo_customer_anniversary_trigger_claim' => 'customer_anniversary_trigger_claim',
             'ordo_segment_blast_trigger_claim' => 'segment_blast_trigger_claim',
+            'ordo_segment_bulk_action_claim' => 'segment_bulk_action_claim',
             'ordo_wishlist_abandoned_reminder_log' => 'wishlist_abandoned_reminder_log',
             'ordo_stalled_payment_reminder_log' => 'stalled_payment_reminder_log',
             'ordo_loyalty_points_ledger' => 'loyalty_points_ledger',
@@ -108,5 +112,32 @@ class CustomerDataTableProviderTest extends TestCase
     public function testGetTablesAndGetExportKeysByTableAgreeOnTheSameTableSet(): void
     {
         self::assertSame($this->provider->getTables(), array_keys($this->provider->getExportKeysByTable()));
+    }
+
+    /**
+     * The real fix for this class's own documented "went stale six times" problem: parses
+     * etc/db_schema.xml directly instead of trusting another hand-maintained list, so a table
+     * that gains a customer_id column in the future fails THIS test instead of needing another
+     * audit to notice. Only `<column>` elements that are direct children of `<table>` count -
+     * `<constraint>`/`<index>` elements also have `<column name="...">` children, but those only
+     * reference a column that's already declared elsewhere, they don't declare a new one.
+     */
+    public function testTablesToExportKeysCoversEveryCustomerIdBearingTable(): void
+    {
+        $schema = simplexml_load_file(__DIR__ . '/../../../../etc/db_schema.xml');
+        self::assertNotFalse($schema, 'Could not parse etc/db_schema.xml');
+
+        $tablesWithCustomerId = [];
+        foreach ($schema->table as $table) {
+            foreach ($table->column as $column) {
+                if ((string) $column['name'] === 'customer_id') {
+                    $tablesWithCustomerId[] = (string) $table['name'];
+                    break;
+                }
+            }
+        }
+
+        self::assertNotEmpty($tablesWithCustomerId, 'Parsed zero customer_id-bearing tables - check the XPath above against the real db_schema.xml shape.');
+        self::assertEqualsCanonicalizing($tablesWithCustomerId, $this->provider->getTables());
     }
 }

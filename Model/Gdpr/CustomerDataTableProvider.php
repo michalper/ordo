@@ -12,7 +12,7 @@ namespace Ordo\Automation\Model\Gdpr;
  * erasure that misses data (compliance risk) or an export that's incomplete - both now read from
  * here instead.
  *
- * Went stale THREE times now, in exactly the way this doc warns about. First: a follow-up audit
+ * Went stale SIX times now, in exactly the way this doc warns about. First: a follow-up audit
  * found the list was missing ordo_customer_rfm_score, ordo_trigger_outcome_log,
  * ordo_campaign_outcome_log, ordo_push_subscription, ordo_reorder_cycle, ordo_offer and
  * ordo_credit_limit_alert_log. Second (2026-09-17, found during live end-to-end verification of
@@ -32,9 +32,15 @@ namespace Ordo\Automation\Model\Gdpr;
  * the customer_inactive campaign trigger feature) carries a non-nullable customer_id and had
  * never been added either. Fifth (2026-11-23, full-repo audit): ordo_wishlist_abandoned_reminder_log,
  * ordo_stalled_payment_reminder_log and ordo_loyalty_points_ledger each carry a non-nullable
- * customer_id and had never been added either. There is no automated check that this list stays
- * complete - re-verify against db_schema.xml for every table with a customer_id column whenever a
- * new one is added, don't trust this list is still exhaustive just because it was once.
+ * customer_id and had never been added either. Sixth (2026-11-24, security review):
+ * ordo_segment_bulk_action_claim carries a non-nullable customer_id and had never been added
+ * either, despite its own sibling claim tables (ordo_customer_anniversary_trigger_claim,
+ * ordo_segment_blast_trigger_claim, ordo_customer_inactive_trigger_claim) all being here already.
+ *
+ * Test\Unit\Model\Gdpr\CustomerDataTableProviderTest's own
+ * testTablesToExportKeysCoversEveryCustomerIdBearingTable() now parses etc/db_schema.xml directly
+ * and fails if a table with a customer_id column is missing from this list - added specifically
+ * so a seventh recurrence fails CI instead of needing another audit to catch it.
  */
 class CustomerDataTableProvider
 {
@@ -75,6 +81,7 @@ class CustomerDataTableProvider
         'ordo_customer_inactive_trigger_claim' => 'customer_inactive_trigger_claim',
         'ordo_customer_anniversary_trigger_claim' => 'customer_anniversary_trigger_claim',
         'ordo_segment_blast_trigger_claim' => 'segment_blast_trigger_claim',
+        'ordo_segment_bulk_action_claim' => 'segment_bulk_action_claim',
         'ordo_wishlist_abandoned_reminder_log' => 'wishlist_abandoned_reminder_log',
         'ordo_stalled_payment_reminder_log' => 'stalled_payment_reminder_log',
         'ordo_loyalty_points_ledger' => 'loyalty_points_ledger',
