@@ -68,6 +68,34 @@ class FunnelViewModelTest extends TestCase
         self::assertSame([$row], $this->makeViewModel()->getFunnelRows());
     }
 
+    /**
+     * Regression for a full-repo /simplify finding: the template calls both getFunnelRows() and
+     * hasVariants() (which itself calls getFunnelRows() again), so without memoization
+     * CampaignFunnelStats::getForCampaign()'s own two aggregate queries ran twice per
+     * campaign-edit page load.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetFunnelRowsMemoizesAcrossRepeatedCallsOnTheSameInstance(): void
+    {
+        $campaign = $this->createStub(Campaign::class);
+        $campaign->method('getEntityId')->willReturn(5);
+        $this->registry->method('registry')->willReturnMap([['ordo_campaign', $campaign]]);
+
+        $row = [
+            'variant' => 'a', 'sent' => 1, 'delivered' => 1, 'opened' => 0, 'clicked' => 0,
+            'converted' => 0, 'conversion_rate' => 0.0, 'revenue' => 0.0,
+        ];
+        $campaignFunnelStats = $this->createMock(CampaignFunnelStats::class);
+        $campaignFunnelStats->expects(self::once())->method('getForCampaign')->with(5)->willReturn([$row]);
+        $this->campaignFunnelStats = $campaignFunnelStats;
+
+        $viewModel = $this->makeViewModel();
+
+        self::assertSame([$row], $viewModel->getFunnelRows());
+        self::assertTrue($viewModel->hasVariants());
+        self::assertSame([$row], $viewModel->getFunnelRows());
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testHasVariantsTrueWhenAnyRowHasANonNullVariant(): void
     {
