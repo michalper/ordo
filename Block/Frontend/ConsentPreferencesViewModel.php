@@ -19,18 +19,6 @@ use Ordo\Automation\Model\ConsentTopic;
  */
 class ConsentPreferencesViewModel implements ArgumentInterface
 {
-    /**
-     * @var ConsentChannel[] every message-delivery channel - ads is rendered separately, see
-     *     isAdsConsented().
-     */
-    private const array DELIVERY_CHANNELS = [
-        ConsentChannel::Email,
-        ConsentChannel::Sms,
-        ConsentChannel::Push,
-        ConsentChannel::WhatsApp,
-        ConsentChannel::Rcs,
-    ];
-
     private ?ConsentPreferencesInterface $preferences = null;
 
     public function __construct(
@@ -56,7 +44,7 @@ class ConsentPreferencesViewModel implements ArgumentInterface
      */
     public function getDeliveryChannels(): array
     {
-        return self::DELIVERY_CHANNELS;
+        return ConsentChannel::deliveryChannels();
     }
 
     private function getChannelPreference(ConsentChannel $channel): ?ConsentChannelPreferenceInterface

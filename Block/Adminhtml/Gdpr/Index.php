@@ -75,14 +75,7 @@ class Index extends Template
         $customerId = $this->getCustomerId();
         $states = [];
 
-        $channels = [
-            ConsentChannel::Email,
-            ConsentChannel::Sms,
-            ConsentChannel::Push,
-            ConsentChannel::WhatsApp,
-            ConsentChannel::Rcs,
-        ];
-        foreach ($channels as $channel) {
+        foreach (ConsentChannel::deliveryChannels() as $channel) {
             $channelStates = $this->consentManager->getTopicConsentStates($customerId, $channel);
             $states[$channel->value] = [
                 ConsentTopic::Promotional->value =>
