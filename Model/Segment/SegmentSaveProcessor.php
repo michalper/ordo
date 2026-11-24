@@ -14,7 +14,9 @@ use Ordo\Automation\Model\ResourceModel\Segment\Website\CollectionFactory as Seg
 use Ordo\Automation\Model\Segment;
 use Ordo\Automation\Model\SegmentConditionFactory;
 use Ordo\Automation\Model\SegmentFactory;
+use Ordo\Automation\Model\SegmentWebsite;
 use Ordo\Automation\Model\SegmentWebsiteFactory;
+use Ordo\Automation\Model\Shared\WebsiteScopeSaver;
 
 /**
  * Persists the segment row plus its condition child rows in one request — same
@@ -46,6 +48,7 @@ class SegmentSaveProcessor
         private readonly SegmentWebsiteFactory $segmentWebsiteFactory,
         private readonly SegmentWebsiteResource $segmentWebsiteResource,
         private readonly SegmentWebsiteCollectionFactory $segmentWebsiteCollectionFactory,
+        private readonly WebsiteScopeSaver $websiteScopeSaver,
         private readonly ResourceConnection $resourceConnection
     ) {
     }
@@ -93,36 +96,21 @@ class SegmentSaveProcessor
     }
 
     /**
-     * No rows at all means unscoped (matches customers on every website) - see docs/adr/0014 -
-     * so an empty posted selection (the common case; most installs are single-website) correctly
-     * leaves this segment with zero website rows rather than writing anything. Mirrors
-     * Model\Campaign\CampaignSaveProcessor::saveWebsites() exactly.
-     *
      * @param array<int, string|int> $websiteIds
      */
     private function saveWebsites(int $segmentId, array $websiteIds): void
     {
         $existingWebsites = $this->segmentWebsiteCollectionFactory->create();
         $existingWebsites->addSegmentFilter($segmentId);
-        foreach ($existingWebsites as $existing) {
-            $this->segmentWebsiteResource->delete($existing);
-        }
 
-        $seen = [];
-        foreach ($websiteIds as $websiteId) {
-            $websiteId = (int) $websiteId;
-            if ($websiteId <= 0 || isset($seen[$websiteId])) {
-                continue;
-            }
-            $seen[$websiteId] = true;
-
-            $website = $this->segmentWebsiteFactory->create();
-            $website->setData([
-                'segment_id' => $segmentId,
-                'website_id' => $websiteId,
-            ]);
-            $this->segmentWebsiteResource->save($website);
-        }
+        $this->websiteScopeSaver->save(
+            $existingWebsites,
+            $this->segmentWebsiteResource,
+            fn (): SegmentWebsite => $this->segmentWebsiteFactory->create(),
+            'segment_id',
+            $segmentId,
+            $websiteIds
+        );
     }
 
     /**

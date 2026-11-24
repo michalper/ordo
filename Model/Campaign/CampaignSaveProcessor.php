@@ -11,6 +11,7 @@ use Ordo\Automation\Model\CampaignConditionFactory;
 use Ordo\Automation\Model\CampaignDispatcher;
 use Ordo\Automation\Model\CampaignFactory;
 use Ordo\Automation\Model\CampaignTriggerFactory;
+use Ordo\Automation\Model\CampaignWebsite;
 use Ordo\Automation\Model\CampaignWebsiteFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action as CampaignActionResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action\CollectionFactory as CampaignActionCollectionFactory;
@@ -21,6 +22,7 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Trigger as CampaignTriggerResou
 use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as CampaignTriggerCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\Campaign\Website as CampaignWebsiteResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Website\CollectionFactory as CampaignWebsiteCollectionFactory;
+use Ordo\Automation\Model\Shared\WebsiteScopeSaver;
 
 /**
  * Persists the campaign row plus its trigger/condition/action child rows in one request. Child
@@ -67,6 +69,7 @@ class CampaignSaveProcessor
         private readonly CampaignWebsiteFactory $campaignWebsiteFactory,
         private readonly CampaignWebsiteResource $campaignWebsiteResource,
         private readonly CampaignWebsiteCollectionFactory $campaignWebsiteCollectionFactory,
+        private readonly WebsiteScopeSaver $websiteScopeSaver,
         private readonly CacheInterface $cache,
         private readonly ResourceConnection $resourceConnection
     ) {
@@ -234,34 +237,20 @@ class CampaignSaveProcessor
     }
 
     /**
-     * No rows at all means unscoped (matches every website) - see docs/adr/0014 - so an empty
-     * posted selection (the common case; most installs are single-website) correctly leaves
-     * this campaign with zero website rows rather than writing anything.
-     *
      * @param array<int, string|int> $websiteIds
      */
     private function saveWebsites(int $campaignId, array $websiteIds): void
     {
         $existingWebsites = $this->campaignWebsiteCollectionFactory->create();
         $existingWebsites->addCampaignFilter($campaignId);
-        foreach ($existingWebsites as $existing) {
-            $this->campaignWebsiteResource->delete($existing);
-        }
 
-        $seen = [];
-        foreach ($websiteIds as $websiteId) {
-            $websiteId = (int) $websiteId;
-            if ($websiteId <= 0 || isset($seen[$websiteId])) {
-                continue;
-            }
-            $seen[$websiteId] = true;
-
-            $website = $this->campaignWebsiteFactory->create();
-            $website->setData([
-                'campaign_id' => $campaignId,
-                'website_id' => $websiteId,
-            ]);
-            $this->campaignWebsiteResource->save($website);
-        }
+        $this->websiteScopeSaver->save(
+            $existingWebsites,
+            $this->campaignWebsiteResource,
+            fn (): CampaignWebsite => $this->campaignWebsiteFactory->create(),
+            'campaign_id',
+            $campaignId,
+            $websiteIds
+        );
     }
 }
