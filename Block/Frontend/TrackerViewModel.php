@@ -79,6 +79,11 @@ class TrackerViewModel implements ArgumentInterface
         return $this->config->isLowStockWidgetEnabled();
     }
 
+    public function isCrossSellWidgetEnabled(): bool
+    {
+        return $this->config->isCrossSellWidgetEnabled();
+    }
+
     public function isEmailCaptureEnabled(): bool
     {
         return $this->config->isEmailCaptureEnabled();

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="StorefrontCrossSellWidgetTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="On-site behavior tracking"/>
+            <title value="window.ordoRenderCrossSell renders real recommendations for the order just placed, and refuses a different order"/>
+            <description value="Controller/Track/CrossSell.php reuses the exact same ProductRecommender best-seller-fallback logic AdminAddProductRecommendationsActionTest already proves for the email action - see that test's own description for why this needs a seed customer/order (establishing a best-seller) and a separate real customer/order (buying something else, so the fallback has something believable to recommend that isn't their own purchase). This test additionally proves the one thing only a real browser session can prove: Controller/Track/CrossSell.php's order-ownership check (docs/adr/0082) actually rejects an order_id that doesn't belong to the CURRENT checkout session, not just the seed customer's own order being correctly recommended for their own session."/>
+            <severity value="CRITICAL"/>
+            <group value="ordo_automation"/>
+            <group value="tracking"/>
+        </annotations>
+        <before>
+            <magentoCLI command="config:set ordo_tracking/tracking/cross_sell_enabled 1" stepKey="enableCrossSell"/>
+            <createData entity="Simple_US_Customer" stepKey="createSeedCustomer"/>
+            <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <createData entity="SimpleProduct2" stepKey="createSeedProduct"/>
+            <createData entity="SimpleProduct2" stepKey="createMainProduct"/>
+        </before>
+        <after>
+            <magentoCLI command="config:set ordo_tracking/tracking/cross_sell_enabled 0" stepKey="disableCrossSell"/>
+            <deleteData createDataKey="createSeedCustomer" stepKey="deleteSeedCustomer"/>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createSeedProduct" stepKey="deleteSeedProduct"/>
+            <deleteData createDataKey="createMainProduct" stepKey="deleteMainProduct"/>
+        </after>
+
+        <!-- Step 1: the SEED order - a different, throwaway customer buys productSeed, making it
+             the store's only best-seller so far (same reasoning as
+             AdminAddProductRecommendationsActionTest's own seed order). Its own order id is
+             grabbed from the success page's order link before logging out - needed later for the
+             negative/ownership case in Step 3, since by then this session will belong to a
+             different customer entirely. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsSeedCustomer">
+            <argument name="Customer" value="$$createSeedCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createSeedProduct.custom_attributes[url_key]$.html" stepKey="goToSeedProductPage"/>
+        <waitForPageLoad stepKey="waitForSeedProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addSeedProductToCart">
+            <argument name="productName" value="$createSeedProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToSeedCart"/>
+        <waitForPageLoad stepKey="waitForSeedCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeSeedOrder"/>
+        <waitForElementVisible selector="{{CheckoutSuccessMainSection.orderLink}}" stepKey="waitForSeedOrderLink"/>
+        <executeJS function="return document.querySelector('a[href*=order_id]').href.match(/order_id\/(\d+)/)[1];" stepKey="grabSeedOrderId"/>
+        <actionGroup ref="StorefrontCustomerLogoutActionGroup" stepKey="logoutSeedCustomer"/>
+
+        <!-- Step 2: the REAL order under test - a different customer buys a DIFFERENT product
+             (productMain). ProductRecommender's own co-purchase affinity for this customer is
+             empty (nobody else ever bought productMain), so the best-seller fallback fires -
+             productSeed is the store's only best-seller and isn't something this customer owns,
+             so it's exactly what the widget must recommend. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createMainProduct.custom_attributes[url_key]$.html" stepKey="goToMainProductPage"/>
+        <waitForPageLoad stepKey="waitForMainProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addMainProductToCart">
+            <argument name="productName" value="$createMainProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+        <waitForElementVisible selector="{{CheckoutSuccessMainSection.orderLink}}" stepKey="waitForRealOrderLink"/>
+        <executeJS function="return document.querySelector('a[href*=order_id]').href.match(/order_id\/(\d+)/)[1];" stepKey="grabRealOrderId"/>
+
+        <!-- Step 3: the widget call this test customer's own just-placed order id must succeed -
+             window.ordoRenderCrossSell is tracker.js's own theme-integration-point function
+             (docs/adr/0082), called here exactly as a real theme's thank-you template would,
+             against a container this test injects since no theme in this environment calls it
+             automatically. -->
+        <executeJS function="var d = document.createElement('div'); d.id = 'ordo-cross-sell-real'; d.style.display = 'none'; document.body.appendChild(d);" stepKey="injectRealContainer"/>
+        <executeJS function="window.ordoRenderCrossSell('{$grabRealOrderId}', '#ordo-cross-sell-real');" stepKey="callCrossSellForOwnOrder"/>
+        <wait time="2" stepKey="waitForRealCrossSellFetch"/>
+        <!-- Codeception's own see()/findElement (the real W3C WebDriver "find element" command)
+             unreliably fails to locate an element a plain executeJS call just appended to
+             document.body in this environment, even though document.getElementById() confirms
+             (via a throwaway diagnostic executeJS call during development) that the element
+             genuinely exists in the live DOM at this exact point - reading the content back via
+             executeJS instead sidesteps whatever that WebDriver-vs-JS-DOM discrepancy is. -->
+        <executeJS function="var c = document.getElementById('ordo-cross-sell-real'); return c ? c.innerHTML : 'MISSING_CONTAINER';" stepKey="grabRealContainerHtml"/>
+        <assertStringContainsString stepKey="seeRecommendedProductInWidget">
+            <expectedResult type="string">$createSeedProduct.name$</expectedResult>
+            <actualResult type="variable">grabRealContainerHtml</actualResult>
+        </assertStringContainsString>
+
+        <!-- Step 4: the security case docs/adr/0082 exists for - this same session's own
+             CheckoutSession::getLastRealOrderId() is the REAL order above, not the seed
+             customer's order, so asking for the seed order's id here must be refused (empty
+             container), proving the ownership check isn't bypassable just by knowing a valid
+             order id that belongs to someone else. -->
+        <executeJS function="var d = document.createElement('div'); d.id = 'ordo-cross-sell-foreign'; d.style.display = 'none'; document.body.appendChild(d);" stepKey="injectForeignContainer"/>
+        <executeJS function="window.ordoRenderCrossSell('{$grabSeedOrderId}', '#ordo-cross-sell-foreign');" stepKey="callCrossSellForForeignOrder"/>
+        <wait time="2" stepKey="waitForForeignCrossSellFetch"/>
+        <executeJS function="return document.querySelector('#ordo-cross-sell-foreign').innerHTML;" stepKey="grabForeignContainerHtml"/>
+        <assertEquals stepKey="assertForeignContainerStaysEmpty">
+            <expectedResult type="string"></expectedResult>
+            <actualResult type="variable">grabForeignContainerHtml</actualResult>
+        </assertEquals>
+    </test>
+</tests>

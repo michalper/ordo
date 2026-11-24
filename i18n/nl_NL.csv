@@ -1292,3 +1292,8 @@
 "Outbound","Uitgaand"
 "Reply sent.","Antwoord verzonden."
 "Could not send the reply: %1","Het antwoord kon niet worden verzonden: %1"
+"Enable ""You might also like"" on the order thank-you page","Schakel ""Dit vind je mogelijk ook leuk"" in op de bedankpagina van de bestelling"
+"Shows a small product recommendation grid on the thank-you page after an order is placed, using the same ""customers who bought this also bought"" logic as a campaign email's recommended-products block. Needs a small one-time change in your theme to display it (ask your developer to call window.ordoRenderCrossSell - see the module's documentation). Requires tracking to be enabled above.","Toont een klein raster met aanbevolen producten op de bedankpagina na het plaatsen van een bestelling, met dezelfde ""klanten die dit kochten, kochten ook""-logica als het aanbevolen-producten-blok van een campagne-e-mail. Vereist een kleine eenmalige aanpassing in je thema (vraag je ontwikkelaar om window.ordoRenderCrossSell aan te roepen - zie de documentatie van de module). Vereist dat tracking hierboven is ingeschakeld."
+"Number of products to show","Aantal te tonen producten"
+"Default: 4.","Standaard: 4."
+"You might also like","Dit vind je mogelijk ook leuk"

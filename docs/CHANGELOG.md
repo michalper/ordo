@@ -9,6 +9,12 @@ no manual step needed here anymore.
 
 ## [Unreleased]
 
+### Added
+
+- New order thank-you-page cross-sell widget (`window.ordoRenderCrossSell(orderId,
+  containerSelector)`), reusing the same product-recommendation logic and markup a campaign
+  email's recommended-products block already uses. See `docs/adr/0082`.
+
 ## [1.14.0] - 2026-11-24
 
 A continuation of the full-repo audit/`/simplify` sweep that produced 1.13.0.

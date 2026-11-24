@@ -118,6 +118,14 @@ class TrackerViewModelTest extends TestCase
         self::assertTrue((new TrackerViewModel($config))->isLowStockWidgetEnabled());
     }
 
+    public function testIsCrossSellWidgetEnabledReflectsConfig(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isCrossSellWidgetEnabled')->willReturn(true);
+
+        self::assertTrue((new TrackerViewModel($config))->isCrossSellWidgetEnabled());
+    }
+
     public function testIsEmailCaptureEnabledReflectsConfig(): void
     {
         $config = $this->createStub(Config::class);

@@ -1292,3 +1292,8 @@
 "Outbound","发出"
 "Reply sent.","回复已发送。"
 "Could not send the reply: %1","无法发送回复：%1"
+"Enable ""You might also like"" on the order thank-you page","在订单感谢页面启用“您可能也会喜欢”"
+"Shows a small product recommendation grid on the thank-you page after an order is placed, using the same ""customers who bought this also bought"" logic as a campaign email's recommended-products block. Needs a small one-time change in your theme to display it (ask your developer to call window.ordoRenderCrossSell - see the module's documentation). Requires tracking to be enabled above.","下单后在感谢页面显示一个小型推荐商品网格，使用与营销活动邮件推荐商品区块相同的“购买了此商品的客户还购买了”逻辑。需要在您的主题中进行一次性小改动（请让开发人员调用 window.ordoRenderCrossSell - 参见模块文档）。需要上方的跟踪功能已启用。"
+"Number of products to show","显示的商品数量"
+"Default: 4.","默认值：4。"
+"You might also like","您可能也会喜欢"
