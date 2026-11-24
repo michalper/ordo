@@ -42,6 +42,36 @@ class GoogleOAuthTokenProviderTest extends TestCase
         self::assertSame('access-123', $this->provider->getAccessToken());
     }
 
+    /**
+     * Regression for a full-repo /simplify finding: Cron\SyncAdAudiences calls getAccessToken()
+     * once per enabled audience - without caching, N audiences in one cron tick meant N
+     * redundant HTTP round-trips to Google's OAuth endpoint for the exact same credentials.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetAccessTokenCachesAStillValidTokenAcrossCalls(): void
+    {
+        $this->curl->expects(self::once())->method('post');
+        $this->curl->method('getStatus')->willReturn(200);
+        $this->curl->method('getBody')
+            ->willReturn(json_encode(['access_token' => 'access-123', 'expires_in' => 3600]));
+
+        self::assertSame('access-123', $this->provider->getAccessToken());
+        self::assertSame('access-123', $this->provider->getAccessToken());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetAccessTokenRefetchesOnceTheCachedTokenHasExpired(): void
+    {
+        $this->curl->expects(self::exactly(2))->method('post');
+        $this->curl->method('getStatus')->willReturn(200);
+        // expires_in below the safety margin means it's already treated as expired immediately.
+        $this->curl->method('getBody')
+            ->willReturn(json_encode(['access_token' => 'access-123', 'expires_in' => 5]));
+
+        self::assertSame('access-123', $this->provider->getAccessToken());
+        self::assertSame('access-123', $this->provider->getAccessToken());
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testGetAccessTokenThrowsOnNon200Status(): void
     {
