@@ -14,14 +14,24 @@ use Magento\Framework\Pricing\Helper\Data as PricingHelper;
  * for embedding straight into a campaign email body via {{var recommended_products_html|raw}} —
  * email HTML must be table-based with inline styles (no external CSS, no flexbox/grid), matching
  * this module's other shipped templates (see view/frontend/email/campaign_generic.html).
- *
- * A SKU that no longer resolves to a product (deleted/disabled between recommendation-compute
- * time and email-send time) is skipped silently — same handling FreeGiftManagement::addGiftItem
- * relies on ProductRepositoryInterface::get() for; a stale SKU in someone's recommendation list
- * isn't an error condition worth logging.
  */
 class ProductRecommendationRenderer
 {
+    /**
+     * Keyed by sku, shared across renderHtml()/renderText() and across calls - found during a
+     * full-repo /simplify sweep: Action\AddProductRecommendations calls both methods with the
+     * exact same $skus, each independently loading every product one at a time, so one
+     * recommendation send did up to 2x N individual EAV product loads. Caching by sku (not by
+     * customer) is safe across this instance's whole lifetime - a recommended product's own
+     * data doesn't change mid-run, and a popular sku recommended to many customers in the same
+     * batch is now loaded at most once total, not once per customer either.
+     *
+     * @var array<string, Product|null> null means a prior lookup confirmed this sku doesn't
+     *   resolve to a product (deleted/disabled) - cached too, so a repeated stale sku isn't
+     *   re-queried on every call either.
+     */
+    private array $productCache = [];
+
     public function __construct(
         private readonly ProductRepositoryInterface $productRepository,
         private readonly Escaper $escaper,
@@ -45,11 +55,8 @@ class ProductRecommendationRenderer
 
         $cells = [];
         foreach ($skus as $sku) {
-            try {
-                /** @var Product $product ProductRepositoryInterface::get() always returns the
-                 *  concrete Product model in practice — only its interface is declared. */
-                $product = $this->productRepository->get($sku);
-            } catch (NoSuchEntityException) {
+            $product = $this->loadProduct($sku);
+            if (!$product instanceof \Magento\Catalog\Model\Product) {
                 continue;
             }
 
@@ -86,10 +93,8 @@ class ProductRecommendationRenderer
 
         $lines = [];
         foreach ($skus as $sku) {
-            try {
-                /** @var Product $product */
-                $product = $this->productRepository->get($sku);
-            } catch (NoSuchEntityException) {
+            $product = $this->loadProduct($sku);
+            if (!$product instanceof \Magento\Catalog\Model\Product) {
                 continue;
             }
 
@@ -102,6 +107,31 @@ class ProductRecommendationRenderer
         }
 
         return $heading . "\n" . implode("\n", $lines);
+    }
+
+    /**
+     * A sku that no longer resolves to a product (deleted/disabled between recommendation-compute
+     * time and email-send time) is skipped silently — same handling FreeGiftManagement::
+     * addGiftItem relies on ProductRepositoryInterface::get() for; a stale sku in someone's
+     * recommendation list isn't an error condition worth logging.
+     */
+    private function loadProduct(string $sku): ?Product
+    {
+        if (array_key_exists($sku, $this->productCache)) {
+            return $this->productCache[$sku];
+        }
+
+        try {
+            /** @var Product $product ProductRepositoryInterface::get() always returns the
+             *  concrete Product model in practice — only its interface is declared. */
+            $product = $this->productRepository->get($sku);
+        } catch (NoSuchEntityException) {
+            $this->productCache[$sku] = null;
+            return null;
+        }
+
+        $this->productCache[$sku] = $product;
+        return $product;
     }
 
     private function renderProductCell(Product $product): string
