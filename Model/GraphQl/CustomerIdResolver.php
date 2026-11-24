@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\GraphQl;
 
+use Magento\Framework\GraphQl\Exception\GraphQlAuthorizationException;
 use Magento\Framework\GraphQl\Query\Resolver\ContextInterface as BaseContextInterface;
 use Magento\GraphQl\Model\Query\ContextInterface;
 
@@ -33,5 +34,22 @@ class CustomerIdResolver
         $userId = $context->getUserId();
 
         return ($userId !== null && $userId > 0) ? $userId : null;
+    }
+
+    /**
+     * Found during a full-repo /simplify sweep: ConsentPreferences/CreditLimit/SetConsent/
+     * SetConsentTopic each independently repeated the identical
+     * "resolveCustomerId($context) === null -> throw GraphQlAuthorizationException" guard. One
+     * shared throwing call, same shape UserContextCustomerIdResolver::requireCustomerId()
+     * already gives REST-side *Management services.
+     */
+    public function requireCustomerId(BaseContextInterface $context): int
+    {
+        $customerId = $this->resolveCustomerId($context);
+        if ($customerId === null) {
+            throw new GraphQlAuthorizationException(__('The current customer isn\'t authorized.'));
+        }
+
+        return $customerId;
     }
 }

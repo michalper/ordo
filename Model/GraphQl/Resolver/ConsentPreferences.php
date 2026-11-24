@@ -5,7 +5,6 @@ namespace Ordo\Automation\Model\GraphQl\Resolver;
 
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\GraphQl\Config\Element\Field;
-use Magento\Framework\GraphQl\Exception\GraphQlAuthorizationException;
 use Magento\Framework\GraphQl\Exception\GraphQlNoSuchEntityException;
 use Magento\Framework\GraphQl\Query\Resolver\ContextInterface as BaseContextInterface;
 use Magento\Framework\GraphQl\Query\ResolverInterface;
@@ -19,11 +18,11 @@ use Ordo\Automation\Model\GraphQl\CustomerIdResolver;
  * (Controller\Consent\Index) and the REST GET /V1/ordo/consent-preferences/mine route - all
  * three are a thin transport onto ConsentPreferencesManagementInterface::getMyPreferences().
  *
- * Checks CustomerIdResolver itself, the same explicit-guest-check CreditLimit's own resolver
- * already needs: ConsentPreferencesManagement's own UserContextInterface::getUserId() returns 0
- * for a GraphQL guest, not null (ADR 0032's own confirmed quirk), which would otherwise silently
- * build "preferences" for a nonexistent customer id 0 instead of failing - see
- * ConsentPreferencesManagement's own docblock.
+ * Checks CustomerIdResolver::requireCustomerId() itself, the same explicit-guest-check
+ * CreditLimit's own resolver already needs: ConsentPreferencesManagement's own
+ * UserContextInterface::getUserId() returns 0 for a GraphQL guest, not null (ADR 0032's own
+ * confirmed quirk), which would otherwise silently build "preferences" for a nonexistent
+ * customer id 0 instead of failing.
  */
 class ConsentPreferences implements ResolverInterface
 {
@@ -47,9 +46,7 @@ class ConsentPreferences implements ResolverInterface
         ?array $args = null
     ) {
         /** @var BaseContextInterface $context */
-        if ($this->customerIdResolver->resolveCustomerId($context) === null) {
-            throw new GraphQlAuthorizationException(__('The current customer isn\'t authorized.'));
-        }
+        $this->customerIdResolver->requireCustomerId($context);
 
         try {
             $preferences = $this->consentPreferencesManagement->getMyPreferences();

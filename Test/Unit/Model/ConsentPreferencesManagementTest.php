@@ -14,6 +14,7 @@ use Ordo\Automation\Model\ConsentPreferences;
 use Ordo\Automation\Model\ConsentPreferencesFactory;
 use Ordo\Automation\Model\ConsentPreferencesManagement;
 use Ordo\Automation\Model\ConsentTopic;
+use Ordo\Automation\Model\UserContextCustomerIdResolver;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
@@ -46,7 +47,8 @@ class ConsentPreferencesManagementTest extends TestCase
             $this->consentManager,
             $this->userContext,
             $this->consentPreferencesFactory,
-            $this->consentChannelPreferenceFactory
+            $this->consentChannelPreferenceFactory,
+            new UserContextCustomerIdResolver()
         );
     }
 
@@ -130,5 +132,23 @@ class ConsentPreferencesManagementTest extends TestCase
         $this->expectException(NoSuchEntityException::class);
 
         $this->makeManagement()->setMyChannelConsent('email', true);
+    }
+
+    /**
+     * Regression for a full-repo /simplify finding: this now goes through
+     * UserContextCustomerIdResolver (same as CreditLimitManagement/LoyaltyPointsManagement/
+     * LoyaltyWalletPassManagement) instead of its own hand-rolled "=== null" check, so a guest's
+     * id-0 GraphQL context (UserContextInterface::getUserId() returns 0, not null, for a guest)
+     * is rejected here directly too - no longer solely reliant on every GraphQL resolver calling
+     * in to have already pre-filtered it.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetMyPreferencesThrowsNoSuchEntityExceptionForGuestCustomerIdZero(): void
+    {
+        $this->userContext->method('getUserId')->willReturn(0);
+
+        $this->expectException(NoSuchEntityException::class);
+
+        $this->makeManagement()->getMyPreferences();
     }
 }

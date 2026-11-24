@@ -5,7 +5,6 @@ namespace Ordo\Automation\Model\GraphQl\Resolver;
 
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\GraphQl\Config\Element\Field;
-use Magento\Framework\GraphQl\Exception\GraphQlAuthorizationException;
 use Magento\Framework\GraphQl\Exception\GraphQlNoSuchEntityException;
 use Magento\Framework\GraphQl\Query\Resolver\ContextInterface as BaseContextInterface;
 use Magento\Framework\GraphQl\Query\ResolverInterface;
@@ -49,9 +48,7 @@ class CreditLimit implements ResolverInterface
         ?array $args = null
     ) {
         /** @var BaseContextInterface $context */
-        if ($this->customerIdResolver->resolveCustomerId($context) === null) {
-            throw new GraphQlAuthorizationException(__('The current customer isn\'t authorized.'));
-        }
+        $this->customerIdResolver->requireCustomerId($context);
 
         try {
             $status = $this->creditLimitManagement->getMyStatus();
