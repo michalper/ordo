@@ -80,6 +80,7 @@ class ConsentManagerTest extends TestCase
     {
         $collection = $this->createStub(CustomerConsentTopicCollection::class);
         $collection->method('addCustomerAndChannelFilter')->willReturnSelf();
+        $collection->method('addCustomerFilter')->willReturnSelf();
         $collection->method('addCustomerChannelAndTopicFilter')->willReturnSelf();
         $collection->method('addCustomerIdsChannelAndTopicFilter')->willReturnSelf();
         $collection->method('getFirstItem')->willReturn(
@@ -353,6 +354,37 @@ class ConsentManagerTest extends TestCase
             [ConsentTopic::AccountUpdates->value => false],
             $this->manager->getTopicConsentStates(42, ConsentChannel::Email)
         );
+    }
+
+    /**
+     * Regression for a full-repo /simplify finding: Controller\Adminhtml\Gdpr\Export and
+     * Block\Adminhtml\Gdpr\Index both used to call getTopicConsentStates() once per channel -
+     * this batched counterpart must return every channel's own map from one query, grouping by
+     * channel in PHP, including an empty map for a channel with no rows at all.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetAllTopicConsentStatesGroupsRowsByChannel(): void
+    {
+        $emailRow = $this->createStub(CustomerConsentTopic::class);
+        $emailRow->method('getChannel')->willReturn(ConsentChannel::Email->value);
+        $emailRow->method('getTopic')->willReturn(ConsentTopic::Promotional->value);
+        $emailRow->method('isConsented')->willReturn(false);
+
+        $smsRow = $this->createStub(CustomerConsentTopic::class);
+        $smsRow->method('getChannel')->willReturn(ConsentChannel::Sms->value);
+        $smsRow->method('getTopic')->willReturn(ConsentTopic::AccountUpdates->value);
+        $smsRow->method('isConsented')->willReturn(true);
+
+        $collection = $this->createStub(CustomerConsentTopicCollection::class);
+        $collection->method('addCustomerFilter')->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$emailRow, $smsRow]));
+        $this->topicCollectionFactory->method('create')->willReturn($collection);
+
+        $states = $this->manager->getAllTopicConsentStates(42);
+
+        self::assertSame([ConsentTopic::Promotional->value => false], $states[ConsentChannel::Email->value]);
+        self::assertSame([ConsentTopic::AccountUpdates->value => true], $states[ConsentChannel::Sms->value]);
+        self::assertSame([], $states[ConsentChannel::Push->value]);
     }
 
     /**

@@ -7,7 +7,6 @@ use Magento\Backend\Model\View\Result\Redirect;
 use Magento\Framework\Controller\Result\Raw;
 use Magento\Framework\Controller\Result\RawFactory;
 use Ordo\Automation\Controller\Adminhtml\Gdpr\Export;
-use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Gdpr\CustomerDataExporter;
 use Ordo\Automation\Test\Unit\Controller\AbstractAdminActionTestCase;
@@ -29,7 +28,7 @@ class ExportTest extends AbstractAdminActionTestCase
         $customerDataExporter->expects(self::never())->method('export');
         $consentManager = $this->createMock(ConsentManager::class);
         $consentManager->expects(self::never())->method('getConsentStates');
-        $consentManager->expects(self::never())->method('getTopicConsentStates');
+        $consentManager->expects(self::never())->method('getAllTopicConsentStates');
         $this->messageManager->expects(self::once())->method('addErrorMessage');
 
         $resultRawFactory = $this->createStub(RawFactory::class);
@@ -48,9 +47,8 @@ class ExportTest extends AbstractAdminActionTestCase
         $customerDataExporter->expects(self::once())->method('export')->with(42)->willReturn(['tags' => []]);
         $consentManager = $this->createMock(ConsentManager::class);
         $consentManager->expects(self::once())->method('getConsentStates')->with(42)->willReturn(['email' => true]);
-        $consentManager->expects(self::exactly(5))->method('getTopicConsentStates')
-            ->with(42, self::isInstanceOf(ConsentChannel::class))
-            ->willReturn(['promotional' => false]);
+        $consentManager->expects(self::once())->method('getAllTopicConsentStates')->with(42)
+            ->willReturn(['email' => ['promotional' => false]]);
 
         $raw = $this->createMock(Raw::class);
         $raw->expects(self::exactly(2))->method('setHeader')->willReturnSelf();

@@ -158,7 +158,7 @@ class IndexTest extends TestCase
     public function testGetTopicConsentStatesUsesEachTopicsOwnDefaultAndCoversEveryMessageChannelButNotAds(): void
     {
         $this->registry->method('registry')->willReturnMap([['ordo_gdpr_customer_id', 42]]);
-        $this->consentManager->method('getTopicConsentStates')->willReturn([]);
+        $this->consentManager->method('getAllTopicConsentStates')->willReturn([]);
 
         $states = $this->block->getTopicConsentStates();
 
@@ -181,11 +181,9 @@ class IndexTest extends TestCase
     public function testGetTopicConsentStatesReflectsRecordedOptIn(): void
     {
         $this->registry->method('registry')->willReturnMap([['ordo_gdpr_customer_id', 42]]);
-        $this->consentManager->method('getTopicConsentStates')->willReturnCallback(
-            fn (int $customerId, ConsentChannel $channel) => $channel === ConsentChannel::Email
-                ? [ConsentTopic::Promotional->value => true]
-                : []
-        );
+        $this->consentManager->method('getAllTopicConsentStates')->willReturn([
+            ConsentChannel::Email->value => [ConsentTopic::Promotional->value => true],
+        ]);
 
         $states = $this->block->getTopicConsentStates();
 

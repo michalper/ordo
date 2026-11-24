@@ -21,6 +21,18 @@ class Collection extends AbstractCollection
         return $this;
     }
 
+    /**
+     * Every topic-consent row for one customer, across every channel - one query instead of one
+     * per channel, same reasoning as every other batch load in this module. Used by
+     * ConsentManager::getAllTopicConsentStates(), the batched counterpart of
+     * getTopicConsentStates() + addCustomerAndChannelFilter() above.
+     */
+    public function addCustomerFilter(int $customerId): self
+    {
+        $this->addFieldToFilter('customer_id', ['eq' => $customerId]);
+        return $this;
+    }
+
     public function addCustomerChannelAndTopicFilter(int $customerId, string $channel, string $topic): self
     {
         $this->addFieldToFilter('customer_id', ['eq' => $customerId]);
