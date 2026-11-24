@@ -13,6 +13,7 @@ use Ordo\Automation\Model\ResourceModel\MessageLog as MessageLogResource;
 use Ordo\Automation\Model\ResourceModel\MessageLog\Collection as MessageLogCollection;
 use Ordo\Automation\Model\ResourceModel\MessageLog\CollectionFactory as MessageLogCollectionFactory;
 use Ordo\Automation\Model\Sms\CallbackUrlBuilder;
+use Ordo\Automation\Model\Sms\TwilioSignatureValidator;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Psr\Log\LoggerInterface;
@@ -66,6 +67,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
             $this->messageLogCollectionFactory,
             $this->messageLogResource,
             new StatusDowngradeGuard(),
+            new TwilioSignatureValidator(),
             $this->logger
         );
     }

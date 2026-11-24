@@ -16,8 +16,8 @@ use Ordo\Automation\Model\MessageLog\StatusDowngradeGuard;
 use Ordo\Automation\Model\ResourceModel\MessageLog as MessageLogResource;
 use Ordo\Automation\Model\ResourceModel\MessageLog\CollectionFactory as MessageLogCollectionFactory;
 use Ordo\Automation\Model\Sms\CallbackUrlBuilder;
+use Ordo\Automation\Model\Sms\TwilioSignatureValidator;
 use Psr\Log\LoggerInterface;
-use Twilio\Security\RequestValidator;
 
 /**
  * Public, unauthenticated endpoint Twilio POSTs delivery-status updates to (the "statusCallback"
@@ -37,6 +37,7 @@ class StatusCallback extends Action implements HttpPostActionInterface, CsrfAwar
         private readonly MessageLogCollectionFactory $messageLogCollectionFactory,
         private readonly MessageLogResource $messageLogResource,
         private readonly StatusDowngradeGuard $statusDowngradeGuard,
+        private readonly TwilioSignatureValidator $twilioSignatureValidator,
         private readonly LoggerInterface $logger
     ) {
         parent::__construct($context);
@@ -51,25 +52,11 @@ class StatusCallback extends Action implements HttpPostActionInterface, CsrfAwar
         $params = is_array($params) ? $params : [];
 
         $authToken = $this->config->getTwilioAuthToken();
-        // Twilio's RequestValidator has no special-case rejection for an empty *key* (only for an
-        // empty signature) - with no auth token configured yet, the HMAC key is a known constant
-        // ('') and the correct signature is fully computable by anyone from the public callback
-        // URL + POST params, same fail-open risk SendGridSignatureValidator::isValid() guards
-        // against for its own empty key. Must fail closed here before ever constructing/calling
-        // RequestValidator.
-        if ($authToken === '') {
-            $this->logger->error(
-                'Ordo_Automation: rejected an SMS status callback, Twilio Auth Token is not configured.'
-            );
-
-            return $result->setHttpResponseCode(403)->setData(['ok' => false]);
-        }
-
-        $validator = new RequestValidator($authToken);
         $callbackUrl = $this->callbackUrlBuilder->getSmsStatusCallbackUrl();
-        if ($signature === '' || !$validator->validate($signature, $callbackUrl, $params)) {
+        if (!$this->twilioSignatureValidator->isValid($authToken, $signature, $callbackUrl, $params)) {
             $this->logger->error(
-                'Ordo_Automation: rejected an SMS status callback with an invalid X-Twilio-Signature.'
+                'Ordo_Automation: rejected an SMS status callback with an invalid or missing '
+                . 'X-Twilio-Signature (check the Twilio Auth Token is configured).'
             );
 
             return $result->setHttpResponseCode(403)->setData(['ok' => false]);

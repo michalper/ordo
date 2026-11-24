@@ -10,6 +10,7 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\Conversation\InboundMessageProcessor;
 use Ordo\Automation\Model\Sms\CallbackUrlBuilder;
+use Ordo\Automation\Model\Sms\TwilioSignatureValidator;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Psr\Log\LoggerInterface;
@@ -57,6 +58,7 @@ class ReplyTest extends AbstractFrontendActionTestCase
             $this->config,
             $this->callbackUrlBuilder,
             $this->inboundMessageProcessor,
+            new TwilioSignatureValidator(),
             $this->logger
         );
     }
