@@ -76,6 +76,22 @@ class EscalateStalePendingApprovalsTest extends TestCase
         );
     }
 
+    /**
+     * Mirrors ResourceModel\OrderApproval::rollbackEscalation()'s own real behavior (reflects
+     * both fields into the model, regardless of whether the claim being rolled back advanced the
+     * tier) so these cron-level tests - which mock the whole OrderApprovalResource - still
+     * observe the same setData shape the real resource model produces.
+     */
+    private function mockRollbackEscalationSucceeds(): void
+    {
+        $this->orderApprovalResource->method('rollbackEscalation')->willReturnCallback(
+            function (OrderApproval $model, int $remindersSent, int $escalationTier): void {
+                $model->setData('reminders_sent', $remindersSent);
+                $model->setData('escalation_tier', $escalationTier);
+            }
+        );
+    }
+
     private function makeCron(): EscalateStalePendingApprovals
     {
         return new EscalateStalePendingApprovals(
@@ -226,7 +242,10 @@ class EscalateStalePendingApprovalsTest extends TestCase
         $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
 
         $this->mockClaimEscalationSucceeds();
-        $this->orderApprovalResource->expects(self::once())->method('save')->with($approval);
+        $this->mockRollbackEscalationSucceeds();
+        $this->orderApprovalResource->expects(self::once())->method('rollbackEscalation')
+            ->with($approval, 3, 0);
+        $this->orderApprovalResource->expects(self::never())->method('save');
         $this->logger->expects(self::once())->method('error');
 
         $this->makeCron()->execute();
@@ -563,11 +582,17 @@ class EscalateStalePendingApprovalsTest extends TestCase
         $this->orderCollectionFactory->method('create')->willReturn($orderCollection);
 
         $this->mockClaimEscalationSucceeds();
-        $this->orderApprovalResource->expects(self::once())->method('save')->with($approval);
+        $this->mockRollbackEscalationSucceeds();
+        $this->orderApprovalResource->expects(self::once())->method('rollbackEscalation')
+            ->with($approval, 0, 0);
+        $this->orderApprovalResource->expects(self::never())->method('save');
         $this->logger->expects(self::once())->method('error');
 
         $this->makeCron()->execute();
 
-        self::assertSame([['reminders_sent', 1], ['reminders_sent', 0]], $setDataCalls);
+        self::assertSame(
+            [['reminders_sent', 1], ['reminders_sent', 0], ['escalation_tier', 0]],
+            $setDataCalls
+        );
     }
 }

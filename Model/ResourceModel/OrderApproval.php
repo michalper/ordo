@@ -100,4 +100,33 @@ class OrderApproval extends AbstractDb
 
         return $affectedRows > 0;
     }
+
+    /**
+     * Reverts a claimEscalation() this same call just made, when the escalation email then
+     * genuinely fails to send - a plain $model->setData(...) + save() cannot do this correctly:
+     * claimEscalation() writes reminders_sent/escalation_tier via a raw UPDATE that never touches
+     * the model's own origData snapshot, so AbstractDb::save()'s diff-against-origData would see
+     * the reset values as identical to origData (since origData still holds the pre-claim values
+     * from the original load()) and skip writing anything - found during a full-repo
+     * /code-review: the row stayed permanently advanced to the next tier/reminders_sent as if the
+     * escalation had succeeded, even though the recipient never got the email, with no retry
+     * path. This does the revert as its own raw UPDATE instead, matching claimEscalation()'s own
+     * style, so it writes regardless of what origData thinks changed.
+     */
+    public function rollbackEscalation(
+        \Ordo\Automation\Model\OrderApproval $model,
+        int $remindersSent,
+        int $escalationTier
+    ): void {
+        $connection = $this->getConnection();
+
+        $connection->update(
+            $this->getMainTable(),
+            ['reminders_sent' => $remindersSent, 'escalation_tier' => $escalationTier],
+            $connection->quoteInto('entity_id = ?', (int) $model->getEntityId())
+        );
+
+        $model->setData('reminders_sent', $remindersSent);
+        $model->setData('escalation_tier', $escalationTier);
+    }
 }

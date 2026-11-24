@@ -223,4 +223,39 @@ class OrderApprovalTest extends AbstractDbTestCase
 
         self::assertFalse($resource->claimEscalation($model, 0, 0, 1, 0, false));
     }
+
+    /**
+     * Regression test for a full-repo /code-review finding: claimEscalation() writes via a raw
+     * UPDATE that never touches the model's own origData, so a plain setData()+save() rollback
+     * would see the reverted values as already matching origData and write nothing at all. This
+     * must issue its own unconditional UPDATE instead, regardless of what origData thinks
+     * changed, and reflect both fields into the model either way.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testRollbackEscalationWritesBothFieldsUnconditionally(): void
+    {
+        $connection = $this->createMock(\Magento\Framework\DB\Adapter\AdapterInterface::class);
+        $connection->method('quoteInto')->willReturnCallback(
+            fn (string $sql, $value) => str_replace('?', (string) $value, $sql)
+        );
+        $connection->expects(self::once())->method('update')
+            ->with('ordo_order_approval', ['reminders_sent' => 3, 'escalation_tier' => 0], 'entity_id = 7');
+
+        $resource = $this->getMockBuilder(OrderApproval::class)
+            ->setConstructorArgs([$this->makeDbContext()])
+            ->onlyMethods(['getConnection'])
+            ->getMock();
+        $resource->method('getConnection')->willReturn($connection);
+
+        $model = $this->createMock(OrderApprovalModel::class);
+        $model->method('getEntityId')->willReturn(7);
+        $setDataCalls = [];
+        $model->method('setData')->willReturnCallback(function ($key, $value) use (&$setDataCalls) {
+            $setDataCalls[] = [$key, $value];
+        });
+
+        $resource->rollbackEscalation($model, 3, 0);
+
+        self::assertSame([['reminders_sent', 3], ['escalation_tier', 0]], $setDataCalls);
+    }
 }
