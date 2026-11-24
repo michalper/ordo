@@ -33,15 +33,14 @@ class GenerateCoupon implements ActionInterface
         $prefix = (string) ($params['prefix'] ?? 'ORDO');
         $campaignId = isset($context['campaign_id']) ? (int) $context['campaign_id'] : null;
 
-        try {
-            $context['coupon_code'] = $this->couponGenerator->generate($ruleId, $prefix, campaignId: $campaignId);
-        } catch (\Throwable $e) {
-            $this->logger->error(sprintf(
-                'Ordo_Automation: failed to generate coupon for rule #%d: %s',
-                $ruleId,
-                $e->getMessage()
-            ));
-        }
+        // Deliberately not caught here - found during a full-repo /code-review: this method
+        // used to log-and-swallow a generate() failure, which meant CampaignDispatcher's own
+        // fail-closed-on-action-exception design (ADR 0068) never saw anything wrong, and the
+        // chain continued to a later send_email referencing {{var coupon_code}} with no code
+        // ever set. CampaignDispatcher::runOneActionOrSplitStoppingChainOnFailure() is the one
+        // place that's supposed to catch an action's own exception (and it logs the same failure
+        // itself, so nothing is lost by not logging it twice here).
+        $context['coupon_code'] = $this->couponGenerator->generate($ruleId, $prefix, campaignId: $campaignId);
     }
 
     public function getParamFields(): array

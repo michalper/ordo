@@ -93,21 +93,27 @@ class GenerateCouponTest extends TestCase
         self::assertArrayNotHasKey('coupon_code', $context);
     }
 
+    /**
+     * Deliberately NOT caught here - CampaignDispatcher::runOneActionOrSplitStoppingChainOnFailure()
+     * is the one place that's supposed to catch an action's own exception (fail-closed, ADR 0068).
+     * Swallowing it here used to let the chain continue to a later send_email referencing
+     * {{var coupon_code}} with no code ever set.
+     */
     #[AllowMockObjectsWithoutExpectations]
-    public function testExecuteLogsErrorWhenGeneratorThrows(): void
+    public function testExecuteLetsAGeneratorFailurePropagate(): void
     {
         $generator = $this->createMock(CouponGenerator::class);
         $generator->method('generate')->willThrowException(new \RuntimeException('rule not found'));
 
         $logger = $this->createMock(LoggerInterface::class);
-        $logger->expects(self::once())->method('error');
+        $logger->expects(self::never())->method('error');
 
         $action = new GenerateCoupon($generator, $logger, $this->makeCartPriceRuleOptions());
 
         $context = [];
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('rule not found');
         $action->execute($context, ['rule_id' => 5]);
-
-        self::assertArrayNotHasKey('coupon_code', $context);
     }
 
     public function testGetParamFieldsListsRuleIdAndPrefix(): void
