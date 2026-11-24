@@ -16,12 +16,19 @@ class Collection extends AbstractCollection
     }
 
     /**
-     * Offers that are still "sent" (awaiting a customer decision) and expire on the given date.
+     * Offers that are still "sent" (awaiting a customer decision) and expire on or before the
+     * given date - lteq, not eq, same reasoning as the structurally identical
+     * ReorderCycle\Collection::addDueTodayFilter(): a cron tick missed on the offer's exact
+     * target date (downtime, a delayed deploy, the feature briefly disabled) would otherwise
+     * never match again, since the target date keeps recalculating relative to "now" on every
+     * future run and will never again equal this offer's fixed expires_at - permanently skipping
+     * its reminder. The reminder log's own claim table still guards against a double-send for an
+     * offer this catches up on.
      */
     public function addExpiringOnFilter(string $date): self
     {
         $this->addFieldToFilter(OfferInterface::STATUS, OfferInterface::STATUS_SENT);
-        $this->addFieldToFilter(OfferInterface::EXPIRES_AT, ['eq' => $date]);
+        $this->addFieldToFilter(OfferInterface::EXPIRES_AT, ['lteq' => $date]);
         return $this;
     }
 
