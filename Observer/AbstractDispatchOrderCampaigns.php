@@ -22,11 +22,22 @@ abstract class AbstractDispatchOrderCampaigns implements ObserverInterface
 
     abstract protected function triggerEventCode(): string;
 
+    /**
+     * True by default - overridden only by a subclass wired to an event that can genuinely fire
+     * more than once for the exact same real-world occurrence (see
+     * DispatchOrderPlacedCampaigns's own override and docblock for why it needs one and
+     * DispatchOrderCanceledCampaigns doesn't).
+     */
+    protected function shouldDispatch(Order $order): bool
+    {
+        return true;
+    }
+
     public function execute(EventObserver $observer): void
     {
         /** @var Order|null $order */
         $order = $observer->getEvent()->getOrder();
-        if (!$order || !$order->getCustomerId()) {
+        if (!$order || !$order->getCustomerId() || !$this->shouldDispatch($order)) {
             return;
         }
 
