@@ -62,4 +62,67 @@ class SegmentBulkActionClaimStore
             ['batch_id = ?' => $batchId, 'customer_id = ?' => $customerId]
         );
     }
+
+    /**
+     * Batch variant of claim() - one SELECT for who's already claimed plus one bulk INSERT for
+     * everyone else, instead of one INSERT attempt per customer - found during a full-repo
+     * /simplify sweep, same "check existing, bulk-insert the diff" shape
+     * CustomerTagManager::addTagsIfAbsent() already uses for the identical "most of this batch
+     * was never claimed before" case (the common one - the uncommon one, this exact message
+     * genuinely redelivered, excludes everyone via the SELECT below before the insert ever
+     * runs). A real race within this call's own SELECT-then-insert window (a second, genuinely
+     * concurrent worker claiming the same few customers) falls back to this store's own
+     * single-row claim() for just the colliding batch, rather than letting one row's
+     * DuplicateException abort every other customer's otherwise-successful claim in the same
+     * call.
+     *
+     * @param int[] $customerIds
+     * @return int[] the subset of $customerIds this call successfully claimed - safe to run the
+     *   action for. Everything else was already claimed (an earlier, now-redelivered attempt at
+     *   this exact message, or a genuinely concurrent claim) and must not run the action again.
+     */
+    public function claimBatch(string $batchId, array $customerIds): array
+    {
+        if ($customerIds === []) {
+            return [];
+        }
+
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('ordo_segment_bulk_action_claim');
+
+        $alreadyClaimed = array_map(
+            static fn (mixed $customerId): int => (int) $customerId,
+            $connection->fetchCol(
+                $connection->select()
+                    ->from($table, 'customer_id')
+                    ->where('batch_id = ?', $batchId)
+                    ->where('customer_id IN (?)', $customerIds)
+            )
+        );
+
+        $toClaim = array_values(array_diff($customerIds, $alreadyClaimed));
+        if ($toClaim === []) {
+            return [];
+        }
+
+        $claimedAt = date('Y-m-d H:i:s');
+        $rows = array_map(
+            static fn (int $customerId): array => [
+                'batch_id' => $batchId,
+                'customer_id' => $customerId,
+                'claimed_at' => $claimedAt,
+            ],
+            $toClaim
+        );
+
+        try {
+            $connection->insertMultiple($table, $rows);
+            return $toClaim;
+        } catch (DuplicateException) {
+            return array_values(array_filter(
+                $toClaim,
+                fn (int $customerId): bool => $this->claim($batchId, $customerId)
+            ));
+        }
+    }
 }
