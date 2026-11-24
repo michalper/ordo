@@ -133,6 +133,16 @@ jobs:
       - name: Checkout Magento ${{ matrix.magento-version }}
         run: git clone --branch ${{ matrix.magento-version }} --depth 1 https://github.com/magento/magento2.git magento
 
+      - name: Cache the installed Magento vendor/ tree
+        # See api-tests.yml's identical step for the full reasoning - same fix, same matrix
+        # shape, found during the same CI-speed audit.
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: magento/vendor
+          key: magento-vendor-${{ matrix.magento-version }}-${{ matrix.php-version }}-${{ hashFiles('ordo-module/composer.json') }}
+          restore-keys: |
+            magento-vendor-${{ matrix.magento-version }}-${{ matrix.php-version }}-
+
       - name: Cache Composer packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:

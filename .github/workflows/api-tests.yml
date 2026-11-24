@@ -130,6 +130,26 @@ jobs:
       - name: Checkout Magento ${{ matrix.magento-version }}
         run: git clone --branch ${{ matrix.magento-version }} --depth 1 https://github.com/magento/magento2.git magento
 
+      - name: Cache the installed Magento vendor/ tree
+        # Found during a CI-speed audit: without this, every one of this matrix's legs resolves
+        # and installs Magento's own ~200+-package dependency tree from scratch on every single
+        # run - only the Composer *download* cache below was ever cached, not the actual
+        # installed/autoloaded vendor/ it produces. Keyed on the pinned Magento tag + PHP version
+        # (both fix the exact composer.lock Magento's own clone ships, so a hit is always a
+        # byte-for-byte-correct install) and this module's own composer.json (invalidates if ITS
+        # dependency declarations change) - deliberately NOT on this module's actual source, so
+        # the cache stays warm across every PR that only changes the module's own code. "Require
+        # the local module" below still runs unconditionally even on a hit: composer's path
+        # repository (symlink:false) always re-copies the module's current content into
+        # vendor/michalper/ordo on every require/update, so a cached-but-stale copy is never an
+        # issue - only the other, unrelated ~200 packages are what the cache actually saves.
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: magento/vendor
+          key: magento-vendor-${{ matrix.magento-version }}-${{ matrix.php-version }}-${{ hashFiles('ordo-module/composer.json') }}
+          restore-keys: |
+            magento-vendor-${{ matrix.magento-version }}-${{ matrix.php-version }}-
+
       - name: Cache Composer packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
