@@ -39,18 +39,6 @@ class Campaign extends AbstractNamedToggleableEntityModel implements CampaignInt
      * doesn't yet expose this toggle, so it's a plain model accessor rather than a REST-visible
      * field for now.
      */
-    public function getConditionLogic(): string
-    {
-        $value = $this->getData('condition_logic');
-        return $value === 'any' ? 'any' : 'all';
-    }
-
-    public function setConditionLogic(string $logic): self
-    {
-        $this->setData('condition_logic', $logic === 'any' ? 'any' : 'all');
-        return $this;
-    }
-
     /**
      * 0 (the stored default, including every pre-existing campaign row from before this column
      * existed, which reads back as null) means holdout is off - nobody is ever held out unless an
