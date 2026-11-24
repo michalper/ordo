@@ -7,6 +7,7 @@ use Magento\Framework\App\Request\DataPersistorInterface;
 use Magento\Ui\DataProvider\AbstractDataProvider;
 use Ordo\Automation\Model\ResourceModel\ScoreRule\CollectionFactory as ScoreRuleCollectionFactory;
 use Ordo\Automation\Model\ResourceModel\ScoreRule\Website\CollectionFactory as ScoreRuleWebsiteCollectionFactory;
+use Ordo\Automation\Model\ScoreRuleWebsite;
 
 /**
  * Feeds the score rule edit form. Flat entity, no child rows — simpler than
@@ -45,11 +46,17 @@ class DataProvider extends AbstractDataProvider
 
         $this->loadedData = [];
 
-        foreach ($this->collection->getItems() as $scoreRule) {
+        $rules = $this->collection->getItems();
+        $websiteIdsByRule = $this->loadWebsiteIdsByRule(array_map(
+            static fn ($scoreRule): int => (int) $scoreRule->getEntityId(),
+            $rules
+        ));
+
+        foreach ($rules as $scoreRule) {
             $ruleId = (int) $scoreRule->getEntityId();
             /** @var array<string, mixed> $ruleData */
             $ruleData = $scoreRule->getData();
-            $ruleData['website_ids'] = $this->loadWebsiteIds($ruleId);
+            $ruleData['website_ids'] = $websiteIdsByRule[$ruleId] ?? [];
             $this->loadedData[$ruleId] = $ruleData;
         }
 
@@ -67,18 +74,27 @@ class DataProvider extends AbstractDataProvider
     }
 
     /**
-     * @return int[]
+     * One batch query for every rule on this page, not one query per rule - found during a
+     * full-repo /simplify sweep; same reasoning (and the same addScoreRuleIdsFilter() query)
+     * already used by ScoreRuleEvaluator::loadWebsiteIdsByRule().
+     *
+     * @param int[] $scoreRuleIds
+     * @return array<int, int[]>
      */
-    private function loadWebsiteIds(int $scoreRuleId): array
+    private function loadWebsiteIdsByRule(array $scoreRuleIds): array
     {
-        $collection = $this->scoreRuleWebsiteCollectionFactory->create();
-        $collection->addScoreRuleFilter($scoreRuleId);
-
-        $websiteIds = [];
-        foreach ($collection as $row) {
-            $websiteIds[] = $row->getWebsiteId();
+        if ($scoreRuleIds === []) {
+            return [];
         }
 
-        return $websiteIds;
+        $websiteIdsByRule = [];
+        $collection = $this->scoreRuleWebsiteCollectionFactory->create();
+        $collection->addScoreRuleIdsFilter($scoreRuleIds);
+        foreach ($collection as $row) {
+            /** @var ScoreRuleWebsite $row */
+            $websiteIdsByRule[(int) $row->getScoreRuleId()][] = $row->getWebsiteId();
+        }
+
+        return $websiteIdsByRule;
     }
 }
