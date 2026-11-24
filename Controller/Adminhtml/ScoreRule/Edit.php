@@ -37,6 +37,11 @@ class Edit extends AbstractScoreRuleAction implements HttpGetActionInterface
         $this->scoreRuleResource->load($entity, $entityId);
     }
 
+    protected function activeMenu(): string
+    {
+        return 'Ordo_Automation::campaigns';
+    }
+
     protected function registryKey(): string
     {
         return 'ordo_score_rule';

@@ -37,6 +37,11 @@ class Edit extends AbstractLeadRoutingRuleAction implements HttpGetActionInterfa
         $this->leadRoutingRuleResource->load($entity, $entityId);
     }
 
+    protected function activeMenu(): string
+    {
+        return 'Ordo_Automation::campaigns';
+    }
+
     protected function registryKey(): string
     {
         return 'ordo_lead_routing_rule';

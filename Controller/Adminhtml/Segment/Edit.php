@@ -37,6 +37,11 @@ class Edit extends AbstractSegmentAction implements HttpGetActionInterface
         $this->segmentResource->load($entity, $entityId);
     }
 
+    protected function activeMenu(): string
+    {
+        return 'Ordo_Automation::campaigns';
+    }
+
     protected function registryKey(): string
     {
         return 'ordo_segment';

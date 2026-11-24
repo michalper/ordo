@@ -35,6 +35,13 @@ trait RendersEditPageTrait
     abstract protected function registryKey(): string;
 
     /**
+     * @return string the admin-menu node to mark active (Ordo_Automation::... from menu.xml) -
+     *   same hook RendersGridPageTrait already has for its own Index controllers; found during a
+     *   full-repo /simplify sweep still hardcoded here to a single constant instead.
+     */
+    abstract protected function activeMenu(): string;
+
+    /**
      * @return string title-case noun phrase for the page title ("Edit %1 ..."/"New %1")
      */
     abstract protected function editEntityLabel(): string;
@@ -64,7 +71,7 @@ trait RendersEditPageTrait
 
         /** @var Page $resultPage */
         $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Ordo_Automation::campaigns');
+        $resultPage->setActiveMenu($this->activeMenu());
         $resultPage->getConfig()->getTitle()->prepend(
             $entityId
                 ? __('Edit %1 "%2"', $this->editEntityLabel(), $this->entityDisplayName($entity))

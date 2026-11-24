@@ -37,6 +37,11 @@ class Edit extends AbstractFreeGiftOfferAction implements HttpGetActionInterface
         $this->offerResource->load($entity, $entityId);
     }
 
+    protected function activeMenu(): string
+    {
+        return 'Ordo_Automation::campaigns';
+    }
+
     protected function registryKey(): string
     {
         return 'ordo_free_gift_offer';

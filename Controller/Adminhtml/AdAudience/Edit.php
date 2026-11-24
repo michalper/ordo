@@ -37,6 +37,11 @@ class Edit extends AbstractAdAudienceAction implements HttpGetActionInterface
         $this->adAudienceResource->load($entity, $entityId);
     }
 
+    protected function activeMenu(): string
+    {
+        return 'Ordo_Automation::campaigns';
+    }
+
     protected function registryKey(): string
     {
         return 'ordo_ad_audience';
