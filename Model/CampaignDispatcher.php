@@ -640,7 +640,7 @@ class CampaignDispatcher
             $actionRow = $actions[$i];
 
             if ($actionRow->getDelayMinutes() > 0) {
-                $this->scheduleResume(
+                $this->scheduleResumeOrLogFailure(
                     $campaignId,
                     (int) $actionRow->getEntityId(),
                     $actionRow->getDelayMinutes(),
@@ -869,6 +869,40 @@ class CampaignDispatcher
             $context,
             date('Y-m-d H:i:s', strtotime("+{$delayMinutes} minutes"))
         );
+    }
+
+    /**
+     * Found during a full-repo /code-review: this write used to be called directly from
+     * runActionsFrom()'s loop, outside runOneActionOrSplitStoppingChainOnFailure()'s own
+     * try/catch. By the time a later action's own deferral reaches here, one or more EARLIER
+     * actions in this same chain may have already run and succeeded (resumeScheduledAction()'s
+     * own just-elapsed action, plus any further non-delayed ones runActionsFrom() already got
+     * through). A thrown exception here (a DB hiccup saving the new scheduled row) used to
+     * propagate all the way up to Cron\RunScheduledCampaignActions' own catch block, which
+     * enqueues a retry keyed on the ORIGINAL resume action id/context - re-running every action
+     * already successfully completed on this exact attempt, not just the one deferral that
+     * actually failed. Catching and logging it here instead - same fail-closed shape
+     * runOneActionOrSplitStoppingChainOnFailure() already uses - stops the chain without
+     * triggering that wrongful whole-chain retry.
+     *
+     * @param array<string, mixed> $context
+     */
+    private function scheduleResumeOrLogFailure(
+        int $campaignId,
+        int $resumeActionId,
+        int $delayMinutes,
+        array $context
+    ): void {
+        try {
+            $this->scheduleResume($campaignId, $resumeActionId, $delayMinutes, $context);
+        } catch (\Throwable $e) {
+            $this->logger->error(sprintf(
+                'Ordo_Automation: campaign #%d failed to schedule the delayed resume of action #%d: %s',
+                $campaignId,
+                $resumeActionId,
+                $e->getMessage()
+            ));
+        }
     }
 
     /**

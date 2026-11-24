@@ -797,6 +797,53 @@ class CampaignDispatcherTest extends TestCase
     }
 
     /**
+     * Regression for a full-repo /code-review finding: a DB failure writing the scheduled-action
+     * row for a LATER action's own delay used to propagate straight out of dispatch() uncaught -
+     * which, via Cron\RunScheduledCampaignActions' own catch block, would enqueue a retry keyed
+     * on the ORIGINAL resume point, re-running the earlier action that already ran successfully
+     * in this same chain. Must be caught and logged instead, same fail-closed shape a normal
+     * action's own thrown exception already gets.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testDispatchLogsAndStopsWithoutPropagatingWhenSchedulingTheRemainingChainFails(): void
+    {
+        $this->triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([1]));
+        $this->campaignCollectionFactory->method('create')->willReturn($this->makeCampaignCollection([$this->makeCampaign(1)]));
+        $this->conditionCollectionFactory->method('create')->willReturn($this->makeConditionCollection([]));
+
+        $immediateAction = $this->createMock(CampaignAction::class);
+        $immediateAction->method('getCampaignId')->willReturn(1);
+        $immediateAction->method('getEntityId')->willReturn(10);
+        $immediateAction->method('getDelayMinutes')->willReturn(0);
+        $immediateAction->method('getData')->willReturnMap([['type', 'tag_customer']]);
+        $immediateAction->method('getParams')->willReturn(['tag' => 'vip']);
+
+        $delayedAction = $this->createStub(CampaignAction::class);
+        $delayedAction->method('getCampaignId')->willReturn(1);
+        $delayedAction->method('getEntityId')->willReturn(11);
+        $delayedAction->method('getDelayMinutes')->willReturn(60);
+
+        $this->actionCollectionFactory->method('create')->willReturn(
+            $this->makeActionCollection([$immediateAction, $delayedAction])
+        );
+
+        $action = $this->createMock(ActionInterface::class);
+        $action->expects(self::once())->method('execute')->with(self::anything(), ['tag' => 'vip']);
+        $this->actionPool = new ActionPool(['tag_customer' => $action]);
+
+        $scheduled = $this->createStub(CampaignScheduledAction::class);
+        $this->campaignScheduledActionFactory->method('create')->willReturn($scheduled);
+        $this->campaignScheduledActionResource->method('save')
+            ->willThrowException(new \RuntimeException('db down'));
+
+        $this->logger->expects(self::once())->method('error')->with(
+            self::stringContains('campaign #1 failed to schedule the delayed resume of action #11')
+        );
+
+        $this->makeDispatcher()->dispatch('order_placed', ['customer_id' => 1]);
+    }
+
+    /**
      * Regression for a real double-run bug: QuietHoursGate/SendTimeOptimizationGate defer a send
      * by writing a scheduled-action row and returning from allows() without throwing -
      * ActionInterface::execute() returns void either way, so without an explicit signal the
