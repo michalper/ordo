@@ -6,7 +6,8 @@ namespace Ordo\Automation\Controller\Adminhtml\EmailTemplateVersion;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Email\Model\ResourceModel\Template as MagentoTemplateResource;
-use Magento\Email\Model\TemplateFactory as MagentoTemplateFactory;
+use Magento\Email\Model\ResourceModel\Template\CollectionFactory as MagentoTemplateCollectionFactory;
+use Magento\Email\Model\Template as MagentoTemplate;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Ui\Component\MassAction\Filter;
 use Ordo\Automation\Model\EmailTemplateVersion;
@@ -33,7 +34,7 @@ class MassRestore extends Action implements HttpPostActionInterface
         Context $context,
         private readonly Filter $filter,
         private readonly EmailTemplateVersionCollectionFactory $emailTemplateVersionCollectionFactory,
-        private readonly MagentoTemplateFactory $magentoTemplateFactory,
+        private readonly MagentoTemplateCollectionFactory $magentoTemplateCollectionFactory,
         private readonly MagentoTemplateResource $magentoTemplateResource
     ) {
         parent::__construct($context);
@@ -43,14 +44,14 @@ class MassRestore extends Action implements HttpPostActionInterface
     {
         $resultRedirect = $this->resultRedirectFactory->create();
         $collection = $this->filter->getCollection($this->emailTemplateVersionCollectionFactory->create());
+        $templatesById = $this->loadTemplatesById($collection);
 
         $restored = 0;
         foreach ($collection as $version) {
             /** @var EmailTemplateVersion $version */
-            $template = $this->magentoTemplateFactory->create();
-            $this->magentoTemplateResource->load($template, $version->getTemplateId());
+            $template = $templatesById[(int) $version->getTemplateId()] ?? null;
 
-            if (!$template->getId()) {
+            if ($template === null) {
                 continue;
             }
 
@@ -72,6 +73,39 @@ class MassRestore extends Action implements HttpPostActionInterface
         }
 
         return $resultRedirect->setPath('*/*/');
+    }
+
+    /**
+     * One batched load for every distinct template_id selected, instead of one
+     * MagentoTemplateResource::load() call per selected version row - found during a full-repo
+     * /simplify sweep. Selecting several versions of the same template is still harmless (see
+     * this class's own docblock) - they now simply share the one already-loaded model instance.
+     *
+     * @param iterable<EmailTemplateVersion> $versions
+     * @return array<int, MagentoTemplate>
+     */
+    private function loadTemplatesById(iterable $versions): array
+    {
+        $templateIds = [];
+        foreach ($versions as $version) {
+            /** @var EmailTemplateVersion $version */
+            $templateIds[(int) $version->getTemplateId()] = true;
+        }
+
+        if ($templateIds === []) {
+            return [];
+        }
+
+        $collection = $this->magentoTemplateCollectionFactory->create();
+        $collection->addFieldToFilter('template_id', ['in' => array_keys($templateIds)]);
+
+        $templatesById = [];
+        foreach ($collection as $template) {
+            /** @var MagentoTemplate $template */
+            $templatesById[(int) $template->getId()] = $template;
+        }
+
+        return $templatesById;
     }
 
     /**
