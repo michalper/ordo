@@ -1029,13 +1029,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 14
-			path: Controller/WhatsApp/Webhook.php
-
-		-
-			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:save\(\) expects Magento\\Framework\\Model\\AbstractModel, Magento\\Framework\\DataObject given\.$#'
-			identifier: argument.type
-			count: 1
+			count: 18
 			path: Controller/WhatsApp/Webhook.php
 
 		-

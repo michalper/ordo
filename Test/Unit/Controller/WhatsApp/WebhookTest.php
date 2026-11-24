@@ -100,7 +100,7 @@ class WebhookTest extends AbstractFrontendActionTestCase
         return 'sha256=' . hash_hmac('sha256', $rawBody, self::APP_SECRET);
     }
 
-    private function makeMessageLog(?int $id): MessageLog
+    private function makeMessageLog(?int $id, string $providerMessageId = 'wamid.123'): MessageLog
     {
         $resource = $this->createStub(\Magento\Framework\Model\ResourceModel\Db\AbstractDb::class);
         $resource->method('getIdFieldName')->willReturn('entity_id');
@@ -112,12 +112,35 @@ class WebhookTest extends AbstractFrontendActionTestCase
         );
         if ($id !== null) {
             $log->setId($id);
+            $log->setProviderMessageId($providerMessageId);
         }
 
         return $log;
     }
 
-    private function makeTemplate(?int $id): WhatsAppTemplate
+    /**
+     * @return MessageLogCollection&\PHPUnit\Framework\MockObject\Stub
+     */
+    private function makeLogCollection(MessageLog ...$logs): MessageLogCollection
+    {
+        $collection = $this->createStub(MessageLogCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator($logs));
+        return $collection;
+    }
+
+    /**
+     * @return WhatsAppTemplateCollection&\PHPUnit\Framework\MockObject\Stub
+     */
+    private function makeTemplateCollection(WhatsAppTemplate ...$templates): WhatsAppTemplateCollection
+    {
+        $collection = $this->createStub(WhatsAppTemplateCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator($templates));
+        return $collection;
+    }
+
+    private function makeTemplate(?int $id, string $metaTemplateId = 'meta-template-123'): WhatsAppTemplate
     {
         $resource = $this->createStub(\Magento\Framework\Model\ResourceModel\Db\AbstractDb::class);
         $resource->method('getIdFieldName')->willReturn('entity_id');
@@ -129,6 +152,7 @@ class WebhookTest extends AbstractFrontendActionTestCase
         );
         if ($id !== null) {
             $template->setId($id);
+            $template->setMetaTemplateId($metaTemplateId);
         }
 
         return $template;
@@ -235,11 +259,11 @@ class WebhookTest extends AbstractFrontendActionTestCase
         $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
         $this->request->method('getContent')->willReturn($rawBody);
 
-        $log = $this->makeMessageLog(7);
+        $log = $this->makeMessageLog(7, 'wamid.123');
         $collection = $this->createMock(MessageLogCollection::class);
         $collection->expects(self::once())->method('addFieldToFilter')
-            ->with('provider_message_id', 'wamid.123')->willReturnSelf();
-        $collection->expects(self::once())->method('getFirstItem')->willReturn($log);
+            ->with('provider_message_id', ['in' => ['wamid.123']])->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$log]));
         $this->messageLogCollectionFactory->expects(self::once())->method('create')->willReturn($collection);
 
         $this->messageLogResource->expects(self::once())->method('save')->with($log);
@@ -270,11 +294,8 @@ class WebhookTest extends AbstractFrontendActionTestCase
         $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
         $this->request->method('getContent')->willReturn($rawBody);
 
-        $log = $this->makeMessageLog(7);
-        $collection = $this->createStub(MessageLogCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($log);
-        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+        $log = $this->makeMessageLog(7, 'wamid.123');
+        $this->messageLogCollectionFactory->method('create')->willReturn($this->makeLogCollection($log));
 
         $this->messageLogResource->expects(self::once())->method('save')->with($log);
 
@@ -303,12 +324,9 @@ class WebhookTest extends AbstractFrontendActionTestCase
         $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
         $this->request->method('getContent')->willReturn($rawBody);
 
-        $log = $this->makeMessageLog(7);
+        $log = $this->makeMessageLog(7, 'wamid.123');
         $log->setStatus(MessageLog::STATUS_FAILED);
-        $collection = $this->createStub(MessageLogCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($log);
-        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+        $this->messageLogCollectionFactory->method('create')->willReturn($this->makeLogCollection($log));
 
         $this->messageLogResource->expects(self::never())->method('save');
         $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
@@ -337,14 +355,40 @@ class WebhookTest extends AbstractFrontendActionTestCase
         $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
         $this->request->method('getContent')->willReturn($rawBody);
 
-        $log = $this->makeMessageLog(null);
-        $collection = $this->createStub(MessageLogCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($log);
-        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+        $this->messageLogCollectionFactory->method('create')->willReturn($this->makeLogCollection());
 
         $this->messageLogResource->expects(self::never())->method('save');
         $this->logger->expects(self::once())->method('info');
+        $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
+
+        $controller->execute();
+    }
+
+    /**
+     * Codecov caught this: the batched loader's own "skip a malformed, non-array status entry"
+     * continue was never exercised - the original code's equivalent (a plain
+     * `if (is_array($status)) { ... }` with no explicit skip line) never needed its own test for
+     * this, since there was no separate line to cover.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPostWithANonArrayStatusEntryIsIgnoredWithoutQueryingTheLog(): void
+    {
+        $controller = $this->makeController();
+        $rawBody = json_encode([
+            'entry' => [[
+                'changes' => [[
+                    'value' => [
+                        'statuses' => ['this-is-not-a-status-object'],
+                    ],
+                ]],
+            ]],
+        ]);
+        $this->request->method('isGet')->willReturn(false);
+        $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
+        $this->request->method('getContent')->willReturn($rawBody);
+
+        $this->messageLogCollectionFactory->expects(self::never())->method('create');
+        $this->messageLogResource->expects(self::never())->method('save');
         $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
 
         $controller->execute();
@@ -419,11 +463,11 @@ class WebhookTest extends AbstractFrontendActionTestCase
         $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
         $this->request->method('getContent')->willReturn($rawBody);
 
-        $log = $this->makeMessageLog(7);
+        $log = $this->makeMessageLog(7, 'wamid.123');
         $collection = $this->createMock(MessageLogCollection::class);
         $collection->expects(self::once())->method('addFieldToFilter')
-            ->with('provider_message_id', 'wamid.123')->willReturnSelf();
-        $collection->expects(self::once())->method('getFirstItem')->willReturn($log);
+            ->with('provider_message_id', ['in' => ['wamid.123']])->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$log]));
         $this->messageLogCollectionFactory->expects(self::once())->method('create')->willReturn($collection);
 
         $this->messageLogEventWriter->expects(self::once())->method('recordRead')->with(7);
@@ -452,11 +496,7 @@ class WebhookTest extends AbstractFrontendActionTestCase
         $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
         $this->request->method('getContent')->willReturn($rawBody);
 
-        $log = $this->makeMessageLog(null);
-        $collection = $this->createMock(MessageLogCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($log);
-        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+        $this->messageLogCollectionFactory->method('create')->willReturn($this->makeLogCollection());
 
         $this->messageLogEventWriter->expects(self::never())->method('recordRead');
 
@@ -482,11 +522,11 @@ class WebhookTest extends AbstractFrontendActionTestCase
         $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
         $this->request->method('getContent')->willReturn($rawBody);
 
-        $template = $this->makeTemplate(3);
+        $template = $this->makeTemplate(3, 'meta-template-123');
         $collection = $this->createMock(WhatsAppTemplateCollection::class);
         $collection->expects(self::once())->method('addFieldToFilter')
-            ->with('meta_template_id', 'meta-template-123')->willReturnSelf();
-        $collection->expects(self::once())->method('getFirstItem')->willReturn($template);
+            ->with('meta_template_id', ['in' => ['meta-template-123']])->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$template]));
         $this->whatsAppTemplateCollectionFactory->expects(self::once())->method('create')->willReturn($collection);
 
         $this->whatsAppTemplateResource->expects(self::once())->method('save')->with($template);
@@ -517,11 +557,9 @@ class WebhookTest extends AbstractFrontendActionTestCase
         $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
         $this->request->method('getContent')->willReturn($rawBody);
 
-        $template = $this->makeTemplate(3);
-        $collection = $this->createStub(WhatsAppTemplateCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($template);
-        $this->whatsAppTemplateCollectionFactory->method('create')->willReturn($collection);
+        $template = $this->makeTemplate(3, 'meta-template-123');
+        $this->whatsAppTemplateCollectionFactory->method('create')
+            ->willReturn($this->makeTemplateCollection($template));
 
         $this->whatsAppTemplateResource->expects(self::once())->method('save')->with($template);
 
@@ -550,11 +588,7 @@ class WebhookTest extends AbstractFrontendActionTestCase
         $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
         $this->request->method('getContent')->willReturn($rawBody);
 
-        $template = $this->makeTemplate(null);
-        $collection = $this->createStub(WhatsAppTemplateCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($template);
-        $this->whatsAppTemplateCollectionFactory->method('create')->willReturn($collection);
+        $this->whatsAppTemplateCollectionFactory->method('create')->willReturn($this->makeTemplateCollection());
 
         $this->whatsAppTemplateResource->expects(self::never())->method('save');
         $this->logger->expects(self::once())->method('info');
@@ -634,6 +668,48 @@ class WebhookTest extends AbstractFrontendActionTestCase
         $this->inboundMessageProcessor->expects(self::never())->method('process');
 
         $controller->execute();
+    }
+
+    /**
+     * Regression for a full-repo /simplify finding: two distinct status entries in the same
+     * webhook call (different provider_message_ids) used to each do their own MessageLog
+     * lookup query. Must now be one batched IN(...) load for the whole call.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testTwoStatusEntriesWithDifferentIdsLoadBothLogsInOneBatchedQuery(): void
+    {
+        $controller = $this->makeController();
+        $rawBody = json_encode([
+            'entry' => [[
+                'changes' => [[
+                    'value' => [
+                        'statuses' => [
+                            ['id' => 'wamid.first', 'status' => 'delivered'],
+                            ['id' => 'wamid.second', 'status' => 'failed'],
+                        ],
+                    ],
+                ]],
+            ]],
+        ]);
+        $this->request->method('isGet')->willReturn(false);
+        $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
+        $this->request->method('getContent')->willReturn($rawBody);
+
+        $firstLog = $this->makeMessageLog(7, 'wamid.first');
+        $secondLog = $this->makeMessageLog(9, 'wamid.second');
+
+        $collection = $this->createMock(MessageLogCollection::class);
+        $collection->expects(self::once())->method('addFieldToFilter')
+            ->with('provider_message_id', ['in' => ['wamid.first', 'wamid.second']])->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$firstLog, $secondLog]));
+        $this->messageLogCollectionFactory->expects(self::once())->method('create')->willReturn($collection);
+
+        $this->messageLogResource->expects(self::exactly(2))->method('save');
+
+        $controller->execute();
+
+        self::assertSame(MessageLog::STATUS_DELIVERED, $firstLog->getStatus());
+        self::assertSame(MessageLog::STATUS_FAILED, $secondLog->getStatus());
     }
 
     #[AllowMockObjectsWithoutExpectations]
