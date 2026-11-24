@@ -3,30 +3,27 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Plugin\Campaign;
 
-use Ordo\Automation\Model\AdminActionLog;
-use Ordo\Automation\Model\AdminActionLog\Recorder;
 use Ordo\Automation\Model\Campaign;
 use Ordo\Automation\Model\Campaign\CampaignSaveProcessor;
+use Ordo\Automation\Plugin\Shared\AbstractSaveProcessorAuditPlugin;
 
 /**
- * Records who saved a campaign, and what changed - see Model\AdminActionLog\Recorder's own
+ * Records who saved a campaign, and what changed - see AbstractSaveProcessorAuditPlugin's own
  * docblock for the overall design. An `around` (not `after`) so create-vs-update can be
  * determined from the raw posted $data (an entity_id posted at all means "update") before
  * process() itself mutates anything - by the time process() returns, the campaign's own
  * getOrigData() no longer reflects "was this new" in a way this plugin needs to re-derive.
  */
-class CampaignSaveProcessorAuditPlugin
+class CampaignSaveProcessorAuditPlugin extends AbstractSaveProcessorAuditPlugin
 {
-    private const string ENTITY_TYPE = 'campaign';
+    protected function entityType(): string
+    {
+        return 'campaign';
+    }
 
-    /**
-     * @var string[]
-     */
-    private const array AUDITED_FIELDS = ['name', 'enabled', 'condition_logic'];
-
-    public function __construct(
-        private readonly Recorder $recorder
-    ) {
+    protected function auditedFields(): array
+    {
+        return ['name', 'enabled', 'condition_logic'];
     }
 
     /**
@@ -35,16 +32,8 @@ class CampaignSaveProcessorAuditPlugin
      */
     public function aroundProcess(CampaignSaveProcessor $subject, callable $proceed, array $data): Campaign
     {
-        $isCreate = empty($data['entity_id']);
-
-        $campaign = $proceed($data);
-
-        $this->recorder->record(
-            self::ENTITY_TYPE,
-            $campaign->getEntityId(),
-            $isCreate ? AdminActionLog::ACTION_CREATE : AdminActionLog::ACTION_UPDATE,
-            $isCreate ? null : $this->recorder->diffFields($campaign, self::AUDITED_FIELDS)
-        );
+        /** @var Campaign $campaign */
+        $campaign = $this->doAroundProcess($proceed, $data);
 
         return $campaign;
     }
