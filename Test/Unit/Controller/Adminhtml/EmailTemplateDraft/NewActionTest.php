@@ -134,4 +134,31 @@ class NewActionTest extends AbstractAdminActionTestCase
 
         self::assertSame($redirect, $this->controller->execute());
     }
+
+    /**
+     * This is the entry point into a draft Publish later writes back onto the live core
+     * email_template row - Ordo_Automation::email_template_drafts is a sibling ACL node, not a
+     * child of Magento_Email::template, so _isAllowed() must require both, not just its own
+     * resource.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testIsAllowedRequiresBothTheOwnResourceAndMagentoEmailTemplate(): void
+    {
+        $isAllowed = new \ReflectionMethod(NewAction::class, '_isAllowed');
+
+        $this->authorization->method('isAllowed')->willReturnMap([
+            ['Ordo_Automation::email_template_drafts', null, true],
+            ['Magento_Email::template', null, false],
+        ]);
+        self::assertFalse($isAllowed->invoke($this->controller));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testIsAllowedPassesWhenBothResourcesAreGranted(): void
+    {
+        $isAllowed = new \ReflectionMethod(NewAction::class, '_isAllowed');
+
+        $this->authorization->method('isAllowed')->willReturn(true);
+        self::assertTrue($isAllowed->invoke($this->controller));
+    }
 }
