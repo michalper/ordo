@@ -45,4 +45,18 @@ class SegmentBulkActionClaimStoreTest extends TestCase
         $store = new SegmentBulkActionClaimStore($resourceConnection);
         self::assertFalse($store->claim('batch-uuid', 42));
     }
+
+    public function testUnclaimDeletesTheClaimRow(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::once())->method('delete')
+            ->with('ordo_segment_bulk_action_claim', ['batch_id = ?' => 'batch-uuid', 'customer_id = ?' => 42]);
+
+        $resourceConnection = $this->createStub(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $store = new SegmentBulkActionClaimStore($resourceConnection);
+        $store->unclaim('batch-uuid', 42);
+    }
 }

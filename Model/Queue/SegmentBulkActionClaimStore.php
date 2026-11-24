@@ -44,4 +44,22 @@ class SegmentBulkActionClaimStore
 
         return true;
     }
+
+    /**
+     * Rolls back a claim() this same call just made, when the action it guarded then genuinely
+     * fails - found during a full-repo /code-review: without this, a transient failure (a bad
+     * record, a DB hiccup) for one customer left their claim row in place forever, so a later
+     * redelivery of this exact message (the scenario this claim store exists for) would skip
+     * them permanently instead of retrying - turning "never double-apply on redelivery" into
+     * "never apply at all after any transient failure".
+     */
+    public function unclaim(string $batchId, int $customerId): void
+    {
+        $connection = $this->resourceConnection->getConnection();
+
+        $connection->delete(
+            $this->resourceConnection->getTableName('ordo_segment_bulk_action_claim'),
+            ['batch_id = ?' => $batchId, 'customer_id = ?' => $customerId]
+        );
+    }
 }

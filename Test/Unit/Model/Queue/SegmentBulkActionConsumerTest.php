@@ -94,8 +94,14 @@ class SegmentBulkActionConsumerTest extends TestCase
         self::assertSame(['tag' => 'vip'], $this->executedWith[0]['params']);
     }
 
+    /**
+     * Regression for the real gap this closes: a failing customer's claim must be rolled back,
+     * not left in place - otherwise a redelivery of this exact message (the scenario the claim
+     * store exists for) would see them as already claimed and skip them forever, even though the
+     * action never actually ran.
+     */
     #[AllowMockObjectsWithoutExpectations]
-    public function testExecuteLogsPerCustomerFailureAndContinuesTheLoop(): void
+    public function testExecuteRollsBackTheClaimAndLogsPerCustomerFailureAndContinuesTheLoop(): void
     {
         $this->serializer->method('unserialize')->willReturn([
             'action_type' => 'add_tag',
@@ -109,6 +115,10 @@ class SegmentBulkActionConsumerTest extends TestCase
                 throw new \RuntimeException('db down');
             }
         });
+
+        $this->claimStore = $this->createMock(SegmentBulkActionClaimStore::class);
+        $this->claimStore->method('claim')->willReturn(true);
+        $this->claimStore->expects(self::once())->method('unclaim')->with('batch-uuid', 2);
 
         $this->logger->expects(self::once())->method('error');
         $this->logger->expects(self::once())->method('info')->with(

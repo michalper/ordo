@@ -88,6 +88,11 @@ class SegmentBulkActionConsumer
                 $action->execute($context, $params);
                 $applied++;
             } catch (\Throwable $e) {
+                // Roll back the claim just made above - otherwise a redelivery of this exact
+                // message (the real scenario this claim store exists for) would see this
+                // customer as already claimed and skip them forever, even though the action
+                // never actually ran for them.
+                $this->claimStore->unclaim($batchId, $customerId);
                 $this->logger->error(sprintf(
                     'Ordo_Automation: failed to apply bulk action "%s" to customer #%d: %s',
                     $actionType,
