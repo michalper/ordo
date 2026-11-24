@@ -50,6 +50,12 @@
         <plugin name="ordo_automation_snapshot_email_template_version" type="Ordo\Automation\Plugin\Email\SnapshotEmailTemplateVersion"/>
     </type>
 
+    <!-- Closes a real broken-access-control gap found during a full-repo security review - see
+         Plugin\Customer\ProtectAdminOnlyCustomerAttributesPlugin's own docblock. -->
+    <type name="Magento\Customer\Api\CustomerRepositoryInterface">
+        <plugin name="ordo_automation_protect_admin_only_customer_attributes" type="Ordo\Automation\Plugin\Customer\ProtectAdminOnlyCustomerAttributesPlugin"/>
+    </type>
+
     <type name="Ordo\Automation\Model\AdAudience\SyncClientPool">
         <arguments>
             <argument name="clients" xsi:type="array">
