@@ -72,11 +72,11 @@ class Index extends Template
      */
     public function getTopicConsentStates(): array
     {
-        $customerId = $this->getCustomerId();
-        $states = [];
+        $allChannelStates = $this->consentManager->getAllTopicConsentStates($this->getCustomerId());
 
+        $states = [];
         foreach (ConsentChannel::deliveryChannels() as $channel) {
-            $channelStates = $this->consentManager->getTopicConsentStates($customerId, $channel);
+            $channelStates = $allChannelStates[$channel->value] ?? [];
             $states[$channel->value] = [
                 ConsentTopic::Promotional->value =>
                     $channelStates[ConsentTopic::Promotional->value]

@@ -6,7 +6,6 @@ namespace Ordo\Automation\Controller\Adminhtml\Gdpr;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\Controller\Result\RawFactory;
-use Ordo\Automation\Model\ConsentChannel;
 use Ordo\Automation\Model\ConsentManager;
 use Ordo\Automation\Model\Gdpr\CustomerDataExporter;
 
@@ -37,14 +36,9 @@ class Export extends AbstractGdprAction implements HttpGetActionInterface
             return $this->resultRedirectFactory->create()->setPath('*/*/index');
         }
 
-        $topicConsentStates = [];
-        foreach (ConsentChannel::deliveryChannels() as $channel) {
-            $topicConsentStates[$channel->value] = $this->consentManager->getTopicConsentStates($customerId, $channel);
-        }
-
         $payload = [
             'consent_states' => $this->consentManager->getConsentStates($customerId),
-            'topic_consent_states' => $topicConsentStates,
+            'topic_consent_states' => $this->consentManager->getAllTopicConsentStates($customerId),
             'data' => $this->customerDataExporter->export($customerId),
         ];
 

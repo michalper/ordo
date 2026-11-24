@@ -122,6 +122,34 @@ class ConsentManager
     }
 
     /**
+     * Batch variant of getTopicConsentStates() across every channel for one customer, instead of
+     * calling it once per channel - found during a full-repo /simplify sweep: both
+     * Controller\Adminhtml\Gdpr\Export and Block\Adminhtml\Gdpr\Index looped
+     * ConsentChannel::deliveryChannels() calling getTopicConsentStates() per channel, one query
+     * each.
+     *
+     * @return array<string, array<string, bool>> channel value => (topic value => consented),
+     *     same per-channel shape getTopicConsentStates() returns, for every message-delivery
+     *     channel.
+     */
+    public function getAllTopicConsentStates(int $customerId): array
+    {
+        $collection = $this->customerConsentTopicCollectionFactory->create();
+        $collection->addCustomerFilter($customerId);
+
+        $states = array_fill_keys(
+            array_map(static fn (ConsentChannel $channel): string => $channel->value, ConsentChannel::deliveryChannels()),
+            []
+        );
+        foreach ($collection as $topicConsent) {
+            /** @var CustomerConsentTopic $topicConsent */
+            $states[$topicConsent->getChannel()][$topicConsent->getTopic()] = $topicConsent->isConsented();
+        }
+
+        return $states;
+    }
+
+    /**
      * Batch variant of hasConsent() - one query for the whole set instead of one per customer,
      * for the reminder crons (SendAbandonedCartReminders, SendCreditLimitAlerts,
      * SendOfferExpiryReminders, SendReorderReminders, SendWinBackEmails) that otherwise call
