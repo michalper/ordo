@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Model\ResourceModel;
 
 use Magento\Framework\DB\Adapter\AdapterInterface;
+use Magento\Framework\DB\Select;
 use Ordo\Automation\Model\CampaignActionRetry;
 use Ordo\Automation\Model\ResourceModel\CampaignActionRetry as CampaignActionRetryResource;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -71,5 +72,23 @@ class CampaignActionRetryTest extends AbstractDbTestCase
         $model->expects(self::never())->method('setNextRetryAt');
 
         self::assertFalse($resource->claim($model, '2026-01-01 00:00:00', '2026-01-01 00:05:00'));
+    }
+
+    public function testFetchContextsForCampaignReturnsEveryRowsContextForThatCampaign(): void
+    {
+        [$context, $connection] = $this->makeDbContextWithConnection();
+
+        $select = $this->createMock(Select::class);
+        $select->expects(self::once())->method('from')
+            ->with('ordo_campaign_action_retry', 'context')->willReturnSelf();
+        $select->expects(self::once())->method('where')->with('campaign_id = ?', 7)->willReturnSelf();
+
+        $connection->expects(self::once())->method('select')->willReturn($select);
+        $connection->expects(self::once())->method('fetchCol')->with($select)
+            ->willReturn(['{"customer_id":42}', '{"customer_id":99}']);
+
+        $resource = new CampaignActionRetryResource($context);
+
+        self::assertSame(['{"customer_id":42}', '{"customer_id":99}'], $resource->fetchContextsForCampaign(7));
     }
 }
