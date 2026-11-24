@@ -27,6 +27,24 @@ abstract class AbstractNamedToggleableEntityModel extends AbstractModel
         return (string) $this->getData('name');
     }
 
+    /**
+     * Found hand-duplicated verbatim between Campaign and Segment during a full-repo /simplify
+     * sweep - neither's own interface declares this (CampaignInterface doesn't, and Segment has
+     * no interface at all - admin-only), so there's no interface-covariance reason (see this
+     * class's own docblock) to keep it split per subclass.
+     */
+    public function getConditionLogic(): string
+    {
+        $value = $this->getData('condition_logic');
+        return $value === 'any' ? 'any' : 'all';
+    }
+
+    public function setConditionLogic(string $logic): static
+    {
+        $this->setData('condition_logic', $logic === 'any' ? 'any' : 'all');
+        return $this;
+    }
+
     public function isEnabled(): bool
     {
         return (bool) $this->getData('enabled');
