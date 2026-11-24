@@ -5,7 +5,6 @@ namespace Ordo\Automation\Model;
 
 use Magento\Authorization\Model\UserContextInterface;
 use Magento\Framework\Exception\LocalizedException;
-use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Api\ConsentPreferencesManagementInterface;
 use Ordo\Automation\Api\Data\ConsentChannelPreferenceInterface;
 use Ordo\Automation\Api\Data\ConsentPreferencesInterface;
@@ -16,18 +15,19 @@ class ConsentPreferencesManagement implements ConsentPreferencesManagementInterf
         private readonly ConsentManager $consentManager,
         private readonly UserContextInterface $userContext,
         private readonly ConsentPreferencesFactory $consentPreferencesFactory,
-        private readonly ConsentChannelPreferenceFactory $consentChannelPreferenceFactory
+        private readonly ConsentChannelPreferenceFactory $consentChannelPreferenceFactory,
+        private readonly UserContextCustomerIdResolver $userContextCustomerIdResolver
     ) {
     }
 
     public function getMyPreferences(): ConsentPreferencesInterface
     {
-        return $this->buildPreferences($this->resolveCustomerId());
+        return $this->buildPreferences($this->userContextCustomerIdResolver->requireCustomerId($this->userContext));
     }
 
     public function setMyChannelConsent(string $channel, bool $consented): ConsentPreferencesInterface
     {
-        $customerId = $this->resolveCustomerId();
+        $customerId = $this->userContextCustomerIdResolver->requireCustomerId($this->userContext);
 
         $channelEnum = ConsentChannel::tryFrom($channel);
         if ($channelEnum === null) {
@@ -41,7 +41,7 @@ class ConsentPreferencesManagement implements ConsentPreferencesManagementInterf
 
     public function setMyTopicConsent(string $channel, string $topic, bool $consented): ConsentPreferencesInterface
     {
-        $customerId = $this->resolveCustomerId();
+        $customerId = $this->userContextCustomerIdResolver->requireCustomerId($this->userContext);
 
         $channelEnum = ConsentChannel::tryFrom($channel);
         $topicEnum = ConsentTopic::tryFrom($topic);
@@ -52,24 +52,6 @@ class ConsentPreferencesManagement implements ConsentPreferencesManagementInterf
         $this->consentManager->setTopicConsent($customerId, $channelEnum, $topicEnum, $consented, 'storefront');
 
         return $this->buildPreferences($customerId);
-    }
-
-    /**
-     * Same "0 means guest, not a real id" caveat getUserId() has everywhere else in this module
-     * (see Model\GraphQl\CustomerIdResolver's own docblock) doesn't apply to the REST/frontend
-     * path this implementation is written against - Magento's REST dispatch only ever populates
-     * UserContextInterface with a real customer id or null here, never 0. GraphQL callers guard
-     * against the 0-for-guest case of their own context before ever reaching this class - see
-     * Model\GraphQl\Resolver\ConsentPreferences's own docblock.
-     */
-    private function resolveCustomerId(): int
-    {
-        $customerId = $this->userContext->getUserId();
-        if ($customerId === null) {
-            throw new NoSuchEntityException(__('No authenticated customer for this request.'));
-        }
-
-        return (int) $customerId;
     }
 
     private function buildPreferences(int $customerId): ConsentPreferencesInterface

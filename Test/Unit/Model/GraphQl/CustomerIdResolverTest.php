@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Model\GraphQl;
 
+use Magento\Framework\GraphQl\Exception\GraphQlAuthorizationException;
 use Magento\Framework\GraphQl\Query\Resolver\ContextInterface as BaseContextInterface;
 use Magento\GraphQl\Model\Query\ContextInterface;
 use Ordo\Automation\Model\GraphQl\CustomerIdResolver;
@@ -43,5 +44,28 @@ class CustomerIdResolverTest extends TestCase
         $context->method('getUserId')->willReturn(42);
 
         self::assertSame(42, (new CustomerIdResolver())->resolveCustomerId($context));
+    }
+
+    /**
+     * Regression for a full-repo /simplify finding: ConsentPreferences/CreditLimit/SetConsent/
+     * SetConsentTopic each used to repeat this exact "resolveCustomerId() === null -> throw"
+     * guard themselves. Now a single throwing call here.
+     */
+    public function testRequireCustomerIdThrowsAuthorizationExceptionForGuest(): void
+    {
+        $context = $this->createStub(ContextInterface::class);
+        $context->method('getUserId')->willReturn(0);
+
+        $this->expectException(GraphQlAuthorizationException::class);
+
+        (new CustomerIdResolver())->requireCustomerId($context);
+    }
+
+    public function testRequireCustomerIdReturnsRealCustomerId(): void
+    {
+        $context = $this->createStub(ContextInterface::class);
+        $context->method('getUserId')->willReturn(42);
+
+        self::assertSame(42, (new CustomerIdResolver())->requireCustomerId($context));
     }
 }
