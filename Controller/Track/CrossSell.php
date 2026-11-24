@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Controller\Track;
 
+use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
@@ -15,7 +16,6 @@ use Magento\Sales\Api\OrderRepositoryInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Recommendation\ProductRecommendationRenderer;
 use Ordo\Automation\Model\Recommendation\ProductRecommender;
-use Ordo\Automation\Model\Track\LastRealOrderIdReader;
 
 /**
  * Public, unauthenticated endpoint - called by window.ordoRenderCrossSell(orderId,
@@ -29,10 +29,12 @@ use Ordo\Automation\Model\Track\LastRealOrderIdReader;
  * scope), but it is NEVER trusted on its own: this is a public GET endpoint, so a bare integer
  * order id would otherwise let anyone enumerate ids and read back a stranger's own purchase-
  * affinity signal (an IDOR-shaped leak, low-sensitivity but real). It's only ever honored when it
- * matches LastRealOrderIdReader::getLastRealOrderId() (CheckoutSession::getLastRealOrderId(),
- * wrapped for testability - see that class's own docblock) - the same order-ownership check
- * Magento's own core Success block relies on - i.e. only the order THIS exact browser session
- * just placed.
+ * matches CheckoutSession::getLastRealOrder()->getIncrementId() - the same order-ownership check
+ * Magento's own core Success block relies on internally - i.e. only the order THIS exact browser
+ * session just placed. getLastRealOrder() (a real, declared method), not getLastRealOrderId()
+ * (a magic accessor via Magento\Framework\Session\SessionManager::__call(), which PHPUnit can't
+ * stub directly - MockBuilder::addMethods(), the mechanism for exactly this case, was removed in
+ * PHPUnit 10+) - same information, trivially mockable.
  *
  * Reuses Model\Recommendation\ProductRecommender/ProductRecommendationRenderer wholesale - the
  * same co-purchase-affinity ranking and email-grade HTML grid markup
@@ -46,7 +48,7 @@ class CrossSell extends Action implements HttpGetActionInterface, CsrfAwareActio
         Context $context,
         private readonly JsonFactory $resultJsonFactory,
         private readonly OrderRepositoryInterface $orderRepository,
-        private readonly LastRealOrderIdReader $lastRealOrderIdReader,
+        private readonly CheckoutSession $checkoutSession,
         private readonly ProductRecommender $productRecommender,
         private readonly ProductRecommendationRenderer $productRecommendationRenderer,
         private readonly Config $config
@@ -73,7 +75,8 @@ class CrossSell extends Action implements HttpGetActionInterface, CsrfAwareActio
             return $result->setData(['html' => '']);
         }
 
-        if ((string) $order->getIncrementId() !== $this->lastRealOrderIdReader->getLastRealOrderId()) {
+        $lastRealIncrementId = (string) $this->checkoutSession->getLastRealOrder()->getIncrementId();
+        if ((string) $order->getIncrementId() !== $lastRealIncrementId) {
             return $result->setData(['html' => '']);
         }
 

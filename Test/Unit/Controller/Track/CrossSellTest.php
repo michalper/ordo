@@ -3,16 +3,17 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Test\Unit\Controller\Track;
 
+use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\Controller\Result\Json;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
+use Magento\Sales\Model\Order;
 use Ordo\Automation\Controller\Track\CrossSell;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Recommendation\ProductRecommendationRenderer;
 use Ordo\Automation\Model\Recommendation\ProductRecommender;
-use Ordo\Automation\Model\Track\LastRealOrderIdReader;
 use Ordo\Automation\Test\Unit\Controller\AbstractFrontendActionTestCase;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
@@ -20,7 +21,7 @@ class CrossSellTest extends AbstractFrontendActionTestCase
 {
     private JsonFactory $resultJsonFactory;
     private OrderRepositoryInterface $orderRepository;
-    private LastRealOrderIdReader $lastRealOrderIdReader;
+    private CheckoutSession $checkoutSession;
     private ProductRecommender $productRecommender;
     private ProductRecommendationRenderer $productRecommendationRenderer;
     private Config $config;
@@ -30,7 +31,7 @@ class CrossSellTest extends AbstractFrontendActionTestCase
     {
         $this->resultJsonFactory = $this->createStub(JsonFactory::class);
         $this->orderRepository = $this->createMock(OrderRepositoryInterface::class);
-        $this->lastRealOrderIdReader = $this->createStub(LastRealOrderIdReader::class);
+        $this->checkoutSession = $this->createStub(CheckoutSession::class);
         $this->productRecommender = $this->createMock(ProductRecommender::class);
         $this->productRecommendationRenderer = $this->createMock(ProductRecommendationRenderer::class);
         $this->config = $this->createStub(Config::class);
@@ -46,7 +47,7 @@ class CrossSellTest extends AbstractFrontendActionTestCase
             $this->makeContext(),
             $this->resultJsonFactory,
             $this->orderRepository,
-            $this->lastRealOrderIdReader,
+            $this->checkoutSession,
             $this->productRecommender,
             $this->productRecommendationRenderer,
             $this->config
@@ -57,6 +58,19 @@ class CrossSellTest extends AbstractFrontendActionTestCase
     {
         $order = $this->createStub(OrderInterface::class);
         $order->method('getCustomerId')->willReturn($customerId);
+        $order->method('getIncrementId')->willReturn($incrementId);
+
+        return $order;
+    }
+
+    /**
+     * CheckoutSession::getLastRealOrder() (a real, declared method, unlike the magic
+     * getLastRealOrderId() it reads internally) always returns an Order instance - an unloaded,
+     * empty one (getIncrementId() === null) when no order was ever placed this session.
+     */
+    private function makeLastRealOrder(?string $incrementId): Order
+    {
+        $order = $this->createStub(Order::class);
         $order->method('getIncrementId')->willReturn($incrementId);
 
         return $order;
@@ -114,7 +128,28 @@ class CrossSellTest extends AbstractFrontendActionTestCase
         $this->request->expects(self::once())->method('getParam')->with('order_id')->willReturn('5');
         $this->orderRepository->expects(self::once())->method('get')->with(5)
             ->willReturn($this->makeOrder(7, '000000123'));
-        $this->lastRealOrderIdReader->method('getLastRealOrderId')->willReturn('000000999');
+        $this->checkoutSession->method('getLastRealOrder')->willReturn($this->makeLastRealOrder('000000999'));
+
+        $this->jsonResult->expects(self::once())->method('setData')->with(['html' => '']);
+        $this->productRecommender->expects(self::never())->method('getRecommendedSkus');
+
+        $controller->execute();
+    }
+
+    /**
+     * Regression for a real browser session that hasn't placed any order at all this visit -
+     * CheckoutSession::getLastRealOrder() still returns a (freshly-constructed, unloaded) Order
+     * instance rather than null, whose getIncrementId() is null, not a matching string.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteReturnsEmptyHtmlWhenNoOrderWasEverPlacedThisSession(): void
+    {
+        $controller = $this->makeController();
+        $this->config->method('isCrossSellWidgetEnabled')->willReturn(true);
+        $this->request->expects(self::once())->method('getParam')->with('order_id')->willReturn('5');
+        $this->orderRepository->expects(self::once())->method('get')->with(5)
+            ->willReturn($this->makeOrder(7, '000000123'));
+        $this->checkoutSession->method('getLastRealOrder')->willReturn($this->makeLastRealOrder(null));
 
         $this->jsonResult->expects(self::once())->method('setData')->with(['html' => '']);
         $this->productRecommender->expects(self::never())->method('getRecommendedSkus');
@@ -131,7 +166,7 @@ class CrossSellTest extends AbstractFrontendActionTestCase
         $this->request->expects(self::once())->method('getParam')->with('order_id')->willReturn('5');
         $this->orderRepository->expects(self::once())->method('get')->with(5)
             ->willReturn($this->makeOrder(7, '000000123'));
-        $this->lastRealOrderIdReader->method('getLastRealOrderId')->willReturn('000000123');
+        $this->checkoutSession->method('getLastRealOrder')->willReturn($this->makeLastRealOrder('000000123'));
         $this->productRecommender->expects(self::once())->method('getRecommendedSkus')->with(7, 4)
             ->willReturn(['SKU-1', 'SKU-2']);
         $this->productRecommendationRenderer->expects(self::once())->method('renderHtml')
@@ -152,7 +187,7 @@ class CrossSellTest extends AbstractFrontendActionTestCase
         $this->request->expects(self::once())->method('getParam')->with('order_id')->willReturn('5');
         $this->orderRepository->expects(self::once())->method('get')->with(5)
             ->willReturn($this->makeOrder(0, '000000123'));
-        $this->lastRealOrderIdReader->method('getLastRealOrderId')->willReturn('000000123');
+        $this->checkoutSession->method('getLastRealOrder')->willReturn($this->makeLastRealOrder('000000123'));
         $this->productRecommender->expects(self::once())->method('getRecommendedSkus')->with(0, 4)
             ->willReturn([]);
         $this->productRecommendationRenderer->expects(self::once())->method('renderHtml')

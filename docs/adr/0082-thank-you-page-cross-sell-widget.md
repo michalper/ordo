@@ -32,20 +32,20 @@ target the PDP.
   other widget this file exposes (`renderSocialProof`/`renderLowStock` also just drop a
   server-formatted value straight into the DOM).
 - **Order ownership is enforced server-side via `Magento\Checkout\Model\Session::
-  getLastRealOrderId()`, not trusted from the request.** `order_id` is a plain integer on a
-  public, unauthenticated GET endpoint - without this check, anyone could enumerate order ids and
-  read back a stranger's own purchase-affinity signal (a low-sensitivity but real IDOR-shaped
-  leak). `Controller\Track\CrossSell` loads the order by the posted entity id, then refuses to
-  recommend anything unless that order's own increment id matches
-  `CheckoutSession::getLastRealOrderId()` - the exact same ownership boundary Magento's own core
-  `Success` block relies on internally, just re-implemented here since this controller receives
-  the id as an explicit argument rather than reading the block's order object directly. This is
-  the first use of `Magento\Checkout\Model\Session` anywhere in this module - wrapped behind a
-  new `Model\Track\LastRealOrderIdReader` (one real, declared method around
-  `getLastRealOrderId()`, which is otherwise a magic accessor via
-  `Magento\Framework\Session\SessionManager::__call()`, not a method PHPUnit can stub directly -
-  `MockBuilder::addMethods()`, the mechanism for exactly this case, was removed in PHPUnit 10+).
-  The wrapper's own single line is covered by a real `Test/Integration/` test instead of a mock.
+  getLastRealOrder()->getIncrementId()`, not trusted from the request.** `order_id` is a plain
+  integer on a public, unauthenticated GET endpoint - without this check, anyone could enumerate
+  order ids and read back a stranger's own purchase-affinity signal (a low-sensitivity but real
+  IDOR-shaped leak). `Controller\Track\CrossSell` loads the order by the posted entity id, then
+  refuses to recommend anything unless that order's own increment id matches the CURRENT
+  session's own last real order - the exact same ownership boundary Magento's own core `Success`
+  block relies on internally, just re-implemented here since this controller receives the id as
+  an explicit argument rather than reading the block's order object directly. This is the first
+  use of `Magento\Checkout\Model\Session` anywhere in this module - read via `getLastRealOrder()`
+  (a real, declared method returning a `Sales\Model\Order`) rather than the lower-level
+  `getLastRealOrderId()` it calls internally, which is a magic accessor via
+  `Magento\Framework\Session\SessionManager::__call()` that PHPUnit can't stub directly
+  (`MockBuilder::addMethods()`, the mechanism for exactly this case, was removed in PHPUnit 10+) -
+  same information, trivially mockable, no wrapper class needed.
 - **Guest orders fall through to `ProductRecommender`'s existing best-seller fallback.**
   `getRecommendedSkus()` already treats `customerId <= 0` as "no purchase history to rank
   against" and pads straight from store-wide best-sellers - exactly the guest-checkout case here,
