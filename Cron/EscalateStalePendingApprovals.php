@@ -93,7 +93,10 @@ class EscalateStalePendingApprovals
             $remindersSentBeforeClaim = $approval->getRemindersSent();
             $escalationTierBeforeClaim = $approval->getEscalationTier();
 
-            [$recipient, $tierAdvanced] = $this->claimRecipientEmail($approval, $maxRemindersPerTier, $chainEmails);
+            // rollbackEscalation() below always reverts both fields to their pre-claim values
+            // regardless of which tier a failed claim advanced to, so the second element
+            // (tierAdvanced) claimRecipientEmail() returns is no longer needed here.
+            [$recipient] = $this->claimRecipientEmail($approval, $maxRemindersPerTier, $chainEmails);
             if ($recipient === null) {
                 // Already claimed by peekRecipientEmail() at the pre-filter stage above, so this
                 // shouldn't normally happen - defensive only.
@@ -111,15 +114,18 @@ class EscalateStalePendingApprovals
                 $sent++;
             } catch (\Throwable $e) {
                 // Roll the claim back to its pre-claim values - a genuinely failed send must be
-                // retried next run, not silently counted as having happened. Only touch
-                // escalation_tier when this claim actually advanced it, so a same-tier reminder's
-                // rollback writes reminders_sent alone, exactly like the original single-level
-                // version did.
-                $approval->setData('reminders_sent', $remindersSentBeforeClaim);
-                if ($tierAdvanced) {
-                    $approval->setData('escalation_tier', $escalationTierBeforeClaim);
-                }
-                $this->orderApprovalResource->save($approval);
+                // retried next run, not silently counted as having happened. A plain
+                // setData()+save() can't do this: claimEscalation() wrote the new values via a
+                // raw UPDATE that never touched origData, so AbstractDb::save()'s diff-against-
+                // origData would see these reset values as already matching origData (both still
+                // the pre-claim ones) and write nothing at all - found during a full-repo
+                // /code-review. rollbackEscalation() reverts via its own raw UPDATE instead, so
+                // it writes regardless of what origData thinks changed.
+                $this->orderApprovalResource->rollbackEscalation(
+                    $approval,
+                    $remindersSentBeforeClaim,
+                    $escalationTierBeforeClaim
+                );
                 $this->cronRunLogger->logFailure(
                     sprintf('send approval escalation for order #%d', (int) $order->getEntityId()),
                     $e
