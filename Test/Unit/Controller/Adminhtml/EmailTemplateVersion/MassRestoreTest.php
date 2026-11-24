@@ -101,6 +101,47 @@ class MassRestoreTest extends AbstractAdminActionTestCase
         $controller->execute();
     }
 
+    /**
+     * Regression for a real Codecov-caught gap: the batched load's own early-return (nothing to
+     * query when the mass action selected nothing at all) was never exercised - a 0-row
+     * selection is a real, reachable case (a stale/empty grid selection), not just a defensive
+     * guard.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteDoesNothingWhenNoVersionsAreSelected(): void
+    {
+        $context = $this->makeContext();
+        $redirect = $this->createMock(Redirect::class);
+        $redirect->method('setPath')->willReturnSelf();
+        $this->resultRedirectFactory->method('create')->willReturn($redirect);
+
+        $collection = $this->makeRealCollection(EmailTemplateVersionCollection::class, 'ordo_email_template_version');
+
+        $filter = $this->createMock(Filter::class);
+        $filter->expects(self::once())->method('getCollection')->willReturn($collection);
+
+        $emailTemplateVersionCollectionFactory = $this->createStub(EmailTemplateVersionCollectionFactory::class);
+        $emailTemplateVersionCollectionFactory->method('create')
+            ->willReturn($this->createStub(EmailTemplateVersionCollection::class));
+
+        $magentoTemplateCollectionFactory = $this->createMock(MagentoTemplateCollectionFactory::class);
+        $magentoTemplateCollectionFactory->expects(self::never())->method('create');
+
+        $magentoTemplateResource = $this->createMock(MagentoTemplateResource::class);
+        $magentoTemplateResource->expects(self::never())->method('save');
+
+        $this->messageManager->expects(self::never())->method('addSuccessMessage');
+
+        $controller = $this->makeController(
+            $context,
+            $filter,
+            $emailTemplateVersionCollectionFactory,
+            $magentoTemplateCollectionFactory,
+            $magentoTemplateResource
+        );
+        $controller->execute();
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteSkipsVersionWhoseLiveTemplateNoLongerExists(): void
     {
