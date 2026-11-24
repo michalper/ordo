@@ -35,6 +35,7 @@ use Ordo\Automation\Model\ResourceModel\Campaign\Trigger\CollectionFactory as Tr
 use Ordo\Automation\Model\ResourceModel\Campaign\Website as CampaignWebsiteResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Website\Collection as WebsiteCollection;
 use Ordo\Automation\Model\ResourceModel\Campaign\Website\CollectionFactory as WebsiteCollectionFactory;
+use Ordo\Automation\Model\Shared\WebsiteScopeSaver;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
@@ -189,6 +190,7 @@ class CampaignSaveProcessorTest extends TestCase
             $this->campaignWebsiteFactory,
             $this->campaignWebsiteResource,
             $this->websiteCollectionFactory,
+            new WebsiteScopeSaver(),
             $this->cache,
             $this->resourceConnection
         );

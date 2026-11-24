@@ -21,6 +21,7 @@ use Ordo\Automation\Model\SegmentConditionFactory;
 use Ordo\Automation\Model\SegmentFactory;
 use Ordo\Automation\Model\SegmentWebsite;
 use Ordo\Automation\Model\SegmentWebsiteFactory;
+use Ordo\Automation\Model\Shared\WebsiteScopeSaver;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
@@ -102,6 +103,7 @@ class SegmentSaveProcessorTest extends TestCase
             $this->segmentWebsiteFactory,
             $this->segmentWebsiteResource,
             $this->segmentWebsiteCollectionFactory,
+            new WebsiteScopeSaver(),
             $this->resourceConnection
         );
     }

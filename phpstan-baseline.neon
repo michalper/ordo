@@ -3748,7 +3748,7 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$object of method Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb\:\:delete\(\) expects Magento\\Framework\\Model\\AbstractModel, mixed given\.$#'
 			identifier: argument.type
-			count: 2
+			count: 1
 			path: Model/Segment/SegmentSaveProcessor.php
 
 		-
