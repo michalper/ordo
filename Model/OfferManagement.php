@@ -18,6 +18,7 @@ class OfferManagement implements OfferManagementInterface
         private readonly OfferRepositoryInterface $offerRepository,
         private readonly Config $config,
         private readonly UserContextInterface $userContext,
+        private readonly UserContextCustomerIdResolver $userContextCustomerIdResolver,
         private readonly OfferResource $offerResource
     ) {
     }
@@ -26,8 +27,15 @@ class OfferManagement implements OfferManagementInterface
     {
         $offer = $this->offerRepository->getById($offerId);
 
-        $customerId = $this->userContext->getUserId();
-        if ($customerId === null || $offer->getCustomerId() !== (int) $customerId) {
+        // requireCustomerId(), not a bare getUserId() === null check - found during a full-repo
+        // /code-review: a guest GraphQL caller's UserContextInterface::getUserId() returns 0,
+        // not null (see UserContextCustomerIdResolver's own docblock), so the bare null check
+        // this used to have would pass a guest straight through to the owner-match comparison
+        // below, which only fails closed if no offer actually has customer_id = 0 - a real
+        // storefront REST route (resource="self") can't reach this, but GraphQL's
+        // ExtendOffer resolver has no equivalent gate of its own and calls straight in.
+        $customerId = $this->userContextCustomerIdResolver->requireCustomerId($this->userContext);
+        if ($offer->getCustomerId() !== $customerId) {
             // Same "not found" response for a wrong owner as for a missing offer — avoids
             // leaking that offer #123 exists but belongs to someone else.
             throw new NoSuchEntityException(__('Offer with id "%1" does not exist.', $offerId));

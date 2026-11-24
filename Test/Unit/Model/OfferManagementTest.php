@@ -11,6 +11,7 @@ use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\Offer;
 use Ordo\Automation\Model\OfferManagement;
 use Ordo\Automation\Model\ResourceModel\Offer as OfferResource;
+use Ordo\Automation\Model\UserContextCustomerIdResolver;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
@@ -33,6 +34,7 @@ class OfferManagementTest extends TestCase
             $this->offerRepository,
             $this->config,
             $this->userContext,
+            new UserContextCustomerIdResolver(),
             $this->offerResource
         );
     }
@@ -58,6 +60,25 @@ class OfferManagementTest extends TestCase
         $this->offerRepository->method('getById')->willReturn($offer);
 
         $this->userContext->method('getUserId')->willReturn(null);
+
+        $this->expectException(NoSuchEntityException::class);
+        $this->management->selfExtend(10);
+    }
+
+    /**
+     * Found during a full-repo /code-review: UserContextInterface::getUserId() returns 0, not
+     * null, for a GraphQL guest (Model\GraphQl\Resolver\ExtendOffer calls selfExtend() with no
+     * guard of its own) - a bare `=== null` check alone would let a guest through to the
+     * owner-match comparison, which only fails closed if no offer actually has customer_id = 0.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSelfExtendThrowsForGuestCustomerIdZero(): void
+    {
+        $offer = $this->createMock(Offer::class);
+        $offer->method('getCustomerId')->willReturn(5);
+        $this->offerRepository->method('getById')->willReturn($offer);
+
+        $this->userContext->method('getUserId')->willReturn(0);
 
         $this->expectException(NoSuchEntityException::class);
         $this->management->selfExtend(10);
