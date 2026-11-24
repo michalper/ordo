@@ -57,6 +57,12 @@
  * original legacy 0-10 NPS button row, "text" is a single free-text input, and "choice" is a row
  * of buttons, one per survey.choices entry (a generic_survey campaign action — see docs/adr/0061
  * for the backend half of this and docs/adr/0064 for this storefront widget half).
+ *
+ * window.ordoRenderCrossSell(orderId, containerSelector) is the same theme-integration-point
+ * shape again, for the order thank-you page: the server returns ready-to-insert HTML (the same
+ * "recommended for you" grid markup a campaign email already uses), set directly as the
+ * container's innerHTML — no client-side product rendering of its own — see renderCrossSell
+ * below and docs/adr/0082.
  */
 (function () {
     'use strict';
@@ -73,6 +79,7 @@
     var SOCIAL_PROOF_ENDPOINT = '/ordo/track/socialproof';
     var LOW_STOCK_ENDPOINT = '/ordo/track/lowstock';
     var EMAIL_CAPTURE_ENDPOINT = '/ordo/track/emailcapture';
+    var CROSS_SELL_ENDPOINT = '/ordo/track/crosssell';
     var EMAIL_CAPTURE_DISMISSED_COOKIE = 'ordo_email_capture_dismissed';
     var EMAIL_CAPTURE_BANNER_ID = 'ordo-email-capture-banner';
     var REWARD_SPIN_DURATION_MS = 1200;
@@ -839,6 +846,35 @@
     }
 
     /**
+     * Unlike renderSocialProof/renderLowStock above (a single text message), the server here
+     * returns ready-to-insert HTML — the same "recommended for you" grid markup a campaign email
+     * already uses (Model\Recommendation\ProductRecommendationRenderer) — set directly via
+     * innerHTML, so this file still needs no product-rendering logic of its own.
+     */
+    function renderCrossSell(orderId, containerSelector) {
+        if (currentScript?.dataset.crossSellEnabled !== '1') {
+            return;
+        }
+
+        var container = document.querySelector(containerSelector);
+        if (!container || !orderId) {
+            return;
+        }
+
+        fetch(CROSS_SELL_ENDPOINT + '?order_id=' + encodeURIComponent(orderId), { credentials: 'same-origin' })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                if (data?.html) {
+                    container.innerHTML = data.html;
+                    container.style.display = '';
+                }
+            })
+            .catch(function () {});
+    }
+
+    /**
      * Shows a small popup after a configurable delay, inviting an anonymous visitor to sign up
      * for the store's newsletter — see ADR 0043. Unlike the other widgets above, this is a
      * standing, store-wide feature (no theme integration call needed) rather than a per-SKU one,
@@ -954,6 +990,7 @@
     window.ordoSubscribeToPriceWatch = subscribeToPriceWatch;
     window.ordoRenderSocialProof = renderSocialProof;
     window.ordoRenderLowStock = renderLowStock;
+    window.ordoRenderCrossSell = renderCrossSell;
     track('page_view');
     startPolling(15, renderPollResponse);
     startExitIntentDetection();

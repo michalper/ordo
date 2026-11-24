@@ -1292,3 +1292,8 @@
 "Outbound","Odchozí"
 "Reply sent.","Odpověď byla odeslána."
 "Could not send the reply: %1","Odpověď se nepodařilo odeslat: %1"
+"Enable ""You might also like"" on the order thank-you page","Povolit ""Mohlo by se vám také líbit"" na děkovné stránce objednávky"
+"Shows a small product recommendation grid on the thank-you page after an order is placed, using the same ""customers who bought this also bought"" logic as a campaign email's recommended-products block. Needs a small one-time change in your theme to display it (ask your developer to call window.ordoRenderCrossSell - see the module's documentation). Requires tracking to be enabled above.","Zobrazí na děkovné stránce po dokončení objednávky malou mřížku s doporučenými produkty, pomocí stejné logiky ""kdo koupil toto, koupil i ono"" jako blok doporučených produktů v e-mailu kampaně. Vyžaduje malou jednorázovou úpravu šablony (požádejte svého vývojáře, aby zavolal window.ordoRenderCrossSell - viz dokumentace modulu). Vyžaduje, aby bylo výše povoleno sledování."
+"Number of products to show","Počet zobrazených produktů"
+"Default: 4.","Výchozí: 4."
+"You might also like","Mohlo by se vám také líbit"

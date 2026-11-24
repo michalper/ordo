@@ -1292,3 +1292,8 @@
 "Outbound","Вихідне"
 "Reply sent.","Відповідь надіслано."
 "Could not send the reply: %1","Не вдалося надіслати відповідь: %1"
+"Enable ""You might also like"" on the order thank-you page","Увімкнути ""Вам також може сподобатися"" на сторінці подяки за замовлення"
+"Shows a small product recommendation grid on the thank-you page after an order is placed, using the same ""customers who bought this also bought"" logic as a campaign email's recommended-products block. Needs a small one-time change in your theme to display it (ask your developer to call window.ordoRenderCrossSell - see the module's documentation). Requires tracking to be enabled above.","Показує невелику сітку рекомендованих товарів на сторінці подяки після оформлення замовлення, використовуючи ту саму логіку ""покупці, які купили це, також купили"", що й блок рекомендацій у листі кампанії. Потребує невеликої одноразової зміни у вашій темі (попросіть розробника викликати window.ordoRenderCrossSell - див. документацію модуля). Потребує, щоб трекінг був увімкнений вище."
+"Number of products to show","Кількість товарів для показу"
+"Default: 4.","За замовчуванням: 4."
+"You might also like","Вам також може сподобатися"

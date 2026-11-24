@@ -1165,6 +1165,78 @@ QUnit.module('Ordo_Automation/js/tracker (low stock)', function () {
     });
 });
 
+QUnit.module('Ordo_Automation/js/tracker (cross sell)', function () {
+    function makeContainer(document, id) {
+        const container = document.createElement('div');
+        container.id = id;
+        container.style.display = 'none';
+        document.body.appendChild(container);
+        return container;
+    }
+
+    QUnit.test('does nothing when data-cross-sell-enabled is not "1"', async function (assert) {
+        const env = loadTracker();
+        const document = env.dom.window.document;
+        const container = makeContainer(document, 'ordo-cross-sell');
+        const callsBefore = env.fetchCalls.length;
+
+        env.dom.window.ordoRenderCrossSell('5', '#ordo-cross-sell');
+        await flush();
+
+        assert.strictEqual(env.fetchCalls.length, callsBefore, 'no request made');
+        assert.strictEqual(container.style.display, 'none', 'container left untouched');
+    });
+
+    QUnit.test('does nothing when the container selector matches nothing', async function (assert) {
+        const env = loadTracker({ 'data-cross-sell-enabled': '1' });
+        const callsBefore = env.fetchCalls.length;
+
+        env.dom.window.ordoRenderCrossSell('5', '#does-not-exist');
+        await flush();
+
+        assert.strictEqual(env.fetchCalls.length, callsBefore, 'no request made');
+    });
+
+    QUnit.test('does nothing when no orderId is given', async function (assert) {
+        const env = loadTracker({ 'data-cross-sell-enabled': '1' });
+        const callsBefore = env.fetchCalls.length;
+
+        env.dom.window.ordoRenderCrossSell('', '#ordo-cross-sell');
+        await flush();
+
+        assert.strictEqual(env.fetchCalls.length, callsBefore, 'no request made');
+    });
+
+    QUnit.test('fills and reveals the container with the server-rendered HTML', async function (assert) {
+        const env = loadTracker({ 'data-cross-sell-enabled': '1' });
+        const document = env.dom.window.document;
+        const container = makeContainer(document, 'ordo-cross-sell');
+
+        env.setPollResponse({ html: '<p>Recommended for you</p>' });
+        env.dom.window.ordoRenderCrossSell('5', '#ordo-cross-sell');
+        await flush();
+
+        const call = env.fetchCalls[env.fetchCalls.length - 1];
+        assert.strictEqual(call.url, '/ordo/track/crosssell?order_id=5');
+        assert.deepEqual(call.options, { credentials: 'same-origin' });
+        assert.strictEqual(container.innerHTML, '<p>Recommended for you</p>');
+        assert.strictEqual(container.style.display, '');
+    });
+
+    QUnit.test('leaves the container hidden when the server returns no html', async function (assert) {
+        const env = loadTracker({ 'data-cross-sell-enabled': '1' });
+        const document = env.dom.window.document;
+        const container = makeContainer(document, 'ordo-cross-sell');
+
+        env.setPollResponse({ html: '' });
+        env.dom.window.ordoRenderCrossSell('5', '#ordo-cross-sell');
+        await flush();
+
+        assert.strictEqual(container.innerHTML, '');
+        assert.strictEqual(container.style.display, 'none');
+    });
+});
+
 QUnit.module('Ordo_Automation/js/tracker (email capture)', function () {
     function submitForm(document, email) {
         const banner = document.getElementById('ordo-email-capture-banner');

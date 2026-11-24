@@ -872,12 +872,19 @@ README/ROADMAP prose alone.**
   query text fits the existing generic `event_key` slot on `ordo_visitor_event`, immediately
   usable as a segmentation condition via the existing `event_occurred` condition with zero new
   condition code.
-- **Real-time post-purchase/thank-you-page cross-sell widget.** `AddProductRecommendations` only fires
-  inside `send_email` - grepped `view/frontend` for any thank-you/order-success integration point and
-  found none; no `window.ordo*` function targets that page the way `ordoRenderSocialProof`/
-  `ordoRenderLowStock` target the PDP. Shape: same theme-integration-point pattern as those two
-  (`window.ordoRenderCrossSell(orderId, containerSelector)`), reusing `Model\Recommendation\ProductRecommender`
-  server-side - zero new recommendation logic.
+- ~~**Real-time post-purchase/thank-you-page cross-sell widget.**~~ — done, see
+  `docs/adr/0082-thank-you-page-cross-sell-widget.md`. Same theme-integration-point shape as
+  `ordoRenderSocialProof`/`ordoRenderLowStock` - `window.ordoRenderCrossSell(orderId,
+  containerSelector)`, backed by a new `Controller\Track\CrossSell` that reuses
+  `Model\Recommendation\ProductRecommender`/`ProductRecommendationRenderer` wholesale (zero new
+  recommendation logic or client-side rendering - the server returns the same email-grade HTML
+  grid, set directly as the container's innerHTML). `order_id` is never trusted on its own
+  (a public, unauthenticated GET endpoint): it's only honored when it matches
+  `CheckoutSession::getLastRealOrderId()`, closing a real IDOR-shaped gap this feature would
+  otherwise have opened. Verified end-to-end against a real running instance (MFTF, a real
+  checkout through to the thank-you page): a real best-seller-fallback recommendation rendered
+  for the order just placed, and a different, valid order id belonging to another customer's
+  session was correctly refused.
 - **Explicit SMS/WhatsApp marketing-consent capture at checkout.** `Model\ConsentManager`'s channel-level
   default is "no row = consented" (an opt-out model) - legally thin for SMS specifically (TCPA-style
   regimes expect affirmative prior consent, not silent opt-out), and there's no checkout touchpoint

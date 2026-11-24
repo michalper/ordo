@@ -994,6 +994,12 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
+			path: Controller/Track/CrossSell.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
 			path: Controller/Track/DismissNotification.php
 
 		-
@@ -3780,6 +3786,12 @@ parameters:
 			identifier: cast.int
 			count: 1
 			path: Model/Track/DeliveryClaimer.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/Track/LastRealOrderIdReader.php
 
 		-
 			message: '#^Call to an undefined method Magento\\Framework\\App\\RequestInterface\:\:getHeader\(\)\.$#'

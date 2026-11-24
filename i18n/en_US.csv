@@ -427,3 +427,8 @@
 "Disallowed - click to allow","Disallowed - click to allow"
 "Whether your (hashed) email may be shared with ad platforms for audience targeting - this never affects which messages we send you.","Whether your (hashed) email may be shared with ad platforms for audience targeting - this never affects which messages we send you."
 "Your preferences have been saved.","Your preferences have been saved."
+"Enable ""You might also like"" on the order thank-you page","Enable ""You might also like"" on the order thank-you page"
+"Shows a small product recommendation grid on the thank-you page after an order is placed, using the same ""customers who bought this also bought"" logic as a campaign email's recommended-products block. Needs a small one-time change in your theme to display it (ask your developer to call window.ordoRenderCrossSell - see the module's documentation). Requires tracking to be enabled above.","Shows a small product recommendation grid on the thank-you page after an order is placed, using the same ""customers who bought this also bought"" logic as a campaign email's recommended-products block. Needs a small one-time change in your theme to display it (ask your developer to call window.ordoRenderCrossSell - see the module's documentation). Requires tracking to be enabled above."
+"Number of products to show","Number of products to show"
+"Default: 4.","Default: 4."
+"You might also like","You might also like"

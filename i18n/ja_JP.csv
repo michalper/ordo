@@ -1292,3 +1292,8 @@
 "Outbound","送信"
 "Reply sent.","返信を送信しました。"
 "Could not send the reply: %1","返信を送信できませんでした: %1"
+"Enable ""You might also like"" on the order thank-you page","注文のお礼ページで「こちらもおすすめ」を有効にする"
+"Shows a small product recommendation grid on the thank-you page after an order is placed, using the same ""customers who bought this also bought"" logic as a campaign email's recommended-products block. Needs a small one-time change in your theme to display it (ask your developer to call window.ordoRenderCrossSell - see the module's documentation). Requires tracking to be enabled above.","注文完了後のお礼ページに、キャンペーンメールのおすすめ商品ブロックと同じ「これを購入した人はこちらも購入」ロジックを使って、小さなおすすめ商品グリッドを表示します。テーマ側で一度だけ簡単な変更が必要です（開発者に window.ordoRenderCrossSell を呼び出すよう依頼してください - モジュールのドキュメントを参照）。上記のトラッキングが有効になっている必要があります。"
+"Number of products to show","表示する商品数"
+"Default: 4.","デフォルト: 4。"
+"You might also like","こちらもおすすめ"

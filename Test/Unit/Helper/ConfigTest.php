@@ -83,6 +83,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isStalledPaymentReminderEnabled());
         self::assertTrue($this->config->isChurnRiskDigestEnabled());
         self::assertTrue($this->config->isRcsEnabled());
+        self::assertTrue($this->config->isCrossSellWidgetEnabled());
         self::assertTrue($this->config->isWalletPassEnabled());
     }
 
@@ -132,6 +133,20 @@ class ConfigTest extends TestCase
     public function testGetTwilioRcsMaxRequestsPerSecondDefaultsToOne(): void
     {
         self::assertSame(1, $this->config->getTwilioRcsMaxRequestsPerSecond());
+    }
+
+    public function testGetCrossSellItemCountDelegatesToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_tracking/tracking/cross_sell_item_count', 'store', null, '6'],
+        ]);
+
+        self::assertSame(6, $this->config->getCrossSellItemCount());
+    }
+
+    public function testGetCrossSellItemCountDefaultsToFour(): void
+    {
+        self::assertSame(4, $this->config->getCrossSellItemCount());
     }
 
     public function testGetSocialProofMinimumViewsDelegatesToScopeConfig(): void

@@ -1292,3 +1292,8 @@
 "Outbound","Odhodno"
 "Reply sent.","Odgovor je bil poslan."
 "Could not send the reply: %1","Odgovora ni bilo mogoče poslati: %1"
+"Enable ""You might also like"" on the order thank-you page","Omogoči ""Morda vam je všeč tudi"" na strani zahvale ob naročilu"
+"Shows a small product recommendation grid on the thank-you page after an order is placed, using the same ""customers who bought this also bought"" logic as a campaign email's recommended-products block. Needs a small one-time change in your theme to display it (ask your developer to call window.ordoRenderCrossSell - see the module's documentation). Requires tracking to be enabled above.","Na strani zahvale po oddaji naročila prikaže majhno mrežo priporočenih izdelkov, z enako logiko ""stranke, ki so kupile to, so kupile tudi"" kot blok priporočil v e-poštnem sporočilu kampanje. Zahteva majhno enkratno spremembo v vaši temi (prosite razvijalca, naj pokliče window.ordoRenderCrossSell - glejte dokumentacijo modula). Zahteva, da je sledenje zgoraj omogočeno."
+"Number of products to show","Število prikazanih izdelkov"
+"Default: 4.","Privzeto: 4."
+"You might also like","Morda vam je všeč tudi"

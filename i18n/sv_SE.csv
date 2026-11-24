@@ -1292,3 +1292,8 @@
 "Outbound","Utgående"
 "Reply sent.","Svaret har skickats."
 "Could not send the reply: %1","Svaret kunde inte skickas: %1"
+"Enable ""You might also like"" on the order thank-you page","Aktivera ""Du kanske också gillar"" på orderns tacksida"
+"Shows a small product recommendation grid on the thank-you page after an order is placed, using the same ""customers who bought this also bought"" logic as a campaign email's recommended-products block. Needs a small one-time change in your theme to display it (ask your developer to call window.ordoRenderCrossSell - see the module's documentation). Requires tracking to be enabled above.","Visar ett litet rutnät med rekommenderade produkter på tacksidan efter en beställning, med samma ""kunder som köpte detta köpte också""-logik som rekommendationsblocket i ett kampanjmejl. Kräver en liten engångsändring i ditt tema (be din utvecklare anropa window.ordoRenderCrossSell - se modulens dokumentation). Kräver att spårning är aktiverat ovan."
+"Number of products to show","Antal produkter att visa"
+"Default: 4.","Standard: 4."
+"You might also like","Du kanske också gillar"

@@ -856,6 +856,18 @@
                     <comment>Default: "Subscribe".</comment>
                     <depends><field id="email_capture_enabled">1</field></depends>
                 </field>
+                <field id="cross_sell_enabled" translate="label comment" type="select" sortOrder="240" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable "You might also like" on the order thank-you page</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Shows a small product recommendation grid on the thank-you page after an order is placed, using the same "customers who bought this also bought" logic as a campaign email's recommended-products block. Needs a small one-time change in your theme to display it (ask your developer to call window.ordoRenderCrossSell - see the module's documentation). Requires tracking to be enabled above.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="cross_sell_item_count" translate="label comment" type="text" sortOrder="250" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Number of products to show</label>
+                    <comment>Default: 4.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="cross_sell_enabled">1</field></depends>
+                </field>
             </group>
             <group id="ai" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>AI Content (self-hosted Ollama)</label>

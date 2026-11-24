@@ -1292,3 +1292,8 @@
 "Outbound","Kimenő"
 "Reply sent.","A válasz elküldve."
 "Could not send the reply: %1","A válasz nem küldhető el: %1"
+"Enable ""You might also like"" on the order thank-you page","A ""Ez is tetszhet még"" bekapcsolása a rendelés köszönő oldalán"
+"Shows a small product recommendation grid on the thank-you page after an order is placed, using the same ""customers who bought this also bought"" logic as a campaign email's recommended-products block. Needs a small one-time change in your theme to display it (ask your developer to call window.ordoRenderCrossSell - see the module's documentation). Requires tracking to be enabled above.","A rendelés leadása után a köszönő oldalon megjelenít egy kis ajánlott termék rácsot, ugyanazt a ""akik ezt vették, ezt is vették"" logikát használva, mint a kampány e-mailek ajánlott termékek blokkja. A témában szükséges egy apró, egyszeri módosítás (kérje meg a fejlesztőjét, hogy hívja meg a window.ordoRenderCrossSell függvényt - lásd a modul dokumentációját). Megköveteli, hogy a fenti követés engedélyezve legyen."
+"Number of products to show","Megjelenítendő termékek száma"
+"Default: 4.","Alapértelmezett: 4."
+"You might also like","Ez is tetszhet még"

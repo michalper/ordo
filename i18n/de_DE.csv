@@ -1292,3 +1292,8 @@
 "Outbound","Ausgehend"
 "Reply sent.","Antwort wurde gesendet."
 "Could not send the reply: %1","Die Antwort konnte nicht gesendet werden: %1"
+"Enable ""You might also like"" on the order thank-you page","Aktiviere ""Das könnte dir auch gefallen"" auf der Bestellbestätigungsseite"
+"Shows a small product recommendation grid on the thank-you page after an order is placed, using the same ""customers who bought this also bought"" logic as a campaign email's recommended-products block. Needs a small one-time change in your theme to display it (ask your developer to call window.ordoRenderCrossSell - see the module's documentation). Requires tracking to be enabled above.","Zeigt auf der Bestellbestätigungsseite nach einer Bestellung ein kleines Raster mit empfohlenen Produkten, basierend auf derselben ""Kunden, die dies gekauft haben, kauften auch""-Logik wie der Empfehlungsblock einer Kampagnen-E-Mail. Erfordert eine kleine einmalige Anpassung im Theme (bitten Sie Ihren Entwickler, window.ordoRenderCrossSell aufzurufen - siehe Moduldokumentation). Erfordert, dass das Tracking oben aktiviert ist."
+"Number of products to show","Anzahl der angezeigten Produkte"
+"Default: 4.","Standard: 4."
+"You might also like","Das könnte dir auch gefallen"
