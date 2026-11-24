@@ -37,6 +37,11 @@ class Edit extends AbstractContentBlockAction implements HttpGetActionInterface
         $this->contentBlockResource->load($entity, $entityId);
     }
 
+    protected function activeMenu(): string
+    {
+        return 'Ordo_Automation::campaigns';
+    }
+
     protected function registryKey(): string
     {
         return 'ordo_content_block';

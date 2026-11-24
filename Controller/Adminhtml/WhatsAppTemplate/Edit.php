@@ -37,6 +37,11 @@ class Edit extends AbstractWhatsAppTemplateAction implements HttpGetActionInterf
         $this->whatsAppTemplateResource->load($entity, $entityId);
     }
 
+    protected function activeMenu(): string
+    {
+        return 'Ordo_Automation::campaigns';
+    }
+
     protected function registryKey(): string
     {
         return 'ordo_whatsapp_template';

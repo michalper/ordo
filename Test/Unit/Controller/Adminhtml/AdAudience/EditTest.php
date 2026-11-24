@@ -28,8 +28,8 @@ class EditTest extends AbstractAdminActionTestCase
         $pageConfig = $this->createStub(PageConfig::class);
         $pageConfig->method('getTitle')->willReturn($title);
 
-        $resultPage = $this->createStub(Page::class);
-        $resultPage->method('setActiveMenu')->willReturnSelf();
+        $resultPage = $this->createMock(Page::class);
+        $resultPage->expects(self::once())->method('setActiveMenu')->with('Ordo_Automation::campaigns')->willReturnSelf();
         $resultPage->method('getConfig')->willReturn($pageConfig);
 
         return $resultPage;
