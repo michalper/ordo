@@ -9,6 +9,7 @@ use Magento\Framework\App\ActionFlag;
 use Magento\Framework\App\Request\Http;
 use Magento\Framework\App\Response\RedirectInterface;
 use Magento\Framework\App\ViewInterface;
+use Magento\Framework\AuthorizationInterface;
 use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
 use Magento\Framework\Message\ManagerInterface as MessageManagerInterface;
 use Magento\Framework\ObjectManagerInterface;
@@ -25,14 +26,17 @@ abstract class AbstractAdminActionTestCase extends TestCase
     protected Http $request;
     protected MessageManagerInterface $messageManager;
     protected RedirectFactory $resultRedirectFactory;
+    protected AuthorizationInterface $authorization;
 
     protected function makeContext(): Context
     {
         $this->request = $this->createMock(Http::class);
         $this->messageManager = $this->createMock(MessageManagerInterface::class);
         $this->resultRedirectFactory = $this->createStub(RedirectFactory::class);
+        $this->authorization = $this->createStub(AuthorizationInterface::class);
 
         $context = $this->createStub(Context::class);
+        $context->method('getAuthorization')->willReturn($this->authorization);
         $context->method('getRequest')->willReturn($this->request);
         $context->method('getResponse')->willReturn($this->createStub(\Magento\Framework\App\ResponseInterface::class));
         $context->method('getObjectManager')->willReturn($this->createStub(ObjectManagerInterface::class));
