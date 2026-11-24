@@ -6,6 +6,7 @@ namespace Ordo\Automation\Test\Unit\Console\Command\ApiKey;
 use Ordo\Automation\Console\Command\ApiKey\GenerateCommand;
 use Ordo\Automation\Model\AiAgent\AiAgentApiKeyStore;
 use Ordo\Automation\Model\AiAgent\ApiKeyGenerator;
+use Ordo\Automation\Model\RandomTokenGenerator;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 
@@ -13,7 +14,7 @@ class GenerateCommandTest extends TestCase
 {
     public function testExecutePrintsTheGeneratedPlaintextKeyAndItsId(): void
     {
-        $generator = new ApiKeyGenerator();
+        $generator = new ApiKeyGenerator(new RandomTokenGenerator());
 
         $store = $this->createMock(AiAgentApiKeyStore::class);
         $store->expects(self::once())->method('create')->with('My Agent', self::isString());

@@ -6,6 +6,7 @@ namespace Ordo\Automation\Test\Unit\Model\AiAgent;
 use Ordo\Automation\Model\AiAgent\AiAgentApiKeyStore;
 use Ordo\Automation\Model\AiAgent\ApiKeyAuthenticator;
 use Ordo\Automation\Model\AiAgent\ApiKeyGenerator;
+use Ordo\Automation\Model\RandomTokenGenerator;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
@@ -17,7 +18,7 @@ class ApiKeyAuthenticatorTest extends TestCase
         $store = $this->createMock(AiAgentApiKeyStore::class);
         $store->expects(self::never())->method('findActiveByHash');
 
-        $authenticator = new ApiKeyAuthenticator($store, new ApiKeyGenerator());
+        $authenticator = new ApiKeyAuthenticator($store, new ApiKeyGenerator(new RandomTokenGenerator()));
 
         self::assertNull($authenticator->authenticate(''));
     }
@@ -29,7 +30,7 @@ class ApiKeyAuthenticatorTest extends TestCase
         $store->method('findActiveByHash')->willReturn(null);
         $store->expects(self::never())->method('touchLastUsed');
 
-        $authenticator = new ApiKeyAuthenticator($store, new ApiKeyGenerator());
+        $authenticator = new ApiKeyAuthenticator($store, new ApiKeyGenerator(new RandomTokenGenerator()));
 
         self::assertNull($authenticator->authenticate('oaa_wrongkey'));
     }
@@ -37,7 +38,7 @@ class ApiKeyAuthenticatorTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testAuthenticateTouchesLastUsedAndReturnsTheHashWhenAnActiveKeyMatches(): void
     {
-        $generator = new ApiKeyGenerator();
+        $generator = new ApiKeyGenerator(new RandomTokenGenerator());
         $hash = $generator->hash('oaa_realkey');
 
         $store = $this->createMock(AiAgentApiKeyStore::class);
