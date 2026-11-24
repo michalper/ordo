@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\ProductFeed;
 
+use Magento\Catalog\Model\Product;
 use Magento\Store\Model\StoreManagerInterface;
-use Ordo\Automation\Api\ProductFeed\FeedGeneratorInterface;
 use Ordo\Automation\Helper\Config;
 
 /**
@@ -16,24 +16,27 @@ use Ordo\Automation\Helper\Config;
  * "/.well-known/ai-plugin.json" (Controller\WellKnown\AiPluginManifest) alongside this feed's own
  * URL, gated behind the same Config::isAiAgentEnabled() toggle.
  *
- * Same scope and skip-if-missing-a-required-field rule as the other two formats (enabled,
- * catalog/search-visible products only; a product missing a resolvable price or image is
- * skipped rather than emitted incomplete).
+ * Same scope and skip-if-missing-a-required-field rule as the other two formats, shared via
+ * AbstractProductFeedGenerator.
  */
-class AiAgentFeedGenerator implements FeedGeneratorInterface
+class AiAgentFeedGenerator extends AbstractProductFeedGenerator
 {
     public const string FEED_CODE = 'ai_agent';
 
-    private string $currencyCode = '';
-    private \Magento\Directory\Model\Currency $baseCurrency;
-    /** @var array<int, array<string, mixed>> */
-    private array $items = [];
+    /**
+     * @var array<int, array{
+     *     sku: string, name: string, description: string, url: string, image_url: string,
+     *     price: float, currency: string, in_stock: bool
+     * }>
+     */
+    protected array $items = [];
 
     public function __construct(
-        private readonly CatalogFeedProductFetcher $productFetcher,
-        private readonly StoreManagerInterface $storeManager,
+        CatalogFeedProductFetcher $productFetcher,
+        StoreManagerInterface $storeManager,
         private readonly Config $config
     ) {
+        parent::__construct($productFetcher, $storeManager);
     }
 
     public function getFeedCode(): string
@@ -49,25 +52,6 @@ class AiAgentFeedGenerator implements FeedGeneratorInterface
     public function isEnabled(int $storeId): bool
     {
         return $this->config->isAiAgentEnabled($storeId);
-    }
-
-    public function startFeed(int $storeId): void
-    {
-        /** @var \Magento\Store\Model\Store $store getCurrentCurrencyCode() isn't declared on
-         *  StoreInterface, only the concrete Store model — same real-world usage as
-         *  GoogleMerchantFeedGenerator. */
-        $store = $this->storeManager->getStore($storeId);
-        $this->currencyCode = $store->getCurrentCurrencyCode();
-        $this->baseCurrency = $store->getBaseCurrency();
-        $this->items = [];
-    }
-
-    public function addProduct(\Magento\Catalog\Model\Product $product): void
-    {
-        $item = $this->renderItem($product, $this->baseCurrency, $this->currencyCode);
-        if ($item !== null) {
-            $this->items[] = $item;
-        }
     }
 
     public function finishFeed(): array
@@ -86,36 +70,22 @@ class AiAgentFeedGenerator implements FeedGeneratorInterface
      *     price: float, currency: string, in_stock: bool
      * }|null
      */
-    private function renderItem(
-        \Magento\Catalog\Model\Product $product,
-        \Magento\Directory\Model\Currency $baseCurrency,
-        string $currencyCode
-    ): ?array {
-        $sku = (string) $product->getSku();
-        $name = (string) $product->getName();
-        $url = (string) $product->getProductUrl();
-        $price = $product->getFinalPrice();
-
-        if ($sku === '' || $name === '' || $url === '' || $price <= 0) {
-            return null;
-        }
-
-        $imageUrl = $this->productFetcher->getImageUrl($product);
-        if ($imageUrl === null) {
+    protected function renderItem(Product $product): ?array
+    {
+        $fields = $this->extractCommonFields($product);
+        if ($fields === null) {
             return null;
         }
 
         return [
-            'sku' => $sku,
-            'name' => $name,
-            'description' => (string) $product->getData('description'),
-            'url' => $url,
-            'image_url' => $imageUrl,
-            // getFinalPrice() is base currency (catalog_product_index_price) - convert to the
-            // store's display currency, same reasoning as GoogleMerchantFeedGenerator.
-            'price' => round((float) $baseCurrency->convert($price, $currencyCode), 2),
-            'currency' => $currencyCode,
-            'in_stock' => (bool) $product->getData('is_in_stock'),
+            'sku' => $fields['sku'],
+            'name' => $fields['name'],
+            'description' => $fields['description'],
+            'url' => $fields['url'],
+            'image_url' => $fields['imageUrl'],
+            'price' => round($fields['price'], 2),
+            'currency' => $this->currencyCode,
+            'in_stock' => $fields['inStock'],
         ];
     }
 }

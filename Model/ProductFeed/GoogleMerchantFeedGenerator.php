@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\ProductFeed;
 
+use Magento\Catalog\Model\Product;
 use Magento\Store\Model\StoreManagerInterface;
-use Ordo\Automation\Api\ProductFeed\FeedGeneratorInterface;
 use Ordo\Automation\Helper\Config;
 
 /**
@@ -15,29 +15,24 @@ use Ordo\Automation\Helper\Config;
  * Scope: enabled, catalog/search-visible products only (a not-visible-individually product has
  * no standalone product page for g:link to point at). One <item> per product; a product missing
  * a resolvable price or image is skipped rather than emitted with a blank required field, since
- * Google Merchant Center rejects/ignores items missing g:price or g:image_link anyway.
+ * Google Merchant Center rejects/ignores items missing g:price or g:image_link anyway. See
+ * AbstractProductFeedGenerator for the scope/skip rules shared with the other feed formats.
  *
  * @see https://support.google.com/merchants/answer/7052112 (feed spec)
  */
-class GoogleMerchantFeedGenerator implements FeedGeneratorInterface
+class GoogleMerchantFeedGenerator extends AbstractProductFeedGenerator
 {
     public const string FEED_CODE = 'google_merchant';
 
-    private int $storeId = 0;
-    // The concrete Store, not StoreInterface - getCurrentCurrencyCode()/getBaseUrl() below aren't
-    // declared on the interface, only the concrete model (same reasoning the old local @var
-    // annotation gave before this became a property across startFeed()/finishFeed() calls).
-    private \Magento\Store\Model\Store $store;
-    private string $currencyCode = '';
-    private \Magento\Directory\Model\Currency $baseCurrency;
     /** @var array<int, string> */
-    private array $items = [];
+    protected array $items = [];
 
     public function __construct(
-        private readonly CatalogFeedProductFetcher $productFetcher,
-        private readonly StoreManagerInterface $storeManager,
+        CatalogFeedProductFetcher $productFetcher,
+        StoreManagerInterface $storeManager,
         private readonly Config $config
     ) {
+        parent::__construct($productFetcher, $storeManager);
     }
 
     public function getFeedCode(): string
@@ -55,27 +50,6 @@ class GoogleMerchantFeedGenerator implements FeedGeneratorInterface
         return $this->config->isShoppingFeedEnabled($storeId);
     }
 
-    public function startFeed(int $storeId): void
-    {
-        $this->storeId = $storeId;
-        /** @var \Magento\Store\Model\Store $store getCurrentCurrencyCode()/getBaseUrl() aren't
-         *  declared on StoreInterface, only the concrete Store model — same real-world usage as
-         *  core's own currency-formatting code throughout Magento. */
-        $store = $this->storeManager->getStore($storeId);
-        $this->store = $store;
-        $this->currencyCode = $store->getCurrentCurrencyCode();
-        $this->baseCurrency = $store->getBaseCurrency();
-        $this->items = [];
-    }
-
-    public function addProduct(\Magento\Catalog\Model\Product $product): void
-    {
-        $item = $this->renderItem($product, $this->baseCurrency, $this->currencyCode);
-        if ($item !== null) {
-            $this->items[] = $item;
-        }
-    }
-
     public function finishFeed(): array
     {
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
@@ -91,42 +65,24 @@ class GoogleMerchantFeedGenerator implements FeedGeneratorInterface
         return ['content' => $xml, 'productCount' => count($this->items)];
     }
 
-    private function renderItem(
-        \Magento\Catalog\Model\Product $product,
-        \Magento\Directory\Model\Currency $baseCurrency,
-        string $currencyCode
-    ): ?string {
-        $sku = (string) $product->getSku();
-        $name = (string) $product->getName();
-        $url = (string) $product->getProductUrl();
-        $price = $product->getFinalPrice();
-
-        if ($sku === '' || $name === '' || $url === '' || $price <= 0) {
+    protected function renderItem(Product $product): ?string
+    {
+        $fields = $this->extractCommonFields($product);
+        if ($fields === null) {
             return null;
         }
 
-        $imageUrl = $this->productFetcher->getImageUrl($product);
-        if ($imageUrl === null) {
-            return null;
-        }
-
-        $description = (string) $product->getData('description');
-        $inStock = (bool) $product->getData('is_in_stock');
-        // getFinalPrice() is base currency (from catalog_product_index_price) - it must be
-        // converted to the store's current (display) currency before being tagged with
-        // $currencyCode, or every price is off by the currency rate on a store where display
-        // currency != base currency.
-        $priceValue = number_format((float) $baseCurrency->convert($price, $currencyCode), 2, '.', '');
+        $priceValue = number_format($fields['price'], 2, '.', '');
 
         return '<item>'
-            . '<g:id>' . $this->escape($sku) . '</g:id>'
-            . '<title>' . $this->escape($name) . '</title>'
-            . '<description>' . $this->escape($description) . '</description>'
-            . '<link>' . $this->escape($url) . '</link>'
-            . '<g:image_link>' . $this->escape($imageUrl) . '</g:image_link>'
+            . '<g:id>' . $this->escape($fields['sku']) . '</g:id>'
+            . '<title>' . $this->escape($fields['name']) . '</title>'
+            . '<description>' . $this->escape($fields['description']) . '</description>'
+            . '<link>' . $this->escape($fields['url']) . '</link>'
+            . '<g:image_link>' . $this->escape($fields['imageUrl']) . '</g:image_link>'
             . '<g:condition>new</g:condition>'
-            . '<g:availability>' . ($inStock ? 'in stock' : 'out of stock') . '</g:availability>'
-            . '<g:price>' . $priceValue . ' ' . $this->escape($currencyCode) . '</g:price>'
+            . '<g:availability>' . ($fields['inStock'] ? 'in stock' : 'out of stock') . '</g:availability>'
+            . '<g:price>' . $priceValue . ' ' . $this->escape($this->currencyCode) . '</g:price>'
             . '</item>';
     }
 

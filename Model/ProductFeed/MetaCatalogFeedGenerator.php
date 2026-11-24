@@ -3,18 +3,17 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\ProductFeed;
 
+use Magento\Catalog\Model\Product;
 use Magento\Store\Model\StoreManagerInterface;
-use Ordo\Automation\Api\ProductFeed\FeedGeneratorInterface;
 use Ordo\Automation\Helper\Config;
 
 /**
  * Builds a Meta Commerce Manager-compatible CSV product feed for the whole catalog — the second
  * feed format alongside GoogleMerchantFeedGenerator, which this class deliberately mirrors
- * structurally (same paging strategy, same skip-if-missing-a-required-field rule, same scope of
- * enabled/catalog-or-search-visible products only). CSV rather than XML because Meta's own feed
- * spec supports both and CSV is the simpler of the two to emit correctly (no namespace, no
- * per-field element nesting) — this module already has no existing XML-vs-CSV precedent to match
- * either way.
+ * structurally (same scope/skip rules, shared via AbstractProductFeedGenerator). CSV rather than
+ * XML because Meta's own feed spec supports both and CSV is the simpler of the two to emit
+ * correctly (no namespace, no per-field element nesting) — this module already has no existing
+ * XML-vs-CSV precedent to match either way.
  *
  * Meta's Custom Audiences integration (Model\AdAudience\MetaSyncClient) pushes hashed customer
  * emails to the Marketing API; this is unrelated — a catalog feed is a URL Meta's crawler polls
@@ -23,7 +22,7 @@ use Ordo\Automation\Helper\Config;
  *
  * @see https://www.facebook.com/business/help/120325381656392 (feed spec / required fields)
  */
-class MetaCatalogFeedGenerator implements FeedGeneratorInterface
+class MetaCatalogFeedGenerator extends AbstractProductFeedGenerator
 {
     public const string FEED_CODE = 'meta_catalog';
 
@@ -31,17 +30,17 @@ class MetaCatalogFeedGenerator implements FeedGeneratorInterface
         'id', 'title', 'description', 'availability', 'condition', 'price', 'link', 'image_link', 'brand',
     ];
 
-    private string $currencyCode = '';
-    private \Magento\Directory\Model\Currency $baseCurrency;
-    private string $defaultBrand = '';
     /** @var array<int, array<int, string>> */
-    private array $rows = [];
+    protected array $items = [];
+
+    private string $defaultBrand = '';
 
     public function __construct(
-        private readonly CatalogFeedProductFetcher $productFetcher,
-        private readonly StoreManagerInterface $storeManager,
+        CatalogFeedProductFetcher $productFetcher,
+        StoreManagerInterface $storeManager,
         private readonly Config $config
     ) {
+        parent::__construct($productFetcher, $storeManager);
     }
 
     public function getFeedCode(): string
@@ -61,54 +60,27 @@ class MetaCatalogFeedGenerator implements FeedGeneratorInterface
 
     public function startFeed(int $storeId): void
     {
-        /** @var \Magento\Store\Model\Store $store getBaseCurrency()/getCurrentCurrencyCode()
-         *  aren't declared on StoreInterface, only the concrete Store model — same real-world
-         *  usage as GoogleMerchantFeedGenerator. */
-        $store = $this->storeManager->getStore($storeId);
-        $this->currencyCode = $store->getCurrentCurrencyCode();
-        $this->baseCurrency = $store->getBaseCurrency();
+        parent::startFeed($storeId);
         $this->defaultBrand = $this->config->getMetaCatalogFeedDefaultBrand($storeId);
-        $this->rows = [];
-    }
-
-    public function addProduct(\Magento\Catalog\Model\Product $product): void
-    {
-        $row = $this->renderRow($product, $this->baseCurrency, $this->currencyCode, $this->defaultBrand);
-        if ($row !== null) {
-            $this->rows[] = $row;
-        }
     }
 
     public function finishFeed(): array
     {
         $lines = [$this->toCsvLine(self::CSV_HEADER)];
-        foreach ($this->rows as $row) {
+        foreach ($this->items as $row) {
             $lines[] = $this->toCsvLine($row);
         }
 
-        return ['content' => implode("\r\n", $lines) . "\r\n", 'productCount' => count($this->rows)];
+        return ['content' => implode("\r\n", $lines) . "\r\n", 'productCount' => count($this->items)];
     }
 
     /**
      * @return array<int, string>|null
      */
-    private function renderRow(
-        \Magento\Catalog\Model\Product $product,
-        \Magento\Directory\Model\Currency $baseCurrency,
-        string $currencyCode,
-        string $defaultBrand
-    ): ?array {
-        $sku = (string) $product->getSku();
-        $name = (string) $product->getName();
-        $url = (string) $product->getProductUrl();
-        $basePrice = (float) $product->getFinalPrice();
-
-        if ($sku === '' || $name === '' || $url === '' || $basePrice <= 0) {
-            return null;
-        }
-
-        $imageUrl = $this->productFetcher->getImageUrl($product);
-        if ($imageUrl === null) {
+    protected function renderItem(Product $product): ?array
+    {
+        $fields = $this->extractCommonFields($product);
+        if ($fields === null) {
             return null;
         }
 
@@ -116,31 +88,23 @@ class MetaCatalogFeedGenerator implements FeedGeneratorInterface
         // attribute mapping (unlike Google, which has no equivalent required field), so the
         // configured store-wide default is the only source - a product with none configured is
         // skipped rather than emitted with a blank required field, same rule as a missing
-        // price/image below.
-        if ($defaultBrand === '') {
+        // price/image in extractCommonFields().
+        if ($this->defaultBrand === '') {
             return null;
         }
 
-        $description = (string) $product->getData('description');
-        $inStock = (bool) $product->getData('is_in_stock');
-
-        // getFinalPrice() is always in the store's BASE currency, never its display currency —
-        // convert() is required whenever those differ, exactly the multi-currency bug
-        // ROADMAP.md flags for the Google feed (base price tagged with the display currency
-        // code, no conversion). This generator gets it right from the start.
-        $convertedPrice = $baseCurrency->convert($basePrice, $currencyCode);
-        $priceValue = number_format($convertedPrice, 2, '.', '') . ' ' . $currencyCode;
+        $priceValue = number_format($fields['price'], 2, '.', '') . ' ' . $this->currencyCode;
 
         return [
-            $sku,
-            $name,
-            $description,
-            $inStock ? 'in stock' : 'out of stock',
+            $fields['sku'],
+            $fields['name'],
+            $fields['description'],
+            $fields['inStock'] ? 'in stock' : 'out of stock',
             'new',
             $priceValue,
-            $url,
-            $imageUrl,
-            $defaultBrand,
+            $fields['url'],
+            $fields['imageUrl'],
+            $this->defaultBrand,
         ];
     }
 
