@@ -72,12 +72,18 @@ class SegmentBulkActionConsumer
             return;
         }
 
+        $customerIds = array_map(static fn (mixed $customerId): int => (int) $customerId, $customerIds);
+
+        // Batched - found during a full-repo /simplify sweep: one claim() INSERT attempt per
+        // customer meant up to one query per row for a batch that can run into the thousands.
+        // See SegmentBulkActionClaimStore::claimBatch()'s own docblock for how it still gives
+        // each customer the exact same claim-or-skip outcome as before.
+        $claimedCustomerIds = array_flip($this->claimStore->claimBatch($batchId, $customerIds));
+
         $applied = 0;
 
         foreach ($customerIds as $customerId) {
-            $customerId = (int) $customerId;
-
-            if (!$this->claimStore->claim($batchId, $customerId)) {
+            if (!isset($claimedCustomerIds[$customerId])) {
                 // Already applied on an earlier (now-redelivered) attempt at this exact message -
                 // must not run the action again.
                 continue;

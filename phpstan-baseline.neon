@@ -3101,6 +3101,12 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
+			path: Model/Queue/SegmentBulkActionClaimStore.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
 			path: Model/Queue/SegmentBulkActionConsumer.php
 
 		-

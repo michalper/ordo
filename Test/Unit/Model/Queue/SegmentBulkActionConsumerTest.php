@@ -26,7 +26,9 @@ class SegmentBulkActionConsumerTest extends TestCase
         $this->serializer = $this->createMock(SerializerInterface::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->claimStore = $this->createStub(SegmentBulkActionClaimStore::class);
-        $this->claimStore->method('claim')->willReturn(true);
+        $this->claimStore->method('claimBatch')->willReturnCallback(
+            static fn (string $batchId, array $customerIds): array => $customerIds
+        );
         $this->executedWith = [];
     }
 
@@ -117,7 +119,7 @@ class SegmentBulkActionConsumerTest extends TestCase
         });
 
         $this->claimStore = $this->createMock(SegmentBulkActionClaimStore::class);
-        $this->claimStore->method('claim')->willReturn(true);
+        $this->claimStore->method('claimBatch')->willReturn([1, 2, 3]);
         $this->claimStore->expects(self::once())->method('unclaim')->with('batch-uuid', 2);
 
         $this->logger->expects(self::once())->method('error');
@@ -145,11 +147,8 @@ class SegmentBulkActionConsumerTest extends TestCase
         ]);
 
         $this->claimStore = $this->createMock(SegmentBulkActionClaimStore::class);
-        $this->claimStore->method('claim')->willReturnMap([
-            ['batch-uuid', 1, true],
-            ['batch-uuid', 2, false],
-            ['batch-uuid', 3, true],
-        ]);
+        $this->claimStore->expects(self::once())->method('claimBatch')
+            ->with('batch-uuid', [1, 2, 3])->willReturn([1, 3]);
 
         $this->logger->expects(self::once())->method('info')->with(
             'Ordo_Automation: applied bulk action "add_tag" to 2/3 segment members.'
