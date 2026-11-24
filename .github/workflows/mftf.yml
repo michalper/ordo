@@ -163,6 +163,22 @@ jobs:
       - name: Checkout Magento 2.4.9
         run: git clone --branch 2.4.9 --depth 1 https://github.com/magento/magento2.git magento
 
+      - name: Cache the installed Magento vendor/ tree
+        # See api-tests.yml's identical step for the full reasoning, found during the same
+        # CI-speed audit. No matrix.magento-version/php-version here (this workflow pins both,
+        # unlike api-tests.yml/integration-tests.yml) - every one of this workflow's 7 `group`
+        # legs installs the exact same Magento 2.4.9/PHP 8.4 tree regardless of group, so they
+        # all share one cache key; only the first leg of a given run actually needs to populate
+        # it cold (cache writes land after a job finishes, so legs starting in parallel on the
+        # very first run after this change won't yet see each other's cache - every run after
+        # that one does).
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: magento/vendor
+          key: magento-vendor-2.4.9-8.4-${{ hashFiles('ordo-module/composer.json') }}
+          restore-keys: |
+            magento-vendor-2.4.9-8.4-
+
       - name: Cache Composer packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
