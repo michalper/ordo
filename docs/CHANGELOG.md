@@ -9,6 +9,12 @@ no manual step needed here anymore.
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-11-25
+
+Two new storefront theme-integration points, both following this module's own established
+"theme calls a documented `window.ordo*` function" shape rather than a native Magento UI
+component customization.
+
 ### Added
 
 - New order thank-you-page cross-sell widget (`window.ordoRenderCrossSell(orderId,
