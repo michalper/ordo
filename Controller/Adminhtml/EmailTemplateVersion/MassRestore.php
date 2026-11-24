@@ -73,4 +73,17 @@ class MassRestore extends Action implements HttpPostActionInterface
 
         return $resultRedirect->setPath('*/*/');
     }
+
+    /**
+     * This writes to the live core email_template row (via $magentoTemplateResource->save()
+     * above), the exact write Magento_Email::template itself exists to gate - found during a
+     * full-repo security review: Ordo_Automation::email_template_versioning is a sibling ACL
+     * node, not a child of Magento_Email::template, so a role granted the former without the
+     * latter could otherwise overwrite any live template despite being explicitly denied core's
+     * own template-editing permission.
+     */
+    protected function _isAllowed()
+    {
+        return parent::_isAllowed() && $this->_authorization->isAllowed('Magento_Email::template');
+    }
 }
