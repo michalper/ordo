@@ -63,6 +63,13 @@
  * "recommended for you" grid markup a campaign email already uses), set directly as the
  * container's innerHTML — no client-side product rendering of its own — see renderCrossSell
  * below and docs/adr/0082.
+ *
+ * window.ordoCaptureChannelConsent(channel, consented) is a theme integration point for
+ * capturing a logged-in customer's message-delivery-channel consent choice (e.g. an SMS/WhatsApp
+ * marketing-consent checkbox at checkout) wherever the theme has a UI moment for it — posts
+ * straight to the backend on change, independent of any page's own form submission, since the
+ * customer is already identified by their own session. See captureChannelConsent below and
+ * docs/adr/0083.
  */
 (function () {
     'use strict';
@@ -80,6 +87,7 @@
     var LOW_STOCK_ENDPOINT = '/ordo/track/lowstock';
     var EMAIL_CAPTURE_ENDPOINT = '/ordo/track/emailcapture';
     var CROSS_SELL_ENDPOINT = '/ordo/track/crosssell';
+    var CAPTURE_CHANNEL_CONSENT_ENDPOINT = '/ordo/track/capturechannelconsent';
     var EMAIL_CAPTURE_DISMISSED_COOKIE = 'ordo_email_capture_dismissed';
     var EMAIL_CAPTURE_BANNER_ID = 'ordo-email-capture-banner';
     var REWARD_SPIN_DURATION_MS = 1200;
@@ -875,6 +883,30 @@
     }
 
     /**
+     * Posts a logged-in customer's channel consent choice straight to the backend on change -
+     * no confirmation/response handling needed here (the theme's own checkbox already reflects
+     * the choice the customer just made; the backend either saves it or no-ops for a guest/
+     * invalid channel, neither of which this call needs to react to).
+     */
+    function captureChannelConsent(channel, consented) {
+        if (currentScript?.dataset.channelConsentCaptureEnabled !== '1') {
+            return;
+        }
+
+        if (!channel) {
+            return;
+        }
+
+        var body = new URLSearchParams({
+            channel: channel,
+            consented: consented ? '1' : '0'
+        });
+
+        fetch(CAPTURE_CHANNEL_CONSENT_ENDPOINT, { method: 'POST', body: body, keepalive: true })
+            .catch(function () {});
+    }
+
+    /**
      * Shows a small popup after a configurable delay, inviting an anonymous visitor to sign up
      * for the store's newsletter — see ADR 0043. Unlike the other widgets above, this is a
      * standing, store-wide feature (no theme integration call needed) rather than a per-SKU one,
@@ -991,6 +1023,7 @@
     window.ordoRenderSocialProof = renderSocialProof;
     window.ordoRenderLowStock = renderLowStock;
     window.ordoRenderCrossSell = renderCrossSell;
+    window.ordoCaptureChannelConsent = captureChannelConsent;
     track('page_view');
     startPolling(15, renderPollResponse);
     startExitIntentDetection();

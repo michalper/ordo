@@ -868,6 +868,12 @@
                     <validate>validate-digits validate-greater-than-zero</validate>
                     <depends><field id="cross_sell_enabled">1</field></depends>
                 </field>
+                <field id="channel_consent_capture_enabled" translate="label comment" type="select" sortOrder="260" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable capturing a channel consent choice from the storefront</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Lets a logged-in customer opt in/out of a message-delivery channel (e.g. SMS, WhatsApp) from wherever your theme adds a checkbox for it - a checkout SMS/WhatsApp consent checkbox is the typical use case. Needs a small one-time change in your theme (ask your developer to call window.ordoCaptureChannelConsent - see the module's documentation). Requires tracking to be enabled above.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
             </group>
             <group id="ai" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>AI Content (self-hosted Ollama)</label>

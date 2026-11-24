@@ -14,6 +14,11 @@ no manual step needed here anymore.
 - New order thank-you-page cross-sell widget (`window.ordoRenderCrossSell(orderId,
   containerSelector)`), reusing the same product-recommendation logic and markup a campaign
   email's recommended-products block already uses. See `docs/adr/0082`.
+- New channel-consent-capture endpoint (`window.ordoCaptureChannelConsent(channel, consented)`)
+  for a logged-in customer - the typical use case is an SMS/WhatsApp marketing-consent checkbox
+  at checkout, closing a real TCPA-style gap (this module's own consent register otherwise
+  defaults to opt-out for SMS, with no storefront touchpoint to opt in explicitly). See
+  `docs/adr/0083`.
 
 ## [1.14.0] - 2026-11-24
 

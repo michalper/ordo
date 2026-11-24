@@ -991,6 +991,12 @@ parameters:
 			path: Controller/Sms/StatusCallback.php
 
 		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Controller/Track/CaptureChannelConsent.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1

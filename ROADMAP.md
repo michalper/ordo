@@ -885,12 +885,23 @@ README/ROADMAP prose alone.**
   checkout through to the thank-you page): a real best-seller-fallback recommendation rendered
   for the order just placed, and a different, valid order id belonging to another customer's
   session was correctly refused.
-- **Explicit SMS/WhatsApp marketing-consent capture at checkout.** `Model\ConsentManager`'s channel-level
-  default is "no row = consented" (an opt-out model) - legally thin for SMS specifically (TCPA-style
-  regimes expect affirmative prior consent, not silent opt-out), and there's no checkout touchpoint
-  capturing it either way (grepped for `checkout`/`sms_opt_in`/`marketing_consent`, zero hits). Shape: a
-  checkout-page checkbox writing a real `ConsentManager::setConsent()` row for the `Sms`/`Whatsapp`
-  channel at order placement - a UI/plugin addition, no new consent primitive.
+- ~~**Explicit SMS/WhatsApp marketing-consent capture at checkout.**~~ — done, see
+  `docs/adr/0083-channel-consent-capture-endpoint.md`. New `window.ordoCaptureChannelConsent(channel,
+  consented)` theme-integration point - the theme adds its own checkbox wherever it has a UI
+  moment for one (a checkout SMS/WhatsApp consent checkbox next to the phone field is the
+  motivating case, but nothing here is checkout-specific) and wires its `onchange` to this one
+  call, which posts straight to `Controller\Track\CaptureChannelConsent`. Deliberately NOT a
+  native Magento checkout UI component (a real reference implementation,
+  `Magento\CheckoutAgreements`, runs to 6+ JS files and its own layout XML for one checkbox) -
+  asked the user directly and confirmed the lighter, already-established "theme calls a
+  documented function" shape over a first-of-its-kind checkout layout customization. Scoped to
+  logged-in customers only (`ConsentManager` is entirely `customer_id`-keyed - a guest checkout
+  has no customer entity to attach a preference to), also an explicit user decision. No new
+  consent primitive - delegates to `ConsentPreferencesManagementInterface::setMyChannelConsent()`,
+  the same service the storefront "Communication Preferences" page and REST/GraphQL already call.
+  Verified against a real running instance (MFTF): a real logged-in customer's SMS opt-in,
+  opt-out, and a different channel (WhatsApp) opt-in all wrote the expected real
+  `ordo_customer_consent` row.
 
 Considered and dropped in the same pass: a cross-channel/global frequency fatigue cap (already shipped,
 `Model/Campaign/FrequencyCapManager.php`, channel-agnostic by design); subscription/auto-replenishment and

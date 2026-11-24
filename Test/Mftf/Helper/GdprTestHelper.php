@@ -59,4 +59,48 @@ class GdprTestHelper extends Helper
             ));
         }
     }
+
+    /**
+     * Confirms Controller\Track\CaptureChannelConsent's real, database-observable effect - the
+     * endpoint itself only ever returns {"ok": true/false}, never the row it wrote, so this reads
+     * ordo_customer_consent directly, same reasoning as this helper's own assertNoConsentRowForCustomer().
+     *
+     * $consented is '1'/'0' (a plain string, not bool) - every MFTF <argument> value is passed
+     * as a string, and this file is declare(strict_types=1), so a bool-typed parameter would
+     * throw a TypeError the moment MFTF's own XML (which has no boolean literal, only text
+     * content) tried to call this with "true"/"false".
+     */
+    public function assertConsentRow(
+        int $customerId,
+        string $channel,
+        string $consented
+    ): void {
+        $pdo = $this->resolveDbConnection();
+
+        $statement = $pdo->prepare(
+            'SELECT consented FROM ordo_customer_consent WHERE customer_id = :customer_id AND channel = :channel'
+        );
+        $statement->execute(['customer_id' => $customerId, 'channel' => $channel]);
+        $row = $statement->fetch(\PDO::FETCH_ASSOC);
+
+        if ($row === false) {
+            throw new \RuntimeException(sprintf(
+                'No ordo_customer_consent row found for customer_id=%d, channel=%s.',
+                $customerId,
+                $channel
+            ));
+        }
+
+        $expectedConsented = $consented === '1';
+        $actualConsented = (bool) $row['consented'];
+        if ($actualConsented !== $expectedConsented) {
+            throw new \RuntimeException(sprintf(
+                'ordo_customer_consent row for customer_id=%d, channel=%s has consented=%s, expected %s.',
+                $customerId,
+                $channel,
+                $actualConsented ? 'true' : 'false',
+                $expectedConsented ? 'true' : 'false'
+            ));
+        }
+    }
 }

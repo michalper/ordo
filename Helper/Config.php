@@ -125,6 +125,8 @@ class Config
     private const string XML_PATH_TRACKING_CROSS_SELL_ENABLED = 'ordo_tracking/tracking/cross_sell_enabled';
     private const string XML_PATH_TRACKING_CROSS_SELL_ITEM_COUNT
         = 'ordo_tracking/tracking/cross_sell_item_count';
+    private const string XML_PATH_TRACKING_CHANNEL_CONSENT_CAPTURE_ENABLED
+        = 'ordo_tracking/tracking/channel_consent_capture_enabled';
 
     private const string XML_PATH_POPUP_ENABLED = 'ordo_tracking/tracking/popup_enabled';
     private const string XML_PATH_POPUP_POLL_INTERVAL_SECONDS = 'ordo_tracking/tracking/popup_poll_interval_seconds';
@@ -956,6 +958,15 @@ class Config
     public function getCrossSellItemCount(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_TRACKING_CROSS_SELL_ITEM_COUNT, 4, $storeId);
+    }
+
+    public function isChannelConsentCaptureEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_TRACKING_CHANNEL_CONSENT_CAPTURE_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
     }
 
     public function isPopupEnabled(?int $storeId = null): bool
