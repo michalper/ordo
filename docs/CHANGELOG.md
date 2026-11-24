@@ -9,6 +9,10 @@ no manual step needed here anymore.
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-11-24
+
+A continuation of the full-repo audit/`/simplify` sweep that produced 1.13.0.
+
 ### Fixed
 
 - **Security**: closed a guest-id-0 GraphQL bypass in `OfferManagement::selfExtend()`.
@@ -44,7 +48,19 @@ change), and batched several more per-row queries into one.
   `ProductRecommendationRenderer`'s product loads by SKU.
 - `Rfm\Grid\Collection`'s `rfm_score` is now computed from a wrapped derived table instead of a
   window-function alias that couldn't compose within one `SELECT`.
-- CI now caches the installed Magento `vendor/` tree across API/integration/MFTF test runs,
+- Batched `Controller\WhatsApp\Webhook`'s per-entry `MessageLog`/template lookups and
+  `SegmentBulkActionConsumer`'s per-customer claim INSERT - one query per batch instead of one
+  per entry/customer.
+- Extracted `Model\Shared\WebsiteScopeSaver` (shared by `CampaignSaveProcessor`/
+  `SegmentSaveProcessor`) and `AbstractProductFeedGenerator` (shared by the Google/Meta/AI-agent
+  feed formats), each replacing 2-3 near-identical copies.
+- Cached `MatchingSegments`' resolved segment names for 60s and memoized
+  `FunnelViewModel::getFunnelRows()` across repeated calls on the same request; hoisted
+  `Flow::getFlowDataJson()`'s trigger/condition/action label maps out of their own per-row loops.
+- Generalized `AbstractEntityActionsColumn` with two configurable hooks (which field names the
+  row, and extra row actions beyond edit/delete) so `EmailTemplateDraftActions` no longer needs
+  its own from-scratch `prepareDataSource()`.
+- CI now caches the installed Magento `vendor/` tree across API/integration/MFTF/ZAP test runs,
   instead of a from-scratch install on every run.
 
 ## [1.13.0] - 2026-11-23
