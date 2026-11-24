@@ -84,6 +84,11 @@ class TrackerViewModel implements ArgumentInterface
         return $this->config->isCrossSellWidgetEnabled();
     }
 
+    public function isChannelConsentCaptureEnabled(): bool
+    {
+        return $this->config->isChannelConsentCaptureEnabled();
+    }
+
     public function isEmailCaptureEnabled(): bool
     {
         return $this->config->isEmailCaptureEnabled();

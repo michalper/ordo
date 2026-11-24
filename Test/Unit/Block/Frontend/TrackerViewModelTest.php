@@ -126,6 +126,14 @@ class TrackerViewModelTest extends TestCase
         self::assertTrue((new TrackerViewModel($config))->isCrossSellWidgetEnabled());
     }
 
+    public function testIsChannelConsentCaptureEnabledReflectsConfig(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isChannelConsentCaptureEnabled')->willReturn(true);
+
+        self::assertTrue((new TrackerViewModel($config))->isChannelConsentCaptureEnabled());
+    }
+
     public function testIsEmailCaptureEnabledReflectsConfig(): void
     {
         $config = $this->createStub(Config::class);

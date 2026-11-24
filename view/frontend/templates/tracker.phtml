@@ -16,6 +16,7 @@ $viewModel = $block->getData('view_model');
     data-social-proof-enabled="<?= $viewModel->isSocialProofEnabled() ? '1' : '0' ?>"
     data-low-stock-enabled="<?= $viewModel->isLowStockWidgetEnabled() ? '1' : '0' ?>"
     data-cross-sell-enabled="<?= $viewModel->isCrossSellWidgetEnabled() ? '1' : '0' ?>"
+    data-channel-consent-capture-enabled="<?= $viewModel->isChannelConsentCaptureEnabled() ? '1' : '0' ?>"
     data-email-capture-enabled="<?= $viewModel->isEmailCaptureEnabled() ? '1' : '0' ?>"
     data-email-capture-delay="<?= (int) $viewModel->getEmailCaptureDelaySeconds() ?>"
     data-email-capture-headline="<?= $escaper->escapeHtmlAttr($viewModel->getEmailCaptureHeadline()) ?>"

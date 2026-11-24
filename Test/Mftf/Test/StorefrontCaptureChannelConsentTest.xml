@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="StorefrontCaptureChannelConsentTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="On-site behavior tracking"/>
+            <title value="window.ordoCaptureChannelConsent writes a real ordo_customer_consent row for the logged-in customer"/>
+            <description value="Controller/Track/CaptureChannelConsent.php delegates to ConsentPreferencesManagementInterface::setMyChannelConsent() - the same service the storefront Communication Preferences page and REST/GraphQL already call - so this proves the whole chain (controller -> service -> ConsentManager -> real ordo_customer_consent row) actually works end to end against a real logged-in customer session, not just mocked collaborators. See docs/adr/0083."/>
+            <severity value="CRITICAL"/>
+            <group value="ordo_automation"/>
+            <group value="tracking"/>
+        </annotations>
+        <before>
+            <magentoCLI command="config:set ordo_tracking/tracking/channel_consent_capture_enabled 1" stepKey="enableChannelConsentCapture"/>
+            <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+                <argument name="Customer" value="$$createCustomer$$"/>
+            </actionGroup>
+        </before>
+        <after>
+            <magentoCLI command="config:set ordo_tracking/tracking/channel_consent_capture_enabled 0" stepKey="disableChannelConsentCapture"/>
+            <actionGroup ref="StorefrontCustomerLogoutActionGroup" stepKey="logoutCustomer"/>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+        </after>
+
+        <!-- Step 1: opting in to SMS - a theme would call this from its own checkout/account
+             checkbox onchange handler; called directly here via executeJS exactly as that real
+             call would be, same convention as every other tracker.js theme-integration-point
+             test in this suite. -->
+        <amOnPage url="/" stepKey="goToStorefrontHome"/>
+        <waitForPageLoad stepKey="waitForHomePage"/>
+        <executeJS function="window.ordoCaptureChannelConsent('sms', true);" stepKey="captureSmsOptIn"/>
+        <wait time="3" stepKey="waitForSmsOptInToLand"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\GdprTestHelper" method="assertConsentRow" stepKey="assertSmsOptInSaved">
+            <argument name="customerId">$createCustomer.id$</argument>
+            <argument name="channel">sms</argument>
+            <argument name="consented">1</argument>
+        </helper>
+
+        <!-- Step 2: opting back out - the same endpoint, consented=false, proving it isn't a
+             one-way "record consent" write but a real toggle reflecting the customer's actual
+             current choice (an UPSERT onto the same row, per ConsentManager::setConsent()'s own
+             contract), the same way the storefront Communication Preferences page's own checkbox
+             already behaves. -->
+        <executeJS function="window.ordoCaptureChannelConsent('sms', false);" stepKey="captureSmsOptOut"/>
+        <wait time="3" stepKey="waitForSmsOptOutToLand"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\GdprTestHelper" method="assertConsentRow" stepKey="assertSmsOptOutSaved">
+            <argument name="customerId">$createCustomer.id$</argument>
+            <argument name="channel">sms</argument>
+            <argument name="consented">0</argument>
+        </helper>
+
+        <!-- Step 3: a different channel (WhatsApp) - proving the endpoint isn't hardcoded to
+             "sms" specifically (docs/adr/0083's own point: not restricted to Sms/WhatsApp in the
+             controller, any real ConsentChannel value is accepted). -->
+        <executeJS function="window.ordoCaptureChannelConsent('whatsapp', true);" stepKey="captureWhatsAppOptIn"/>
+        <wait time="3" stepKey="waitForWhatsAppOptInToLand"/>
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\GdprTestHelper" method="assertConsentRow" stepKey="assertWhatsAppOptInSaved">
+            <argument name="customerId">$createCustomer.id$</argument>
+            <argument name="channel">whatsapp</argument>
+            <argument name="consented">1</argument>
+        </helper>
+    </test>
+</tests>

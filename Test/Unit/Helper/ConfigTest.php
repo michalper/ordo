@@ -84,6 +84,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isChurnRiskDigestEnabled());
         self::assertTrue($this->config->isRcsEnabled());
         self::assertTrue($this->config->isCrossSellWidgetEnabled());
+        self::assertTrue($this->config->isChannelConsentCaptureEnabled());
         self::assertTrue($this->config->isWalletPassEnabled());
     }
 

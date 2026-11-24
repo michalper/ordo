@@ -1237,6 +1237,51 @@ QUnit.module('Ordo_Automation/js/tracker (cross sell)', function () {
     });
 });
 
+QUnit.module('Ordo_Automation/js/tracker (channel consent capture)', function () {
+    QUnit.test('does nothing when data-channel-consent-capture-enabled is not "1"', async function (assert) {
+        const env = loadTracker();
+        const callsBefore = env.fetchCalls.length;
+
+        env.dom.window.ordoCaptureChannelConsent('sms', true);
+        await flush();
+
+        assert.strictEqual(env.fetchCalls.length, callsBefore, 'no request made');
+    });
+
+    QUnit.test('does nothing when no channel is given', async function (assert) {
+        const env = loadTracker({ 'data-channel-consent-capture-enabled': '1' });
+        const callsBefore = env.fetchCalls.length;
+
+        env.dom.window.ordoCaptureChannelConsent('', true);
+        await flush();
+
+        assert.strictEqual(env.fetchCalls.length, callsBefore, 'no request made');
+    });
+
+    QUnit.test('posts the channel and consented=1 when checked', async function (assert) {
+        const env = loadTracker({ 'data-channel-consent-capture-enabled': '1' });
+
+        env.dom.window.ordoCaptureChannelConsent('sms', true);
+        await flush();
+
+        const call = env.fetchCalls[env.fetchCalls.length - 1];
+        assert.strictEqual(call.url, '/ordo/track/capturechannelconsent');
+        assert.strictEqual(new URLSearchParams(call.options.body).get('channel'), 'sms');
+        assert.strictEqual(new URLSearchParams(call.options.body).get('consented'), '1');
+    });
+
+    QUnit.test('posts consented=0 when unchecked', async function (assert) {
+        const env = loadTracker({ 'data-channel-consent-capture-enabled': '1' });
+
+        env.dom.window.ordoCaptureChannelConsent('whatsapp', false);
+        await flush();
+
+        const call = env.fetchCalls[env.fetchCalls.length - 1];
+        assert.strictEqual(new URLSearchParams(call.options.body).get('channel'), 'whatsapp');
+        assert.strictEqual(new URLSearchParams(call.options.body).get('consented'), '0');
+    });
+});
+
 QUnit.module('Ordo_Automation/js/tracker (email capture)', function () {
     function submitForm(document, email) {
         const banner = document.getElementById('ordo-email-capture-banner');
