@@ -4136,14 +4136,20 @@ parameters:
 			path: Ui/Component/Listing/Column/AbstractEntityActionsColumn.php
 
 		-
-			message: '#^Cannot access offset ''name'' on mixed\.$#'
+			message: '#^Cannot access offset mixed on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: Ui/Component/Listing/Column/AbstractEntityActionsColumn.php
 
 		-
-			message: '#^Cannot access offset mixed on mixed\.$#'
+			message: '#^Cannot access offset string on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Ui/Component/Listing/Column/AbstractEntityActionsColumn.php
+
+		-
+			message: '#^Parameter \#1 \$item of method Ordo\\Automation\\Ui\\Component\\Listing\\Column\\AbstractEntityActionsColumn\:\:getExtraActions\(\) expects array\<string, mixed\>, mixed given\.$#'
+			identifier: argument.type
 			count: 1
 			path: Ui/Component/Listing/Column/AbstractEntityActionsColumn.php
 
@@ -4530,66 +4536,6 @@ parameters:
 			identifier: return.type
 			count: 1
 			path: Model/EmailTemplateDraft/DataProvider.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Ui\\Component\\Listing\\Column\\EmailTemplateDraftActions\:\:__construct\(\) has parameter \$components with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Ui/Component/Listing/Column/EmailTemplateDraftActions.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Ui\\Component\\Listing\\Column\\EmailTemplateDraftActions\:\:__construct\(\) has parameter \$data with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Ui/Component/Listing/Column/EmailTemplateDraftActions.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Ui\\Component\\Listing\\Column\\EmailTemplateDraftActions\:\:prepareDataSource\(\) has parameter \$dataSource with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Ui/Component/Listing/Column/EmailTemplateDraftActions.php
-
-		-
-			message: '#^Method Ordo\\Automation\\Ui\\Component\\Listing\\Column\\EmailTemplateDraftActions\:\:prepareDataSource\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Ui/Component/Listing/Column/EmailTemplateDraftActions.php
-
-		-
-			message: '#^Cannot access offset ''items'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Ui/Component/Listing/Column/EmailTemplateDraftActions.php
-
-		-
-			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
-			identifier: foreach.nonIterable
-			count: 1
-			path: Ui/Component/Listing/Column/EmailTemplateDraftActions.php
-
-		-
-			message: '#^Cannot access offset ''entity_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Ui/Component/Listing/Column/EmailTemplateDraftActions.php
-
-		-
-			message: '#^Cannot access offset ''template_code'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Ui/Component/Listing/Column/EmailTemplateDraftActions.php
-
-		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 1
-			path: Ui/Component/Listing/Column/EmailTemplateDraftActions.php
-
-		-
-			message: '#^Cannot access offset mixed on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: Ui/Component/Listing/Column/EmailTemplateDraftActions.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
