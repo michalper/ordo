@@ -3308,6 +3308,24 @@ parameters:
 			path: Model/ResourceModel/CampaignActionRetry.php
 
 		-
+			message: '#^Cannot call method select\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/ResourceModel/CampaignActionRetry.php
+
+		-
+			message: '#^Cannot call method fetchCol\(\) on Magento\\Framework\\DB\\Adapter\\AdapterInterface\|false\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Model/ResourceModel/CampaignActionRetry.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Model/ResourceModel/CampaignActionRetry.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1

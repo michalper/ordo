@@ -3,7 +3,9 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Campaign;
 
+use Ordo\Automation\Model\ParamsMap;
 use Ordo\Automation\Model\ResourceModel\Campaign\ScheduledAction\CollectionFactory as ScheduledActionCollectionFactory;
+use Ordo\Automation\Model\ResourceModel\CampaignActionRetry as CampaignActionRetryResource;
 
 /**
  * Campaign entry dedup - closes the ROADMAP.md campaign engine "No campaign entry dedup" gap.
@@ -21,20 +23,37 @@ use Ordo\Automation\Model\ResourceModel\Campaign\ScheduledAction\CollectionFacto
 class CampaignEntryGuard
 {
     public function __construct(
-        private readonly ScheduledActionCollectionFactory $scheduledActionCollectionFactory
+        private readonly ScheduledActionCollectionFactory $scheduledActionCollectionFactory,
+        private readonly CampaignActionRetryResource $campaignActionRetryResource
     ) {
     }
 
     /**
      * True when this customer already has an unclaimed (executed_at IS NULL) scheduled-action
      * row for this campaign - i.e. they're currently waiting on a delay_minutes resume somewhere
-     * in its action chain.
+     * in its action chain - OR a failed resume for them is sitting in the campaign action retry
+     * queue awaiting backoff. The second check is required: Cron\RunScheduledCampaignActions
+     * claims (sets executed_at) BEFORE attempting a resume, so a resume that then fails and gets
+     * moved into ordo_campaign_action_retry is invisible to the first check alone - without this,
+     * the same trigger firing again for that customer during the retry's backoff window would
+     * let them re-enter this campaign from action index 0, running two independent chains at
+     * once for the same (campaign, customer) - exactly what this guard exists to prevent.
      */
     public function hasPendingEntry(int $campaignId, int $customerId): bool
     {
         $collection = $this->scheduledActionCollectionFactory->create();
         $collection->addPendingForCampaignAndCustomerFilter($campaignId, $customerId);
 
-        return $collection->getSize() > 0;
+        if ($collection->getSize() > 0) {
+            return true;
+        }
+
+        foreach ($this->campaignActionRetryResource->fetchContextsForCampaign($campaignId) as $contextJson) {
+            if ((ParamsMap::fromJson((string) $contextJson)['customer_id'] ?? null) === $customerId) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
