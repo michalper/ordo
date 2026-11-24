@@ -9,6 +9,44 @@ no manual step needed here anymore.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Security**: closed a guest-id-0 GraphQL bypass in `OfferManagement::selfExtend()`.
+- **Security**: closed a customer self-escalation path on B2B credit/spend limits.
+- **Security**: GDPR export/erase was missing `ordo_segment_bulk_action_claim`.
+- **Security**: closed an ACL-scope bypass on email template draft/publish/restore.
+- `SegmentBulkActionConsumer` permanently skipped a customer after a transient failure instead of
+  retrying them on redelivery.
+- The `order_placed` campaign trigger fired on every order save, not just creation.
+- A failed `scheduleResume()` write wrongly re-queued an already-succeeded chain.
+- `EscalateStalePendingApprovals`'s rollback silently wrote nothing on a failed send.
+- The offer expiry reminder filter used `eq` instead of `lteq`, so a missed cron tick never
+  caught up.
+- `GenerateCoupon` swallowed its own exception, defeating the dispatcher's fail-closed design.
+- `CampaignEntryGuard` couldn't see a customer's own retry-queue entry.
+- `ExpireOverdueOffers` had no feature-toggle check.
+
+### Changed
+
+A full-repo `/simplify` sweep: deduplicated repeated logic into shared helpers (no behavior
+change), and batched several more per-row queries into one.
+
+- Extracted `CustomerIdResolver::requireCustomerId()`, `RandomTokenGenerator`,
+  `AbstractSaveProcessorAuditPlugin`, and `TwilioSignatureValidator`, each replacing 2-3 near-
+  identical hand-written copies.
+- Moved `getConditionLogic()`/`setConditionLogic()` onto the shared `Campaign`/`Segment` base;
+  gave `RendersEditPageTrait` its own `activeMenu()` hook instead of a hardcoded value.
+- Batched `ScoreRule\DataProvider`'s website lookup, `Controller\Email\StatusCallback`'s per-event
+  `MessageLog` lookup, `ConsentManager`'s per-channel topic-consent lookup, and
+  `EmailTemplateVersion\MassRestore`'s per-row live template load - one query per page/request
+  instead of one per row.
+- Cached `GoogleOAuthTokenProvider`'s access token across one cron run and
+  `ProductRecommendationRenderer`'s product loads by SKU.
+- `Rfm\Grid\Collection`'s `rfm_score` is now computed from a wrapped derived table instead of a
+  window-function alias that couldn't compose within one `SELECT`.
+- CI now caches the installed Magento `vendor/` tree across API/integration/MFTF test runs,
+  instead of a from-scratch install on every run.
+
 ## [1.13.0] - 2026-11-23
 
 A full-repo security/correctness audit, plus the OpenSSF Best Practices Badge (Silver achieved)
