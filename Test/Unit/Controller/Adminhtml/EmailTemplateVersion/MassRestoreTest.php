@@ -158,4 +158,44 @@ class MassRestoreTest extends AbstractAdminActionTestCase
         );
         $controller->execute();
     }
+
+    /**
+     * This restores straight onto the live core email_template row - Ordo_Automation::
+     * email_template_versioning is a sibling ACL node, not a child of Magento_Email::template,
+     * so _isAllowed() must require both, not just its own resource.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testIsAllowedRequiresBothTheOwnResourceAndMagentoEmailTemplate(): void
+    {
+        $controller = new MassRestore(
+            $this->makeContext(),
+            $this->createStub(Filter::class),
+            $this->createStub(EmailTemplateVersionCollectionFactory::class),
+            $this->createStub(MagentoTemplateFactory::class),
+            $this->createStub(MagentoTemplateResource::class)
+        );
+        $isAllowed = new \ReflectionMethod(MassRestore::class, '_isAllowed');
+
+        $this->authorization->method('isAllowed')->willReturnMap([
+            ['Ordo_Automation::email_template_versioning', null, true],
+            ['Magento_Email::template', null, false],
+        ]);
+        self::assertFalse($isAllowed->invoke($controller));
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testIsAllowedPassesWhenBothResourcesAreGranted(): void
+    {
+        $controller = new MassRestore(
+            $this->makeContext(),
+            $this->createStub(Filter::class),
+            $this->createStub(EmailTemplateVersionCollectionFactory::class),
+            $this->createStub(MagentoTemplateFactory::class),
+            $this->createStub(MagentoTemplateResource::class)
+        );
+        $isAllowed = new \ReflectionMethod(MassRestore::class, '_isAllowed');
+
+        $this->authorization->method('isAllowed')->willReturn(true);
+        self::assertTrue($isAllowed->invoke($controller));
+    }
 }
