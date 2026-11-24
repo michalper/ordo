@@ -364,6 +364,36 @@ class WebhookTest extends AbstractFrontendActionTestCase
         $controller->execute();
     }
 
+    /**
+     * Codecov caught this: the batched loader's own "skip a malformed, non-array status entry"
+     * continue was never exercised - the original code's equivalent (a plain
+     * `if (is_array($status)) { ... }` with no explicit skip line) never needed its own test for
+     * this, since there was no separate line to cover.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testPostWithANonArrayStatusEntryIsIgnoredWithoutQueryingTheLog(): void
+    {
+        $controller = $this->makeController();
+        $rawBody = json_encode([
+            'entry' => [[
+                'changes' => [[
+                    'value' => [
+                        'statuses' => ['this-is-not-a-status-object'],
+                    ],
+                ]],
+            ]],
+        ]);
+        $this->request->method('isGet')->willReturn(false);
+        $this->request->method('getHeader')->willReturn($this->signatureFor($rawBody));
+        $this->request->method('getContent')->willReturn($rawBody);
+
+        $this->messageLogCollectionFactory->expects(self::never())->method('create');
+        $this->messageLogResource->expects(self::never())->method('save');
+        $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
+
+        $controller->execute();
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testPostWithAStatusEntryMissingAMessageIdIsIgnoredWithoutQueryingTheLog(): void
     {
