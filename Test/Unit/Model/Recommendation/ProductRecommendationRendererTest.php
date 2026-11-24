@@ -146,6 +146,41 @@ class ProductRecommendationRendererTest extends TestCase
         self::assertStringNotContainsString('Recommended for you', $text);
     }
 
+    /**
+     * Regression for a full-repo /simplify finding: Action\AddProductRecommendations calls both
+     * renderHtml() and renderText() with the exact same $skus, and each used to independently
+     * load every product one at a time - up to 2x N individual EAV product loads per
+     * recommendation send. A sku's product must now be fetched at most once total, shared across
+     * both calls (and across a repeated sku within one call, or a repeated call).
+     */
+    public function testLoadsEachProductAtMostOnceAcrossRenderHtmlAndRenderText(): void
+    {
+        $widget = $this->createStub(Product::class);
+        $widget->method('getName')->willReturn('Widget');
+        $widget->method('getProductUrl')->willReturn('https://example.com/widget.html');
+        $widget->method('getFinalPrice')->willReturn(19.99);
+
+        $productRepository = $this->createMock(ProductRepositoryInterface::class);
+        $productRepository->expects(self::once())->method('get')->with('SKU-1')->willReturn($widget);
+        $this->productRepository = $productRepository;
+
+        $renderer = $this->makeRenderer();
+        $renderer->renderHtml(['SKU-1', 'SKU-1']);
+        $renderer->renderText(['SKU-1']);
+    }
+
+    public function testAnUnresolvableSkuIsAlsoLoadedAtMostOnce(): void
+    {
+        $productRepository = $this->createMock(ProductRepositoryInterface::class);
+        $productRepository->expects(self::once())->method('get')->with('MISSING-SKU')
+            ->willThrowException(new NoSuchEntityException(__('No such product')));
+        $this->productRepository = $productRepository;
+
+        $renderer = $this->makeRenderer();
+        self::assertSame('', $renderer->renderHtml(['MISSING-SKU']));
+        self::assertSame('', $renderer->renderText(['MISSING-SKU']));
+    }
+
     public function testRenderTextContainsNoHtmlMarkup(): void
     {
         $product = $this->createStub(Product::class);
