@@ -68,7 +68,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         );
     }
 
-    private function makeMessageLog(?int $id, ?int $customerId = null): MessageLog
+    private function makeMessageLog(?int $id, ?int $customerId = null, string $providerMessageId = '<abc@example.com>'): MessageLog
     {
         $resource = $this->createStub(\Magento\Framework\Model\ResourceModel\Db\AbstractDb::class);
         $resource->method('getIdFieldName')->willReturn('entity_id');
@@ -80,12 +80,24 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         );
         if ($id !== null) {
             $log->setId($id);
+            $log->setProviderMessageId($providerMessageId);
         }
         if ($customerId !== null) {
             $log->setCustomerId($customerId);
         }
 
         return $log;
+    }
+
+    /**
+     * @return MessageLogCollection&\PHPUnit\Framework\MockObject\Stub
+     */
+    private function makeLogCollection(MessageLog ...$logs): MessageLogCollection
+    {
+        $collection = $this->createStub(MessageLogCollection::class);
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator($logs));
+        return $collection;
     }
 
     private function stubHeaders(string $signature, string $timestamp): void
@@ -139,8 +151,8 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         $log = $this->makeMessageLog(7);
         $collection = $this->createMock(MessageLogCollection::class);
         $collection->expects(self::once())->method('addFieldToFilter')
-            ->with('provider_message_id', '<abc@example.com>')->willReturnSelf();
-        $collection->expects(self::once())->method('getFirstItem')->willReturn($log);
+            ->with('provider_message_id', ['in' => ['<abc@example.com>']])->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$log]));
         $this->messageLogCollectionFactory->expects(self::once())->method('create')->willReturn($collection);
 
         $this->messageLogResource->expects(self::once())->method('save')->with($log);
@@ -164,10 +176,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         $this->signatureValidator->method('isValid')->willReturn(true);
 
         $log = $this->makeMessageLog(7);
-        $collection = $this->createStub(MessageLogCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($log);
-        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+        $this->messageLogCollectionFactory->method('create')->willReturn($this->makeLogCollection($log));
 
         $this->messageLogResource->expects(self::once())->method('save')->with($log);
 
@@ -193,10 +202,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         $this->signatureValidator->method('isValid')->willReturn(true);
 
         $log = $this->makeMessageLog(7, 42);
-        $collection = $this->createStub(MessageLogCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($log);
-        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+        $this->messageLogCollectionFactory->method('create')->willReturn($this->makeLogCollection($log));
 
         $this->messageLogResource->expects(self::once())->method('save')->with($log);
         $this->consentManager->expects(self::once())->method('setConsent')
@@ -217,10 +223,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         $this->signatureValidator->method('isValid')->willReturn(true);
 
         $log = $this->makeMessageLog(7, 42);
-        $collection = $this->createStub(MessageLogCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($log);
-        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+        $this->messageLogCollectionFactory->method('create')->willReturn($this->makeLogCollection($log));
 
         $this->messageLogResource->expects(self::once())->method('save')->with($log);
         $this->consentManager->expects(self::once())->method('setConsent')
@@ -239,10 +242,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         $this->signatureValidator->method('isValid')->willReturn(true);
 
         $log = $this->makeMessageLog(7);
-        $collection = $this->createStub(MessageLogCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($log);
-        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+        $this->messageLogCollectionFactory->method('create')->willReturn($this->makeLogCollection($log));
 
         $this->messageLogResource->expects(self::once())->method('save')->with($log);
         $this->consentManager->expects(self::never())->method('setConsent');
@@ -260,10 +260,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         $this->signatureValidator->method('isValid')->willReturn(true);
 
         $log = $this->makeMessageLog(7, 42);
-        $collection = $this->createStub(MessageLogCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($log);
-        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+        $this->messageLogCollectionFactory->method('create')->willReturn($this->makeLogCollection($log));
 
         $this->messageLogResource->method('save');
         $this->consentManager->expects(self::never())->method('setConsent');
@@ -280,11 +277,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         $this->request->method('getContent')->willReturn($body);
         $this->signatureValidator->method('isValid')->willReturn(true);
 
-        $log = $this->makeMessageLog(null);
-        $collection = $this->createStub(MessageLogCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($log);
-        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+        $this->messageLogCollectionFactory->method('create')->willReturn($this->makeLogCollection());
 
         $this->messageLogResource->expects(self::never())->method('save');
         $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
@@ -322,10 +315,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         $this->signatureValidator->method('isValid')->willReturn(true);
 
         $log = $this->makeMessageLog(7);
-        $collection = $this->createStub(MessageLogCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($log);
-        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+        $this->messageLogCollectionFactory->method('create')->willReturn($this->makeLogCollection($log));
 
         $this->messageLogResource->expects(self::never())->method('save');
         $this->messageLogEventWriter->expects(self::once())->method('recordOpened')->with(7);
@@ -349,10 +339,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         $this->signatureValidator->method('isValid')->willReturn(true);
 
         $log = $this->makeMessageLog(7);
-        $collection = $this->createStub(MessageLogCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($log);
-        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+        $this->messageLogCollectionFactory->method('create')->willReturn($this->makeLogCollection($log));
 
         $this->messageLogResource->expects(self::never())->method('save');
         $this->messageLogEventWriter->expects(self::once())->method('recordClicked')
@@ -374,10 +361,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         $this->signatureValidator->method('isValid')->willReturn(true);
 
         $log = $this->makeMessageLog(7);
-        $collection = $this->createStub(MessageLogCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($log);
-        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+        $this->messageLogCollectionFactory->method('create')->willReturn($this->makeLogCollection($log));
 
         $this->messageLogResource->expects(self::once())->method('save')->with($log);
         $this->messageLogEventWriter->expects(self::once())->method('recordOpened')->with(7);
@@ -404,10 +388,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
         $log = $this->makeMessageLog(7);
         $log->setStatus(MessageLog::STATUS_UNDELIVERED);
         $log->setErrorCode('550 mailbox unavailable');
-        $collection = $this->createStub(MessageLogCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($log);
-        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+        $this->messageLogCollectionFactory->method('create')->willReturn($this->makeLogCollection($log));
 
         $this->messageLogResource->expects(self::never())->method('save');
         $this->logger->expects(self::once())->method('info');
@@ -433,10 +414,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
 
         $log = $this->makeMessageLog(7, 42);
         $log->setStatus(MessageLog::STATUS_OPTED_OUT);
-        $collection = $this->createStub(MessageLogCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($log);
-        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+        $this->messageLogCollectionFactory->method('create')->willReturn($this->makeLogCollection($log));
 
         $this->messageLogResource->expects(self::never())->method('save');
         $this->consentManager->expects(self::never())->method('setConsent');
@@ -464,10 +442,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
 
         $log = $this->makeMessageLog(7);
         $log->setStatus(MessageLog::STATUS_SENT);
-        $collection = $this->createStub(MessageLogCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($log);
-        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+        $this->messageLogCollectionFactory->method('create')->willReturn($this->makeLogCollection($log));
 
         $this->messageLogResource->expects(self::exactly(2))->method('save')->with($log);
 
@@ -495,10 +470,7 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
 
         $log = $this->makeMessageLog(7);
         $log->setStatus(MessageLog::STATUS_UNDELIVERED);
-        $collection = $this->createStub(MessageLogCollection::class);
-        $collection->method('addFieldToFilter')->willReturnSelf();
-        $collection->method('getFirstItem')->willReturn($log);
-        $this->messageLogCollectionFactory->method('create')->willReturn($collection);
+        $this->messageLogCollectionFactory->method('create')->willReturn($this->makeLogCollection($log));
 
         $this->messageLogResource->expects(self::once())->method('save')->with($log);
 
@@ -506,6 +478,41 @@ class StatusCallbackTest extends AbstractFrontendActionTestCase
 
         self::assertSame('undelivered', $log->getStatus());
         self::assertSame('550 mailbox unavailable', $log->getErrorCode());
+    }
+
+    /**
+     * Regression for a full-repo /simplify finding: distinct events in the same webhook call
+     * (different smtp-ids) used to each do their own MessageLog lookup query. Must now be one
+     * batched IN(...) load for the whole call.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testTwoEventsWithDifferentSmtpIdsLoadBothLogsInOneBatchedQuery(): void
+    {
+        $controller = $this->makeController();
+        $this->stubHeaders('real-signature', '1700000000');
+        $body = json_encode([
+            ['event' => 'delivered', 'smtp-id' => '<first@example.com>'],
+            ['event' => 'bounce', 'smtp-id' => '<second@example.com>'],
+        ]);
+        $this->request->method('getContent')->willReturn($body);
+        $this->signatureValidator->method('isValid')->willReturn(true);
+
+        $firstLog = $this->makeMessageLog(7, null, '<first@example.com>');
+        $secondLog = $this->makeMessageLog(9, null, '<second@example.com>');
+
+        $collection = $this->createMock(MessageLogCollection::class);
+        $collection->expects(self::once())->method('addFieldToFilter')
+            ->with('provider_message_id', ['in' => ['<first@example.com>', '<second@example.com>']])
+            ->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([$firstLog, $secondLog]));
+        $this->messageLogCollectionFactory->expects(self::once())->method('create')->willReturn($collection);
+
+        $this->messageLogResource->expects(self::exactly(2))->method('save');
+
+        $controller->execute();
+
+        self::assertSame('delivered', $firstLog->getStatus());
+        self::assertSame('undelivered', $secondLog->getStatus());
     }
 
     #[AllowMockObjectsWithoutExpectations]

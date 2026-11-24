@@ -113,19 +113,57 @@ class StatusCallback extends Action implements HttpPostActionInterface, CsrfAwar
             return $result->setData(['ok' => false, 'reason' => 'invalid_payload']);
         }
 
+        $events = array_values(array_filter($events, 'is_array'));
+        $logsByMessageId = $this->loadLogsByMessageId($events);
+
         foreach ($events as $event) {
-            if (is_array($event)) {
-                $this->processEvent($event);
-            }
+            $this->processEvent($event, $logsByMessageId);
         }
 
         return $result->setData(['ok' => true]);
     }
 
     /**
-     * @param array<array-key, mixed> $event
+     * One batched IN(...) load for every event's own smtp-id in this webhook call, instead of
+     * one query per event - found via a full-repo /simplify sweep, same "one query, not N"
+     * reasoning as every other batch load in this module.
+     *
+     * @param array<int, array<array-key, mixed>> $events
+     * @return array<string, MessageLog>
      */
-    private function processEvent(array $event): void
+    private function loadLogsByMessageId(array $events): array
+    {
+        $messageIds = [];
+        foreach ($events as $event) {
+            $eventType = (string) ($event['event'] ?? '');
+            $messageId = (string) ($event['smtp-id'] ?? '');
+            $isHandled = isset(self::EVENT_TO_STATUS[$eventType]) || isset(self::EVENT_TO_LOG_EVENT_TYPE[$eventType]);
+            if ($isHandled && $messageId !== '') {
+                $messageIds[$messageId] = true;
+            }
+        }
+
+        if ($messageIds === []) {
+            return [];
+        }
+
+        $collection = $this->messageLogCollectionFactory->create();
+        $collection->addFieldToFilter('provider_message_id', ['in' => array_keys($messageIds)]);
+
+        $logsByMessageId = [];
+        foreach ($collection as $log) {
+            /** @var MessageLog $log */
+            $logsByMessageId[(string) $log->getProviderMessageId()] = $log;
+        }
+
+        return $logsByMessageId;
+    }
+
+    /**
+     * @param array<array-key, mixed> $event
+     * @param array<string, MessageLog> $logsByMessageId
+     */
+    private function processEvent(array $event, array $logsByMessageId): void
     {
         $eventType = (string) ($event['event'] ?? '');
         $status = self::EVENT_TO_STATUS[$eventType] ?? null;
@@ -137,12 +175,9 @@ class StatusCallback extends Action implements HttpPostActionInterface, CsrfAwar
             return;
         }
 
-        $collection = $this->messageLogCollectionFactory->create();
-        $collection->addFieldToFilter('provider_message_id', $messageId);
-        /** @var MessageLog $log */
-        $log = $collection->getFirstItem();
+        $log = $logsByMessageId[$messageId] ?? null;
 
-        if (!$log->getId()) {
+        if ($log === null) {
             // SendGrid also retries on a non-2xx response for the whole batch - an unrecognized
             // smtp-id just means this one event is skipped, same reasoning as
             // Controller\Sms\StatusCallback's own unknown-MessageSid branch.
