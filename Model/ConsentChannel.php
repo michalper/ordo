@@ -29,4 +29,19 @@ enum ConsentChannel: string
      * Google/Meta for ad targeting, or vice versa.
      */
     case Ads = 'ads';
+
+    /**
+     * Every message-delivery channel (everything except Ads, which has no message-delivery
+     * concept of its own - see its own case docblock above). Found during a full-repo /simplify
+     * sweep hand-copied in 3 places (Controller\Adminhtml\Gdpr\Export, Block\Adminhtml\Gdpr\Index,
+     * Block\Frontend\ConsentPreferencesViewModel) - exactly the stale-second-list failure mode
+     * this enum's own class docblock exists to prevent, just one level up.
+     *
+     * @return self[]
+     */
+    // phpcs:ignore Magento2.Functions.StaticFunction -- a plain cases() filter, nothing to intercept
+    public static function deliveryChannels(): array
+    {
+        return array_filter(self::cases(), static fn (self $channel): bool => $channel !== self::Ads);
+    }
 }

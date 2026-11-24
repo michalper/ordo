@@ -58,22 +58,6 @@ class DashboardViewModel implements ArgumentInterface
     ];
 
     /**
-     * The fixed, known trigger set (Model\Config\Source\TriggerEvent's list) — every one of
-     * these always gets a dashboard row, including a trigger no campaign currently uses (0),
-     * rather than only showing rows for triggers that happen to already have a campaign. That's
-     * the point of a "per fixed trigger" breakdown: it answers "which of the triggers we
-     * support are actually being used" just as much as "how many campaigns use each one".
-     */
-    private const array FIXED_TRIGGER_EVENTS = [
-        CampaignTriggerInterface::TRIGGER_ORDER_PLACED,
-        CampaignTriggerInterface::TRIGGER_CUSTOMER_REGISTERED,
-        CampaignTriggerInterface::TRIGGER_TAG_ADDED,
-        CampaignTriggerInterface::TRIGGER_CART_ABANDONED,
-        CampaignTriggerInterface::TRIGGER_VISITOR_TAG_ADDED,
-        CampaignTriggerInterface::TRIGGER_SCORE_THRESHOLD_CROSSED,
-    ];
-
-    /**
      * Labels for the 5 cron-driven triggers tracked by TriggerOutcomeLogger — a separate set
      * from TRIGGER_LABELS/FIXED_TRIGGER_EVENTS above, which are campaign trigger *events*
      * (order_placed, tag_added, ...), not these standalone scheduled sends.
@@ -339,11 +323,19 @@ class DashboardViewModel implements ArgumentInterface
     }
 
     /**
+     * The fixed, known trigger set (Model\Config\Source\TriggerEvent's list) — every one of
+     * these always gets a dashboard row, including a trigger no campaign currently uses (0),
+     * rather than only showing rows for triggers that happen to already have a campaign. That's
+     * the point of a "per fixed trigger" breakdown: it answers "which of the triggers we
+     * support are actually being used" just as much as "how many campaigns use each one". Simply
+     * TRIGGER_LABELS' own keys - kept as a second, hand-maintained constant array until a
+     * full-repo /simplify sweep found the two had to stay in sync by hand for no reason.
+     *
      * @return string[]
      */
     public function getFixedTriggerEvents(): array
     {
-        return self::FIXED_TRIGGER_EVENTS;
+        return array_keys(self::TRIGGER_LABELS);
     }
 
     /**
