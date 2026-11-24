@@ -86,6 +86,20 @@ jobs:
       - name: Checkout Magento 2.4.9
         run: git clone --branch 2.4.9 --depth 1 https://github.com/magento/magento2.git magento
 
+      - name: Cache the installed Magento vendor/ tree
+        # See api-tests.yml's identical step for the full reasoning, found during a CI-speed
+        # audit. Same fixed Magento 2.4.9/PHP 8.4 key shape as mftf.yml's own copy of this step -
+        # this workflow runs nightly/on-demand rather than per-PR, so the win is smaller, but
+        # it's free and this job's own timeout had to be raised once already for the full active
+        # scan to fit, so shaving minutes off the install phase gives the scan more of that
+        # headroom back.
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: magento/vendor
+          key: magento-vendor-2.4.9-8.4-${{ hashFiles('ordo-module/composer.json') }}
+          restore-keys: |
+            magento-vendor-2.4.9-8.4-
+
       - name: Cache Composer packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
