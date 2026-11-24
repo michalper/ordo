@@ -28,6 +28,8 @@ and OpenSSF Scorecard work it led to.
 - A documented backup-maintainer arrangement for repo-level continuity (issues, PRs, releases) if
   the primary maintainer is unavailable.
 - OpenSSF Best Practices Badge: Silver achieved (Passing badge also added this release).
+- A per-store enable toggle for the `send_email` channel (defaults on, so existing installs keep
+  sending exactly as before).
 
 ### Fixed
 
@@ -53,6 +55,35 @@ and OpenSSF Scorecard work it led to.
 - GDPR export/erase was missing 3 tables that carry `customer_id`.
 - A real dependency vulnerability (`glob`, GHSA-3g3m-2fjr-6pw4) in the JS coverage toolchain.
 - `LICENSE` had an embedded paragraph that broke GitHub's own license-file parsing.
+- **SSRF**: closed in `send_webhook`'s admin-configured outbound URL; `RssFetcher`'s own SSRF
+  guard consolidated onto the same shared validator instead of a second, parallel check.
+- Closed TOCTOU/race-condition gaps in: referral-conversion reward crediting, order-approval
+  escalation reminders, lead assignment on a routing rule's very first use, and scheduled
+  campaign trigger firing.
+- `DispatchCustomerInactiveCampaigns`' claim rollback now scopes to the one row a failed dispatch
+  actually inserted, instead of wiping that customer's whole cooldown history.
+- A customer-tagging failure no longer crashes `customer_register_success`.
+- `Referral`'s first-order check now excludes canceled orders.
+- Opted-out `send_email` skips are now recorded in the message log instead of silently vanishing.
+- Two queue consumers (`VisitorAggregationConsumer`, `SegmentBulkActionConsumer`) no longer let a
+  decode/processing exception escape uncaught.
+- 6 table-level `db_schema.xml` comments with an embedded apostrophe that broke a fresh
+  `setup:install`.
+- `scripts/ci-green.sh`'s own self-referential check-run exclusion never actually matched (wrong
+  check-run name), so this very release's own automated cut was stuck "not green" indefinitely
+  until found and fixed.
+
+### Changed
+
+- Deduplicated the recurring "scan rows, claim, dispatch/send, roll back on failure" boilerplate
+  across most of `Cron/`/`Observer/` into a handful of new shared abstracts and one new
+  `CustomerTagManager::syncTagForSet()` helper - no behavior change, same claim/rollback/log
+  semantics everywhere, just no longer copy-pasted per feature.
+- `WhatsAppSignatureValidator` now delegates to the shared `WebhookSignatureValidator`; GraphQL's
+  guest-customer-id guard consolidated across 3 Management classes into one resolver.
+- Batched the per-row "already sent" exclusion pre-filter in 3 reminder crons, and the
+  overdue-offer expiry sweep, instead of one query per row; `RetryFailedCampaignActions` now
+  shares one campaign lookup memo across a whole run instead of re-fetching per row.
 
 ### Security
 
@@ -66,6 +97,12 @@ and OpenSSF Scorecard work it led to.
   settings (a scoped, read-only fine-grained PAT) instead of erroring out blind; branch protection
   itself was also hardened (pull requests required before merging, branches must be up to date,
   enforced for administrators too).
+- The `sonar` CI check now actually fails when SonarCloud's own Quality Gate doesn't pass -
+  previously it only submitted the analysis and always reported success regardless of findings.
+- Added `.github/CODEOWNERS`, making the already-enabled "require code owner review" branch
+  protection setting mean something (it had nothing to match against before).
+- Enabled private vulnerability reporting and tag protection rules for `v*` release tags.
+- CI workflows now also trigger on `merge_group`, in case a future merge queue needs it.
 
 ## [1.12.0] - 2026-11-23
 
