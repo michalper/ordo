@@ -141,11 +141,106 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
             return $result->setData(['ok' => false, 'reason' => 'invalid_payload']);
         }
 
-        foreach ($this->extractChanges($payload) as $change) {
-            $this->processChange($change);
+        $changes = $this->extractChanges($payload);
+        $logsByMessageId = $this->loadMessageLogsByProviderMessageId($changes);
+        $templatesByMetaId = $this->loadTemplatesByMetaId($changes);
+
+        foreach ($changes as $change) {
+            $this->processChange($change, $logsByMessageId, $templatesByMetaId);
         }
 
         return $result->setData(['ok' => true]);
+    }
+
+    /**
+     * One batched IN(...) load for every status/read-receipt entry's own provider_message_id in
+     * this webhook call, instead of one query per entry - found during a full-repo /simplify
+     * sweep, same "one query, not N" reasoning as Controller\Email\StatusCallback's own
+     * equivalent batch.
+     *
+     * @param array<int, array<mixed>> $changes
+     * @return array<string, MessageLog>
+     */
+    private function loadMessageLogsByProviderMessageId(array $changes): array
+    {
+        $providerMessageIds = [];
+        foreach ($changes as $change) {
+            $value = $this->toArray($change['value'] ?? null);
+            foreach ($this->toArray($value['statuses'] ?? null) as $status) {
+                if (!is_array($status)) {
+                    continue;
+                }
+
+                $id = (string) ($status['id'] ?? '');
+                $metaStatus = strtoupper((string) ($status['status'] ?? ''));
+                // Same "is this status actually handled at all" check processMessageStatus()
+                // itself does before ever looking anything up - an id is only worth batch
+                // loading for if the status is one this webhook does something with (READ, or a
+                // mapped delivery status); an unrecognized status never queried the log before
+                // this change either, and must still not query it now.
+                $isHandled = $metaStatus === 'READ' || isset(self::MESSAGE_STATUS_MAP[$metaStatus]);
+                if ($id !== '' && $isHandled) {
+                    $providerMessageIds[$id] = true;
+                }
+            }
+        }
+
+        if ($providerMessageIds === []) {
+            return [];
+        }
+
+        $collection = $this->messageLogCollectionFactory->create();
+        $collection->addFieldToFilter('provider_message_id', ['in' => array_keys($providerMessageIds)]);
+
+        $logsByMessageId = [];
+        foreach ($collection as $log) {
+            /** @var MessageLog $log */
+            $logsByMessageId[(string) $log->getProviderMessageId()] = $log;
+        }
+
+        return $logsByMessageId;
+    }
+
+    /**
+     * Same batching as loadMessageLogsByProviderMessageId() above, for the separate
+     * message_template_status_update changes, keyed by Meta's own template id instead.
+     *
+     * @param array<int, array<mixed>> $changes
+     * @return array<string, WhatsAppTemplate>
+     */
+    private function loadTemplatesByMetaId(array $changes): array
+    {
+        $metaTemplateIds = [];
+        foreach ($changes as $change) {
+            if (($change['field'] ?? null) !== 'message_template_status_update') {
+                continue;
+            }
+
+            $value = $this->toArray($change['value'] ?? null);
+            $id = (string) ($value['message_template_id'] ?? '');
+            $metaStatus = strtoupper((string) ($value['event'] ?? ''));
+            // Same "is this event actually mapped at all" check processTemplateStatus() itself
+            // does before ever looking anything up - an unmapped event never queried the
+            // template before this change either, and must still not query it now.
+            if ($id !== '' && isset(self::TEMPLATE_STATUS_MAP[$metaStatus])) {
+                $metaTemplateIds[$id] = true;
+            }
+        }
+
+        if ($metaTemplateIds === []) {
+            return [];
+        }
+
+        $collection = $this->whatsAppTemplateCollectionFactory->create();
+        $collection->addFieldToFilter('meta_template_id', ['in' => array_keys($metaTemplateIds)]);
+
+        $templatesByMetaId = [];
+        foreach ($collection as $template) {
+            /** @var WhatsAppTemplate $template */
+            $templatesByMetaId[(string) $template->getMetaTemplateId()] = $template;
+        }
+
+        return $templatesByMetaId;
     }
 
     /**
@@ -168,14 +263,16 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
 
     /**
      * @param array<mixed> $change
+     * @param array<string, MessageLog> $logsByMessageId
+     * @param array<string, WhatsAppTemplate> $templatesByMetaId
      */
-    private function processChange(array $change): void
+    private function processChange(array $change, array $logsByMessageId, array $templatesByMetaId): void
     {
         $value = $this->toArray($change['value'] ?? null);
 
         foreach ($this->toArray($value['statuses'] ?? null) as $status) {
             if (is_array($status)) {
-                $this->processMessageStatus($status);
+                $this->processMessageStatus($status, $logsByMessageId);
             }
         }
 
@@ -187,7 +284,7 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
 
         $templateUpdate = $change['field'] ?? null;
         if ($templateUpdate === 'message_template_status_update') {
-            $this->processTemplateStatus($value);
+            $this->processTemplateStatus($value, $templatesByMetaId);
         }
     }
 
@@ -224,8 +321,9 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
 
     /**
      * @param array<mixed> $status
+     * @param array<string, MessageLog> $logsByMessageId
      */
-    private function processMessageStatus(array $status): void
+    private function processMessageStatus(array $status, array $logsByMessageId): void
     {
         $providerMessageId = (string) ($status['id'] ?? '');
         $metaStatus = strtoupper((string) ($status['status'] ?? ''));
@@ -235,7 +333,7 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
         }
 
         if ($metaStatus === 'READ') {
-            $this->processReadReceipt($providerMessageId);
+            $this->processReadReceipt($providerMessageId, $logsByMessageId);
             return;
         }
 
@@ -244,7 +342,7 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
             return;
         }
 
-        $log = $this->findMessageLogByProviderMessageId($providerMessageId, 'status update');
+        $log = $this->findMessageLogByProviderMessageId($providerMessageId, 'status update', $logsByMessageId);
         if (!$log instanceof MessageLog) {
             return;
         }
@@ -275,9 +373,12 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
      * message_engaged campaign conditions work the same way for WhatsApp reads - see
      * docs/adr/0051.
      */
-    private function processReadReceipt(string $providerMessageId): void
+    /**
+     * @param array<string, MessageLog> $logsByMessageId
+     */
+    private function processReadReceipt(string $providerMessageId, array $logsByMessageId): void
     {
-        $log = $this->findMessageLogByProviderMessageId($providerMessageId, 'read receipt');
+        $log = $this->findMessageLogByProviderMessageId($providerMessageId, 'read receipt', $logsByMessageId);
         if (!$log instanceof MessageLog) {
             return;
         }
@@ -288,22 +389,24 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
     /**
      * The one place every status/event handler above resolves an ordo_message_log row by
      * Meta's provider_message_id - logs and returns null on no match instead of each caller
-     * repeating its own lookup-and-log block.
+     * repeating its own lookup-and-log block. Looks up the batch loaded once per webhook call
+     * by loadMessageLogsByProviderMessageId(), not a fresh query per entry.
+     *
+     * @param array<string, MessageLog> $logsByMessageId
      */
-    private function findMessageLogByProviderMessageId(string $providerMessageId, string $context): ?MessageLog
-    {
-        $collection = $this->messageLogCollectionFactory->create();
-        $collection->addFieldToFilter('provider_message_id', $providerMessageId);
-        /** @var MessageLog $log */
-        $log = $collection->getFirstItem();
+    private function findMessageLogByProviderMessageId(
+        string $providerMessageId,
+        string $context,
+        array $logsByMessageId
+    ): ?MessageLog {
+        $log = $logsByMessageId[$providerMessageId] ?? null;
 
-        if (!$log->getId()) {
+        if ($log === null) {
             $this->logger->info(sprintf(
                 'Ordo_Automation: WhatsApp webhook %s for unknown message id "%s".',
                 $context,
                 $providerMessageId
             ));
-            return null;
         }
 
         return $log;
@@ -311,8 +414,9 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
 
     /**
      * @param array<mixed> $value
+     * @param array<string, WhatsAppTemplate> $templatesByMetaId
      */
-    private function processTemplateStatus(array $value): void
+    private function processTemplateStatus(array $value, array $templatesByMetaId): void
     {
         $metaTemplateId = (string) ($value['message_template_id'] ?? '');
         $metaStatus = strtoupper((string) ($value['event'] ?? ''));
@@ -322,11 +426,9 @@ class Webhook extends Action implements HttpGetActionInterface, HttpPostActionIn
             return;
         }
 
-        $collection = $this->whatsAppTemplateCollectionFactory->create();
-        $collection->addFieldToFilter('meta_template_id', $metaTemplateId);
-        $template = $collection->getFirstItem();
+        $template = $templatesByMetaId[$metaTemplateId] ?? null;
 
-        if (!$template->getId()) {
+        if ($template === null) {
             $this->logger->info(sprintf(
                 'Ordo_Automation: WhatsApp webhook template status update for unknown template id "%s".',
                 $metaTemplateId
