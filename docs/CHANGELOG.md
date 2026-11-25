@@ -9,12 +9,26 @@ no manual step needed here anymore.
 
 ## [Unreleased]
 
+### Added
+
+- New `country_in` campaign/segment condition - matches a customer whose default billing
+  address is in a given list of countries. See `docs/adr/0084`.
+
 ### Changed
 
 - `VisitorAggregator` (on-site behavior tracking) now bounds its per-event aggregation query to
   the configured tracking retention window, instead of scanning a customer/visitor's entire
   retained event history on every single tracked event. Two new indexes
   (`ordo_visitor_event.customer_id`/`visitor_id` + `created_at`) back the bounded query.
+
+### Fixed
+
+- **Currency mixing**: 7 places that summed or compared `sales_order.grand_total` (the order's
+  own currency) instead of `base_grand_total` across a multi-currency/multi-website install - B2B
+  spend-limit approval holds, the `OrderTotalAtLeast` campaign condition, loyalty points earned
+  per order, CLV projection, campaign revenue attribution, the Customer 360 lifetime order total,
+  and the RFM admin grid's own monetary column (which could show a different number than the one
+  actually deciding RFM segment membership).
 
 ## [1.15.0] - 2026-11-25
 

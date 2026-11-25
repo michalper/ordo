@@ -1297,3 +1297,6 @@
 "Number of products to show","表示する商品数"
 "Default: 4.","デフォルト: 4。"
 "You might also like","こちらもおすすめ"
+"Countries (comma-separated ISO codes)","国（ISOコードをコンマで区切って指定）"
+"2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","2文字のコード（例: US,PL,DE）- 顧客のデフォルトの請求先住所と一致します。"
+"Country Is","国が次である"

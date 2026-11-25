@@ -1297,3 +1297,6 @@
 "Number of products to show","Gösterilecek ürün sayısı"
 "Default: 4.","Varsayılan: 4."
 "You might also like","Şunlar da ilginizi çekebilir"
+"Countries (comma-separated ISO codes)","Ülkeler (virgülle ayrılmış ISO kodları)"
+"2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","2 harfli kodlar, örn. US,PL,DE - müşterinin varsayılan fatura adresiyle eşleşir."
+"Country Is","Ülke"

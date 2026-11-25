@@ -37,7 +37,11 @@ class EarnLoyaltyPointsForOrder implements ObserverInterface
         $this->loyaltyPointsManager->earnForOrder(
             (int) $order->getCustomerId(),
             (int) $order->getEntityId(),
-            (float) $order->getGrandTotal()
+            // getBaseGrandTotal(), not getGrandTotal() - getLoyaltyPointsPerDollar() is one flat
+            // store-wide rate, not a per-currency one, so a multi-currency/multi-website install
+            // would otherwise earn a mismatched number of points depending on which currency a
+            // given order happened to be placed in.
+            (float) $order->getBaseGrandTotal()
         );
     }
 }

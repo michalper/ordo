@@ -109,7 +109,10 @@ class HoldOrderForApprovalTest extends TestCase
             'ordo_order_approval_request',
             [
                 'order_increment_id' => '000000007',
-                'order_total' => 500.0,
+                // The order's own currency total (getGrandTotal()), not the base-currency one
+                // used to decide the hold - this email is read by a human looking at this one
+                // order, not a threshold comparison.
+                'order_total' => 777.0,
                 'customer_name' => 'Jan Kowalski',
                 'approve_url' => 'https://example.com/ordo/approval/approve/token/' . $token,
                 'reject_url' => 'https://example.com/ordo/approval/reject/token/' . $token,
@@ -189,7 +192,10 @@ class HoldOrderForApprovalTest extends TestCase
         $order = $this->createMock(Order::class);
         $order->method('getCustomerId')->willReturn(null);
         $order->method('getCustomerEmail')->willReturn('vip@example.com');
-        $order->method('getGrandTotal')->willReturn(500.0);
+        // Deliberately different values - proves the spend-limit hold is decided from the
+        // base-currency total while the approval email still shows the order's own currency.
+        $order->method('getBaseGrandTotal')->willReturn(500.0);
+        $order->method('getGrandTotal')->willReturn(777.0);
         $order->method('getEntityId')->willReturn(7);
         $order->method('getIncrementId')->willReturn('000000007');
         $order->method('getCustomerFirstname')->willReturn('Jan');
@@ -249,7 +255,7 @@ class HoldOrderForApprovalTest extends TestCase
     {
         $order = $this->createMock(Order::class);
         $order->method('getCustomerId')->willReturn(42);
-        $order->method('getGrandTotal')->willReturn(50.0);
+        $order->method('getBaseGrandTotal')->willReturn(50.0);
         $this->stubOrderStore($order);
 
         $spendLimitAttr = $this->createStub(AttributeInterface::class);
@@ -274,7 +280,10 @@ class HoldOrderForApprovalTest extends TestCase
     {
         $order = $this->createMock(Order::class);
         $order->method('getCustomerId')->willReturn(42);
-        $order->method('getGrandTotal')->willReturn(500.0);
+        // Deliberately different values - proves the spend-limit hold is decided from the
+        // base-currency total while the approval email still shows the order's own currency.
+        $order->method('getBaseGrandTotal')->willReturn(500.0);
+        $order->method('getGrandTotal')->willReturn(777.0);
         $order->method('getEntityId')->willReturn(7);
         $order->method('getIncrementId')->willReturn('000000007');
         $order->method('getCustomerFirstname')->willReturn('Jan');
@@ -318,7 +327,7 @@ class HoldOrderForApprovalTest extends TestCase
     {
         $order = $this->createMock(Order::class);
         $order->method('getCustomerId')->willReturn(42);
-        $order->method('getGrandTotal')->willReturn(500.0);
+        $order->method('getBaseGrandTotal')->willReturn(500.0);
         $order->method('getEntityId')->willReturn(7);
         // First call is the new isOrderApprovalEnabled() store-scoping check - must succeed so
         // execution actually reaches sendApprovalRequestEmail(), whose OWN getStore() call (the

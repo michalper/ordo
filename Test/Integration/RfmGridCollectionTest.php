@@ -101,7 +101,13 @@ class RfmGridCollectionTest extends TestCase
         return $customerId;
     }
 
-    private function createCompletedOrder(int $customerId, float $grandTotal): int
+    /**
+     * $grandTotal and $baseGrandTotal default to the same value but can be given separately -
+     * deliberately different in testFrequencyAndMonetarySumRealOrdersForACustomerWithPurchases()
+     * below, proving the grid's own "monetary" column sums base_grand_total (the field that
+     * stays meaningful across orders placed in different currencies), not grand_total.
+     */
+    private function createCompletedOrder(int $customerId, float $grandTotal, ?float $baseGrandTotal = null): int
     {
         /** @var Order $order */
         $order = self::$objectManager->get(OrderFactory::class)->create();
@@ -110,7 +116,7 @@ class RfmGridCollectionTest extends TestCase
         $order->setStatus('complete');
         $order->setStoreId(1);
         $order->setGrandTotal($grandTotal);
-        $order->setBaseGrandTotal($grandTotal);
+        $order->setBaseGrandTotal($baseGrandTotal ?? $grandTotal);
         $order->setOrderCurrencyCode('USD');
         $order->setBaseCurrencyCode('USD');
 
@@ -140,8 +146,10 @@ class RfmGridCollectionTest extends TestCase
     public function testFrequencyAndMonetarySumRealOrdersForACustomerWithPurchases(): void
     {
         $customerId = $this->createCustomer();
-        $this->createCompletedOrder($customerId, 40.0);
-        $this->createCompletedOrder($customerId, 60.0);
+        // grandTotal/baseGrandTotal deliberately differ - proves "monetary" sums
+        // base_grand_total (35.0 + 55.0 = 90.0), not grand_total (40.0 + 60.0 = 100.0).
+        $this->createCompletedOrder($customerId, grandTotal: 40.0, baseGrandTotal: 35.0);
+        $this->createCompletedOrder($customerId, grandTotal: 60.0, baseGrandTotal: 55.0);
 
         /** @var Collection $collection */
         $collection = self::$objectManager->create(Collection::class);
@@ -150,7 +158,7 @@ class RfmGridCollectionTest extends TestCase
 
         self::assertNotNull($row, 'The customer must appear in the RFM grid even on their first load.');
         self::assertSame(2, (int) $row->getData('frequency'));
-        self::assertEqualsWithDelta(100.0, (float) $row->getData('monetary'), 0.0001);
+        self::assertEqualsWithDelta(90.0, (float) $row->getData('monetary'), 0.0001);
         self::assertNotNull($row->getData('last_order_at'));
         self::assertLessThan(999999, (int) $row->getData('recency_days'));
     }

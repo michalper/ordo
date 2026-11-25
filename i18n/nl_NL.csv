@@ -1297,3 +1297,6 @@
 "Number of products to show","Aantal te tonen producten"
 "Default: 4.","Standaard: 4."
 "You might also like","Dit vind je mogelijk ook leuk"
+"Countries (comma-separated ISO codes)","Landen (door komma's gescheiden ISO-codes)"
+"2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","2-letterige codes, bijv. US,PL,DE - komt overeen met het standaard factuuradres van de klant."
+"Country Is","Land is"
