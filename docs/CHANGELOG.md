@@ -9,6 +9,12 @@ no manual step needed here anymore.
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-11-25
+
+A full audit of where this module mixes order currencies found 7 real bugs; a parallel audit for
+new feature/optimization candidates turned up a currency-unrelated segmentation gap, an
+acquisition-source capture gap, and a real performance issue in on-site behavior tracking.
+
 ### Added
 
 - New `country_in` campaign/segment condition - matches a customer whose default billing
