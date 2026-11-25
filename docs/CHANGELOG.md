@@ -14,6 +14,13 @@ no manual step needed here anymore.
 - New `country_in` campaign/segment condition - matches a customer whose default billing
   address is in a given list of countries. See `docs/adr/0084`.
 
+### Changed
+
+- `VisitorAggregator` (on-site behavior tracking) now bounds its per-event aggregation query to
+  the configured tracking retention window, instead of scanning a customer/visitor's entire
+  retained event history on every single tracked event. Two new indexes
+  (`ordo_visitor_event.customer_id`/`visitor_id` + `created_at`) back the bounded query.
+
 ### Fixed
 
 - **Currency mixing**: 7 places that summed or compared `sales_order.grand_total` (the order's

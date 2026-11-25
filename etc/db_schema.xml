@@ -644,6 +644,17 @@
             <column name="event_key"/>
             <column name="created_at"/>
         </index>
+        <!-- Back Model\VisitorAggregator's own customer_id/visitor_id + created_at >= ? scans -
+             ORDO_VISITOR_EVENT_CUSTOMER_ID/_VISITOR_ID alone can find the right rows but then
+             leave created_at unindexed for that lookup. -->
+        <index referenceId="ORDO_VISITOR_EVENT_CUSTOMER_ID_CREATED_AT" indexType="btree">
+            <column name="customer_id"/>
+            <column name="created_at"/>
+        </index>
+        <index referenceId="ORDO_VISITOR_EVENT_VISITOR_ID_CREATED_AT" indexType="btree">
+            <column name="visitor_id"/>
+            <column name="created_at"/>
+        </index>
     </table>
 
     <table name="ordo_product_performance" resource="default" engine="innodb" comment="Running per-SKU view count, kept current by Cron\CalculateProductPerformance reading ordo_visitor_event incrementally before PruneVisitorEvents deletes it - purchase counts are joined live from sales_order_item at report time instead (that data is never pruned, so it needs no table of its own), see Model\ResourceModel\ProductPerformance\Grid\Collection.">

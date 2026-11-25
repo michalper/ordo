@@ -51,6 +51,7 @@ class VisitorAggregator
                 ->from($table, ['event_type', 'event_key', 'occurrences' => new \Zend_Db_Expr('COUNT(*)')])
                 ->where('customer_id = ?', $customerId)
                 ->where('event_key IS NOT NULL')
+                ->where('created_at >= ?', $this->retentionCutoff())
                 ->group(['event_type', 'event_key'])
         );
 
@@ -91,6 +92,7 @@ class VisitorAggregator
                 ->where('visitor_id = ?', $visitorId)
                 ->where('customer_id IS NULL')
                 ->where('event_key IS NOT NULL')
+                ->where('created_at >= ?', $this->retentionCutoff())
                 ->group(['event_type', 'event_key'])
         );
 
@@ -125,6 +127,25 @@ class VisitorAggregator
         }
 
         return $tags;
+    }
+
+    /**
+     * Bounds both aggregation queries to Config::getTrackingRetentionDays() - the same window
+     * Cron\PruneVisitorEvents already enforces, so this never scans a row that's about to be (or
+     * already was) deleted anyway. Without this, every single tracked event re-ran a full,
+     * ever-growing GROUP BY over that customer/visitor's entire retained history - the one
+     * aggregation query in this module with no date bound at all, unlike every scan cron (see
+     * CLAUDE.md's own "everything is a cron-driven scan against *_at claim columns" note).
+     * Safe regardless of threshold tuning: tags are additive/sticky (this class's own docblock),
+     * never revoked once earned, so a customer who already crossed a threshold using
+     * since-pruned events keeps their tag - this only bounds what COUNT(*) has to scan, not
+     * which tags a customer can ever hold.
+     */
+    private function retentionCutoff(): string
+    {
+        $retentionDays = $this->config->getTrackingRetentionDays();
+
+        return date('Y-m-d H:i:s', (int) strtotime("-{$retentionDays} days"));
     }
 
     /**
