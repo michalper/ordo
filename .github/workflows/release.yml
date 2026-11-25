@@ -42,6 +42,20 @@ name: Auto-release
 # input that actually did warrant bullets. Recovery used both times so far: draft the
 # plain-language bullets by hand, in the same voice, and open the ordo-site PR manually (see that
 # repo's own #3 and #4).
+#
+# Third known limitation, found cutting 1.16.0: a genuine failure, not a false negative this
+# time - the Claude-drafted bullets were correct and the changelog.html commit/push to
+# ordo-site's own branch succeeded, but the final `gh pr create` step failed with "error checking
+# for existing pull request: GraphQL: Resource not accessible by personal access token
+# (repository.pullRequests)". ORDO_SITE_TOKEN (this job's own comment above documents its
+# required scopes: Contents Read & write, Pull requests Read & write) had lost - or never
+# actually had - the Pull requests scope on michalper/ordo-site; fine-grained PATs can silently
+# drop a scope on renewal/re-approval, unlike classic PATs. The commit/push half of this job is
+# idempotent and already succeeded by this point, so recovery is: open+merge the already-pushed
+# release-notes/<version> branch manually (see ordo-site's own #5), and separately re-check/
+# regenerate ORDO_SITE_TOKEN's scopes (GitHub -> Settings -> Developer settings -> Personal
+# access tokens -> Fine-grained tokens) before the next release needs this job to actually
+# succeed end to end.
 
 on:
   workflow_call:
