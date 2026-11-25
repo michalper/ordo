@@ -12,6 +12,11 @@
  * since that varies by theme. "checkout_start" is what Model\ResourceModel\FunnelReport\Grid\
  * Collection's own funnel report reads for its own middle stage — see docs/adr/0031.
  *
+ * Also automatic, same tier as "page_view": captureAcquisitionSource() (docs/adr/0085) reads
+ * utm_source/utm_campaign from the current page's own URL query string (the only place they
+ * ever appear — Magento doesn't carry query params forward across internal navigation, so this
+ * naturally only ever fires once per real ad click/landing) and tracks whichever are present.
+ *
  * Same theme-integration-point shape again for on-site search: the search-results template calls
  * window.ordoTrack('search_no_results', queryText) only when it rendered zero results — this
  * module has no automatic hook into Magento's own search-results page (that page's own "number of
@@ -143,6 +148,27 @@
         fetch(ENDPOINT, { method: 'POST', body: body, keepalive: true }).catch(function () {});
 
         pushToDataLayer(eventType, eventKey);
+    }
+
+    /**
+     * See this file's own top docblock. UTM_PARAMS maps the query param name to the event_type
+     * track() sends it as — both tag through VisitorAggregator's own IMMEDIATE_EVENT_TYPES path
+     * (threshold 1, lowercased), not the repeated-occurrence path every other tracked type uses.
+     */
+    var UTM_PARAMS = {
+        utm_source: 'utm_source',
+        utm_campaign: 'utm_campaign'
+    };
+
+    function captureAcquisitionSource() {
+        var params = new URLSearchParams(window.location.search);
+
+        Object.keys(UTM_PARAMS).forEach(function (param) {
+            var value = params.get(param);
+            if (value) {
+                track(UTM_PARAMS[param], value);
+            }
+        });
     }
 
     /**
@@ -1025,6 +1051,7 @@
     window.ordoRenderCrossSell = renderCrossSell;
     window.ordoCaptureChannelConsent = captureChannelConsent;
     track('page_view');
+    captureAcquisitionSource();
     startPolling(15, renderPollResponse);
     startExitIntentDetection();
     startEmailCaptureTimer();

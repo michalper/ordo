@@ -9,6 +9,14 @@ no manual step needed here anymore.
 
 ## [Unreleased]
 
+### Added
+
+- `utm_source`/`utm_campaign` acquisition-source capture - automatic, like the existing
+  `page_view` tracking, no theme integration needed. Tags the visitor/customer
+  (`utm_source_google`, `utm_campaign_summer_sale`, ...) so an existing "Has Tag" campaign/segment
+  condition can already target "came from campaign X" with no new condition type. See
+  `docs/adr/0085`.
+
 ### Fixed
 
 - **Currency mixing**: 7 places that summed or compared `sales_order.grand_total` (the order's

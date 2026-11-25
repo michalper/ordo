@@ -31,13 +31,16 @@ const ABSOLUTE_PATH = path.join(__dirname, '..', '..', MODULE_PATH);
  *   loads, for testing a guard that reads a cookie synchronously at load time (e.g.
  *   startEmailCaptureTimer()'s dismissed-on-a-previous-page-load check) - setting it only after
  *   loadTracker() returns would be too late, that code already ran once as a load-time side effect
+ * @param {String} [options.url] overrides the default https://example.test/ page URL - for
+ *   testing captureAcquisitionSource()'s own read of the page's query string (utm_source/
+ *   utm_campaign), which it reads synchronously at load time like every other automatic call
  * @return {Object} dom, recorded fetch calls/timers, and a setter for the next poll response
  */
 function loadTracker(scriptAttrs, options) {
     const { dom } = createDomEnv();
     // jsdom silently no-ops document.cookie writes on the default about:blank origin - the
     // email-capture tests need a real one so the "dismissed" cookie actually persists.
-    dom.reconfigure({ url: 'https://example.test/' });
+    dom.reconfigure({ url: options?.url || 'https://example.test/' });
     const document = dom.window.document;
 
     if (options?.preCookie) {
@@ -1018,6 +1021,45 @@ QUnit.module('Ordo_Automation/js/tracker (exit intent)', function () {
         dispatchMouseOut(document, { relatedTarget: null, clientY: 650 });
 
         assert.strictEqual(env.fetchCalls.length, callsBefore, 'exiting downward is not exit intent');
+    });
+});
+
+QUnit.module('Ordo_Automation/js/tracker (acquisition source)', function () {
+    function trackCallsFor(fetchCalls, eventType) {
+        return fetchCalls.filter(function (call) {
+            return call.url === '/ordo/track/event'
+                && new URLSearchParams(call.options.body).get('event_type') === eventType;
+        });
+    }
+
+    QUnit.test('tracks utm_source when present in the landing URL', function (assert) {
+        const env = loadTracker({}, { url: 'https://example.test/?utm_source=google' });
+
+        const calls = trackCallsFor(env.fetchCalls, 'utm_source');
+        assert.strictEqual(calls.length, 1);
+        assert.strictEqual(new URLSearchParams(calls[0].options.body).get('event_key'), 'google');
+    });
+
+    QUnit.test('tracks utm_campaign when present in the landing URL', function (assert) {
+        const env = loadTracker({}, { url: 'https://example.test/?utm_campaign=summer_sale' });
+
+        const calls = trackCallsFor(env.fetchCalls, 'utm_campaign');
+        assert.strictEqual(calls.length, 1);
+        assert.strictEqual(new URLSearchParams(calls[0].options.body).get('event_key'), 'summer_sale');
+    });
+
+    QUnit.test('tracks both when both are present', function (assert) {
+        const env = loadTracker({}, { url: 'https://example.test/?utm_source=google&utm_campaign=summer_sale' });
+
+        assert.strictEqual(trackCallsFor(env.fetchCalls, 'utm_source').length, 1);
+        assert.strictEqual(trackCallsFor(env.fetchCalls, 'utm_campaign').length, 1);
+    });
+
+    QUnit.test('tracks neither when the landing URL has no utm params', function (assert) {
+        const env = loadTracker({}, { url: 'https://example.test/' });
+
+        assert.strictEqual(trackCallsFor(env.fetchCalls, 'utm_source').length, 0);
+        assert.strictEqual(trackCallsFor(env.fetchCalls, 'utm_campaign').length, 0);
     });
 });
 
