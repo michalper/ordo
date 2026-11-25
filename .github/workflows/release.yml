@@ -29,6 +29,19 @@ name: Auto-release
 # -> this run -> "Re-run jobs" -> "Re-run failed jobs"), which works because update-site's own
 # steps are themselves idempotent (re-running a successful ordo-site PR+merge would just fail
 # harmlessly on a duplicate branch name - safe to retry).
+#
+# Second known limitation, found cutting 1.15.0: update-site's own "has_bullets" check can be a
+# false negative, not just the HTTP-failure case above - the Claude API call itself returned 200
+# with the CHANGELOG section verbatim as input (two clearly user-visible new storefront widgets),
+# but `.content[0].text` came back empty, so the job concluded "nothing user-visible" and exited 0
+# (a genuine success, not a failure - the "re-run failed jobs" recovery above doesn't even apply).
+# A manual re-run of the same job reproduced the exact same empty-bullets outcome a second time.
+# Root cause not confirmed (the raw /tmp/claude-response.json is gone by the time this is
+# noticed), but the prompt's own "if truly nothing in the section is user-visible, output nothing
+# at all" instruction is the most likely culprit - skip-on-doubt phrasing failing closed on an
+# input that actually did warrant bullets. Recovery used both times so far: draft the
+# plain-language bullets by hand, in the same voice, and open the ordo-site PR manually (see that
+# repo's own #3 and #4).
 
 on:
   workflow_call:
