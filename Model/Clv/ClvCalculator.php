@@ -23,7 +23,9 @@ use Ordo\Automation\Helper\Config;
  *   CLV = average order value  x  purchase frequency (orders/year)  x  projection window (years)
  *
  * - Average order value = monetary total / order count, identical inputs to RfmCalculator's own
- *   getMonetaryTotal()/getFrequency().
+ *   getMonetaryTotal()/getFrequency() - including base_grand_total, not grand_total, for the
+ *   same reason RfmCalculator itself uses it: a customer with orders placed under more than one
+ *   currency would otherwise have unrelated currencies summed into one meaningless number.
  * - Purchase frequency is annualized from the customer's own tenure (time since their first
  *   non-canceled order) rather than a fixed global window, so a customer who ordered 4 times in
  *   2 months projects a much higher run rate than one who ordered 4 times in 4 years. Tenure is
@@ -92,7 +94,7 @@ class ClvCalculator
             $connection->select()
                 ->from($orderTable, [
                     'frequency' => 'COUNT(*)',
-                    'monetary' => 'SUM(grand_total)',
+                    'monetary' => 'SUM(base_grand_total)',
                     'first_order_at' => 'MIN(created_at)',
                 ])
                 ->where('customer_id = ?', $customerId)
@@ -142,7 +144,7 @@ class ClvCalculator
                     ->from($orderTable, [
                         'customer_id' => 'customer_id',
                         'frequency' => 'COUNT(*)',
-                        'monetary' => 'SUM(grand_total)',
+                        'monetary' => 'SUM(base_grand_total)',
                         'first_order_at' => 'MIN(created_at)',
                     ])
                     ->where('state != ?', 'canceled')

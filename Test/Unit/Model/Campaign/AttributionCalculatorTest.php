@@ -64,7 +64,7 @@ class AttributionCalculatorTest extends TestCase
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturnCallback(fn () => $this->makeSelect());
         $connection->method('fetchAll')->willReturn([
-            ['entity_id' => '10', 'customer_id' => '42', 'grand_total' => '100.0000', 'created_at' => '2026-09-01 00:00:00'],
+            ['entity_id' => '10', 'customer_id' => '42', 'base_grand_total' => '100.0000', 'created_at' => '2026-09-01 00:00:00'],
         ]);
         $connection->method('fetchCol')->willReturn([]);
         // The anti-join guarantees the order has no rows, so there's nothing to delete either —
@@ -83,7 +83,7 @@ class AttributionCalculatorTest extends TestCase
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturnCallback(fn () => $this->makeSelect());
         $connection->method('fetchAll')->willReturn([
-            ['entity_id' => '10', 'customer_id' => '42', 'grand_total' => '100.0000', 'created_at' => '2026-09-01 00:00:00'],
+            ['entity_id' => '10', 'customer_id' => '42', 'base_grand_total' => '100.0000', 'created_at' => '2026-09-01 00:00:00'],
         ]);
         $connection->method('fetchCol')->willReturn(['5', '9']);
 

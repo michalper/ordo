@@ -9,6 +9,15 @@ no manual step needed here anymore.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Currency mixing**: 7 places that summed or compared `sales_order.grand_total` (the order's
+  own currency) instead of `base_grand_total` across a multi-currency/multi-website install - B2B
+  spend-limit approval holds, the `OrderTotalAtLeast` campaign condition, loyalty points earned
+  per order, CLV projection, campaign revenue attribution, the Customer 360 lifetime order total,
+  and the RFM admin grid's own monetary column (which could show a different number than the one
+  actually deciding RFM segment membership).
+
 ## [1.15.0] - 2026-11-25
 
 Two new storefront theme-integration points, both following this module's own established

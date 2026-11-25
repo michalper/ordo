@@ -16,7 +16,10 @@ class DispatchOrderCanceledCampaignsTest extends TestCase
     {
         $order = $this->createStub(Order::class);
         $order->method('getCustomerId')->willReturn(42);
-        $order->method('getGrandTotal')->willReturn(99.5);
+        // Deliberately different from getBaseGrandTotal() - proves OrderTotalAtLeast's context
+        // is built from the base-currency total, not whatever currency this order was placed in.
+        $order->method('getGrandTotal')->willReturn(430.0);
+        $order->method('getBaseGrandTotal')->willReturn(99.5);
         $order->method('getIncrementId')->willReturn('000000123');
         $order->method('getEntityId')->willReturn(123);
 
