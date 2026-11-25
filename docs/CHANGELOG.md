@@ -9,6 +9,13 @@ no manual step needed here anymore.
 
 ## [Unreleased]
 
+### Changed
+
+- `VisitorAggregator` (on-site behavior tracking) now bounds its per-event aggregation query to
+  the configured tracking retention window, instead of scanning a customer/visitor's entire
+  retained event history on every single tracked event. Two new indexes
+  (`ordo_visitor_event.customer_id`/`visitor_id` + `created_at`) back the bounded query.
+
 ## [1.15.0] - 2026-11-25
 
 Two new storefront theme-integration points, both following this module's own established

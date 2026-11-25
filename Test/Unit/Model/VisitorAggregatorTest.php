@@ -274,6 +274,58 @@ class VisitorAggregatorTest extends TestCase
         $aggregator->aggregateForVisitor('v1');
     }
 
+    /**
+     * The one real-world cost this bound exists to fix: without it, every tracked event
+     * re-scanned a customer/visitor's entire retained event history, growing without limit as
+     * their activity accumulates - the only aggregation query in this module with no date bound
+     * at all. Bounded to Config::getTrackingRetentionDays(), the same window
+     * Cron\PruneVisitorEvents already enforces.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAggregateForCustomerBoundsTheScanToTheConfiguredRetentionWindow(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isTrackingEnabled')->willReturn(true);
+        $config->method('getTrackingViewThreshold')->willReturn(3);
+        $config->method('getTrackingRetentionDays')->willReturn(7);
+
+        $whereCalls = [];
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+        $select->method('where')->willReturnCallback(
+            function (mixed ...$args) use (&$whereCalls, $select): Select {
+                $whereCalls[] = $args;
+                return $select;
+            }
+        );
+
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchAll')->willReturn([]);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $aggregator = $this->makeAggregator($config, $resourceConnection);
+        $aggregator->aggregateForCustomer(42);
+
+        $createdAtCalls = array_values(array_filter(
+            $whereCalls,
+            static fn (array $call): bool => $call[0] === 'created_at >= ?'
+        ));
+        self::assertCount(1, $createdAtCalls, 'Expected exactly one created_at >= ? bound.');
+
+        $expectedCutoff = strtotime((string) $createdAtCalls[0][1]);
+        self::assertEqualsWithDelta(
+            strtotime('-7 days'),
+            $expectedCutoff,
+            5,
+            'Cutoff must be ~7 days ago (Config::getTrackingRetentionDays()).'
+        );
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testAggregateForVisitorSkipsRowBelowViewThreshold(): void
     {
