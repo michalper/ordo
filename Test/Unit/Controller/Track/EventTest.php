@@ -209,6 +209,51 @@ class EventTest extends AbstractFrontendActionTestCase
      * checkout_start (docs/adr/0031) needs no event_key, unlike product_view/category_view -
      * there's nothing to identify about "checkout started" beyond the fact itself.
      */
+    /**
+     * utm_source/utm_campaign (docs/adr/0085) are automatic, like page_view - tracker.js sends
+     * these itself from the landing URL's own query string, no theme integration needed. Unlike
+     * exit_intent/search_no_results, these feed VisitorAggregator's threshold-based tagging
+     * only (threshold hardcoded to 1 there) - no live Magento event to dispatch.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteLogsUtmSourceEvent(): void
+    {
+        $controller = $this->makeController();
+        $this->config->method('isTrackingEnabled')->willReturn(true);
+        $this->request->method('getParam')->willReturnMap([
+            ['visitor_id', null, 'v1'],
+            ['event_type', null, 'utm_source'],
+            ['event_key', null, 'google'],
+        ]);
+
+        $this->customerSession->method('isLoggedIn')->willReturn(false);
+
+        $this->visitorEventLogger->expects(self::once())->method('log')->with('v1', 'utm_source', 'google', null);
+        $this->eventManager->expects(self::never())->method('dispatch');
+        $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
+
+        $controller->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteLogsUtmCampaignEvent(): void
+    {
+        $controller = $this->makeController();
+        $this->config->method('isTrackingEnabled')->willReturn(true);
+        $this->request->method('getParam')->willReturnMap([
+            ['visitor_id', null, 'v1'],
+            ['event_type', null, 'utm_campaign'],
+            ['event_key', null, 'summer_sale'],
+        ]);
+
+        $this->customerSession->method('isLoggedIn')->willReturn(false);
+
+        $this->visitorEventLogger->expects(self::once())->method('log')->with('v1', 'utm_campaign', 'summer_sale', null);
+        $this->jsonResult->expects(self::once())->method('setData')->with(['ok' => true]);
+
+        $controller->execute();
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteLogsCheckoutStartEvent(): void
     {

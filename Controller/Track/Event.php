@@ -38,6 +38,13 @@ class Event extends Action implements HttpPostActionInterface, CsrfAwareActionIn
         'checkout_start',
         'exit_intent',
         'search_no_results',
+        // utm_source/utm_campaign (docs/adr/0085) are automatic, like page_view - tracker.js
+        // sends these itself when present in the landing URL's own query string, no theme
+        // integration needed. VisitorAggregator tags on the first occurrence (not a repeated-
+        // threshold signal like product_view/element_clicked), since a single ad click is the
+        // whole signal.
+        'utm_source',
+        'utm_campaign',
     ];
     private const int MAX_KEY_LENGTH = 255;
 

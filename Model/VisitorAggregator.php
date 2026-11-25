@@ -29,6 +29,16 @@ class VisitorAggregator
      */
     private const array CLICK_EVENT_TYPES = ['element_clicked'];
 
+    /**
+     * utm_source/utm_campaign (docs/adr/0085) always tag on the first occurrence - a hardcoded
+     * threshold of 1, deliberately NOT getTrackingClickThreshold() (admin-configurable, default
+     * 1 today, but tuned for a different signal - "did they click something on the page", not
+     * "how did they arrive"). A UTM param normally appears on exactly one landing URL per visit
+     * (Magento doesn't carry query params forward across internal navigation), so requiring more
+     * than one occurrence would mean this would effectively never tag at all.
+     */
+    private const array IMMEDIATE_EVENT_TYPES = ['utm_source', 'utm_campaign'];
+
     public function __construct(
         private readonly Config $config,
         private readonly ResourceConnection $resourceConnection,
@@ -154,6 +164,10 @@ class VisitorAggregator
      */
     private function resolveThreshold(string $eventType): int
     {
+        if (in_array($eventType, self::IMMEDIATE_EVENT_TYPES, true)) {
+            return 1;
+        }
+
         return in_array($eventType, self::CLICK_EVENT_TYPES, true)
             ? $this->config->getTrackingClickThreshold()
             : $this->config->getTrackingViewThreshold();
@@ -164,6 +178,14 @@ class VisitorAggregator
      */
     private function buildTag(array $row): string
     {
+        if (in_array($row['event_type'], self::IMMEDIATE_EVENT_TYPES, true)) {
+            // Lowercased - ad platforms are inconsistent about utm param casing
+            // ("Google"/"GOOGLE"/"google"), and this tag is meant to be matched against by a
+            // campaign/segment's own tag condition, where a predictable, single casing matters
+            // more than preserving whatever the raw click happened to carry.
+            return sprintf('%s_%s', $row['event_type'], strtolower((string) $row['event_key']));
+        }
+
         if (in_array($row['event_type'], self::CLICK_EVENT_TYPES, true)) {
             return sprintf('clicked_%s', $row['event_key']);
         }

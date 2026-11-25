@@ -104,6 +104,74 @@ class VisitorAggregatorTest extends TestCase
         $aggregator->aggregateForCustomer(42);
     }
 
+    /**
+     * utm_source/utm_campaign tag on the first occurrence, regardless of
+     * getTrackingViewThreshold()/getTrackingClickThreshold() - a UTM param normally appears on
+     * exactly one landing URL per visit, so waiting for more than one occurrence would mean this
+     * would effectively never tag.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAggregateForCustomerTagsUtmSourceOnFirstOccurrenceRegardlessOfConfiguredThresholds(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isTrackingEnabled')->willReturn(true);
+        $config->method('getTrackingViewThreshold')->willReturn(3);
+        $config->method('getTrackingClickThreshold')->willReturn(5);
+
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchAll')->willReturn([
+            ['event_type' => 'utm_source', 'event_key' => 'google', 'occurrences' => 1],
+        ]);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $tagManager = $this->createMock(CustomerTagManager::class);
+        $tagManager->expects(self::once())->method('addTag')->with(42, 'utm_source_google');
+
+        $aggregator = $this->makeAggregator($config, $resourceConnection, $tagManager);
+        $aggregator->aggregateForCustomer(42);
+    }
+
+    /**
+     * Ad platforms are inconsistent about utm param casing - the tag a campaign/segment's own
+     * tag condition matches against must be predictable regardless.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAggregateForCustomerLowercasesUtmCampaignTag(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isTrackingEnabled')->willReturn(true);
+
+        $select = $this->createStub(Select::class);
+        $select->method('from')->willReturnSelf();
+        $select->method('where')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($select);
+        $connection->method('fetchAll')->willReturn([
+            ['event_type' => 'utm_campaign', 'event_key' => 'Summer_Sale', 'occurrences' => 1],
+        ]);
+
+        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection->method('getConnection')->willReturn($connection);
+        $resourceConnection->method('getTableName')->willReturnCallback(fn (string $t) => $t);
+
+        $tagManager = $this->createMock(CustomerTagManager::class);
+        $tagManager->expects(self::once())->method('addTag')->with(42, 'utm_campaign_summer_sale');
+
+        $aggregator = $this->makeAggregator($config, $resourceConnection, $tagManager);
+        $aggregator->aggregateForCustomer(42);
+    }
+
     #[AllowMockObjectsWithoutExpectations]
     public function testAggregateForCustomerSkipsElementClickedBelowClickThreshold(): void
     {

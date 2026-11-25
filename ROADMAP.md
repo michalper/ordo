@@ -918,3 +918,15 @@ Commerce-only-primitive ceiling respectively, not re-litigated here).
   established "free-text list, no widget" shape `Action\SendWhatsApp`'s own `params` field
   already uses) rather than a new multi-value picker widget - the canvas editor has no such
   widget today and building one would be considerably more code for the same result.
+
+- ~~**UTM/acquisition-source segmentation.**~~ — done, see
+  `docs/adr/0085-acquisition-source-capture.md`. Turned out to be a capture gap, not a matching
+  one: the existing `tag`/`visitor_tag` conditions already express "came from Google" against
+  any free-text tag string once one exists - nothing captured `utm_source`/`utm_campaign` at
+  all. `tracker.js`'s new `captureAcquisitionSource()` reads them off the landing URL
+  automatically (same tier as `page_view`, no theme integration needed) and tags on the first
+  occurrence (not VisitorAggregator's usual repeated-threshold path - a UTM param only ever
+  appears once per real ad click). Verified end-to-end against the sandbox: a real logged event
+  → immediate visitor tag → re-attributed and re-aggregated through the real login-stitching
+  pipeline → the existing `HasTag` condition correctly matched the resulting customer tag, with
+  zero new condition class.
