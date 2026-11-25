@@ -9,6 +9,11 @@ no manual step needed here anymore.
 
 ## [Unreleased]
 
+### Added
+
+- New `country_in` campaign/segment condition - matches a customer whose default billing
+  address is in a given list of countries. See `docs/adr/0084`.
+
 ### Fixed
 
 - **Currency mixing**: 7 places that summed or compared `sales_order.grand_total` (the order's

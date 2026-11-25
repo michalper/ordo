@@ -1297,3 +1297,6 @@
 "Number of products to show","Počet zobrazených produktů"
 "Default: 4.","Výchozí: 4."
 "You might also like","Mohlo by se vám také líbit"
+"Countries (comma-separated ISO codes)","Země (kódy ISO oddělené čárkami)"
+"2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","Dvoupísmenné kódy, např. US,PL,DE - odpovídá výchozí fakturační adrese klienta."
+"Country Is","Země je"
