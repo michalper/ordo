@@ -1297,3 +1297,6 @@
 "Number of products to show","Antal produkter att visa"
 "Default: 4.","Standard: 4."
 "You might also like","Du kanske också gillar"
+"Countries (comma-separated ISO codes)","Länder (ISO-koder separerade med kommatecken)"
+"2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","2-bokstavskoder, t.ex. US,PL,DE - matchar kundens standardfaktureringsadress."
+"Country Is","Land är"

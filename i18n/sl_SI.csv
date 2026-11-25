@@ -1297,3 +1297,6 @@
 "Number of products to show","Število prikazanih izdelkov"
 "Default: 4.","Privzeto: 4."
 "You might also like","Morda vam je všeč tudi"
+"Countries (comma-separated ISO codes)","Države (kode ISO, ločene z vejico)"
+"2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","2-črkovne kode, npr. US,PL,DE - ujema se s privzetim naslovom za račun stranke."
+"Country Is","Država je"

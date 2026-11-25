@@ -1297,3 +1297,6 @@
 "Number of products to show","Кількість товарів для показу"
 "Default: 4.","За замовчуванням: 4."
 "You might also like","Вам також може сподобатися"
+"Countries (comma-separated ISO codes)","Країни (коди ISO через кому)"
+"2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","Двобуквені коди, напр. US,PL,DE - відповідає платіжній адресі клієнта за замовчуванням."
+"Country Is","Країна —"

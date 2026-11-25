@@ -357,6 +357,7 @@
                 <item name="purchased_category" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\PurchasedCategory</item>
                 <item name="event_occurred" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\EventOccurred</item>
                 <item name="message_engaged" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\MessageEngaged</item>
+                <item name="country_in" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\CountryIn</item>
             </argument>
         </arguments>
     </type>

@@ -432,3 +432,6 @@
 "Number of products to show","Number of products to show"
 "Default: 4.","Default: 4."
 "You might also like","You might also like"
+"Countries (comma-separated ISO codes)","Countries (comma-separated ISO codes)"
+"2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","2-letter codes, e.g. US,PL,DE - matches the customer's default billing address."
+"Country Is","Country Is"
