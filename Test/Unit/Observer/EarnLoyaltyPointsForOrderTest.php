@@ -25,7 +25,11 @@ class EarnLoyaltyPointsForOrderTest extends TestCase
         $order = $this->createStub(Order::class);
         $order->method('getCustomerId')->willReturn(42);
         $order->method('getEntityId')->willReturn(123);
-        $order->method('getGrandTotal')->willReturn(99.95);
+        // Deliberately different from getBaseGrandTotal() - proves points are earned off the
+        // store's own base-currency total, not whatever currency this order happened to be
+        // placed in (getLoyaltyPointsPerDollar() is one flat store-wide rate).
+        $order->method('getGrandTotal')->willReturn(430.0);
+        $order->method('getBaseGrandTotal')->willReturn(99.95);
 
         $loyaltyPointsManager = $this->createMock(LoyaltyPointsManager::class);
         $loyaltyPointsManager->expects(self::once())->method('earnForOrder')->with(42, 123, 99.95);

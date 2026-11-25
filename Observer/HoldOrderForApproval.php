@@ -71,7 +71,12 @@ class HoldOrderForApproval implements ObserverInterface
         $spendLimit = $spendLimitAttribute ? (float) $spendLimitAttribute->getValue() : 0.0;
         $adminEmail = $adminEmailAttribute ? (string) $adminEmailAttribute->getValue() : '';
 
-        if ($spendLimit <= 0.0 || $adminEmail === '' || (float) $order->getGrandTotal() <= $spendLimit) {
+        // getBaseGrandTotal(), not getGrandTotal() - same reasoning as CreditLimitCalculator's
+        // own base_total_due choice: spend_limit is one flat attribute value, not a per-currency
+        // one, so comparing it against the order's own (possibly foreign) currency total on a
+        // multi-currency/multi-website install would hold orders incorrectly, in either
+        // direction, depending on the exchange rate.
+        if ($spendLimit <= 0.0 || $adminEmail === '' || (float) $order->getBaseGrandTotal() <= $spendLimit) {
             return;
         }
 

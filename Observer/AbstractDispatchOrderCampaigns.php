@@ -43,7 +43,11 @@ abstract class AbstractDispatchOrderCampaigns implements ObserverInterface
 
         $this->campaignDispatchPublisher->publish($this->triggerEventCode(), [
             'customer_id' => (int) $order->getCustomerId(),
-            'order_total' => (float) $order->getGrandTotal(),
+            // getBaseGrandTotal(), not getGrandTotal() - Campaign\Condition\OrderTotalAtLeast
+            // compares this against one flat admin-configured threshold, not a per-currency one,
+            // so a multi-currency/multi-website install would otherwise fire inconsistently
+            // depending on which currency a given order happened to be placed in.
+            'order_total' => (float) $order->getBaseGrandTotal(),
             'order_increment_id' => $order->getIncrementId(),
             // The real order this exact send's own dispatch is for - Model\CampaignOutcomeLogger
             // ::logSent() excludes it when checking whether the customer already has a LATER

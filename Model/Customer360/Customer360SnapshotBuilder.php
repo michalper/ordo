@@ -104,8 +104,14 @@ class Customer360SnapshotBuilder
         $connection = $this->resourceConnection->getConnection();
         $orderTable = $this->resourceConnection->getTableName('sales_order');
 
+        // base_grand_total, not grand_total - same reasoning as RfmCalculator::getMonetaryTotal():
+        // a customer with orders placed under more than one currency would otherwise have
+        // unrelated currencies summed into one meaningless number.
         $select = $connection->select()
-            ->from($orderTable, ['order_count' => 'COUNT(*)', 'order_total' => 'COALESCE(SUM(grand_total), 0)'])
+            ->from(
+                $orderTable,
+                ['order_count' => 'COUNT(*)', 'order_total' => 'COALESCE(SUM(base_grand_total), 0)']
+            )
             ->where('customer_id = ?', $customerId);
 
         $row = $connection->fetchRow($select);

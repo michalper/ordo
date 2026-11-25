@@ -63,19 +63,25 @@ class AttributionCalculator
          * @var array<int, array{
          *     entity_id: string|int,
          *     customer_id: string|int,
-         *     grand_total: string|float,
+         *     base_grand_total: string|float,
          *     created_at: string
          * }> $orders
          * Anti-join: only orders not yet attributed. The old recompute-everything pass redid the
          * same oldest-1000 orders every hour (one SELECT + DELETE + per-row INSERTs each) and,
          * past the cap, never reached newer orders at all. Newest first so a fresh order is
          * attributed on the next pass even while older zero-touch candidates still fill the cap.
+         *
+         * base_grand_total, not grand_total - this gets summed with every other attributed
+         * order's own share in getAttributedRevenueForCampaigns() below, same reasoning as
+         * CreditLimitCalculator's own base_total_due choice: a multi-store install can have
+         * orders placed under more than one currency, and summing the order-currency grand_total
+         * would mix them into one meaningless number.
          */
         $orders = $connection->fetchAll(
             $connection->select()
                 ->from(
                     ['so' => $this->resourceConnection->getTableName('sales_order')],
-                    ['entity_id', 'customer_id', 'grand_total', 'created_at']
+                    ['entity_id', 'customer_id', 'base_grand_total', 'created_at']
                 )
                 ->joinLeft(
                     ['ca' => $this->resourceConnection->getTableName('ordo_campaign_attribution')],
@@ -93,7 +99,7 @@ class AttributionCalculator
             $this->computeForOrder(
                 (int) $order['entity_id'],
                 (int) $order['customer_id'],
-                (float) $order['grand_total'],
+                (float) $order['base_grand_total'],
                 (string) $order['created_at'],
                 $windowDays
             );
@@ -105,7 +111,7 @@ class AttributionCalculator
     private function computeForOrder(
         int $orderId,
         int $customerId,
-        float $grandTotal,
+        float $baseGrandTotal,
         string $orderCreatedAt,
         int $windowDays
     ): void {
@@ -137,7 +143,7 @@ class AttributionCalculator
             return;
         }
 
-        $revenueShare = round($grandTotal / $touchCount, 4);
+        $revenueShare = round($baseGrandTotal / $touchCount, 4);
         $now = date('Y-m-d H:i:s');
 
         $rows = [];

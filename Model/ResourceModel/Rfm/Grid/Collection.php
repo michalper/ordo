@@ -82,11 +82,14 @@ class Collection extends SearchResult
         $connection = $this->rfmResourceConnection->getConnection();
         $orderTable = $this->rfmResourceConnection->getTableName('sales_order');
 
+        // base_grand_total, not grand_total - must match RfmCalculator::getAggregatesForAllCustomers()'s
+        // own choice, or this grid would show a different "monetary" number than the one actually
+        // deciding RFM segment membership/scoring on a multi-currency install.
         $aggregate = $connection->select()
             ->from($orderTable, [
                 'customer_id' => 'customer_id',
                 'frequency' => 'COUNT(*)',
-                'monetary' => 'SUM(grand_total)',
+                'monetary' => 'SUM(base_grand_total)',
                 'last_order_at' => 'MAX(created_at)',
             ])
             ->where('state != ?', 'canceled')

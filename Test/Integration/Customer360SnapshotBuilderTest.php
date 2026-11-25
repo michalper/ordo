@@ -137,7 +137,13 @@ class Customer360SnapshotBuilderTest extends TestCase
         return $customerId;
     }
 
-    private function createOrderDaysAgo(int $customerId, int $daysAgo, float $grandTotal): int
+    /**
+     * $grandTotal and $baseGrandTotal default to the same value but can be given separately -
+     * deliberately different in testBuildAggregatesRealOrderStatsTagsScoreAndMatchingSegmentsForTheSameCustomer()
+     * below, proving Customer360SnapshotBuilder sums base_grand_total (the field that stays
+     * meaningful across orders placed in different currencies), not grand_total.
+     */
+    private function createOrderDaysAgo(int $customerId, int $daysAgo, float $grandTotal, ?float $baseGrandTotal = null): int
     {
         /** @var Order $order */
         $order = self::$objectManager->get(OrderFactory::class)->create();
@@ -146,7 +152,7 @@ class Customer360SnapshotBuilderTest extends TestCase
         $order->setStatus('complete');
         $order->setStoreId(1);
         $order->setGrandTotal($grandTotal);
-        $order->setBaseGrandTotal($grandTotal);
+        $order->setBaseGrandTotal($baseGrandTotal ?? $grandTotal);
         $order->setOrderCurrencyCode('USD');
         $order->setBaseCurrencyCode('USD');
 
@@ -200,8 +206,10 @@ class Customer360SnapshotBuilderTest extends TestCase
     public function testBuildAggregatesRealOrderStatsTagsScoreAndMatchingSegmentsForTheSameCustomer(): void
     {
         $customerId = $this->createCustomer();
-        $this->createOrderDaysAgo($customerId, daysAgo: 20, grandTotal: 30.0);
-        $this->createOrderDaysAgo($customerId, daysAgo: 10, grandTotal: 50.0);
+        // grandTotal/baseGrandTotal deliberately differ - proves the snapshot sums
+        // base_grand_total (25.0 + 45.0 = 70.0), not grand_total (30.0 + 50.0 = 80.0).
+        $this->createOrderDaysAgo($customerId, daysAgo: 20, grandTotal: 30.0, baseGrandTotal: 25.0);
+        $this->createOrderDaysAgo($customerId, daysAgo: 10, grandTotal: 50.0, baseGrandTotal: 45.0);
 
         $tag = 'customer360-test-' . uniqid('', true);
         $tagManager = self::$objectManager->get(CustomerTagManagementInterface::class);
@@ -223,7 +231,7 @@ class Customer360SnapshotBuilderTest extends TestCase
 
         self::assertSame($customerId, $snapshot->customerId);
         self::assertSame(2, $snapshot->orderCount, 'Real non-canceled order count must be exactly 2.');
-        self::assertSame(80.0, $snapshot->orderTotal, 'Real order total must be the sum of both real orders\' grand_total.');
+        self::assertSame(70.0, $snapshot->orderTotal, 'Real order total must be the sum of both real orders\' base_grand_total.');
         self::assertSame(42, $snapshot->leadScore);
         self::assertContains($tag, $snapshot->tags);
         self::assertGreaterThan(
