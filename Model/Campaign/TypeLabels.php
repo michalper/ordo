@@ -52,6 +52,7 @@ class TypeLabels
             'message_engaged' => (string) __('Opened/Clicked Campaign'),
             'reorder_cycle_at_risk' => (string) __('Reorder Cycle At Risk (drift ratio at least)'),
             'churn_risk_at_least' => (string) __('Churn Risk At Least (drift ratio vs. own order cadence)'),
+            'country_in' => (string) __('Country Is'),
         ];
     }
 

@@ -1297,3 +1297,6 @@
 "Number of products to show","Número de productos a mostrar"
 "Default: 4.","Predeterminado: 4."
 "You might also like","También te puede gustar"
+"Countries (comma-separated ISO codes)","Países (códigos ISO separados por comas)"
+"2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","Códigos de 2 letras, p. ej. US,PL,DE - coincide con la dirección de facturación predeterminada del cliente."
+"Country Is","El país es"

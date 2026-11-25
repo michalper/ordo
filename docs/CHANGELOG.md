@@ -11,6 +11,8 @@ no manual step needed here anymore.
 
 ### Added
 
+- New `country_in` campaign/segment condition - matches a customer whose default billing
+  address is in a given list of countries. See `docs/adr/0084`.
 - `utm_source`/`utm_campaign` acquisition-source capture - automatic, like the existing
   `page_view` tracking, no theme integration needed. Tags the visitor/customer
   (`utm_source_google`, `utm_campaign_summer_sale`, ...) so an existing "Has Tag" campaign/segment

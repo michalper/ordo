@@ -908,6 +908,17 @@ Considered and dropped in the same pass: a cross-channel/global frequency fatigu
 gift-card-based rewards (hit the standing no-auto-charge constraint and the Gift Card
 Commerce-only-primitive ceiling respectively, not re-litigated here).
 
+- ~~**Geo/country segmentation.**~~ — done, see `docs/adr/0084-country-campaign-segment-condition.md`.
+  A full audit of the 22 registered condition types found zero that match on a customer's own
+  country/region - a store running campaigns/segments across more than one country had no way to
+  target or exclude by it at all. New `country_in` condition, matching against
+  `customer_grid_flat.billing_country_id` (the same denormalized, indexed column Magento's own
+  admin customer grid already filters/searches on) rather than resolving the customer's
+  default-billing address by hand. Params are a comma-separated list of ISO codes (same
+  established "free-text list, no widget" shape `Action\SendWhatsApp`'s own `params` field
+  already uses) rather than a new multi-value picker widget - the canvas editor has no such
+  widget today and building one would be considerably more code for the same result.
+
 - ~~**UTM/acquisition-source segmentation.**~~ — done, see
   `docs/adr/0085-acquisition-source-capture.md`. Turned out to be a capture gap, not a matching
   one: the existing `tag`/`visitor_tag` conditions already express "came from Google" against

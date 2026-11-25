@@ -1297,3 +1297,6 @@
 "Number of products to show","표시할 상품 수"
 "Default: 4.","기본값: 4."
 "You might also like","이런 상품도 좋아하실 것 같아요"
+"Countries (comma-separated ISO codes)","국가(쉼표로 구분된 ISO 코드)"
+"2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","2자리 코드, 예: US,PL,DE - 고객의 기본 청구지 주소와 일치합니다."
+"Country Is","국가가 다음과 일치"

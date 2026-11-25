@@ -1297,3 +1297,6 @@
 "Number of products to show","Numărul de produse afișate"
 "Default: 4.","Implicit: 4."
 "You might also like","S-ar putea să-ți placă și"
+"Countries (comma-separated ISO codes)","Țări (coduri ISO separate prin virgulă)"
+"2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","Coduri din 2 litere, de ex. US,PL,DE - corespunde adresei de facturare implicite a clientului."
+"Country Is","Țara este"
