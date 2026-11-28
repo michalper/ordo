@@ -1,0 +1,105 @@
+<?xml version="1.0"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">ordo_loyaltypointsreport_listing.ordo_loyaltypointsreport_listing_data_source</item>
+        </item>
+    </argument>
+    <settings>
+        <spinner>ordo_loyaltypointsreport_columns</spinner>
+        <deps>
+            <dep>ordo_loyaltypointsreport_listing.ordo_loyaltypointsreport_listing_data_source</dep>
+        </deps>
+        <buttons>
+            <button name="back_to_dashboard">
+                <url path="ordo/dashboard/index"/>
+                <class>back</class>
+                <label translate="true">Back to Dashboard</label>
+            </button>
+        </buttons>
+    </settings>
+
+    <dataSource name="ordo_loyaltypointsreport_listing_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider</argument>
+            <argument name="name" xsi:type="string">ordo_loyaltypointsreport_listing_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">entity_id</argument>
+            <argument name="requestFieldName" xsi:type="string">entity_id</argument>
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="update_url" xsi:type="url" path="mui/index/render"/>
+                </item>
+            </argument>
+        </argument>
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/grid/provider</item>
+            </item>
+        </argument>
+    </dataSource>
+
+    <!-- Read-only - no mass actions. One row per calendar month; see
+         Model\ResourceModel\LoyaltyPointsReport\Grid\Collection's own docblock. -->
+    <columns name="ordo_loyaltypointsreport_columns">
+        <!-- Plain text, not the Date column type - same reasoning CohortRetention's own
+             cohort_month column gives: 'month' is a 'YYYY-MM-01' bucket label from DATE_FORMAT(),
+             not a real DATETIME column, and the Date column's UTC->admin-timezone conversion
+             shifts a plain date string onto the wrong day. -->
+        <column name="month">
+            <settings>
+                <filter>text</filter>
+                <dataType>text</dataType>
+                <sorting>asc</sorting>
+                <label translate="true">Month</label>
+            </settings>
+        </column>
+        <column name="earned">
+            <settings>
+                <filter>textRange</filter>
+                <dataType>text</dataType>
+                <sortable>true</sortable>
+                <label translate="true">Points Earned</label>
+            </settings>
+        </column>
+        <column name="redeemed">
+            <settings>
+                <filter>textRange</filter>
+                <dataType>text</dataType>
+                <sortable>true</sortable>
+                <label translate="true">Points Redeemed</label>
+            </settings>
+        </column>
+        <column name="expired">
+            <settings>
+                <filter>textRange</filter>
+                <dataType>text</dataType>
+                <sortable>true</sortable>
+                <label translate="true">Points Expired</label>
+            </settings>
+        </column>
+        <column name="net">
+            <settings>
+                <filter>textRange</filter>
+                <dataType>text</dataType>
+                <sortable>true</sortable>
+                <label translate="true">Net Change</label>
+            </settings>
+        </column>
+        <column name="outstanding_liability">
+            <settings>
+                <filter>textRange</filter>
+                <dataType>text</dataType>
+                <sortable>true</sortable>
+                <label translate="true">Outstanding Liability (Running Total)</label>
+            </settings>
+        </column>
+        <column name="redemption_rate">
+            <settings>
+                <filter>textRange</filter>
+                <dataType>text</dataType>
+                <sortable>true</sortable>
+                <label translate="true">Redemption Rate (%)</label>
+            </settings>
+        </column>
+    </columns>
+</listing>

@@ -40,6 +40,7 @@
                 <resource id="Ordo_Automation::anomaly_alert" title="Ordo Automation Anomaly Alerts" translate="title" sortOrder="770"/>
                 <resource id="Ordo_Automation::funnel_report" title="Ordo Automation Funnel Report" translate="title" sortOrder="780"/>
                 <resource id="Ordo_Automation::referral" title="Ordo Automation Referrals" translate="title" sortOrder="790"/>
+                <resource id="Ordo_Automation::loyalty_points_report" title="Ordo Automation Loyalty Points Report" translate="title" sortOrder="800"/>
             </resource>
         </resources>
     </acl>

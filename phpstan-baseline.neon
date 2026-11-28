@@ -658,6 +658,12 @@ parameters:
 			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
 			identifier: argument.type
 			count: 1
+			path: Controller/Adminhtml/LoyaltyPointsReport/Index.php
+
+		-
+			message: '#^Parameter \#1 \$prefix of method Magento\\Framework\\View\\Page\\Title\:\:prepend\(\) expects string, Magento\\Framework\\Phrase given\.$#'
+			identifier: argument.type
+			count: 1
 			path: Controller/Adminhtml/Rfm/Index.php
 
 		-
