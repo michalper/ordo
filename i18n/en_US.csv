@@ -440,3 +440,6 @@
 "Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default."
 "Maximum marketing messages per window","Maximum marketing messages per window"
 "Checkout Abandoned (started checkout, no order since)","Checkout Abandoned (started checkout, no order since)"
+"NPS Score At Most","NPS Score At Most"
+"Maximum NPS score","Maximum NPS score"
+"Assign Lead Routing Rule","Assign Lead Routing Rule"

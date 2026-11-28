@@ -1326,3 +1326,6 @@
 "Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","Omezte, kolik marketingových zpráv vám napříč všemi kanály celkem zasíláme - klidně striktněji, než je náš celoobchodní limit. Nechte prázdné, pokud chcete použít náš výchozí limit."
 "Maximum marketing messages per window","Maximální počet marketingových zpráv za období"
 "Checkout Abandoned (started checkout, no order since)","Opuštěná pokladna (zahájena pokladna, od té doby žádná objednávka)"
+"NPS Score At Most","Skóre NPS nejvýše"
+"Maximum NPS score","Maximální skóre NPS"
+"Assign Lead Routing Rule","Přiřadit pravidlo směrování leadů"

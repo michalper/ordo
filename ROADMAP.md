@@ -1027,19 +1027,9 @@ project lacks, or touches the standing no-auto-charge constraint.
 - ~~**`customer_anniversary`'s `date_source` has no "first order" option - only `dob`/`registration`.**~~
   Shipped, see `docs/adr/0091-customer-anniversary-first-order-date-source.md`. New `first_order`
   `date_source` value, keyed off `MIN(sales_order.created_at)` per customer.
-- **A detractor NPS/survey response has no way to reach a human.** `Model\Campaign\Condition\
-  NpsScoreAtLeast` only supports an "at least" threshold (there is no `nps_score_at_most`/
-  "detractor" condition at all), and `Model\LeadRouting\LeadAssigner`/`LeadRoutingRuleEvaluator`
-  are only ever invoked from two hardcoded observer events (`customer_register_success`,
-  `ordo_customer_score_threshold_crossed` - see `Observer\AssignLeadRoutingRule`'s own docblock),
-  never from the campaign engine's own `ActionPool`. Together, a store genuinely cannot build "a
-  customer just gave us a low NPS score - get a rep on this" today, despite this module already
-  having every piece except the two connectors: a new `nps_score_at_most` condition (the exact
-  mirror of the existing `_at_least` one, same query, flipped comparison) and a new
-  `assign_lead_routing_rule` campaign action (a thin wrapper around the existing
-  `LeadRoutingRuleEvaluator`/`LeadAssigner` pair, reusing their round-robin assignment logic
-  as-is - `AssignLeadRoutingRule`'s own one-time-assignment guard, `LeadAssigner::hasAssignedRep()`,
-  already protects against this overwriting an existing rep relationship).
+- ~~**A detractor NPS/survey response has no way to reach a human.**~~ Shipped, see
+  `docs/adr/0093-nps-detractor-lead-routing-escalation.md`. New `nps_score_at_most` condition +
+  `assign_lead_routing_rule` action.
 - ~~**No per-customer self-service message-frequency preference - only an admin-wide cap.**~~
   Shipped, see `docs/adr/0094-customer-frequency-preference.md`. New `ordo_max_messages_per_window`
   customer attribute (not a `ordo_customer_consent` column - see that ADR for why);

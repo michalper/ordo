@@ -1326,3 +1326,6 @@
 "Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","Limitați câte mesaje de marketing vă trimitem în total pe toate canalele - mai strict decât limita noastră generală, dacă doriți. Lăsați necompletat pentru a folosi valoarea noastră implicită."
 "Maximum marketing messages per window","Mesaje de marketing maxime pe fereastră"
 "Checkout Abandoned (started checkout, no order since)","Checkout abandonat (checkout început, fără comandă de atunci)"
+"NPS Score At Most","Scorul NPS Cel mult"
+"Maximum NPS score","Scorul maxim NPS"
+"Assign Lead Routing Rule","Atribuiți regula de direcționare a clienților potențiali"

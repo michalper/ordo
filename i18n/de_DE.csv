@@ -1326,3 +1326,6 @@
 "Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","Begrenzen Sie, wie viele Marketingnachrichten wir Ihnen über alle Kanäle zusammen senden - gerne strenger als unser eigenes, shopweites Limit. Leer lassen, um einfach unseren Standardwert zu verwenden."
 "Maximum marketing messages per window","Maximale Marketingnachrichten pro Zeitfenster"
 "Checkout Abandoned (started checkout, no order since)","Checkout abgebrochen (Checkout gestartet, seitdem keine Bestellung)"
+"NPS Score At Most","NPS-Wert höchstens"
+"Maximum NPS score","Maximaler NPS-Wert"
+"Assign Lead Routing Rule","Lead-Routing-Regel zuweisen"

@@ -1326,3 +1326,6 @@
 "Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","모든 채널을 합산하여 보내는 마케팅 메시지 수를 제한할 수 있습니다 - 원하시면 매장 전체 한도보다 더 엄격하게 설정할 수 있습니다. 기본값을 사용하려면 비워 두세요."
 "Maximum marketing messages per window","기간당 최대 마케팅 메시지 수"
 "Checkout Abandoned (started checkout, no order since)","결제 포기(결제를 시작했지만 그 이후 주문 없음)"
+"NPS Score At Most","NPS 점수 이하"
+"Maximum NPS score","최대 NPS 점수"
+"Assign Lead Routing Rule","리드 라우팅 규칙 할당"

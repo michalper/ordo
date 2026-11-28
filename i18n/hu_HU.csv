@@ -1326,3 +1326,6 @@
 "Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","Korlátozza, hány marketingüzenetet küldünk Önnek összesen, minden csatornán - akár szigorúbban is, mint a saját, bolti szintű korlátunk. Hagyja üresen, ha az alapértelmezett értéket szeretné használni."
 "Maximum marketing messages per window","Maximális marketingüzenetek száma időszakonként"
 "Checkout Abandoned (started checkout, no order since)","Pénztár elhagyva (pénztár elindítva, azóta nincs rendelés)"
+"NPS Score At Most","NPS pontszám legfeljebb"
+"Maximum NPS score","Maximális NPS-pontszám"
+"Assign Lead Routing Rule","Lead-irányítási szabály hozzárendelése"
